@@ -1,5 +1,11 @@
 use super::*;
-use bevy::text::EditableText;
+use bevy::{
+    ecs::{entity_disabling::Disabled, query::Allow},
+    text::EditableText,
+};
+
+mod form;
+mod list;
 
 const PAGE_SIZE: usize = 20;
 
@@ -10,10 +16,11 @@ struct Input {
 }
 
 #[derive(Component)]
-struct Countdown {
+pub(super) struct Countdown {
     owner: Entity,
     uid: String,
     schedule: String,
+    presented: Option<(String, model::Next)>,
 }
 
 #[derive(Clone)]
@@ -83,7 +90,7 @@ impl Action for Command {
                     let Some(row) = find(world, owner, uid) else {
                         return;
                     };
-                    Draft::edit(&row)
+                    Draft::edit(row)
                 } else {
                     Draft::default()
                 };
@@ -136,8 +143,8 @@ impl Action for Command {
     }
 }
 
-fn find(world: &World, owner: Entity, uid: &str) -> Option<Frequency> {
-    world.get::<View>(owner)?.rows.by_uid(uid).cloned()
+fn find<'a>(world: &'a World, owner: Entity, uid: &str) -> Option<&'a Frequency> {
+    world.get::<View>(owner)?.rows.by_uid(uid)
 }
 
 pub(super) fn row(world: &mut World, parent: Entity) -> Entity {
@@ -178,8 +185,8 @@ pub(super) fn button(
     owner: Entity,
     title: &str,
     command: Command,
-) {
-    crate::native::castle_feed::button(world, parent, owner, title, command);
+) -> Entity {
+    crate::native::castle_feed::button(world, parent, owner, title, command)
 }
 
 pub(super) fn glyph(
@@ -247,7 +254,7 @@ pub(super) fn input(
     index: usize,
     title: &str,
     value: &str,
-) {
+) -> Entity {
     if index != 4 {
         crate::native::edit_mode::label(world, parent, title, 13.0);
     }
@@ -275,6 +282,7 @@ pub(super) fn input(
     if let Some(mut node) = world.get_mut::<bevy::a11y::AccessibilityNode>(entity) {
         node.set_label(title);
     }
+    entity
 }
 
 fn clear(world: &mut World, parent: Entity) {
@@ -288,290 +296,79 @@ fn clear(world: &mut World, parent: Entity) {
 }
 
 pub(super) fn render_form(world: &mut World, owner: Entity) {
-    let controls = world.get::<View>(owner).unwrap().controls;
-    clear(world, controls);
-    if let Some(draft) = world.get::<FrequencyCastle>(owner).unwrap().draft.as_ref() {
-        let title = if draft.uid.is_some() {
-            "Save"
-        } else {
-            "Create"
-        };
-        button(world, controls, owner, title, Command::Save);
-        button(world, controls, owner, "Cancel", Command::Cancel);
-    } else {
-        icon_button(
-            world,
-            controls,
-            owner,
-            crate::native::icons::Icon::Plus,
-            "New frequency",
-            Command::New,
-            22.0,
-        );
-    }
-    let form = world.get::<View>(owner).unwrap().form;
-    clear(world, form);
-    let Some(draft) = world.get::<FrequencyCastle>(owner).unwrap().draft.clone() else {
-        return;
-    };
-    crate::native::edit_mode::label(
-        world,
-        form,
-        if draft.uid.is_some() {
-            "Edit frequency · existing rules keep the same reference"
-        } else {
-            "New frequency"
-        },
-        16.0,
-    );
-    for (index, title) in [(1, "Name"), (0, "Slug")] {
-        input(world, form, owner, index, title, &draft.fields[index]);
-    }
-    if draft.cadence_editable {
-        input(
-            world,
-            form,
-            owner,
-            2,
-            "Every · e.g. 1 month + 1 day or 1 day + 10s + 100ms",
-            &draft.fields[2],
-        );
-        crate::native::edit_mode::label(
-            world,
-            form,
-            "Then move forward to · no selection means any weekday",
-            13.0,
-        );
-        let weekdays = row(world, form);
-        for day in super::interval::WEEKDAYS {
-            let label = super::interval::weekday_label(day);
-            let label = if draft.weekdays.contains(&day) {
-                format!("[{label}]")
-            } else {
-                label.into()
-            };
-            button(world, weekdays, owner, &label, Command::Weekday(day));
-        }
-        let title = match draft.original.as_ref().map(|original| &original.cadence) {
-            Some(nucleus::karma::FrequencyCadenceAst::Calendar { timezone, .. }) => {
-                format!("Next date · {} local time", timezone.as_str())
-            }
-            _ => "Next date · date and time with offset".into(),
-        };
-        input(world, form, owner, 3, &title, &draft.fields[3]);
-    } else {
-        crate::native::edit_mode::label(
-            world,
-            form,
-            "This calendar or parameter-based schedule is kept unchanged when renaming.",
-            12.0,
-        );
-    }
+    form::render(world, owner);
 }
 
 pub(super) fn render_list(world: &mut World, owner: Entity) {
-    let _prepare = nucleus::performance::Span::new("frequency-list-preparation");
-    let view = world.get::<View>(owner).unwrap();
-    let (list, deleting, page) = (view.list, view.deleting.clone(), view.page);
-    let query = world
-        .get::<FrequencyCastle>(owner)
-        .unwrap()
-        .search
-        .trim()
-        .to_lowercase();
-    let rows: Vec<_> = view
-        .rows
-        .iter()
-        .filter(|row| {
-            query.is_empty()
-                || format!("{} {} {}", row.slug, row.definition.purpose, row.status)
-                    .to_lowercase()
-                    .contains(&query)
-        })
-        .collect();
-    let count = rows.len();
-    let page = page.min(count.saturating_sub(1) / PAGE_SIZE);
-    let rows: Vec<_> = rows
-        .into_iter()
-        .skip(page * PAGE_SIZE)
-        .take(PAGE_SIZE)
-        .cloned()
-        .collect();
-    world.get_mut::<View>(owner).unwrap().page = page;
-    clear(world, list);
-    if rows.is_empty() {
-        crate::native::edit_mode::label(
-            world,
-            list,
-            "No frequencies found. Use + to create one.",
-            14.0,
-        );
-    }
-    let now = chrono::Utc::now().timestamp_millis();
-    for frequency in &rows {
-        let block = stack(world, list);
-        let heading = row(world, block);
-        world.get_mut::<Node>(heading).unwrap().flex_wrap = FlexWrap::NoWrap;
-        let active = !frequency.quantity.is_zero();
-        let indicator = world
-            .spawn((
-                Node {
-                    width: px(17),
-                    height: px(17),
-                    flex_shrink: 0.0,
-                    border: UiRect::all(px(1.5)),
-                    border_radius: BorderRadius::all(percent(50)),
-                    ..default()
-                },
-                crate::native::token_style::border(crate::native::tokens::Token::Ink),
-                crate::native::icons::Tooltip(
-                    if active {
-                        "Active"
-                    } else {
-                        "Inactive · quantity 0"
-                    }
-                    .into(),
-                ),
-                ChildOf(heading),
-            ))
-            .id();
-        if active {
-            world
-                .entity_mut(indicator)
-                .insert(crate::native::token_style::background(
-                    crate::native::tokens::Token::Ink,
-                ));
-        }
-        let name =
-            crate::native::edit_mode::label(world, heading, &frequency.definition.purpose, 17.0);
-        let slug =
-            crate::native::edit_mode::label(world, heading, &format!("@{}", frequency.slug), 17.0);
-        for label in [name, slug] {
-            world
-                .entity_mut(label)
-                .insert(TextLayout::linebreak(bevy::text::LineBreak::NoWrap));
-            let mut node = world.get_mut::<Node>(label).unwrap();
-            node.flex_shrink = 1.0;
-            node.min_width = px(0);
-            node.overflow = Overflow::clip();
-        }
-        icon_button(
-            world,
-            heading,
-            owner,
-            crate::native::icons::Icon::Pencil,
-            "Edit",
-            Command::Edit(frequency.uid.clone()),
-            17.0,
-        );
-        icon_button(
-            world,
-            heading,
-            owner,
-            crate::native::icons::Icon::Delete,
-            "Delete",
-            Command::Delete(frequency.uid.clone()),
-            17.0,
-        );
-        let countdown =
-            crate::native::edit_mode::label(world, block, &model::details(frequency, now), 13.0);
-        world.entity_mut(countdown).insert(Countdown {
-            owner,
-            uid: frequency.uid.clone(),
-            schedule: model::schedule(frequency),
-        });
-        if deleting.as_ref() == Some(&frequency.uid) {
-            crate::native::edit_mode::label(
-                world,
-                block,
-                "Delete this frequency? Frequencies used by rules, Signals, or Programs cannot be deleted.",
-                13.0,
-            );
-            let confirm = row(world, block);
-            button(
-                world,
-                confirm,
-                owner,
-                "Confirm delete",
-                Command::ConfirmDelete(frequency.uid.clone()),
-            );
-            button(
-                world,
-                confirm,
-                owner,
-                "Keep frequency",
-                Command::CancelDelete,
-            );
-        }
-    }
-    if count > PAGE_SIZE {
-        let pages = row(world, list);
-        if page > 0 {
-            button(world, pages, owner, "Previous", Command::Page(page - 1));
-        }
-        crate::native::edit_mode::label(
-            world,
-            pages,
-            &format!("Page {} / {}", page + 1, count.div_ceil(PAGE_SIZE)),
-            13.0,
-        );
-        if (page + 1) * PAGE_SIZE < count {
-            button(world, pages, owner, "Next", Command::Page(page + 1));
-        }
-    }
+    list::render(world, owner);
 }
 
 pub(super) fn capture(world: &mut World, owner: Entity) -> bool {
     let _capture = nucleus::performance::Span::new("frequency-field-capture");
-    let inputs: Vec<_> = world
-        .query::<(Entity, &Input, &EditableText)>()
-        .iter(world)
-        .filter(|(_, input, _)| input.owner == owner)
-        .map(|(entity, input, _)| (entity, input.index))
-        .collect();
+    world
+        .run_system_cached_with(capture_fields, owner)
+        .expect("capture Frequency fields")
+}
+
+fn capture_fields(
+    In(owner): In<Entity>,
+    inputs: Query<(&Input, &EditableText)>,
+    mut castles: Query<&mut FrequencyCastle, Allow<Disabled>>,
+) -> bool {
+    let Ok(mut castle) = castles.get_mut(owner) else {
+        return false;
+    };
     let mut previous_search = None;
-    for (entity, index) in inputs {
-        let Some(castle) = world.get::<FrequencyCastle>(owner) else {
-            return false;
-        };
-        let expected = if index == 4 {
+    for (input, text) in &inputs {
+        if input.owner != owner {
+            continue;
+        }
+        let expected = if input.index == 4 {
             Some(castle.search.as_str())
         } else {
             castle
                 .draft
                 .as_ref()
-                .map(|draft| draft.fields[index].as_str())
+                .map(|draft| draft.fields[input.index].as_str())
         };
         let Some(expected) = expected else { continue };
-        let text = world.get::<EditableText>(entity).unwrap().value();
-        if text == expected {
+        if text.value() == expected {
             continue;
         }
-        let value = text.to_string();
-        let mut castle = world.get_mut::<FrequencyCastle>(owner).unwrap();
-        if index == 4 {
-            // Retain the original value only on an actual change. Applying in
-            // query order also preserves the last input if a field is repeated.
-            let previous = std::mem::replace(&mut castle.search, value);
-            previous_search.get_or_insert(previous);
+        if input.index == 4 {
+            if previous_search.is_none() {
+                previous_search = Some(std::mem::take(&mut castle.search));
+            }
+            crate::controls::copy_value(text, &mut castle.search);
         } else if let Some(draft) = &mut castle.draft {
-            draft.fields[index] = value;
+            crate::controls::copy_value(text, &mut draft.fields[input.index]);
         }
+        nucleus::performance::add("frequency-fields-published", 1);
     }
-    previous_search
-        .is_some_and(|previous| world.get::<FrequencyCastle>(owner).unwrap().search != previous)
+    previous_search.is_some_and(|previous| castle.search != previous)
 }
 
 pub(super) fn inputs(world: &mut World) {
-    let owners: Vec<_> = world
-        .query_filtered::<Entity, With<FrequencyCastle>>()
-        .iter(world)
-        .collect();
-    for owner in owners {
+    world
+        .run_system_cached(update_inputs)
+        .expect("update Frequency inputs");
+}
+
+fn update_inputs(
+    world: &mut World,
+    candidates: &mut QueryState<Entity, With<FrequencyCastle>>,
+    mut owners: Local<Vec<Entity>>,
+) {
+    owners.extend(candidates.iter(world));
+    let count = owners.len();
+    for owner in owners.drain(..) {
         if capture(world, owner) {
             world.get_mut::<View>(owner).unwrap().page = 0;
             render_list(world, owner);
         }
+    }
+    if count == 0 {
+        *owners = Vec::new();
     }
 }
 
@@ -596,7 +393,7 @@ pub(super) fn refresh_next_date(world: &mut World, owner: Entity) {
     if Some(row.handle_revision) != draft.revision {
         return;
     }
-    let date = Draft::edit(&row).fields[3].clone();
+    let date = model::edit_date(row);
     if date == draft.fields[3] {
         return;
     }
@@ -609,55 +406,94 @@ pub(super) fn refresh_next_date(world: &mut World, owner: Entity) {
     else {
         return;
     };
-    draft.fields[3] = date.clone();
+    date.clone_into(&mut draft.fields[3]);
     if let Some(fields) = &mut draft.original_fields {
-        fields[3] = date.clone();
+        date.clone_into(&mut fields[3]);
     }
     for (input, mut text) in world.query::<(&Input, &mut EditableText)>().iter_mut(world) {
-        if input.owner == owner && input.index == 3 {
+        if input.owner == owner && input.index == 3 && text.value() != date.as_str() {
             text.editor.set_text(&date);
         }
     }
 }
 
-pub(super) fn tick(world: &mut World, mut wake_at: Local<Option<std::time::Instant>>) {
+fn publish_countdown(world: &mut World, entity: Entity, next: model::Next) {
+    let _publish = nucleus::performance::Span::new("frequency-countdown-publication");
+    let countdown = world.get::<Countdown>(entity).unwrap();
+    let schedule_changed = countdown
+        .presented
+        .as_ref()
+        .is_none_or(|(schedule, _)| *schedule != countdown.schedule);
+    let changed = schedule_changed
+        || countdown
+            .presented
+            .as_ref()
+            .is_none_or(|(_, presented)| *presented != next);
+    let entity_ref = world.entity(entity);
+    let text = entity_ref.get_ref::<Text>().unwrap();
+    if !changed && !text.is_changed() {
+        return;
+    }
+    nucleus::performance::add("frequency-countdowns-prepared", 1);
+    let label = format!("{} | Next: {next}", countdown.schedule);
+    let publish = text.0 != label;
+    let schedule = schedule_changed.then(|| countdown.schedule.clone());
+    if changed {
+        let mut countdown = world.get_mut::<Countdown>(entity).unwrap();
+        if let Some((previous_schedule, previous_next)) = &mut countdown.presented {
+            if let Some(schedule) = schedule {
+                *previous_schedule = schedule;
+            }
+            *previous_next = next;
+        } else {
+            countdown.presented = Some((schedule.expect("first countdown schedule"), next));
+        }
+    }
+    if publish {
+        world.get_mut::<Text>(entity).unwrap().0 = label;
+        nucleus::performance::add("frequency-countdowns-published", 1);
+    }
+}
+
+pub(super) fn tick(
+    world: &mut World,
+    candidates: &mut QueryState<(Entity, &'static Countdown)>,
+    mut countdowns: Local<Vec<Entity>>,
+    mut wake_at: Local<Option<std::time::Instant>>,
+) {
     let _presentation = nucleus::performance::Span::new("frequency-countdown-presentation");
     let now = chrono::Utc::now().timestamp_millis();
-    let updates: Vec<_> = world
-        .query::<(Entity, &Countdown)>()
-        .iter(world)
-        .filter_map(|(entity, countdown)| {
-            if crate::native::laboratory::suspended(world, countdown.owner) {
-                return None;
-            }
-            let root = world.get::<ChildOf>(countdown.owner)?.parent();
-            if let (Some(spaces), Some(member)) = (
-                world.get::<crate::native::workspace::Workspaces>(root),
-                world.get::<WorkspaceMember>(countdown.owner),
-            ) && spaces.active != member.0
-            {
-                return None;
-            }
-            let frequency = world
-                .get::<View>(countdown.owner)?
-                .rows
-                .by_uid(&countdown.uid)?;
-            Some((
-                entity,
-                format!(
-                    "{} | Next: {}",
-                    countdown.schedule,
-                    model::next(frequency, now)
-                ),
-                frequency.next_at_ms.is_some(),
-            ))
-        })
-        .collect();
-    let ticking = updates.iter().any(|(_, _, next)| *next);
-    for (entity, label, _) in updates {
-        if world.get::<Text>(entity).unwrap().0 != label {
-            world.get_mut::<Text>(entity).unwrap().0 = label;
+    countdowns.extend(candidates.iter(world).map(|(entity, _)| entity));
+    let count = countdowns.len();
+    nucleus::performance::add("frequency-countdown-candidates", count as u64);
+    let mut ticking = false;
+    for entity in countdowns.drain(..) {
+        let countdown = world.get::<Countdown>(entity).unwrap();
+        if crate::native::laboratory::suspended(world, countdown.owner) {
+            continue;
         }
+        let Some(root) = world.get::<ChildOf>(countdown.owner).map(ChildOf::parent) else {
+            continue;
+        };
+        if let (Some(spaces), Some(member)) = (
+            world.get::<crate::native::workspace::Workspaces>(root),
+            world.get::<WorkspaceMember>(countdown.owner),
+        ) && spaces.active != member.0
+        {
+            continue;
+        }
+        let Some(frequency) = world
+            .get::<View>(countdown.owner)
+            .and_then(|view| view.rows.by_uid(&countdown.uid))
+        else {
+            continue;
+        };
+        let next = model::Next::new(frequency, now);
+        ticking |= next.scheduled();
+        publish_countdown(world, entity, next);
+    }
+    if count == 0 {
+        *countdowns = Vec::new();
     }
     if ticking && wake_at.is_none_or(|at| at.elapsed().as_secs() >= 1) {
         *wake_at = Some(std::time::Instant::now());

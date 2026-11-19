@@ -13,7 +13,7 @@
 edition = "2021"
 rust-version = "1.88"
 name = "parley"
-version = "0.9.0"
+version = "0.11.1"
 build = false
 exclude = ["/tests"]
 autolib = false
@@ -38,9 +38,11 @@ all-features = true
 
 [features]
 accesskit = ["dep:accesskit"]
+complex-scripts = []
 default = ["system"]
 libm = [
     "fontique/libm",
+    "harfrust/libm",
     "peniko/libm",
     "skrifa/libm",
     "dep:core_maths",
@@ -74,11 +76,11 @@ version = "0.1.1"
 optional = true
 
 [dependencies.fontique]
-version = "0.9.0"
+version = "0.11.1"
 default-features = false
 
 [dependencies.harfrust]
-version = "0.6.0"
+version = "0.12.0"
 default-features = false
 
 [dependencies.hashbrown]
@@ -113,12 +115,12 @@ version = "0.1.0"
 default-features = false
 
 [dependencies.parley_data]
-version = "0.9.0"
+version = "0.11.1"
 features = ["baked"]
 default-features = false
 
 [dependencies.skrifa]
-version = "0.42.0"
+version = "0.44.0"
 default-features = false
 
 [dev-dependencies.peniko]
@@ -131,11 +133,10 @@ features = ["freestanding"]
 default-features = false
 
 [lints.clippy]
-allow_attributes_without_reason = "warn"
 cargo_common_metadata = "warn"
 cast_possible_truncation = "warn"
 collection_is_never_read = "warn"
-dbg_macro = "warn"
+dbg_macro = "deny"
 debug_assert_with_mut_call = "warn"
 default_trait_access = "warn"
 doc_markdown = "warn"
@@ -150,7 +151,8 @@ redundant_feature_names = "warn"
 same_functions_in_if_condition = "warn"
 semicolon_if_nothing_returned = "warn"
 should_panic_without_expect = "warn"
-todo = "warn"
+todo = "deny"
+allow_attributes_without_reason = "deny"
 too_many_arguments = "allow"
 unseparated_literal_suffix = "warn"
 use_self = "warn"

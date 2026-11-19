@@ -140,54 +140,45 @@ pub fn outcome_forms(transfer: &Value, person: &str) -> Vec<Form> {
 }
 
 pub fn reviewed_payload(form: &Form, preview: &Value, actor: &str) -> Result<Value, String> {
-    let mut action = form.data.clone();
-    if text(preview, "person") != actor || actor.is_empty() {
+    let _span = nucleus::performance::Span::new("transfer-reviewed-action-preparation");
+    if super::display_ref(&preview["person"]) != actor || actor.is_empty() {
         return Err("This review belongs to a different Person. Choose the Person whose signer is installed.".into());
     }
-    if action["action"] == "complete-transfer-occurrence-claims-bulk" {
-        let items: Vec<_> = array(preview, "items")
-            .iter()
-            .filter_map(|item| {
-                item["action"]
-                    .as_object()
-                    .map(|action| Value::Object(action.clone()))
-            })
-            .collect();
+    const EXPECTED: [(&str, &str); 5] = [
+        ("expected_remaining_quantity", "remaining_quantity"),
+        ("expected_local_delta", "local_delta"),
+        (
+            "expected_application_formula_hash",
+            "application_formula_hash",
+        ),
+        (
+            "expected_application_formula_version",
+            "application_formula_version",
+        ),
+        ("expected_remainder_policy", "remainder_policy"),
+    ];
+    let bulk = form.data["action"] == "complete-transfer-occurrence-claims-bulk";
+    if bulk {
+        let items = array(preview, "items");
         if preview["eligible"] != true
             || items.is_empty()
-            || items.len() != array(preview, "items").len()
-            || text(preview, "review_token").is_empty()
+            || items.iter().any(|item| !item["action"].is_object())
+            || super::display_ref(&preview["review_token"]).is_empty()
         {
             return Err("The selection contains blocked or missing claims".into());
         }
-        action["review_token"] = preview["review_token"].clone();
-        action["items"] = json!(items);
     } else {
         if !capability(preview, "settle")
-            || preview["canonical_quantity"].as_f64() != action["canonical_quantity"].as_f64()
-            || preview["occurrence"] != action["occurrence"]
+            || preview["canonical_quantity"].as_f64() != form.data["canonical_quantity"].as_f64()
+            || preview["occurrence"] != form.data["occurrence"]
         {
             return Err("The quantity or occurrence changed. Request a fresh review.".into());
         }
-        for (expected, actual) in [
-            ("expected_remaining_quantity", "remaining_quantity"),
-            ("expected_local_delta", "local_delta"),
-            (
-                "expected_application_formula_hash",
-                "application_formula_hash",
-            ),
-            (
-                "expected_application_formula_version",
-                "application_formula_version",
-            ),
-            ("expected_remainder_policy", "remainder_policy"),
-        ] {
+        for (expected, actual) in EXPECTED {
             if preview[expected].is_null() || preview[expected] != preview[actual] {
                 return Err("The Cell returned an incomplete settlement review".into());
             }
-            action[expected] = preview[expected].clone();
         }
-        action["expected_effects_hash"] = preview["expected_effects_hash"].clone();
         if preview["effects"]
             .as_array()
             .is_some_and(|effects| !effects.is_empty())
@@ -197,6 +188,22 @@ pub fn reviewed_payload(form: &Form, preview: &Value, actor: &str) -> Result<Val
         {
             return Err("The Cell returned an incomplete group review".into());
         }
+    }
+    nucleus::performance::add("transfer-reviewed-payloads-prepared", 1);
+    let mut action = form.data.clone();
+    if bulk {
+        action["review_token"] = preview["review_token"].clone();
+        action["items"] = Value::Array(
+            array(preview, "items")
+                .iter()
+                .map(|item| item["action"].clone())
+                .collect(),
+        );
+    } else {
+        for (expected, _) in EXPECTED {
+            action[expected] = preview[expected].clone();
+        }
+        action["expected_effects_hash"] = preview["expected_effects_hash"].clone();
     }
     Ok(action)
 }

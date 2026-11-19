@@ -186,7 +186,7 @@ struct ParagraphLinks {
 }
 
 fn click(
-    mut event: On<Pointer<Click>>,
+    mut event: On<PointerClick>,
     paragraphs: Query<(
         &ParagraphLinks,
         &bevy::text::TextLayoutInfo,
@@ -205,7 +205,7 @@ fn click(
         return;
     };
     let point = (inverse
-        .transform_point2(event.pointer_location.position / node.inverse_scale_factor())
+        .transform_point2(event.pointer.position / node.inverse_scale_factor())
         + node.size() / 2.0)
         / layout.scale_factor;
     let link = layout
@@ -216,7 +216,7 @@ fn click(
             links
                 .links
                 .iter()
-                .find(|(section, _)| *section == run.section_index)
+                .find(|(section, _)| *section == run.section_index as usize)
         })
         .map(|(_, link)| link.clone());
     if let Some(link) = link {

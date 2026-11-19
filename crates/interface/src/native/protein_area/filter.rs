@@ -7,6 +7,9 @@ use crate::native::{
 };
 use std::collections::HashSet;
 
+mod preparation;
+pub(super) use preparation::Preparation;
+
 #[derive(Component)]
 pub(crate) struct Subscription(pub Entity, pub bool);
 
@@ -59,6 +62,10 @@ fn ensure(world: &mut World, owner: Entity, changes: bool) -> Option<Entity> {
     {
         return Some(entity);
     }
+    spawn(world, owner, changes)
+}
+
+fn spawn(world: &mut World, owner: Entity, changes: bool) -> Option<Entity> {
     let root = world.get::<ChildOf>(owner)?.parent();
     let workspace = *world.get::<WorkspaceMember>(owner)?;
     Some(
@@ -68,72 +75,8 @@ fn ensure(world: &mut World, owner: Entity, changes: bool) -> Option<Entity> {
     )
 }
 
-pub(super) fn maintain(world: &mut World) {
-    let subscriptions: Vec<_> = world
-        .query::<(Entity, &Subscription)>()
-        .iter(world)
-        .map(|(e, s)| (e, s.0, s.1))
-        .collect();
-    for (entity, owner, changes) in subscriptions {
-        let valid = world.get::<InfluenceArea>(owner).is_some_and(|a| {
-            if changes {
-                a.change_filter.is_some()
-            } else {
-                a.filter.is_some()
-            }
-        });
-        if !valid {
-            stop(world, entity);
-            let editors: Vec<_> = world
-                .query::<(Entity, &QueryEditor)>()
-                .iter(world)
-                .filter(|(_, q)| q.0 == entity)
-                .map(|(e, _)| e)
-                .collect();
-            for editor in editors {
-                world.despawn(editor);
-            }
-            world.despawn(entity);
-            if world.get_entity(owner).is_ok() {
-                if changes {
-                    world.entity_mut(owner).remove::<ChangeMatches>();
-                } else {
-                    world.entity_mut(owner).remove::<Matches>();
-                }
-            }
-        } else if let (Some(root), Some(member)) = (
-            world.get::<ChildOf>(owner).map(ChildOf::parent),
-            world.get::<WorkspaceMember>(owner).copied(),
-        ) {
-            if world.get::<ChildOf>(entity).map(ChildOf::parent) != Some(root)
-                || world.get::<WorkspaceMember>(entity) != Some(&member)
-            {
-                world.entity_mut(entity).insert((ChildOf(root), member));
-            }
-        }
-    }
-    let owners: Vec<_> = world
-        .query::<(Entity, &InfluenceArea)>()
-        .iter(world)
-        .filter(|(_, a)| a.filter.is_some() || a.change_filter.is_some())
-        .map(|(e, a)| (e, a.filter.is_some(), a.change_filter.is_some()))
-        .collect();
-    for (owner, effects, changes) in owners {
-        if effects {
-            ensure(world, owner, false);
-        }
-        if changes {
-            ensure(world, owner, true);
-        }
-    }
-}
-
-pub(super) fn publish(world: &mut World) {
-    let subscriptions: Vec<_> = world
-        .query::<(Entity, &Subscription)>()
-        .iter(world)
-        .map(|(e, s)| (e, s.0, s.1))
-        .collect();
+fn publish(world: &mut World, subscriptions: impl Iterator<Item = (Entity, Entity, bool)>) {
+    use crate::host::performance::{self, Count};
     for (entity, owner, changes) in subscriptions {
         let Some(config) = configuration_ref(world, entity) else {
             continue;
@@ -143,28 +86,42 @@ pub(super) fn publish(world: &mut World) {
         };
         let current =
             state.ready && config.enabled && state.applied.as_ref().is_some_and(|c| c.enabled);
+        let dirty = state.dirty;
         let previous = if changes {
             world.get::<ChangeMatches>(owner).map(|m| &m.0)
         } else {
             world.get::<Matches>(owner)
         };
-        if !state.dirty
+        if !dirty
             && previous.is_some_and(|matches| {
                 matches.current == current && matches.source == config.source
             })
         {
             continue;
         }
-        let matches = Matches {
-            source: config.source.clone(),
-            current,
-            uids: state
+        performance::add(Count::AreaFilterRowsInspected, state.data.len() as u64);
+        let changed = {
+            let uids: HashSet<&str> = state
                 .data
                 .iter()
-                .filter_map(|row| row["uid"].as_str().map(str::to_string))
-                .collect(),
+                .filter_map(|row| row["uid"].as_str())
+                .collect();
+            let unchanged = previous.is_some_and(|previous| {
+                previous.current == current
+                    && previous.source == config.source
+                    && previous.uids.len() == uids.len()
+                    && uids.iter().all(|uid| previous.uids.contains(*uid))
+            });
+            (!unchanged).then(|| {
+                performance::add(Count::AreaFilterMemberCopies, uids.len() as u64);
+                Matches {
+                    source: config.source.clone(),
+                    current,
+                    uids: uids.into_iter().map(str::to_owned).collect(),
+                }
+            })
         };
-        if previous != Some(&matches) {
+        if let Some(matches) = changed {
             if !matches.current && crate::native::area_mutation::armed(world, owner) {
                 crate::native::area_mutation::disarm(
                     world,
@@ -172,18 +129,21 @@ pub(super) fn publish(world: &mut World) {
                     "Property changes inactive because the Protein filter stopped. Run the filter before property changes can resume.",
                 );
             }
+            performance::count(Count::AreaFilterMatchWrites);
             if changes {
                 world.entity_mut(owner).insert(ChangeMatches(matches));
             } else {
                 world.entity_mut(owner).insert(matches);
             }
         }
-        world
-            .resource_mut::<Runtime>()
-            .areas
-            .get_mut(&entity)
-            .unwrap()
-            .dirty = false;
+        if dirty {
+            world
+                .resource_mut::<Runtime>()
+                .areas
+                .get_mut(&entity)
+                .unwrap()
+                .dirty = false;
+        }
     }
 }
 

@@ -6,9 +6,6 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
-/// Read-heavy draft content shared by its presentation and pending file writes.
-/// Every mutation detaches shared storage and invalidates structural
-/// validation. This never substitutes for authorization or send-time validation.
 #[derive(Clone, Default)]
 pub(crate) struct Parts(Arc<Content>);
 
@@ -39,8 +36,6 @@ impl Parts {
         content
     }
 
-    // Keys identify occurrences within one composer, including identical
-    // attachments. They never enter the saved or outbound representation.
     pub(super) fn rows(&self) -> impl Iterator<Item = (u64, &MessagePart)> {
         self.0.keys.iter().copied().zip(self.0.parts.iter())
     }
@@ -89,8 +84,6 @@ impl Parts {
 
     pub(crate) fn clear(&mut self) {
         if !self.is_empty() {
-            // A queued snapshot owns its old content; clearing the composer
-            // must not copy that content merely to discard it.
             *self = Self(Arc::new(Content {
                 next_key: self.0.next_key,
                 ..Content::default()
@@ -131,8 +124,6 @@ impl fmt::Debug for Parts {
     }
 }
 
-// Preserve the existing bare-array on-disk/wire representation. The retained
-// allocation and validation result are local implementation details.
 impl Serialize for Parts {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         self.0.parts.serialize(serializer)

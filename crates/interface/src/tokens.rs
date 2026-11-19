@@ -95,7 +95,6 @@ macro_rules! tokens {
         #[repr(usize)]
         pub enum Token { $($id,)* }
         impl Token {
-            /// Stable identifier used by serialized overrides and authoring.
             pub const fn identifier(self) -> &'static str {
                 match self { $(Self::$id => stringify!($id),)* }
             }

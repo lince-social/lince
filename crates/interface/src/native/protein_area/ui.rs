@@ -1,4 +1,5 @@
 use super::*;
+use crate::host::performance::{self, Count, Stage};
 use crate::native::{
     actions::{Action, ActionButton},
     edit_mode::label,
@@ -6,6 +7,7 @@ use crate::native::{
     sand::Square,
 };
 use bevy::text::EditableText;
+use std::fmt::Write as _;
 
 #[derive(Clone)]
 pub(crate) enum Command {
@@ -449,39 +451,54 @@ pub(super) fn inputs(world: &mut World) {
 }
 
 pub(super) fn statuses(world: &mut World) {
-    let updates: Vec<_> = world
-        .query::<(Entity, &Status)>()
-        .iter(world)
-        .map(|(entity, area)| {
-            (
-                entity,
-                world
-                    .resource::<Runtime>()
-                    .areas
-                    .get(&area.0)
-                    .map(|state| {
-                        if world.get::<filter::Subscription>(area.0).is_some() {
-                            return format!("{} · {} matches", state.status, state.data.len());
-                        }
-                        format!(
-                            "{} · {} records · {} / {}",
-                            state.status,
-                            state.data.len(),
-                            state.page + 1,
-                            state.data.len().div_ceil(200).max(1)
-                        )
-                    })
-                    .unwrap_or_else(|| "Stopped".into()),
-            )
-        })
-        .collect();
-    for (entity, value) in updates {
-        if let Some(mut text) = world.get_mut::<Text>(entity) {
-            if text.0 != value {
-                text.0 = value;
+    world
+        .run_system_cached(update_statuses)
+        .expect("update Protein status labels");
+}
+
+fn update_statuses(
+    world: &mut World,
+    labels: &mut QueryState<(Entity, &Status)>,
+    mut owners: Local<Vec<(Entity, Entity)>>,
+    mut value: Local<String>,
+) {
+    let _statuses = performance::Span::new(Stage::RecordStatusPresentation);
+    owners.extend(labels.iter(world).map(|(entity, area)| (entity, area.0)));
+    if owners.is_empty() {
+        owners.shrink_to_fit();
+        value.clear();
+        value.shrink_to_fit();
+        return;
+    }
+    for (entity, area) in owners.drain(..) {
+        let Some(text) = world.get::<Text>(entity) else {
+            continue;
+        };
+        performance::count(Count::RecordStatusLabelsInspected);
+        value.clear();
+        if let Some(state) = world.resource::<Runtime>().areas.get(&area) {
+            value.push_str(&state.status);
+            if world.get::<filter::Subscription>(area).is_some() {
+                write!(value, " · {} matches", state.data.len()).unwrap();
+            } else {
+                write!(
+                    value,
+                    " · {} records · {} / {}",
+                    state.data.len(),
+                    state.page + 1,
+                    state.data.len().div_ceil(200).max(1)
+                )
+                .unwrap();
             }
+        } else {
+            value.push_str("Stopped");
+        }
+        if text.0 != *value {
+            world.get_mut::<Text>(entity).unwrap().0.clone_from(&value);
+            performance::count(Count::RecordStatusWrites);
         }
     }
+    value.clear();
 }
 
 pub(crate) fn controls(world: &mut World, _: Entity, panel: Entity, owner: Entity) {

@@ -34,7 +34,7 @@ fn adjacent_records_with_fences_keep_their_own_boundaries() {
 
 #[test]
 fn bundled_lince_document_can_receive_identities_and_be_projected() {
-    let source = include_str!("../../../institute/anicca/Lince.lingua");
+    let source = include_str!("../../../institute/trails/lince/Lince.lingua");
     let (identified, _) = anicca::ensure_uids(source).unwrap();
     let projected = anicca::project(&anicca::parse(&identified).unwrap()).unwrap();
     let installation = projected

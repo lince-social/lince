@@ -107,7 +107,7 @@ fn image(world: &mut World) -> Handle<Image> {
 struct GameScreen(Entity);
 
 fn focus(
-    mut event: On<Pointer<Press>>,
+    mut event: On<PointerPress>,
     screens: Query<&GameScreen>,
     mut focus: ResMut<InputFocus>,
 ) {

@@ -1,6 +1,7 @@
 use super::*;
 use crate::Order;
 use nucleus::schedule::allocation::{Work, allocate};
+use serde::Deserialize;
 
 pub(super) async fn apply(
     store: &store::Store,
@@ -12,9 +13,9 @@ pub(super) async fn apply(
         .order
         .iter()
         .filter_map(|order| match order {
-            Order::Asc(field) => field.strip_prefix('#').map(|name| (name, false)),
-            Order::Desc(field) => field.strip_prefix('#').map(|name| (name, true)),
-            Order::Link(_) => None,
+            Order::Asc(field) if field.starts_with('#') => Some((field.as_str(), false)),
+            Order::Desc(field) if field.starts_with('#') => Some((field.as_str(), true)),
+            _ => None,
         })
         .collect();
     if hierarchy.is_empty() {
@@ -22,12 +23,9 @@ pub(super) async fn apply(
     }
     let records: Vec<_> = output
         .iter()
-        .filter_map(|row| row["record_uid"].as_str().map(str::to_owned))
+        .filter_map(|row| row["record_uid"].as_str())
         .collect();
-    let fields: Vec<_> = hierarchy
-        .iter()
-        .map(|(name, _)| format!("#{name}"))
-        .collect();
+    let fields: Vec<_> = hierarchy.iter().map(|(field, _)| *field).collect();
     let values = crate::assertion_order::values(store, &records, &fields).await?;
     let cursor_records: HashSet<_> = output
         .iter()
@@ -38,7 +36,7 @@ pub(super) async fn apply(
                     .and_then(|value| nucleus::DecimalValue::parse_inferred(value).ok())
                     .is_some_and(|value| value.is_negative())
         })
-        .filter_map(|row| row["record_uid"].as_str().map(str::to_owned))
+        .filter_map(|row| row["record_uid"].as_str())
         .collect();
     let mut work = Vec::new();
     let mut cursor_ids = HashSet::new();
@@ -51,7 +49,6 @@ pub(super) async fn apply(
             .and_then(|value| nucleus::DecimalValue::parse_inferred(value).ok());
         let cursor =
             row["category"] == "overdue" && quantity.is_some_and(|value| value.is_negative());
-        let time = serde_json::from_value::<nucleus::schedule::TimeRange>(row["time"].clone()).ok();
         if !cursor
             && row["preview"] != true
             && row["origin"]["kind"] != "projection"
@@ -60,6 +57,7 @@ pub(super) async fn apply(
             completed.insert(uid.to_owned());
             continue;
         }
+        let time = nucleus::schedule::TimeRange::deserialize(&row["time"]).ok();
         if !cursor
             && cursor_records.contains(record)
             && time.as_ref().is_some_and(|time| time.from_ms <= base_ms)
@@ -105,6 +103,7 @@ pub(super) async fn apply(
                 .collect(),
         });
     }
+    drop(cursor_records);
     let releases: HashMap<_, _> = work
         .iter()
         .map(|work| (work.id.clone(), work.release_ms))

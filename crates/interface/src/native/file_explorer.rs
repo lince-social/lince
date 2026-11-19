@@ -84,7 +84,6 @@ struct View {
     listings: BTreeMap<PathBuf, Arc<AtomicBool>>,
     pending_sorts: BTreeSet<PathBuf>,
     rows: Vec<Row>,
-    // Search owns `rows` directly; listing updates only rebuild the directory model.
     search_results: bool,
     rendered: presentation::Rows,
     cancellation: Arc<AtomicBool>,

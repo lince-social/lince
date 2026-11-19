@@ -234,8 +234,6 @@ async fn shortest_interval(state: &CellRuntime) -> Result<u64, String> {
     let interval = store::organs::minimum_catchup_interval(&state.store.pool)
         .await
         .map_err(|error| error.to_string())?;
-    // Clamping is monotone, so clamp(min(intervals)) preserves the former
-    // min(clamp(intervals)) result without loading any Contact payloads.
     Ok(interval.map_or(30, |seconds| seconds.clamp(5, 300) as u64))
 }
 

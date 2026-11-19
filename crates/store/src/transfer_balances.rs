@@ -425,7 +425,6 @@ pub async fn read_on(
     read_prepared_on(connection, record, actual, &prepared).await
 }
 
-/// Calculate a Record selection from one read transaction and one loan timestamp.
 pub async fn read_many(
     pool: &SqlitePool,
     records: &[&str],

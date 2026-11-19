@@ -7,6 +7,9 @@ use serde_json::Value;
 
 use crate::{LinkDirection, Predicate};
 
+mod read;
+pub use read::ReadGraph;
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ExtensionProperty {
@@ -229,6 +232,7 @@ pub struct AssertionIntent {
     pub touched_properties: BTreeSet<AssertionProperty>,
 }
 
+#[derive(Clone)]
 struct Budget<'a> {
     limits: &'a Limits,
     steps: usize,
@@ -325,7 +329,7 @@ struct Graph<'a> {
     source: &'a GraphSnapshot,
     records: BTreeMap<&'a str, &'a RecordState>,
     concepts: BTreeMap<&'a str, &'a ConceptState>,
-    children: BTreeMap<String, BTreeSet<String>>,
+    children: BTreeMap<&'a str, BTreeSet<&'a str>>,
     assertions: BTreeMap<&'a str, &'a AssertionState>,
     assertions_by_subject: BTreeMap<&'a str, BTreeMap<&'a str, &'a AssertionState>>,
 }
@@ -339,6 +343,8 @@ impl<'a> Graph<'a> {
     }
 
     fn prepare(source: &'a GraphSnapshot, budget: &mut Budget<'_>) -> Result<Self, AuthorityError> {
+        let _preparation = nucleus::performance::Span::new("authority-graph-preparation");
+        let mut indexed_edges = 0;
         within(source.records.len(), budget.limits.records)?;
         within(source.concepts.len(), budget.limits.concepts)?;
         within(source.assertions.len(), budget.limits.assertions)?;
@@ -404,9 +410,10 @@ impl<'a> Graph<'a> {
                 graph.concept(parent)?;
                 graph
                     .children
-                    .entry(parent.clone())
+                    .entry(parent.as_str())
                     .or_default()
-                    .insert(concept.uid.clone());
+                    .insert(concept.uid.as_str());
+                indexed_edges += 1;
             }
         }
         acyclic(graph.concepts.keys().copied(), &graph.children, budget)?;
@@ -479,6 +486,7 @@ impl<'a> Graph<'a> {
                 return Err(AuthorityError::InvalidGraph);
             }
         }
+        nucleus::performance::add("authority-concept-edges-indexed", indexed_edges);
         Ok(graph)
     }
 
@@ -490,13 +498,12 @@ impl<'a> Graph<'a> {
             .ok_or(AuthorityError::MissingDependency)
     }
 
-    fn concept(&self, uid: &str) -> Result<(), AuthorityError> {
+    fn concept(&self, uid: &str) -> Result<&'a ConceptState, AuthorityError> {
         identity(uid, "c")?;
-        if self.concepts.contains_key(uid) {
-            Ok(())
-        } else {
-            Err(AuthorityError::MissingDependency)
-        }
+        self.concepts
+            .get(uid)
+            .copied()
+            .ok_or(AuthorityError::MissingDependency)
     }
 
     fn organ(&self, uid: &str) -> Result<(), AuthorityError> {
@@ -520,24 +527,25 @@ impl<'a> Graph<'a> {
         &self,
         uid: &str,
         budget: &mut Budget<'_>,
-    ) -> Result<BTreeSet<String>, AuthorityError> {
+    ) -> Result<BTreeSet<&'a str>, AuthorityError> {
         if let Some(concepts) =
             nucleus::vocabulary::parse_meaning_set(uid).map_err(|_| AuthorityError::InvalidGraph)?
         {
+            let mut family = BTreeSet::new();
             for concept in &concepts {
                 budget.step()?;
-                self.concept(concept)?;
+                family.insert(self.concept(concept)?.uid.as_str());
             }
-            return Ok(concepts.into_iter().collect());
+            return Ok(family);
         }
-        self.concept(uid)?;
-        reachable(uid, &self.children, budget)
+        let root = self.concept(uid)?.uid.as_str();
+        reachable(root, &self.children, budget)
     }
 }
 
 fn acyclic<'a>(
     nodes: impl Iterator<Item = &'a str>,
-    edges: &BTreeMap<String, BTreeSet<String>>,
+    edges: &BTreeMap<&'a str, BTreeSet<&'a str>>,
     budget: &mut Budget<'_>,
 ) -> Result<(), AuthorityError> {
     let mut incoming: BTreeMap<&str, usize> = nodes.map(|uid| (uid, 0)).collect();
@@ -545,7 +553,7 @@ fn acyclic<'a>(
         for child in children {
             budget.step()?;
             *incoming
-                .get_mut(child.as_str())
+                .get_mut(*child)
                 .ok_or(AuthorityError::MissingDependency)? += 1;
         }
     }
@@ -561,11 +569,11 @@ fn acyclic<'a>(
             for child in children {
                 budget.step()?;
                 let count = incoming
-                    .get_mut(child.as_str())
+                    .get_mut(*child)
                     .ok_or(AuthorityError::MissingDependency)?;
                 *count -= 1;
                 if *count == 0 {
-                    queue.push_back(child);
+                    queue.push_back(*child);
                 }
             }
         }
@@ -577,20 +585,20 @@ fn acyclic<'a>(
     }
 }
 
-fn reachable(
-    root: &str,
-    edges: &BTreeMap<String, BTreeSet<String>>,
+fn reachable<'a>(
+    root: &'a str,
+    edges: &BTreeMap<&'a str, BTreeSet<&'a str>>,
     budget: &mut Budget<'_>,
-) -> Result<BTreeSet<String>, AuthorityError> {
-    let mut seen = BTreeSet::from([root.to_string()]);
-    let mut queue = VecDeque::from([root.to_string()]);
+) -> Result<BTreeSet<&'a str>, AuthorityError> {
+    let mut seen = BTreeSet::from([root]);
+    let mut queue = VecDeque::from([root]);
     while let Some(uid) = queue.pop_front() {
         budget.step()?;
-        if let Some(children) = edges.get(&uid) {
+        if let Some(children) = edges.get(uid) {
             for child in children {
                 budget.step()?;
-                if seen.insert(child.clone()) {
-                    queue.push_back(child.clone());
+                if seen.insert(*child) {
+                    queue.push_back(*child);
                 }
             }
         }
@@ -598,16 +606,17 @@ fn reachable(
     Ok(seen)
 }
 
-enum Selector {
-    All(Vec<Selector>),
-    Any(Vec<Selector>),
-    Not(Box<Selector>),
-    Members(BTreeSet<String>),
+enum Selector<'a> {
+    All(Vec<Selector<'a>>),
+    Any(Vec<Selector<'a>>),
+    Not(Box<Selector<'a>>),
+    Members(BTreeSet<&'a str>),
     Kind(String),
     Content(Predicate),
+    TextContains(String),
 }
 
-impl Selector {
+impl<'a> Selector<'a> {
     fn matches(
         &self,
         record: &RecordState,
@@ -632,8 +641,16 @@ impl Selector {
                 false
             }
             Self::Not(child) => !child.matches(record, budget)?,
-            Self::Members(members) => members.contains(&record.uid),
+            Self::Members(members) => members.contains(record.uid.as_str()),
             Self::Kind(kind) => kind == record.kind.as_str(),
+            Self::TextContains(needle) => {
+                let content = record
+                    .content
+                    .as_ref()
+                    .ok_or(AuthorityError::IncompleteRecord)?;
+                content.head.to_lowercase().contains(needle)
+                    || content.body.to_lowercase().contains(needle)
+            }
             Self::Content(predicate) => {
                 let content = record
                     .content
@@ -657,10 +674,6 @@ impl Selector {
                     }
                     Predicate::SlugEq(value) => content.slug.as_ref() == Some(value),
                     Predicate::UnitEq(value) => content.unit_uid.as_ref() == Some(value),
-                    Predicate::TextContains(value) => {
-                        content.head.to_lowercase().contains(&value.to_lowercase())
-                            || content.body.to_lowercase().contains(&value.to_lowercase())
-                    }
                     _ => return Err(AuthorityError::UnsupportedPredicate),
                 }
             }
@@ -669,7 +682,7 @@ impl Selector {
 
     fn compile(
         predicate: &Predicate,
-        graph: &Graph<'_>,
+        graph: &Graph<'a>,
         budget: &mut Budget<'_>,
         depth: usize,
     ) -> Result<Self, AuthorityError> {
@@ -683,9 +696,14 @@ impl Selector {
             | Predicate::QuantityGt(_)
             | Predicate::QuantityGte(_)
             | Predicate::QuantityEq(_) => Ok(Self::Content(predicate.clone())),
-            Predicate::SlugEq(value) | Predicate::TextContains(value) => {
+            Predicate::SlugEq(value) => {
                 budget.text(value)?;
                 Ok(Self::Content(predicate.clone()))
+            }
+            Predicate::TextContains(value) => {
+                budget.text(value)?;
+                nucleus::performance::add("authority-text-needles-prepared", 1);
+                Ok(Self::TextContains(value.to_lowercase()))
             }
             Predicate::UnitEq(value) => {
                 budget.text(value)?;
@@ -718,8 +736,8 @@ impl Selector {
             )?))),
             Predicate::UidEq(uid) => {
                 budget.text(uid)?;
-                graph.record(uid)?;
-                Ok(Self::Members(BTreeSet::from([uid.clone()])))
+                let record = graph.record(uid)?;
+                Ok(Self::Members(BTreeSet::from([record.uid.as_str()])))
             }
             Predicate::KindEq(kind) => {
                 budget.text(kind)?;
@@ -734,8 +752,8 @@ impl Selector {
                 let mut members = BTreeSet::new();
                 for assertion in &graph.source.assertions {
                     budget.step()?;
-                    if family.contains(&assertion.predicate_uid) {
-                        members.insert(assertion.subject_uid.clone());
+                    if family.contains(assertion.predicate_uid.as_str()) {
+                        members.insert(assertion.subject_uid.as_str());
                     }
                 }
                 Ok(Self::Members(members))
@@ -757,20 +775,20 @@ impl Selector {
                     let Some(object) = graph.object(assertion) else {
                         continue;
                     };
-                    if !family.contains(&assertion.predicate_uid) {
+                    if !family.contains(assertion.predicate_uid.as_str()) {
                         continue;
                     }
                     if matches!(direction, LinkDirection::Out | LinkDirection::Both)
                         && other.as_ref().is_none_or(|other| other == object)
                     {
-                        members.insert(assertion.subject_uid.clone());
+                        members.insert(assertion.subject_uid.as_str());
                     }
                     if matches!(direction, LinkDirection::In | LinkDirection::Both)
                         && other
                             .as_ref()
                             .is_none_or(|other| other == &assertion.subject_uid)
                     {
-                        members.insert(object.clone());
+                        members.insert(object.as_str());
                     }
                 }
                 Ok(Self::Members(members))
@@ -782,24 +800,24 @@ impl Selector {
             } => {
                 budget.text(record)?;
                 budget.text(kind)?;
-                graph.record(record)?;
+                let root = graph.record(record)?.uid.as_str();
                 let family = graph.family(kind, budget)?;
-                let mut edges: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+                let mut edges: BTreeMap<&str, BTreeSet<&str>> = BTreeMap::new();
                 for assertion in &graph.source.assertions {
                     budget.step()?;
                     if let Some(object) = graph.object(assertion)
-                        && family.contains(&assertion.predicate_uid)
+                        && family.contains(assertion.predicate_uid.as_str())
                     {
                         edges
-                            .entry(object.clone())
+                            .entry(object.as_str())
                             .or_default()
-                            .insert(assertion.subject_uid.clone());
+                            .insert(assertion.subject_uid.as_str());
                     }
                 }
                 acyclic(graph.records.keys().copied(), &edges, budget)?;
-                let mut members = reachable(record, &edges, budget)?;
+                let mut members = reachable(root, &edges, budget)?;
                 if !include_self {
-                    members.remove(record);
+                    members.remove(root);
                 }
                 Ok(Self::Members(members))
             }
@@ -811,7 +829,7 @@ impl Selector {
 
     fn organs(
         uids: &[String],
-        graph: &Graph<'_>,
+        graph: &Graph<'a>,
         budget: &mut Budget<'_>,
     ) -> Result<Self, AuthorityError> {
         within(uids.len(), budget.limits.records)?;
@@ -830,28 +848,25 @@ impl Selector {
                 .as_deref()
                 .is_some_and(|uid| organs.contains(uid))
             {
-                members.insert(record.uid.clone());
+                members.insert(record.uid.as_str());
             }
         }
         Ok(Self::Members(members))
     }
 }
 
-struct Evaluation<'a> {
-    graph: Graph<'a>,
-    ceiling: &'a VisibilityCeiling,
-    read: Selector,
-    grants: Vec<Selector>,
+struct Selectors<'a> {
+    read: Selector<'a>,
+    grants: Vec<Selector<'a>>,
 }
 
-impl<'a> Evaluation<'a> {
+impl<'a> Selectors<'a> {
     fn prepare(
         policy: &RolePolicy,
-        snapshot: &'a GraphSnapshot,
-        ceiling: &'a VisibilityCeiling,
+        graph: &Graph<'a>,
+        ceiling: &VisibilityCeiling,
         budget: &mut Budget<'_>,
     ) -> Result<Self, AuthorityError> {
-        let graph = Graph::prepare(snapshot, budget)?;
         within(ceiling.records.len(), budget.limits.records)?;
         for uid in &ceiling.records {
             budget.step()?;
@@ -868,11 +883,11 @@ impl<'a> Evaluation<'a> {
             graph.place(uid)?;
         }
         within(policy.grants.len(), budget.limits.grants)?;
-        let read = Selector::compile(&policy.read, &graph, budget, 0)?;
+        let read = Selector::compile(&policy.read, graph, budget, 0)?;
         let mut grants = Vec::new();
         for grant in &policy.grants {
             budget.step()?;
-            grants.push(Selector::compile(&grant.selector, &graph, budget, 0)?);
+            grants.push(Selector::compile(&grant.selector, graph, budget, 0)?);
             for property in &grant.properties {
                 budget.step()?;
                 if let Property::Extension(property) = property {
@@ -905,6 +920,27 @@ impl<'a> Evaluation<'a> {
                 }
             }
         }
+        Ok(Self { read, grants })
+    }
+}
+
+struct Evaluation<'a> {
+    graph: Graph<'a>,
+    ceiling: &'a VisibilityCeiling,
+    read: Selector<'a>,
+    grants: Vec<Selector<'a>>,
+}
+
+impl<'a> Evaluation<'a> {
+    fn prepare(
+        policy: &RolePolicy,
+        snapshot: &'a GraphSnapshot,
+        ceiling: &'a VisibilityCeiling,
+        budget: &mut Budget<'_>,
+    ) -> Result<Self, AuthorityError> {
+        let _preparation = nucleus::performance::Span::new("authority-evaluation-preparation");
+        let graph = Graph::prepare(snapshot, budget)?;
+        let Selectors { read, grants } = Selectors::prepare(policy, &graph, ceiling, budget)?;
         Ok(Self {
             graph,
             ceiling,
@@ -940,14 +976,7 @@ pub fn readable_records(
     let policy = policy.ok_or(AuthorityError::MissingPolicy)?;
     let mut budget = Budget::new(limits);
     let evaluation = Evaluation::prepare(policy, graph, ceiling, &mut budget)?;
-    let mut readable = BTreeSet::new();
-    for record in evaluation.graph.records.values() {
-        budget.step()?;
-        if !record.deleted && evaluation.readable(record, &mut budget)? {
-            readable.insert(record.uid.clone());
-        }
-    }
-    Ok(readable)
+    read::collect(&evaluation.graph, &evaluation.read, ceiling, &mut budget)
 }
 
 pub fn may_read(
@@ -970,6 +999,7 @@ pub fn selector_membership_changes(
     proposed: &GraphSnapshot,
     limits: &Limits,
 ) -> Result<BTreeSet<String>, AuthorityError> {
+    let _membership = nucleus::performance::Span::new("authority-selector-membership");
     within(selectors.len(), limits.predicate_nodes)?;
     let mut budget = Budget::new(limits);
     let current = Graph::prepare(current, &mut budget)?;
@@ -1060,7 +1090,7 @@ pub fn authorize_record_changes(
     )
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, reason = "Keep declared assertions and authorization context separate at the public boundary")]
 pub fn authorize_record_changes_with_assertion_intents(
     policy: Option<&RolePolicy>,
     current: &GraphSnapshot,
@@ -1083,7 +1113,7 @@ pub fn authorize_record_changes_with_assertion_intents(
     )
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, reason = "The shared check takes the proposed changes and their authority separately")]
 fn authorize_changes(
     policy: Option<&RolePolicy>,
     current: &GraphSnapshot,

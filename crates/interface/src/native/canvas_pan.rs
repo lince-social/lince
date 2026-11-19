@@ -8,7 +8,7 @@ use bevy::{
         PickingSystems,
         events::pointer_events,
         hover::{HoverMap, generate_hovermap, update_interactions},
-        pointer::{Location, PointerAction, PointerButton, PointerId, PointerInput, PointerPress},
+        pointer::{Location, PointerAction, PointerButton, PointerId, PointerInput, PointerPressState},
     },
     prelude::*,
     window::{CursorIcon, WindowEvent},
@@ -76,7 +76,7 @@ fn pan(
     >,
     modes: Query<&crate::native::edit_mode::EditMode>,
     parents: Query<&ChildOf>,
-    mut pointers: Query<(&PointerId, &mut PointerPress)>,
+    mut pointers: Query<(&PointerId, &mut PointerPressState)>,
     mut focus: ResMut<InputFocus>,
     geometry: Query<(&ComputedNode, &UiGlobalTransform, &Node)>,
     window_cursors: Query<(Entity, &Window, Option<&CursorIcon>)>,
@@ -322,7 +322,7 @@ fn pan(
     if consumed || gesture.0.is_some() {
         for (id, mut press) in &mut pointers {
             if *id == PointerId::Mouse {
-                *press = PointerPress::default();
+                *press = PointerPressState::default();
             }
         }
     }

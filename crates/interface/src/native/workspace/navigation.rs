@@ -14,20 +14,19 @@ pub fn destination(world: &World, root: Entity, offset: isize) -> Result<u64, &'
     let active = crate::native::laboratory::scope(world)
         .filter(|(owner, _, temporary, _)| *owner == root && spaces.active == *temporary)
         .map_or(spaces.active, |(_, _, _, previous)| previous);
-    let ordered = numbers(world, root);
-    let current = ordered
-        .iter()
-        .position(|id| *id == active)
-        .ok_or("The current authored workspace is unavailable.")?;
-    current
-        .checked_add_signed(offset)
-        .and_then(|index| ordered.get(index))
-        .copied()
-        .ok_or(if offset < 0 {
-            "This is the first workspace."
-        } else {
-            "This is the last workspace."
-        })
+    let mut ordered = ordered_ids(world, root);
+    let mut previous = None;
+    while let Some(id) = ordered.next() {
+        if id == active {
+            return if offset < 0 {
+                previous.ok_or("This is the first workspace.")
+            } else {
+                ordered.next().ok_or("This is the last workspace.")
+            };
+        }
+        previous = Some(id);
+    }
+    Err("The current authored workspace is unavailable.")
 }
 
 pub fn reorder_destination(

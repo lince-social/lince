@@ -876,7 +876,7 @@ pub fn update(world: &mut World) {
                 if let Some(bounds) = world
                     .resource::<Assets<Mesh>>()
                     .get(&handle)
-                    .and_then(MeshAabb::compute_aabb)
+                    .and_then(MeshAabb::get_aabb)
                 {
                     for x in [-1.0, 1.0] {
                         for y in [-1.0, 1.0] {

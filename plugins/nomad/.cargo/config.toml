@@ -1,4 +1,0 @@
-[build]
-# Used when invoking Cargo from this directory. From the repository root,
-# supply --target-dir target/nomad as shown in README.md.
-target-dir = "../../target/nomad"

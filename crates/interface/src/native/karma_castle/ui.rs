@@ -3,10 +3,18 @@ use crate::native::{
     actions::ActionButton,
     icons::{Icon, Tooltip},
 };
-use bevy::input_focus::InputFocus;
+use bevy::{
+    ecs::{entity_disabling::Disabled, query::Allow},
+    input_focus::InputFocus,
+};
 use bevy::text::EditableText;
 use model::{FieldDraft, SharedField, Suggestion};
 use nucleus::karma::rule_field::RuleFieldKind;
+
+mod readings;
+mod list;
+mod panels;
+pub(super) mod choices;
 
 #[derive(Component)]
 struct Input {
@@ -19,6 +27,7 @@ struct Input {
     selection: std::ops::Range<usize>,
     dirty: bool,
     options: Vec<(Entity, Command)>,
+    choices: choices::State,
     selected: usize,
     dismissed: bool,
 }
@@ -42,14 +51,36 @@ struct RowAction {
 }
 
 pub(super) fn hover_actions(world: &mut World) {
-    let mut hovered = HashSet::new();
-    let mut hits: Vec<_> = world
-        .get_resource::<bevy::picking::hover::HoverMap>()
-        .map(|map| map.values().flat_map(|hits| hits.keys().copied()).collect())
-        .unwrap_or_default();
-    if let Some(focus) = world.get_resource::<InputFocus>().and_then(InputFocus::get) {
-        hits.push(focus);
+    let _hover = nucleus::performance::Span::new("karma-row-controls");
+    world
+        .run_system_cached(update_row_actions)
+        .expect("update Karma row actions");
+}
+
+fn update_row_actions(
+    world: &mut World,
+    actions: &mut QueryState<(Entity, &'static RowAction)>,
+    mut buttons: Local<Vec<(Entity, Entity, Entity)>>,
+    mut hovered: Local<HashSet<Entity>>,
+) {
+    buttons.extend(
+        actions
+            .iter(world)
+            .map(|(entity, action)| (entity, action.row, action.owner)),
+    );
+    nucleus::performance::add("karma-row-controls-visited", buttons.len() as u64);
+    if buttons.is_empty() {
+        *buttons = Vec::new();
+        *hovered = HashSet::new();
+        return;
     }
+    hovered.clear();
+    let focus = world.get_resource::<InputFocus>().and_then(InputFocus::get);
+    let hits = world
+        .get_resource::<bevy::picking::hover::HoverMap>()
+        .into_iter()
+        .flat_map(|map| map.values().flat_map(|hits| hits.keys().copied()))
+        .chain(focus);
     for hit in hits {
         let mut entity = Some(hit);
         while let Some(current) = entity {
@@ -60,12 +91,7 @@ pub(super) fn hover_actions(world: &mut World) {
             entity = world.get::<ChildOf>(current).map(ChildOf::parent);
         }
     }
-    let buttons: Vec<_> = world
-        .query::<(Entity, &RowAction)>()
-        .iter(world)
-        .map(|(entity, action)| (entity, action.row, action.owner))
-        .collect();
-    for (entity, row, owner) in buttons {
+    for (entity, row, owner) in buttons.drain(..) {
         let visible = hovered.contains(&row)
             && world
                 .get::<View>(owner)
@@ -89,42 +115,67 @@ pub(super) fn hover_actions(world: &mut World) {
                 .insert(bevy::ui::InteractionDisabled);
         }
     }
+    hovered.clear();
 }
 
 fn reset_columns(world: &mut World, owner: Entity) {
-    let rows: Vec<_> = world
-        .query::<(Entity, &TableRow)>()
-        .iter(world)
-        .filter(|(_, row)| row.0 == owner)
-        .map(|(entity, _)| entity)
-        .collect();
-    for row in rows {
-        let mut tracks = vec![GridTrack::max_content(); 6];
-        tracks[0] = GridTrack::px(29.0);
-        world.get_mut::<Node>(row).unwrap().grid_template_columns = tracks;
+    world
+        .run_system_cached_with(reset_column_tracks, owner)
+        .expect("reset Karma columns");
+}
+
+fn reset_column_tracks(
+    In(owner): In<Entity>,
+    rows: Query<(Entity, &TableRow)>,
+    mut nodes: Query<&mut Node, Allow<Disabled>>,
+) {
+    let tracks: [RepeatedGridTrack; 6] = std::array::from_fn(|index| {
+        if index == 0 {
+            GridTrack::px(29.0)
+        } else {
+            GridTrack::max_content()
+        }
+    });
+    for (entity, row) in &rows {
+        if row.0 != owner {
+            continue;
+        }
+        let mut node = nodes.get_mut(entity).unwrap();
+        if node.grid_template_columns.as_slice() != tracks.as_slice() {
+            node.grid_template_columns = tracks.to_vec();
+            nucleus::performance::add("karma-column-resets", 1);
+        }
     }
 }
 
 pub(super) fn fit_columns(world: &mut World) {
     let _fit = nucleus::performance::Span::new("karma-column-fitting");
-    let mut widths = HashMap::<Entity, [f32; 6]>::new();
-    let rows: Vec<_> = world
-        .query::<(Entity, &TableRow, &Children)>()
-        .iter(world)
-        .map(|(entity, row, children)| {
-            let columns = widths
-                .entry(row.0)
-                .or_insert([29.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
-            for (index, child) in children.iter().take(6).enumerate().skip(1) {
-                if let Some(node) = world.get::<ComputedNode>(*child) {
-                    columns[index] =
-                        columns[index].max(node.size().x * node.inverse_scale_factor());
-                }
+    world
+        .run_system_cached(fit_column_tracks)
+        .expect("fit Karma columns");
+}
+
+fn fit_column_tracks(
+    world: &mut World,
+    candidates: &mut QueryState<(Entity, &'static TableRow, &'static Children)>,
+    mut widths: Local<HashMap<Entity, [f32; 6]>>,
+    mut rows: Local<Vec<(Entity, Entity)>>,
+) {
+    widths.clear();
+    rows.extend(candidates.iter(world).map(|(entity, row, children)| {
+        let columns = widths
+            .entry(row.0)
+            .or_insert([29.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
+        for (index, child) in children.iter().take(6).enumerate().skip(1) {
+            if let Some(node) = world.get::<ComputedNode>(child) {
+                columns[index] = columns[index].max(node.size().x * node.inverse_scale_factor());
             }
-            (entity, row.0)
-        })
-        .collect();
-    for (entity, owner) in rows {
+        }
+        (entity, row.0)
+    }));
+    let count = rows.len();
+    nucleus::performance::add("karma-column-rows", count as u64);
+    for (entity, owner) in rows.drain(..) {
         if let Some(widths) = widths.get(&owner)
             && widths.iter().all(|width| *width > 0.0)
         {
@@ -140,6 +191,11 @@ pub(super) fn fit_columns(world: &mut World) {
             }
         }
     }
+    widths.clear();
+    if count == 0 {
+        *rows = Vec::new();
+        *widths = HashMap::new();
+    }
 }
 
 #[derive(Component)]
@@ -151,9 +207,10 @@ pub(super) struct Reading {
     requested_at: Option<i64>,
     pending: bool,
     result: Option<String>,
+    hint: Option<readings::Hint<'static>>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub(crate) enum Command {
     Create,
     Simulate,
@@ -329,17 +386,22 @@ impl Action for Command {
                     .rules
                     .iter()
                     .find(|rule| &rule.uid == uid)
-                    .cloned()
                 else {
                     return;
                 };
-                let mut castle = world.get_mut::<KarmaCastle>(owner).unwrap();
-                if !castle
+                let new_draft = (!world
+                    .get::<KarmaCastle>(owner)
+                    .unwrap()
                     .edits
                     .iter()
-                    .any(|draft| draft.rule.as_ref() == Some(uid))
-                {
-                    castle.edits.push(Draft::from_rule(&rule));
+                    .any(|draft| draft.rule.as_ref() == Some(uid)))
+                .then(|| Draft::from_rule(rule));
+                if let Some(draft) = new_draft {
+                    world
+                        .get_mut::<KarmaCastle>(owner)
+                        .unwrap()
+                        .edits
+                        .push(draft);
                 }
                 let mut view = world.get_mut::<View>(owner).unwrap();
                 view.editing = Some((uid.clone(), *index));
@@ -631,6 +693,11 @@ fn button(
             ChildOf(parent),
         ))
         .id();
+    button_label(world, entity, text);
+    entity
+}
+
+fn button_label(world: &mut World, entity: Entity, text: &str) -> Entity {
     let label = crate::native::edit_mode::label(world, entity, text, 16.0);
     world.entity_mut(label).insert(TextLayout::linebreak(
         bevy::text::LineBreak::WordOrCharacter,
@@ -638,7 +705,7 @@ fn button(
     let mut node = world.get_mut::<Node>(label).unwrap();
     node.min_width = Val::Auto;
     node.flex_shrink = 1.0;
-    entity
+    label
 }
 
 fn accessible(world: &mut World, entity: Entity, role: accesskit::Role, label: &str) {
@@ -787,14 +854,14 @@ fn checkbox(
     entity
 }
 
-fn update_selection(world: &mut World, owner: Entity) {
-    let rules = visible_rules(world, owner);
-    let selected = &world.get::<View>(owner).unwrap().selected;
-    let count = rules
-        .iter()
-        .filter(|rule| selected.contains(&rule.uid))
-        .count();
-    let all = !rules.is_empty() && count == rules.len();
+fn update_selection(world: &mut World, owner: Entity, total: usize, count: usize) {
+    let toggled = if total > 0 && total == count {
+        accesskit::Toggled::True
+    } else if count > 0 {
+        accesskit::Toggled::Mixed
+    } else {
+        accesskit::Toggled::False
+    };
     let headers: Vec<_> = world
         .query::<(Entity, &SelectionHeader)>()
         .iter(world)
@@ -802,26 +869,28 @@ fn update_selection(world: &mut World, owner: Entity) {
         .map(|(entity, _)| entity)
         .collect();
     for entity in headers {
-        let glyph = world.get::<Children>(entity).unwrap()[0];
-        let icon = if all {
-            Icon::Check
-        } else if count > 0 {
-            Icon::Minus
-        } else {
-            Icon::Square
-        };
-        let image = crate::native::icons::image(world, icon).unwrap_or_default();
+        update_checkbox(world, entity, toggled);
+    }
+}
+
+fn update_checkbox(world: &mut World, entity: Entity, toggled: accesskit::Toggled) {
+    let glyph = world.get::<Children>(entity).unwrap()[0];
+    let icon = match toggled {
+        accesskit::Toggled::True => Icon::Check,
+        accesskit::Toggled::Mixed => Icon::Minus,
+        accesskit::Toggled::False => Icon::Square,
+    };
+    let image = crate::native::icons::image(world, icon).unwrap_or_default();
+    if world.get::<ImageNode>(glyph).is_none_or(|current| {
+        current.image != image.image || current.texture_atlas != image.texture_atlas
+    }) {
         world.entity_mut(glyph).insert(image);
-        world
-            .get_mut::<bevy::a11y::AccessibilityNode>(entity)
-            .unwrap()
-            .set_toggled(if all {
-                accesskit::Toggled::True
-            } else if count > 0 {
-                accesskit::Toggled::Mixed
-            } else {
-                accesskit::Toggled::False
-            });
+    }
+    let mut node = world
+        .get_mut::<bevy::a11y::AccessibilityNode>(entity)
+        .unwrap();
+    if node.toggled() != Some(toggled) {
+        node.set_toggled(toggled);
     }
 }
 
@@ -855,251 +924,33 @@ fn visible_rules(world: &World, owner: Entity) -> Vec<&Rule> {
         .search
         .trim()
         .to_lowercase();
-    world
-        .get::<View>(owner)
-        .unwrap()
-        .rules
+    matching_rules(&world.get::<View>(owner).unwrap().rules, &query)
+}
+
+fn matching_rules<'a>(rules: &'a [Rule], query: &str) -> Vec<&'a Rule> {
+    rules
         .iter()
-        .filter(|rule| {
-            query.is_empty()
-                || format!("{} {}", rule.name, rule.slug)
-                    .to_lowercase()
-                    .contains(&query)
-                || rule
-                    .fields
-                    .iter()
-                    .any(|field| field.source.to_lowercase().contains(&query))
-        })
+        .filter(|rule| matches_rule(rule, query))
         .collect()
 }
 
+fn matches_rule(rule: &Rule, query: &str) -> bool {
+    query.is_empty()
+        || format!("{} {}", rule.name, rule.slug)
+            .to_lowercase()
+            .contains(query)
+        || rule
+            .fields
+            .iter()
+            .any(|field| field.source.to_lowercase().contains(query))
+}
+
 pub(super) fn render_controls(world: &mut World, owner: Entity) {
-    let view = world.get::<View>(owner).unwrap();
-    let (controls, busy) = (view.controls, view.pending.is_some());
-    let castle = world.get::<KarmaCastle>(owner).unwrap();
-    let creating = castle.draft.is_some();
-    let editing = !castle.edits.is_empty();
-    let (selected, can_pause) = visible_rules(world, owner).into_iter().fold(
-        (false, false),
-        |(selected, can_pause), rule| {
-            let included = view.selected.contains(&rule.uid);
-            (
-                selected || included,
-                can_pause || included && rule.state != "paused",
-            )
-        },
-    );
-    clear(world, controls);
-    if selected && !creating && !editing {
-        for (command, label) in [
-            (Command::PauseSelected, "Pause selected"),
-            (Command::DeleteSelected, "Delete selected"),
-        ] {
-            let disabled = busy || (matches!(command, Command::PauseSelected) && !can_pause);
-            let entity = button(world, controls, owner, command, label);
-            if disabled {
-                world
-                    .entity_mut(entity)
-                    .insert(bevy::ui::InteractionDisabled);
-            }
-        }
-    }
-    if creating || editing {
-        for (command, title) in [
-            (Command::Save, if creating { "Create" } else { "Save" }),
-            (Command::Cancel, "Cancel"),
-        ] {
-            let entity = button(world, controls, owner, command, title);
-            if busy {
-                world
-                    .entity_mut(entity)
-                    .insert(bevy::ui::InteractionDisabled);
-            }
-        }
-    } else {
-        icon_button(
-            world,
-            controls,
-            owner,
-            Icon::Plus,
-            "Create a rule",
-            Command::New,
-            !busy,
-        );
-    }
+    panels::controls(world, owner);
 }
 
 pub(super) fn render_list(world: &mut World, owner: Entity) {
-    let _prepare = nucleus::performance::Span::new("karma-list-preparation");
-    reset_columns(world, owner);
-    {
-        let mut view = world.get_mut::<View>(owner).unwrap();
-        let View {
-            rules, selected, ..
-        } = &mut *view;
-        let known: HashSet<_> = rules.iter().map(|rule| rule.uid.as_str()).collect();
-        selected.retain(|uid| known.contains(uid.as_str()));
-    }
-    let view = world.get::<View>(owner).unwrap();
-    let (list, busy, editing) = (view.list, view.pending.is_some(), view.editing.clone());
-    let rules: Vec<_> = visible_rules(world, owner).into_iter().cloned().collect();
-    let castle = world.get::<KarmaCastle>(owner).unwrap();
-    let edits = castle.edits.clone();
-    let creating = castle.draft.is_some();
-    clear(world, list);
-    update_selection(world, owner);
-    for rule in rules {
-        let cells = grid(world, list);
-        world.entity_mut(cells).insert(RuleRow);
-        let selection = cell(world, cells);
-        let selected = world
-            .get::<View>(owner)
-            .unwrap()
-            .selected
-            .contains(&rule.uid);
-        let checkbox = checkbox(
-            world,
-            selection,
-            owner,
-            Command::Select(rule.uid.clone()),
-            &format!("Select {}", rule_label(&rule)),
-            selected,
-        );
-        if busy {
-            world
-                .entity_mut(checkbox)
-                .insert(bevy::ui::InteractionDisabled);
-        }
-        let edited = edits
-            .iter()
-            .position(|draft| draft.rule.as_ref() == Some(&rule.uid));
-        let value = edited
-            .map(|index| edits[index].clone())
-            .unwrap_or_else(|| Draft::from_rule(&rule));
-        for index in [3, 4, 0, 1, 2] {
-            let cell = cell(world, cells);
-            let active = editing.as_ref() == Some(&(rule.uid.clone(), index));
-            let content = if index >= 3 {
-                let identity = row(world, cell);
-                let text = if index == 3 {
-                    value.name.clone()
-                } else if value.slug.is_empty() {
-                    String::new()
-                } else {
-                    format!("@{}", value.slug)
-                };
-                {
-                    let label = crate::native::edit_mode::label(world, identity, &text, 16.0);
-                    world.entity_mut(label).insert(TextLayout::linebreak(
-                        bevy::text::LineBreak::WordOrCharacter,
-                    ));
-                    let mut node = world.get_mut::<Node>(label).unwrap();
-                    node.min_width = Val::Auto;
-                    node.flex_shrink = 1.0;
-                }
-                identity
-            } else {
-                rich_text(
-                    world,
-                    cell,
-                    owner,
-                    &value.fields[index].text,
-                    value.rule.as_deref(),
-                    index,
-                )
-            };
-            if active && let Some(edited) = edited {
-                world.entity_mut(content).insert(Visibility::Hidden);
-                let overlay = row(world, cell);
-                *world.get_mut::<Node>(overlay).unwrap() = Node {
-                    position_type: PositionType::Absolute,
-                    left: px(6),
-                    right: px(6),
-                    top: px(6),
-                    bottom: px(6),
-                    min_width: px(0),
-                    column_gap: px(8),
-                    ..default()
-                };
-                if index >= 3 {
-                    editor(
-                        world,
-                        overlay,
-                        owner,
-                        edited + 1,
-                        index,
-                        if index == 3 { &value.name } else { &value.slug },
-                    );
-                } else {
-                    editor(
-                        world,
-                        overlay,
-                        owner,
-                        edited + 1,
-                        index,
-                        &value.fields[index].text,
-                    );
-                }
-            } else if !busy && !creating {
-                world.entity_mut(cell).insert((
-                    crate::native::sand::button(0),
-                    crate::native::sand::Borderless,
-                    ActionButton::new(
-                        owner,
-                        crate::native::actions![Command::EditCell(rule.uid.clone(), index)],
-                    ),
-                ));
-                accessible(
-                    world,
-                    cell,
-                    accesskit::Role::Button,
-                    &format!(
-                        "Edit {} for {}",
-                        ["condition", "threshold", "consequence", "name", "slug"][index],
-                        rule_label(&rule)
-                    ),
-                );
-            }
-        }
-        let paused = rule.state == "paused";
-        for (left, icon, label, command) in [
-            (
-                true,
-                if paused { Icon::Play } else { Icon::Stop },
-                if paused {
-                    "Resume rule".to_owned()
-                } else {
-                    "Pause rule".to_owned()
-                },
-                Command::RequestPause(rule.uid.clone(), rule.revision, !paused),
-            ),
-            (
-                false,
-                Icon::Close,
-                format!("Delete {}", rule_label(&rule)),
-                Command::Delete(rule.uid.clone()),
-            ),
-        ] {
-            let entity = icon_button(world, cells, owner, icon, &label, command, !busy);
-            size_icon(world, entity, 16.0);
-            {
-                let mut node = world.get_mut::<Node>(entity).unwrap();
-                node.position_type = PositionType::Absolute;
-                node.top = px(8);
-                if left {
-                    node.left = px(2);
-                } else {
-                    node.right = px(2);
-                }
-            }
-            world.entity_mut(entity).insert((
-                RowAction { row: cells, owner },
-                Visibility::Hidden,
-                bevy::ui::InteractionDisabled,
-            ));
-        }
-    }
-    render_controls(world, owner);
+    list::render(world, owner);
 }
 
 fn size_icon(world: &mut World, entity: Entity, size: f32) {
@@ -1113,54 +964,7 @@ fn size_icon(world: &mut World, entity: Entity, size: f32) {
 }
 
 pub(super) fn render_form(world: &mut World, owner: Entity) {
-    reset_columns(world, owner);
-    let form = world.get::<View>(owner).unwrap().form;
-    clear(world, form);
-    let draft = world.get::<KarmaCastle>(owner).unwrap().draft.clone();
-    if let Some(draft) = draft {
-        let cells = grid(world, form);
-        cell(world, cells);
-        editor_cells(world, cells, owner, 0, &draft);
-    }
-    let view = world.get::<View>(owner).unwrap();
-    let deleting = view
-        .deleting
-        .first()
-        .and_then(|uid| view.rules.iter().find(|rule| &rule.uid == uid))
-        .map(|rule| rule_label(rule).to_owned());
-    if let Some(name) = deleting {
-        let count = view.deleting.len();
-        let message = if count == 1 {
-            format!("Delete {name}?")
-        } else {
-            format!("Delete {count} selected rules?")
-        };
-        let line = row(world, form);
-        crate::native::edit_mode::label(world, line, &message, 14.0);
-        button(world, line, owner, Command::ConfirmDelete, "Delete");
-        button(world, line, owner, Command::CancelDelete, "Cancel");
-    }
-    let view = world.get::<View>(owner).unwrap();
-    if !view.pause_active && !view.pausing.is_empty() {
-        let count = view.pausing.len();
-        let verb = if view.pausing[0].2 { "Pause" } else { "Resume" };
-        let name = view
-            .rules
-            .iter()
-            .find(|rule| rule.uid == view.pausing[0].0)
-            .map(rule_label)
-            .unwrap_or("rule");
-        let message = if count == 1 {
-            format!("{verb} {name}?")
-        } else {
-            format!("{verb} {count} selected rules?")
-        };
-        let line = row(world, form);
-        crate::native::edit_mode::label(world, line, &message, 14.0);
-        button(world, line, owner, Command::ConfirmPause, verb);
-        button(world, line, owner, Command::CancelPause, "Cancel");
-    }
-    render_controls(world, owner);
+    panels::form(world, owner);
 }
 
 fn editor_cells(world: &mut World, cells: Entity, owner: Entity, row: usize, draft: &Draft) {
@@ -1272,6 +1076,7 @@ fn editor(world: &mut World, parent: Entity, owner: Entity, row: usize, index: u
         selection: 0..0,
         dirty: true,
         options: Vec::new(),
+        choices: default(),
         selected: 0,
         dismissed: false,
     });
@@ -1279,26 +1084,33 @@ fn editor(world: &mut World, parent: Entity, owner: Entity, row: usize, index: u
 
 pub(super) fn capture(world: &mut World, owner: Entity) {
     let _capture = nucleus::performance::Span::new("karma-field-capture");
-    let inputs: Vec<_> = world
-        .query::<(Entity, &Input, &EditableText)>()
-        .iter(world)
-        .filter(|(_, input, _)| input.owner == owner)
-        .map(|(entity, input, _)| (entity, input.row, input.index))
-        .collect();
-    for (entity, row, index) in inputs {
-        let castle = world.get::<KarmaCastle>(owner).unwrap();
-        let Some(current) = draft(castle, row) else {
+    world
+        .run_system_cached_with(capture_fields, owner)
+        .expect("capture Karma rule fields");
+}
+
+fn capture_fields(
+    In(owner): In<Entity>,
+    inputs: Query<(&Input, &EditableText)>,
+    mut castles: Query<&mut KarmaCastle, Allow<Disabled>>,
+) {
+    for (input, text) in &inputs {
+        if input.owner != owner {
+            continue;
+        }
+        let mut castle = castles.get_mut(owner).unwrap();
+        let Some(current) = draft(&castle, input.row) else {
             continue;
         };
-        let text = world.get::<EditableText>(entity).unwrap().value();
-        if text == field_value(current, index) {
+        if text.value() == field_value(current, input.index) {
             continue;
         }
-        let text = text.to_string();
-        let mut castle = world.get_mut::<KarmaCastle>(owner).unwrap();
-        if let Some(draft) = draft_mut(&mut castle, row) {
-            set_value(draft, index, &text);
-        }
+        set_value(
+            draft_mut(&mut castle, input.row).unwrap(),
+            input.index,
+            &text.value().to_string(),
+        );
+        nucleus::performance::add("karma-fields-published", 1);
     }
 }
 
@@ -1326,17 +1138,40 @@ fn set_value(draft: &mut Draft, index: usize, text: &str) {
 }
 
 pub(super) fn inputs(world: &mut World) {
-    let searches: Vec<_> = world
-        .query::<(&Search, &EditableText)>()
-        .iter(world)
-        .filter(|(search, text)| {
-            world
-                .get::<KarmaCastle>(search.0)
-                .is_some_and(|castle| text.value() != castle.search.as_str())
-        })
-        .map(|(search, text)| (search.0, text.value().to_string()))
-        .collect();
-    for (owner, value) in searches {
+    world
+        .run_system_cached(update_inputs)
+        .expect("update Karma inputs");
+}
+
+type InputChange = (
+    Entity,
+    Entity,
+    usize,
+    usize,
+    String,
+    bool,
+    std::ops::Range<usize>,
+);
+
+fn update_inputs(
+    world: &mut World,
+    search_query: &mut QueryState<(&'static Search, &'static EditableText)>,
+    input_query: &mut QueryState<(Entity, &'static Input, &'static EditableText)>,
+    mut searches: Local<Vec<(Entity, String)>>,
+    mut inputs: Local<Vec<InputChange>>,
+) {
+    let _prepare = nucleus::performance::Span::new("karma-input-preparation");
+    searches.extend(
+        search_query
+            .iter(world)
+            .filter(|(search, text)| {
+                world
+                    .get::<KarmaCastle>(search.0)
+                    .is_some_and(|castle| text.value() != castle.search.as_str())
+            })
+            .map(|(search, text)| (search.0, text.value().to_string())),
+    );
+    for (owner, value) in searches.drain(..) {
         capture(world, owner);
         world.get_mut::<KarmaCastle>(owner).unwrap().search = value;
         render_list(world, owner);
@@ -1344,37 +1179,31 @@ pub(super) fn inputs(world: &mut World) {
     let focus = world
         .get_resource::<InputFocus>()
         .and_then(|focus| focus.get());
-    let inputs: Vec<_> = world
-        .query::<(Entity, &Input, &EditableText)>()
-        .iter(world)
-        .filter_map(|(entity, input, text)| {
-            let focused = focus == Some(entity) || descendant(world, focus, input.suggestions);
-            let selection = text.editor.raw_selection().text_range();
-            (text.value() != input.observed.as_str()
-                || input.dirty
-                || input.focused != focused
-                || input.selection != selection)
-                .then(|| {
-                    (
-                        entity,
-                        input.owner,
-                        input.row,
-                        input.index,
-                        input.suggestions,
-                        text.value().to_string(),
-                        focused,
-                        selection,
-                    )
-                })
-        })
-        .collect();
-    for (entity, owner, row, index, suggestions, text, focused, selection) in inputs {
+    inputs.extend(input_query.iter(world).filter_map(|(entity, input, text)| {
+        let focused = focus == Some(entity) || descendant(world, focus, input.suggestions);
+        let selection = text.editor.raw_selection().text_range();
+        (text.value() != input.observed.as_str()
+            || input.dirty
+            || input.focused != focused
+            || input.selection != selection)
+            .then(|| {
+                (
+                    entity,
+                    input.owner,
+                    input.row,
+                    input.index,
+                    text.value().to_string(),
+                    focused,
+                    selection,
+                )
+            })
+    }));
+    for (entity, owner, row, index, text, focused, selection) in inputs.drain(..) {
         let mut input = world.get_mut::<Input>(entity).unwrap();
         if text != input.observed || focused != input.focused {
             input.dismissed = false;
         }
         let dismissed = input.dismissed;
-        input.options.clear();
         input.selected = 0;
         if input.observed != text {
             input.observed.clone_from(&text);
@@ -1382,76 +1211,24 @@ pub(super) fn inputs(world: &mut World) {
         input.dirty = false;
         input.focused = focused;
         input.selection = selection.clone();
-        if let Some(draft) = draft_mut(&mut world.get_mut::<KarmaCastle>(owner).unwrap(), row) {
-            set_value(draft, index, &text);
+        if draft(world.get::<KarmaCastle>(owner).unwrap(), row)
+            .is_some_and(|draft| field_value(draft, index) != text)
+        {
+            let mut castle = world.get_mut::<KarmaCastle>(owner).unwrap();
+            set_value(draft_mut(&mut castle, row).unwrap(), index, &text);
+            nucleus::performance::add("karma-fields-published", 1);
         }
-        clear(world, suggestions);
-        world.get_mut::<Node>(suggestions).unwrap().display = Display::None;
         if !focused
             || dismissed
             || index >= 3
             || world.get::<View>(owner).unwrap().pending.is_some()
         {
+            choices::draw(world, entity, &[]);
             continue;
         }
-        let view = world.get::<View>(owner).unwrap();
         let prefix = text.get(..selection.end.min(text.len())).unwrap_or(&text);
-        let mut choices = model::suggestions(
-            RuleFieldKind::ALL[index],
-            prefix,
-            &view.rules,
-            &view.records,
-            &view.frequencies,
-        );
-        let tail = prefix
-            .rsplit(|character: char| {
-                character.is_whitespace()
-                    || matches!(character, '(' | ')' | '*' | '/' | '+' | '=' | ',')
-            })
-            .next()
-            .unwrap_or("")
-            .to_lowercase();
-        choices.extend(
-            model::transfers::elements(
-                RuleFieldKind::ALL[index],
-                &view.transfers,
-                view.acting_person.as_deref(),
-            )
-            .into_iter()
-            .filter(|element| {
-                element.to_lowercase().contains(&tail)
-                    || model::transfers::label(element, &view.transfers)
-                        .to_lowercase()
-                        .contains(&tail)
-            })
-            .take(16)
-            .map(Suggestion::Element),
-        );
-        if !choices.is_empty() {
-            world.get_mut::<Node>(suggestions).unwrap().display = Display::Flex;
-        }
-        for choice in choices {
-            let (command, label) = match choice {
-                Suggestion::Shared(field) => {
-                    let label = format!("Link · {}", field.source);
-                    (Command::Link(row, index, field), label)
-                }
-                Suggestion::Element(element) => (
-                    Command::Insert(row, index, element.clone(), selection.clone()),
-                    model::transfers::label(
-                        &model::element_label(&element, &world.get::<View>(owner).unwrap().records),
-                        &world.get::<View>(owner).unwrap().transfers,
-                    ),
-                ),
-            };
-            let option = button(world, suggestions, owner, command.clone(), &label);
-            world.get_mut::<Node>(option).unwrap().width = percent(100);
-            world
-                .get_mut::<Input>(entity)
-                .unwrap()
-                .options
-                .push((option, command));
-        }
+        let rows = choices::prepare(world, owner, row, index, prefix, &selection);
+        choices::draw(world, entity, &rows);
         highlight(world, entity);
     }
 }
@@ -1461,15 +1238,19 @@ fn highlight(world: &mut World, entity: Entity) {
     let selected = input.selected;
     let options: Vec<_> = input.options.iter().map(|(entity, _)| *entity).collect();
     for (index, option) in options.into_iter().enumerate() {
-        world
-            .entity_mut(option)
-            .insert(crate::native::token_style::background(
-                if index == selected {
-                    crate::native::tokens::Token::Accent
-                } else {
-                    crate::native::tokens::Token::Surface
-                },
-            ));
+        let token = if index == selected {
+            crate::native::tokens::Token::Accent
+        } else {
+            crate::native::tokens::Token::Surface
+        };
+        if world
+            .get::<crate::native::token_style::BackgroundToken>(option)
+            .is_none_or(|current| current.0 != token)
+        {
+            world
+                .entity_mut(option)
+                .insert(crate::native::token_style::background(token));
+        }
     }
 }
 
@@ -1525,15 +1306,13 @@ pub(super) fn keys(world: &mut World) {
     let mut input = world.get_mut::<Input>(focused).unwrap();
     if escape {
         input.dismissed = true;
-        let suggestions = input.suggestions;
-        input.options.clear();
-        world.get_mut::<Node>(suggestions).unwrap().display = Display::None;
+        choices::draw(world, focused, &[]);
         return;
     }
     input.selected = (input.selected as i32 + step).rem_euclid(input.options.len() as i32) as usize;
     let owner = input.owner;
-    let command = input.options[input.selected].1.clone();
     if enter {
+        let command = input.options[input.selected].1.clone();
         command.apply(world, owner);
     } else {
         highlight(world, focused);
@@ -1551,12 +1330,16 @@ fn descendant(world: &World, mut entity: Option<Entity>, ancestor: Entity) -> bo
 }
 
 pub(super) fn refresh_links(world: &mut World, owner: Entity) {
-    for input in world
-        .query::<&mut Input>()
-        .iter_mut(world)
-        .filter(|input| input.owner == owner)
-    {
-        input.into_inner().dirty = true;
+    world
+        .run_system_cached_with(dirty_links, owner)
+        .expect("refresh Karma field links");
+}
+
+fn dirty_links(In(owner): In<Entity>, mut inputs: Query<&mut Input>) {
+    for mut input in &mut inputs {
+        if input.owner == owner && !input.dirty {
+            input.dirty = true;
+        }
     }
 }
 
@@ -1565,23 +1348,15 @@ fn rich_text(
     parent: Entity,
     owner: Entity,
     source: &str,
-    rule_uid: Option<&str>,
+    rule: &Rule,
     index: usize,
 ) -> Entity {
-    let rule = world
-        .get::<View>(owner)
-        .and_then(|view| {
-            view.rules
-                .iter()
-                .find(|rule| Some(rule.uid.as_str()) == rule_uid)
-        })
-        .cloned();
+    let parts = readings::prepare(owner, source, Some(rule), index);
     let line = row(world, parent);
     let mut node = world.get_mut::<Node>(line).unwrap();
     node.flex_wrap = FlexWrap::Wrap;
     node.column_gap = px(0);
-    let mut offset = 0;
-    for (text, slug) in model::fragments(source) {
+    for readings::Part { text, reading } in parts {
         let part = crate::native::edit_mode::label(world, line, &text, 14.0);
         world.entity_mut(part).insert(TextLayout::linebreak(
             bevy::text::LineBreak::WordOrCharacter,
@@ -1590,123 +1365,93 @@ fn rich_text(
         node.flex_shrink = 1.0;
         node.min_width = Val::Auto;
         node.max_width = percent(100);
-        if let Some(slug) = slug {
-            let reading = model::reading_at(source, offset, offset + text.len());
-            let reading = rule.as_ref().map_or(reading.clone(), |rule| {
-                if index == 2 && !rule.record.is_empty() {
-                    format!("@{}", rule.record)
-                } else {
-                    model::bound_reading(rule, &reading)
-                }
-            });
-            let slug = rule
-                .as_ref()
-                .and_then(|rule| {
-                    if index == 2 {
-                        Some(rule.record.clone()).filter(|uid| !uid.is_empty())
-                    } else {
-                        rule.bindings
-                            .iter()
-                            .find(|binding| {
-                                binding.authored == slug
-                                    && reading.contains(binding.target.as_str())
-                            })
-                            .map(|binding| binding.target.as_str().to_owned())
-                    }
-                })
-                .unwrap_or(slug);
+        if let Some(reading) = reading {
             world.entity_mut(part).insert((
-                Reading {
-                    owner,
-                    slug,
-                    source: reading,
-                    hovered: false,
-                    requested_at: None,
-                    pending: false,
-                    result: None,
-                },
+                reading,
                 Tooltip("Loading reading…".into()),
                 crate::native::token_style::text(crate::native::tokens::Token::Accent),
             ));
         }
-        offset += text.len();
     }
     line
 }
 
-pub(super) fn tick(world: &mut World, mut wake_at: Local<Option<std::time::Instant>>) {
+pub(super) fn tick(
+    world: &mut World,
+    candidates: &mut QueryState<(Entity, &'static Reading)>,
+    mut readings: Local<Vec<Entity>>,
+    mut wake_at: Local<Option<std::time::Instant>>,
+) {
+    let _presentation = nucleus::performance::Span::new("karma-reading-presentation");
     let now = chrono::Utc::now().timestamp_millis();
-    let readings: Vec<_> = world
-        .query::<(Entity, &Reading)>()
-        .iter(world)
-        .map(|(entity, reading)| {
-            (
-                entity,
-                reading.owner,
-                reading.slug.clone(),
-                reading.source.clone(),
-                reading.hovered,
-                reading.pending,
-                reading.requested_at,
-                reading.result.clone(),
-            )
-        })
-        .collect();
+    readings.extend(candidates.iter(world).map(|(entity, _)| entity));
+    let count = readings.len();
+    nucleus::performance::add("karma-reading-candidates", count as u64);
     let mut countdown = false;
-    for (entity, owner, slug, source, hovered, pending, requested_at, result) in readings {
+    for entity in readings.drain(..) {
+        let reading = world.get::<Reading>(entity).unwrap();
+        let owner = reading.owner;
         let Some(view) = world.get::<View>(owner) else {
             continue;
         };
-        let mut hint = if let Some(frequency) = view
-            .frequency_lookup
-            .get(&slug)
-            .map(|index| &view.frequencies[*index])
+        let complex = reading.source.strip_prefix('@') != Some(reading.slug.as_str())
+            && !reading.source.starts_with("freq(");
+        let mut hint = readings::Hint::new(view, reading, complex, now);
+        countdown |= reading.hovered && (hint.countdown() || complex);
+        let mut sent = None;
+        if complex
+            && reading.hovered
+            && !reading.pending
+            && reading
+                .requested_at
+                .is_none_or(|at| now.saturating_sub(at) >= 1000)
         {
-            countdown |= hovered && frequency["next_at_ms"].is_i64();
-            model::frequency_hint(frequency, now)
-        } else if let Some(record) = view
-            .record_lookup
-            .get(&slug)
-            .map(|index| &view.records[*index])
-        {
-            format!(
-                "{}\nCurrent quantity: {}",
-                record["head"].as_str().unwrap_or(&slug),
-                record["quantity"].as_str().unwrap_or("unavailable")
-            )
+            let id = nucleus::new_uid("karma-reading");
+            match send(
+                world,
+                owner,
+                ClientMessage::Act {
+                    id: id.clone(),
+                    action: engine::actions::Action::PreviewKarmaReading {
+                        source: reading.source.clone(),
+                    },
+                },
+            ) {
+                Ok(()) => sent = Some(id),
+                Err(error) => hint.error = Some(error.into()),
+            }
+        }
+        let entity_ref = world.entity(entity);
+        let tooltip = entity_ref.get_ref::<Tooltip>().unwrap();
+        let changed = reading.hint.as_ref() != Some(&hint);
+        let prepared = if changed || tooltip.is_changed() {
+            nucleus::performance::add("karma-reading-hints-prepared", 1);
+            let text = hint.to_string();
+            Some((
+                changed.then(|| hint.into_owned()),
+                (tooltip.0 != text).then_some(text),
+            ))
         } else {
-            "Record unavailable or not readable".into()
+            None
         };
-        if source != format!("@{slug}") && !source.starts_with("freq(") {
-            if let Some(result) = result {
-                hint.push_str(&format!("\n{source}: {result}"));
+        if let Some(id) = sent {
+            world.resource_mut::<Requests>().readings.insert(id, entity);
+            let mut reading = world.get_mut::<Reading>(entity).unwrap();
+            reading.requested_at = Some(now);
+            reading.pending = true;
+        }
+        if let Some((hint, text)) = prepared {
+            if let Some(hint) = hint {
+                world.get_mut::<Reading>(entity).unwrap().hint = Some(hint);
             }
-            if hovered {
-                countdown = true;
-                if !pending && requested_at.is_none_or(|at| now.saturating_sub(at) >= 1000) {
-                    let id = nucleus::new_uid("karma-reading");
-                    match send(
-                        world,
-                        owner,
-                        ClientMessage::Act {
-                            id: id.clone(),
-                            action: engine::actions::Action::PreviewKarmaReading { source },
-                        },
-                    ) {
-                        Ok(()) => {
-                            world.resource_mut::<Requests>().readings.insert(id, entity);
-                            let mut reading = world.get_mut::<Reading>(entity).unwrap();
-                            reading.requested_at = Some(now);
-                            reading.pending = true;
-                        }
-                        Err(error) => hint.push_str(&format!("\n{error}")),
-                    }
-                }
+            if let Some(text) = text {
+                world.get_mut::<Tooltip>(entity).unwrap().0 = text;
+                nucleus::performance::add("karma-reading-hints-published", 1);
             }
         }
-        if world.get::<Tooltip>(entity).unwrap().0 != hint {
-            world.get_mut::<Tooltip>(entity).unwrap().0 = hint;
-        }
+    }
+    if count == 0 {
+        *readings = Vec::new();
     }
     if countdown && wake_at.is_none_or(|at| at.elapsed().as_secs() >= 1) {
         *wake_at = Some(std::time::Instant::now());

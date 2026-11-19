@@ -186,14 +186,26 @@ impl Config {
                 Source::Organ(uid) => uid.len() <= 128,
             }
     }
-    pub fn query(&self) -> Result<protein::Protein, String> {
+    pub(super) fn base_query(&self) -> Result<std::sync::Arc<protein::Protein>, String> {
         if !self.valid() {
             return Err("Invalid row template".into());
         }
-        let mut query = self.draft.compile()?;
+        let query = self.draft.compile_shared()?;
         if query.source != protein::Source::Record || query.aggregate.is_some() {
             return Err("Record templates need a Record query without aggregation".into());
         }
+        Ok(query)
+    }
+
+    pub fn query(&self) -> Result<protein::Protein, String> {
+        let base = self.base_query()?;
+        let _projection = crate::host::performance::Span::new(
+            crate::host::performance::Stage::RecordQueryProjection,
+        );
+        let mut query = (*base).clone();
+        crate::host::performance::count(
+            crate::host::performance::Count::RecordQueriesProjected,
+        );
         let mut fields: Vec<String> = self
             .bindings
             .iter()

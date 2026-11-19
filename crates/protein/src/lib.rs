@@ -10,12 +10,18 @@ mod karma_transfers;
 mod meanings;
 pub mod read_rules;
 pub mod record_query;
+mod record_includes;
 mod record_links;
+mod record_order;
+mod record_predicates;
 mod record_threads;
 pub mod role_authority;
 pub mod schedule;
 pub mod shader_inputs;
 mod transfer_application;
+mod transfer_filter;
+mod transfer_projection;
+mod transfer_roles;
 pub use invalidation::{FactChanges, affects};
 pub use meanings::bind_meanings;
 
@@ -944,6 +950,31 @@ pub fn depends_on_forecast(protein: &Protein) -> bool {
     matches!(protein.source, Source::Calendar | Source::Schedule)
 }
 
+pub fn uses_signer(protein: &Protein) -> bool {
+    match protein.source {
+        Source::KarmaRule
+        | Source::Transfer
+        | Source::TransferSettlementPreview
+        | Source::TransferBulkCompletionPreview => true,
+        Source::Record
+        | Source::Promise
+        | Source::Decision
+        | Source::Fact
+        | Source::Concept
+        | Source::Lingua
+        | Source::Assertion
+        | Source::Auth
+        | Source::Karma
+        | Source::Timeline
+        | Source::Calendar
+        | Source::Schedule
+        | Source::Entry
+        | Source::Frequency
+        | Source::Recurrence
+        | Source::Nearby => false,
+    }
+}
+
 async fn execute_karma(store: &Store, protein: &Protein) -> Result<Vec<Value>, ProteinError> {
     if protein.aggregate.is_some() {
         return Err(karma_query_error(
@@ -1540,7 +1571,8 @@ async fn matching_records_for<Body: RecordBody>(
         (_, None) => store::records::RecordSelection::All,
     };
     let all = store::records::read(&store.pool, selection, with_body).await?;
-    let ctx = PredicateCtx::prepare(store, &protein.filter, visible, subject).await?;
+    let ctx = record_predicates::Context::prepare(store, &protein.filter, visible, subject).await?;
+    let _matching = nucleus::performance::Span::new("protein-record-predicate-matching");
     let mut rows = Vec::new();
     for r in all {
         if required_uids
@@ -1599,7 +1631,7 @@ async fn select_records_for<Body: RecordBody>(
         matching_records_for::<Body>(store, protein, visible, subject, with_body).await?;
     rows.retain(|row| row.slug.as_deref() != Some(store::cells::LOCAL_CELL_SLUG));
     if protein.aggregate.is_none() {
-        rows = order_records(store, rows, &protein.order).await?;
+        rows = record_order::records(store, rows, &protein.order).await?;
         if let Some(after) = &protein.include.record_after {
             let position = rows
                 .iter()
@@ -1677,7 +1709,7 @@ async fn execute_records(
     } else {
         HashMap::new()
     };
-    let work = if [
+    let mut work = if [
         "start_date",
         "due_date",
         "estimate_min",
@@ -1695,7 +1727,7 @@ async fn execute_records(
         HashMap::new()
     };
     let mut projected =
-        record_schema::attach(store, protein, &rows, visible, &work, &concept_names).await?;
+        record_schema::attach(store, protein, &rows, visible, &mut work, &concept_names).await?;
     let mut shader_effects = HashMap::new();
     let mut numeric_values = shader_inputs::attach(store, &rows, &include.numeric_fields).await?;
     if include.shader_effect && !rows.is_empty() {
@@ -1739,61 +1771,68 @@ async fn execute_records(
         HashMap::new()
     };
     let ids: Vec<_> = rows.iter().map(|record| record.uid.as_str()).collect();
-    let mut prepared_includes = RecordIncludes::load(store, &ids, &include).await?;
+    let mut prepared_includes = record_includes::Prepared::load(store, &ids, &include).await?;
     for r in rows {
+        let fields = nucleus::performance::Span::new("protein-record-field-publish");
+        let concept_name = wants("concept_name").then(|| {
+            r.identity_predicate_uid
+                .as_ref()
+                .and_then(|uid| concept_names.get(uid))
+                .map(String::as_str)
+        });
         let mut row = json!({"uid": r.uid});
         if wants("slug") {
-            row["slug"] = json!(r.slug);
+            row["slug"] = r.slug.into();
         }
-        row["kind"] = json!(r.kind);
+        row["kind"] = Value::String(r.kind);
         if wants("head") {
-            row["head"] = json!(r.head);
+            row["head"] = Value::String(r.head);
         }
         if wants("body") {
-            row["body"] = json!(r.body.required()?);
+            row["body"] = Value::String(String::from_loaded(r.body)?);
         }
         if wants("quantity") {
-            row["quantity"] = json!(r.quantity.to_string());
+            row["quantity"] = Value::String(r.quantity.to_string());
         }
         if wants("concept") {
-            row["concept"] = json!(r.identity_predicate_uid);
+            row["concept"] = r.identity_predicate_uid.into();
         }
         if wants("unit") {
-            row["unit"] = json!(r.unit_uid);
+            row["unit"] = r.unit_uid.into();
         }
         if wants("organ") {
-            row["organ"] = json!(r.organ_uid);
+            row["organ"] = r.organ_uid.into();
         }
-        if wants("concept_name") {
-            row["concept_name"] = json!(
-                r.identity_predicate_uid
-                    .as_ref()
-                    .and_then(|uid| concept_names.get(uid))
-            );
+        if let Some(name) = concept_name {
+            row["concept_name"] = name.into();
         }
         if wants("created_at") {
-            row["created_at"] = json!(r.created_at);
+            row["created_at"] = Value::String(r.created_at);
         }
         if wants("updated_at") {
-            row["updated_at"] = json!(r.updated_at);
+            row["updated_at"] = Value::String(r.updated_at);
         }
         if wants("created_hlc") {
-            row["created_hlc"] = json!(r.created_hlc);
+            row["created_hlc"] = r.created_hlc.into();
         }
         if wants("start_date") {
-            row["start_date"] = json!(
-                work.get(&r.uid)
-                    .and_then(|value| value.get("start"))
-                    .and_then(Value::as_str)
-            );
+            row["start_date"] = work
+                .get_mut(&r.uid)
+                .and_then(|value| value.get_mut("start"))
+                .filter(|value| value.is_string())
+                .map(Value::take)
+                .unwrap_or(Value::Null);
         }
         if wants("due_date") {
-            row["due_date"] = json!(
-                work.get(&r.uid)
-                    .and_then(|value| value.get("due"))
-                    .and_then(Value::as_str)
-            );
+            row["due_date"] = work
+                .get_mut(&r.uid)
+                .and_then(|value| value.get_mut("due"))
+                .filter(|value| value.is_string())
+                .map(Value::take)
+                .unwrap_or(Value::Null);
         }
+        drop(fields);
+        nucleus::performance::add("protein-record-owned-field-rows", 1);
         if let Some((settings, graph)) = &links {
             row["links"] = Value::Array(graph.for_record(&r.uid, settings, &concept_names));
         }
@@ -1803,15 +1842,13 @@ async fn execute_records(
         if let Some(Value::Object(fields)) = availability.remove(&r.uid) {
             row.as_object_mut().unwrap().extend(fields);
         }
-        attach_includes(
-            store,
+        record_includes::attach(
             &mut row,
             &r.uid,
             &include,
             &protected_transfers,
             &mut prepared_includes,
-        )
-        .await?;
+        );
         if let Some(Value::Object(fields)) = projected.remove(&r.uid) {
             row.as_object_mut().unwrap().extend(fields);
         }
@@ -1846,477 +1883,50 @@ fn aggregate_records<Body>(
     rows: &[store::records::RecordRow<Body>],
     agg: &Aggregate,
 ) -> Vec<Value> {
-    let mut buckets: std::collections::BTreeMap<(String, String), (nucleus::DecimalValue, i64)> =
+    let _aggregate = nucleus::performance::Span::new("protein-record-aggregate");
+    let mut buckets: std::collections::BTreeMap<(&str, &str), (nucleus::DecimalValue, i64)> =
         std::collections::BTreeMap::new();
     for r in rows {
         let key = match agg.by {
-            GroupBy::Concept => r
-                .identity_predicate_uid
-                .clone()
-                .unwrap_or_else(|| UNCLASSIFIED.into()),
-            GroupBy::Kind => r.kind.clone(),
-            GroupBy::Total => TOTAL.into(),
-            GroupBy::CauseKind | GroupBy::Day | GroupBy::Month | GroupBy::Classification => {
-                "(n/a)".into()
-            }
+            GroupBy::Concept => r.identity_predicate_uid.as_deref().unwrap_or(UNCLASSIFIED),
+            GroupBy::Kind => r.kind.as_str(),
+            GroupBy::Total => TOTAL,
+            GroupBy::CauseKind | GroupBy::Day | GroupBy::Month | GroupBy::Classification => "(n/a)",
         };
-        let unit = r.unit_uid.clone().unwrap_or_default();
+        let unit = r.unit_uid.as_deref().unwrap_or_default();
         let entry = buckets
             .entry((key, unit))
             .or_insert_with(|| (store::exact::zero(), 0));
         entry.0 = entry.0.aligned_add(r.quantity).unwrap_or(entry.0);
         entry.1 += 1;
     }
+    nucleus::performance::add("protein-record-aggregate-groups", buckets.len() as u64);
     buckets
         .into_iter()
         .map(|((group, unit), (total, count))| {
             let unit = if unit.is_empty() {
                 Value::Null
             } else {
-                Value::String(unit)
+                Value::from(unit)
             };
             match agg.op {
-                AggregateOp::Sum => json!({
-                    "group": group,
-                    "unit_uid": unit,
-                    "value": total.to_string(),
-                    "count": count,
-                }),
-                AggregateOp::Count => json!({
-                    "group": group,
-                    "unit_uid": unit,
-                    "count": count,
-                }),
+                AggregateOp::Sum => Value::from_iter([
+                    ("group", Value::from(group)),
+                    ("unit_uid", unit),
+                    ("value", Value::String(total.to_string())),
+                    ("count", count.into()),
+                ]),
+                AggregateOp::Count => Value::from_iter([
+                    ("group", Value::from(group)),
+                    ("unit_uid", unit),
+                    ("count", count.into()),
+                ]),
             }
         })
         .collect()
 }
 
-async fn order_records<Body: RecordBody>(
-    store: &Store,
-    mut rows: Vec<store::records::RecordRow<Body>>,
-    order: &[Order],
-) -> Result<Vec<store::records::RecordRow<Body>>, ProteinError> {
-    if order.iter().any(|key| {
-        matches!(key, Order::Asc(field) | Order::Desc(field) if field == "body" || field == "description")
-    }) && rows.iter().any(|row| row.body.loaded().is_none())
-    {
-        return Err(store::StoreError::Protocol(
-            "Record body was not loaded for this sort".into(),
-        ));
-    }
-    rows.sort_by_cached_key(|row| (row.head.to_lowercase(), row.uid.clone()));
-    let need_work = order.iter().any(|key| matches!(key, Order::Asc(field) | Order::Desc(field) if field == "start_date" || field == "due_date"));
-    let work = if need_work {
-        let selected: Vec<_> = rows.iter().map(|row| row.uid.clone()).collect();
-        store::records::extensions_for_records(&store.pool, "work", &selected).await?
-    } else {
-        HashMap::new()
-    };
-    let concept_names: HashMap<String, String> = if order.iter().any(|key| {
-        matches!(key, Order::Asc(field) | Order::Desc(field)
-            if field == "concept_name" || field == "concept")
-    }) {
-        store::concepts::list_all(&store.pool)
-            .await?
-            .into_iter()
-            .map(|concept| (concept.uid, concept.canonical_name))
-            .collect()
-    } else {
-        HashMap::new()
-    };
-    let mut assignees = HashMap::new();
-    if order.iter().any(
-        |key| matches!(key, Order::Asc(field) | Order::Desc(field) if field == "assignee_name"),
-    ) {
-        let binding = store::vocabulary::feature_binding(&store.pool, "assignment").await?;
-        let subjects: Vec<_> = rows.iter().map(|row| row.uid.as_str()).collect();
-        let links =
-            store::assertions::binary_for_subjects(&store.pool, &binding.concept_uids, &subjects)
-                .await?;
-        let people: HashSet<_> = links.iter().map(|link| link.object_uid.as_str()).collect();
-        let people: Vec<_> = people.into_iter().collect();
-        let names = store::records::live_heads_for(&store.pool, &people).await?;
-        for link in links {
-            if let Some(name) = names.get(&link.object_uid) {
-                assignees
-                    .entry(link.subject_uid)
-                    .or_insert_with(|| name.clone());
-            }
-        }
-    }
-    let assertion_fields: Vec<_> = order
-        .iter()
-        .filter_map(|key| match key {
-            Order::Asc(field) | Order::Desc(field) if field.starts_with('#') => Some(field.clone()),
-            _ => None,
-        })
-        .collect();
-    let assertion_values = if assertion_fields.is_empty() {
-        HashMap::new()
-    } else {
-        let uids: Vec<_> = rows.iter().map(|row| row.uid.clone()).collect();
-        assertion_order::values(store, &uids, &assertion_fields).await?
-    };
-    for key in order.iter().rev() {
-        match key {
-            Order::Asc(f) | Order::Desc(f) => {
-                let desc = matches!(key, Order::Desc(_));
-                let priorities = assertion_values.get(f);
-                rows.sort_by(|a, b| {
-                    if f.starts_with('#') {
-                        let left = priorities.and_then(|values| values.get(&a.uid));
-                        let right = priorities.and_then(|values| values.get(&b.uid));
-                        return match (left, right) {
-                            (Some(a), Some(b)) => {
-                                if desc {
-                                    b.cmp(a)
-                                } else {
-                                    a.cmp(b)
-                                }
-                            }
-                            (Some(_), None) => std::cmp::Ordering::Less,
-                            (None, Some(_)) => std::cmp::Ordering::Greater,
-                            (None, None) => std::cmp::Ordering::Equal,
-                        };
-                    }
-                    let ord = record_field_cmp(a, b, f, &concept_names, &assignees, &work);
-                    if desc
-                        && !record_field_is_missing(a, f, &concept_names, &assignees, &work)
-                        && !record_field_is_missing(b, f, &concept_names, &assignees, &work)
-                    {
-                        ord.reverse()
-                    } else {
-                        ord
-                    }
-                });
-            }
-            Order::Link(rule) => {
-                let family =
-                    store::vocabulary::meaning_family(&store.pool, &rule.kind, None).await?;
-                let edges = store::assertions::edges_of_predicates(&store.pool, &family).await?;
-                let edges = if rule.higher == LinkEndpoint::From {
-                    edges
-                } else {
-                    edges
-                        .into_iter()
-                        .map(|edge| nucleus::graph::Edge {
-                            from: edge.to,
-                            to: edge.from,
-                            quantity: edge.quantity,
-                        })
-                        .collect()
-                };
-                let uids: Vec<String> = rows.iter().map(|r| r.uid.clone()).collect();
-                let ordered = nucleus::graph::topo_order(&uids, &edges);
-                let mut by_uid: HashMap<String, store::records::RecordRow<Body>> =
-                    rows.into_iter().map(|r| (r.uid.clone(), r)).collect();
-                rows = ordered
-                    .into_iter()
-                    .filter_map(|uid| by_uid.remove(&uid))
-                    .collect();
-            }
-        }
-    }
-    Ok(rows)
-}
 
-fn record_field_is_missing<Body>(
-    row: &store::records::RecordRow<Body>,
-    field: &str,
-    concepts: &HashMap<String, String>,
-    assignees: &HashMap<String, String>,
-    work: &HashMap<String, Value>,
-) -> bool {
-    match field {
-        "slug" => row.slug.is_none(),
-        "concept_name" | "concept" => row
-            .identity_predicate_uid
-            .as_ref()
-            .and_then(|uid| concepts.get(uid))
-            .is_none(),
-        "assignee_name" | "assignee" => !assignees.contains_key(&row.uid),
-        "start_date" => work
-            .get(&row.uid)
-            .and_then(|value| value.get("start"))
-            .and_then(Value::as_str)
-            .is_none(),
-        "due_date" => work
-            .get(&row.uid)
-            .and_then(|value| value.get("due"))
-            .and_then(Value::as_str)
-            .is_none(),
-        _ => false,
-    }
-}
-
-fn record_field_cmp<Body: RecordBody>(
-    left: &store::records::RecordRow<Body>,
-    right: &store::records::RecordRow<Body>,
-    field: &str,
-    concepts: &HashMap<String, String>,
-    assignees: &HashMap<String, String>,
-    work: &HashMap<String, Value>,
-) -> std::cmp::Ordering {
-    fn optional<T: Ord>(left: Option<T>, right: Option<T>) -> std::cmp::Ordering {
-        match (left, right) {
-            (Some(a), Some(b)) => a.cmp(&b),
-            (Some(_), None) => std::cmp::Ordering::Less,
-            (None, Some(_)) => std::cmp::Ordering::Greater,
-            (None, None) => std::cmp::Ordering::Equal,
-        }
-    }
-    let work_date = |row: &store::records::RecordRow<Body>, name: &str| {
-        work.get(&row.uid)
-            .and_then(|value| value.get(name))
-            .and_then(Value::as_str)
-    };
-    // Preserve zero-padded decimal ordering, including legacy negative HLC values.
-    let hlc_key = |value: i64| (value >= 0, value.unsigned_abs());
-    match field {
-        "created_hlc" => optional(
-            left.created_hlc.map(hlc_key),
-            right.created_hlc.map(hlc_key),
-        ),
-        "title" | "head" => left.head.cmp(&right.head),
-        "description" | "body" => left.body.loaded().cmp(&right.body.loaded()),
-        "uid" => left.uid.cmp(&right.uid),
-        "slug" => optional(left.slug.as_deref(), right.slug.as_deref()),
-        "kind" => left.kind.cmp(&right.kind),
-        "quantity" => left.quantity.exact_numeric_cmp(right.quantity),
-        "concept_name" | "concept" => optional(
-            left.identity_predicate_uid
-                .as_ref()
-                .and_then(|uid| concepts.get(uid)),
-            right
-                .identity_predicate_uid
-                .as_ref()
-                .and_then(|uid| concepts.get(uid)),
-        ),
-        "assignee_name" | "assignee" => {
-            optional(assignees.get(&left.uid), assignees.get(&right.uid))
-        }
-        "start_date" => optional(work_date(left, "start"), work_date(right, "start")),
-        "due_date" => optional(work_date(left, "due"), work_date(right, "due")),
-        "created_at" => left.created_at.cmp(&right.created_at),
-        "updated_at" => left.updated_at.cmp(&right.updated_at),
-        _ => std::cmp::Ordering::Equal,
-    }
-}
-
-#[derive(Default)]
-struct RecordIncludes {
-    facts: HashMap<String, Vec<store::facts::Summary>>,
-    promises: HashMap<String, Vec<store::misc::PromiseRow>>,
-    extensions: HashMap<String, Value>,
-    numeric_extensions: HashMap<String, Vec<Value>>,
-    reference_reads: HashMap<String, Vec<Value>>,
-}
-
-impl RecordIncludes {
-    async fn load(
-        store: &Store,
-        records: &[&str],
-        include: &Include,
-    ) -> Result<Self, ProteinError> {
-        use store::sqlx::Row;
-
-        let _includes = nucleus::performance::Span::new("protein-record-includes-await");
-        let mut inputs = Self::default();
-        if records.is_empty() {
-            return Ok(inputs);
-        }
-        if let Some(facts) = &include.facts {
-            inputs.facts =
-                store::facts::summaries_for_records(&store.pool, records, facts.limit).await?;
-        }
-        if include.promises.is_some() {
-            inputs.promises = store::misc::promises_for_records(&store.pool, records).await?;
-        }
-        if let Some(extension) = &include.extension {
-            inputs.extensions =
-                store::records::get_extensions(&store.pool, records, &extension.namespace).await?;
-        }
-        if include.numeric_extensions {
-            inputs.numeric_extensions =
-                store::records::numeric_extensions_for_records(&store.pool, records).await?;
-        }
-        if include.reference_reads {
-            let selected = serde_json::to_string(records)
-                .map_err(|error| store::StoreError::Protocol(error.to_string()))?;
-            let rows = store::sqlx::query(
-                "SELECT rr.record_uid, rr.reader_organ, rr.reads, rr.last_read_at,
-                        r.head AS reader_name
-                 FROM reference_read rr
-                 LEFT JOIN organ_contact c ON c.record_uid = rr.reader_organ
-                 LEFT JOIN record r ON r.uid = c.record_uid
-                 WHERE rr.record_uid IN (SELECT value FROM json_each(?))
-                 ORDER BY rr.record_uid, rr.last_read_at DESC",
-            )
-            .bind(selected)
-            .fetch_all(&store.pool)
-            .await?;
-            for row in rows {
-                inputs
-                    .reference_reads
-                    .entry(row.get("record_uid"))
-                    .or_default()
-                    .push(json!({
-                        "reader_organ": row.get::<String, _>("reader_organ"),
-                        "reader_name": row.get::<Option<String>, _>("reader_name"),
-                        "reads": row.get::<i64, _>("reads"),
-                        "last_read_at": row.get::<String, _>("last_read_at"),
-                    }));
-            }
-        }
-        Ok(inputs)
-    }
-}
-
-async fn attach_includes(
-    store: &Store,
-    row: &mut Value,
-    record_uid: &str,
-    include: &Include,
-    protected_transfers: &HashSet<String>,
-    prepared: &mut RecordIncludes,
-) -> Result<(), ProteinError> {
-    let _includes = nucleus::performance::Span::new("protein-record-includes-await");
-    if include.facts.is_some() {
-        let list = prepared.facts.remove(record_uid).unwrap_or_default();
-        row["facts"] = Value::Array(
-            list.into_iter()
-                .map(|f| {
-                    json!({
-                        "delta": f.delta.to_f64(),
-                        "at": f.at.to_rfc3339(),
-                        "cause_kind": f.cause.kind.as_str(),
-                        "cause": (!protected_transfers.contains(record_uid)).then_some(f.cause.uid).flatten(),
-                        "actor": (!protected_transfers.contains(record_uid)).then_some(f.actor_uid).flatten(),
-                    })
-                })
-                .collect(),
-        );
-    }
-    if let Some(promises) = &include.promises {
-        let list = prepared.promises.remove(record_uid).unwrap_or_default();
-        row["promises"] = Value::Array(
-            list.into_iter()
-                .filter(|p| {
-                    !p.transfer_uid
-                        .as_ref()
-                        .is_some_and(|uid| protected_transfers.contains(uid))
-                        && (promises.state.is_empty()
-                            || promises.state.iter().any(|s| s == p.state.as_str()))
-                })
-                .map(|p| {
-                    json!({
-                        "uid": p.uid,
-                        "delta": p.delta,
-                        "state": p.state.as_str(),
-                        "window_end": p.window_end,
-                        "party": p.party_uid,
-                    })
-                })
-                .collect(),
-        );
-    }
-    if include.extension.is_some() {
-        row["extension"] = prepared
-            .extensions
-            .remove(record_uid)
-            .unwrap_or(Value::Null);
-    }
-    if include.numeric_extensions {
-        row["numeric_extensions"] = Value::Array(
-            prepared
-                .numeric_extensions
-                .remove(record_uid)
-                .unwrap_or_default(),
-        );
-    }
-    if include.reference_reads {
-        row["reference_reads"] = Value::Array(
-            prepared
-                .reference_reads
-                .remove(record_uid)
-                .unwrap_or_default(),
-        );
-    }
-    if include.contact {
-        row["contact"] = store::organs::contact(&store.pool, record_uid)
-            .await?
-            .map(|c| {
-                json!({
-                    "trust": c.trust,
-                    "proximity": c.proximity,
-                    "pending_introduction": c.pending_introduction,
-                    "node_id": c.node_id,
-                    "delivery": c.delivery().as_str(),
-                    "awaiting_roster_since": c.awaiting_roster_since,
-                    "mailed_at": c.mailed_at,
-                    "peer_acked_seq": c.peer_acked_seq,
-                    "sync_out": c.sync_out,
-                    "sync_in": c.sync_in,
-                    "scope_fields": c.scope_fields,
-                    "scope_version": c.scope_version,
-                    "accept_fields": c.accept_fields,
-                    "accept_version": c.accept_version,
-                    "scope_unreadable": c.scope_unreadable,
-                    "accept_unreadable": c.accept_unreadable,
-                })
-            })
-            .unwrap_or(Value::Null);
-        if row["contact"].is_object() {
-            row["contact"]["organ_access"] =
-                serde_json::to_value(store::organ_access::get(&store.pool, record_uid).await?)
-                    .map_err(|error| store::StoreError::Protocol(error.to_string()))?;
-            let mailbox: (i64, i64, Option<String>) = store::sqlx::query_as("SELECT COUNT(*), COALESCE(SUM(EXISTS(SELECT 1 FROM mailbox_outbox_receipt r WHERE r.uid=o.uid)),0), (SELECT MAX(r.accepted_at) FROM mailbox_outbox_receipt r JOIN mailbox_outbox q ON q.uid=r.uid WHERE q.to_organ=?1) FROM mailbox_outbox o WHERE o.to_organ=?1").bind(record_uid).fetch_one(&store.pool).await?;
-            row["contact"]["delivery_status"] = json!({"saved_mail":mailbox.0,"mailbox_stored":mailbox.1,"last_mailbox_storage":mailbox.2,"queued_operations":store::sqlx::query_scalar::<_,i64>("SELECT COUNT(*) FROM sync_outbox WHERE contact_organ=?").bind(record_uid).fetch_one(&store.pool).await?});
-            row["contact"]["quarantined"] = json!(
-                store::organs::quarantined_for(&store.pool, record_uid, 20)
-                    .await?
-                    .into_iter()
-                    .map(|(reason, payload, at)| json!({
-                        "reason": reason,
-                        "payload": payload,
-                        "at": at,
-                    }))
-                    .collect::<Vec<_>>()
-            );
-            row["contact"]["hidden_records"] = json!(
-                store::visibility::hidden_records_from_organ(&store.pool, record_uid)
-                    .await?
-                    .into_iter()
-                    .map(|hidden| json!({
-                        "uid": hidden.uid,
-                        "head": hidden.head,
-                        "slug": hidden.slug,
-                    }))
-                    .collect::<Vec<_>>()
-            );
-        }
-    }
-    if include.conversations {
-        row["conversations"] = Value::Array(
-            store::replica::conversations_with(&store.pool, record_uid)
-                .await?
-                .into_iter()
-                .map(|c| json!({ "uid": c.uid, "head": c.head, "state": c.state }))
-                .collect(),
-        );
-    }
-    if let Some(projection) = &include.projection {
-        let target = resolve_at(&projection.at);
-        if let Some(target) = target {
-            row["projected"] = json!({
-                "at": target, "quantity": Value::Null, "status": "scenario_required",
-                "reason": "Choose a Simulation scenario to inspect assumed future changes",
-            });
-        }
-    }
-    Ok(())
-}
 
 async fn record_availability(
     store: &Store,
@@ -2359,362 +1969,6 @@ fn resolve_at(value: &str) -> Option<String> {
         .map(|_| value.to_string())
 }
 
-struct PredicateCtx<'a> {
-    person: Option<String>,
-    concept_families: HashMap<&'a str, HashSet<String>>,
-    record_concepts: Option<HashMap<String, Vec<String>>>,
-    anchors: HashMap<&'a str, Option<nucleus::place::Place>>,
-    locations: HashMap<String, nucleus::vocabulary::SavedLocation>,
-    relations: HashMap<(&'a str, LinkDirection, Option<&'a str>), HashSet<String>>,
-    branches: HashMap<(&'a str, &'a str, bool), HashSet<String>>,
-    work: Option<HashMap<String, Value>>,
-    organs: HashMap<&'a str, Option<String>>,
-    text_queries: HashMap<&'a str, String>,
-}
-
-impl<'a> PredicateCtx<'a> {
-    async fn prepare(
-        store: &Store,
-        preds: &'a [Predicate],
-        visible: Option<&HashSet<String>>,
-        subject: Option<&str>,
-    ) -> Result<Self, ProteinError> {
-        let mut leaves = Vec::new();
-        let mut pending: Vec<_> = preds.iter().rev().collect();
-        while let Some(predicate) = pending.pop() {
-            match predicate {
-                Predicate::All(children) | Predicate::Any(children) => {
-                    pending.extend(children.iter().rev())
-                }
-                Predicate::Not(child) => pending.push(child),
-                _ => leaves.push(predicate),
-            }
-        }
-        let mut ctx = PredicateCtx {
-            person: subject.map(str::to_owned),
-            concept_families: HashMap::new(),
-            record_concepts: None,
-            anchors: HashMap::new(),
-            locations: if leaves
-                .iter()
-                .any(|predicate| matches!(predicate, Predicate::Near { .. }))
-            {
-                store::places::saved_locations_for_person(&store.pool, visible, subject).await?
-            } else {
-                HashMap::new()
-            },
-            relations: HashMap::new(),
-            branches: HashMap::new(),
-            work: None,
-            organs: HashMap::new(),
-            text_queries: HashMap::new(),
-        };
-        for p in leaves {
-            ctx.prepare_one(store, p).await?;
-        }
-        Ok(ctx)
-    }
-
-    async fn prepare_one(&mut self, store: &Store, p: &'a Predicate) -> Result<(), ProteinError> {
-        match p {
-            Predicate::ConceptIn(name) => {
-                if self.concept_families.contains_key(name.as_str()) {
-                    return Ok(());
-                }
-                if self.record_concepts.is_none() {
-                    self.record_concepts = Some(
-                        store::ledger::all_record_concepts(&store.pool)
-                            .await?
-                            .into_iter()
-                            .collect(),
-                    );
-                }
-                let family =
-                    match store::vocabulary::resolve(&store.pool, name, self.person.as_deref())
-                        .await?
-                    {
-                        Some(uid) => store::concepts::descendants_including(&store.pool, &uid)
-                            .await?
-                            .into_iter()
-                            .collect(),
-                        None => HashSet::new(),
-                    };
-                self.concept_families.insert(name, family);
-            }
-            Predicate::Near { of, .. } => {
-                if self.anchors.contains_key(of.as_str()) {
-                    return Ok(());
-                }
-                let place = match store::records::resolve(&store.pool, of).await? {
-                    Some(r) => self
-                        .locations
-                        .get(&r.uid)
-                        .and_then(|location| location.selected.as_ref())
-                        .map(|candidate| nucleus::place::Place {
-                            lat: candidate.latitude,
-                            lon: candidate.longitude,
-                        }),
-                    None => None,
-                };
-                self.anchors.insert(of, place);
-            }
-            Predicate::Under {
-                record,
-                kind,
-                include_self,
-            } => {
-                let key = (record.as_str(), kind.as_str(), *include_self);
-                if self.branches.contains_key(&key) {
-                    return Ok(());
-                }
-                let root = store::records::resolve(&store.pool, record).await?;
-                let family =
-                    store::vocabulary::meaning_family(&store.pool, kind, self.person.as_deref())
-                        .await?;
-                let members = match root {
-                    Some(root) => store::assertions::record_descendants(
-                        &store.pool,
-                        &root.uid,
-                        &family,
-                        *include_self,
-                    )
-                    .await?
-                    .into_iter()
-                    .collect(),
-                    _ => HashSet::new(),
-                };
-                self.branches.insert(key, members);
-            }
-            Predicate::Relation {
-                kind,
-                direction,
-                other,
-            } => {
-                let key = (kind.as_str(), *direction, other.as_deref());
-                if self.relations.contains_key(&key) {
-                    return Ok(());
-                }
-                let predicates =
-                    store::vocabulary::meaning_family(&store.pool, kind, self.person.as_deref())
-                        .await?;
-                if predicates.is_empty() {
-                    self.relations.insert(key, HashSet::new());
-                    return Ok(());
-                };
-                let other_uid = match other {
-                    Some(token) => match store::records::resolve(&store.pool, token).await? {
-                        Some(record) => Some(record.uid),
-                        None => {
-                            self.relations.insert(key, HashSet::new());
-                            return Ok(());
-                        }
-                    },
-                    None => None,
-                };
-                let mut matches = HashSet::new();
-                for link in
-                    store::assertions::binary_of_predicates(&store.pool, &predicates).await?
-                {
-                    if matches!(*direction, LinkDirection::Out | LinkDirection::Both)
-                        && other_uid.as_ref().is_none_or(|uid| uid == &link.object_uid)
-                    {
-                        matches.insert(link.subject_uid.clone());
-                    }
-                    if matches!(*direction, LinkDirection::In | LinkDirection::Both)
-                        && other_uid
-                            .as_ref()
-                            .is_none_or(|uid| uid == &link.subject_uid)
-                    {
-                        matches.insert(link.object_uid);
-                    }
-                }
-                self.relations.insert(key, matches);
-            }
-            Predicate::WorkDate { .. } => {
-                if self.work.is_none() {
-                    self.work = Some(store::records::all_extensions(&store.pool, "work").await?);
-                }
-            }
-            Predicate::OrganEq(token) => {
-                if self.organs.contains_key(token.as_str()) {
-                    return Ok(());
-                }
-                let resolved = store::records::resolve(&store.pool, token)
-                    .await?
-                    .map(|r| r.uid);
-                self.organs.insert(token, resolved);
-            }
-            Predicate::OrganIn(tokens) => {
-                for token in tokens {
-                    if self.organs.contains_key(token.as_str()) {
-                        continue;
-                    }
-                    let resolved = store::records::resolve(&store.pool, token)
-                        .await?
-                        .map(|r| r.uid);
-                    self.organs.insert(token, resolved);
-                }
-            }
-            Predicate::TextContains(query) => {
-                self.text_queries
-                    .entry(query)
-                    .or_insert_with(|| query.to_lowercase());
-            }
-            _ => {}
-        }
-        Ok(())
-    }
-
-    fn matches_record<Body: RecordBody>(
-        &self,
-        r: &store::records::RecordRow<Body>,
-        preds: &[Predicate],
-    ) -> Result<bool, ProteinError> {
-        for p in preds {
-            if !self.matches_one(r, p)? {
-                return Ok(false);
-            }
-        }
-        Ok(true)
-    }
-
-    fn matches_one<Body: RecordBody>(
-        &self,
-        r: &store::records::RecordRow<Body>,
-        p: &Predicate,
-    ) -> Result<bool, ProteinError> {
-        Ok(match p {
-            Predicate::ProjectionWindow(_) | Predicate::RollingWindow(_) => false,
-            Predicate::All(ps) => {
-                for p in ps {
-                    if !self.matches_one(r, p)? {
-                        return Ok(false);
-                    }
-                }
-                true
-            }
-            Predicate::Any(ps) => {
-                for p in ps {
-                    if self.matches_one(r, p)? {
-                        return Ok(true);
-                    }
-                }
-                false
-            }
-            Predicate::Not(p) => !self.matches_one(r, p)?,
-            Predicate::QuantityLt(n) => r.quantity.exact_numeric_cmp(*n).is_lt(),
-            Predicate::QuantityLte(n) => !r.quantity.exact_numeric_cmp(*n).is_gt(),
-            Predicate::QuantityGt(n) => r.quantity.exact_numeric_cmp(*n).is_gt(),
-            Predicate::QuantityGte(n) => !r.quantity.exact_numeric_cmp(*n).is_lt(),
-            Predicate::QuantityEq(n) => r.quantity.exact_numeric_cmp(*n).is_eq(),
-            Predicate::UidEq(uid) => r.uid == *uid,
-            Predicate::KindEq(k) => r.kind == *k,
-            Predicate::SlugEq(s) => r.slug.as_deref() == Some(s.as_str()),
-            Predicate::ConceptIn(name) => {
-                self.concept_families
-                    .get(name.as_str())
-                    .is_some_and(|family| {
-                        self.record_concepts
-                            .as_ref()
-                            .and_then(|records| records.get(&r.uid))
-                            .is_some_and(|concepts| concepts.iter().any(|c| family.contains(c)))
-                    })
-            }
-            Predicate::Under {
-                record,
-                kind,
-                include_self,
-            } => self
-                .branches
-                .get(&(record.as_str(), kind.as_str(), *include_self))
-                .is_some_and(|members| members.contains(&r.uid)),
-            Predicate::Relation {
-                kind,
-                direction,
-                other,
-            } => self
-                .relations
-                .get(&(kind.as_str(), *direction, other.as_deref()))
-                .is_some_and(|records| records.contains(&r.uid)),
-            Predicate::TextContains(query) => {
-                let query = &self.text_queries[query.as_str()];
-                r.head.to_lowercase().contains(query)
-                    || r.body.required()?.to_lowercase().contains(query)
-            }
-            Predicate::WorkDate { field, op, value } => {
-                let date = self
-                    .work
-                    .as_ref()
-                    .and_then(|work| work.get(&r.uid))
-                    .and_then(|work| {
-                        let key = match field {
-                            WorkDateField::Start => "start",
-                            WorkDateField::Due => "due",
-                        };
-                        work.get(key)
-                            .and_then(Value::as_str)
-                            .filter(|date| !date.is_empty())
-                            .and_then(|date| date.get(..10))
-                    });
-                match op {
-                    DateComparison::Exists => date.is_some(),
-                    DateComparison::Eq => date.zip(value.as_deref()).is_some_and(|(a, b)| a == b),
-                    DateComparison::Lt => date.zip(value.as_deref()).is_some_and(|(a, b)| a < b),
-                    DateComparison::Lte => date.zip(value.as_deref()).is_some_and(|(a, b)| a <= b),
-                    DateComparison::Gt => date.zip(value.as_deref()).is_some_and(|(a, b)| a > b),
-                    DateComparison::Gte => date.zip(value.as_deref()).is_some_and(|(a, b)| a >= b),
-                }
-            }
-            Predicate::StateIn(_) => true,
-            Predicate::RevisionEq(_)
-            | Predicate::RevisionLt(_)
-            | Predicate::RevisionLte(_)
-            | Predicate::RevisionGt(_)
-            | Predicate::RevisionGte(_)
-            | Predicate::StatusIn(_)
-            | Predicate::ViewerRoleIn(_)
-            | Predicate::InvitationStateIn(_)
-            | Predicate::PersonEq(_)
-            | Predicate::UnitEq(_)
-            | Predicate::WindowEndBefore(_)
-            | Predicate::WindowEndAfter(_)
-            | Predicate::OccurrenceIn(_) => true,
-            Predicate::AtSince(_) | Predicate::CauseKindEq(_) | Predicate::RecordEq(_) => true,
-            Predicate::AtBefore(_) | Predicate::ClassifiedIn(_) => true,
-            Predicate::Near { of, meters } => {
-                match (
-                    self.anchors.get(of.as_str()).and_then(|a| *a),
-                    self.locations
-                        .get(&r.uid)
-                        .and_then(|location| location.selected.as_ref())
-                        .map(|candidate| nucleus::place::Place {
-                            lat: candidate.latitude,
-                            lon: candidate.longitude,
-                        }),
-                ) {
-                    (Some(anchor), Some(here)) => nucleus::place::near(here, anchor, *meters),
-                    _ => false,
-                }
-            }
-            Predicate::OrganEq(token) => {
-                match (
-                    self.organs.get(token.as_str()).and_then(|o| o.as_deref()),
-                    &r.organ_uid,
-                ) {
-                    (Some(resolved), Some(actual)) => resolved == actual,
-                    _ => false,
-                }
-            }
-            Predicate::OrganIn(tokens) => match &r.organ_uid {
-                Some(actual) => tokens.iter().any(|token| {
-                    self.organs.get(token.as_str()).and_then(|o| o.as_deref())
-                        == Some(actual.as_str())
-                }),
-                None => false,
-            },
-        })
-    }
-}
 
 async fn execute_promises(
     store: &Store,
@@ -2727,18 +1981,14 @@ async fn execute_promises(
         predicate: &Predicate,
     ) -> Result<bool, ProteinError> {
         Ok(match predicate {
-            Predicate::All(children) => children
-                .iter()
-                .map(|child| matches(promise, child))
-                .collect::<Result<Vec<_>, _>>()?
-                .into_iter()
-                .all(|matched| matched),
-            Predicate::Any(children) => children
-                .iter()
-                .map(|child| matches(promise, child))
-                .collect::<Result<Vec<_>, _>>()?
-                .into_iter()
-                .any(|matched| matched),
+            Predicate::All(children) => children.iter().try_fold(true, |all, child| {
+                let matched = matches(promise, child)?;
+                Ok::<_, ProteinError>(all && matched)
+            })?,
+            Predicate::Any(children) => children.iter().try_fold(false, |any, child| {
+                let matched = matches(promise, child)?;
+                Ok::<_, ProteinError>(any || matched)
+            })?,
             Predicate::Not(child) => !matches(promise, child)?,
             Predicate::StateIn(states) => {
                 states.iter().any(|state| state == promise.state.as_str())
@@ -2755,7 +2005,9 @@ async fn execute_promises(
 
     let protected_transfers = protected_transfer_history(store, subject).await?;
     let mut out = Vec::new();
-    for p in store::misc::list_promises(&store.pool).await? {
+    let promises = store::misc::list_promises(&store.pool).await?;
+    let _selection = nucleus::performance::Span::new("protein-promise-selection");
+    for p in promises {
         if p.transfer_uid
             .as_ref()
             .is_some_and(|uid| protected_transfers.contains(uid))
@@ -2813,18 +2065,17 @@ async fn execute_promises(
 }
 
 async fn execute_decisions(store: &Store, protein: &Protein) -> Result<Vec<Value>, ProteinError> {
+    let decisions = store::misc::open_decision_rows(&store.pool).await?;
+    let _publish = nucleus::performance::Span::new("protein-decision-publish");
     let mut out = Vec::new();
-    for d in store::misc::list_decisions(&store.pool).await? {
-        if !d.open {
-            continue;
-        }
-        out.push(json!({
-            "uid": d.record_uid,
-            "subject": d.subject_uid,
-            "kind": d.kind,
-            "question": d.question,
-            "options": d.options,
-        }));
+    for decision in decisions {
+        out.push(Value::from_iter([
+            ("uid", decision.record_uid.into()),
+            ("subject", decision.subject_uid.into()),
+            ("kind", decision.kind.into()),
+            ("question", decision.question.into()),
+            ("options", decision.options),
+        ]));
         if protein.limit.is_some_and(|l| out.len() >= l) {
             break;
         }
@@ -2837,24 +2088,31 @@ async fn execute_nearby(
     protein: &Protein,
     peers: &[nucleus::nearby::NearbyPeer],
 ) -> Result<Vec<Value>, ProteinError> {
-    let mut peers = peers.to_vec();
+    let preparation = nucleus::performance::Span::new("protein-nearby-preparation");
+    let mut peers: Vec<_> = peers.iter().collect();
     peers.sort_by(|a, b| a.node_id.cmp(&b.node_id));
-    let mut out = Vec::new();
-    for peer in peers {
-        let contact = store::organs::contact_by_node_id(&store.pool, &peer.node_id).await?;
-        out.push(json!({
-            "node_id": peer.node_id,
-            "fingerprint": peer.fingerprint,
-            "claimed_name": peer.name,
-            "known": contact.is_some(),
-            "name": contact.as_ref().map(|c| c.head.clone()),
-            "trust": contact.as_ref().map(|c| c.trust.clone()),
-        }));
-        if protein.limit.is_some_and(|l| out.len() >= l) {
-            break;
-        }
+    if let Some(limit) = protein.limit {
+        peers.truncate(limit.max(1));
     }
-    Ok(out)
+    let nodes: Vec<_> = peers.iter().map(|peer| peer.node_id.as_str()).collect();
+    nucleus::performance::add("nearby-presentation-selected-peers", peers.len() as u64);
+    drop(preparation);
+    let contacts = store::organs::presentation::peers_by_node(&store.pool, &nodes).await?;
+    let _publication = nucleus::performance::Span::new("protein-nearby-publish");
+    Ok(peers
+        .into_iter()
+        .map(|peer| {
+            let contact = contacts.get(&peer.node_id);
+            json!({
+                "node_id": peer.node_id,
+                "fingerprint": peer.fingerprint,
+                "claimed_name": peer.name,
+                "known": contact.is_some(),
+                "name": contact.map(|contact| contact.head.as_str()),
+                "trust": contact.map(|contact| contact.trust.as_str()),
+            })
+        })
+        .collect())
 }
 
 fn resolve_since(value: &str) -> Option<String> {
@@ -2968,21 +2226,60 @@ async fn execute_facts(
     subject: Option<&str>,
 ) -> Result<Vec<Value>, ProteinError> {
     let protected_transfers = protected_transfer_history(store, subject).await?;
-    let counts_as = store::ledger::all_record_concepts(&store.pool).await?;
-    let mut record_concepts: HashMap<String, Vec<String>> = HashMap::new();
-    let mut record_unit: HashMap<String, Option<String>> = HashMap::new();
-    for r in store::records::list_all(&store.pool).await? {
-        record_unit.insert(r.uid.clone(), r.unit_uid.clone());
-        let mut concepts: Vec<String> = r.identity_predicate_uid.clone().into_iter().collect();
-        if let Some(extra) = counts_as.get(&r.uid) {
-            for concept in extra {
-                if !concepts.contains(concept) {
-                    concepts.push(concept.clone());
-                }
-            }
-        }
-        record_concepts.insert(r.uid.clone(), concepts);
+    let needs_concepts = protein
+        .filter
+        .iter()
+        .any(|predicate| matches!(predicate, Predicate::ConceptIn(_)))
+        || protein
+            .aggregate
+            .as_ref()
+            .is_some_and(|aggregate| aggregate.by == GroupBy::Concept);
+    let counts_as = if needs_concepts {
+        store::ledger::all_record_concepts(&store.pool).await?
+    } else {
+        Default::default()
+    };
+    let metadata = store::records::grouping(
+        &store.pool,
+        store::records::GroupingFields {
+            unit: protein.aggregate.is_some(),
+            identity: needs_concepts,
+        },
+    )
+    .await?;
+    struct Dimensions<'a> {
+        unit: &'a str,
+        concepts: Vec<&'a str>,
     }
+    let record_dimensions = {
+        let _prepare = nucleus::performance::Span::new("protein-fact-dimensions");
+        metadata
+            .iter()
+            .map(|record| {
+                let mut seen = HashSet::new();
+                let concepts = record
+                    .identity
+                    .as_deref()
+                    .into_iter()
+                    .chain(
+                        counts_as
+                            .get(&record.uid)
+                            .into_iter()
+                            .flatten()
+                            .map(String::as_str),
+                    )
+                    .filter(|concept| seen.insert(*concept))
+                    .collect();
+                (
+                    record.uid.as_str(),
+                    Dimensions {
+                        unit: record.unit.as_deref().unwrap_or_default(),
+                        concepts,
+                    },
+                )
+            })
+            .collect::<HashMap<_, _>>()
+    };
 
     let mut since: Option<String> = None;
     let mut before: Option<String> = None;
@@ -2996,9 +2293,7 @@ async fn execute_facts(
             Predicate::AtBefore(v) => before = resolve_since(v),
             Predicate::CauseKindEq(k) => cause_kind = Some(k),
             Predicate::RecordEq(token) => {
-                record = store::records::resolve(&store.pool, token)
-                    .await?
-                    .map(|r| r.uid);
+                record = store::records::resolve_uid(&store.pool, token).await?;
                 if record.is_none() {
                     return Ok(vec![]);
                 }
@@ -3031,7 +2326,14 @@ async fn execute_facts(
 
     const FACT_SCAN_CAP: i64 = 100_000;
     let mut facts = Vec::new();
-    for f in store::facts::list_since(&store.pool, since.as_deref(), FACT_SCAN_CAP).await? {
+    for f in store::facts::ledger_since(
+        &store.pool,
+        since.as_deref(),
+        FACT_SCAN_CAP,
+        protein.aggregate.is_none(),
+    )
+    .await?
+    {
         if visible.is_some_and(|v| !v.contains(&f.record_uid)) {
             continue;
         }
@@ -3045,9 +2347,14 @@ async fn execute_facts(
             continue;
         }
         if let Some(family) = &concept_family {
-            let matches = record_concepts
-                .get(&f.record_uid)
-                .is_some_and(|concepts| concepts.iter().any(|c| family.contains(c)));
+            let matches = record_dimensions
+                .get(f.record_uid.as_str())
+                .is_some_and(|record| {
+                    record
+                        .concepts
+                        .iter()
+                        .any(|concept| family.contains(*concept))
+                });
             if !matches {
                 continue;
             }
@@ -3064,33 +2371,35 @@ async fn execute_facts(
     }
 
     if let Some(agg) = &protein.aggregate {
-        let mut buckets: std::collections::BTreeMap<(String, String), DeltaBucket> =
+        use std::borrow::Cow;
+        let _aggregate = nucleus::performance::Span::new("protein-fact-aggregate");
+        let mut buckets: std::collections::BTreeMap<(Cow<'_, str>, &str), DeltaBucket> =
             Default::default();
         for f in &facts {
+            let dimensions = record_dimensions.get(f.record_uid.as_str());
             let key = match agg.by {
-                GroupBy::Total => TOTAL.to_string(),
-                GroupBy::CauseKind | GroupBy::Kind => f.cause.kind.as_str().to_string(),
-                GroupBy::Day => f.at.format("%Y-%m-%d").to_string(),
-                GroupBy::Month => f.at.format("%Y-%m").to_string(),
-                GroupBy::Concept => record_concepts
-                    .get(&f.record_uid)
-                    .and_then(|concepts| concepts.first().cloned())
-                    .unwrap_or_else(|| UNCLASSIFIED.into()),
-                GroupBy::Classification => fact_classification
-                    .get(&f.uid)
-                    .cloned()
-                    .unwrap_or_else(|| UNCLASSIFIED.into()),
+                GroupBy::Total => Cow::Borrowed(TOTAL),
+                GroupBy::CauseKind | GroupBy::Kind => Cow::Borrowed(f.cause.kind.as_str()),
+                GroupBy::Day => Cow::Owned(f.at.format("%Y-%m-%d").to_string()),
+                GroupBy::Month => Cow::Owned(f.at.format("%Y-%m").to_string()),
+                GroupBy::Concept => Cow::Borrowed(
+                    dimensions
+                        .and_then(|record| record.concepts.first().copied())
+                        .unwrap_or(UNCLASSIFIED),
+                ),
+                GroupBy::Classification => Cow::Borrowed(
+                    fact_classification
+                        .get(&f.uid)
+                        .map(String::as_str)
+                        .unwrap_or(UNCLASSIFIED),
+                ),
             };
-            let unit = record_unit
-                .get(&f.record_uid)
-                .cloned()
-                .flatten()
-                .unwrap_or_default();
+            let unit = dimensions.map_or("", |record| record.unit);
             buckets.entry((key, unit)).or_default().add(f.delta)?;
         }
         return Ok(buckets
             .into_iter()
-            .map(|((group, unit), bucket)| bucket.row(&group, &unit, agg.op))
+            .map(|((group, unit), bucket)| bucket.row(group.as_ref(), unit, agg.op))
             .collect());
     }
 
@@ -3126,9 +2435,7 @@ async fn execute_entries(
     for p in &protein.filter {
         match p {
             Predicate::RecordEq(token) => {
-                record = store::records::resolve(&store.pool, token)
-                    .await?
-                    .map(|r| r.uid);
+                record = store::records::resolve_uid(&store.pool, token).await?;
                 if record.is_none() {
                     return Ok(vec![]);
                 }
@@ -3157,8 +2464,7 @@ async fn execute_entries(
         let concept = entry
             .fact_uid
             .as_deref()
-            .and_then(|uid| fact_classification.get(uid))
-            .cloned();
+            .and_then(|uid| fact_classification.get(uid));
         if let Some(family) = &classification_family
             && !concept.as_deref().is_some_and(|c| family.contains(c))
         {
@@ -3400,17 +2706,26 @@ async fn execute_timeline(
         .unwrap_or(GroupBy::Month);
 
     let fact_classification = store::ledger::all_fact_concepts(&store.pool).await?;
-    let mut record_unit: HashMap<String, Option<String>> = HashMap::new();
-    for r in store::records::list_all(&store.pool).await? {
-        record_unit.insert(r.uid.clone(), r.unit_uid.clone());
-    }
+    let record_unit = store::records::grouping(
+        &store.pool,
+        store::records::GroupingFields {
+            unit: true,
+            identity: false,
+        },
+    )
+    .await?
+    .into_iter()
+    .map(|record| (record.uid, record.unit))
+    .collect::<HashMap<_, _>>();
 
     const TIMELINE_SCAN_CAP: i64 = 100_000;
-    let mut opening: std::collections::BTreeMap<String, nucleus::DecimalValue> = Default::default();
-    let mut settled_through: std::collections::BTreeMap<String, nucleus::DecimalValue> =
+    type Buckets<'a> =
+        std::collections::BTreeMap<&'a str, std::collections::BTreeMap<String, DeltaBucket>>;
+    let mut opening: std::collections::BTreeMap<&str, nucleus::DecimalValue> = Default::default();
+    let mut settled_through: std::collections::BTreeMap<&str, nucleus::DecimalValue> =
         Default::default();
-    let mut actual: std::collections::BTreeMap<(String, String), DeltaBucket> = Default::default();
-    for f in store::facts::list_since(&store.pool, None, TIMELINE_SCAN_CAP).await? {
+    let mut actual: Buckets<'_> = Default::default();
+    for f in store::facts::ledger_since(&store.pool, None, TIMELINE_SCAN_CAP, false).await? {
         if visible.is_some_and(|v| !v.contains(&f.record_uid)) {
             continue;
         }
@@ -3422,39 +2737,28 @@ async fn execute_timeline(
         }
         let unit = record_unit
             .get(&f.record_uid)
-            .cloned()
-            .flatten()
+            .and_then(Option::as_deref)
             .unwrap_or_default();
-        let accumulate = |totals: &mut std::collections::BTreeMap<
-            String,
-            nucleus::DecimalValue,
-        >|
-         -> Result<(), ProteinError> {
-            let slot = totals
-                .entry(unit.clone())
-                .or_insert_with(store::exact::zero);
-            *slot = slot.aligned_add(f.delta).ok_or_else(timeline_overflow)?;
-            Ok(())
-        };
         if f.at < from {
-            accumulate(&mut opening)?;
-            accumulate(&mut settled_through)?;
+            timeline_accumulate(&mut opening, unit, f.delta)?;
+            timeline_accumulate(&mut settled_through, unit, f.delta)?;
             continue;
         }
         if f.at >= to {
             continue;
         }
         if f.at <= now {
-            accumulate(&mut settled_through)?;
+            timeline_accumulate(&mut settled_through, unit, f.delta)?;
         }
         actual
-            .entry((timeline_bucket(f.at, by), unit))
+            .entry(unit)
+            .or_default()
+            .entry(timeline_bucket(f.at, by))
             .or_default()
             .add(f.delta)?;
     }
 
-    let mut expected: std::collections::BTreeMap<(String, String), DeltaBucket> =
-        Default::default();
+    let mut expected: Buckets<'_> = Default::default();
     let mut contributors: Vec<Value> = Vec::new();
     let forward_from = if now > from { now } else { from };
     let mut projection_truncated = false;
@@ -3472,8 +2776,7 @@ async fn execute_timeline(
         }
         let unit = record_unit
             .get(&rule.record_uid)
-            .cloned()
-            .flatten()
+            .and_then(Option::as_deref)
             .unwrap_or_default();
         let derived =
             store::recurrence::occurrences(&store.pool, &rule, forward_from, to, now).await?;
@@ -3491,7 +2794,9 @@ async fn execute_timeline(
             };
             let bucket = timeline_bucket(occurrence.due_at, by);
             expected
-                .entry((bucket.clone(), unit.clone()))
+                .entry(unit)
+                .or_default()
+                .entry(bucket.clone())
                 .or_default()
                 .add(amount)?;
             contributors.push(json!({
@@ -3551,12 +2856,15 @@ async fn execute_timeline(
         let unit = promise
             .record_uid
             .as_deref()
-            .and_then(|uid| record_unit.get(uid).cloned().flatten())
+            .and_then(|uid| record_unit.get(uid))
+            .and_then(Option::as_deref)
             .unwrap_or_default();
         let amount = store::exact::from_f64(promise.delta);
         let bucket = timeline_bucket(due, by);
         expected
-            .entry((bucket.clone(), unit.clone()))
+            .entry(unit)
+            .or_default()
+            .entry(bucket.clone())
             .or_default()
             .add(amount)?;
         contributors.push(json!({
@@ -3573,29 +2881,27 @@ async fn execute_timeline(
         }));
     }
 
-    let mut units: Vec<String> = actual
+    let _publish = nucleus::performance::Span::new("protein-timeline-publication");
+    let units = actual
         .keys()
-        .map(|(_, unit)| unit.clone())
-        .chain(expected.keys().map(|(_, unit)| unit.clone()))
-        .collect();
-    units.sort();
-    units.dedup();
-
-    let per_unit = |totals: &std::collections::BTreeMap<String, nucleus::DecimalValue>| {
+        .chain(expected.keys())
+        .copied()
+        .collect::<std::collections::BTreeSet<_>>();
+    let per_unit = |totals: &std::collections::BTreeMap<&str, nucleus::DecimalValue>| {
         let mut map = serde_json::Map::new();
-        for unit in &units {
+        for &unit in &units {
             let value = totals.get(unit).copied().unwrap_or_else(store::exact::zero);
-            map.insert(unit.clone(), Value::String(value.to_string()));
+            map.insert(unit.to_owned(), Value::String(value.to_string()));
         }
         Value::Object(map)
     };
     let single_unit = if units.len() <= 1 {
-        units.first().cloned().or_else(|| Some(String::new()))
+        Some(units.first().copied().unwrap_or_default())
     } else {
         None
     };
     let scalar =
-        |totals: &std::collections::BTreeMap<String, nucleus::DecimalValue>| match &single_unit {
+        |totals: &std::collections::BTreeMap<&str, nucleus::DecimalValue>| match single_unit {
             Some(unit) => Value::String(
                 totals
                     .get(unit)
@@ -3617,33 +2923,32 @@ async fn execute_timeline(
         "opening": scalar(&opening),
         "current_by_unit": per_unit(&settled_through),
         "opening_by_unit": per_unit(&opening),
-        "units": units.clone(),
+        "units": units,
         "projection_truncated": projection_truncated,
     })];
 
-    for unit in &units {
-        let mut buckets: Vec<String> = actual
-            .keys()
-            .filter(|(_, u)| u == unit)
-            .map(|(b, _)| b.clone())
+    let present = timeline_bucket(now, by);
+    for &unit in &units {
+        let actual_buckets = actual.get(unit);
+        let expected_buckets = expected.get(unit);
+        let buckets = actual_buckets
+            .into_iter()
+            .flat_map(|values| values.keys())
             .chain(
-                expected
-                    .keys()
-                    .filter(|(_, u)| u == unit)
-                    .map(|(b, _)| b.clone()),
+                expected_buckets
+                    .into_iter()
+                    .flat_map(|values| values.keys()),
             )
-            .collect();
-        buckets.sort();
-        buckets.dedup();
-
+            .map(String::as_str)
+            .collect::<std::collections::BTreeSet<_>>();
+        nucleus::performance::add("protein-timeline-published-buckets", buckets.len() as u64);
         let mut running = opening
             .get(unit)
             .copied()
             .unwrap_or_else(store::exact::zero);
-        let present = timeline_bucket(now, by);
         for bucket in buckets {
-            let settled = actual.get(&(bucket.clone(), unit.clone()));
-            let declared = expected.get(&(bucket.clone(), unit.clone()));
+            let settled = actual_buckets.and_then(|values| values.get(bucket));
+            let declared = expected_buckets.and_then(|values| values.get(bucket));
             if let Some(settled) = settled {
                 running = running
                     .aligned_add(settled.net)
@@ -3654,9 +2959,9 @@ async fn execute_timeline(
                     .aligned_add(declared.net)
                     .ok_or_else(timeline_overflow)?;
             }
-            let phase = if bucket.as_str() < present.as_str() {
+            let phase = if bucket < present.as_str() {
                 "actual"
-            } else if bucket == present {
+            } else if bucket == present.as_str() {
                 "present"
             } else {
                 "expected"
@@ -3687,6 +2992,16 @@ async fn execute_timeline(
     });
     rows.extend(contributors);
     Ok(rows)
+}
+
+fn timeline_accumulate<'a>(
+    totals: &mut std::collections::BTreeMap<&'a str, nucleus::DecimalValue>,
+    unit: &'a str,
+    delta: nucleus::DecimalValue,
+) -> Result<(), ProteinError> {
+    let slot = totals.entry(unit).or_insert_with(store::exact::zero);
+    *slot = slot.aligned_add(delta).ok_or_else(timeline_overflow)?;
+    Ok(())
 }
 
 fn timeline_overflow() -> ProteinError {
@@ -4058,9 +3373,7 @@ fn agreement_required(agreement_type: &str, agreement_pct: Option<i64>, parties:
 }
 
 const PHASE_1_DRAFT_ACTIONS_BLOCKER: &str = "phase_1_draft_actions_not_available";
-use store::transfer_agreement::{
-    AgreementReadinessProjection, agreement_path_matches, with_promise_context,
-};
+use store::transfer_agreement::{AgreementReadinessProjection, with_promise_context};
 
 struct EffectiveSettlementApplication {
     record: Option<String>,
@@ -4174,138 +3487,8 @@ pub fn transfer_occurrence_roles(
     input: &store::transfers::TransferAgreementReadinessInput,
     promise_uid: &str,
 ) -> Result<(Option<String>, String, String), &'static str> {
-    let promise = input
-        .promises
-        .iter()
-        .find(|promise| promise.uid == promise_uid)
-        .ok_or("promise_not_in_current_revision")?;
-    if promise.state == "open" {
-        return Err("open_promise_template");
-    }
-    let actor = promise
-        .person_uid
-        .as_deref()
-        .ok_or("promise_person_unassigned")?;
-    let coalition_people = input.coalition.as_ref().map(|coalition| {
-        input
-            .parties
-            .iter()
-            .filter(|party| coalition.party_uids.contains(&party.party_uid))
-            .map(|party| party.person_uid.as_str())
-            .collect::<HashSet<_>>()
-    });
-    let eligible_counterparty = |person: Option<&str>| {
-        person.is_some_and(|person| {
-            person != actor
-                && coalition_people
-                    .as_ref()
-                    .is_none_or(|members| members.contains(person))
-        })
-    };
-    if let Some(exchange) = &promise.exchange {
-        if actor != exchange.owner(promise.delta) {
-            return Err("exchange_direction_invalid");
-        }
-        let other = if actor == exchange.giver {
-            &exchange.receiver
-        } else {
-            &exchange.giver
-        };
-        if !eligible_counterparty(Some(other))
-            || !input.parties.iter().any(|party| party.person_uid == *other)
-        {
-            return Err("exchange_counterparty_unavailable");
-        }
-        let matches = input
-            .promises
-            .iter()
-            .filter(|other| agreement_path_matches(promise, other))
-            .collect::<Vec<_>>();
-        if matches.len() > 1 {
-            return Err("exchange_allocation_ambiguous");
-        }
-        if matches
-            .first()
-            .is_some_and(|other| !matches!(other.state.as_str(), "agreed" | "active"))
-        {
-            return Err("exchange_counterparty_not_agreed");
-        }
-        return Ok((
-            matches.first().map(|promise| promise.uid.clone()),
-            exchange.giver.clone(),
-            exchange.receiver.clone(),
-        ));
-    }
-    let exact = input
-        .promises
-        .iter()
-        .filter(|other| {
-            agreement_path_matches(promise, other)
-                && matches!(other.state.as_str(), "agreed" | "active")
-                && eligible_counterparty(other.person_uid.as_deref())
-        })
-        .collect::<Vec<_>>();
-    let (opposite, counterparty) = match exact.as_slice() {
-        [other] => (
-            Some(other.uid.clone()),
-            other
-                .person_uid
-                .clone()
-                .ok_or("occurrence_counterparty_missing")?,
-        ),
-        [] => {
-            let others = input
-                .parties
-                .iter()
-                .filter(|party| eligible_counterparty(Some(&party.person_uid)))
-                .map(|party| party.person_uid.as_str())
-                .collect::<HashSet<_>>();
-            if others.len() != 1 {
-                return Err("occurrence_counterparty_ambiguous");
-            }
-            (
-                None,
-                (*others.iter().next().expect("one counterparty")).into(),
-            )
-        }
-        _ => return Err("occurrence_counterparty_ambiguous"),
-    };
-    if promise.delta < 0.0 {
-        Ok((opposite, actor.into(), counterparty))
-    } else if promise.delta > 0.0 {
-        Ok((opposite, counterparty, actor.into()))
-    } else {
-        Err("occurrence_quantity_zero")
-    }
+    transfer_roles::one(input, promise_uid)
 }
-
-const TRANSFER_STATUSES: &[&str] = &[
-    "inactive",
-    "draft",
-    "withdrawn",
-    "cancelled",
-    "settled",
-    "partially_settled",
-    "satiated",
-    "system_disputed",
-    "disputed",
-    "broken",
-    "in_transfer",
-    "agreed",
-    "proposed",
-];
-const TRANSFER_VIEWER_ROLES: &[&str] = &["local", "creator", "participant", "invitee", "observer"];
-const TRANSFER_INVITATION_STATES: &[&str] =
-    &["pending", "accepted", "rejected", "withdrawn", "expired"];
-const TRANSFER_PROMISE_STATES: &[&str] = &[
-    "open",
-    "proposed",
-    "agreed",
-    "active",
-    "kept",
-    "broken",
-    "withdrawn",
-];
 
 fn transfer_query_error(code: &str, detail: impl std::fmt::Display) -> ProteinError {
     store::sqlx::Error::Protocol(format!("{code}: {detail}"))
@@ -4356,302 +3539,6 @@ fn transfer_predicate_name(predicate: &Predicate) -> &'static str {
     }
 }
 
-#[derive(Default)]
-struct TransferPredicateCtx {
-    record_tokens: HashMap<String, Option<String>>,
-    person_tokens: HashMap<String, Option<String>>,
-    unit_tokens: HashMap<String, Option<String>>,
-    concept_families: HashMap<String, HashSet<String>>,
-    instants: HashMap<String, chrono::DateTime<chrono::FixedOffset>>,
-}
-
-impl TransferPredicateCtx {
-    async fn prepare(store: &Store, predicates: &[Predicate]) -> Result<Self, ProteinError> {
-        let mut context = Self::default();
-        for predicate in predicates {
-            context.prepare_one(store, predicate).await?;
-        }
-        Ok(context)
-    }
-
-    fn prepare_one<'a>(
-        &'a mut self,
-        store: &'a Store,
-        predicate: &'a Predicate,
-    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), ProteinError>> + Send + 'a>>
-    {
-        Box::pin(async move {
-            match predicate {
-                Predicate::All(inner) | Predicate::Any(inner) => {
-                    for predicate in inner {
-                        self.prepare_one(store, predicate).await?;
-                    }
-                }
-                Predicate::Not(inner) => self.prepare_one(store, inner).await?,
-                Predicate::UidEq(_)
-                | Predicate::SlugEq(_)
-                | Predicate::RevisionEq(_)
-                | Predicate::RevisionLt(_)
-                | Predicate::RevisionLte(_)
-                | Predicate::RevisionGt(_)
-                | Predicate::RevisionGte(_) => {}
-                Predicate::StatusIn(statuses) => {
-                    Self::validate_values("status_in", statuses, TRANSFER_STATUSES)?;
-                }
-                Predicate::ViewerRoleIn(roles) => {
-                    Self::validate_values("viewer_role_in", roles, TRANSFER_VIEWER_ROLES)?;
-                }
-                Predicate::InvitationStateIn(states) => {
-                    Self::validate_values(
-                        "invitation_state_in",
-                        states,
-                        TRANSFER_INVITATION_STATES,
-                    )?;
-                }
-                Predicate::StateIn(states) => {
-                    Self::validate_values("state_in", states, TRANSFER_PROMISE_STATES)?;
-                }
-                Predicate::PersonEq(token) => {
-                    let resolved = store::records::resolve(&store.pool, token)
-                        .await?
-                        .filter(|record| record.kind == nucleus::RecordKind::Person.as_str())
-                        .map(|record| record.uid);
-                    self.person_tokens.insert(token.clone(), resolved);
-                }
-                Predicate::RecordEq(token) => {
-                    let resolved = store::records::resolve(&store.pool, token)
-                        .await?
-                        .map(|record| record.uid);
-                    self.record_tokens.insert(token.clone(), resolved);
-                }
-                Predicate::ConceptIn(token) => {
-                    let family = match store::concepts::resolve(&store.pool, token).await? {
-                        Some(uid) => store::concepts::descendants_including(&store.pool, &uid)
-                            .await?
-                            .into_iter()
-                            .collect(),
-                        None => HashSet::new(),
-                    };
-                    self.concept_families.insert(token.clone(), family);
-                }
-                Predicate::UnitEq(token) => {
-                    let resolved = store::concepts::resolve(&store.pool, token).await?;
-                    self.unit_tokens.insert(token.clone(), resolved);
-                }
-                Predicate::WindowEndBefore(value) | Predicate::WindowEndAfter(value) => {
-                    let instant = chrono::DateTime::parse_from_rfc3339(value).map_err(|_| {
-                        transfer_query_error(
-                            "protein_transfer_invalid_window",
-                            format!("`{value}` is not an RFC3339 instant"),
-                        )
-                    })?;
-                    self.instants.insert(value.clone(), instant);
-                }
-                unsupported => {
-                    return Err(transfer_query_error(
-                        "protein_transfer_unsupported_predicate",
-                        transfer_predicate_name(unsupported),
-                    ));
-                }
-            }
-            Ok(())
-        })
-    }
-
-    fn validate_values(
-        predicate: &str,
-        values: &[String],
-        supported: &[&str],
-    ) -> Result<(), ProteinError> {
-        if let Some(value) = values
-            .iter()
-            .find(|value| !supported.contains(&value.as_str()))
-        {
-            return Err(transfer_query_error(
-                "protein_transfer_invalid_predicate_value",
-                format!("{predicate} does not support `{value}`"),
-            ));
-        }
-        Ok(())
-    }
-
-    fn matches(&self, row: &TransferPredicateRow<'_>, predicates: &[Predicate]) -> bool {
-        predicates
-            .iter()
-            .all(|predicate| self.matches_one(row, predicate))
-    }
-
-    fn matches_one(&self, row: &TransferPredicateRow<'_>, predicate: &Predicate) -> bool {
-        match predicate {
-            Predicate::All(inner) => inner.iter().all(|item| self.matches_one(row, item)),
-            Predicate::Any(inner) => inner.iter().any(|item| self.matches_one(row, item)),
-            Predicate::Not(inner) => !self.matches_one(row, inner),
-            Predicate::UidEq(uid) => row.uid == uid,
-            Predicate::SlugEq(slug) => row.slug == Some(slug.as_str()),
-            Predicate::RevisionEq(revision) => row.revision == *revision,
-            Predicate::RevisionLt(revision) => row.revision < *revision,
-            Predicate::RevisionLte(revision) => row.revision <= *revision,
-            Predicate::RevisionGt(revision) => row.revision > *revision,
-            Predicate::RevisionGte(revision) => row.revision >= *revision,
-            Predicate::StatusIn(statuses) => statuses.iter().any(|status| status == row.status),
-            Predicate::ViewerRoleIn(roles) => roles
-                .iter()
-                .any(|role| row.viewer_roles.contains(role.as_str())),
-            Predicate::InvitationStateIn(states) => row.invitations.iter().any(|invitation| {
-                states
-                    .iter()
-                    .any(|state| state == invitation.status.as_str())
-            }),
-            Predicate::StateIn(states) => row
-                .promises
-                .iter()
-                .any(|promise| states.iter().any(|state| state == promise.state.as_str())),
-            Predicate::PersonEq(token) => self
-                .person_tokens
-                .get(token)
-                .and_then(|person| person.as_deref())
-                .is_some_and(|person| {
-                    row.parties.iter().any(|(_, actor, _)| actor == person)
-                        || row.invitations.iter().any(|invitation| {
-                            invitation.addressed_person_uid == person
-                                || invitation.invited_by_person_uid == person
-                        })
-                        || row.revision_promises.map_or_else(
-                            || {
-                                row.promises
-                                    .iter()
-                                    .any(|promise| promise.party_uid.as_deref() == Some(person))
-                            },
-                            |promises| {
-                                promises
-                                    .iter()
-                                    .any(|promise| promise.person_uid.as_deref() == Some(person))
-                            },
-                        )
-                }),
-            Predicate::RecordEq(token) => self
-                .record_tokens
-                .get(token)
-                .and_then(|record| record.as_deref())
-                .is_some_and(|record| {
-                    row.revision_promises.map_or_else(
-                        || {
-                            row.promises
-                                .iter()
-                                .any(|promise| promise.record_uid.as_deref() == Some(record))
-                        },
-                        |promises| {
-                            promises
-                                .iter()
-                                .any(|promise| promise.record_uid.as_deref() == Some(record))
-                        },
-                    )
-                }),
-            Predicate::ConceptIn(token) => self.concept_families.get(token).is_some_and(|family| {
-                row.revision_promises.map_or_else(
-                    || {
-                        row.promises.iter().any(|promise| {
-                            promise
-                                .record_uid
-                                .as_ref()
-                                .and_then(|uid| row.records_by_uid.get(uid))
-                                .and_then(|record| record.identity_predicate_uid.as_ref())
-                                .is_some_and(|concept| family.contains(concept))
-                        })
-                    },
-                    |promises| {
-                        promises.iter().any(|promise| {
-                            promise
-                                .concept_uid
-                                .as_ref()
-                                .or_else(|| {
-                                    promise
-                                        .record_uid
-                                        .as_ref()
-                                        .and_then(|uid| row.records_by_uid.get(uid))
-                                        .and_then(|record| record.identity_predicate_uid.as_ref())
-                                })
-                                .is_some_and(|concept| family.contains(concept))
-                        })
-                    },
-                )
-            }),
-            Predicate::UnitEq(token) => self
-                .unit_tokens
-                .get(token)
-                .and_then(|unit| unit.as_deref())
-                .is_some_and(|unit| {
-                    row.revision_promises.map_or_else(
-                        || {
-                            row.promises.iter().any(|promise| {
-                                promise
-                                    .record_uid
-                                    .as_ref()
-                                    .and_then(|uid| row.records_by_uid.get(uid))
-                                    .and_then(|record| record.unit_uid.as_deref())
-                                    == Some(unit)
-                            })
-                        },
-                        |promises| {
-                            promises
-                                .iter()
-                                .any(|promise| promise.unit_uid.as_deref() == Some(unit))
-                        },
-                    )
-                }),
-            Predicate::WindowEndBefore(value) => self.instants.get(value).is_some_and(|until| {
-                let matches = |end: Option<&str>| {
-                    end.and_then(|end| chrono::DateTime::parse_from_rfc3339(end).ok())
-                        .is_some_and(|end| end < *until)
-                };
-                row.revision_promises.map_or_else(
-                    || {
-                        row.promises
-                            .iter()
-                            .any(|promise| matches(promise.window_end.as_deref()))
-                    },
-                    |promises| {
-                        promises
-                            .iter()
-                            .any(|promise| matches(promise.window_end.as_deref()))
-                    },
-                )
-            }),
-            Predicate::WindowEndAfter(value) => self.instants.get(value).is_some_and(|since| {
-                let matches = |end: Option<&str>| {
-                    end.and_then(|end| chrono::DateTime::parse_from_rfc3339(end).ok())
-                        .is_some_and(|end| end > *since)
-                };
-                row.revision_promises.map_or_else(
-                    || {
-                        row.promises
-                            .iter()
-                            .any(|promise| matches(promise.window_end.as_deref()))
-                    },
-                    |promises| {
-                        promises
-                            .iter()
-                            .any(|promise| matches(promise.window_end.as_deref()))
-                    },
-                )
-            }),
-            _ => false,
-        }
-    }
-}
-
-struct TransferPredicateRow<'a> {
-    uid: &'a str,
-    slug: Option<&'a str>,
-    revision: u64,
-    status: &'a str,
-    viewer_roles: &'a HashSet<&'static str>,
-    invitations: &'a [store::transfers::TransferInvitationRow],
-    parties: &'a [(String, String, i64)],
-    promises: &'a [store::misc::PromiseRow],
-    revision_promises: Option<&'a [nucleus::transfer::TransferRevisionPromise]>,
-    records_by_uid: &'a HashMap<String, store::records::RecordRow>,
-}
 
 fn parse_transfer_revision_evidence(
     fact: &nucleus::Fact,
@@ -4721,6 +3608,7 @@ async fn transfer_revision_projection(
     revision: u64,
     include_terms: bool,
 ) -> Result<Value, ProteinError> {
+    let _evidence = nucleus::performance::Span::new("protein-transfer-revision-evidence-await");
     if revision == 0 {
         return Ok(json!({
             "current": null,
@@ -4770,6 +3658,7 @@ struct TransferTimelineSeed {
 }
 
 async fn transfer_fact_proof(store: &Store, fact_uid: &str) -> Result<Value, ProteinError> {
+    let _proof = nucleus::performance::Span::new("protein-transfer-proof-await");
     let Some(fact) = store::facts::get(&store.pool, fact_uid).await? else {
         return Ok(json!({
             "fact": fact_uid,
@@ -4871,6 +3760,7 @@ async fn transfer_timeline(
     recipient_details_authorized: bool,
     viewer_person: Option<&str>,
 ) -> Result<Vec<Value>, ProteinError> {
+    let _timeline = nucleus::performance::Span::new("protein-transfer-timeline-await");
     let mut seeds = Vec::new();
     for number in 1..=revision {
         let Some(fact) = store::transfers::revision_fact(&store.pool, transfer_uid, number).await?
@@ -5102,14 +3992,15 @@ async fn transfer_timeline(
     });
     let mut timeline = Vec::with_capacity(seeds.len());
     for seed in seeds {
-        timeline.push(json!({
-            "uid": seed.uid,
-            "kind": seed.kind,
-            "at": seed.at,
-            "fact": seed.fact_uid,
-            "detail": seed.detail,
-            "proof": transfer_fact_proof(store, &seed.fact_uid).await?,
-        }));
+        let proof = transfer_fact_proof(store, &seed.fact_uid).await?;
+        timeline.push(Value::from_iter([
+            ("uid", seed.uid.into()),
+            ("kind", seed.kind.into()),
+            ("at", seed.at.into()),
+            ("fact", seed.fact_uid.into()),
+            ("detail", seed.detail),
+            ("proof", proof),
+        ]));
     }
     Ok(timeline)
 }
@@ -6509,18 +5400,27 @@ async fn execute_transfers(
     installed_signer_actor: Option<&str>,
     viewer_override: Option<TransferViewer>,
 ) -> Result<Vec<Value>, ProteinError> {
-    let filter_context = TransferPredicateCtx::prepare(store, &protein.filter).await?;
+    let filter_context = transfer_filter::Context::prepare(store, &protein.filter).await?;
     validate_transfer_order(&protein.order)?;
-    let records = store::records::list_all(&store.pool).await?;
-    let records_by_uid: HashMap<_, _> = records
-        .iter()
-        .cloned()
-        .map(|record| (record.uid.clone(), record))
-        .collect();
-    let concept_names: HashMap<_, _> = store::concepts::list_all(&store.pool)
+    let records = {
+        let _read = nucleus::performance::Span::new("protein-transfer-records-read-await");
+        store::records::read::<Option<String>>(
+            &store.pool,
+            store::records::RecordSelection::All,
+            false,
+        )
+        .await?
+    };
+    let records_by_uid: HashMap<_, _> = {
+        let _index = nucleus::performance::Span::new("protein-transfer-record-index");
+        records
+            .into_iter()
+            .map(|record| (record.uid.clone(), record))
+            .collect()
+    };
+    let concept_names: HashMap<_, _> = store::concepts::canonical_names(&store.pool)
         .await?
         .into_iter()
-        .map(|concept| (concept.uid, concept.canonical_name))
         .collect();
     let viewer = match viewer_override {
         Some(viewer) => viewer,
@@ -6752,16 +5652,10 @@ async fn execute_transfers(
                 redact_upstream(blocker);
             }
         }
-        let occurrence_roles = readiness_input
-            .promises
-            .iter()
-            .map(|promise| {
-                (
-                    promise.uid.clone(),
-                    transfer_occurrence_roles(&readiness_input, &promise.uid),
-                )
-            })
-            .collect::<HashMap<_, _>>();
+        let hierarchy_details_hidden = !hidden_children.is_empty()
+            || hidden_parent_history
+            || hidden_parent
+            || !hidden_upstreams.is_empty();
         let levels: Vec<i64> = parties.iter().map(|(_, _, level)| *level).collect();
         let states: Vec<nucleus::PromiseState> = promises.iter().map(|p| p.state).collect();
         let mut status = derive_transfer_status(
@@ -6874,20 +5768,20 @@ async fn execute_transfers(
         let revision_promises = current_revision_evidence
             .as_ref()
             .map(|evidence| evidence.terms.promises.as_slice());
-        let mut balance: std::collections::BTreeMap<String, f64> = Default::default();
+        let mut balance: std::collections::BTreeMap<&str, f64> = Default::default();
         for p in &promises {
             let key = p
                 .record_uid
                 .as_ref()
                 .and_then(|r| records_by_uid.get(r))
-                .and_then(|record| record.identity_predicate_uid.clone())
-                .unwrap_or_else(|| "(none)".into());
+                .and_then(|record| record.identity_predicate_uid.as_deref())
+                .unwrap_or("(none)");
             *balance.entry(key).or_insert(0.0) += p.delta;
         }
         let balanced = !balance.is_empty() && balance.values().all(|v| v.abs() < 1e-9);
         let balance_detail = balance
             .iter()
-            .map(|(concept, delta)| {
+            .map(|(&concept, delta)| {
                 json!({
                     "concept": if concept == "(none)" { None } else { Some(concept) },
                     "concept_name": if concept == "(none)" {
@@ -7050,95 +5944,6 @@ async fn execute_transfers(
         } else {
             primary_status
         };
-        let coalition_members = readiness_input.coalition.as_ref().map(|coalition| {
-            coalition
-                .party_uids
-                .iter()
-                .map(String::as_str)
-                .collect::<HashSet<_>>()
-        });
-        let agreement_candidates = readiness_input
-            .parties
-            .iter()
-            .filter(|party| {
-                viewer.local || viewer.person.as_deref() == Some(party.person_uid.as_str())
-            })
-            .collect::<Vec<_>>();
-        let review_options = agreement_candidates
-            .iter()
-            .filter(|party| party.level == 0)
-            .map(|party| {
-                viewer.agreement_transition_blockers(
-                    &party.person_uid,
-                    &party.party_uid,
-                    party.level,
-                    1,
-                    readiness_input.revision,
-                    revision_signed,
-                    coalition_members.as_ref(),
-                    installed_signer_actor == Some(party.person_uid.as_str()),
-                )
-            })
-            .collect::<Vec<_>>();
-        let review_blockers = if review_options.iter().any(Vec::is_empty) {
-            Vec::new()
-        } else {
-            review_options
-                .into_iter()
-                .next()
-                .unwrap_or_else(|| vec!["no_party_can_enter_checked_level"])
-        };
-        let commit_options = agreement_candidates
-            .iter()
-            .filter(|party| party.level == 1)
-            .map(|party| {
-                viewer.agreement_transition_blockers(
-                    &party.person_uid,
-                    &party.party_uid,
-                    party.level,
-                    2,
-                    readiness_input.revision,
-                    revision_signed,
-                    coalition_members.as_ref(),
-                    installed_signer_actor == Some(party.person_uid.as_str()),
-                )
-            })
-            .collect::<Vec<_>>();
-        let commit_blockers = if commit_options.iter().any(Vec::is_empty) {
-            Vec::new()
-        } else {
-            commit_options
-                .into_iter()
-                .next()
-                .unwrap_or_else(|| vec!["no_party_can_enter_agreed_level"])
-        };
-        let back_options = agreement_candidates
-            .iter()
-            .filter(|party| party.level > 0)
-            .map(|party| {
-                viewer.agreement_transition_blockers(
-                    &party.person_uid,
-                    &party.party_uid,
-                    party.level,
-                    party.level - 1,
-                    readiness_input.revision,
-                    revision_signed,
-                    coalition_members.as_ref(),
-                    installed_signer_actor == Some(party.person_uid.as_str()),
-                )
-            })
-            .collect::<Vec<_>>();
-        let back_blockers = if back_options.iter().any(Vec::is_empty) {
-            Vec::new()
-        } else {
-            back_options
-                .into_iter()
-                .next()
-                .unwrap_or_else(|| vec!["no_party_can_move_agreement_back"])
-        };
-        let can_review = review_blockers.is_empty();
-        let can_commit = commit_blockers.is_empty();
-        let can_move_agreement_back = back_blockers.is_empty();
         let mut viewer_roles = HashSet::new();
         if viewer.local {
             viewer_roles.insert("local");
@@ -7155,104 +5960,48 @@ async fn execute_transfers(
         if viewer_roles.is_empty() {
             viewer_roles.insert("observer");
         }
-        let disclosure_access = revision_promises
-            .unwrap_or_default()
-            .iter()
-            .map(|promise| {
-                (
-                    promise.uid.as_str(),
-                    nucleus::transfer::disclosure::ItemAccess::for_item(
-                        promise.item.as_ref(),
-                        viewer.person.as_deref(),
-                        promise.person_uid.as_deref(),
-                        is_participant || is_invitee,
-                        viewer.local || is_creator,
-                    ),
-                )
-            })
-            .collect::<HashMap<_, _>>();
-        let mut query_promises = promises.clone();
-        let mut query_revision_promises = revision_promises.map(<[_]>::to_vec);
-        for promise in &mut query_promises {
-            if let Some(access) = disclosure_access.get(promise.uid.as_str()) {
-                if !access.source {
-                    promise.record_uid = None;
-                    promise.concept_uid = None;
-                }
-                if !access.parties {
-                    promise.party_uid = None;
-                }
-                if !access.quantity {
-                    promise.unit_uid = None;
-                }
-            }
-        }
-        if let Some(promises) = &mut query_revision_promises {
-            for promise in promises {
-                if let Some(access) = disclosure_access.get(promise.uid.as_str()) {
-                    if !access.source {
-                        promise.record_uid = None;
-                        promise.concept_uid = None;
-                    }
-                    if !access.parties {
-                        promise.person_uid = None;
-                    }
-                    if !access.quantity {
-                        promise.unit_uid = None;
-                    }
-                }
-            }
-        }
-        let hide_people = disclosure_access.values().any(|access| !access.parties);
-        let mut visible_people = query_promises
-            .iter()
-            .filter_map(|promise| promise.party_uid.as_deref())
-            .chain(viewer.person.as_deref())
-            .collect::<HashSet<_>>();
-        for promise in revision_promises.unwrap_or_default() {
-            if disclosure_access
-                .get(promise.uid.as_str())
-                .is_some_and(|access| access.parties)
-                && let Some(exchange) = promise
-                    .item
-                    .as_ref()
-                    .and_then(|item| item.exchange.as_ref())
-            {
-                visible_people.insert(exchange.giver.as_str());
-                visible_people.insert(exchange.receiver.as_str());
-            }
-        }
-        let query_parties = parties
-            .iter()
-            .filter(|(_, person, _)| !hide_people || visible_people.contains(person.as_str()))
-            .cloned()
-            .collect::<Vec<_>>();
-        let query_invitations = invitations
-            .iter()
-            .filter(|invitation| {
-                !hide_people
-                    || (visible_people.contains(invitation.addressed_person_uid.as_str())
-                        && visible_people.contains(invitation.invited_by_person_uid.as_str()))
-            })
-            .cloned()
-            .collect::<Vec<_>>();
         if !filter_context.matches(
-            &TransferPredicateRow {
+            &transfer_filter::Row {
                 uid,
                 slug: t.slug.as_deref(),
                 revision: t.transfer.revision as u64,
                 status,
                 viewer_roles: &viewer_roles,
-                invitations: &query_invitations,
-                parties: &query_parties,
-                promises: &query_promises,
-                revision_promises: query_revision_promises.as_deref(),
+                invitations: &invitations,
+                parties: &parties,
+                promises: &promises,
+                revision_promises,
                 records_by_uid: &records_by_uid,
+                viewer_person: viewer.person.as_deref(),
+                viewer_involved: is_participant || is_invitee,
+                viewer_privileged: viewer.local || is_creator,
             },
             &protein.filter,
         ) {
             continue;
         }
+        let occurrence_roles = transfer_roles::validity(&readiness_input);
+        let coalition_members = readiness_input.coalition.as_ref().map(|coalition| {
+            coalition
+                .party_uids
+                .iter()
+                .map(String::as_str)
+                .collect::<HashSet<_>>()
+        });
+        let transfer_projection::AgreementOptions {
+            review: review_blockers,
+            commit: commit_blockers,
+            back: back_blockers,
+        } = transfer_projection::agreement_options(
+            &readiness_input,
+            &viewer,
+            revision_signed,
+            coalition_members.as_ref(),
+            installed_signer_actor,
+        );
+        let can_review = review_blockers.is_empty();
+        let can_commit = commit_blockers.is_empty();
+        let can_move_agreement_back = back_blockers.is_empty();
         let draft_terms_editable = states.iter().all(|state| {
             matches!(
                 state,
@@ -7365,7 +6114,7 @@ async fn execute_transfers(
                     .get(&promise.uid)
                     .is_some_and(|readiness| readiness.ready)
                 && occurrence_roles
-                    .get(&promise.uid)
+                    .get(promise.uid.as_str())
                     .is_some_and(Result::is_ok)
                 && !occurred_promises.contains(promise.uid.as_str())
         });
@@ -7374,13 +6123,18 @@ async fn execute_transfers(
         } else {
             vec!["no_policy_ready_occurrence"]
         };
-        let revision_evidence = transfer_revision_projection(
-            store,
-            uid,
-            t.transfer.revision as u64,
-            recipient_details_authorized,
-        )
-        .await?;
+        let revision_evidence = if hierarchy_details_hidden {
+            nucleus::performance::add("protein-transfer-hidden-evidence", 1);
+            Value::Null
+        } else {
+            transfer_revision_projection(
+                store,
+                uid,
+                t.transfer.revision as u64,
+                recipient_details_authorized,
+            )
+            .await?
+        };
         let negotiation_write_blockers =
             viewer.negotiation_write_blockers(is_creator, is_participant, is_invitee);
         let can_write_negotiation = negotiation_write_blockers.is_empty();
@@ -7479,10 +6233,15 @@ async fn execute_transfers(
         > = Default::default();
         let mut settlement_status_counts: std::collections::BTreeMap<&str, usize> =
             Default::default();
+        let promises_by_uid = if occurrences.is_empty() {
+            HashMap::new()
+        } else {
+            transfer_projection::first_by_key(&promises, |promise| promise.uid.as_str())
+        };
         for occurrence in &occurrences {
-            let origin_promise = promises
-                .iter()
-                .find(|promise| promise.uid == occurrence.promise_uid);
+            let origin_promise = promises_by_uid
+                .get(occurrence.promise_uid.as_str())
+                .copied();
             let source_owner = origin_promise.and_then(|promise| promise.party_uid.as_deref());
             let origin_record = occurrence
                 .record_uid
@@ -8286,21 +7045,28 @@ async fn execute_transfers(
                 && promises.iter().any(|promise| promise.state == nucleus::PromiseState::Open)
                 && !inbox_mine,
         });
-        let timeline = transfer_timeline(
-            store,
-            uid,
-            t.transfer.revision as u64,
-            &invitations,
-            &agreement_events,
-            &occurrences,
-            source_group_state.as_ref(),
-            &correction_lineage,
-            &promise_successors,
-            recipient_details_authorized,
-            viewer_person,
-        )
-        .await?;
-        let current_proof = match current_revision_fact.as_ref() {
+        let timeline = if hierarchy_details_hidden {
+            Vec::new()
+        } else {
+            transfer_timeline(
+                store,
+                uid,
+                t.transfer.revision as u64,
+                &invitations,
+                &agreement_events,
+                &occurrences,
+                source_group_state.as_ref(),
+                &correction_lineage,
+                &promise_successors,
+                recipient_details_authorized,
+                viewer_person,
+            )
+            .await?
+        };
+        let current_proof = match current_revision_fact
+            .as_ref()
+            .filter(|_| !hierarchy_details_hidden)
+        {
             Some(fact) => Some(transfer_fact_proof(store, &fact.uid).await?),
             None => None,
         };
@@ -8395,6 +7161,27 @@ async fn execute_transfers(
             .iter()
             .map(|lineage| (lineage.successor_promise_uid.as_str(), lineage))
             .collect::<HashMap<_, _>>();
+        let signed_by_uid = if promises.is_empty() {
+            HashMap::new()
+        } else {
+            transfer_projection::first_by_key(revision_promises.unwrap_or_default(), |promise| {
+                promise.uid.as_str()
+            })
+        };
+        let occurrences_by_promise = if promises.is_empty() {
+            HashMap::new()
+        } else {
+            transfer_projection::first_by_key(&occurrences, |occurrence| {
+                occurrence.promise_uid.as_str()
+            })
+        };
+        let blockers_by_person = transfer_projection::party_blockers(
+            &parties,
+            &readiness_input,
+            &agreement_readiness,
+            recipient_details_authorized,
+            viewer_person,
+        );
         let mut value = json!({
             "kind": "transfer",
             "uid": uid,
@@ -8769,26 +7556,11 @@ async fn execute_transfers(
                     } else {
                         vec!["party_is_already_at_unchecked_level"]
                     };
-                    let person_readiness_blockers = readiness_input
-                        .promises
-                        .iter()
-                        .filter(|promise| promise.person_uid.as_deref() == Some(actor.as_str()))
-                        .filter_map(|promise| {
-                            agreement_readiness
-                                .promises
-                                .get(&promise.uid)
-                                .filter(|readiness| readiness.eligible && !readiness.ready)
-                                .map(|readiness| {
-                                    readiness
-                                        .blockers
-                                        .iter()
-                                        .map(|blocker| {
-                                            with_promise_context(&promise.uid, blocker)
-                                        })
-                                        .collect::<Vec<_>>()
-                                })
-                        })
+                    let person_readiness_blockers = blockers_by_person
+                        .get(actor.as_str())
+                        .into_iter()
                         .flatten()
+                        .map(|blocker| with_promise_context(blocker.promise, blocker.value))
                         .collect::<Vec<_>>();
                     json!({
                         "uid": party,
@@ -8826,9 +7598,7 @@ async fn execute_transfers(
             "promises": promises
                 .iter()
                 .map(|p| {
-                    let signed = revision_promises.and_then(|promises| {
-                        promises.iter().find(|promise| promise.uid == p.uid)
-                    });
+                    let signed = signed_by_uid.get(p.uid.as_str()).copied();
                     let record = p.record_uid.as_ref().and_then(|uid| records_by_uid.get(uid));
                     let concept = signed
                         .and_then(|promise| promise.concept_uid.as_deref())
@@ -8883,7 +7653,7 @@ async fn execute_transfers(
                     if occurred_promises.contains(p.uid.as_str()) {
                         activate_blockers.push("promise_already_activated");
                     }
-                    if let Some(Err(code)) = occurrence_roles.get(&p.uid) {
+                    if let Some(Err(code)) = occurrence_roles.get(p.uid.as_str()) {
                         activate_blockers.push(code);
                     }
                     let projected_window_end = signed
@@ -8897,9 +7667,8 @@ async fn execute_transfers(
                                 },
                             )
                         });
-                    let remaining_quantity = occurrences
-                        .iter()
-                        .find(|occurrence| occurrence.promise_uid == p.uid)
+                    let remaining_quantity = occurrences_by_promise
+                        .get(p.uid.as_str())
                         .and_then(|occurrence| {
                             settlement_progress_by_occurrence
                                 .get(&occurrence.uid)
@@ -9097,11 +7866,7 @@ async fn execute_transfers(
                 value.as_object_mut().unwrap().remove(key);
             }
         }
-        if !hidden_children.is_empty()
-            || hidden_parent_history
-            || hidden_parent
-            || !hidden_upstreams.is_empty()
-        {
+        if hierarchy_details_hidden {
             for key in [
                 "revision_evidence",
                 "proof",
@@ -9116,19 +7881,7 @@ async fn execute_transfers(
             value["children_details_hidden"] = json!(children_details_hidden);
             value["hierarchy_details_hidden"] = json!(true);
         }
-        let accepted_loans = store::transfer_loans::accepted(&store.pool, uid).await?;
-        if let Some(promises) = value["promises"].as_array_mut() {
-            for promise in promises {
-                let exchange = promise["item"]["exchange"]["uid"]
-                    .as_str()
-                    .or(promise["exchange"].as_str());
-                promise["accepted_loan"] = json!(
-                    accepted_loans
-                        .iter()
-                        .find(|loan| Some(loan.exchange.as_str()) == exchange)
-                );
-            }
-        }
+        transfer_projection::attach_loans(store, uid, &mut value).await?;
         if value["promises"].as_array().is_some_and(|promises| {
             promises
                 .iter()

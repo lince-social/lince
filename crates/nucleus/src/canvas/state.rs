@@ -267,8 +267,6 @@ impl State {
         next: &mut Arc<Snapshot>,
         mutation: &Mutation,
     ) -> Result<(Vec<String>, Option<u64>), String> {
-        // A full undo replaces the candidate. Select its source before making
-        // a writable copy, rather than cloning the current canvas to discard it.
         if let Mutation::Undo { receipt } = mutation {
             let previous = self
                 .receipts
@@ -409,6 +407,13 @@ impl State {
                 workspace,
                 component,
                 geometry,
+            }
+            | Mutation::AddWithMetadata {
+                placement,
+                workspace,
+                component,
+                geometry,
+                ..
             } => {
                 require_workspace(*workspace)?;
                 component.validate(&self.registry, false)?;
@@ -422,28 +427,12 @@ impl State {
                     geometry: geometry.clone(),
                     selected: false,
                     group: None,
-                    metadata: Default::default(),
+                    metadata: match mutation {
+                        Mutation::AddWithMetadata { metadata, .. } => metadata.clone(),
+                        _ => Default::default(),
+                    },
                 });
                 Ok((vec![placement.clone()], Some(*workspace)))
-            }
-            Mutation::AddWithMetadata {
-                placement,
-                workspace,
-                component,
-                geometry,
-                metadata,
-            } => {
-                let result = self.apply(
-                    next,
-                    &Mutation::Add {
-                        placement: placement.clone(),
-                        workspace: *workspace,
-                        component: component.clone(),
-                        geometry: geometry.clone(),
-                    },
-                )?;
-                find(next, placement)?.metadata = metadata.clone();
-                Ok(result)
             }
             Mutation::Configure {
                 placement,

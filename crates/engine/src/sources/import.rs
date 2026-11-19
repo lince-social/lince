@@ -3,7 +3,10 @@ use crate::actions::Action;
 use lince_resources::{INSTANCE_NAMESPACE, SOURCE_NAMESPACE};
 use nucleus::{Cause, DecimalValue, NewFact, RecordKind};
 use sha2::{Digest, Sha256};
-use std::collections::{BTreeSet, HashMap};
+use std::{
+    borrow::Cow,
+    collections::{BTreeSet, HashMap},
+};
 
 fn identity(prefix: &str, value: &str) -> String {
     let digest = Sha256::digest(value.as_bytes());
@@ -44,16 +47,30 @@ struct Prepared {
     personal: BTreeSet<String>,
     bound: BTreeSet<String>,
     slugs: BTreeMap<String, String>,
+    body_links: Vec<(String, String)>,
 }
 
 impl Prepared {
-    fn body(&self, text: &str) -> String {
-        let mut body = text.to_owned();
-        for (slug, uid) in &self.slugs {
-            body = body.replace(&format!("[[{slug}]]"), &format!("[[{uid}]]"));
-        }
-        for (original, uid) in &self.records {
-            body = body.replace(&format!("[[{original}]]"), &format!("[[{uid}]]"));
+    fn body<'a>(&self, text: &'a str) -> Cow<'a, str> {
+        let _prepare = nucleus::performance::Span::new("source-body-preparation");
+        let mut body = Cow::Borrowed(text);
+        for (from, to) in &self.body_links {
+            let mut matches = body.match_indices(from.as_str());
+            let Some((first, _)) = matches.next() else {
+                continue;
+            };
+            let mut updated = String::with_capacity(body.len());
+            updated.push_str(&body[..first]);
+            updated.push_str(to);
+            let mut end = first + from.len();
+            for (at, _) in matches {
+                updated.push_str(&body[end..at]);
+                updated.push_str(to);
+                end = at + from.len();
+            }
+            updated.push_str(&body[end..]);
+            body = Cow::Owned(updated);
+            nucleus::performance::add("source-body-matched-rules", 1);
         }
         body
     }
@@ -237,7 +254,7 @@ impl Engine {
                 )
             })
             .collect();
-        let slugs = records
+        let slugs: BTreeMap<String, String> = records
             .iter()
             .filter_map(|record| {
                 record
@@ -246,6 +263,17 @@ impl Engine {
                     .map(|slug| (slug.clone(), mapping[&record.uid].clone()))
             })
             .collect();
+        let body_links = {
+            let _prepare = nucleus::performance::Span::new("source-body-rule-preparation");
+            let links: Vec<_> = slugs
+                .iter()
+                .chain(mapping.iter())
+                .filter(|(from, to)| from != to)
+                .map(|(from, to)| (format!("[[{from}]]"), format!("[[{to}]]")))
+                .collect();
+            nucleus::performance::add("source-body-links-prepared", links.len() as u64);
+            links
+        };
         Ok(Prepared {
             key: lince_resources::fingerprint(binding_key.as_bytes()),
             bound_state: !source.instances.is_empty()
@@ -264,6 +292,7 @@ impl Engine {
             personal,
             bound,
             slugs,
+            body_links,
         })
     }
 
@@ -489,15 +518,16 @@ impl Engine {
                         .bind(RESOURCE_NAMESPACE)
                         .fetch_optional(&mut *tx)
                         .await?;
+                        let body_hash = lince_resources::fingerprint(body.as_bytes());
                         store::records::set_extension_on(&mut tx,uid,&format!("lince.source-history.{}",baseline["revision"].as_str().unwrap_or("initial").chars().take(32).collect::<String>()),
-                            &json!({"baseline":baseline,"resource":resource.as_deref().map(serde_json::from_str::<Value>).transpose()?,"head":head,"body_hash":lince_resources::fingerprint(body.as_bytes())})).await?;
+                            &json!({"baseline":baseline,"resource":resource.as_deref().map(serde_json::from_str::<Value>).transpose()?,"head":head,"body_hash":&body_hash})).await?;
+                        let replacement = (baseline["body_hash"] == body_hash)
+                            .then(|| prepared.body(&record.body));
                         store::records::set_authoring_text_on(
                             &mut tx,
                             uid,
                             (baseline["head"] == head).then_some(record.head.as_str()),
-                            (baseline["body_hash"]
-                                == lince_resources::fingerprint(body.as_bytes()))
-                            .then_some(prepared.body(&record.body).as_str()),
+                            replacement.as_deref(),
                         )
                         .await?;
                         if let Some(assertions) = baseline["assertions"].as_array() {
@@ -855,16 +885,16 @@ impl Engine {
                 .as_ref()
                 .map(
                     |source| -> Result<store::recurrence::RuleCondition, EngineError> {
-                        Ok(store::recurrence::RuleCondition {
-                            source: source.clone(),
-                            bindings: Vec::new(),
-                            gate: nucleus::karma::Gate::parse(gate.as_deref().unwrap_or("!=0"))
+                        Ok(store::recurrence::RuleCondition::new(
+                            source.clone(),
+                            Vec::new(),
+                            nucleus::karma::Gate::parse(gate.as_deref().unwrap_or("!=0"))
                                 .map_err(invalid)?,
-                            carry: nucleus::karma::Carry::parse(
+                            nucleus::karma::Carry::parse(
                                 carry.as_deref().unwrap_or("value"),
                             )
                             .map_err(invalid)?,
-                        })
+                        ))
                     },
                 )
                 .transpose()?;

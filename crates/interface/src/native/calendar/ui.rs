@@ -2,6 +2,8 @@ use super::*;
 use crate::native::{actions::ActionButton, icons::Tooltip, tokens::Token};
 use chrono::Datelike;
 
+mod presentation;
+
 const MONTHS: [&str; 12] = [
     "January",
     "February",
@@ -81,9 +83,25 @@ pub(crate) fn store_entry(world: &mut World, root: Entity, parent: Entity) {
 }
 
 pub(super) fn render(world: &mut World, owner: Entity) {
-    let Some(calendar) = world.get::<CalendarSand>(owner).map(|s| s.0.clone()) else {
+    let _present = nucleus::performance::Span::new("calendar-presentation");
+    if world.get::<CalendarSand>(owner).is_none() {
         return;
-    };
+    }
+    if !crate::native::output_views::presents_entity(world, owner) {
+        world.get_mut::<View>(owner).unwrap().dirty = true;
+        return;
+    }
+    let source = area(world, owner);
+    let sources = presentation::sources(world, owner);
+    let today = chrono::Local::now().date_naive();
+    if presentation::matches(world, owner, source, &sources, today) {
+        world.get_mut::<View>(owner).unwrap().dirty = false;
+        nucleus::performance::add("calendar-frames-retained", 1);
+        presentation::refresh(world, owner, source);
+        return;
+    }
+    let calendar = world.get::<CalendarSand>(owner).unwrap().0.clone();
+    nucleus::performance::add("calendar-frames-built", 1);
     if let Some(body) = world.get_mut::<View>(owner).unwrap().body.take() {
         world.despawn(body);
     }
@@ -103,8 +121,8 @@ pub(super) fn render(world: &mut World, owner: Entity) {
     let mut view = world.get_mut::<View>(owner).unwrap();
     view.body = Some(body);
     view.rendered = Some(calendar.clone());
+    view.dirty = false;
     let selector = view.selector;
-    let page = view.page;
     let error = view.error.clone();
     let picker = world.get::<Picker>(owner).is_some();
     let header = row(world, body);
@@ -195,7 +213,8 @@ pub(super) fn render(world: &mut World, owner: Entity) {
         crate::native::edit_mode::label(world, body, &error, 14.0);
     }
     if let Some(selector) = selector {
-        selectors(world, owner, body, selector);
+        selectors(world, owner, body, selector, &sources);
+        presentation::remember(world, owner, source, sources, today, None);
         return;
     }
     let weekdays = row(world, body);
@@ -204,22 +223,7 @@ pub(super) fn render(world: &mut World, owner: Entity) {
         world.get_mut::<Node>(label).unwrap().width = percent(100.0 / 7.0);
     }
     world.get_mut::<Node>(weekdays).unwrap().column_gap = px(0);
-    let source = area(world, owner);
     let dates = calendar.days();
-    let data = projection::data(world, owner)
-        .or_else(|| {
-            source.and_then(|source| {
-                crate::native::protein_area::calendar_feed(world, source).map(|(rows, _)| rows)
-            })
-        })
-        .unwrap_or(&[]);
-    let records = records(&calendar, data, page);
-    let maximum = records.maximum;
-    let page = records.page;
-    let hidden = records.hidden;
-    let entries = records.days;
-    world.get_mut::<View>(owner).unwrap().page = page;
-    let today = chrono::Local::now().date_naive();
     let grid = world
         .spawn((
             Node {
@@ -233,6 +237,7 @@ pub(super) fn render(world: &mut World, owner: Entity) {
             ChildOf(body),
         ))
         .id();
+    let mut cells = Vec::with_capacity(42);
     for week in 0..6 {
         let week_entity = world
             .spawn((
@@ -266,6 +271,11 @@ pub(super) fn render(world: &mut World, owner: Entity) {
                     crate::native::token_style::border(Token::SandBorder),
                 ))
                 .id();
+            cells.push(presentation::Day {
+                cell,
+                week: week_entity,
+                header: None,
+            });
             let Some(date) = dates[index] else { continue };
             let value = date.format("%Y-%m-%d").to_string();
             let selected = calendar
@@ -303,76 +313,30 @@ pub(super) fn render(world: &mut World, owner: Entity) {
                 node.justify_content = JustifyContent::Center;
                 node.align_items = AlignItems::Center;
             }
-            for (uid, title, tip) in &entries[index] {
-                if let Some(source) = source {
-                    let source_kind = world
-                        .get::<InfluenceArea>(source)
-                        .and_then(|a| a.protein.as_ref())
-                        .unwrap()
-                        .source
-                        .clone();
-                    let entity = button(
-                        world,
-                        cell,
-                        owner,
-                        title,
-                        tip,
-                        Command::Record(crate::native::protein_area::RecordBinding {
-                            area: source,
-                            uid: uid.clone(),
-                            source: source_kind,
-                        }),
-                    );
-                    let mut node = world.get_mut::<Node>(entity).unwrap();
-                    node.width = percent(100);
-                    node.min_height = px(18);
-                    node.padding = UiRect::axes(px(3), px(1));
-                }
-            }
+            cells.last_mut().unwrap().header = Some(day);
         }
     }
-    if let Some(source) = source {
-        let footer = row(world, body);
-        let state = world.get::<projection::Feed>(owner).map_or_else(
-            || crate::native::protein_area::calendar_status(world, source).to_string(),
-            |feed| feed.status.clone(),
-        );
-        let count = crate::native::protein_area::calendar_feed(world, source)
-            .map_or(0, |(data, _)| data.len());
-        let label = crate::native::edit_mode::label(
-            world,
+    let footer = if source.is_some() {
+        Some(row(world, body))
+    } else {
+        if calendar.area.is_some() {
+            crate::native::edit_mode::label(world, body, "Protein Area unavailable", 12.0);
+        }
+        None
+    };
+    presentation::remember(
+        world,
+        owner,
+        source,
+        sources,
+        today,
+        Some(presentation::Month {
+            grid,
+            days: cells,
             footer,
-            &format!("{state} · {count} Records · {}", calendar.timezone),
-            12.0,
-        );
-        world.entity_mut(label).insert(Tooltip(format!("{hidden} without a valid date or period. Results follow the Protein Area's filters and row limit.")));
-        if maximum > PER_DAY {
-            button(
-                world,
-                footer,
-                owner,
-                "‹",
-                "Previous records",
-                Command::Page(page.saturating_sub(1)),
-            );
-            crate::native::edit_mode::label(
-                world,
-                footer,
-                &format!("{} / {}", page + 1, maximum.div_ceil(PER_DAY)),
-                12.0,
-            );
-            button(
-                world,
-                footer,
-                owner,
-                "›",
-                "More records",
-                Command::Page((page + 1).min(maximum.saturating_sub(1) / PER_DAY)),
-            );
-        }
-    } else if calendar.area.is_some() {
-        crate::native::edit_mode::label(world, body, "Protein Area unavailable", 12.0);
-    }
+        }),
+    );
+    presentation::refresh(world, owner, source);
 }
 
 pub(super) struct MonthRecords {
@@ -387,7 +351,10 @@ pub(super) fn records(
     data: &[serde_json::Value],
     requested_page: usize,
 ) -> MonthRecords {
+    let _prepare = nucleus::performance::Span::new("calendar-month-records");
+    nucleus::performance::add("calendar-month-input-rows", data.len() as u64);
     let days = calendar.days();
+    let dates = std::cell::OnceCell::new();
     let mut spans = Vec::new();
     let mut counts = [0usize; 42];
     let mut hidden = 0;
@@ -395,7 +362,18 @@ pub(super) fn records(
         if record["kind"] == "projection-status" {
             continue;
         }
-        let Some((start, end)) = model::span_in(record, &calendar.timezone) else {
+        let dates = dates.get_or_init(|| {
+            nucleus::performance::add("calendar-month-timezones", 1);
+            calendar
+                .timezone
+                .parse()
+                .ok()
+                .map(nucleus::projection::Dates::new)
+        });
+        let Some((start, end)) = dates
+            .as_ref()
+            .and_then(|dates| model::span_with_dates(record, dates))
+        else {
             hidden += 1;
             continue;
         };
@@ -458,7 +436,13 @@ pub(super) fn records(
     result
 }
 
-fn selectors(world: &mut World, owner: Entity, body: Entity, selector: Selector) {
+fn selectors(
+    world: &mut World,
+    owner: Entity,
+    body: Entity,
+    selector: Selector,
+    sources: &[(String, String)],
+) {
     let choices = row(world, body);
     match selector {
         Selector::Timezone => {
@@ -542,16 +526,6 @@ fn selectors(world: &mut World, owner: Entity, body: Entity, selector: Selector)
                 "Disconnect Protein Area",
                 Command::Source(None),
             );
-            let root = world.get::<ChildOf>(owner).unwrap().parent();
-            let workspace = world.get::<WorkspaceMember>(owner).unwrap().0;
-            let sources: Vec<_> = world
-                .query::<(&InfluenceArea, &ChildOf, &WorkspaceMember)>()
-                .iter(world)
-                .filter(|(area, parent, member)| {
-                    parent.parent() == root && member.0 == workspace && area.protein.is_some()
-                })
-                .map(|(area, _, _)| (area.id.clone(), area.name.clone()))
-                .collect();
             for (id, name) in sources {
                 button(
                     world,
@@ -559,7 +533,7 @@ fn selectors(world: &mut World, owner: Entity, body: Entity, selector: Selector)
                     owner,
                     &name,
                     "Use this Protein Spawn Area",
-                    Command::Source(Some(id)),
+                    Command::Source(Some(id.clone())),
                 );
             }
         }

@@ -15,7 +15,7 @@ pub(crate) fn status(world: &mut World, parent: Entity) -> Entity {
 }
 
 pub(super) fn statuses(mut labels: Query<(&Text, &mut Node), With<Status>>) {
-    for (text, mut node) in &mut labels {
+    for (text, node) in &mut labels {
         let display = if text.0.is_empty() || text.0 == "Saved" {
             Display::None
         } else {
@@ -26,21 +26,26 @@ pub(super) fn statuses(mut labels: Query<(&Text, &mut Node), With<Status>>) {
     }
 }
 
-pub(super) fn sync_edits(world: &mut World) {
-    let updates: Vec<_> = world
-        .query::<&Message>()
-        .iter(world)
-        .filter_map(|message| {
-            if !crate::native::record_binding::active(world, message.input) {
-                return None;
-            }
-            let text = world.get::<EditableText>(message.input)?.value();
-            let description =
-                world.get::<crate::native::description::Description>(message.preview)?;
-            (text != description.source.as_str()).then(|| (message.preview, text.to_string()))
-        })
-        .collect();
-    for (preview, text) in updates {
+pub(super) fn sync_edits(
+    world: &mut World,
+    messages: &mut QueryState<&'static Message>,
+    mut updates: Local<Vec<(Entity, String)>>,
+) {
+    let _preview = nucleus::performance::Span::new("thread-edit-preview");
+    updates.clear();
+    updates.extend(messages.iter(world).filter_map(|message| {
+        if !crate::native::record_binding::active(world, message.input) {
+            return None;
+        }
+        let text = world.get::<EditableText>(message.input)?.value();
+        let description = world.get::<crate::native::description::Description>(message.preview)?;
+        (text != description.source.as_str()).then(|| (message.preview, text.to_string()))
+    }));
+    nucleus::performance::add("thread-preview-updates-prepared", updates.len() as u64);
+    if updates.is_empty() {
+        updates.shrink_to_fit();
+    }
+    for (preview, text) in updates.drain(..) {
         crate::native::description::set(world, preview, &text);
     }
 }
@@ -229,7 +234,7 @@ pub(super) fn refresh(world: &mut World, entity: Entity, data: &Value, previous:
     if world.get::<AccessibilityNode>(preview).is_none_or(|node| {
         node.role() != accesskit::Role::Paragraph
             || node.label() != Some(body)
-            || node.live() != live
+            || node.live() != Some(live)
             || !node.is_live_atomic()
     }) {
         let mut accessible = accesskit::Node::new(accesskit::Role::Paragraph);

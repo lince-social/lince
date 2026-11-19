@@ -125,7 +125,8 @@ impl Epub {
         if source.len() > 4 * 1024 * 1024 {
             return Err("EPUB chapter exceeds 4 MiB".into());
         }
-        let mut base = Url::parse("https://book.invalid/").unwrap();
+        let mut base = Url::parse("https://book.invalid/")
+            .expect("the built-in EPUB base URL is valid");
         base.set_path(&self.sections[section]);
         let source = super::resources::markup(&self.book, &base, source.as_bytes(), 0)?;
         let assets = Arc::new(Assets::default());
@@ -151,7 +152,12 @@ impl Epub {
         let mut requests = 0;
         loop {
             document.resolve(0.0);
-            let pending: Vec<_> = assets.0.lock().unwrap().drain(..).collect();
+            let pending: Vec<_> = assets
+                .0
+                .lock()
+                .map_err(|error| format!("Cannot read queued EPUB assets: {error}"))?
+                .drain(..)
+                .collect();
             if pending.is_empty() {
                 break;
             }

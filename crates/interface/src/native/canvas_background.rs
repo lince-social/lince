@@ -1,7 +1,12 @@
-use crate::native::{canvas::CanvasView, container::BoxRoot, workspace::Workspaces};
+use crate::native::{
+    canvas::CanvasView,
+    container::BoxRoot,
+    tokens::{ThemeSettings, Token, TokenOverrides, TokenValue},
+    workspace::Workspaces,
+};
 use bevy::{
-    asset::embedded_asset, math::DVec2, prelude::*, render::render_resource::AsBindGroup,
-    shader::ShaderRef, ui::UiSystems,
+    asset::embedded_asset, ecs::query::QueryState, math::DVec2, prelude::*,
+    render::render_resource::AsBindGroup, shader::ShaderRef, ui::UiSystems,
 };
 use serde::{Deserialize, Serialize};
 
@@ -32,17 +37,29 @@ pub(crate) fn current(world: &World, root: Entity) -> CanvasColors {
 }
 
 pub(crate) fn for_workspace(world: &World, root: Entity, workspace: u64) -> CanvasColors {
-    use crate::native::tokens::{ThemeSettings, Token, TokenOverrides, TokenValue};
     let defaults = ThemeSettings::default();
     let settings = world.get_resource::<ThemeSettings>().unwrap_or(&defaults);
-    let rgb = |token| match settings.resolve(token, None, &TokenOverrides::default()).0 {
+    workspace_colors(world, root, workspace, theme_colors(settings))
+}
+
+fn theme_colors(settings: &ThemeSettings) -> CanvasColors {
+    let overrides = TokenOverrides::default();
+    let rgb = |token| match settings.resolve(token, None, &overrides).0 {
         TokenValue::Color([r, g, b, _]) => [r, g, b],
         _ => unreachable!(),
     };
-    let mut colors = CanvasColors {
+    CanvasColors {
         background: rgb(Token::CanvasBackground),
         grid: rgb(Token::CanvasGrid),
-    };
+    }
+}
+
+fn workspace_colors(
+    world: &World,
+    root: Entity,
+    workspace: u64,
+    mut colors: CanvasColors,
+) -> CanvasColors {
     if let Some(space) = world
         .get::<Workspaces>(root)
         .and_then(|spaces| spaces.entries.iter().find(|space| space.id == workspace))
@@ -91,18 +108,16 @@ pub(crate) struct PatternMaterial {
 
 impl UiMaterial for PatternMaterial {
     fn fragment_shader() -> ShaderRef {
-        "embedded://lince_interface/native/canvas_pattern.wgsl".into()
+        "embedded://lince_interface/native/canvas_pattern.wesl".into()
     }
 }
 
 pub(crate) fn output_pattern(
     world: &World,
-    root: Entity,
-    workspace: u64,
+    grid: [u8; 3],
     canvas: CanvasView,
     size: Vec2,
 ) -> Option<PatternMaterial> {
-    use crate::native::tokens::{ThemeSettings, Token};
     let defaults = ThemeSettings::default();
     let settings = world.get_resource::<ThemeSettings>().unwrap_or(&defaults);
     let number = |token| {
@@ -111,18 +126,11 @@ pub(crate) fn output_pattern(
             .0
             .number()
     };
-    let spacing = number(Token::GridSpacing);
-    let (x, spacing) = grid_axis(canvas.center.x, canvas.zoom, size.x, spacing)?;
-    let (y, _) = grid_axis(
-        canvas.center.y,
-        canvas.zoom,
-        size.y,
-        number(Token::GridSpacing),
-    )?;
+    let configured_spacing = number(Token::GridSpacing);
+    let (x, spacing) = grid_axis(canvas.center.x, canvas.zoom, size.x, configured_spacing)?;
+    let (y, _) = grid_axis(canvas.center.y, canvas.zoom, size.y, configured_spacing)?;
     Some(PatternMaterial {
-        ink: color(for_workspace(world, root, workspace).grid)
-            .to_linear()
-            .to_vec4(),
+        ink: color(grid).to_linear().to_vec4(),
         geometry: Vec4::new(x, y, spacing, number(Token::CanvasPattern) / 100.0),
         viewport: size.extend(number(Token::GridThickness)).extend(0.0),
         eye: Vec4::ZERO,
@@ -135,7 +143,7 @@ pub struct CanvasBackgroundPlugin;
 impl Plugin for CanvasBackgroundPlugin {
     fn build(&self, app: &mut App) {
         if app.world().contains_resource::<AssetServer>() {
-            embedded_asset!(app, "canvas_pattern.wgsl");
+            embedded_asset!(app, "canvas_pattern.wesl");
             app.add_plugins(UiMaterialPlugin::<PatternMaterial>::default());
         } else {
             app.init_resource::<Assets<PatternMaterial>>();
@@ -169,49 +177,67 @@ fn grid_axis(center: f64, zoom: f64, extent: f32, spacing: f32) -> Option<(f32, 
     ))
 }
 
-fn draw(world: &mut World) {
-    let roots: Vec<_> = world
-        .query_filtered::<Entity, With<BoxRoot>>()
-        .iter(world)
-        .collect();
-    for root in roots {
+#[derive(Default)]
+struct Preparation {
+    query: Option<QueryState<Entity, With<BoxRoot>>>,
+    roots: Vec<Entity>,
+}
+
+#[derive(Clone, Copy)]
+struct Style {
+    colors: CanvasColors,
+    spacing: f32,
+    thickness: f32,
+    pattern: f32,
+}
+
+impl Style {
+    fn current(world: &World) -> Self {
+        let defaults = ThemeSettings::default();
+        let settings = world.get_resource::<ThemeSettings>().unwrap_or(&defaults);
+        let overrides = TokenOverrides::default();
+        let number = |token| settings.resolve(token, None, &overrides).0.number();
+        nucleus::performance::add("canvas-background-theme-resolutions", 1);
+        Self {
+            colors: theme_colors(settings),
+            spacing: number(Token::GridSpacing),
+            thickness: number(Token::GridThickness),
+            pattern: number(Token::CanvasPattern),
+        }
+    }
+}
+
+fn draw(world: &mut World, mut preparation: Local<Preparation>) {
+    let _presentation = nucleus::performance::Span::new("canvas-background-presentation");
+    let Preparation { query, roots } = &mut *preparation;
+    let query = query.get_or_insert_with(|| {
+        nucleus::performance::add("canvas-background-query-plans", 1);
+        world.query_filtered()
+    });
+    roots.extend(query.iter(world));
+    if roots.is_empty() {
+        *roots = Vec::new();
+        return;
+    }
+    let mut style = None;
+    for root in roots.drain(..) {
         let Some(view) = world.get::<CanvasView>(root) else {
             continue;
         };
         let Some(target) = world.get::<ComputedUiRenderTargetInfo>(root) else {
             continue;
         };
+        let style = style.get_or_insert_with(|| Style::current(world));
+        let workspace = world
+            .get::<Workspaces>(root)
+            .map_or(1, |spaces| spaces.active);
         let drawing = Drawing {
             spatial: world
                 .get::<crate::native::topology::view::View>(root)
                 .copied()
                 .filter(|view| view.spatial),
-            spacing: world
-                .get_resource::<crate::native::tokens::ThemeSettings>()
-                .map(|settings| {
-                    settings
-                        .resolve(
-                            crate::native::tokens::Token::GridSpacing,
-                            None,
-                            &Default::default(),
-                        )
-                        .0
-                        .number()
-                })
-                .unwrap_or(32.0),
-            thickness: world
-                .get_resource::<crate::native::tokens::ThemeSettings>()
-                .map(|settings| {
-                    settings
-                        .resolve(
-                            crate::native::tokens::Token::GridThickness,
-                            None,
-                            &Default::default(),
-                        )
-                        .0
-                        .number()
-                })
-                .unwrap_or(1.0),
+            spacing: style.spacing,
+            thickness: style.thickness,
             center: view.center
                 + world
                     .get::<crate::native::layout::desktop::HostViewport>(root)
@@ -224,20 +250,8 @@ fn draw(world: &mut World) {
                     }),
             zoom: view.zoom,
             viewport: target.logical_size(),
-            colors: current(world, root),
-            pattern: world
-                .get_resource::<crate::native::tokens::ThemeSettings>()
-                .map(|settings| {
-                    settings
-                        .resolve(
-                            crate::native::tokens::Token::CanvasPattern,
-                            None,
-                            &Default::default(),
-                        )
-                        .0
-                        .number()
-                })
-                .unwrap_or(100.0),
+            colors: workspace_colors(world, root, workspace, style.colors),
+            pattern: style.pattern,
         };
         if world
             .get::<Grid>(root)
@@ -278,11 +292,14 @@ fn draw(world: &mut World) {
             material.viewport.w = (PerspectiveProjection::default().fov * 0.5).tan();
         }
         if let Some(grid) = world.get::<Grid>(root) {
-            let handle = grid.material.clone();
-            *world
-                .resource_mut::<Assets<PatternMaterial>>()
-                .get_mut(&handle)
-                .unwrap() = material;
+            let handle = grid.material.id();
+            if world.resource::<Assets<PatternMaterial>>().get(handle) != Some(&material) {
+                *world
+                    .resource_mut::<Assets<PatternMaterial>>()
+                    .get_mut(handle)
+                    .unwrap() = material;
+                nucleus::performance::add("canvas-background-material-writes", 1);
+            }
         } else {
             let handle = world
                 .resource_mut::<Assets<PatternMaterial>>()
@@ -317,18 +334,29 @@ fn draw(world: &mut World) {
             .get_resource::<crate::native::topology::presentation::BackgroundCamera>()
             .map(|c| c.0)
         {
-            world.get_mut::<Camera>(camera).unwrap().clear_color =
-                ClearColorConfig::Custom(color(drawing.colors.background));
+            let color = color(drawing.colors.background);
+            if !matches!(world.get::<Camera>(camera).unwrap().clear_color,
+                ClearColorConfig::Custom(current) if current == color)
+            {
+                world.get_mut::<Camera>(camera).unwrap().clear_color =
+                    ClearColorConfig::Custom(color);
+                nucleus::performance::add("canvas-background-component-writes", 1);
+            }
         }
         if world
             .get::<crate::native::topology::presentation::SpatialRoot>(root)
             .is_some()
         {
-            world.entity_mut(root).remove::<BackgroundColor>();
+            if world.get::<BackgroundColor>(root).is_some() {
+                world.entity_mut(root).remove::<BackgroundColor>();
+                nucleus::performance::add("canvas-background-component-writes", 1);
+            }
         } else {
-            world
-                .entity_mut(root)
-                .insert(BackgroundColor(color(drawing.colors.background)));
+            let background = BackgroundColor(color(drawing.colors.background));
+            if world.get::<BackgroundColor>(root) != Some(&background) {
+                world.entity_mut(root).insert(background);
+                nucleus::performance::add("canvas-background-component-writes", 1);
+            }
         }
         world.get_mut::<Grid>(root).unwrap().drawing = Some(drawing);
         if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {

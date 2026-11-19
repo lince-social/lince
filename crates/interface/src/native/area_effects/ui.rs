@@ -1,4 +1,5 @@
 use super::*;
+use crate::native::area::editing::Edit;
 use crate::native::{
     actions::{Action, ActionButton},
     edit_mode::label,
@@ -33,35 +34,33 @@ impl Action for Change {
         let Some(root) = allowed(world, owner) else {
             return;
         };
-        let mut area = world.get::<InfluenceArea>(owner).unwrap().clone();
-        match *self {
-            Self::Sort => {
-                area.sorting = if area.sorting.is_some() {
-                    None
-                } else {
-                    Some(Sorting::default())
-                }
-            }
+        let area = world.get::<InfluenceArea>(owner).unwrap();
+        let edit = match *self {
+            Self::Sort => Edit::Sorting(if area.sorting.is_some() {
+                None
+            } else {
+                Some(Sorting::default())
+            }),
             Self::Horizontal => {
-                if let Some(sort) = &mut area.sorting {
-                    sort.horizontal = !sort.horizontal;
-                }
+                let Some(mut sort) = area.sorting.clone() else { return };
+                sort.horizontal = !sort.horizontal;
+                Edit::Sorting(Some(sort))
             }
             Self::Reverse => {
-                if let Some(sort) = &mut area.sorting {
-                    sort.reverse = !sort.reverse;
-                }
+                let Some(mut sort) = area.sorting.clone() else { return };
+                sort.reverse = !sort.reverse;
+                Edit::Sorting(Some(sort))
             }
-            Self::Mode(mode) => area.force_mode = mode,
-            Self::Immunity(immunity) => area.immunity = immunity,
-            Self::Scale(scale) => area.scale = scale,
+            Self::Mode(mode) => Edit::ForceMode(mode),
+            Self::Immunity(immunity) => Edit::Immunity(immunity),
+            Self::Scale(scale) => Edit::Scale(scale),
             Self::Strength(strength) => {
-                if let Some(sort) = &mut area.sorting {
-                    sort.strength = f64::from(strength);
-                }
+                let Some(mut sort) = area.sorting.clone() else { return };
+                sort.strength = f64::from(strength);
+                Edit::Sorting(Some(sort))
             }
-        }
-        if !area.validate() || world.get::<InfluenceArea>(owner) == Some(&area) {
+        };
+        if !edit.differs(area) || !edit.valid(area) {
             return;
         }
         crate::native::area_mutation::disarm(
@@ -69,7 +68,7 @@ impl Action for Change {
             owner,
             "Property changes inactive after an Area edit. Configured changes resume automatically.",
         );
-        world.entity_mut(owner).insert(area);
+        edit.apply(&mut world.get_mut::<InfluenceArea>(owner).unwrap());
         let values: Vec<_> = world
             .query::<(Entity, &ValueControl)>()
             .iter(world)
@@ -191,7 +190,9 @@ fn slider(world: &mut World, parent: Entity, owner: Entity, value: f32, scale: b
 }
 
 pub(crate) fn controls(world: &mut World, _root: Entity, panel: Entity, owner: Entity) {
-    let area = world.get::<InfluenceArea>(owner).unwrap().clone();
+    let area = world.get::<InfluenceArea>(owner).unwrap();
+    let (sorting, immunity, scale, force_mode) =
+        (area.sorting.clone(), area.immunity, area.scale, area.force_mode);
     label(world, panel, "Sorting", 18.0);
     let row = crate::native::area_panel::row(world, panel);
     button(
@@ -199,15 +200,15 @@ pub(crate) fn controls(world: &mut World, _root: Entity, panel: Entity, owner: E
         row,
         owner,
         Change::Sort,
-        if area.sorting.is_some() {
+        if sorting.is_some() {
             Icon::Check
         } else {
             Icon::Close
         },
         "Toggle sorting of existing Sands. Uses the Protein filter order, or the spawning query order. Without a query, uses Record identity. Does not spawn Sands.",
-        area.sorting.is_some(),
+        sorting.is_some(),
     );
-    if let Some(sort) = area.sorting {
+    if let Some(sort) = sorting {
         button(
             world,
             row,
@@ -270,11 +271,11 @@ pub(crate) fn controls(world: &mut World, _root: Entity, panel: Entity, owner: E
             Change::Immunity(mode),
             icon,
             tip,
-            area.immunity == mode,
+            immunity == mode,
         );
     }
     label(world, panel, "Size multiplier", 18.0);
-    slider(world, panel, owner, area.scale, true);
+    slider(world, panel, owner, scale, true);
     let row = crate::native::area_panel::row(world, panel);
     button(
         world,
@@ -283,7 +284,7 @@ pub(crate) fn controls(world: &mut World, _root: Entity, panel: Entity, owner: E
         Change::Scale(1.0),
         Icon::Reset,
         "Reset size multiplier to 1",
-        area.scale == 1.0,
+        scale == 1.0,
     );
     label(world, panel, "Physics influence", 18.0);
     let row = crate::native::area_panel::row(world, panel);
@@ -294,7 +295,7 @@ pub(crate) fn controls(world: &mut World, _root: Entity, panel: Entity, owner: E
         Change::Mode(ForceMode::Simple),
         Icon::Forward,
         "Simple: steer toward the target or sorted slot. Attraction weakens within half the Area's smallest side and stops on arrival. Record and Area changes update the destination. Repulsion keeps its configured strength. Limited reach and immunity still apply.",
-        area.force_mode == ForceMode::Simple,
+        force_mode == ForceMode::Simple,
     );
     button(
         world,
@@ -303,7 +304,7 @@ pub(crate) fn controls(world: &mut World, _root: Entity, panel: Entity, owner: E
         Change::Mode(ForceMode::Newtonian),
         Icon::Attract,
         "Newtonian: keep steering toward the target during movement, or away when repelling. Force falls with squared distance from the target outside half the Area's smallest side, and is capped at the configured strength.",
-        area.force_mode == ForceMode::Newtonian,
+        force_mode == ForceMode::Newtonian,
     );
 }
 

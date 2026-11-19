@@ -1,5 +1,6 @@
 use super::*;
 use std::{
+    borrow::Cow,
     collections::HashSet,
     time::{Duration, Instant},
 };
@@ -86,17 +87,60 @@ pub(super) fn unsubscribe(world: &mut World, organ: &str, id: String) {
     }
 }
 
-pub(super) fn subscribed(world: &mut World, organ: &str, message: &ClientMessage) {
-    if let Some(session) = world.resource_mut::<Runtime>().sessions.get_mut(organ) {
-        match message {
+struct SubscriptionChange<'a> {
+    id: Cow<'a, str>,
+    subscribed: bool,
+}
+
+impl<'a> SubscriptionChange<'a> {
+    fn from_message(message: &'a ClientMessage) -> Option<Self> {
+        let (id, subscribed) = match message {
             ClientMessage::Subscribe { id, .. } | ClientMessage::WorkspaceSubscribe { id, .. } => {
-                session.subscriptions.insert(id.clone());
+                (id, true)
             }
-            ClientMessage::Unsubscribe { id } => {
-                session.subscriptions.remove(id);
-            }
-            _ => {}
+            ClientMessage::Unsubscribe { id } => (id, false),
+            _ => return None,
+        };
+        Some(Self {
+            id: Cow::Borrowed(id),
+            subscribed,
+        })
+    }
+
+    fn into_owned(self) -> SubscriptionChange<'static> {
+        SubscriptionChange {
+            id: Cow::Owned(self.id.into_owned()),
+            subscribed: self.subscribed,
         }
+    }
+
+    fn apply(self, world: &mut World, organ: &str) {
+        if let Some(session) = world.resource_mut::<Runtime>().sessions.get_mut(organ) {
+            if self.subscribed {
+                session.subscriptions.insert(self.id.into_owned());
+            } else {
+                session.subscriptions.remove(self.id.as_ref());
+            }
+        }
+    }
+}
+
+pub(super) fn subscribed(world: &mut World, organ: &str, message: &ClientMessage) {
+    if let Some(change) = SubscriptionChange::from_message(message) {
+        change.apply(world, organ);
+    }
+}
+
+pub(super) fn send(
+    world: &mut World,
+    organ: &str,
+    permit: crate::native::cell_bridge::Permit<'_>,
+    message: ClientMessage,
+) {
+    let change = SubscriptionChange::from_message(&message).map(SubscriptionChange::into_owned);
+    permit.send(message);
+    if let Some(change) = change {
+        change.apply(world, organ);
     }
 }
 
@@ -249,7 +293,10 @@ pub(super) fn receive(world: &mut World, organ: &str, message: ServerMessage) {
         if failed {
             login::clear_passwords(world, owner);
         }
-        super::receive(world, owner, message.clone());
+        crate::host::performance::count(
+            crate::host::performance::Count::RecordProjectionRemoteDeliveries,
+        );
+        super::receive(world, owner, &message);
     }
     if let ServerMessage::Error { message, .. } = &message {
         if failed {

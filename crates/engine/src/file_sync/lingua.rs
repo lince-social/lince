@@ -4,6 +4,7 @@ mod habits;
 use super::*;
 use anicca::{ProjectedAssertion, ProjectedRecord, grammar::grammar as ast};
 use automation::Automation;
+use std::borrow::Cow;
 
 #[derive(Debug, Default)]
 pub(super) struct State {
@@ -153,28 +154,33 @@ impl Engine {
         projected.extensions.sort_by(|left, right| {
             (&left.target_slug, &left.namespace).cmp(&(&right.target_slug, &right.namespace))
         });
+        let record_validation = nucleus::performance::Span::new("file-sync-lingua-record-validation");
+        let work = serde_json::json!({});
         for record in &mut projected.records {
+            nucleus::performance::add("file-sync-lingua-validation-records", 1);
             normalize(record)?;
-            crate::record_creation::Draft {
-                uid: record.uid.clone(),
-                head: record.head.clone(),
-                body: record.body.clone(),
-                slug: record.slug.clone(),
-                quantity: record.quantity.as_ref().unwrap().0.clone(),
-                assertions: record
-                    .assertions
-                    .iter()
-                    .map(|a| crate::record_creation::Assertion {
-                        predicate: a.predicate.clone(),
-                        object: a.object_uri.clone().or_else(|| a.object_slug.clone()),
-                        quantity: a.quantity.clone(),
-                        unit: a.unit.clone(),
-                    })
-                    .collect(),
-                ..Default::default()
+            crate::record_creation::DraftFields {
+                uid: &record.uid,
+                head: &record.head,
+                body: &record.body,
+                slug: record.slug.as_deref(),
+                quantity: &record.quantity.as_ref().unwrap().0,
+                assertions: record.assertions.iter().map(|assertion| {
+                    crate::record_creation::AssertionFields {
+                        predicate: &assertion.predicate,
+                        object: assertion
+                            .object_uri
+                            .as_deref()
+                            .or(assertion.object_slug.as_deref()),
+                        quantity: assertion.quantity.as_deref(),
+                        unit: assertion.unit.as_deref(),
+                    }
+                }),
+                work: &work,
             }
             .validate()?;
         }
+        drop(record_validation);
         let mut automation = Automation {
             frequencies: projected.frequencies,
             rules: projected.rules,
@@ -194,18 +200,26 @@ impl Engine {
         let Some(row) = store::records::get(&self.store.pool, uid).await? else {
             return Ok(None);
         };
-        let concepts: HashMap<_, _> = store::concepts::list_all(&self.store.pool)
+        let concepts: HashMap<_, _> = store::concepts::canonical_names(&self.store.pool)
             .await?
             .into_iter()
-            .map(|row| (row.uid, row.canonical_name))
             .collect();
-        let mut assertions = Vec::new();
-        for assertion in store::assertions::for_subjects(&self.store.pool, &[uid.into()]).await? {
+        let source_assertions =
+            store::assertions::for_subjects(&self.store.pool, &[uid.into()]).await?;
+        let object_slugs = {
+            let object_uids: Vec<_> = source_assertions
+                .iter()
+                .filter_map(|assertion| assertion.object_uid.as_deref())
+                .collect();
+            store::records::live_slugs_for(&self.store.pool, &object_uids).await?
+        };
+        let mut assertions = Vec::with_capacity(source_assertions.len());
+        for assertion in source_assertions {
             let object_slug = match &assertion.object_uid {
                 Some(uid) => Some(
-                    store::records::get(&self.store.pool, uid)
-                        .await?
-                        .and_then(|row| row.slug)
+                    object_slugs
+                        .get(uid)
+                        .cloned()
                         .ok_or_else(|| {
                             invalid(
                                 "A linked Record needs a slug before it can be written in Lingua",
@@ -613,18 +627,21 @@ impl Engine {
                 Err(error) => conflict(&mut report, path, error),
             }
         }
-        let mut identities: HashMap<String, String> = store::records::list_all(&self.store.pool)
-            .await?
-            .into_iter()
-            .filter_map(|r| r.slug.map(|slug| (slug, r.uid)))
+        let input_preparation = nucleus::performance::Span::new("file-sync-lingua-input-preparation-await");
+        let rows = store::records::live_identifiers(&self.store.pool).await?;
+        let mut identities: HashMap<String, String> = rows
+            .iter()
+            .filter_map(|(uid, slug)| slug.as_ref().map(|slug| (slug.clone(), uid.clone())))
             .collect();
-        for row in store::records::list_all(&self.store.pool).await? {
-            identities.insert(row.uid.clone(), row.uid);
+        for (uid, _) in rows {
+            identities.insert(uid.clone(), uid);
         }
         let mut declared = HashMap::new();
         let mut duplicate = HashSet::new();
         let mut slugs = HashMap::new();
         for (path, document) in &documents {
+            let rule_uids: HashSet<_> = document.automation.rules.iter()
+                .map(|rule| rule.uid.as_str()).collect();
             let entries = document
                 .records
                 .iter()
@@ -648,11 +665,7 @@ impl Engine {
                     duplicate.insert(other);
                     duplicate.insert(path.clone());
                 }
-                let is_rule = document
-                    .automation
-                    .rules
-                    .iter()
-                    .any(|rule| &rule.uid == uid);
+                let is_rule = rule_uids.contains(uid.as_str());
                 if !is_rule {
                     identities.insert(uid.clone(), uid.clone());
                 }
@@ -681,25 +694,32 @@ impl Engine {
                     .map(|frequency| frequency.uid.clone())
             }))
             .collect();
+        let mut declared_uids = None;
+        drop(input_preparation);
         for path in &paths {
             let Some(document) = documents.get_mut(path) else {
                 continue;
             };
             let validation = async {
+                let _validation = nucleus::performance::Span::new("file-sync-lingua-input-validation-await");
                 if duplicate.contains(path) {
                     return Err(invalid(
                         "Duplicate Record uid or slug; the file was kept unchanged",
                     ));
                 }
+                let mut resource_base = None;
                 for extension in &mut document.extensions {
                     if !shared_extension(&extension.namespace){return Err(invalid("This metadata namespace is managed by its dedicated editor"));}
                     extension.target_uid=Some(identities.get(&extension.target_slug).cloned().ok_or_else(||invalid("Unknown Extension target"))?);
                     if !document.records.iter().any(|record|Some(&record.uid)==extension.target_uid.as_ref()){return Err(invalid("Declare metadata alongside its Record"));}
                     if extension.namespace==lince_resources::RESOURCE_NAMESPACE {
-                        let base=lince_resources::address(&path.to_string_lossy()).map_err(invalid)?.to_string();
-                        let mut resource:lince_resources::Resource=serde_json::from_value(extension.fields.clone())?;
-                        resource.uri=lince_resources::resolve(&base,&resource.uri).map_err(invalid)?;
-                        for representation in &mut resource.representations{representation.uri=lince_resources::resolve(&base,&representation.uri).map_err(invalid)?;}
+                        if resource_base.is_none() {
+                            resource_base = Some(lince_resources::address(&path.to_string_lossy()).map_err(invalid)?.to_string());
+                        }
+                        let base = resource_base.as_ref().unwrap();
+                        let mut resource: lince_resources::Resource = serde::Deserialize::deserialize(&extension.fields)?;
+                        resource.uri=lince_resources::resolve(base,&resource.uri).map_err(invalid)?;
+                        for representation in &mut resource.representations{representation.uri=lince_resources::resolve(base,&representation.uri).map_err(invalid)?;}
                         resource.validate().map_err(invalid)?;
                         extension.fields=serde_json::to_value(resource)?;
                     }
@@ -709,7 +729,7 @@ impl Engine {
                     if current!=known.extensions&&current!=document.extensions{return Err(invalid("The file and Record metadata both changed; resolve the conflict before syncing"));}
                 }
                 for frequency in &document.automation.frequencies {
-                    if let Some(row) = store::records::get(&self.store.pool, &frequency.uid).await? {
+                    if let Some(row) = store::records::routing(&self.store.pool, &frequency.uid).await? {
                         if row.organ_uid.as_deref() != Some(organ) || row.kind != "frequency" {
                             return Err(invalid("The Frequency belongs to another Organ or has another type"));
                         }
@@ -720,11 +740,11 @@ impl Engine {
                     if !rule.frequency_slug.is_empty() {
                         rule.frequency_uid = Some(identities.get(&rule.frequency_slug).filter(|uid| frequency_uids.contains(*uid)).cloned().ok_or_else(|| invalid("Unknown Rule frequency"))?);
                     }
-                    if let Some(target) = store::records::get(&self.store.pool, rule.record_uid.as_ref().unwrap()).await? {
+                    if let Some(target) = store::records::routing(&self.store.pool, rule.record_uid.as_ref().unwrap()).await? {
                         if target.organ_uid.as_deref() != Some(organ) { return Err(invalid("The Rule target belongs to another Organ")); }
                     }
                     if let Some(source) = &rule.condition {
-                        for read in nucleus::karma::Condition::parse(source).map_err(invalid)?.reads() {
+                        for read in nucleus::karma::Condition::parse(source).map_err(invalid)?.reads_ref() {
                             if read.func != nucleus::expr::ASSERTION {
                                 for (position,slug) in read.slug.split('|').enumerate() {
                                     if read.func==nucleus::expr::HAS_ASSERTION&&position==1 {continue;}
@@ -760,10 +780,14 @@ impl Engine {
                         return Err(invalid("This file has no accepted sync baseline and differs from Karma; use an explicit import or resolve the conflict"));
                     }
                 }
+                let mut assertion_base = None;
                 for record in &mut document.records {
                     for assertion in &mut record.assertions {
                         if let Some(uri) = &mut assertion.object_uri {
-                            *uri = lince_resources::resolve(&lince_resources::Reference::path(path).map_err(invalid)?.target, uri).map_err(invalid)?;
+                            if assertion_base.is_none() {
+                                assertion_base = Some(lince_resources::Reference::path(path).map_err(invalid)?.target);
+                            }
+                            *uri = lince_resources::resolve(assertion_base.as_deref().unwrap(), uri).map_err(invalid)?;
                         }
                         if let Some(slug) = &assertion.object_slug {
                             assertion.object_uid = Some(
@@ -775,7 +799,11 @@ impl Engine {
                         }
                     }
                     normalize(record)?;
-                    if let Err(reason) = self.check_body_links(&record.body, &declared.keys().cloned().collect()).await? { return Err(invalid(reason)); }
+                    let pending = declared_uids.get_or_insert_with(|| {
+                        nucleus::performance::add("file-sync-declaration-sets-prepared", 1);
+                        declared.keys().cloned().collect()
+                    });
+                    if let Err(reason) = self.check_body_links(&record.body, pending).await? { return Err(invalid(reason)); }
                     if let Some(known) = state.files.get(path).filter(|known| known.source != document.source) {
                         if let Some(previous) = known.records.iter().find(|r| r.uid == record.uid) {
                             let current = self.lingua_record(&record.uid).await?;
@@ -784,7 +812,7 @@ impl Engine {
                             }
                         }
                     }
-                    if let Some(row) = store::records::get(&self.store.pool, &record.uid).await? {
+                    if let Some(row) = store::records::routing(&self.store.pool, &record.uid).await? {
                         if row.organ_uid.as_deref() != Some(organ) {
                             return Err(invalid("The Record belongs to another Organ"));
                         }
@@ -1212,8 +1240,24 @@ fn render_document(
     extensions: &[anicca::ProjectedExtension],
     path: &Path,
 ) -> Result<String, EngineError> {
+    let _render = nucleus::performance::Span::new("file-sync-lingua-render");
+    let preparation = nucleus::performance::Span::new("file-sync-lingua-record-preparation");
+    nucleus::performance::add("file-sync-lingua-document-parses", 1);
     let mut document = anicca::parse(source).map_err(invalid)?;
-    document.declarations.retain(|declaration| matches!(declaration, ast::Declaration::Record(record) if records.iter().any(|r| Some(r.uid.as_str()) == record.opening.uid())));
+    let selected: HashSet<_> = records.iter().map(|record| record.uid.as_str()).collect();
+    document.declarations.retain(|declaration| {
+        matches!(declaration, ast::Declaration::Record(record)
+            if record.opening.uid().is_some_and(|uid| selected.contains(uid)))
+    });
+    let mut positions = HashMap::new();
+    for (index, declaration) in document.declarations.iter().enumerate() {
+        if let ast::Declaration::Record(record) = declaration
+            && let Some(uid) = record.opening.uid().and_then(|uid| selected.get(uid))
+        {
+            positions.entry(*uid).or_insert(index);
+        }
+    }
+    let mut base = None;
     for record in records {
         let (quantity, unit) = record.quantity.as_ref().unwrap();
         let subject = format!(
@@ -1231,64 +1275,74 @@ fn render_document(
         let ast::Declaration::Record(template) = parsed.declarations.remove(0) else {
             unreachable!()
         };
-        match document.declarations.iter_mut().find(
-            |d| matches!(d, ast::Declaration::Record(r) if r.opening.uid() == Some(&record.uid)),
-        ) {
-            Some(ast::Declaration::Record(existing)) => {
-                existing.header.subject = template.header.subject;
-            }
-            _ => document
+        let index = if let Some(index) = positions.get(record.uid.as_str()).copied() {
+            let ast::Declaration::Record(existing) = &mut document.declarations[index] else {
+                unreachable!()
+            };
+            existing.header.subject = template.header.subject;
+            index
+        } else {
+            let index = document.declarations.len();
+            document
                 .declarations
-                .push(ast::Declaration::Record(template)),
+                .push(ast::Declaration::Record(template));
+            positions.insert(record.uid.as_str(), index);
+            index
+        };
+        let mut assertions = Cow::Borrowed(record.assertions.as_slice());
+        if base.is_none() {
+            base = Some(
+                lince_resources::address(
+                    &lince_resources::Reference::path(path)
+                        .map_err(invalid)?
+                        .target,
+                )
+                .map_err(invalid)?,
+            );
         }
-        let mut assertions = record.assertions.clone();
-        let base = lince_resources::address(
-            &lince_resources::Reference::path(path)
-                .map_err(invalid)?
-                .target,
-        )
-        .map_err(invalid)?;
-        for assertion in &mut assertions {
-            if let Some(uri) = &mut assertion.object_uri
+        let base = base.as_ref().unwrap();
+        for (index, assertion) in record.assertions.iter().enumerate() {
+            if let Some(uri) = &assertion.object_uri
                 && let Ok(target) = lince_resources::address(uri)
                 && let Some(relative) = base.make_relative(&target)
+                && relative != *uri
             {
-                *uri = relative;
+                assertions.to_mut()[index].object_uri = Some(relative);
             }
         }
-        let updated = anicca::set_record_runtime(
-            &anicca::format(&document),
-            &record.uid,
-            &record.head,
-            &record.body,
-            quantity,
-            &assertions,
-        )
-        .map_err(invalid)?;
-        document = anicca::parse(&updated).map_err(invalid)?;
+        let ast::Declaration::Record(target) = &mut document.declarations[index] else {
+            unreachable!()
+        };
+        anicca::update_record_runtime(target, &record.head, &record.body, quantity, &assertions);
+        nucleus::performance::add("file-sync-lingua-records-rewritten", 1);
     }
-    let mut text = anicca::format(&document);
+    drop(preparation);
+    let mut text = format_document(&document);
+    let mut resource_base = None;
     for extension in extensions {
-        let mut fields = extension.fields.clone();
+        let mut fields = Cow::Borrowed(&extension.fields);
         if extension.namespace == lince_resources::RESOURCE_NAMESPACE {
-            let base = lince_resources::address(&path.to_string_lossy()).map_err(invalid)?;
-            for property in ["uri"] {
-                if let Some(uri) = fields[property]
-                    .as_str()
-                    .and_then(|uri| lince_resources::address(uri).ok())
-                    && let Some(relative) = base.make_relative(&uri)
-                {
-                    fields[property] = serde_json::json!(relative);
-                }
+            if resource_base.is_none() {
+                resource_base =
+                    Some(lince_resources::address(&path.to_string_lossy()).map_err(invalid)?);
             }
-            if let Some(representations) = fields["representations"].as_array_mut() {
-                for representation in representations {
-                    if let Some(uri) = representation["uri"]
-                        .as_str()
-                        .and_then(|uri| lince_resources::address(uri).ok())
+            let base = resource_base.as_ref().unwrap();
+            if let Some(value) = extension.fields["uri"].as_str()
+                && let Ok(uri) = lince_resources::address(value)
+                && let Some(relative) = base.make_relative(&uri)
+                && relative != value
+            {
+                fields.to_mut()["uri"] = serde_json::json!(relative);
+            }
+            if let Some(representations) = extension.fields["representations"].as_array() {
+                for (index, representation) in representations.iter().enumerate() {
+                    if let Some(value) = representation["uri"].as_str()
+                        && let Ok(uri) = lince_resources::address(value)
                         && let Some(relative) = base.make_relative(&uri)
+                        && relative != value
                     {
-                        representation["uri"] = serde_json::json!(relative);
+                        fields.to_mut()["representations"][index]["uri"] =
+                            serde_json::json!(relative);
                     }
                 }
             }
@@ -1299,9 +1353,20 @@ fn render_document(
         );
     }
     text.push_str(&automation.render()?);
+    let validation = nucleus::performance::Span::new("file-sync-lingua-validation");
+    nucleus::performance::add("file-sync-lingua-document-parses", 1);
     let document = anicca::parse(&text).map_err(invalid)?;
-    anicca::project(&document).map_err(invalid)?;
-    Ok(anicca::format(&document))
+    {
+        let _projection = nucleus::performance::Span::new("file-sync-lingua-projection-validation");
+        anicca::validate_projection(&document).map_err(invalid)?;
+    }
+    drop(validation);
+    Ok(format_document(&document))
+}
+
+fn format_document(document: &ast::Document) -> String {
+    let _format = nucleus::performance::Span::new("file-sync-lingua-format");
+    anicca::format(document)
 }
 
 fn shared_extension(namespace: &str) -> bool {

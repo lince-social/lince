@@ -492,7 +492,6 @@ fn maintain(world: &mut World) {
             if world.get::<SyncCastle>(route.owner).is_some() {
                 return true;
             }
-            // Retain only subscriptions whose cleanup is still queued behind backpressure.
             route.sender.as_ref().is_some_and(|sender| {
                 !sender.is_closed()
                     && sender

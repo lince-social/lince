@@ -997,7 +997,7 @@ fn only_an_act_routed_rule_counts_as_acting_outside_the_cell() {
     assert!(!asking.is_externally_observable());
 }
 
-async fn sqlx_count(store: &Store, query: &str) -> i64 {
+async fn sqlx_count(store: &Store, query: &'static str) -> i64 {
     store::sqlx::query_scalar(query)
         .fetch_one(&store.pool)
         .await
@@ -1407,7 +1407,7 @@ async fn reaction_counts(store: &Store) -> (i64, i64, i64, i64) {
 }
 
 async fn count(store: &Store, table: &str) -> i64 {
-    store::sqlx::query_scalar(&format!("SELECT COUNT(*) FROM {table}"))
+    store::sqlx::query_scalar(store::sqlx::AssertSqlSafe(format!("SELECT COUNT(*) FROM {table}")))
         .fetch_one(&store.pool)
         .await
         .unwrap()

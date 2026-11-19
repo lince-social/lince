@@ -83,9 +83,6 @@ enum Kind {
 }
 
 #[derive(Component)]
-// The owner stays installed while its state is borrowed by an exclusive action
-// or refresh. Readers see None during that borrow, as when the old component
-// was temporarily removed, without moving the entity between component layouts.
 struct Editor(Option<EditorState>);
 
 struct EditorState {

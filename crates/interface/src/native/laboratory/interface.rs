@@ -874,7 +874,7 @@ fn protein_area_filter_visible_and_selectable() {
         .query;
     assert!(
         query["where"][0]["all"][0].get("kind_eq").is_some(),
-        "{query}"
+        "{query:?}"
     );
 }
 
@@ -1090,11 +1090,12 @@ fn retained_layout_keeps_scroll_reparenting_clips_and_input_order_current() {
         .get::<UiGlobalTransform>(body)
         .unwrap()
         .translation;
-    let original_clip = app
-        .world()
-        .get::<bevy::ui::CalculatedClip>(body)
-        .unwrap()
-        .clip;
+    let viewport = Rect::from_corners(Vec2::ZERO, Vec2::new(1000.0, 700.0));
+    let clip_bounds = |world: &World| {
+        let clip = world.get::<bevy::ui::CalculatedClip>(body).unwrap();
+        crate::native::canvas_clip::clipped_rect(viewport, clip)
+    };
+    let original_clip = clip_bounds(app.world());
     app.world_mut()
         .entity_mut(panels[0])
         .insert(ScrollPosition(Vec2::new(0.0, 40.0)));
@@ -1114,10 +1115,7 @@ fn retained_layout_keeps_scroll_reparenting_clips_and_input_order_current() {
         original - Vec2::new(0.0, 40.0)
     );
     assert_eq!(
-        app.world()
-            .get::<bevy::ui::CalculatedClip>(body)
-            .unwrap()
-            .clip,
+        clip_bounds(app.world()),
         original_clip
     );
     app.world_mut().entity_mut(body).insert(ChildOf(panels[1]));
@@ -1130,10 +1128,7 @@ fn retained_layout_keeps_scroll_reparenting_clips_and_input_order_current() {
         original + Vec2::new(400.0, 0.0)
     );
     assert_eq!(
-        app.world()
-            .get::<bevy::ui::CalculatedClip>(body)
-            .unwrap()
-            .clip,
+        clip_bounds(app.world()),
         Rect {
             min: original_clip.min + Vec2::new(400.0, 0.0),
             max: original_clip.max + Vec2::new(400.0, 0.0)

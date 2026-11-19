@@ -3,7 +3,7 @@ use bevy::{
     ecs::message::MessageCursor,
     picking::{
         hover::{HoverMap, generate_hovermap},
-        pointer::{Location, PointerAction, PointerButton, PointerId, PointerInput, PointerPress},
+        pointer::{Location, PointerAction, PointerButton, PointerId, PointerInput, PointerPressState},
     },
     window::WindowEvent,
 };
@@ -250,11 +250,11 @@ fn input(
     world.resource_mut::<DragState>().0 = drag;
     if !consumed.is_empty() {
         for (id, mut press) in world
-            .query::<(&PointerId, &mut PointerPress)>()
+            .query::<(&PointerId, &mut PointerPressState)>()
             .iter_mut(world)
         {
             if consumed.contains(id) {
-                *press = PointerPress::default();
+                *press = PointerPressState::default();
             }
         }
     }

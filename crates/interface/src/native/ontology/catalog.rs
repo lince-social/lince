@@ -4,9 +4,6 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
-/// An immutable reply owns its derived order and identity indexes. Cloning a
-/// catalog for presentation shares both rows and preparation; replacing the
-/// reply retires them together. Only indexes a consumer requests are built.
 #[derive(Clone, Default)]
 pub(super) struct Catalog(Arc<Snapshot>);
 
@@ -77,7 +74,6 @@ impl Catalog {
     pub(super) fn ordered(&self) -> impl ExactSizeIterator<Item = &Value> {
         self.index(&self.0.ordered, || {
             let mut indices: Vec<_> = (0..self.len()).collect();
-            // Stable equal-title order is the source order, as before.
             indices.sort_by(|&left, &right| title(&self[left]).cmp(title(&self[right])));
             indices
         })
@@ -145,8 +141,6 @@ impl Catalog {
         let identities = self.identities();
         let position =
             identities.partition_point(|&index| self[index]["uid"].as_str().unwrap() < uid);
-        // A chooser sorts by caption before UID. With duplicate IDs, its first
-        // matching caption need not belong to the first source row.
         identities[position..]
             .iter()
             .map(|&index| &self[index])

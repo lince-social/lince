@@ -1,5 +1,81 @@
 use super::*;
+use bevy::ecs::query::QueryState;
 use std::collections::HashMap;
+
+#[derive(Resource)]
+struct NameCapture {
+    modes: QueryState<(Entity, &'static EditMode)>,
+    controls: QueryState<(&'static EditControl, &'static Children)>,
+    edits: Vec<(Entity, u64, String)>,
+    labels: Vec<Entity>,
+}
+
+impl FromWorld for NameCapture {
+    fn from_world(world: &mut World) -> Self {
+        Self {
+            modes: world.query(),
+            controls: world.query(),
+            edits: Vec::new(),
+            labels: Vec::new(),
+        }
+    }
+}
+
+pub(super) fn save_names(world: &mut World) {
+    let _capture = nucleus::performance::Span::new("edit-workspace-name-capture");
+    world.init_resource::<NameCapture>();
+    world.resource_scope(|world, mut capture: Mut<NameCapture>| {
+        let NameCapture {
+            modes,
+            controls,
+            edits,
+            labels,
+        } = &mut *capture;
+        edits.clear();
+        edits.extend(modes.iter(world).filter_map(|(root, mode)| {
+            if !mode.enabled {
+                return None;
+            }
+            let field = mode.name?;
+            let workspace = world.get::<WorkspaceName>(field)?.0;
+            let text = world.get::<EditableText>(field)?;
+            if text.is_composing() || text.pending_paste.is_some() {
+                return None;
+            }
+            let spaces = world.get::<Workspaces>(root)?;
+            let current = spaces.entries.iter().find(|space| space.id == workspace)?;
+            let value = text.value();
+            if value == current.name.as_str() && current.name.trim() == current.name {
+                return None;
+            }
+            let name = value.to_cow();
+            (!name.trim().is_empty() && name.trim() != current.name)
+                .then(|| (root, workspace, name.into_owned()))
+        }));
+        for (root, workspace, name) in edits.drain(..) {
+            if !workspace::rename_id(world, root, workspace, &name) {
+                continue;
+            }
+            labels.clear();
+            labels.extend(
+                controls
+                    .iter(world)
+                    .filter(|(control, _)| {
+                        control.root == root
+                            && control.action == EditAction::SwitchWorkspace(workspace)
+                    })
+                    .flat_map(|(_, children)| children.iter()),
+            );
+            for entity in labels.drain(..) {
+                if let Some(mut text) = world.get_mut::<Text>(entity)
+                    && text.0 != name.trim()
+                {
+                    name.trim().clone_into(&mut text.0);
+                }
+            }
+        }
+    });
+}
 
 #[derive(Component)]
 pub(super) struct Row {

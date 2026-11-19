@@ -85,7 +85,7 @@ const CREDITS: &[crate::native::credits::Attribution] = &[
 ];
 
 #[derive(Component)]
-struct Form {
+pub(super) struct Form {
     panel: Entity,
     ports: Entity,
     advanced: Entity,
@@ -101,6 +101,12 @@ struct Form {
     confirmed_pins: bool,
     pending: Option<(String, Backend)>,
     job: Option<Job>,
+}
+
+impl replies::Pending for Form {
+    fn pending_id(&self) -> Option<&str> {
+        self.pending.as_ref().map(|pending| pending.0.as_str())
+    }
 }
 
 struct Job {
@@ -387,7 +393,7 @@ fn capture(world: &mut World, owner: Entity) {
     form.values = values;
 }
 
-fn selected(world: &World, owner: Entity) -> Result<Endpoint, String> {
+fn selected(world: &World, owner: Entity) -> Result<Arc<Endpoint>, String> {
     let form = world
         .get::<Form>(owner)
         .ok_or("Firmware setup unavailable")?;
@@ -462,8 +468,8 @@ fn configuration(world: &World, owner: Entity) -> Result<Configuration, String> 
         time_server: values[TIME].clone(),
         setup: Setup {
             audience: world.get::<Devices>(owner).unwrap().audience.clone(),
-            device: row.uid,
-            signal: row.signal_uid,
+            device: row.uid.clone(),
+            signal: row.signal_uid.clone(),
             key_epoch: row.credential_epoch,
         },
         workflow,
@@ -515,7 +521,7 @@ fn prepare(world: &mut World, owner: Entity) -> Result<(), String> {
         world,
         owner,
         Request::ConfigureStream {
-            signal: row.signal_uid,
+            signal: row.signal_uid.clone(),
             value_type: kind,
             source_url: String::new(),
             expected_revision: revision,
@@ -759,7 +765,7 @@ fn apply(world: &mut World, owner: Entity, control: &Control) -> Result<(), Stri
                     .configure(&configuration, &row.public_key, &cancel)
                     .map(|()| Reply::Provisioned {
                         password: configuration.password,
-                        endpoint: row.uid,
+                        endpoint: row.uid.clone(),
                         revision: row.revision,
                     })
             });
@@ -804,7 +810,7 @@ fn apply(world: &mut World, owner: Entity, control: &Control) -> Result<(), Stri
                     "",
                     position,
                 );
-                crate::native::video_castle::open_signal(world, sand, row.signal_uid);
+                crate::native::video_castle::open_signal(world, sand, row.signal_uid.clone());
                 if let Some(source) = crate::native::practice_cells::source(world, owner) {
                     world
                         .entity_mut(sand)
@@ -858,39 +864,41 @@ fn placement(world: &World, owner: Entity) -> Result<(Entity, u64, bevy::math::D
 }
 
 pub(super) fn observe(world: &mut World, owner: Entity, data: &Value) {
-    if let Ok(streams) = serde_json::from_value(data["streams"].clone()) {
+    if let Ok(streams) = Vec::<store::signal_streams::Configuration>::deserialize(&data["streams"])
+    {
         if let Some(mut form) = world.get_mut::<Form>(owner) {
             form.streams = streams;
         }
     }
 }
 
-pub(super) fn receive(world: &mut World, message: &ServerMessage) -> bool {
+#[cfg(test)]
+fn receive(world: &mut World, message: &ServerMessage) -> bool {
     let id = match message {
         ServerMessage::ActionOk { id, .. } | ServerMessage::Error { id, .. } => id,
         _ => return false,
     };
-    let found = world
-        .query::<(Entity, &Form)>()
-        .iter(world)
-        .find_map(|(owner, form)| {
-            form.pending
-                .as_ref()
-                .filter(|(pending, _)| pending == id)
-                .map(|(_, kind)| (owner, *kind))
-        });
-    let Some((owner, kind)) = found else {
+    let Some(owner) = replies::Owners::<Form>::from_world(world).first(world, id) else {
         return false;
     };
-    world.get_mut::<Form>(owner).unwrap().pending = None;
+    receive_owned(world, owner, message);
+    true
+}
+
+pub(super) fn receive_owned(world: &mut World, owner: Entity, message: &ServerMessage) {
+    let (_, kind) = world
+        .get_mut::<Form>(owner)
+        .unwrap()
+        .pending
+        .take()
+        .unwrap();
     match message {
         ServerMessage::ActionOk {
             data: Some(data), ..
         } => {
-            if let Ok(rows) = serde_json::from_value(data["endpoints"].clone()) {
-                let mut state = world.get_mut::<Devices>(owner).unwrap();
-                state.rows = rows;
-                state.audience = data["audience"].as_str().unwrap_or_default().into();
+            if let Ok(rows) = Vec::<Endpoint>::deserialize(&data["endpoints"]) {
+                super::capture(world, owner);
+                super::publish(world, owner, rows, data["audience"].as_str().unwrap_or_default());
                 super::render(world, owner);
             }
             observe(world, owner, data);
@@ -905,7 +913,7 @@ pub(super) fn receive(world: &mut World, message: &ServerMessage) -> bool {
                 }
                 Backend::Configure => {
                     selected(world, owner).and_then(|row| {
-                        let stream: Option<store::signal_streams::Configuration> = serde_json::from_value(data["stream"].clone())
+                        let stream = Option::<store::signal_streams::Configuration>::deserialize(&data["stream"])
                             .map_err(|_| "Cell returned an invalid Signal configuration")?;
                         let form = world.get::<Form>(owner).unwrap();
                         let jpeg = form.values[KIND] == "camera" || (form.values[KIND] == "custom" && form.values[CUSTOM_OUTPUT] == "jpeg");
@@ -953,7 +961,6 @@ pub(super) fn receive(world: &mut World, message: &ServerMessage) -> bool {
             "Cell response was incomplete; refresh access before continuing",
         ),
     }
-    true
 }
 
 fn load_profile(world: &mut World, owner: Entity, profile: &lince_ailuros::profile::BoardProfile) {
@@ -1137,7 +1144,7 @@ pub(super) fn maintain(world: &mut World) {
                         world,
                         owner,
                         Request::SetEnabled {
-                            endpoint: row.uid,
+                            endpoint: row.uid.clone(),
                             expected_revision: row.revision,
                             enabled: true,
                         },

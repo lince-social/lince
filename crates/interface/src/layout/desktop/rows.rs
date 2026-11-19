@@ -1,6 +1,7 @@
 use super::*;
 
 mod sizing;
+mod solve;
 mod validation;
 mod transfers;
 mod compact;
@@ -299,102 +300,20 @@ impl Rows {
         }
     }
 
-    pub fn order(&mut self, influences: &BTreeMap<PlacementId, Influence>) {
+    pub fn order(
+        &mut self,
+        influences: &BTreeMap<PlacementId, Influence>,
+        ordering: &mut super::ordering::InfluenceOrder,
+    ) {
         let rank = |id: &PlacementId| influences.get(id).and_then(|influence| influence.order);
         for row in &mut self.rows {
-            let slots: Vec<_> = row
-                .items
-                .iter()
-                .enumerate()
-                .filter(|(_, item)| rank(&item.id).is_some())
-                .map(|(index, _)| index)
-                .collect();
-            let mut ordered: Vec<_> = slots
-                .iter()
-                .map(|index| row.items[*index].clone())
-                .collect();
-            ordered.sort_by_key(|item| (rank(&item.id), item.id));
-            for (index, item) in slots.into_iter().zip(ordered) {
-                row.items[index] = item;
-            }
+            ordering.members(&mut row.items, |item| {
+                rank(&item.id).map(|rank| (rank, item.id))
+            });
         }
-        let slots: Vec<_> = self
-            .rows
-            .iter()
-            .enumerate()
-            .filter(|(_, row)| row.items.iter().any(|item| rank(&item.id).is_some()))
-            .map(|(index, _)| index)
-            .collect();
-        let mut ordered: Vec<_> = slots
-            .iter()
-            .map(|index| self.rows[*index].clone())
-            .collect();
-        ordered.sort_by_key(|row| row.items.iter().filter_map(|item| rank(&item.id)).min());
-        for (index, row) in slots.into_iter().zip(ordered) {
-            self.rows[index] = row;
-        }
-    }
-
-    pub fn solve(
-        &self,
-        usable: Rectangle,
-        inner: [f64; 2],
-        gap: f64,
-        entries: &BTreeMap<PlacementId, &Item>,
-        minimized: &BTreeSet<PlacementId>,
-        influences: &BTreeMap<PlacementId, Influence>,
-        maximized: &BTreeSet<PlacementId>,
-    ) -> (Vec<SolvedItem>, [f64; 2]) {
-        let mut solved = Vec::with_capacity(entries.len());
-        let mut extent = inner;
-        let mut y = gap;
-        for row in &self.rows {
-            let visible: Vec<_> = row
-                .items
-                .iter()
-                .filter(|item| !minimized.contains(&item.id))
-                .collect();
-            if visible.is_empty() {
-                continue;
-            }
-            let height = visible
-                .iter()
-                .filter(|item| !self.compact.iter().any(|group| group.active == item.id))
-                .map(|item| f64::from(entries[&item.id].rules.axes[1].min))
-                .fold(if visible.iter().any(|item| maximized.contains(&item.id)) { inner[1] } else { row.height.spaced(inner[1], gap) }, f64::max)
-                .max(if visible.iter().any(|item| self.compact.iter().any(|group| group.active == item.id)) { COMPACT_HEADER_HEIGHT + 1.0 } else { 1.0 });
-            let mut row_height = height;
-            let mut x = gap;
-            for item in visible {
-                let compact = self.compact.iter().any(|group| group.active == item.id);
-                let rules = entries[&item.id].rules;
-                let scale = if maximized.contains(&item.id) { 1.0 } else { influences.get(&item.id).copied().unwrap_or_default().scale };
-                let requested_width = if maximized.contains(&item.id) { inner[0] } else { item.width.spaced(inner[0], gap) };
-                let width = (requested_width * scale)
-                    .clamp(f64::from(rules.axes[0].min), f64::from(rules.axes[0].max));
-                let size = [
-                    width,
-                    ((if compact { (height - COMPACT_HEADER_HEIGHT).max(1.0) } else { height }) * scale)
-                        .clamp(f64::from(rules.axes[1].min), f64::from(rules.axes[1].max)),
-                ];
-                if !compact { row_height = row_height.max(size[1]); }
-                solved.push(SolvedItem {
-                    id: item.id,
-                    rectangle: Rectangle::new(
-                        [usable.origin()[0] + x, usable.origin()[1] + y + if compact { COMPACT_HEADER_HEIGHT } else { 0.0 }],
-                        size,
-                    )
-                    .unwrap(),
-                    floating: false,
-                });
-                extent[1] = extent[1].max(y + size[1] + gap);
-                x += if compact { requested_width + gap } else { width + gap };
-            }
-            extent[0] = extent[0].max(x);
-            y += row_height + gap;
-        }
-        extent[1] = extent[1].max(y);
-        (solved, extent)
+        ordering.groups(&mut self.rows, |row| {
+            row.items.iter().filter_map(|item| rank(&item.id)).min()
+        });
     }
 }
 

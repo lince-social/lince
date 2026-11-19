@@ -1,7 +1,9 @@
 mod input;
 pub(crate) mod login_view;
+mod pending_input;
 mod presentation;
 mod run_view;
+mod service;
 #[cfg(test)]
 mod tests;
 mod vt;
@@ -14,7 +16,7 @@ use crate::native::{actions::Action, sand_panel as panel};
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 use bevy::{input_focus::InputFocus, prelude::*};
 use cell::{ClientMessage, ServerMessage};
-use std::collections::{HashMap, VecDeque};
+use std::collections::HashMap;
 
 const CELL_WIDTH: f32 = 15.0 * 1233.0 / 2048.0;
 const CELL_HEIGHT: f32 = 18.0;
@@ -83,7 +85,7 @@ pub struct TerminalSand {
     frame: Option<std::sync::Arc<vt::Frame>>,
     lines: Vec<Entity>,
     cursor: Entity,
-    input: VecDeque<Vec<u8>>,
+    input: pending_input::Input,
 }
 
 #[derive(Component)]
@@ -100,7 +102,7 @@ impl Plugin for TerminalPlugin {
             .add_message::<crate::native::cell_bridge::CellMessage>()
             .add_systems(
                 Update,
-                update.after(crate::native::cell_bridge::ReceiveCell),
+                service::update.after(crate::native::cell_bridge::ReceiveCell),
             );
     }
 }
@@ -164,7 +166,7 @@ fn populate_view(world: &mut World, sand: Entity, embedded: bool) -> Entity {
             frame: None,
             lines: Vec::new(),
             cursor,
-            input: VecDeque::new(),
+            input: pending_input::Input::default(),
         },
         crate::native::sand_store::SandCredits(CREDITS),
     ));
@@ -332,234 +334,17 @@ fn close(world: &mut World, owner: Entity) {
     panel::status(world, status, "Shell closed");
 }
 
-fn update(
-    world: &mut World,
-    mut cursor: Local<bevy::ecs::message::MessageCursor<crate::native::cell_bridge::CellMessage>>,
-) {
-    let messages: Vec<_> = cursor
-        .read(world.resource::<Messages<crate::native::cell_bridge::CellMessage>>())
-        .filter(|message| {
-            matches!(
-                message.0.as_ref(),
-                ServerMessage::TerminalOpened { .. }
-                    | ServerMessage::TerminalData { .. }
-                    | ServerMessage::TerminalExit { .. }
-                    | ServerMessage::FioteTerminal { .. }
-                    | ServerMessage::Command { .. }
-                    | ServerMessage::Error { .. }
+fn geometry(world: &World, screen: Entity) -> Option<(u16, u16)> {
+    world
+        .get::<ComputedNode>(screen)
+        .filter(|node| node.size().x > 0.0)
+        .map(|node| {
+            let size = node.size() * node.inverse_scale_factor();
+            (
+                (size.x / CELL_WIDTH).floor().clamp(10.0, 240.0) as u16,
+                (size.y / CELL_HEIGHT).floor().clamp(4.0, 100.0) as u16,
             )
         })
-        .map(|message| message.0.clone())
-        .collect();
-    for message in messages.iter().map(|message| message.as_ref()) {
-        receive(world, message);
-    }
-    let removed: Vec<_> = world
-        .resource::<Sessions>()
-        .0
-        .iter()
-        .filter(|(entity, (id, _))| {
-            world
-                .get::<TerminalSand>(**entity)
-                .is_none_or(|view| view.session.as_ref() != Some(id))
-        })
-        .map(|(entity, (id, sender))| (*entity, id.clone(), sender.clone()))
-        .collect();
-    for (entity, id, sender) in removed {
-        if !matches!(
-            sender.try_send(ClientMessage::TerminalClose { id }),
-            Err(tokio::sync::mpsc::error::TrySendError::Full(_))
-        ) {
-            world.resource_mut::<Sessions>().0.remove(&entity);
-        }
-    }
-    let owners: Vec<_> = world
-        .query_filtered::<Entity, With<TerminalSand>>()
-        .iter(world)
-        .collect();
-    for owner in owners {
-        run_view::poll(world, owner);
-        login_view::poll(world, owner);
-        let terminal = world.get::<TerminalSand>(owner).unwrap();
-        let status = terminal.status;
-        let geometry = world
-            .get::<ComputedNode>(terminal.screen)
-            .filter(|node| node.size().x > 0.0)
-            .map(|node| {
-                let size = node.size() * node.inverse_scale_factor();
-                (
-                    (size.x / CELL_WIDTH).floor().clamp(10.0, 240.0) as u16,
-                    (size.y / CELL_HEIGHT).floor().clamp(4.0, 100.0) as u16,
-                )
-            })
-            .unwrap_or(terminal.geometry);
-        if geometry != terminal.geometry
-            && world.get::<run_view::RunView>(owner).is_none()
-            && world.get::<login_view::LoginView>(owner).is_none()
-        {
-            let result = if terminal.opened {
-                panel::send(
-                    world,
-                    owner,
-                    ClientMessage::TerminalResize {
-                        id: terminal.session.clone().unwrap(),
-                        cols: geometry.0,
-                        rows: geometry.1,
-                        pixel_width: geometry.0 * 9,
-                        pixel_height: geometry.1 * 18,
-                    },
-                )
-                .and_then(|()| {
-                    command(
-                        world,
-                        owner,
-                        worker::Command::Resize(geometry.0, geometry.1),
-                    )
-                })
-            } else if terminal.session.is_some() {
-                Err("Waiting for shell".into())
-            } else {
-                Ok(())
-            };
-            if result.is_ok() {
-                world.get_mut::<TerminalSand>(owner).unwrap().geometry = geometry;
-            }
-        }
-        let output = world
-            .get::<TerminalSand>(owner)
-            .unwrap()
-            .worker
-            .as_ref()
-            .map(worker::Worker::take);
-        if let Some(output) = output {
-            if let Some(error) = output.error {
-                close(world, owner);
-                panel::status(world, status, error);
-                continue;
-            }
-            if output.input_bytes != 0 {
-                // This is the only production append path; consuming/clearing input cannot
-                // exceed the limit, so empty worker deliveries need no rescan.
-                let queued: usize = world
-                    .get::<TerminalSand>(owner)
-                    .unwrap()
-                    .input
-                    .iter()
-                    .map(Vec::len)
-                    .sum();
-                if queued + output.input_bytes > 1024 * 1024 {
-                    close(world, owner);
-                    panel::status(world, status, "Terminal input queue is full; shell closed");
-                    continue;
-                }
-                if !world.get::<TerminalSand>(owner).unwrap().exited {
-                    world
-                        .get_mut::<TerminalSand>(owner)
-                        .unwrap()
-                        .input
-                        .extend(output.input);
-                }
-            }
-            if let Some(frame) = output.frame {
-                render(world, owner, frame);
-            }
-        }
-        loop {
-            if world.get::<login_view::LoginView>(owner).is_some() {
-                break;
-            }
-            let terminal = world.get::<TerminalSand>(owner).unwrap();
-            if !terminal.opened {
-                break;
-            }
-            let Some(bytes) = terminal.input.front() else {
-                break;
-            };
-            let message = if let Some(run) = world.get::<run_view::RunView>(owner) {
-                ClientMessage::Command {
-                    id: run.run.clone(),
-                    request: cell::command::Request::Input {
-                        command: run.command.clone(),
-                        run: run.run.clone(),
-                        data_base64: BASE64.encode(bytes),
-                    },
-                }
-            } else {
-                ClientMessage::TerminalInput {
-                    id: terminal.session.clone().unwrap(),
-                    data_base64: BASE64.encode(bytes),
-                }
-            };
-            if let Err(error) = panel::send(world, owner, message) {
-                panel::status(world, status, error);
-                break;
-            }
-            world
-                .get_mut::<TerminalSand>(owner)
-                .unwrap()
-                .input
-                .pop_front();
-        }
-    }
-}
-
-fn receive(world: &mut World, message: impl std::borrow::Borrow<ServerMessage>) {
-    let message = message.borrow();
-    if login_view::receive(world, &message) || run_view::receive(world, &message) {
-        return;
-    }
-    let id = match &message {
-        ServerMessage::TerminalOpened { id, .. }
-        | ServerMessage::TerminalData { id, .. }
-        | ServerMessage::TerminalExit { id, .. }
-        | ServerMessage::Error { id, .. } => id,
-        _ => return,
-    };
-    let owners: Vec<_> = world
-        .query::<(Entity, &TerminalSand)>()
-        .iter(world)
-        .filter(|(_, terminal)| {
-            terminal.session.as_ref() == Some(id) || id == crate::native::cell_bridge::CONNECTION
-        })
-        .map(|(entity, terminal)| (entity, terminal.status))
-        .collect();
-    for (owner, status) in owners {
-        match &message {
-            ServerMessage::TerminalOpened { shell, cwd, .. } => {
-                world.get_mut::<TerminalSand>(owner).unwrap().opened = true;
-                panel::status(world, status, format!("{shell} · {cwd}"));
-            }
-            ServerMessage::TerminalData { data_base64, .. } => {
-                let result = BASE64
-                    .decode(data_base64)
-                    .map_err(|e| e.to_string())
-                    .and_then(|bytes| command(world, owner, worker::Command::Feed(bytes)));
-                if let Err(error) = result {
-                    close(world, owner);
-                    panel::status(world, status, error);
-                }
-            }
-            ServerMessage::TerminalExit { exit_code, .. } => {
-                let mut terminal = world.get_mut::<TerminalSand>(owner).unwrap();
-                terminal.opened = false;
-                terminal.exited = true;
-                terminal.input.clear();
-                panel::status(
-                    world,
-                    status,
-                    format!(
-                        "Shell exited{}",
-                        exit_code.map_or(String::new(), |code| format!(" ({code})"))
-                    ),
-                );
-            }
-            ServerMessage::Error { message, .. } => {
-                close(world, owner);
-                panel::status(world, status, message);
-            }
-            _ => {}
-        }
-    }
 }
 
 struct Run {

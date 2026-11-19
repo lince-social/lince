@@ -1,14 +1,16 @@
-use std::{cell::RefCell, collections::BTreeMap, future::Future};
+use std::{cell::RefCell, collections::BTreeMap, future::Future, sync::Arc};
 
 use nucleus::DecimalValue;
 use nucleus::transfer::karma::Snapshot;
 
 use crate::{Engine, EngineError};
 
+pub(crate) type Snapshots = Arc<BTreeMap<String, Arc<Snapshot>>>;
+
 #[derive(Default)]
 pub(crate) struct Readings {
     actor: Option<String>,
-    pub(crate) snapshots: BTreeMap<String, Snapshot>,
+    pub(crate) snapshots: Option<Snapshots>,
     pub(crate) guards: BTreeMap<String, nucleus::transfer::karma::Guard>,
 }
 
@@ -27,7 +29,7 @@ pub(crate) async fn scope<F: Future>(actor: Option<&str>, future: F) -> F::Outpu
             .scope(
                 RefCell::new(Readings {
                     actor: actor.map(str::to_owned),
-                    snapshots: BTreeMap::new(),
+                    snapshots: None,
                     guards: BTreeMap::new(),
                 }),
                 future,
@@ -50,7 +52,7 @@ fn invalid(message: impl ToString) -> EngineError {
 impl Engine {
     pub(crate) async fn resolve_karma_transfer(&self, token: &str) -> Result<String, EngineError> {
         let token = token.trim_start_matches('@');
-        if let Some(record) = store::records::resolve(&self.store.pool, token).await? {
+        if let Some(record) = store::records::resolve_kind(&self.store.pool, token).await? {
             return if record.kind == "transfer" {
                 Ok(record.uid)
             } else {
@@ -89,7 +91,7 @@ impl Engine {
             .into_iter()
             .find(|row| row["uid"] == transfer)
             .ok_or_else(|| invalid("Transfer is outside what this login may read"))?;
-        let state: Snapshot = serde_json::from_value(row["karma_state"].clone()).map_err(|_| {
+        let state: Snapshot = serde::Deserialize::deserialize(&row["karma_state"]).map_err(|_| {
             invalid(
                 "Transfer has no current authorized automation snapshot; receive a fresh delivery",
             )
@@ -107,7 +109,8 @@ impl Engine {
         &self,
         token: &str,
         actor: Option<&str>,
-    ) -> Result<Snapshot, EngineError> {
+    ) -> Result<Arc<Snapshot>, EngineError> {
+        let _read = nucleus::performance::Span::new("karma-transfer-snapshot-read-await");
         self.require_permission(actor, "transfer:read").await?;
         if let Ok(Some(state)) = READINGS.try_with(|readings| {
             let readings = readings.borrow();
@@ -115,25 +118,43 @@ impl Engine {
                 .then(|| {
                     readings
                         .snapshots
-                        .get(token.trim_start_matches('@'))
+                        .as_ref()
+                        .and_then(|snapshots| snapshots.get(token.trim_start_matches('@')))
                         .cloned()
                 })
                 .flatten()
         }) {
+            nucleus::performance::add("karma-transfer-snapshot-reuses", 1);
             return Ok(state);
         }
         let transfer = self.resolve_karma_transfer(token).await?;
-        if let Ok(Some(state)) =
-            READINGS.try_with(|readings| readings.borrow().snapshots.get(&transfer).cloned())
-        {
+        if let Ok(Some(state)) = READINGS.try_with(|readings| {
+            readings
+                .borrow()
+                .snapshots
+                .as_ref()
+                .and_then(|snapshots| snapshots.get(&transfer))
+                .cloned()
+        }) {
+            nucleus::performance::add("karma-transfer-snapshot-reuses", 1);
             return Ok(state);
         }
-        let state = self.transfer_karma_snapshot(&transfer, actor).await?;
+        let state = Arc::new(self.transfer_karma_snapshot(&transfer, actor).await?);
+        nucleus::performance::add("karma-transfer-snapshots-shared", 1);
         let _ = READINGS.try_with(|readings| {
-            readings
-                .borrow_mut()
+            let mut readings = readings.borrow_mut();
+            let _publication =
+                nucleus::performance::Span::new("karma-transfer-snapshot-publication");
+            let snapshots = readings
                 .snapshots
-                .insert(transfer, state.clone())
+                .get_or_insert_with(|| Arc::new(BTreeMap::new()));
+            if Arc::strong_count(snapshots) > 1 {
+                nucleus::performance::add(
+                    "karma-transfer-snapshot-map-entries-copied",
+                    snapshots.len() as u64,
+                );
+            }
+            Arc::make_mut(snapshots).insert(transfer, state.clone())
         });
         Ok(state)
     }
@@ -162,7 +183,7 @@ impl Engine {
                 let person = names
                     .get(1)
                     .ok_or_else(|| invalid("Agreement readings need a Transfer and a Person"))?;
-                let person = store::records::resolve(&self.store.pool, person)
+                let person = store::records::resolve_kind(&self.store.pool, person)
                     .await?
                     .filter(|record| record.kind == "person")
                     .ok_or_else(|| invalid("Agreement Person is unavailable"))?;
@@ -209,7 +230,7 @@ impl Engine {
             if self.resolve_karma_transfer(input).await.is_ok() {
                 self.cached_transfer_snapshot(input, actor).await?;
             } else {
-                self.refuse_unreadable(actor, &[input.clone()]).await?;
+                self.refuse_unreadable(actor, std::slice::from_ref(input)).await?;
             }
         }
         Ok(())

@@ -202,7 +202,7 @@ async fn credential_on(
                 CASE WHEN valid = 1 THEN username END,
                 CASE WHEN valid = 1 THEN password_hash END FROM bounded"
     );
-    let row = sqlx::query_as::<_, (i64, Option<String>, Option<String>, Option<String>)>(&query)
+    let row = sqlx::query_as::<_, (i64, Option<String>, Option<String>, Option<String>)>(sqlx::AssertSqlSafe(query.as_str()))
         .bind(MAX_USERNAME_BYTES as i64)
         .bind(MAX_PASSWORD_HASH_BYTES as i64)
         .bind(identity)
@@ -274,6 +274,7 @@ pub async fn granted_login_on(
     organ_uid: &str,
     authenticated_node_id: &str,
 ) -> Result<Option<AuthenticationState>, StoreError> {
+    let _read = nucleus::performance::Span::new("session-granted-login-read");
     record_uid(organ_uid)?;
     node_id(authenticated_node_id)?;
     let row = sqlx::query_as::<_, (i64, i64, Option<String>)>(
@@ -281,11 +282,12 @@ pub async fn granted_login_on(
              SELECT COUNT(*) AS matches,
                     COALESCE(SUM(CASE WHEN typeof(organ_uid) = 'text' AND typeof(person_uid) = 'text'
                               AND length(CAST(person_uid AS BLOB)) = 28 THEN 0 ELSE 1 END), 0) AS invalid
-               FROM organ_login WHERE CAST(organ_uid AS TEXT) = ?
+               FROM organ_login WHERE organ_uid = ? OR organ_uid = CAST(? AS BLOB)
          )
          SELECT b.matches, b.invalid, l.person_uid FROM bounded b
            LEFT JOIN organ_login l ON b.matches = 1 AND b.invalid = 0 AND l.organ_uid = ? LIMIT 1",
     )
+    .bind(organ_uid)
     .bind(organ_uid)
     .bind(organ_uid)
     .fetch_one(&mut *connection)

@@ -62,9 +62,6 @@ fn status_only(previous: Row<'_>, current: Row<'_>) -> Option<String> {
 }
 
 fn items(catalog: &Catalog) -> Vec<(Key, Row<'_>)> {
-    // Resolve cross-row action inputs once, retaining the original first-match
-    // semantics. A delivery's retry control depends on its provider, not only
-    // on the delivery row itself.
     let mut providers = HashMap::new();
     for package in &catalog.packages {
         for contribution in &package.manifest.contributions {

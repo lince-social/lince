@@ -34,22 +34,24 @@ impl Engine {
         now: DateTime<Utc>,
         publication_inputs: bool,
     ) -> Result<QueryEvaluation, EngineError> {
+        let _span = nucleus::performance::Span::new("trust-query-evaluation");
         query.validate().map_err(invalid)?;
         let changed = self.watch_query_changes();
         let revision = changed.borrow().revision();
-        let known_filter = [&query.issuers, &query.counterparties]
-            .into_iter()
-            .any(|filter| {
-                filter
-                    .include
-                    .iter()
-                    .chain(&filter.exclude)
-                    .any(|condition| condition.known.is_some())
-            });
-        let known_policy = known_filter.then(|| {
+        let needs_known_policy = query.contacts.is_none()
+            && [&query.issuers, &query.counterparties]
+                .into_iter()
+                .any(|filter| {
+                    filter
+                        .include
+                        .iter()
+                        .chain(&filter.exclude)
+                        .any(|condition| condition.known.is_some())
+                });
+        let known_policy = needs_known_policy.then(|| {
             nucleus::trust_analysis::paths::Policy::for_anchor(Identity::Person(person.into()))
         });
-        let contacts = if let Some(policy) = query.contacts.as_ref().or(known_policy.as_ref()) {
+        let mut contacts = if let Some(policy) = query.contacts.as_ref().or(known_policy.as_ref()) {
             let mut policy = policy.clone();
             policy
                 .exclude_everywhere
@@ -94,26 +96,29 @@ impl Engine {
             .await?;
         self.contact_reader_on(&mut tx, person, actor, as_organ)
             .await?;
-        let mut contexts = contacts
-            .as_ref()
-            .map(|contacts| contacts.contexts.clone())
-            .unwrap_or_else(BTreeMap::new);
-        if contexts
-            .keys()
-            .chain(identities.iter())
-            .collect::<BTreeSet<_>>()
-            .len()
-            > nucleus::trust_analysis::MAX_IDENTITIES
-        {
-            return Err(invalid(
-                "The shared graph/evidence identity budget was reached; narrow this query",
-            ));
-        }
+        let mut contexts = {
+            let _preparation = nucleus::performance::Span::new("trust-query-context-preparation");
+            let contexts = contacts
+                .as_mut()
+                .map(|contacts| std::mem::take(&mut contacts.contexts))
+                .unwrap_or_else(BTreeMap::new);
+            nucleus::performance::add("trust-query-contexts-moved", contexts.len() as u64);
+            let additions = identities
+                .iter()
+                .filter(|identity| !contexts.contains_key(*identity))
+                .count();
+            if contexts.len().saturating_add(additions) > nucleus::trust_analysis::MAX_IDENTITIES {
+                return Err(invalid(
+                    "The shared graph/evidence identity budget was reached; narrow this query",
+                ));
+            }
+            contexts
+        };
         for identity in identities {
             let mut context = self
                 .contact_identity_context_on(&mut tx, &identity, actor)
                 .await?;
-            context.known |= identity == Identity::Person(person.into());
+            context.known |= matches!(&identity, Identity::Person(uid) if uid == person);
             if let Some(previous) = contexts.get(&identity) {
                 context.known |= previous.known;
             }

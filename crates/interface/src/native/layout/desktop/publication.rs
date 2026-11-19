@@ -2,8 +2,6 @@ use super::*;
 
 pub(super) type Corners = [[f64; 2]; 4];
 
-/// Resolver geometry has at most one rectangular compact clip. Keep that shape
-/// inline until publication, where existing polygon storage can be reused.
 pub(super) struct ResolvedItem {
     pub(super) id: ItemId,
     pub(super) output: OutputId,
@@ -184,7 +182,6 @@ impl Publication {
             },
         ));
         for output in &snapshot.outputs {
-            // Original output lookup used the first matching output/workspace.
             self.outputs
                 .entry((output.id, output.workspace))
                 .or_insert(output.bounds);
@@ -195,8 +192,6 @@ impl Publication {
             snapshot.items.len() as u64,
         );
         for (index, geometry) in snapshot.items.iter().enumerate() {
-            // Preserve the old full-snapshot equality behavior even for an
-            // externally supplied non-reflexive (NaN) mapping or polygon.
             changed |= geometry.mapping.corners.as_ref().is_some_and(|corners| {
                 corners
                     .iter()
@@ -285,8 +280,6 @@ pub(super) fn publish(world: &mut World) {
         if !publication.prepare(world, snapshot) {
             return;
         }
-        // Prepare against one unchanged snapshot, then publish the batch once.
-        // No temporal geometry, clipping or owner decision is reused.
         let mut published = world.resource_mut::<PublishedGeometry>();
         let snapshot = published.0.as_mut().unwrap();
         engine::performance::add(

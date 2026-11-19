@@ -629,7 +629,11 @@ pub fn refresh(world: &mut World, parent: Entity, data: &Value) -> bool {
                 false
             }
         });
-        if !order.iter().copied().eq(page.order.iter().map(String::as_str)) {
+        if !order
+            .iter()
+            .copied()
+            .eq(page.order.iter().map(String::as_str))
+        {
             let entities: Vec<_> = order.iter().map(|uid| page.messages[*uid]).collect();
             world.entity_mut(page.list).replace_children(&entities);
             nucleus::performance::add("thread-message-orders-updated", 1);
@@ -771,7 +775,7 @@ impl Action for LoadOlder {
 }
 
 fn scroll(
-    event: On<Pointer<Scroll>>,
+    event: On<PointerScroll>,
     views: Query<(&Viewport, &ScrollPosition)>,
     parents: Query<&ChildOf>,
     mut commands: Commands,
@@ -793,6 +797,7 @@ fn scroll(
 }
 
 fn anchor_scroll(mut views: Query<(&mut Viewport, &mut ScrollPosition, &ComputedNode)>) {
+    let _anchor = nucleus::performance::Span::new("thread-scroll-anchoring");
     for (mut view, mut position, node) in &mut views {
         if node.size().y <= 0.0 {
             continue;
@@ -801,30 +806,53 @@ fn anchor_scroll(mut views: Query<(&mut Viewport, &mut ScrollPosition, &Computed
         let viewport = node.size().y * node.inverse_scale_factor();
         let maximum = (height - viewport).max(0.0);
         let bottom = position.0.y >= (view.height - viewport).max(0.0) - 2.0;
-        if !view.initialized || (bottom && !view.prepend) {
-            position.0.y = maximum;
+        let offset = if !view.initialized || (bottom && !view.prepend) {
+            Some(maximum)
         } else if view.prepend {
-            position.0.y = (position.0.y + height - view.height).clamp(0.0, maximum);
+            Some((position.0.y + height - view.height).clamp(0.0, maximum))
+        } else {
+            None
+        };
+        if let Some(offset) = offset
+            && position.0.y != offset
+        {
+            position.0.y = offset;
+            nucleus::performance::add("thread-scroll-offset-publications", 1);
         }
-        view.height = height;
-        view.initialized = true;
-        view.prepend = false;
+        if view.height != height {
+            view.height = height;
+        }
+        if !view.initialized {
+            view.initialized = true;
+        }
+        if view.prepend {
+            view.prepend = false;
+        }
     }
 }
 
-fn load_errors(world: &mut World) {
-    let errors: Vec<_> = world
-        .query::<(Entity, &Page)>()
-        .iter(world)
-        .filter(|(_, page)| page.requested.is_some())
-        .filter_map(|(entity, page)| {
-            let castle = world.get::<ThreadCastle>(page.castle)?;
-            let status =
-                crate::native::protein_area::thread_load_error(world, castle.binding.area)?;
-            Some((entity, page.status, status.to_owned()))
-        })
-        .collect();
-    for (entity, label, error) in errors {
+fn load_errors(
+    world: &mut World,
+    pages: &mut QueryState<(Entity, &'static Page)>,
+    mut errors: Local<Vec<(Entity, Entity, String)>>,
+) {
+    let _errors = nucleus::performance::Span::new("thread-load-errors");
+    errors.clear();
+    errors.extend(
+        pages
+            .iter(world)
+            .filter(|(_, page)| page.requested.is_some())
+            .filter_map(|(entity, page)| {
+                let castle = world.get::<ThreadCastle>(page.castle)?;
+                let status =
+                    crate::native::protein_area::thread_load_error(world, castle.binding.area)?;
+                Some((entity, page.status, status.to_owned()))
+            }),
+    );
+    if errors.is_empty() {
+        errors.shrink_to_fit();
+    }
+    for (entity, label, error) in errors.drain(..) {
         world.get_mut::<Page>(entity).unwrap().requested = None;
         world.get_mut::<Text>(label).unwrap().0 = error;
     }
@@ -945,18 +973,18 @@ fn select_focused_tab(world: &mut World) {
     let focused = world
         .get_resource::<bevy::input_focus::InputFocus>()
         .and_then(|focus| focus.get());
-    let Some((castle, thread)) = focused
-        .and_then(|entity| world.get::<TabName>(entity))
-        .map(|tab| (tab.castle, tab.thread.clone()))
-    else {
+    let Some(tab) = focused.and_then(|entity| world.get::<TabName>(entity)) else {
         return;
     };
-    if let Some(mut state) = world.get_mut::<ThreadCastle>(castle)
-        && state.active.as_ref() != Some(&thread)
+    if world
+        .get::<ThreadCastle>(tab.castle)
+        .is_none_or(|castle| castle.active.as_ref() == Some(&tab.thread))
     {
-        state.active = Some(thread);
-        show_active(world, castle);
+        return;
     }
+    let (castle, thread) = (tab.castle, tab.thread.clone());
+    world.get_mut::<ThreadCastle>(castle).unwrap().active = Some(thread);
+    show_active(world, castle);
 }
 
 fn composer_size(
@@ -1005,12 +1033,15 @@ fn composer_keys(world: &mut World) {
     let focused = world
         .get_resource::<bevy::input_focus::InputFocus>()
         .and_then(|focus| focus.get());
-    let form = world
-        .query::<(Entity, &ThreadForm)>()
-        .iter(world)
-        .find(|(_, form)| Some(form.input) == focused)
-        .map(|(entity, form)| (entity, form.input));
-    let Some((form, input)) = form else { return };
+    let Some(input) = focused else {
+        return;
+    };
+    let Some(form) = world
+        .run_system_cached_with(form_for_input, input)
+        .expect("find current thread composer")
+    else {
+        return;
+    };
     let mut text = world.get_mut::<EditableText>(input).unwrap();
     if text.is_composing()
         || text.pending_edits.iter().any(|edit| {
@@ -1030,12 +1061,24 @@ fn composer_keys(world: &mut World) {
     }
 }
 
-fn submit_keys(world: &mut World) {
-    let forms: Vec<_> = world
-        .query_filtered::<Entity, With<SubmitRequested>>()
-        .iter(world)
-        .collect();
-    for form in forms {
+fn form_for_input(In(input): In<Entity>, forms: Query<(Entity, &ThreadForm)>) -> Option<Entity> {
+    forms
+        .iter()
+        .find(|(_, form)| form.input == input)
+        .map(|(entity, _)| entity)
+}
+
+fn submit_keys(
+    world: &mut World,
+    forms: &mut QueryState<Entity, With<SubmitRequested>>,
+    mut pending: Local<Vec<Entity>>,
+) {
+    pending.clear();
+    pending.extend(forms.iter(world));
+    if pending.is_empty() {
+        pending.shrink_to_fit();
+    }
+    for form in pending.drain(..) {
         world.entity_mut(form).remove::<SubmitRequested>();
         Send.apply(world, form);
     }
@@ -1137,24 +1180,32 @@ impl Action for Send {
 }
 
 fn focus_composer(world: &mut World, owner: Entity) {
-    let Some(castle) = world.get::<ThreadCastle>(owner) else {
-        return;
-    };
-    let (active, binding) = (castle.active.clone(), castle.binding.clone());
     let input = world
-        .query::<&ThreadForm>()
-        .iter(world)
-        .find(|form| {
-            form.thread == active
-                && form.binding.uid == binding.uid
-                && form.binding.area == binding.area
-        })
-        .map(|form| form.input);
+        .run_system_cached_with(active_composer, owner)
+        .expect("find active thread composer");
     if let Some(input) = input
         && let Some(mut focus) = world.get_resource_mut::<bevy::input_focus::InputFocus>()
     {
         focus.set(input, bevy::input_focus::FocusCause::Navigated);
     }
+}
+
+fn active_composer(
+    In(owner): In<Entity>,
+    world: &mut World,
+    forms: &mut QueryState<&'static ThreadForm>,
+) -> Option<Entity> {
+    let Some(castle) = world.get::<ThreadCastle>(owner) else {
+        return None;
+    };
+    forms
+        .iter(world)
+        .find(|form| {
+            form.thread == castle.active
+                && form.binding.uid == castle.binding.uid
+                && form.binding.area == castle.binding.area
+        })
+        .map(|form| form.input)
 }
 
 pub(crate) fn created(world: &mut World, entity: Entity, created: Option<&str>) {

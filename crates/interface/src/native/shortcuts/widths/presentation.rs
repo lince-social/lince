@@ -43,8 +43,6 @@ pub(super) fn observe(world: &World, modal: &mut Modal) -> bool {
     changed |= previous.flags != flags;
     previous.flags = flags;
     modal.observed = previous;
-    // Only value changes clear action feedback. Composition/pending state still
-    // invalidates Prepared, but did not clear this message in the original path.
     changed
 }
 
@@ -227,8 +225,6 @@ fn render_summaries(world: &mut World, presentation: &mut Presentation) {
             presentation.focus.insert(root, focused);
         }
     }
-    // Keep the first matching native item, as the former per-view find did.
-    // Geometry is read afresh every pass; only its textual projection is retained.
     let mut remaining = presentation.focus.len();
     if remaining != 0 {
         for (managed, item, parent) in presentation.managed.iter(world) {

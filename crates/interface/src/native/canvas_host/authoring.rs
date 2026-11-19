@@ -551,8 +551,6 @@ fn entities(editing: &Editing) -> BTreeMap<String, Entity> {
         .collect()
 }
 
-// This index lives only within one immutable-world index/validation/inspection
-// phase. A phase without layout parents never materializes it.
 struct LayoutParts<'a> {
     parts: &'a BTreeMap<String, Entity>,
     by_id: OnceCell<BTreeMap<[u8; 16], &'a str>>,
@@ -574,7 +572,6 @@ impl<'a> LayoutParts<'a> {
             let mut by_id = BTreeMap::new();
             for (part, entity) in self.parts {
                 if let Some(layout) = world.get::<crate::native::layout::LayoutBox>(*entity) {
-                    // Preserve the old lookup's first match in part-ID order.
                     by_id.entry(layout.id).or_insert(part.as_str());
                 }
             }

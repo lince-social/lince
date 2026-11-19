@@ -68,12 +68,9 @@ impl Engine {
         let mut consumed = None;
         for (key, position) in positions {
             if collection.selected.contains(&key) {
-                let saved = &collection.artifacts[&key];
-                let bundle = saved.document.public_bundle().unwrap();
-                let scope = &bundle.publication.scope;
-                let scope_id = scope.id().map_err(invalid)?;
-                let resolution = &resolutions[&scope_id];
-                let (projected, pending) = super::collection::project_history(saved, resolution)?;
+                let artifact = collection.artifact(&key);
+                let resolution = &resolutions[artifact.scope()];
+                let (projected, pending) = artifact.project_history(resolution)?;
                 partial |= !pending.is_empty();
                 let size = nucleus::json::encoded_len(&(&projected, &pending))?;
                 if projected_bytes.saturating_add(size) > 4 * 1024 * 1024 {

@@ -1,4 +1,4 @@
-use nucleus::shader_effect::bindings::{NumericBinding, NumericField, NumericSource};
+use nucleus::shader_effect::bindings::NumericField;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::{BTreeSet, HashMap};
@@ -16,22 +16,16 @@ pub fn key(field: &NumericField) -> String {
 }
 
 pub fn validate(requests: &[Request]) -> Result<(), crate::ProteinError> {
+    let _validation = nucleus::performance::Span::new("numeric-projection-validation");
     if requests.len() > 128 {
         return Err(store::StoreError::Protocol(
             "Numeric projections support at most 128 requested fields.".into(),
         ));
     }
     for request in requests {
-        nucleus::shader_effect::bindings::validate(&[NumericBinding {
-            slot: 0,
-            label: "Reading".into(),
-            source: NumericSource {
-                organ: None,
-                record: Some(request.record.clone()),
-                field: request.field.clone(),
-            },
-        }])
-        .map_err(store::StoreError::Protocol)?;
+        nucleus::performance::add("numeric-projection-validation-attempts", 1);
+        nucleus::shader_effect::bindings::validate_record_field(&request.record, &request.field)
+            .map_err(store::StoreError::Protocol)?;
     }
     Ok(())
 }

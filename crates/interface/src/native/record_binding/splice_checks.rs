@@ -59,11 +59,11 @@ fn compare(property: &str, before: &str, after: &str) {
     assert_eq!(actual.get_pending_txn_len(), 0);
     assert_eq!(
         serde_json::to_value(
-            actual.export_json_updates_without_peer_compression(&version, &actual.oplog_vv())
+            actual.export_json_updates_without_peer_compression(&version, &actual.oplog_vv()).unwrap()
         )
         .unwrap(),
         serde_json::to_value(
-            expected.export_json_updates_without_peer_compression(&version, &expected.oplog_vv())
+            expected.export_json_updates_without_peer_compression(&version, &expected.oplog_vv()).unwrap()
         )
         .unwrap()
     );

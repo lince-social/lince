@@ -139,7 +139,7 @@ pub unsafe fn mixed_gemv_colmajor<
         alpha: Acc,
         beta: Acc,
     ) {
-        #[allow(dead_code)]
+        #[allow(dead_code, reason = "The local SIMD adapter uses different fields for different instantiations")]
         struct Impl<'a, Lhs, Rhs, Dst, Acc, S> {
             simd: S,
             m: usize,
@@ -373,7 +373,7 @@ pub unsafe fn mixed_gemv_rowmajor<
         alpha: Acc,
         beta: Acc,
     ) {
-        #[allow(dead_code)]
+        #[allow(dead_code, reason = "The local SIMD adapter uses different fields for different instantiations")]
         struct Impl<Lhs, Rhs, Dst, Acc, S> {
             simd: S,
             dst: *mut Dst,

@@ -1,17 +1,24 @@
-use bevy::{prelude::*, text::EditableText};
+use bevy::{ecs::entity_disabling::Disabled, prelude::*, text::EditableText};
 
 use super::*;
+mod presentation;
 
 #[derive(Component)]
-struct Commands {
+pub(super) struct Commands {
     panel: Entity,
-    rows: Vec<Value>,
+    rows: Arc<Vec<Arc<Value>>>,
     pending: Option<(String, bool)>,
     target: Option<String>,
     revision: Option<i64>,
     values: [String; 5],
     shell: bool,
     editing: bool,
+}
+
+impl replies::Pending for Commands {
+    fn pending_id(&self) -> Option<&str> {
+        self.pending.as_ref().map(|pending| pending.0.as_str())
+    }
 }
 
 #[derive(Component)]
@@ -89,7 +96,7 @@ pub(super) fn spawn(world: &mut World, owner: Entity, parent: Entity) {
     world.get_mut::<Node>(panel).unwrap().display = Display::None;
     world.entity_mut(owner).insert(Commands {
         panel,
-        rows: Vec::new(),
+        rows: Arc::default(),
         pending: None,
         target: None,
         revision: None,
@@ -111,15 +118,22 @@ pub(super) fn toggle(world: &mut World, owner: Entity) {
 }
 
 fn capture(world: &mut World, owner: Entity) {
-    let inputs: Vec<_> = world
-        .query::<(&Input, &EditableText)>()
-        .iter(world)
-        .filter(|(input, _)| input.owner == owner)
-        .map(|(input, text)| (input.index, text.value().to_string()))
-        .collect();
-    if let Some(mut state) = world.get_mut::<Commands>(owner) {
-        for (index, value) in inputs {
-            state.values[index] = value;
+    world
+        .run_system_cached_with(capture_fields, owner)
+        .expect("capture Karma command fields");
+}
+
+fn capture_fields(
+    In(owner): In<Entity>,
+    inputs: Query<(&Input, &EditableText)>,
+    mut commands: Query<&mut Commands, Allow<Disabled>>,
+) {
+    let _capture = nucleus::performance::Span::new("karma-command-field-capture");
+    let Ok(mut state) = commands.get_mut(owner) else { return };
+    for (input, text) in &inputs {
+        if input.owner == owner && text.value() != state.values[input.index].as_str() {
+            crate::controls::copy_value(text, &mut state.values[input.index]);
+            nucleus::performance::add("karma-command-fields-captured", 1);
         }
     }
 }
@@ -272,168 +286,10 @@ impl crate::native::actions::Action for Command {
 }
 
 fn render(world: &mut World, owner: Entity) {
-    let panel = world.get::<Commands>(owner).unwrap().panel;
-    if let Some(children) = world.get::<Children>(panel) {
-        let children: Vec<_> = children.iter().collect();
-        for child in children {
-            world.despawn(child);
-        }
-    }
-    crate::native::edit_mode::label(world, panel, "Commands and numeric samples", 16.0);
-    let line = ui::row(world, panel);
-    for (label, command) in [
-        ("New command", Command::New),
-        ("Refresh results", Command::Refresh),
-    ] {
-        crate::native::castle_feed::button(world, line, owner, label, command);
-    }
-    crate::native::edit_mode::label(
-        world,
-        panel,
-        "query_command(@source) runs a fresh numeric query. signal(@source) reads its saved successful sample. @target: run(@source) runs a saved command as a consequence.",
-        13.0,
-    );
-    let state = world.get::<Commands>(owner).unwrap();
-    let editing = state.editing;
-    let shell = state.shell;
-    let values = state.values.clone();
-    let rows = state.rows.clone();
-    if editing {
-        let line = ui::row(world, panel);
-        crate::native::castle_feed::button(
-            world,
-            line,
-            owner,
-            "Fixed shell script",
-            Command::Shell(true),
-        );
-        crate::native::castle_feed::button(
-            world,
-            line,
-            owner,
-            "Executable and arguments",
-            Command::Shell(false),
-        );
-        for (index, label) in [
-            (0, "Slug"),
-            (1, "Name"),
-            (
-                2,
-                if shell {
-                    "Fixed shell script"
-                } else {
-                    "Executable"
-                },
-            ),
-            (3, "Literal arguments as JSON (executable mode)"),
-            (4, "Execution Cell UID (empty selects this Cell)"),
-        ] {
-            crate::native::edit_mode::label(world, panel, label, 13.0);
-            let entity = world
-                .spawn(crate::native::sand::text_editor(
-                    &values[index],
-                    world.resource::<crate::native::theme::Typography>(),
-                    0,
-                ))
-                .insert((
-                    ChildOf(panel),
-                    Input { owner, index },
-                    Node {
-                        width: percent(100),
-                        min_height: px(30),
-                        ..default()
-                    },
-                ))
-                .id();
-            let mut text = world.get_mut::<EditableText>(entity).unwrap();
-            text.allow_newlines = index == 2 || index == 3;
-            text.visible_lines = Some(if index == 2 { 3.0 } else { 1.0 });
-            text.max_characters = Some(if index == 2 || index == 3 {
-                16_384
-            } else {
-                256
-            });
-            let mut accessible = accesskit::Node::new(accesskit::Role::TextInput);
-            accessible.set_label(label);
-            world
-                .entity_mut(entity)
-                .insert(bevy::a11y::AccessibilityNode(accessible));
-        }
-        let line = ui::row(world, panel);
-        crate::native::castle_feed::button(world, line, owner, "Save command", Command::Save);
-        crate::native::castle_feed::button(world, line, owner, "Close editor", Command::Close);
-    }
-    for row in rows {
-        let Some(uid) = row["uid"].as_str() else {
-            continue;
-        };
-        let line = ui::row(world, panel);
-        crate::native::edit_mode::label(
-            world,
-            line,
-            &format!(
-                "@{} · saved value {}",
-                row["slug"].as_str().unwrap_or(uid),
-                row["sample"].as_str().unwrap_or("unavailable")
-            ),
-            14.0,
-        );
-        crate::native::castle_feed::button(
-            world,
-            line,
-            owner,
-            "Edit command",
-            Command::Edit(uid.into()),
-        );
-        crate::native::castle_feed::button(
-            world,
-            line,
-            owner,
-            "Run numeric test",
-            Command::Run(uid.into()),
-        );
-        if let Some(history) = row["history"].as_array() {
-            for invocation in history.iter().take(5) {
-                crate::native::edit_mode::label(
-                    world,
-                    panel,
-                    &format!(
-                        "{} · {} · {}{}",
-                        invocation["at"].as_str().unwrap_or_default(),
-                        invocation["status"].as_str().unwrap_or_default(),
-                        invocation["error"]
-                            .as_str()
-                            .or_else(|| invocation["value"].as_str())
-                            .or_else(|| invocation["stdout"].as_str())
-                            .unwrap_or_default(),
-                        invocation["stderr"]
-                            .as_str()
-                            .filter(|text| !text.is_empty())
-                            .map_or_else(String::new, |text| format!(" · {text}"))
-                    ),
-                    12.0,
-                );
-            }
-        }
-    }
+    presentation::render(world, owner);
 }
 
-pub(super) fn receive(world: &mut World, message: &ServerMessage) -> bool {
-    let id = match message {
-        ServerMessage::ActionOk { id, .. } | ServerMessage::Error { id, .. } => id,
-        _ => return false,
-    };
-    let owner = world
-        .query::<(Entity, &Commands)>()
-        .iter(world)
-        .find(|(_, state)| {
-            state
-                .pending
-                .as_ref()
-                .is_some_and(|(pending, _)| pending == id)
-        })
-        .map(|(owner, _)| owner);
-    let Some(owner) = owner else { return false };
+pub(super) fn receive(world: &mut World, owner: Entity, message: &ServerMessage) {
     capture(world, owner);
     let (_, inspect) = world
         .get_mut::<Commands>(owner)
@@ -443,11 +299,13 @@ pub(super) fn receive(world: &mut World, message: &ServerMessage) -> bool {
         .unwrap();
     match message {
         ServerMessage::ActionOk { data, .. } if inspect => {
-            world.get_mut::<Commands>(owner).unwrap().rows = data
+            let rows = data
                 .as_ref()
                 .and_then(|data| data["commands"].as_array())
-                .cloned()
-                .unwrap_or_default();
+                .map_or(&[][..], Vec::as_slice);
+            if incoming::publish_rows(&mut world.get_mut::<Commands>(owner).unwrap().rows, rows) {
+                nucleus::performance::add("karma-command-rows-published", rows.len() as u64);
+            }
             render(world, owner);
         }
         ServerMessage::ActionOk { created, .. } => {
@@ -471,14 +329,13 @@ pub(super) fn receive(world: &mut World, message: &ServerMessage) -> bool {
         ServerMessage::Error { message, .. } => status(world, owner, message),
         _ => {}
     }
-    true
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[allow(dead_code)]
+    #[allow(dead_code, reason = "Each test target uses a different subset of the included Karma fixtures")]
     mod karma {
         include!(concat!(
             env!("CARGO_MANIFEST_DIR"),

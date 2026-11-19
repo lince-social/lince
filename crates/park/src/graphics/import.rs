@@ -412,6 +412,7 @@ impl GpuContext {
         self.completion.track(submission)
     }
 
+    #[cfg(feature = "native-presentation")]
     pub(crate) fn export_render_targets(
         &self,
         sources: &[wgpu::Texture],
@@ -796,7 +797,7 @@ pub(super) mod tests {
         slice.map_async(wgpu::MapMode::Read, move |result| { let _ = sender.send(result); });
         renderer.device.poll(wgpu::PollType::Wait { submission_index: None, timeout: Some(std::time::Duration::from_secs(5)) }).unwrap();
         receiver.recv_timeout(std::time::Duration::from_secs(1)).unwrap().unwrap();
-        let pixels = slice.get_mapped_range();
+        let pixels = slice.get_mapped_range().unwrap();
         for y in 0..4 {
             for x in 0..4 {
                 let offset = y * 256 + x * 8;
@@ -832,7 +833,7 @@ pub(super) mod tests {
         slice.map_async(wgpu::MapMode::Read, move |result| { let _ = sender.send(result); });
         renderer.device.poll(wgpu::PollType::Wait { submission_index: None, timeout: Some(std::time::Duration::from_secs(5)) }).unwrap();
         receiver.recv_timeout(std::time::Duration::from_secs(1)).unwrap().unwrap();
-        let pixels = slice.get_mapped_range();
+        let pixels = slice.get_mapped_range().unwrap();
         for y in 0..4 {
             for x in 0..4 {
                 let offset = y * 256 + x * 4;

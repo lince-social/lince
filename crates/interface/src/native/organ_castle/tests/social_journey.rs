@@ -166,11 +166,11 @@ async fn exchange(sender: &engine::Engine, receiver: &engine::Engine) {
         "social_publication_job",
         "social_pickup_work",
     ] {
-        store::sqlx::query(&format!("UPDATE {table} SET next_attempt=0"))
+        store::sqlx::query(store::sqlx::AssertSqlSafe(format!("UPDATE {table} SET next_attempt=0")))
             .execute(&sender.store.pool)
             .await
             .unwrap();
-        store::sqlx::query(&format!("UPDATE {table} SET next_attempt=0"))
+        store::sqlx::query(store::sqlx::AssertSqlSafe(format!("UPDATE {table} SET next_attempt=0")))
             .execute(&receiver.store.pool)
             .await
             .unwrap();

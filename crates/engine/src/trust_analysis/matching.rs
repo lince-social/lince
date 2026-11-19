@@ -51,6 +51,8 @@ impl Engine {
         } else {
             None
         };
+        let mut measure_value = None;
+        let mut source_query = None;
         for offer in &offers {
             if store::location::transfer_ended(&self.store.pool, offer).await? {
                 continue;
@@ -97,10 +99,13 @@ impl Engine {
                 let options =
                     store::transfer_evidence::source_measures(&self.store.pool, record, None)
                         .await?;
-                if !options
-                    .iter()
-                    .any(|option| option["measure"] == json!(need.measure))
-                {
+                if !options.iter().any(|option| {
+                    option["measure"]
+                        == *measure_value.get_or_insert_with(|| {
+                            nucleus::performance::add("supplier-measure-comparisons-prepared", 1);
+                            json!(need.measure)
+                        })
+                }) {
                     continue;
                 }
                 let available = store::transfer_balances::read(&self.store.pool, record)
@@ -156,25 +161,30 @@ impl Engine {
                 else {
                     continue;
                 };
-                let mut sources = request.sources.clone();
-                sources.subject = Identity::Person(giver.into());
-                sources.role = nucleus::transfer::outcome::Role::Giver;
-                sources.issuers.include.retain(|rule| {
-                    !rule.identities.is_empty()
-                        || rule.known.is_some()
-                        || rule.lower.is_some()
-                        || rule.upper.is_some()
-                });
-                sources.measurements = vec![nucleus::transfer::receipt::Measurement {
-                    meaning: need.measure.meaning.clone(),
-                    unit: need.measure.unit.clone(),
-                    object_commitment: None,
-                }];
                 if need.measure.object.is_some() {
                     continue;
                 }
+                let sources = source_query.get_or_insert_with(|| {
+                    let _span = nucleus::performance::Span::new("supplier-trust-query-preparation");
+                    nucleus::performance::add("supplier-trust-queries-prepared", 1);
+                    let mut sources = request.sources.clone();
+                    sources.role = nucleus::transfer::outcome::Role::Giver;
+                    sources.issuers.include.retain(|rule| {
+                        !rule.identities.is_empty()
+                            || rule.known.is_some()
+                            || rule.lower.is_some()
+                            || rule.upper.is_some()
+                    });
+                    sources.measurements = vec![nucleus::transfer::receipt::Measurement {
+                        meaning: need.measure.meaning.clone(),
+                        unit: need.measure.unit.clone(),
+                        object_commitment: None,
+                    }];
+                    sources
+                });
+                sources.subject = Identity::Person(giver.into());
                 let analysis = self
-                    .evaluate_trust_query(person, actor, &sources, false, now)
+                    .evaluate_trust_query(person, actor, sources, false, now)
                     .await?;
                 let experience = analysis
                     .analysis

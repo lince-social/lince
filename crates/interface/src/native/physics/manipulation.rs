@@ -104,7 +104,7 @@ fn matches_visible_shape(world: &mut World, target: Entity, spatial: bool) {
                 .as_cuboid()
                 .unwrap();
             position.distance(center) < 0.00001
-                && rotation.dot(pose.rotation()).abs() > 1.0 - 1e-9
+                && rotation.dot(pose.rotation().as_quat()).abs() > 1.0 - 1e-6
                 && shape.half_extents.distance(size * 0.5) < 0.00001
         });
         assert!(
@@ -148,8 +148,8 @@ fn moving_and_resizing_previews_drive_scaled_colliders_without_authoring_until_c
                     .clone();
                 let entity = body(app.world_mut(), target, spatial);
                 app.world_mut().entity_mut(entity).insert((
-                    LinearVelocity(DVec3::splat(20.0)),
-                    AngularVelocity(DVec3::splat(2.0)),
+                    LinearVelocity(Vec3::splat(20.0)),
+                    AngularVelocity(Vec3::splat(2.0)),
                 ));
                 assert!(manipulation::begin(
                     app.world_mut(),
@@ -188,11 +188,11 @@ fn moving_and_resizing_previews_drive_scaled_colliders_without_authoring_until_c
                 assert_eq!(shape_entities(app.world_mut(), entity), owned);
                 assert_eq!(
                     app.world().get::<LinearVelocity>(entity).unwrap().0,
-                    DVec3::ZERO
+                    Vec3::ZERO
                 );
                 assert_eq!(
                     app.world().get::<AngularVelocity>(entity).unwrap().0,
-                    DVec3::ZERO
+                    Vec3::ZERO
                 );
                 if commit {
                     assert!(manipulation::commit(app.world_mut()));
@@ -216,11 +216,11 @@ fn moving_and_resizing_previews_drive_scaled_colliders_without_authoring_until_c
                 matches_visible_shape(app.world_mut(), target, spatial);
                 assert_eq!(
                     app.world().get::<LinearVelocity>(entity).unwrap().0,
-                    DVec3::ZERO
+                    Vec3::ZERO
                 );
                 assert_eq!(
                     app.world().get::<AngularVelocity>(entity).unwrap().0,
-                    DVec3::ZERO
+                    Vec3::ZERO
                 );
             }
         }

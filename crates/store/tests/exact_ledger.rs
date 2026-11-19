@@ -147,9 +147,7 @@ async fn no_real_quantity_column_survives() {
         ("fact", vec!["delta_mantissa", "delta_scale"]),
         ("record", vec!["quantity_mantissa", "quantity_scale"]),
     ] {
-        let rows = sqlx::query(&format!(
-            "SELECT name, type FROM pragma_table_info('{table}')"
-        ))
+        let rows = sqlx::query("SELECT name, type FROM pragma_table_info(?)").bind(table)
         .fetch_all(&store.pool)
         .await
         .expect("pragma");

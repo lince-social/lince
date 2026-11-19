@@ -1,7 +1,7 @@
 use super::{LayoutBox, MAX_DEPTH, Overflow, Rules, Sizing, solver};
 use crate::native::{canvas::CanvasItem, sand_text::SandText, workspace::WorkspaceMember};
 use bevy::{
-    picking::events::Scroll,
+    picking::events::PointerScroll,
     prelude::*,
     text::{LineBreak, TextLayoutInfo},
     ui::widget::TextScroll,
@@ -629,7 +629,7 @@ pub(super) fn finish_content(world: &mut World) {
 }
 
 pub(super) fn scroll(
-    mut event: On<Pointer<Scroll>>,
+    mut event: On<PointerScroll>,
     mut layouts: Query<(
         &mut LayoutRuntime,
         Option<&LayoutBox>,

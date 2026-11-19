@@ -45,7 +45,10 @@ impl Library {
                 || relative
                     .components()
                     .any(|component| !matches!(component, Component::Normal(_) | Component::CurDir))
-                || entry.name().contains(['\\', ':', '\0'])
+                || entry
+                    .name()
+                    .map_err(|error| error.to_string())?
+                    .contains(['\\', ':', '\0'])
                 || entry
                     .unix_mode()
                     .is_some_and(|mode| !matches!(mode & 0o170000, 0 | 0o040000 | 0o100000))

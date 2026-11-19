@@ -87,6 +87,14 @@ pub(super) fn scope(world: &World, owner: Entity) -> String {
     )
 }
 
+fn display(world: &mut World, entity: Entity, display: Display) {
+    if let Some(mut node) = world.get_mut::<Node>(entity)
+        && node.display != display
+    {
+        node.display = display;
+    }
+}
+
 pub(super) fn render(world: &mut World, owner: Entity) -> bool {
     let person = person(world, owner);
     let scope = scope(world, owner);
@@ -118,15 +126,25 @@ pub(super) fn render(world: &mut World, owner: Entity) -> bool {
         view.receipt_export = None;
         view.receipt_file_job = None;
     }
-    if scoped {
+    if scoped
+        && !world
+            .get::<TransferCastle>(owner)
+            .unwrap()
+            .workflow
+            .matches_scope(&scope)
+    {
         world
             .get_mut::<TransferCastle>(owner)
             .unwrap()
             .workflow
             .scope(&scope);
     }
-    let castle = world.get::<TransferCastle>(owner).unwrap().clone();
-    let active = castle.workflow.workflow == Workflow::Transport;
+    let active = world
+        .get::<TransferCastle>(owner)
+        .unwrap()
+        .workflow
+        .workflow
+        == Workflow::Transport;
     let view = world.get::<View>(owner).unwrap();
     let (header, controls, summary, body, existing) = (
         view.header,
@@ -136,8 +154,11 @@ pub(super) fn render(world: &mut World, owner: Entity) -> bool {
         view.transport,
     );
     for entity in [header, controls, summary, body] {
-        world.get_mut::<Node>(entity).unwrap().display =
-            if active { Display::None } else { Display::Flex };
+        display(
+            world,
+            entity,
+            if active { Display::None } else { Display::Flex },
+        );
     }
     if !active {
         if let Some(entity) = existing {
@@ -145,11 +166,15 @@ pub(super) fn render(world: &mut World, owner: Entity) -> bool {
                 world.despawn(entity);
                 world.get_mut::<View>(owner).unwrap().transport = None;
             } else {
-                world.get_mut::<Node>(entity).unwrap().display = Display::None;
+                display(world, entity, Display::None);
             }
         }
         return false;
     }
+    let castle = world.get::<TransferCastle>(owner).unwrap();
+    let workflow = castle.workflow.clone();
+    let selected = castle.selected.clone();
+    let has_form = castle.form.is_some();
     let root = existing.unwrap_or_else(|| {
         let root = ui::stack(world, owner);
         world.get_mut::<Node>(root).unwrap().flex_grow = 1.0;
@@ -201,60 +226,106 @@ pub(super) fn render(world: &mut World, owner: Entity) -> bool {
         world.get_mut::<View>(owner).unwrap().transport = Some(root);
         root
     });
-    world.get_mut::<Node>(root).unwrap().display = if castle.form.is_some() {
-        Display::None
-    } else {
-        Display::Flex
-    };
+    display(
+        world,
+        root,
+        if has_form {
+            Display::None
+        } else {
+            Display::Flex
+        },
+    );
     let surface = world.get::<Surface>(root).unwrap();
     let (map, controls, panel) = (surface.map, surface.controls, surface.panel);
-    ui::clear(world, controls);
     ui::clear(world, panel);
-    let rows = world.get::<View>(owner).unwrap().rows.clone();
-    let visible = castle.workflow.rows(&rows, &person);
-    let explicit = rows
-        .iter()
-        .find(|row| text(row, "uid") == castle.selected && model::workspace::is_transport(row));
-    let chosen = explicit.cloned().or_else(|| {
-        visible
-            .iter()
-            .find(|row| text(row, "uid") == castle.workflow.selected)
-            .or_else(|| visible.first())
-            .map(|row| (*row).clone())
-    });
+    let (chosen, page, total, titles) = {
+        let _span = nucleus::performance::Span::new("transfer-page-preparation");
+        let rows = &world.get::<View>(owner).unwrap().rows;
+        let explicit = rows.iter().find(|row| {
+            model::display_ref(&row["uid"]) == selected && model::workspace::is_transport(row)
+        });
+        let visible = if workflow.panel == Panel::List || explicit.is_none() {
+            workflow.rows(rows, &person)
+        } else {
+            Vec::new()
+        };
+        let chosen = explicit
+            .or_else(|| {
+                visible
+                    .iter()
+                    .copied()
+                    .find(|row| model::display_ref(&row["uid"]) == workflow.selected)
+                    .or_else(|| visible.first().copied())
+            })
+            .cloned();
+        let page = workflow.page.min(visible.len().saturating_sub(1) / 30);
+        let titles: Vec<_> = if workflow.panel == Panel::List {
+            visible
+                .iter()
+                .skip(page * 30)
+                .take(30)
+                .map(|row| (title(row), text(row, "uid")))
+                .collect()
+        } else {
+            Vec::new()
+        };
+        nucleus::performance::add("transfer-page-cards-prepared", titles.len() as u64);
+        (chosen, page, visible.len(), titles)
+    };
     if let Some(row) = &chosen {
         let uid = text(row, "uid");
         let mut castle = world.get_mut::<TransferCastle>(owner).unwrap();
-        castle.selected = uid.clone();
-        castle.workflow.selected = uid;
+        if castle.selected != uid {
+            castle.selected.clone_from(&uid);
+        }
+        if castle.workflow.selected != uid {
+            castle.workflow.selected = uid;
+        }
     }
     crate::native::map_castle::transport_view(
         world,
         map,
         chosen.as_ref().map(Workspace::records).unwrap_or_default(),
         person.clone(),
-        castle.workflow.panel == Panel::Map,
+        workflow.panel == Panel::Map,
     );
-    button(world, controls, owner, "Back", Navigate::Back);
-    button(
-        world,
-        controls,
-        owner,
-        "Transport options",
-        Navigate::Panel(Panel::Options),
-    );
+    {
+        use crate::native::retained::Presentation;
+        let _span = nucleus::performance::Span::new("transfer-list-presentation");
+        if Presentation::matches(world, controls, |old: &Entity| *old == owner) {
+            nucleus::performance::add("transfer-regions-retained", 1);
+        } else {
+            ui::clear(world, controls);
+            button(world, controls, owner, "Back", Navigate::Back);
+            button(
+                world,
+                controls,
+                owner,
+                "Transport options",
+                Navigate::Panel(Panel::Options),
+            );
+            Presentation::remember(world, controls, owner);
+            nucleus::performance::add("transfer-regions-rebuilt", 1);
+        }
+    }
     let expanded = matches!(
-        castle.workflow.panel,
+        workflow.panel,
         Panel::Details | Panel::List | Panel::Options
     );
     {
         let mut node = world.get_mut::<Node>(panel).unwrap();
-        node.max_height = if expanded { percent(88) } else { percent(35) };
-        node.display = if castle.workflow.panel == Panel::Map {
+        let height = if expanded { percent(88) } else { percent(35) };
+        if node.max_height != height {
+            node.max_height = height;
+        }
+        let display = if workflow.panel == Panel::Map {
             Display::None
         } else {
             Display::Flex
         };
+        if node.display != display {
+            node.display = display;
+        }
     }
     if expanded {
         button(
@@ -273,25 +344,17 @@ pub(super) fn render(world: &mut World, owner: Entity) -> bool {
             Navigate::Panel(Panel::List),
         );
     }
-    match castle.workflow.panel {
+    match workflow.panel {
         Panel::List => {
-            let page = castle
-                .workflow
-                .page
-                .min(visible.len().saturating_sub(1) / 30);
-            world
-                .get_mut::<TransferCastle>(owner)
-                .unwrap()
-                .workflow
-                .page = page;
-            for row in visible.iter().skip(page * 30).take(30) {
-                button(
-                    world,
-                    panel,
-                    owner,
-                    &title(row),
-                    Navigate::Select(text(row, "uid")),
-                );
+            if workflow.page != page {
+                world
+                    .get_mut::<TransferCastle>(owner)
+                    .unwrap()
+                    .workflow
+                    .page = page;
+            }
+            for (title, uid) in titles {
+                button(world, panel, owner, &title, Navigate::Select(uid));
             }
             if page > 0 {
                 button(
@@ -302,7 +365,7 @@ pub(super) fn render(world: &mut World, owner: Entity) -> bool {
                     Navigate::Page(-1),
                 );
             }
-            if (page + 1) * 30 < visible.len() {
+            if (page + 1) * 30 < total {
                 button(world, panel, owner, "More transports", Navigate::Page(1));
             }
             ui::button(
@@ -343,7 +406,7 @@ pub(super) fn render(world: &mut World, owner: Entity) -> bool {
                 world,
                 panel,
                 owner,
-                if castle.workflow.history {
+                if workflow.history {
                     "Show my active transports"
                 } else {
                     "Find transports and history"

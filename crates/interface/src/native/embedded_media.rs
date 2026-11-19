@@ -106,7 +106,7 @@ pub(crate) fn set_controls(world: &mut World, owner: Entity, shown: bool) {
     }
 }
 
-fn click(mut event: On<Pointer<Click>>, media: Query<&Media>, mut commands: Commands) {
+fn click(mut event: On<PointerClick>, media: Query<&Media>, mut commands: Commands) {
     if event.button != PointerButton::Secondary || media.get(event.entity).is_err() {
         return;
     }

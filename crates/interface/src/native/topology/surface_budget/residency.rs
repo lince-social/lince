@@ -10,7 +10,7 @@ use bevy::{
         render_resource::{Texture, TextureId},
         renderer::RenderQueue,
         texture::GpuImage,
-        view::{ViewDepthTexture, ViewTarget},
+        view::{ViewDepthStencilTexture, ViewTarget},
     },
 };
 use std::{
@@ -146,6 +146,8 @@ impl Usage {
 }
 
 #[derive(Component, Clone, ExtractComponent)]
+
+#[extract_app(bevy::render::RenderApp)]
 pub(crate) struct Target {
     pub image: AssetId<Image>,
     pub release: bool,
@@ -168,7 +170,7 @@ impl Plugin for ResidencyPlugin {
         app.insert_resource(usage.clone())
             .add_plugins(ExtractComponentPlugin::<Target>::default());
         app.add_observer(
-            |event: On<Insert, bevy::camera::RenderTarget>,
+            |event: On<Insert<bevy::camera::RenderTarget>>,
              mut projections: Query<&mut Projection>| {
                 if let Ok(mut projection) = projections.get_mut(event.entity) {
                     projection.set_changed();
@@ -250,7 +252,7 @@ fn release_idle_targets(
         (Entity, &Target, Option<&ExtractedCamera>, Has<Camera3d>),
         Or<(
             With<ViewTarget>,
-            With<ViewDepthTexture>,
+            With<ViewDepthStencilTexture>,
             With<ViewPrepassTextures>,
         )>,
     >,
@@ -259,11 +261,11 @@ fn release_idle_targets(
         if target.release && camera.is_none() {
             commands
                 .entity(entity)
-                .remove::<(ViewTarget, ViewDepthTexture, ViewPrepassTextures)>();
+                .remove::<(ViewTarget, ViewDepthStencilTexture, ViewPrepassTextures)>();
         } else if !spatial {
             commands
                 .entity(entity)
-                .remove::<(ViewDepthTexture, ViewPrepassTextures)>();
+                .remove::<(ViewDepthStencilTexture, ViewPrepassTextures)>();
         }
     }
 }
@@ -299,7 +301,7 @@ fn collect(
     views: Query<(
         &Target,
         Option<&ViewTarget>,
-        Option<&ViewDepthTexture>,
+        Option<&ViewDepthStencilTexture>,
         Option<&ViewPrepassTextures>,
     )>,
     queue: Res<RenderQueue>,
@@ -332,11 +334,16 @@ fn collect(
             }
         }
         if let Some(depth) = depth {
-            observe(&depth.texture, true, true);
+            observe(depth.texture(), true, true);
         }
         if let Some(prepass) = prepass {
+            if let Some(depth) = &prepass.depth {
+                observe(&depth.texture.texture, true, true);
+                if let Some(previous) = &depth.previous_frame_texture {
+                    observe(&previous.texture, true, true);
+                }
+            }
             for attachment in [
-                &prepass.depth,
                 &prepass.normal,
                 &prepass.motion_vectors,
                 &prepass.deferred,

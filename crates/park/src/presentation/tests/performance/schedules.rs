@@ -333,9 +333,23 @@ fn native_main_phases_attribute_cpu_and_compare_the_largest_executor() {
         .clone();
     let inventory = labels.iter().map(|label| {
         let schedules = canvas.app.world().resource::<Schedules>();
-        let systems = schedules.get(*label).map(|schedule| schedule.systems().unwrap().map(|(_,system)| {
-            serde_json::json!({"name":system.name().to_string(),"exclusive":system.is_exclusive(),"send":system.is_send()})
-        }).collect::<Vec<_>>()).unwrap_or_default();
+        let systems = schedules
+            .get(*label)
+            .map(|schedule| {
+                schedule
+                    .systems_with_access()
+                    .unwrap()
+                    .map(|(_, entry)| {
+                        let system = entry.system();
+                        serde_json::json!({
+                            "name": system.name().to_string(),
+                            "exclusive": entry.access().is_exclusive(),
+                            "send": system.is_send(),
+                        })
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
         serde_json::json!({"schedule":format!("{label:?}"), "systems":systems})
     }).collect::<Vec<_>>();
     let main = canvas

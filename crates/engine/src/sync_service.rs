@@ -37,6 +37,19 @@ struct Running<'a> {
     id: String,
 }
 
+impl Running<'_> {
+    fn activity(&self) -> Activity {
+        crate::performance::add("sync-activity-history-copies", 1);
+        self.service
+            .running
+            .lock()
+            .unwrap()
+            .get(&self.id)
+            .expect("running sync activity")
+            .clone()
+    }
+}
+
 impl Drop for Running<'_> {
     fn drop(&mut self) {
         self.service.running.lock().unwrap().remove(&self.id);
@@ -79,11 +92,8 @@ impl SyncService {
     ) -> Result<T, E> {
         let _service = crate::performance::Span::new("sync-service-await");
         let id = nucleus::new_uid("sync");
-        self.running
-            .lock()
-            .unwrap()
-            .insert(id.clone(), activity.clone());
-        let _running = Running { service: self, id };
+        self.running.lock().unwrap().insert(id.clone(), activity);
+        let running = Running { service: self, id };
         let result = {
             let _work = crate::performance::Span::new("sync-work-await");
             work.await
@@ -110,6 +120,7 @@ impl SyncService {
             )
         {
             let _history = crate::performance::Span::new("sync-history-append-await");
+            let activity = running.activity();
             if let Err(error) = store::sync_activity::append(
                 &store.pool,
                 &activity,

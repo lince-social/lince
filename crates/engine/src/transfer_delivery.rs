@@ -1053,7 +1053,7 @@ impl Engine {
         .uid)
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments, reason = "The settlement entry point takes separate transfer, settlement, and authority inputs")]
     pub async fn begin_transfer_settlement(
         &self,
         transfer_uid: &str,
@@ -1491,7 +1491,7 @@ impl Engine {
         Ok(accepted)
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments, reason = "Keep remote operation identity and queue inputs explicit at this boundary")]
     pub(crate) async fn queue_remote_transfer_action(
         &self,
         action: &crate::actions::Action,
@@ -1508,7 +1508,7 @@ impl Engine {
         self.queue_remote_transfer_action_with_karma(action, actor_person_uid, key_id, session_id, session_challenge, sequence, message_id, action_base64, signature, now, None).await
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments, reason = "Keep queue inputs and optional Karma context explicit at this boundary")]
     pub(crate) async fn queue_remote_transfer_action_with_karma(
         &self,
         action: &crate::actions::Action,

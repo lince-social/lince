@@ -117,14 +117,14 @@ fn workspace_hole_effects_keep_actual_clipped_pixels_and_clicks_at_fractional_sc
         canvas.desktop_action(DesktopAction::SetLayout(WorkspaceLayout::Free)).unwrap();
         let lower = item(&mut canvas, root, Vec2::splat(400.0), [0.0; 2], Color::srgb(0.02, 0.9, 0.05), 1, false);
         canvas.world_mut().insert_resource(Clicks::default());
-        canvas.world_mut().entity_mut(lower).insert(Button).observe(|_: On<Pointer<Click>>, mut clicks: ResMut<Clicks>| { clicks.0[0] += 1; });
+        canvas.world_mut().entity_mut(lower).insert(bevy::ui_widgets::Button).observe(|_: On<PointerClick>, mut clicks: ResMut<Clicks>| { clicks.0[0] += 1; });
         native::workspace::create(canvas.world_mut(), root);
         canvas.desktop_action(DesktopAction::Workspace(2)).unwrap();
         native::workspace_config::set_physics(canvas.world_mut(), root, 2, false);
         canvas.desktop_action(DesktopAction::SetLayout(WorkspaceLayout::Free)).unwrap();
         *canvas.world_mut().get_mut::<CanvasView>(root).unwrap() = CanvasView::default();
         let upper = item(&mut canvas, root, Vec2::new(600.0, 400.0), [0.0; 2], Color::srgba(0.02, 0.04, 0.95, 0.6), 2, false);
-        canvas.world_mut().entity_mut(upper).insert((WorkspaceMember(2), Button)).observe(|_: On<Pointer<Click>>, mut clicks: ResMut<Clicks>| { clicks.0[1] += 1; });
+        canvas.world_mut().entity_mut(upper).insert((WorkspaceMember(2), bevy::ui_widgets::Button)).observe(|_: On<PointerClick>, mut clicks: ResMut<Clicks>| { clicks.0[1] += 1; });
         let mut opening = native::area::InfluenceArea::new(native::area::AreaShape::Square, bevy::math::DVec2::ZERO, bevy::math::DVec2::splat(200.0));
         opening.hole = true;
         let opening = native::area::spawn_area(canvas.world_mut(), root, 2, opening).unwrap();

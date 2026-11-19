@@ -5,16 +5,36 @@ use bevy::camera::visibility::RenderLayers;
 struct PreviewGround {
     view: Entity,
     key: Key,
-    inputs: Vec<Input>,
+    inputs: Vec<Arc<Input>>,
     clip: Vec<Vec<DVec2>>,
     depth: usize,
 }
 
-pub(super) fn draw(world: &mut World, terrain: &mut Terrain) {
-    let requests = world
+struct Request {
+    id: Entity,
+    root: Entity,
+    workspace: u64,
+    view: crate::native::canvas::CanvasView,
+    pixels: UVec2,
+}
+
+pub(super) fn draw(
+    world: &mut World,
+    terrain: &mut Terrain,
+    materials: &mut super::drawing::Materials,
+) {
+    let requests: Vec<_> = world
         .get_resource::<super::super::previews::Previews>()
-        .map(|views| views.0.clone())
-        .unwrap_or_default();
+        .into_iter()
+        .flat_map(|views| &views.0)
+        .map(|preview| Request {
+            id: preview.id,
+            root: preview.root,
+            workspace: preview.workspace,
+            view: preview.view,
+            pixels: preview.pixels,
+        })
+        .collect();
     let existing: HashMap<_, _> = world
         .query::<(Entity, &PreviewGround)>()
         .iter(world)
@@ -26,17 +46,15 @@ pub(super) fn draw(world: &mut World, terrain: &mut Terrain) {
         let Some(layer) = crate::native::render_layers::OVERVIEW.get(index) else {
             continue;
         };
-        let layers = super::super::holes::layers_for(world, preview.root, preview.workspace)
-            .cloned()
-            .unwrap_or_default();
         let mut spaces = vec![(preview.workspace, 0)];
         spaces.extend(
-            layers
-                .0
-                .iter()
+            super::super::holes::layers_for(world, preview.root, preview.workspace)
+                .into_iter()
+                .flat_map(|layers| &layers.0)
                 .filter(|layer| layer.depth > 0)
                 .map(|layer| (layer.workspace, layer.depth)),
         );
+        let mut render_layers = None;
         let origin =
             crate::native::output_views::canvas(world, preview.root, preview.workspace).center;
         let reach = (preview.pixels.as_dvec2() / preview.view.zoom * 0.5 + DVec2::splat(TILE_SIZE))
@@ -65,7 +83,7 @@ pub(super) fn draw(world: &mut World, terrain: &mut Terrain) {
                     let Some(tile) = terrain.tiles.get(&key) else {
                         continue;
                     };
-                    let quad = vec![
+                    let quad = [
                         key.minimum(),
                         key.minimum() + DVec2::new(TILE_SIZE, 0.0),
                         key.minimum() + DVec2::splat(TILE_SIZE),
@@ -76,7 +94,7 @@ pub(super) fn draw(world: &mut World, terrain: &mut Terrain) {
                         preview.root,
                         preview.workspace,
                         workspace,
-                        quad.clone(),
+                        quad.to_vec(),
                     );
                     if clip.is_empty() {
                         continue;
@@ -85,7 +103,7 @@ pub(super) fn draw(world: &mut World, terrain: &mut Terrain) {
                     let previous = existing.get(&id).copied();
                     let unchanged = previous.is_some_and(|entity| {
                         world.get::<PreviewGround>(entity).is_some_and(|ground| {
-                            ground.inputs == tile.inputs
+                            same_inputs(&ground.inputs, tile.inputs.iter().map(Arc::as_ref))
                                 && ground.clip == clip
                                 && ground.depth == depth
                         })
@@ -98,12 +116,15 @@ pub(super) fn draw(world: &mut World, terrain: &mut Terrain) {
                         }
                         let Some(entity) = super::drawing::visual_in(
                             world,
+                            materials,
                             key,
                             &tile.heights,
-                            depth,
-                            clip != vec![quad],
-                            DVec3::new(origin.x, 0.0, origin.y),
-                            preview.workspace,
+                            super::drawing::GroundView {
+                                depth,
+                                clipped: clip.len() != 1 || clip[0].as_slice() != quad.as_slice(),
+                                origin: DVec3::new(origin.x, 0.0, origin.y),
+                                workspace: preview.workspace,
+                            },
                         ) else {
                             continue;
                         };
@@ -116,15 +137,22 @@ pub(super) fn draw(world: &mut World, terrain: &mut Terrain) {
                         });
                         entity
                     };
-                    world.entity_mut(entity).insert((
-                        RenderLayers::none().with(layer),
-                        Transform::from_xyz(
-                            (key.minimum().x - origin.x) as f32,
-                            -(depth as f32) * 0.2,
-                            (key.minimum().y - origin.y) as f32,
-                        ),
-                    ));
-                    super::drawing::refresh_material(world, entity, key);
+                    let layers: &RenderLayers =
+                        render_layers.get_or_insert_with(|| RenderLayers::none().with(layer));
+                    if world.get::<RenderLayers>(entity) != Some(layers) {
+                        world.entity_mut(entity).insert(layers.clone());
+                        nucleus::performance::add("terrain-ground-component-writes", 1);
+                    }
+                    let transform = Transform::from_xyz(
+                        (key.minimum().x - origin.x) as f32,
+                        -(depth as f32) * 0.2,
+                        (key.minimum().y - origin.y) as f32,
+                    );
+                    if world.get::<Transform>(entity) != Some(&transform) {
+                        world.entity_mut(entity).insert(transform);
+                        nucleus::performance::add("terrain-ground-component-writes", 1);
+                    }
+                    super::drawing::refresh_material(world, materials, entity, key);
                     living.insert(entity);
                     budget -= 1;
                 }

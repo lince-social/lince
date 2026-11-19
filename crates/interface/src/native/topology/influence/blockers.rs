@@ -90,8 +90,6 @@ impl<'w> Blocker<'w> {
     }
 }
 
-/// Borrowed barriers for one source within a read-only operation. This cannot
-/// outlive the World borrow or retain decisions across a geometry/filter edit.
 pub(crate) struct Blockers<'w>(Vec<Blocker<'w>>);
 
 impl<'w> Blockers<'w> {
@@ -154,8 +152,6 @@ pub(crate) fn blocked(
         center,
         forces,
     };
-    // Single-target callers retain short-circuit traversal without allocating a
-    // barrier collection. Batch callers prepare the same predicate once.
     BlockerQuery::new(world)
         .iter(world)
         .filter_map(|entry| Blocker::prepare(world, &source, entry))

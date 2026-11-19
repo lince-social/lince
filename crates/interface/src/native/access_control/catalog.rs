@@ -5,8 +5,6 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
-/// Display order and identity lookup belong to the exact immutable response.
-/// No permission decision or action validity is retained in these indexes.
 #[derive(Clone, Default)]
 pub(super) struct Rows(Arc<Snapshot>);
 
@@ -49,8 +47,6 @@ fn kind(tab: Tab) -> (usize, &'static str) {
 }
 
 impl Rows {
-    /// Preserve semantic change admission, but replace representation-only
-    /// changes too: later editor preparation must see the newest exact data.
     pub(super) fn replace(&mut self, values: &Arc<Vec<Value>>) -> bool {
         let _preparation = nucleus::performance::Span::new("access-catalog-snapshot");
         if nucleus::json::same_values_encoding(&self.0.values, values) {
@@ -77,8 +73,6 @@ impl Rows {
                 .enumerate()
                 .filter_map(|(i, row)| (row["kind"] == kind).then_some(i))
                 .collect();
-            // Stable sorting preserves source order for equal/missing names
-            // and first-source-row lookup for duplicate or absent identities.
             positions
                 .sort_by(|&left, &right| self[left][key].as_str().cmp(&self[right][key].as_str()));
             nucleus::performance::add("access-catalog-indexes-prepared", 1);

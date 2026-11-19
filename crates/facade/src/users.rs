@@ -43,11 +43,11 @@ pub(crate) async fn snapshot(
         }
     }
     let concepts = if can("role:read") || permits(user, "record:create") {
-        store::concepts::list_all(&state.cell.store.pool)
+        store::concepts::canonical_names(&state.cell.store.pool)
             .await
             .map_err(internal)?
             .into_iter()
-            .map(|concept| json!({"uid":concept.uid,"name":concept.canonical_name}))
+            .map(|(uid, name)| Value::from_iter([("uid", uid.into()), ("name", name.into())]))
             .collect::<Vec<_>>()
     } else {
         vec![]

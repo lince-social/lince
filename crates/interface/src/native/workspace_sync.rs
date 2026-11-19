@@ -1708,15 +1708,8 @@ fn history(world: &mut World, owner: Entity, data: &Value) {
 
 fn protect_passwords(views: Query<&WorkspaceSync>, mut fields: Query<&mut EditableText>) {
     for view in &views {
-        if let Ok(mut field) = fields.get_mut(view.password)
-            && field
-                .pending_edits
-                .iter()
-                .any(|edit| matches!(edit, bevy::text::TextEdit::Copy | bevy::text::TextEdit::Cut))
-        {
-            field.pending_edits.retain(|edit| {
-                !matches!(edit, bevy::text::TextEdit::Copy | bevy::text::TextEdit::Cut)
-            });
+        if let Ok(field) = fields.get_mut(view.password) {
+            crate::controls::protect_password(field);
         }
     }
 }
@@ -1785,15 +1778,8 @@ fn maintain(
             .map_or(0, |text| text.value().chars().take(32).count());
         let mask_text = "••••••••••••••••••••••••••••••••";
         panel::status(world, mask, &mask_text[..count * '•'.len_utf8()]);
-        if let Some(mut field) = world.get_mut::<EditableText>(password)
-            && field
-                .pending_edits
-                .iter()
-                .any(|edit| matches!(edit, bevy::text::TextEdit::Copy | bevy::text::TextEdit::Cut))
-        {
-            field.pending_edits.retain(|edit| {
-                !matches!(edit, bevy::text::TextEdit::Copy | bevy::text::TextEdit::Cut)
-            });
+        if let Some(field) = world.get_mut::<EditableText>(password) {
+            crate::controls::protect_password(field);
         }
         let view = world.get::<WorkspaceSync>(owner).unwrap();
         let source = view.source.clone();
@@ -1801,9 +1787,12 @@ fn maintain(
             let value = world
                 .get::<EditableText>(view.change)
                 .filter(|text| !text.is_composing())
-                .map(EditableText::value)
-                .unwrap_or_default();
-            (value != view.draft_text).then(|| value.to_string())
+                .map(EditableText::value);
+            match value {
+                Some(value) if value != view.draft_text.as_str() => Some(value.to_string()),
+                None if !view.draft_text.is_empty() => Some(String::new()),
+                _ => None,
+            }
         };
         if let Some(draft) = draft {
             engine::performance::add("native-workspace-drafts-prepared", 1);

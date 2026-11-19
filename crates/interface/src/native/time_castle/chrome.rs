@@ -506,7 +506,7 @@ pub(super) fn reveal(world: &mut World, owner: Entity) {
 }
 
 #[derive(Clone)]
-struct DismissPeek;
+pub(super) struct DismissPeek;
 impl Action for DismissPeek {
     fn apply(&self, world: &mut World, owner: Entity) {
         if let Some(mut chrome) = world.get_mut::<Chrome>(owner) {
@@ -567,52 +567,82 @@ pub(super) fn dismiss(world: &mut World) {
     }
 }
 
-pub(super) fn peek(world: &mut World, owner: Entity, entries: &[Entry], settings: &Settings) {
-    let Some(chrome) = world.get::<Chrome>(owner) else {
-        return;
-    };
-    let (parent, open, closed, round) =
-        (chrome.peek, chrome.open, chrome.peek_closed, chrome.round);
-    world.entity_mut(parent).despawn_children();
-    world.get_mut::<Node>(parent).unwrap().display =
-        if !entries.is_empty() && !open && !closed && !round {
-            Display::Flex
-        } else {
-            Display::None
-        };
-    if entries.is_empty() || round {
-        return;
+pub(super) fn prepare_peek<'a>(
+    world: &World,
+    owner: Entity,
+    entries: impl ExactSizeIterator<Item = &'a Entry>,
+    settings: &Settings,
+) -> Vec<(ui::rows::Key, ui::rows::Row)> {
+    use ui::rows::{Command, Key, Row};
+    if entries.len() == 0 || world.get::<Chrome>(owner).is_none_or(|chrome| chrome.round) {
+        return Vec::new();
     }
-    let row = crate::native::sand_panel::row(world, parent);
     let title = if entries.len() == 1 {
         "Selected event".into()
     } else {
         format!("{} overlapping events", entries.len())
     };
-    let heading = crate::native::edit_mode::label(world, row, &title, 12.0);
-    world.get_mut::<Node>(heading).unwrap().flex_grow = 1.0;
-    button(world, row, owner, "Close", DismissPeek);
     let pages = entries.len().div_ceil(20).max(1);
     let page = world
         .get::<View>(owner)
         .map_or(0, |view| view.page)
         .min(pages - 1);
-    for entry in entries.iter().skip(page * 20).take(20) {
+    let mut rows = vec![(Key::Heading, Row::Heading(title))];
+    let mut occurrences = HashMap::<&str, usize>::new();
+    for entry in entries.skip(page * 20).take(20) {
         let time = ui::time_label(entry, settings, chrono::Utc::now().timestamp_millis());
-        let event = button(
-            world,
-            parent,
-            owner,
-            &format!("{}\n{time}", ui::headline(&entry.head)),
-            ui::Select(vec![entry.id.clone()]),
-        );
-        world.get_mut::<Node>(event).unwrap().width = percent(100);
+        let occurrence = occurrences.entry(&entry.id).or_default();
+        rows.push((
+            Key::Event(entry.id.clone(), *occurrence),
+            Row::Button(
+                format!("{}\n{time}", ui::headline(&entry.head)),
+                Command::Select(entry.id.clone()),
+                true,
+            ),
+        ));
+        *occurrence += 1;
     }
     if pages > 1 {
-        let row = crate::native::sand_panel::row(world, parent);
-        button(world, row, owner, "Previous", ui::Page(-1));
-        button(world, row, owner, "Next", ui::Page(1));
+        rows.push((
+            Key::Paging,
+            Row::Controls {
+                all: false,
+                pages: true,
+            },
+        ));
     }
+    crate::host::performance::add(
+        crate::host::performance::Count::TimeDetailRowsPrepared,
+        rows.len() as u64,
+    );
+    rows
+}
+
+pub(super) fn present_peek(
+    world: &mut World,
+    owner: Entity,
+    rows: Vec<(ui::rows::Key, ui::rows::Row)>,
+) {
+    let Some(chrome) = world.get::<Chrome>(owner) else {
+        return;
+    };
+    let parent = chrome.peek;
+    let display = if !rows.is_empty() && !chrome.open && !chrome.peek_closed && !chrome.round {
+        Display::Flex
+    } else {
+        Display::None
+    };
+    let mut node = world.get_mut::<Node>(parent).unwrap();
+    if node.display != display {
+        node.display = display;
+    }
+    ui::rows::present(world, parent, owner, rows);
+}
+
+#[cfg(test)]
+pub(super) fn peek(world: &mut World, owner: Entity, entries: &[Entry], settings: &Settings) {
+    let rows = prepare_peek(world, owner, entries.iter(), settings);
+    present_peek(world, owner, rows);
 }
 
 #[cfg(test)]

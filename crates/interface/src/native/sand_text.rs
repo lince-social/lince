@@ -1,6 +1,6 @@
 use crate::native::{canvas::CanvasItem, sand::text_editor, theme::Typography};
 use bevy::{
-    picking::events::Scroll,
+    picking::events::PointerScroll,
     prelude::*,
     text::{EditableText, TextLayoutInfo},
     ui::widget::TextScroll,
@@ -176,7 +176,7 @@ pub fn fit_sand(world: &mut World, sand: Entity) {
 }
 
 fn scroll(
-    mut event: On<Pointer<Scroll>>,
+    mut event: On<PointerScroll>,
     mut texts: Query<
         (&SandText, &ComputedNode, &TextLayoutInfo, &mut TextScroll),
         Without<crate::native::layout::LayoutRuntime>,

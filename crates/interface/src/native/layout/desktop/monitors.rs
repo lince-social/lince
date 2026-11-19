@@ -445,7 +445,7 @@ fn open(world: &mut World, root: Entity) {
         crate::native::edit_mode::FocusScroll,
     ));
     world.entity_mut(body).observe(
-        |mut event: On<Pointer<Scroll>>, mut positions: Query<&mut ScrollPosition>| {
+        |mut event: On<PointerScroll>, mut positions: Query<&mut ScrollPosition>| {
             if let Ok(mut position) = positions.get_mut(event.entity) {
                 position.0.y -= event.y
                     * if event.unit == bevy::input::mouse::MouseScrollUnit::Line {
@@ -481,13 +481,13 @@ fn open(world: &mut World, root: Entity) {
         ));
         let id = head.id;
         world.entity_mut(entity).observe(
-            move |mut event: On<Pointer<DragStart>>, mut commands: Commands| {
+            move |mut event: On<PointerDragStart>, mut commands: Commands| {
                 commands.queue(move |world: &mut World| Change::DragStart(id).apply(world, root));
                 event.propagate(false);
             },
         );
         world.entity_mut(entity).observe(
-            move |mut event: On<Pointer<Drag>>, mut commands: Commands| {
+            move |mut event: On<PointerDrag>, mut commands: Commands| {
                 let distance = event.distance;
                 commands
                     .queue(move |world: &mut World| Change::Drag(id, distance).apply(world, root));
@@ -495,7 +495,7 @@ fn open(world: &mut World, root: Entity) {
             },
         );
         world.entity_mut(entity).observe(
-            move |mut event: On<Pointer<DragEnd>>, mut commands: Commands| {
+            move |mut event: On<PointerDragEnd>, mut commands: Commands| {
                 commands.queue(move |world: &mut World| Change::DragEnd.apply(world, root));
                 event.propagate(false);
             },

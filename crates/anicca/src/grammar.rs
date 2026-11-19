@@ -1,7 +1,7 @@
 #[rust_sitter::grammar("anicca")]
 pub mod grammar {
     #[rust_sitter::extra]
-    #[allow(dead_code)]
+    #[allow(dead_code, reason = "The generated Lingua parser consumes this grammar node")]
     struct Whitespace {
         #[rust_sitter::leaf(pattern = r"\s")]
         _whitespace: (),

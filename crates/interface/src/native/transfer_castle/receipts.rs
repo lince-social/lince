@@ -10,7 +10,7 @@ fn public_document(document: &Value) -> bool {
 }
 
 fn approved_review(document: &Value) -> bool {
-    matches!(serde_json::from_value::<nucleus::transfer::receipt::Document>(document.clone()), Ok(nucleus::transfer::receipt::Document::Review(review)) if review.is_complete())
+    matches!(nucleus::transfer::receipt::Document::deserialize(document), Ok(nucleus::transfer::receipt::Document::Review(review)) if review.is_complete())
 }
 
 pub(super) fn person_approval_form(
@@ -20,7 +20,7 @@ pub(super) fn person_approval_form(
     role: &str,
 ) -> Result<Form, String> {
     let scope: nucleus::transfer::receipt::Scope =
-        serde_json::from_value(scope.clone()).map_err(|error| error.to_string())?;
+        nucleus::transfer::receipt::Scope::deserialize(scope).map_err(|error| error.to_string())?;
     let role: nucleus::transfer::receipt::ApprovalRole =
         serde_json::from_value(json!(role)).map_err(|error| error.to_string())?;
     let approval = nucleus::transfer::receipt::PersonApproval {
@@ -164,7 +164,7 @@ pub(super) fn event_form(person: &str, receipt: &Value, source: Value) -> Form {
                     .iter()
                     .filter_map(|value| {
                         let signed: nucleus::transfer::receipt::SignedEvent =
-                            serde_json::from_value(value.clone()).ok()?;
+                            nucleus::transfer::receipt::SignedEvent::deserialize(value).ok()?;
                         if Some(signed.event.content.stage()) != stage {
                             return None;
                         }
@@ -368,9 +368,7 @@ fn source_options(
     }
     if local == scope["giver"] || local == scope["receiver"] {
         for signed in array(&receipt["document"]["value"]["publication"], "events") {
-            let Ok(signed) =
-                serde_json::from_value::<nucleus::transfer::receipt::SignedEvent>(signed.clone())
-            else {
+            let Ok(signed) = nucleus::transfer::receipt::SignedEvent::deserialize(signed) else {
                 continue;
             };
             if let nucleus::transfer::receipt::Content::Need {
@@ -741,28 +739,41 @@ pub(super) fn render(world: &mut World, owner: Entity, parent: Entity) {
         "Import receipt file…",
         Command::ImportReceiptFile,
     );
-    let view = world.get::<View>(owner).unwrap();
-    let receipt = view.receipt.clone();
-    let listing = view.receipt_list.clone();
-    let export_ready = view.receipt_export.is_some();
-    for entry in array(&listing, "entries") {
-        button(
-            world,
-            parent,
-            owner,
-            &format!(
-                "{} · version {}",
-                text(entry, "head"),
-                text(entry, "version")
-            ),
-            Command::Open(action_form(
-                &person,
-                "Open receipt Record",
-                json!({"kind":"inspect","record":entry["record"]}),
-            )),
+    let (receipt, entries, partial, export_ready) = {
+        let _span = nucleus::performance::Span::new("transfer-receipt-list-preparation");
+        let view = world.get::<View>(owner).unwrap();
+        let entries: Vec<_> = array(&view.receipt_list, "entries")
+            .iter()
+            .map(|entry| {
+                (
+                    format!(
+                        "{} · version {}",
+                        text(entry, "head"),
+                        text(entry, "version")
+                    ),
+                    action_form(
+                        &person,
+                        "Open receipt Record",
+                        json!({"kind":"inspect","record":entry["record"]}),
+                    ),
+                )
+            })
+            .collect();
+        nucleus::performance::add(
+            "transfer-receipt-list-entries-prepared",
+            entries.len() as u64,
         );
+        (
+            view.receipt.clone(),
+            entries,
+            view.receipt_list["partial"] == true,
+            view.receipt_export.is_some(),
+        )
+    };
+    for (caption, action) in entries {
+        button(world, parent, owner, &caption, Command::Open(action));
     }
-    if listing["partial"] == true {
+    if partial {
         crate::native::edit_mode::label(
             world,
             parent,
@@ -1010,7 +1021,7 @@ pub(super) fn render(world: &mut World, owner: Entity, parent: Entity) {
     }
     if document["kind"] == "review" {
         let approvals = array(&document["value"], "approvals");
-        let upfront = serde_json::from_value::<nucleus::transfer::receipt::Scope>(scope.clone())
+        let upfront = nucleus::transfer::receipt::Scope::deserialize(scope)
             .map(|scope| {
                 scope
                     .upfront_roles()

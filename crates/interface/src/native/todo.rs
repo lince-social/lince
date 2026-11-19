@@ -1,5 +1,9 @@
 use crate::i18n::Token as Tr;
-use crate::native::{actions::Action, sand_panel as panel};
+use crate::native::{
+    actions::Action,
+    cell_bridge::{CellMessage, replies},
+    sand_panel as panel,
+};
 use bevy::{prelude::*, text::EditableText};
 use cell::{ClientMessage, ServerMessage};
 use serde::{Deserialize, Serialize};
@@ -8,6 +12,8 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 const PAGE: usize = 40;
+
+mod ui;
 
 #[cfg(test)]
 mod tests;
@@ -174,7 +180,7 @@ struct Queue(Entity);
 struct NewTask(Entity);
 
 fn focus(
-    mut event: On<Pointer<Press>>,
+    mut event: On<PointerPress>,
     lists: Query<&Queue>,
     mut focus: ResMut<bevy::input_focus::InputFocus>,
 ) {
@@ -441,73 +447,10 @@ fn ids_label(world: &mut World, owner: Entity) {
 
 fn render(world: &mut World, owner: Entity) {
     let _render = nucleus::performance::Span::new("todo-list-presentation");
-    let view = world.get::<TodoSand>(owner).unwrap();
-    let (list, show_ids, active, ready) = (view.list, view.show_ids, view.active, view.ready);
-    let start = active / PAGE * PAGE;
-    let rows = view.rows.clone();
-    let total = view.rows.len();
-    panel::clear(world, list);
-    if start >= rows.len() {
-        crate::native::edit_mode::label(
-            world,
-            list,
-            if ready {
-                "Nothing needs doing."
-            } else {
-                "Waiting for tasks…"
-            },
-            16.0,
-        );
+    if !crate::native::output_views::presents_entity(world, owner) {
+        return;
     }
-    for (index, row) in rows.iter().skip(start).take(PAGE).enumerate() {
-        let Some(uid) = row["uid"].as_str() else {
-            continue;
-        };
-        let entry = panel::column(world, list);
-        let node = world.get_mut::<Node>(entry).unwrap().into_inner();
-        node.padding = UiRect::all(px(6));
-        if start + index == active {
-            world
-                .entity_mut(entry)
-                .insert(crate::native::token_style::background(
-                    crate::native::tokens::Token::Surface,
-                ));
-        }
-        let top = panel::row(world, entry);
-        panel::button(world, top, owner, "Done", Command::Complete(uid.into()));
-        let title = row["head"]
-            .as_str()
-            .filter(|text| !text.is_empty())
-            .or_else(|| row["slug"].as_str())
-            .unwrap_or(uid);
-        panel::button(world, top, owner, title, Command::Select(uid.into()));
-        if let Some(body) = row["body"].as_str().filter(|body| !body.is_empty()) {
-            crate::native::edit_mode::label(
-                world,
-                entry,
-                &body.chars().take(1000).collect::<String>(),
-                13.0,
-            );
-        }
-        let meta = if show_ids {
-            uid.into()
-        } else {
-            format!(
-                "quantity {}",
-                quantity(row).unwrap_or_else(|_| "unavailable".into())
-            )
-        };
-        crate::native::edit_mode::label(world, entry, &meta, 12.0);
-    }
-    if total > PAGE {
-        crate::native::edit_mode::label(
-            world,
-            list,
-            &format!("{}–{} of {total}", start + 1, (start + PAGE).min(total)),
-            12.0,
-        );
-    }
-    world.get_mut::<TodoSand>(owner).unwrap().dirty = false;
+    ui::render(world, owner);
 }
 
 fn receive(world: &mut World, owner: Entity, message: &ServerMessage) {
@@ -619,15 +562,32 @@ fn receive(world: &mut World, owner: Entity, message: &ServerMessage) {
     }
 }
 
+fn receive_batch(world: &mut World, owner: Entity, batch: &replies::Batch<'_>) {
+    let _route = nucleus::performance::Span::new("todo-reply-routing");
+    let mut after = 0;
+    loop {
+        let view = world.get::<TodoSand>(owner).unwrap();
+        let ids = std::iter::once(view.subscription.as_str())
+            .chain(view.pending.as_ref().map(|(id, _)| id.as_str()));
+        let Some(index) = batch.next(after, ids) else {
+            break;
+        };
+        nucleus::performance::add("todo-reply-candidates", 1);
+        receive(world, owner, batch.message(index));
+        after = index + 1;
+    }
+}
+
 fn update(
     world: &mut World,
-    mut cursor: Local<bevy::ecs::message::MessageCursor<crate::native::cell_bridge::CellMessage>>,
+    mut cursor: Local<bevy::ecs::message::MessageCursor<CellMessage>>,
+    items: &mut QueryState<Entity, With<TodoSand>>,
+    mut owners: Local<Vec<Entity>>,
+    mut messages: Local<Vec<Arc<ServerMessage>>>,
 ) {
     let _update = nucleus::performance::Span::new("todo-update");
-    let owners: Vec<_> = world
-        .query_filtered::<Entity, With<TodoSand>>()
-        .iter(world)
-        .collect();
+    owners.extend(items.iter(world));
+    let had_owners = !owners.is_empty();
     let stale: Vec<_> = {
         let active: HashSet<_> = owners
             .iter()
@@ -651,13 +611,16 @@ fn update(
             world.resource_mut::<Subscriptions>().0.remove(&id);
         }
     }
-    let messages: Vec<_> = cursor
-        .read(world.resource::<Messages<crate::native::cell_bridge::CellMessage>>())
-        .map(|message| message.0.clone())
-        .collect();
-    for owner in owners {
-        for message in messages.iter().map(|message| message.as_ref()) {
-            receive(world, owner, message);
+    replies::capture(
+        &mut cursor,
+        world.resource::<Messages<CellMessage>>(),
+        &mut messages,
+        had_owners,
+    );
+    let batch = (!messages.is_empty()).then(|| replies::Batch::new(&messages, owners.len() > 1));
+    for owner in owners.drain(..) {
+        if let Some(batch) = &batch {
+            receive_batch(world, owner, batch);
         }
         let view = world.get::<TodoSand>(owner).unwrap();
         if !view.requested && !crate::native::laboratory::blocked(world, owner) {
@@ -683,6 +646,11 @@ fn update(
         if world.get::<TodoSand>(owner).unwrap().dirty {
             render(world, owner);
         }
+    }
+    drop(batch);
+    messages.clear();
+    if !had_owners {
+        *owners = Vec::new();
     }
 }
 

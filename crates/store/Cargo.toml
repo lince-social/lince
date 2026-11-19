@@ -10,14 +10,14 @@ description = "Lince storage: the only crate that speaks SQL. Schema, migrations
 [dependencies]
 nucleus = { workspace = true }
 async-trait = { workspace = true }
-sqlx = { workspace = true, features = ["runtime-tokio", "sqlite", "migrate", "chrono"] }
-libsqlite3-sys = "=0.30.1"
+sqlx = { workspace = true, features = ["runtime-tokio", "sqlite-bundled", "sqlite-unlock-notify", "migrate", "macros"] }
+libsqlite3-sys = { version = "=0.40.0", default-features = false }
 chrono = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true, features = ["raw_value"] }
 sha2 = { workspace = true }
 tokio = { workspace = true }
-unicode-normalization = "=0.1.25"
+unicode-normalization = "=0.1.26"
 
 [build-dependencies]
 sensei = { workspace = true }

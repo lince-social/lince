@@ -1,34 +1,20 @@
 use super::*;
 use bevy::{
-    render::{Extract, ExtractSchedule, RenderApp},
     text::{EditableTextGeneration, TextLayoutInfo},
-    ui_render::{ExtractedUiItem, ExtractedUiNodes, RenderUiSystems},
+    ui_render::TextGlyphColors,
 };
 use lince_editor::language::Style;
 
 #[derive(Component, Default)]
+#[require(TextGlyphColors)]
 pub(super) struct Syntax {
     pub language: Option<&'static str>,
     text: String,
     spans: Vec<(std::ops::Range<usize>, Style)>,
-    colors: Vec<Option<LinearRgba>>,
 }
-
-#[derive(Resource, Default)]
-struct Start(usize);
 
 pub(super) fn install(app: &mut App) {
     app.add_systems(Last, update);
-    if let Some(render) = app.get_sub_app_mut(RenderApp) {
-        render.init_resource::<Start>().add_systems(
-            ExtractSchedule,
-            (
-                begin.before(bevy::ui_render::extract_text_sections),
-                extract.after(bevy::ui_render::extract_text_sections),
-            )
-                .in_set(RenderUiSystems::ExtractText),
-        );
-    }
 }
 
 fn update(
@@ -39,9 +25,10 @@ fn update(
         Ref<TextColor>,
         Option<&bevy::text::TextCursorStyle>,
         &mut Syntax,
+        &mut TextGlyphColors,
     )>,
 ) {
-    for (input, generation, info, foreground, cursor, mut syntax) in &mut editors {
+    for (input, generation, info, foreground, cursor, mut syntax, mut glyph_colors) in &mut editors {
         if !input.is_changed()
             && !generation.is_changed()
             && !syntax.is_changed()
@@ -50,7 +37,7 @@ fn update(
             continue;
         }
         if input.is_composing() || syntax.language.is_none() {
-            syntax.colors.clear();
+            glyph_colors.set_if_neq(TextGlyphColors::default());
             syntax.text.clear();
             continue;
         }
@@ -60,7 +47,7 @@ fn update(
             syntax.text = text.into();
         }
         let Some(layout) = input.editor.try_layout() else {
-            syntax.colors.clear();
+            glyph_colors.set_if_neq(TextGlyphColors::default());
             continue;
         };
         let mut colors = Vec::with_capacity(info.glyphs.len());
@@ -85,7 +72,7 @@ fn update(
             }
         }
         if colors.len() != info.glyphs.len() {
-            syntax.colors.clear();
+            glyph_colors.set_if_neq(TextGlyphColors::default());
             continue;
         }
         for (color, glyph) in colors.iter_mut().zip(&info.glyphs) {
@@ -99,7 +86,7 @@ fn update(
                 *color = None;
             }
         }
-        syntax.colors = colors;
+        glyph_colors.set_if_neq(TextGlyphColors(colors));
     }
 }
 
@@ -115,41 +102,6 @@ fn color(style: Style, light: bool) -> LinearRgba {
         (Style::Comment, true) => [0.40, 0.45, 0.40],
     };
     Color::srgb(r, g, b).to_linear()
-}
-
-fn begin(nodes: Res<ExtractedUiNodes>, mut start: ResMut<Start>) {
-    start.0 = nodes.uinodes.len();
-}
-
-fn extract(
-    mut nodes: ResMut<ExtractedUiNodes>,
-    start: Res<Start>,
-    colors: Extract<Query<&Syntax>>,
-) {
-    if colors.iter().all(|syntax| syntax.colors.is_empty()) {
-        return;
-    }
-    let mut offsets = BTreeMap::new();
-    let nodes = &mut *nodes;
-    for node in nodes.uinodes.iter().skip(start.0) {
-        let ExtractedUiItem::Glyphs { range } = &node.item else {
-            continue;
-        };
-        let entity = node.main_entity.id();
-        let Ok(syntax) = colors.get(entity) else {
-            continue;
-        };
-        let offset = offsets.entry(entity).or_insert(0);
-        for (glyph, color) in nodes.glyphs[range.clone()]
-            .iter_mut()
-            .zip(syntax.colors.iter().skip(*offset))
-        {
-            if let Some(color) = color {
-                glyph.color = *color;
-            }
-        }
-        *offset += range.len();
-    }
 }
 
 #[cfg(test)]
@@ -214,10 +166,10 @@ mod tests {
             ))
             .id();
         world.run_system_once(update).unwrap();
-        let syntax = world.get::<Syntax>(entity).unwrap();
-        assert_eq!(syntax.colors.len(), count);
-        assert!(syntax.colors.iter().any(Option::is_some));
-        assert!(syntax.colors.iter().any(Option::is_none));
+        let colors = &world.get::<TextGlyphColors>(entity).unwrap().0;
+        assert_eq!(colors.len(), count);
+        assert!(colors.iter().any(Option::is_some));
+        assert!(colors.iter().any(Option::is_none));
         assert_eq!(
             world
                 .get::<EditableText>(entity)

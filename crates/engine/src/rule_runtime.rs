@@ -15,6 +15,8 @@ use store::karma::frequencies::{
 use crate::karma_runtime::KarmaDeadlineDirectorConfig;
 use crate::{Engine, EngineError};
 
+mod dependencies;
+
 const VALUE_DEPENDENCY_LIMIT: usize = 4;
 
 pub(crate) async fn execution_checkpoint(evaluation: bool) -> Result<(), EngineError> {
@@ -886,7 +888,7 @@ impl Engine {
                 for token in condition
                     .parsed()
                     .map_err(|e| invalid(e.to_string()))?
-                    .reads()
+                    .reads_ref()
                 {
                     if token.func == "query_command" {
                         continue;
@@ -963,45 +965,60 @@ impl Engine {
             }
             index.rules.insert(rule.uid.clone(), rule);
         }
-        for _ in 0..VALUE_DEPENDENCY_LIMIT {
-            let mut expanded = index.records.clone();
-            for rule in index.rules.values() {
-                let Some(condition) = &rule.condition else {
-                    continue;
-                };
-                for token in condition
-                    .parsed()
-                    .map_err(|error| invalid(error.to_string()))?
-                    .reads()
-                {
-                    if token.func != "value" {
-                        continue;
-                    }
-                    let Some(uid) =
-                        store::records::resolve_uid(&self.store.pool, &token.slug).await?
-                    else {
+        {
+            let _expand = crate::performance::Span::new("record-value-dependencies");
+            let mut rules_by_record: Option<BTreeMap<&str, Vec<&str>>> = None;
+            for _ in 0..VALUE_DEPENDENCY_LIMIT {
+                crate::performance::add("record-value-dependency-rounds", 1);
+                let mut expanded = None;
+                for rule in index.rules.values() {
+                    let Some(condition) = &rule.condition else {
                         continue;
                     };
-                    for dependency in index
-                        .rules
-                        .values()
-                        .filter(|dependency| dependency.record_uid == uid)
+                    for token in condition
+                        .parsed()
+                        .map_err(|error| invalid(error.to_string()))?
+                        .reads_ref()
                     {
-                        for (record_uid, readers) in &index.records {
-                            if readers.contains(&dependency.uid) {
-                                expanded
-                                    .entry(record_uid.clone())
+                        if token.func != "value" {
+                            continue;
+                        }
+                        let Some(uid) =
+                            store::records::resolve_uid(&self.store.pool, &token.slug).await?
+                        else {
+                            continue;
+                        };
+                        let owners = rules_by_record.get_or_insert_with(|| {
+                            let mut owners: BTreeMap<&str, Vec<&str>> = BTreeMap::new();
+                            for dependency in index.rules.values() {
+                                owners
+                                    .entry(&dependency.record_uid)
                                     .or_default()
-                                    .insert(rule.uid.clone());
+                                    .push(&dependency.uid);
                             }
+                            owners
+                        });
+                        let Some(dependency_rules) = owners.get(uid.as_str()) else {
+                            continue;
+                        };
+                        let expanded = expanded
+                            .get_or_insert_with(|| dependencies::Expansion::new(&index.records));
+                        for dependency in dependency_rules {
+                            expanded.inherit(&rule.uid, dependency);
                         }
                     }
                 }
+                let Some(expanded) = expanded else {
+                    break;
+                };
+                let additions = expanded.into_additions();
+                if additions.is_empty() {
+                    break;
+                }
+                for (record, readers) in additions {
+                    index.records.entry(record).or_default().extend(readers);
+                }
             }
-            if expanded == index.records {
-                break;
-            }
-            index.records = expanded;
         }
         for signal in store::misc::list_signals(&self.store.pool).await? {
             if signal.schedule.is_empty() || !index.records.contains_key(&signal.record_uid) {

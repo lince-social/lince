@@ -3,6 +3,7 @@ pub mod allocation;
 use chrono::{DateTime, Datelike, FixedOffset, LocalResult, NaiveDate, NaiveDateTime, TimeZone};
 pub use chrono_tz::Tz;
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 
 pub const MAX_TIME_BYTES: usize = 64;
 pub const MAX_INSTANT_MS: i64 = i64::MAX >> crate::hlc::COUNTER_BITS;
@@ -90,16 +91,21 @@ impl TimeRange {
     }
 }
 
-/// A validated pair of already parsed scheduling endpoints. Borrowing these
-/// values lets metadata and projection consumers share the same interpretation.
 pub struct Endpoints<'a> {
-    start: Option<&'a TimeValue>,
-    due: Option<&'a TimeValue>,
+    start: Option<Cow<'a, TimeValue>>,
+    due: Option<Cow<'a, TimeValue>>,
 }
 
 impl<'a> Endpoints<'a> {
     pub fn new(start: Option<&'a TimeValue>, due: Option<&'a TimeValue>) -> Result<Self, String> {
-        if let (Some(start), Some(due)) = (start, due) {
+        Self::checked(start.map(Cow::Borrowed), due.map(Cow::Borrowed))
+    }
+
+    fn checked(
+        start: Option<Cow<'a, TimeValue>>,
+        due: Option<Cow<'a, TimeValue>>,
+    ) -> Result<Self, String> {
+        if let (Some(start), Some(due)) = (start.as_deref(), due.as_deref()) {
             let reversed = match (start.instant_ms(), due.instant_ms()) {
                 (Some(start), Some(due)) => start > due,
                 _ => start.stored_date() > due.stored_date(),
@@ -111,13 +117,21 @@ impl<'a> Endpoints<'a> {
         Ok(Self { start, due })
     }
 
+    pub fn start(&self) -> Option<&TimeValue> {
+        self.start.as_deref()
+    }
+
+    pub fn due(&self) -> Option<&TimeValue> {
+        self.due.as_deref()
+    }
+
     pub fn range(
         &self,
         estimate_minutes: Option<f64>,
         occurrence_ms: Option<i64>,
     ) -> Result<Option<TimeRange>, String> {
-        let start = self.start.and_then(TimeValue::instant_ms);
-        let due = self.due.and_then(TimeValue::instant_ms);
+        let start = self.start().and_then(TimeValue::instant_ms);
+        let due = self.due().and_then(TimeValue::instant_ms);
         let estimate = estimate_minutes.unwrap_or(0.0);
         if !estimate.is_finite() || !(0.0..=1_000_000_000.0).contains(&estimate) {
             return Err("Estimate must be a finite, nonnegative number of minutes".into());
@@ -153,10 +167,18 @@ impl<'a> Endpoints<'a> {
     }
 }
 
+impl Endpoints<'static> {
+    pub fn parse(start: Option<&str>, due: Option<&str>) -> Result<Self, String> {
+        let _prepare = crate::performance::Span::new("schedule-endpoint-preparation");
+        crate::performance::add("schedule-endpoint-parses", 1);
+        let start = start.map(TimeValue::parse).transpose()?.map(Cow::Owned);
+        let due = due.map(TimeValue::parse).transpose()?.map(Cow::Owned);
+        Self::checked(start, due)
+    }
+}
+
 pub fn validate_endpoints(start: Option<&str>, due: Option<&str>) -> Result<(), String> {
-    let start = start.map(TimeValue::parse).transpose()?;
-    let due = due.map(TimeValue::parse).transpose()?;
-    Endpoints::new(start.as_ref(), due.as_ref()).map(|_| ())
+    Endpoints::parse(start, due).map(|_| ())
 }
 
 pub fn range(
@@ -165,9 +187,7 @@ pub fn range(
     estimate_minutes: Option<f64>,
     occurrence_ms: Option<i64>,
 ) -> Result<Option<TimeRange>, String> {
-    let start = start.map(TimeValue::parse).transpose()?;
-    let due = due.map(TimeValue::parse).transpose()?;
-    Endpoints::new(start.as_ref(), due.as_ref())?.range(estimate_minutes, occurrence_ms)
+    Endpoints::parse(start, due)?.range(estimate_minutes, occurrence_ms)
 }
 
 pub fn civil_instants(date: &str, time: &str, timezone: &str) -> Result<Vec<String>, String> {

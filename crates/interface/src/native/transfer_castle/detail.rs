@@ -399,13 +399,12 @@ pub(super) fn render(world: &mut World, owner: Entity, parent: Entity, transfer:
         }
         forms::review(world, block, &transfer["readiness"], 0);
         karma::render(world, owner, block, transfer);
-        let rows = world.get::<View>(owner).unwrap().rows.clone();
-        let form = crate::transfers::matching::form(
-            transfer,
-            &person(world, owner),
-            &rows,
-            &world.get::<View>(owner).unwrap().context,
-        );
+        let person = person(world, owner);
+        let form = {
+            let _span = nucleus::performance::Span::new("transfer-action-input-preparation");
+            let view = world.get::<View>(owner).unwrap();
+            crate::transfers::matching::form(transfer, &person, &view.rows, &view.context)
+        };
         ui::button(
             world,
             block,
@@ -417,16 +416,17 @@ pub(super) fn render(world: &mut World, owner: Entity, parent: Entity, transfer:
             .get::<SupplierMatches>(owner)
             .filter(|matches| {
                 let view = world.get::<View>(owner).unwrap();
-                matches.person == person(world, owner)
-                    && matches.transfer == text(transfer, "uid")
+                matches.person == person
+                    && matches.transfer.as_str() == model::display_ref(&transfer["uid"]).as_ref()
                     && matches.rows == view.rows
                     && matches.context == view.context
             })
-            .map(|matches| matches.data.clone());
+            .map(|matches| {
+                let _span = nucleus::performance::Span::new("transfer-action-input-preparation");
+                crate::transfers::matching::candidates(&matches.data, &person)
+            });
         if let Some(results) = results {
-            for (label, form) in
-                crate::transfers::matching::candidates(&results, &person(world, owner))
-            {
+            for (label, form) in results {
                 ui::button(world, block, owner, &label, ui::Command::Open(form));
             }
         }
@@ -1308,8 +1308,33 @@ fn hierarchy(world: &mut World, owner: Entity, parent: Entity, transfer: &Value)
             13.0,
         );
     }
-    let rows = world.get::<View>(owner).unwrap().rows.clone();
-    for (key, label) in [("parent", "Parent"), ("source", "Source")] {
+    let (parents, children) = {
+        let _span = nucleus::performance::Span::new("transfer-action-input-preparation");
+        let rows = model::Hierarchy::new(&world.get::<View>(owner).unwrap().rows);
+        let parents = ["parent", "source"]
+            .map(|key| rows.find(&model::display_ref(&transfer[key])).is_some());
+        let children: Vec<_> = array(transfer, "children")
+            .iter()
+            .map(|child| {
+                let row = rows.find(&model::display_ref(&child["uid"]));
+                let occurrences: Vec<_> = row
+                    .into_iter()
+                    .flat_map(|row| array(row, "occurrences"))
+                    .filter(|occurrence| {
+                        capability(occurrence, "confirm_delivery")
+                            || capability(occurrence, "confirm_receipt")
+                    })
+                    .map(|occurrence| text(occurrence, "uid"))
+                    .collect();
+                (row.is_some(), occurrences)
+            })
+            .collect();
+        (parents, children)
+    };
+    for ((key, label), exists) in [("parent", "Parent"), ("source", "Source")]
+        .into_iter()
+        .zip(parents)
+    {
         let uid = text(transfer, key);
         if !uid.is_empty() {
             button(
@@ -1317,7 +1342,7 @@ fn hierarchy(world: &mut World, owner: Entity, parent: Entity, transfer: &Value)
                 block,
                 owner,
                 &format!("{label}: {uid}"),
-                if rows.iter().any(|row| text(row, "uid") == uid) {
+                if exists {
                     Command::Select(uid)
                 } else {
                     Command::Record(uid)
@@ -1333,7 +1358,7 @@ fn hierarchy(world: &mut World, owner: Entity, parent: Entity, transfer: &Value)
             13.0,
         );
     }
-    for child in array(transfer, "children") {
+    for (child, (exists, occurrences)) in array(transfer, "children").iter().zip(children) {
         let uid = text(child, "uid");
         let required = if child["required"] == true {
             "Required"
@@ -1352,7 +1377,7 @@ fn hierarchy(world: &mut World, owner: Entity, parent: Entity, transfer: &Value)
             block,
             owner,
             &format!("{} · {required} · {state}", title(child)),
-            if rows.iter().any(|row| text(row, "uid") == uid) {
+            if exists {
                 Command::Select(uid.clone())
             } else {
                 Command::Record(uid.clone())
@@ -1367,26 +1392,19 @@ fn hierarchy(world: &mut World, owner: Entity, parent: Entity, transfer: &Value)
             let form = Form::action(title, child["action"].clone());
             button(world, block, owner, title, Command::Open(form));
         }
-        if let Some(row) = rows.iter().find(|row| text(row, "uid") == uid) {
-            for occurrence in array(row, "occurrences") {
-                if capability(occurrence, "confirm_delivery")
-                    || capability(occurrence, "confirm_receipt")
-                {
-                    let uid = text(occurrence, "uid");
-                    let selected = world
-                        .get::<View>(owner)
-                        .unwrap()
-                        .selected_occurrences
-                        .contains(&uid);
-                    button(
-                        world,
-                        block,
-                        owner,
-                        &format!("{} {}", if selected { "☑" } else { "☐" }, uid),
-                        Command::SelectOccurrence(uid),
-                    );
-                }
-            }
+        for uid in occurrences {
+            let selected = world
+                .get::<View>(owner)
+                .unwrap()
+                .selected_occurrences
+                .contains(&uid);
+            button(
+                world,
+                block,
+                owner,
+                &format!("{} {}", if selected { "☑" } else { "☐" }, uid),
+                Command::SelectOccurrence(uid),
+            );
         }
     }
     button(

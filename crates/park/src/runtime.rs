@@ -870,8 +870,6 @@ fn run(
         };
         pixel_work = false;
         let Some(frame) = frame else {
-            // Pipeline completion wakes the worker. Preserve pending input and
-            // its timing until a complete frame can publish its acknowledgement.
             update = false;
             continue;
         };

@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use super::*;
 use crate::native::{
     actions::{Action, ActionButton},
@@ -8,6 +9,9 @@ use bevy::{
     text::EditableText,
 };
 use serde_json::json;
+
+mod preparation;
+mod presentation;
 
 #[derive(Component, Clone)]
 pub(super) struct Field {
@@ -23,7 +27,7 @@ struct Picker {
     list: Entity,
     subscription: String,
     rows: Arc<Vec<Value>>,
-    drawn: String,
+    presentation: presentation::State,
     message: String,
     predicate_ready: bool,
     predicate_uid: String,
@@ -87,7 +91,7 @@ pub(super) fn refresh(world: &mut World, entity: Entity, data: &Value) -> bool {
     true
 }
 
-fn data(world: &World, field: &Field) -> Value {
+fn data<'a>(world: &'a World, field: &Field) -> &'a Value {
     world
         .get_resource::<Runtime>()
         .and_then(|runtime| runtime.areas.get(&field.binding.area))
@@ -97,11 +101,10 @@ fn data(world: &World, field: &Field) -> Value {
                 .iter()
                 .find(|row| row["uid"].as_str() == Some(&field.binding.uid))
         })
-        .cloned()
-        .unwrap_or(Value::Null)
+        .unwrap_or(&Value::Null)
 }
 
-fn selection(world: &World, field: Entity) -> std::collections::HashSet<String> {
+fn selection(world: &World, field: Entity) -> std::collections::HashSet<&str> {
     let Some(binding) = world.get::<Field>(field) else {
         return default();
     };
@@ -109,15 +112,15 @@ fn selection(world: &World, field: Entity) -> std::collections::HashSet<String> 
         .as_array()
         .into_iter()
         .flatten()
-        .filter_map(|value| value["uid"].as_str().map(str::to_owned))
+        .filter_map(|value| value["uid"].as_str())
         .collect();
     if let Some(children) = world.get::<Children>(field) {
         for child in children {
             if let Some(pending) = world.get::<Pending>(*child) {
                 if pending.selected {
-                    selected.insert(pending.uid.clone());
+                    selected.insert(pending.uid.as_str());
                 } else {
-                    selected.remove(&pending.uid);
+                    selected.remove(pending.uid.as_str());
                 }
             }
         }
@@ -174,7 +177,7 @@ fn close(world: &mut World, entity: Entity) {
 
 impl Action for Open {
     fn apply(&self, world: &mut World, entity: Entity) {
-        let Some(field) = world.get::<Field>(entity).cloned() else {
+        let Some(button) = world.get::<Field>(entity).map(|field| field.button) else {
             return;
         };
         let Some(root) = root(world, entity) else {
@@ -253,7 +256,7 @@ impl Action for Open {
             list,
             subscription: subscription.clone(),
             rows: Arc::default(),
-            drawn: String::new(),
+            presentation: presentation::State::default(),
             message: "Loading people…".into(),
             predicate_ready: false,
             predicate_uid: String::new(),
@@ -275,7 +278,8 @@ impl Action for Open {
         if let Some(mut focus) = world.get_resource_mut::<InputFocus>() {
             focus.set(input, FocusCause::Pressed);
         }
-        position(world, popup, field.button);
+        let mut windows = world.query();
+        position(world, popup, button, &mut windows);
     }
 }
 
@@ -305,6 +309,7 @@ impl Action for Select {
             .as_array()
             .and_then(|values| values.iter().find(|value| value["uid"] == self.0))
             .and_then(|value| value["assertion"].as_str());
+        let selected = assertion.is_none();
         let mutation = if let Some(assertion) = assertion {
             engine::record_change::Mutation::RetractAssertion {
                 assertion: assertion.into(),
@@ -336,7 +341,7 @@ impl Action for Select {
                 Pending {
                     field: entity,
                     uid: self.0.clone(),
-                    selected: assertion.is_none(),
+                    selected,
                     confirmed: false,
                 },
                 ChildOf(entity),
@@ -384,12 +389,16 @@ pub(super) fn finished(world: &mut World, entity: Entity, error: Option<String>)
     true
 }
 
-fn position(world: &mut World, popup: Entity, anchor: Entity) {
+fn position(
+    world: &mut World,
+    popup: Entity,
+    anchor: Entity,
+    windows: &mut QueryState<&'static Window>,
+) {
     let Some(bounds) = crate::native::topology::presentation::bounds(world, anchor) else {
         return;
     };
-    let viewport = world
-        .query::<&Window>()
+    let viewport = windows
         .iter(world)
         .next()
         .map_or(Vec2::new(800.0, 600.0), |window| {
@@ -399,83 +408,31 @@ fn position(world: &mut World, popup: Entity, anchor: Entity) {
         (node.size().y * node.inverse_scale_factor()).max(100.0)
     });
     let mut node = world.get_mut::<Node>(popup).unwrap();
-    node.width = px(320.0_f32.min(viewport.x - 16.0));
-    node.left = px(bounds.min.x.clamp(8.0, (viewport.x - 328.0).max(8.0)));
-    node.top = px((bounds.max.y + 4.0).min(viewport.y - height - 8.0).max(8.0));
+    let width = px(320.0_f32.min(viewport.x - 16.0));
+    let left = px(bounds.min.x.clamp(8.0, (viewport.x - 328.0).max(8.0)));
+    let top = px((bounds.max.y + 4.0).min(viewport.y - height - 8.0).max(8.0));
+    if node.width != width || node.left != left || node.top != top {
+        node.width = width;
+        node.left = left;
+        node.top = top;
+    }
 }
 
 pub(super) fn update(
     world: &mut World,
-    mut cursor: Local<bevy::ecs::message::MessageCursor<CellMessage>>,
+    mut preparation: Local<preparation::Preparation>,
+    windows: &mut QueryState<&'static Window>,
 ) {
-    let messages: Vec<_> = cursor
-        .read(world.resource::<Messages<CellMessage>>())
-        .map(|message| message.0.clone())
-        .collect();
-    for message in messages.iter().map(|message| message.as_ref()) {
-        let mut outgoing = Vec::new();
-        for mut picker in world.query::<&mut Picker>().iter_mut(world) {
-            match &message {
-                ServerMessage::Snapshot { id, rows }
-                    if *id == format!("{}-predicate", picker.subscription) =>
-                {
-                    outgoing.push(ClientMessage::Unsubscribe { id: id.clone() });
-                    if let Some(binding) = rows
-                        .iter()
-                        .flat_map(|row| row["feature_bindings"].as_array().into_iter().flatten())
-                        .find(|binding| binding["feature"] == "assignment")
-                    {
-                        picker.predicate_uid =
-                            binding["write_concept_uid"].as_str().unwrap_or("").into();
-                        picker.predicate_ready = !picker.predicate_uid.is_empty();
-                    } else {
-                        picker.message =
-                            "Assignment meaning unavailable; inspect feature meanings".into();
-                    }
-                }
-                ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows }
-                    if id == &picker.subscription =>
-                {
-                    picker.rows = rows.clone();
-                    picker.message.clear();
-                }
-                ServerMessage::Error { id, message, .. }
-                    if id.starts_with(&picker.subscription)
-                        || id == crate::native::cell_bridge::CONNECTION =>
-                {
-                    picker.message = message.clone();
-                }
-                _ => {}
-            }
-        }
-        world.resource_mut::<Runtime>().outgoing.extend(outgoing);
-    }
-    let done: Vec<_> = world
-        .query::<(Entity, &Pending)>()
-        .iter(world)
-        .filter(|(_, pending)| {
-            pending.confirmed
-                && world.get::<Field>(pending.field).is_none_or(|field| {
-                    data(world, field)["assignees"]
-                        .as_array()
-                        .is_some_and(|values| {
-                            values.iter().any(|value| value["uid"] == pending.uid)
-                        })
-                        == pending.selected
-                })
-        })
-        .map(|(entity, _)| entity)
-        .collect();
-    for entity in done {
-        world.despawn(entity);
-    }
-    let popups: Vec<_> = world
-        .query::<(Entity, &Picker)>()
-        .iter(world)
-        .map(|(entity, picker)| (entity, picker.field, picker.input, picker.list))
-        .collect();
-    for (popup, field, input, list) in popups {
-        let Some(binding) = world.get::<Field>(field).cloned() else {
+    let _update =
+        crate::host::performance::Span::new(crate::host::performance::Stage::AssigneePickerUpdate);
+    preparation.receive(world);
+    preparation.retire(world);
+    preparation.capture(world);
+    for (popup, field, input, list) in preparation.popups.drain(..) {
+        let Some((button, area)) = world
+            .get::<Field>(field)
+            .map(|field| (field.button, field.binding.area))
+        else {
             close(world, popup);
             continue;
         };
@@ -488,7 +445,7 @@ pub(super) fn update(
                     !hover.values().flat_map(|hits| hits.keys()).any(|entity| {
                         let mut cursor = Some(*entity);
                         while let Some(entity) = cursor {
-                            if entity == popup || entity == binding.button {
+                            if entity == popup || entity == button {
                                 return true;
                             }
                             cursor = world.get::<ChildOf>(entity).map(ChildOf::parent);
@@ -500,7 +457,7 @@ pub(super) fn update(
             .and_then(|root| world.get::<crate::native::workspace::Workspaces>(root))
             .is_none_or(|spaces| {
                 world
-                    .get::<crate::native::workspace::WorkspaceMember>(binding.binding.area)
+                    .get::<crate::native::workspace::WorkspaceMember>(area)
                     .is_none_or(|member| member.0 != spaces.active)
             });
         if hidden
@@ -512,99 +469,10 @@ pub(super) fn update(
             close(world, popup);
             continue;
         }
-        position(world, popup, binding.button);
-        let text = world
-            .get::<EditableText>(input)
-            .unwrap()
-            .value()
-            .to_string()
-            .to_lowercase();
-        let picker = world.get::<Picker>(popup).unwrap();
-        let options: Vec<_> = picker
-            .rows
-            .iter()
-            .filter(|row| {
-                format!(
-                    "{} {}",
-                    row["head"].as_str().unwrap_or_default(),
-                    row["slug"].as_str().unwrap_or_default()
-                )
-                .to_lowercase()
-                .contains(&text)
-            })
-            .take(100)
-            .filter_map(|row| {
-                Some((
-                    row["uid"].as_str()?.to_owned(),
-                    row["head"].as_str().unwrap_or("Unnamed person").to_owned(),
-                ))
-            })
-            .collect();
-        let selected = selection(world, field);
-        let signature = format!(
-            "{:?}:{}:{:?}",
-            options,
-            picker.message,
-            options
-                .iter()
-                .map(|(uid, _)| selected.contains(uid))
-                .collect::<Vec<_>>()
-        );
-        if world
-            .get_resource::<InputFocus>()
-            .and_then(|focus| focus.get())
-            == Some(input)
-            && world
-                .get_resource::<ButtonInput<KeyCode>>()
-                .is_some_and(|keys| {
-                    keys.just_pressed(KeyCode::Enter) || keys.just_pressed(KeyCode::NumpadEnter)
-                })
-            && !world.get::<EditableText>(input).unwrap().is_composing()
-            && let Some((uid, _)) = options.iter().find(|(uid, _)| !selected.contains(uid))
-        {
-            Select(uid.clone()).apply(world, field);
-        }
-        if signature == world.get::<Picker>(popup).unwrap().drawn {
-            continue;
-        }
-        let children: Vec<_> = world
-            .get::<Children>(list)
-            .map(|children| children.iter().collect())
-            .unwrap_or_default();
-        for child in children {
-            world.despawn(child);
-        }
-        let message = world.get::<Picker>(popup).unwrap().message.clone();
-        if !message.is_empty() {
-            crate::native::edit_mode::label(world, list, &message, 14.0);
-        }
-        if options.is_empty() && message.is_empty() {
-            crate::native::edit_mode::label(world, list, "No matching people", 14.0);
-        }
-        for (uid, title) in options {
-            let checked = selected.contains(&uid);
-            let button = world
-                .spawn((
-                    crate::native::sand::button(0),
-                    Node {
-                        width: percent(100),
-                        min_height: px(32),
-                        flex_shrink: 0.0,
-                        ..default()
-                    },
-                    ActionButton::new(field, crate::native::actions![Select(uid)]),
-                    ChildOf(list),
-                ))
-                .id();
-            crate::native::edit_mode::label(
-                world,
-                button,
-                &format!("{} {title}", if checked { "[x]" } else { "[ ]" }),
-                14.0,
-            );
-        }
-        world.get_mut::<Picker>(popup).unwrap().drawn = signature;
+        position(world, popup, button, windows);
+        presentation::update(world, popup, field, input, list);
     }
+    preparation.finish(world);
 }
 
 #[cfg(test)]

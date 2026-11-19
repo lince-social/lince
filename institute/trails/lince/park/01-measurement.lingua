@@ -8,6 +8,8 @@ Park — 1. Measure complete interactions (
 
 # 1. Measure complete interactions
 
+**Priority, 2026-11-19:** this chapter now leads the next Park visit: P153 → P70 → P67 → P36 → P66, with existing P156/P155 runner/identity checks as prerequisites when needed. Follow the [current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y); dated source-only execution deferrals below are superseded for the resumed measurement visit after the owner’s reboot. Reuse working instrumentation and label missing signals rather than rebuilding completed tooling.
+
 **Continue through these Records:**
 
 - [Park — Historical Park visit: 3fdc9356, 2026-11-09 UTC](record:r_12E80VQY3A7TQAXK98A7C6NPAJ)

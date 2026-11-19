@@ -583,6 +583,60 @@ pub async fn list_since(
     map_facts(rows)
 }
 
+pub struct LedgerRow {
+    pub uid: String,
+    pub record_uid: String,
+    pub delta: DecimalValue,
+    pub at: DateTime<Utc>,
+    pub actor_uid: Option<String>,
+    pub cause: Cause,
+    pub payload: Option<String>,
+}
+
+pub async fn ledger_since(
+    pool: &SqlitePool,
+    since_rfc3339: Option<&str>,
+    limit: i64,
+    include_details: bool,
+) -> Result<Vec<LedgerRow>, StoreError> {
+    let _read = nucleus::performance::Span::new("fact-ledger-read-await");
+    let mut query = sqlx::QueryBuilder::new(
+        "SELECT uid, record_uid, delta_mantissa, delta_scale, at, cause_kind, ",
+    );
+    query.push(if include_details {
+        "actor_uid, cause_uid, payload FROM fact"
+    } else {
+        "NULL AS actor_uid, NULL AS cause_uid, NULL AS payload FROM fact"
+    });
+    if let Some(since) = since_rfc3339 {
+        query.push(" WHERE at >= ").push_bind(instant_str(since));
+    }
+    query.push(" ORDER BY rowid LIMIT ").push_bind(limit);
+    let rows = query.build().fetch_all(pool).await?;
+    nucleus::performance::add(
+        if include_details {
+            "fact-ledger-detail-rows"
+        } else {
+            "fact-ledger-aggregate-rows"
+        },
+        rows.len() as u64,
+    );
+    rows.into_iter()
+        .map(|row| {
+            let summary = summary(&row)?;
+            Ok(LedgerRow {
+                uid: row.get("uid"),
+                record_uid: row.get("record_uid"),
+                delta: summary.delta,
+                at: summary.at,
+                actor_uid: summary.actor_uid,
+                cause: summary.cause,
+                payload: row.get("payload"),
+            })
+        })
+        .collect()
+}
+
 pub async fn hours_since_last(
     pool: &SqlitePool,
     record_uid: &str,

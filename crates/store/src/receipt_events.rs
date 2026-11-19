@@ -71,7 +71,6 @@ pub async fn checked(pool: &SqlitePool, saved: &Saved) -> Result<Vec<Projection>
 #[derive(sqlx::FromRow)]
 pub struct Candidate {
     pub record: String,
-    pub bytes: i64,
     pub created_at: String,
     pub version: i64,
 }
@@ -82,6 +81,8 @@ pub async fn candidates(
     occurrence: &str,
     before: Option<(&str, &str)>,
 ) -> Result<Vec<Candidate>, StoreError> {
-    sqlx::query_as("SELECT r.record_uid AS record,length(CAST(v.document_json AS BLOB)) AS bytes,r.created_at,v.version FROM transfer_receipt_record r JOIN record d ON d.uid=r.record_uid JOIN transfer_receipt_version v ON v.record_uid=r.record_uid AND v.version=(SELECT MAX(x.version) FROM transfer_receipt_version x WHERE x.record_uid=r.record_uid) WHERE r.source_origin=? AND r.source_occurrence=? AND r.kind='publication' AND d.deleted_at IS NULL AND (? IS NULL OR (r.created_at,r.record_uid)<(?,?)) ORDER BY r.created_at DESC,r.record_uid DESC LIMIT 65")
+    let _span = nucleus::performance::Span::new("receipt-candidate-read");
+    nucleus::performance::add("receipt-candidate-queries", 1);
+    sqlx::query_as("SELECT r.record_uid AS record,r.created_at,v.version FROM transfer_receipt_record r JOIN record d ON d.uid=r.record_uid JOIN transfer_receipt_version v ON v.record_uid=r.record_uid AND v.version=(SELECT MAX(x.version) FROM transfer_receipt_version x WHERE x.record_uid=r.record_uid) WHERE r.source_origin=? AND r.source_occurrence=? AND r.kind='publication' AND d.deleted_at IS NULL AND (? IS NULL OR (r.created_at,r.record_uid)<(?,?)) ORDER BY r.created_at DESC,r.record_uid DESC LIMIT 65")
         .bind(origin).bind(occurrence).bind(before.map(|position|position.0)).bind(before.map(|position|position.0)).bind(before.map(|position|position.1)).fetch_all(pool).await
 }

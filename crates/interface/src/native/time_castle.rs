@@ -522,8 +522,6 @@ fn update(
             chrome::availability(world, owner, false);
         } else if !retained {
             drop(window);
-            // Changed authored inputs can still produce the same wire query.
-            // Remember their preparation without replacing the subscription.
             world
                 .resource_mut::<Feeds>()
                 .active

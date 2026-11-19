@@ -620,7 +620,7 @@ pub trait ImageCopyCaptureHandler:
 }
 
 
-#[allow(missing_debug_implementations)]
+#[allow(missing_debug_implementations, reason = "Keep the capture protocol data opaque in debug output")]
 pub struct ImageCopyCaptureGlobalData {
     filter: Box<dyn Fn(&Client) -> bool + Send + Sync>,
 }

@@ -303,7 +303,11 @@ fn operation_shares_command_metadata_and_explains_unavailable_actions_at_narrow_
         );
         let node = world.get::<ComputedNode>(target).unwrap();
         let center = world.get::<UiGlobalTransform>(target).unwrap().translation;
-        let clip = world.get::<bevy::ui::CalculatedClip>(target).unwrap().clip;
+        let clip = world.get::<bevy::ui::CalculatedClip>(target).unwrap();
+        let clip = lince_interface::native::clipped_rect(
+            Rect::from_corners(Vec2::ZERO, Vec2::new(size[0] as f32, size[1] as f32)),
+            clip,
+        );
         assert!(center.y - node.size().y * 0.5 >= clip.min.y - 1.0);
         assert!(center.y + node.size().y * 0.5 <= clip.max.y + 1.0);
         let feedback = world.get::<ChildOf>(suggestions).unwrap().parent();
@@ -328,7 +332,11 @@ fn operation_shares_command_metadata_and_explains_unavailable_actions_at_narrow_
         let world = canvas.app.world();
         let node = world.get::<ComputedNode>(rows[0]).unwrap();
         let center = world.get::<UiGlobalTransform>(rows[0]).unwrap().translation;
-        let clip = world.get::<bevy::ui::CalculatedClip>(rows[0]).unwrap().clip;
+        let clip = world.get::<bevy::ui::CalculatedClip>(rows[0]).unwrap();
+        let clip = lince_interface::native::clipped_rect(
+            Rect::from_corners(Vec2::ZERO, Vec2::new(size[0] as f32, size[1] as f32)),
+            clip,
+        );
         assert!(center.y - node.size().y * 0.5 >= clip.min.y - 1.0);
         assert!(center.y + node.size().y * 0.5 <= clip.max.y + 1.0);
     }

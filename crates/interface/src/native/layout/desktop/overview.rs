@@ -202,7 +202,7 @@ pub(super) fn toggle(world: &mut World, root: Entity) {
             ChildOf(overlay),
         ))
         .observe(
-            |mut event: On<Pointer<Scroll>>, mut positions: Query<&mut ScrollPosition>| {
+            |mut event: On<PointerScroll>, mut positions: Query<&mut ScrollPosition>| {
                 if let Ok(mut position) = positions.get_mut(event.entity) {
                     let multiplier = if event.unit == bevy::input::mouse::MouseScrollUnit::Line {
                         24.0
@@ -774,11 +774,11 @@ pub(crate) fn update(world: &mut World) {
                     && world
                         .get::<bevy::ui::CalculatedClip>(card.preview)
                         .is_none_or(|clip| {
-                            clip.clip
-                                .intersect(Rect::from_center_size(center, node.size()))
-                                .size()
-                                .min_element()
-                                > 0.0
+                            !crate::native::canvas_clip::clipped_rect(
+                                Rect::from_center_size(center, node.size()),
+                                clip,
+                            )
+                            .is_empty()
                         })
             });
         if visible && previews.len() < crate::native::topology::previews::LIMIT {

@@ -4,7 +4,8 @@ use cell::{ClientMessage, ServerMessage};
 use engine::sources::Command;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, sync::Arc};
+mod incoming;
 #[path = "source_view/outline.rs"]
 mod outline;
 #[path = "source_view_persistence.rs"]
@@ -329,7 +330,7 @@ struct View {
     body: Entity,
     controls: Entity,
     pulling: bool,
-    preview: Option<Value>,
+    preview: Option<Arc<Value>>,
     parameters: BTreeMap<String, Entity>,
 }
 
@@ -493,7 +494,11 @@ fn populate(world: &mut World, owner: Entity, frame: Entity, exchange: bool) {
 fn status(world: &mut World, owner: Entity, text: impl Into<String>) {
     if let Some(view) = world.get::<View>(owner) {
         let target = view.status;
-        world.get_mut::<Text>(target).unwrap().0 = text.into();
+        let text = text.into();
+        let mut current = world.get_mut::<Text>(target).unwrap();
+        if current.0 != text {
+            current.0 = text;
+        }
     } else if world.entities().contains(owner) {
         crate::native::edit_mode::label(world, owner, &text.into(), 12.0);
     }
@@ -698,18 +703,19 @@ impl Action for Operation {
             | Self::Import(_)
             | Self::Export(_) => {
                 capture(world, owner);
-                let castle = world.get::<SourceView>(owner).unwrap().clone();
+                let _prepare = nucleus::performance::Span::new("source-command-preparation");
+                let castle = world.get::<SourceView>(owner).unwrap();
                 let command = match self {
                     Self::Audit => Command::Audit {
-                        uri: castle.uri,
+                        uri: castle.uri.clone(),
                         inverses: Vec::new(),
                     },
                     Self::Read => Command::Open {
-                        reference: lince_resources::Reference::new(castle.uri),
+                        reference: lince_resources::Reference::new(castle.uri.clone()),
                         record: None,
                     },
                     Self::Extract => Command::Extract {
-                        uri: castle.uri,
+                        uri: castle.uri.clone(),
                         destination: panel::value(
                             world,
                             world.get::<View>(owner).unwrap().destination,
@@ -717,9 +723,9 @@ impl Action for Operation {
                         .unwrap_or_default(),
                     },
                     Self::Preview => Command::Preview {
-                        uri: castle.uri,
-                        selected: castle.selected,
-                        bindings: castle.bindings,
+                        uri: castle.uri.clone(),
+                        selected: castle.selected.clone(),
+                        bindings: castle.bindings.clone(),
                         refresh: true,
                     },
                     Self::Import(update) => {
@@ -736,16 +742,16 @@ impl Action for Operation {
                             return;
                         };
                         Command::Import {
-                            uri: castle.uri,
-                            selected: castle.selected,
-                            bindings: castle.bindings,
+                            uri: castle.uri.clone(),
+                            selected: castle.selected.clone(),
+                            bindings: castle.bindings.clone(),
                             revision: revision.into(),
                             update: *update,
                         }
                     }
                     Self::Export(media) => Command::Export {
-                        uri: castle.uri,
-                        selected: castle.selected,
+                        uri: castle.uri.clone(),
+                        selected: castle.selected.clone(),
                         destination: panel::value(
                             world,
                             world.get::<View>(owner).unwrap().destination,
@@ -755,6 +761,7 @@ impl Action for Operation {
                     },
                     _ => unreachable!(),
                 };
+                drop(_prepare);
                 let source = if matches!(self, Self::Read) {
                     reference_source(world, owner)
                 } else {
@@ -1035,14 +1042,15 @@ impl Action for Operation {
     }
 }
 
-fn render(world: &mut World, owner: Entity, data: Value) {
+fn render(world: &mut World, owner: Entity, data: impl Into<Arc<Value>>) {
+    let _present = nucleus::performance::Span::new("source-preview-presentation");
+    let data = data.into();
     let exchange = world.get::<Exchange>(owner).is_some();
     let body = world.get::<View>(owner).unwrap().body;
     panel::clear(world, body);
     let controls = world.get::<View>(owner).unwrap().controls;
     panel::clear(world, controls);
     outline::controls(world, owner, controls, &data, exchange);
-    let castle = world.get::<SourceView>(owner).unwrap().clone();
     if data["audit"].is_object() {
         crate::native::edit_mode::label(
             world,
@@ -1065,13 +1073,13 @@ fn render(world: &mut World, owner: Entity, data: Value) {
         }
     }
     world.get_mut::<View>(owner).unwrap().parameters.clear();
-    if let Some(current) = &castle.current {
+    if let Some(current) = world.get::<SourceView>(owner).unwrap().current.clone() {
         panel::button(
             world,
             body,
             owner,
             "Open imported Record",
-            Operation::Open(current.clone(), Source::Local),
+            Operation::Open(current, Source::Local),
         );
     }
     if data["files"].is_array() {
@@ -1079,7 +1087,9 @@ fn render(world: &mut World, owner: Entity, data: Value) {
     }
     if let Some(parameters) = data["parameters"].as_object() {
         for (name, input) in parameters {
-            let value = castle
+            let value = world
+                .get::<SourceView>(owner)
+                .unwrap()
                 .bindings
                 .get(name)
                 .cloned()
@@ -1113,7 +1123,13 @@ fn render(world: &mut World, owner: Entity, data: Value) {
         };
         let label = format!(
             "{} {}",
-            if castle.selected.iter().any(|value| value == uri) {
+            if world
+                .get::<SourceView>(owner)
+                .unwrap()
+                .selected
+                .iter()
+                .any(|value| value == uri)
+            {
                 "☑"
             } else {
                 "☐"
@@ -1173,11 +1189,18 @@ fn render(world: &mut World, owner: Entity, data: Value) {
             }
         }
     }
-    if let Some(binding) = castle.binding.filter(|_| {
-        data["rules"]
-            .as_array()
-            .is_some_and(|rules| !rules.is_empty())
-    }) {
+    if let Some(binding) = world
+        .get::<SourceView>(owner)
+        .unwrap()
+        .binding
+        .as_ref()
+        .filter(|_| {
+            data["rules"]
+                .as_array()
+                .is_some_and(|rules| !rules.is_empty())
+        })
+        .cloned()
+    {
         panel::button(
             world,
             body,
@@ -1189,6 +1212,23 @@ fn render(world: &mut World, owner: Entity, data: Value) {
     world.get_mut::<View>(owner).unwrap().preview = Some(data);
 }
 
+fn render_file(world: &mut World, owner: Entity, body: Entity, uri: &str) {
+    panel::button(
+        world,
+        body,
+        owner,
+        "Open file",
+        Operation::Browse(lince_resources::Reference::new(uri), None),
+    );
+    panel::button(
+        world,
+        body,
+        owner,
+        "Select file",
+        Operation::Select(uri.into()),
+    );
+}
+
 fn render_record(
     world: &mut World,
     owner: Entity,
@@ -1198,20 +1238,7 @@ fn render_record(
 ) {
     if record["state"] == "file" {
         if let Some(uri) = record["uid"].as_str() {
-            panel::button(
-                world,
-                body,
-                owner,
-                "Open file",
-                Operation::Browse(lince_resources::Reference::new(uri), None),
-            );
-            panel::button(
-                world,
-                body,
-                owner,
-                "Select file",
-                Operation::Select(uri.into()),
-            );
+            render_file(world, owner, body, uri);
         }
         return;
     }
@@ -1313,9 +1340,7 @@ fn render_record(
             Operation::Focus(uid.into()),
         );
     }
-    if let Ok(resource) =
-        serde_json::from_value::<lince_resources::Resource>(record["resource"].clone())
-    {
+    if let Ok(resource) = lince_resources::Resource::deserialize(&record["resource"]) {
         let _ = media(world, body, owner, &resource);
     }
 }
@@ -1600,8 +1625,7 @@ fn media(
 }
 
 pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessage) {
-    if matches!(message,ServerMessage::Error{id,code,..} if id==crate::native::cell_bridge::CONNECTION || id=="connection" || code.as_deref()==Some("session_expired"))
-    {
+    if incoming::disconnected(message) {
         let cards = world
             .query::<(Entity, &Card)>()
             .iter(world)
@@ -1617,16 +1641,9 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
         ServerMessage::ActionOk { id, .. } | ServerMessage::Error { id, .. } => id,
         _ => return,
     };
-    let Some((owner, origin, card)) = world
-        .get_resource::<Pending>()
-        .and_then(|pending| pending.0.get(id))
-        .cloned()
-    else {
+    let Some((owner, card)) = incoming::target(world, source, id) else {
         return;
     };
-    if &origin != source {
-        return;
-    }
     world.resource_mut::<Pending>().0.remove(id);
     if !world.entities().contains(owner) {
         return;
@@ -1688,9 +1705,7 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
                     }),
                 );
             }
-            if let Ok(resource) =
-                serde_json::from_value::<lince_resources::Resource>(data["resource"].clone())
-            {
+            if let Ok(resource) = lince_resources::Resource::deserialize(&data["resource"]) {
                 let controls = media(world, owner, owner, &resource).unwrap_or(owner);
                 crate::native::edit_mode::label(
                     world,
@@ -1745,9 +1760,9 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
                         &label,
                         Operation::Open(uid.into(), source.clone()),
                     );
-                    if let Ok(resource) = serde_json::from_value::<lince_resources::Resource>(
-                        related["resource"].clone(),
-                    ) {
+                    if let Ok(resource) =
+                        lince_resources::Resource::deserialize(&related["resource"])
+                    {
                         let card = panel::column(world, owner);
                         world.entity_mut(card).insert(Card {
                             reference: uid.into(),
@@ -1783,8 +1798,7 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
                 .flatten()
                 .take(32)
             {
-                if let Ok(action) =
-                    serde_json::from_value::<engine::actions::Action>(control["action"].clone())
+                if let Ok(action) = engine::actions::Action::deserialize(&control["action"])
                     && matches!(
                         action,
                         engine::actions::Action::AssertRecord { .. }
@@ -1837,9 +1851,7 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
                 crate::native::description::open_web(world, owner, uri);
                 return;
             }
-            if let Ok(resource) =
-                serde_json::from_value::<lince_resources::Resource>(data["resource"].clone())
-            {
+            if let Ok(resource) = lince_resources::Resource::deserialize(&data["resource"]) {
                 Operation::Resource(resource).apply(world, owner);
                 return;
             }
@@ -1915,43 +1927,34 @@ fn review_state(castle: &mut SourceView, data: &Value) {
 fn update(
     world: &mut World,
     mut cursor: Local<bevy::ecs::message::MessageCursor<crate::native::cell_bridge::CellMessage>>,
+    mut wave: Local<crate::native::cell_bridge::replies::Wave>,
+    mut maintenance: Local<incoming::Maintenance>,
 ) {
-    let messages = world
-        .get_resource::<Messages<crate::native::cell_bridge::CellMessage>>()
-        .map(|messages| {
-            cursor
-                .read(messages)
-                .map(|message| message.0.clone())
-                .collect::<Vec<_>>()
-        })
-        .unwrap_or_default();
-    for message in messages.iter().map(|message| message.as_ref()) {
-        receive(world, &Source::Local, &message);
+    use crate::native::cell_bridge::{CellMessage, replies};
+    let _update = nucleus::performance::Span::new("source-view-update");
+    if let Some(messages) = world.get_resource::<Messages<CellMessage>>() {
+        if world.resource::<Pending>().0.is_empty() && !maintenance.has_cards(world) {
+            cursor.clear(messages);
+            *wave = replies::Wave::default();
+        } else {
+            wave.capture(&mut cursor, messages, |message| {
+                replies::action_id(message).is_some()
+            });
+        }
     }
-    let cards = world
-        .query::<(Entity, &Card)>()
-        .iter(world)
-        .filter(|(_, card)| !card.requested)
-        .map(|(entity, card)| (entity, card.reference.clone(), card.source.clone()))
-        .collect::<Vec<_>>();
-    for (entity, reference, source) in cards {
-        if crate::native::description::source_sender(world, &source).is_none() {
+    for sequence in wave.drain() {
+        let message = replies::message(world.resource::<Messages<CellMessage>>(), sequence);
+        if !incoming::disconnected(message)
+            && !replies::action_id(message)
+                .is_some_and(|id| incoming::target(world, &Source::Local, id).is_some())
+        {
             continue;
         }
-        world.get_mut::<Card>(entity).unwrap().requested = true;
-        request(
-            world,
-            entity,
-            source,
-            Command::Inspect { record: reference },
-            true,
-        );
+        let message = message.clone();
+        nucleus::performance::add("source-replies-retained", 1);
+        receive(world, &Source::Local, &message);
     }
-    let mut pending = world.remove_resource::<Pending>().unwrap();
-    pending
-        .0
-        .retain(|_, (owner, _, _)| world.entities().contains(*owner));
-    world.insert_resource(pending);
+    maintenance.update(world);
 }
 
 #[derive(Component, Clone)]

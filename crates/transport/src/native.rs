@@ -785,14 +785,11 @@ impl State {
             observed.push(read.record.clone());
         }
         for record in &observed {
-            let mut current = self
-                .record(record["uid"].as_str().ok_or("Missing Record UID.")?)
-                .await?;
+            let uid = record["uid"].as_str().ok_or("Missing Record UID.")?;
+            let mut current = self.record(uid).await?;
             if let Some(extensions) = record["extensions"].as_object() {
                 for namespace in extensions.keys() {
-                    current["extensions"][namespace] = self
-                        .extension(record["uid"].as_str().unwrap(), namespace)
-                        .await?;
+                    current["extensions"][namespace] = self.extension(uid, namespace).await?;
                 }
             }
             let replaces_text = matches!(

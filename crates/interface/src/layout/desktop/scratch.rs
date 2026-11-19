@@ -59,7 +59,32 @@ impl Workspace {
     }
 
     pub(super) fn hidden_items(&self) -> BTreeSet<PlacementId> {
-        self.items.iter().filter(|item| self.hidden(item.id)).map(|item| item.id).collect()
+        #[cfg(feature = "native-presentation")]
+        let _hidden = engine::performance::Span::new("desktop-hidden-membership");
+        let mut compact = BTreeMap::new();
+        if self.mode == WorkspaceLayout::Tiled && !self.items.is_empty() {
+            for group in self.compact_groups() {
+                for id in &group.members {
+                    compact.entry(*id).or_insert(*id != group.active);
+                }
+            }
+        }
+        let hidden: BTreeSet<_> = self
+            .items
+            .iter()
+            .filter(|item| {
+                self.minimized(item.id)
+                    || compact.get(&item.id) == Some(&true)
+                    || self.scratch_hidden(item.id)
+            })
+            .map(|item| item.id)
+            .collect();
+        #[cfg(feature = "native-presentation")]
+        {
+            engine::performance::add("desktop-hidden-compact-ids", compact.len() as u64);
+            engine::performance::add("desktop-hidden-ids-prepared", hidden.len() as u64);
+        }
+        hidden
     }
 
     pub fn mark_scratch(&mut self, id: PlacementId, workspace: u64) -> Result<(), LayoutError> {

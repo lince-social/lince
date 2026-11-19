@@ -523,7 +523,7 @@ pub(super) fn save(world: &mut World, owner: Entity, path: PathBuf) {
     let result = crate::native::file_explorer::worker::run(
         world,
         move || {
-            let point = point.encode();
+            let point = point.encode()?;
             file.save(&expected, &point.text.to_string())
                 .map(|snapshot| (point, snapshot))
         },

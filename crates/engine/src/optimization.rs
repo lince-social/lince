@@ -279,8 +279,6 @@ impl Engine {
         let _poll = nucleus::performance::Span::new("optimization-poll-await");
         self.require_permission(actor, "record:update").await?;
         let (uid, mut run) = self.load_optimization_run(token, actor).await?;
-        // Polls only change status/message. Keep the authored run intact until
-        // a transition needs its before/after values for the guarded write.
         let mut state = run.state.clone();
         let mut message = run.message.clone();
         let mut outcome = ActionOutcome::default();

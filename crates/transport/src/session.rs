@@ -17,7 +17,6 @@ struct Subscription {
 
 struct QueryResult {
     rows: Arc<Vec<serde_json::Value>>,
-    // Keep allocation identity, not the old rows' payload, alive for this wave.
     compared: Option<(Weak<Vec<serde_json::Value>>, bool)>,
 }
 
@@ -814,9 +813,6 @@ impl Session {
             match result {
                 Ok(rows) => {
                     let subscription = self.subscriptions.get_mut(id).unwrap();
-                    // Choose one retained result for this query's whole wave.
-                    // An alias that began at another revision must converge to
-                    // that same Arc, rather than preserving its equal private copy.
                     let result = results.entry(key).or_insert(QueryResult {
                         rows,
                         compared: None,
@@ -885,7 +881,13 @@ impl Session {
             let context = protein::calendar::context(protein, self.subject.as_deref())?;
             self.engine.request_projection(context).await.map_err(|error| store::StoreError::Protocol(error.to_string()))?;
         }
-        let signer_actor = self.available_signer_actor().await;
+        let signer_actor = if protein::uses_signer(protein) {
+            let _signer = engine::performance::Span::new("cell-query-signer-context-await");
+            engine::performance::add("cell-query-signer-lookups", 1);
+            self.available_signer_actor().await
+        } else {
+            None
+        };
         let nearby = protein::is_ephemeral(protein).then(|| self.engine.nearby_peers());
         let rows = protein::execute_for_with_context(
             &self.engine.store,
@@ -1278,8 +1280,6 @@ impl Session {
         }
         let mut out = Vec::new();
         let collaboration = engine::performance::Span::new("cell-refresh-collaboration-await");
-        // A delta exports all document operations since the subscriber's last
-        // version. Refresh each affected document once, in first-seen order.
         let mut refreshed = HashSet::new();
         for fact in facts {
             if !self.collab_records.contains(&fact.record_uid)

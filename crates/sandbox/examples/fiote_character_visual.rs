@@ -418,9 +418,8 @@ async fn main() {
     reports.push(benchmark(&mut app, "static_sixteen"));
     let adapter = format!(
         "{:?}",
-        app.world()
+        &**app.world()
             .resource::<bevy::render::renderer::RenderAdapterInfo>()
-            .0
     );
     let report = serde_json::json!({ "adapter": adapter, "measurement": "Application update and GPU completion; excludes frame pacing; process RSS includes the entire native fixture", "cases": reports });
     std::fs::write(

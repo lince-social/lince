@@ -1,4 +1,8 @@
-use bevy::{prelude::*, text::EditableText};
+use bevy::{
+    ecs::{entity_disabling::Disabled, query::Allow},
+    prelude::*,
+    text::EditableText,
+};
 use engine::karma_preview::{Limits, ProposedRule, Report, Request};
 use serde::{Deserialize, Serialize};
 
@@ -83,13 +87,19 @@ pub(super) fn needs_refresh(world: &World, owner: Entity) -> bool {
 }
 
 #[derive(Component)]
-struct PreviewView {
+pub(super) struct PreviewView {
     panel: Entity,
     output: Entity,
     pending: Option<(String, String, u64)>,
     report: Option<Report>,
     source_revision: u64,
     stale: bool,
+}
+
+impl replies::Pending for PreviewView {
+    fn pending_id(&self) -> Option<&str> {
+        self.pending.as_ref().map(|pending| pending.0.as_str())
+    }
 }
 
 #[derive(Component)]
@@ -211,24 +221,47 @@ pub(super) fn toggle(world: &mut World, owner: Entity) {
 }
 
 fn capture(world: &mut World, owner: Entity) {
-    let values: Vec<_> = world
-        .query::<(&Input, &EditableText)>()
-        .iter(world)
-        .filter(|(input, _)| input.owner == owner)
-        .map(|(input, text)| (input.index, text.value().to_string()))
-        .collect();
-    let mut castle = world.get_mut::<KarmaCastle>(owner).unwrap();
-    for (index, value) in values {
-        let form = &mut castle.preview;
-        match index {
-            0 => form.horizon = value,
-            1 => form.evaluations = value,
-            2 => form.wall = value,
-            3 => form.records = value,
-            4 => form.inputs = value,
-            5 => form.saved_checks = value,
-            _ => {}
+    world
+        .run_system_cached_with(capture_fields, owner)
+        .expect("capture Karma preview fields");
+}
+
+fn capture_fields(
+    In(owner): In<Entity>,
+    inputs: Query<(&Input, &EditableText)>,
+    mut castles: Query<&mut KarmaCastle, Allow<Disabled>>,
+) {
+    let _capture = nucleus::performance::Span::new("karma-preview-field-capture");
+    let mut castle = castles.get_mut(owner).unwrap();
+    for (input, text) in &inputs {
+        if input.owner != owner {
+            continue;
         }
+        let form = &castle.preview;
+        let current = match input.index {
+            0 => &form.horizon,
+            1 => &form.evaluations,
+            2 => &form.wall,
+            3 => &form.records,
+            4 => &form.inputs,
+            5 => &form.saved_checks,
+            _ => continue,
+        };
+        if text.value() == current.as_str() {
+            continue;
+        }
+        let form = &mut castle.preview;
+        let target = match input.index {
+            0 => &mut form.horizon,
+            1 => &mut form.evaluations,
+            2 => &mut form.wall,
+            3 => &mut form.records,
+            4 => &mut form.inputs,
+            5 => &mut form.saved_checks,
+            _ => unreachable!(),
+        };
+        crate::controls::copy_value(text, target);
+        nucleus::performance::add("karma-preview-fields-published", 1);
     }
 }
 
@@ -259,6 +292,10 @@ fn request(world: &World, owner: Entity) -> Result<Request, String> {
     let castle = world
         .get::<KarmaCastle>(owner)
         .ok_or("Rule editor unavailable")?;
+    request_for(castle)
+}
+
+fn request_for(castle: &KarmaCastle) -> Result<Request, String> {
     let form = &castle.preview;
     let proposals = castle
         .draft
@@ -271,7 +308,7 @@ fn request(world: &World, owner: Entity) -> Result<Request, String> {
             }),
             rule: draft.rule.clone(),
             expected_revision: draft.revision,
-            fields: draft.fields.clone().map(|field| field.input()),
+            fields: draft.fields.each_ref().map(model::FieldDraft::input),
         })
         .collect();
     let parse = |value: &str| {
@@ -421,103 +458,137 @@ pub(super) fn dirty(world: &mut World, owner: Entity) {
 }
 
 pub(super) fn maintain(world: &mut World) {
-    let owners: Vec<_> = world
-        .query_filtered::<Entity, With<PreviewView>>()
-        .iter(world)
-        .collect();
-    for owner in owners {
+    world
+        .run_system_cached(maintain_previews)
+        .expect("maintain Karma previews");
+}
+
+fn maintain_previews(
+    world: &mut World,
+    candidates: &mut QueryState<Entity, With<PreviewView>>,
+    mut owners: Local<Vec<Entity>>,
+) {
+    let _maintain = nucleus::performance::Span::new("karma-preview-maintenance");
+    owners.extend(candidates.iter(world));
+    let count = owners.len();
+    for owner in owners.drain(..) {
         capture(world, owner);
-        let fingerprint = request(world, owner)
-            .and_then(|request| request.fingerprint().map_err(|error| error.to_string()))
-            .ok();
-        let mut view = world.get_mut::<PreviewView>(owner).unwrap();
-        if let Some(report) = &view.report {
+    }
+    world
+        .run_system_cached(maintain_reports)
+        .expect("maintain Karma preview reports");
+    if count == 0 {
+        *owners = Vec::new();
+    }
+}
+
+fn maintain_reports(
+    owners: Query<Entity, With<PreviewView>>,
+    castles: Query<Ref<KarmaCastle>, Allow<Disabled>>,
+    mut views: Query<&mut PreviewView, Allow<Disabled>>,
+    mut texts: Query<&mut Text, Allow<Disabled>>,
+) {
+    for owner in &owners {
+        let castle = castles.get(owner).unwrap();
+        let mut view = views.get_mut(owner).unwrap();
+        if !view.stale
+            && (castle.is_changed() || view.is_changed())
+            && let Some(report) = &view.report
+        {
+            let _prepare = nucleus::performance::Span::new("karma-preview-fingerprint");
+            nucleus::performance::add("karma-preview-fingerprints-prepared", 1);
+            let fingerprint = request_for(&castle)
+                .and_then(|request| request.fingerprint().map_err(|error| error.to_string()))
+                .ok();
             if fingerprint.as_deref() != Some(&report.draft) {
                 view.stale = true;
             }
         }
         if view.stale && view.report.is_some() && view.pending.is_none() {
-            let output = view.output;
-            if !world
-                .get::<Text>(output)
-                .unwrap()
-                .0
-                .starts_with("Earlier draft or data · ")
-            {
-                let old = world.get::<Text>(output).unwrap().0.clone();
-                world.get_mut::<Text>(output).unwrap().0 = format!("Earlier draft or data · {old}");
+            let mut text = texts.get_mut(view.output).unwrap();
+            if !text.0.starts_with("Earlier draft or data · ") {
+                text.0 = format!("Earlier draft or data · {}", text.0);
             }
         }
     }
 }
 
-pub(super) fn receive(world: &mut World, message: &ServerMessage) -> bool {
-    let id = match message {
-        ServerMessage::ActionOk { id, .. } | ServerMessage::Error { id, .. } => id,
-        _ => return false,
-    };
-    let owner = world
-        .query::<(Entity, &PreviewView)>()
-        .iter(world)
-        .find(|(_, view)| {
-            view.pending
-                .as_ref()
-                .is_some_and(|pending| &pending.0 == id)
-        })
-        .map(|(owner, _)| owner);
-    let Some(owner) = owner else {
-        return false;
-    };
-    ui::capture(world, owner);
-    capture(world, owner);
+struct PreparedReport {
+    report: Report,
+    text: String,
+    fingerprint: Option<String>,
+}
+
+fn prepare_report(
+    world: &World,
+    owner: Entity,
+    data: &Value,
+) -> Result<PreparedReport, serde_json::Error> {
+    let _prepare = nucleus::performance::Span::new("karma-preview-reply-preparation");
+    let report = Report::deserialize(data)?;
     let fingerprint = request(world, owner)
         .and_then(|request| request.fingerprint().map_err(|error| error.to_string()))
         .ok();
-    let names: HashMap<String, String> = world
+    let names: HashMap<&str, &str> = world
         .get::<View>(owner)
         .into_iter()
         .flat_map(|view| {
             view.records
                 .iter()
-                .filter_map(|record| {
-                    Some((
-                        record["uid"].as_str()?.to_owned(),
-                        record["head"].as_str()?.to_owned(),
-                    ))
-                })
+                .filter_map(|record| Some((record["uid"].as_str()?, record["head"].as_str()?)))
                 .chain(
                     view.rules
                         .iter()
-                        .map(|rule| (rule.uid.clone(), rule.name.clone())),
+                        .map(|rule| (rule.uid.as_str(), rule.name.as_str())),
                 )
         })
         .collect();
+    nucleus::performance::add("karma-preview-names-borrowed", names.len() as u64);
+    let text = describe(&report, &names);
+    Ok(PreparedReport {
+        report,
+        text,
+        fingerprint,
+    })
+}
+
+pub(super) fn receive(world: &mut World, owner: Entity, message: &ServerMessage) {
+    ui::capture(world, owner);
+    capture(world, owner);
+    let prepared = match message {
+        ServerMessage::ActionOk {
+            data: Some(data), ..
+        } => Some(prepare_report(world, owner, data)),
+        _ => None,
+    };
     let mut view = world.get_mut::<PreviewView>(owner).unwrap();
     let submitted = view.pending.take().unwrap();
     let output = view.output;
-    let text = match message {
-        ServerMessage::ActionOk {
-            data: Some(data), ..
-        } => match serde_json::from_value::<Report>(data.clone()) {
-            Ok(report) => {
-                view.stale = !report.source_current
-                    || submitted.2 != view.source_revision
-                    || fingerprint.as_deref() != Some(&report.draft);
-                let text = describe(&report, &names);
-                view.report = Some(report);
-                text
-            }
-            Err(error) => format!("Could not read Simulation result: {error}"),
+    let text = match prepared {
+        Some(Ok(PreparedReport {
+            report,
+            text,
+            fingerprint,
+        })) => {
+            view.stale = !report.source_current
+                || submitted.2 != view.source_revision
+                || fingerprint.as_deref() != Some(&report.draft);
+            view.report = Some(report);
+            text
+        }
+        Some(Err(error)) => format!("Could not read Simulation result: {error}"),
+        None => match message {
+            ServerMessage::Error { message, .. } => message.clone(),
+            _ => "Simulation returned no report".into(),
         },
-        ServerMessage::Error { message, .. } => message.clone(),
-        _ => "Simulation returned no report".into(),
     };
     world.get_mut::<Text>(output).unwrap().0 = text;
-    true
 }
 
-fn describe(report: &Report, names: &HashMap<String, String>) -> String {
-    let name = |uid: &str| names.get(uid).cloned().unwrap_or_else(|| uid.into());
+fn describe(report: &Report, names: &HashMap<&str, &str>) -> String {
+    fn name<'a>(names: &HashMap<&str, &'a str>, uid: &'a str) -> &'a str {
+        names.get(uid).copied().unwrap_or(uid)
+    }
     let at = chrono::DateTime::from_timestamp_millis(report.stopped_at_ms).map_or_else(
         || report.stopped_at_ms.to_string(),
         |date| date.to_rfc3339(),
@@ -551,13 +622,13 @@ fn describe(report: &Report, names: &HashMap<String, String>) -> String {
                 .participants
                 .iter()
                 .map(|(person, participant)| {
-                    format!("{} level {}", name(person), participant.guard.level)
+                    format!("{} level {}", name(names, person), participant.guard.level)
                 })
                 .collect::<Vec<_>>()
                 .join(", ");
             lines.push(format!(
                 "{} · revision {} · {} · {} · {} · {levels}",
-                name(&value.record),
+                name(names, &value.record),
                 transfer.revision,
                 if transfer.active {
                     "active"
@@ -575,7 +646,7 @@ fn describe(report: &Report, names: &HashMap<String, String>) -> String {
         }
         lines.push(format!(
             "{} = {}",
-            name(&value.record),
+            name(names, &value.record),
             value.quantity.as_ref().map_or_else(
                 || "Unavailable".into(),
                 |quantity| quantity.value.to_string()
@@ -595,12 +666,12 @@ fn describe(report: &Report, names: &HashMap<String, String>) -> String {
                 observed,
             } => format!(
                 "{}: expected {}, found {}",
-                name(record.as_str()),
+                name(names, record.as_str()),
                 expected.value,
                 observed.value
             ),
             nucleus::simulation::Witness::RefusedRule { occurrence, .. } => {
-                format!("{} was refused", name(&occurrence.rule_uid))
+                format!("{} was refused", name(names, &occurrence.rule_uid))
             }
             _ => "See the restriction and contributing Rules".into(),
         };
@@ -620,7 +691,7 @@ fn describe(report: &Report, names: &HashMap<String, String>) -> String {
             cycle
                 .rules
                 .iter()
-                .map(|rule| name(rule))
+                .map(|rule| name(names, rule))
                 .collect::<Vec<_>>()
                 .join(" → ")
         ));

@@ -1,14 +1,13 @@
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
-use wake_reference::MfccComparator;
 
 #[path = "wake/features.rs"]
 mod features;
 use features::{Features, WIDTH};
 
 pub const HISTORY_SAMPLES: usize = 40_000;
-pub const NOTICE: &str = include_str!("../../../../vendor/wake-reference/CREDITS.txt");
-pub const LICENSE: &str = include_str!("../../../../vendor/wake-reference/LICENSE");
+pub const NOTICE: &str = include_str!("../../../assets/wake/RUSTPOTTER-NOTICE.txt");
+pub const LICENSE: &str = include_str!("../../../assets/wake/LICENSE-Rustpotter-Apache-2.0.txt");
 pub const FFT_LICENSE: &str = include_str!("../../../assets/wake/LICENSE-RustFFT-MIT.txt");
 pub const MODEL_LICENSE: &str =
     include_str!("../../../assets/wake/LICENSE-Feature-Models-Apache-2.0.txt");
@@ -289,6 +288,23 @@ impl Detector {
     }
 }
 
+fn frame_distance(a: &[f32], b: &[f32]) -> f32 {
+    let mut dot = 0.0;
+    let mut a_squared = 0.0;
+    let mut b_squared = 0.0;
+    for (&a, &b) in a.iter().zip(b) {
+        dot += a * b;
+        a_squared += a * a;
+        b_squared += b * b;
+    }
+    let magnitude = f32::sqrt(a_squared * b_squared);
+    if magnitude == 0.0 {
+        1.0
+    } else {
+        1.0 - dot / magnitude
+    }
+}
+
 fn similarity(window: &[&[f32]], reference: &[Vec<f32>]) -> f32 {
     let mut previous = vec![f32::INFINITY; reference.len() + 1];
     let mut current = previous.clone();
@@ -296,7 +312,7 @@ fn similarity(window: &[&[f32]], reference: &[Vec<f32>]) -> f32 {
     for frame in window {
         current.fill(f32::INFINITY);
         for column in 1..=reference.len() {
-            current[column] = MfccComparator::calculate_distance(frame, &reference[column - 1])
+            current[column] = frame_distance(frame, &reference[column - 1])
                 + previous[column]
                     .min(previous[column - 1])
                     .min(current[column - 1]);

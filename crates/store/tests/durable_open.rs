@@ -121,7 +121,7 @@ async fn durable_openers_refuse_in_memory_and_temporary_urls() {
 }
 
 #[tokio::test]
-async fn a_new_durable_store_has_schema_without_domain_defaults() {
+async fn new_durable_store_applies_migrations_without_initializing_identity() {
     let (directory, url) = temp_store("durable-empty");
     let store = Store::open_durable(&url).await.unwrap();
     let migrations: i64 = store::sqlx::query_scalar("SELECT COUNT(*) FROM _sqlx_migrations")
@@ -151,8 +151,8 @@ async fn a_new_durable_store_has_schema_without_domain_defaults() {
             .unwrap()
             .is_empty()
     );
-    for table in ["record", "lingua", "configuration", "role"] {
-        let count: i64 = store::sqlx::query_scalar(&format!("SELECT COUNT(*) FROM {table}"))
+    for table in ["record", "configuration", "role"] {
+        let count: i64 = store::sqlx::query_scalar(store::sqlx::AssertSqlSafe(format!("SELECT COUNT(*) FROM {table}")))
             .fetch_one(&store.pool)
             .await
             .unwrap();
@@ -169,7 +169,7 @@ async fn a_new_durable_store_has_schema_without_domain_defaults() {
         .fetch_one(&reopened.pool)
         .await
         .unwrap();
-    assert_eq!(local_lingua, 0);
+    assert_eq!(local_lingua, 1);
     reopened.pool.close().await;
     std::fs::remove_dir_all(directory).unwrap();
 }
@@ -297,16 +297,10 @@ async fn existing_only_does_not_repair_deleted_or_wrong_kind_identity_rows() {
 }
 
 #[tokio::test]
-async fn ordinary_open_keeps_its_existing_normal_profile() {
+async fn ordinary_open_uses_the_same_durable_connection_settings() {
     let (directory, url) = temp_store("ordinary-open");
     let store = Store::open(&url).await.unwrap();
-    let mut connection = store.pool.acquire().await.unwrap();
-    let synchronous: i64 = store::sqlx::query_scalar("PRAGMA synchronous")
-        .fetch_one(&mut *connection)
-        .await
-        .unwrap();
-    assert_eq!(synchronous, 1);
-    drop(connection);
+    assert_pool_is_durable(&store).await;
     store.pool.close().await;
     std::fs::remove_dir_all(directory).unwrap();
 

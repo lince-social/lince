@@ -1,3 +1,4 @@
+mod preparation;
 #[cfg(test)]
 mod tests;
 mod ui;
@@ -143,39 +144,12 @@ fn decimal(value: &str) -> Option<DecimalValue> {
 
 impl Comparison {
     pub fn valid(&self) -> bool {
-        let Some(lower) = decimal(&self.value) else {
-            return false;
-        };
-        if self.operator != Operator::Between {
-            return true;
-        }
-        decimal(&self.upper).is_some_and(|upper| {
-            let order = lower.exact_numeric_cmp(upper);
-            order.is_lt() || (order.is_eq() && self.include_lower && self.include_upper)
-        })
+        preparation::ComparisonInput::new(self).valid()
     }
 
+    #[cfg(test)]
     fn matches(&self, value: &Value) -> bool {
-        let Some(value) = value.as_str().and_then(decimal) else {
-            return false;
-        };
-        let Some(lower) = decimal(&self.value) else {
-            return false;
-        };
-        let order = value.exact_numeric_cmp(lower);
-        match self.operator {
-            Operator::Equal => order.is_eq(),
-            Operator::NotEqual => !order.is_eq(),
-            Operator::Greater => order.is_gt(),
-            Operator::AtLeast => !order.is_lt(),
-            Operator::Less => order.is_lt(),
-            Operator::AtMost => !order.is_gt(),
-            Operator::Between => decimal(&self.upper).is_some_and(|upper| {
-                let end = value.exact_numeric_cmp(upper);
-                (order.is_gt() || (self.include_lower && order.is_eq()))
-                    && (end.is_lt() || (self.include_upper && end.is_eq()))
-            }),
-        }
+        preparation::ComparisonInput::new(self).matches(value)
     }
 }
 
@@ -188,17 +162,6 @@ impl Unit {
         match self {
             Self::Exact(unit) => identifier(unit),
             _ => true,
-        }
-    }
-    fn matches(&self, entry: &Value) -> bool {
-        match self {
-            Self::Any => true,
-            Self::Unitless => entry["unit"].is_null(),
-            Self::Exact(unit) => {
-                entry["unit"].as_str() == Some(unit.trim())
-                    || entry["unit_name"].as_str() == Some(unit.trim())
-                    || entry["relation_context"]["unit_name"].as_str() == Some(unit.trim())
-            }
         }
     }
 }
@@ -291,7 +254,7 @@ impl Colors {
 impl Settings {
     pub fn valid(&self) -> bool {
         self.rules.len() <= 128
-            && self.families().len() <= 128
+            && self.family_names().len() <= 128
             && self.rules.iter().all(|rule| {
                 rule.name.len() <= 128
                     && !rule.name.contains('\0')
@@ -304,19 +267,21 @@ impl Settings {
             })
     }
 
-    pub(crate) fn families(&self) -> Vec<String> {
+    fn family_names(&self) -> BTreeSet<&str> {
         self.rules
             .iter()
             .flat_map(|rule| &rule.conditions)
             .filter_map(Condition::family)
             .map(str::trim)
             .filter(|predicate| *predicate != "*")
-            .map(str::to_owned)
-            .collect::<BTreeSet<_>>()
-            .into_iter()
             .collect()
     }
 
+    pub(crate) fn families(&self) -> Vec<String> {
+        self.family_names().into_iter().map(str::to_owned).collect()
+    }
+
+    #[cfg(test)]
     fn evaluate(
         &self,
         target: Target,
@@ -325,108 +290,8 @@ impl Settings {
         destination: &Value,
         link: &Value,
     ) -> Colors {
-        let mut colors = Colors::default();
-        let row = |side| match side {
-            RecordSide::Record => record,
-            RecordSide::Source => source,
-            RecordSide::Destination => destination,
-        };
-        for rule in self
-            .rules
-            .iter()
-            .filter(|rule| rule.enabled && rule.target == target)
-        {
-            let matches = |condition: &Condition| match condition {
-                Condition::Quantity {
-                    record,
-                    comparison,
-                    unit,
-                } => comparison.matches(&row(*record)["quantity"]) && unit.matches(row(*record)),
-                Condition::Assertion {
-                    record,
-                    predicate,
-                    family,
-                    direction,
-                    present,
-                    quantity,
-                    unit,
-                } => {
-                    let record = row(*record);
-                    let uid = record["uid"].as_str();
-                    let found = record["relation_context"]["assertions"]
-                        .as_array()
-                        .into_iter()
-                        .flatten()
-                        .any(|assertion| {
-                            let incident = match direction {
-                                Direction::Outgoing => {
-                                    uid.is_some() && assertion["from"].as_str() == uid
-                                }
-                                Direction::Incoming => {
-                                    assertion["to"].as_str() == uid && uid.is_some()
-                                }
-                                Direction::Either => {
-                                    uid.is_some()
-                                        && (assertion["from"].as_str() == uid
-                                            || assertion["to"].as_str() == uid)
-                                }
-                            };
-                            incident
-                                && assertion_matches(
-                                    assertion,
-                                    predicate,
-                                    *family,
-                                    quantity.as_ref(),
-                                    unit,
-                                )
-                        });
-                    record["relation_context"]["assertions"].is_array() && found == *present
-                }
-                Condition::Link {
-                    predicate,
-                    family,
-                    quantity,
-                    unit,
-                } => assertion_matches(link, predicate, *family, quantity.as_ref(), unit),
-            };
-            let matched = if rule.conditions.is_empty() {
-                true
-            } else {
-                match rule.mode {
-                    Mode::All => rule.conditions.iter().all(matches),
-                    Mode::Any => rule.conditions.iter().any(matches),
-                }
-            };
-            if matched {
-                colors.fill(&rule.colors);
-            }
-        }
-        colors
+        preparation::Rules::new(self, target).evaluate(record, source, destination, link)
     }
-}
-
-fn assertion_matches(
-    assertion: &Value,
-    predicate: &str,
-    family: bool,
-    quantity: Option<&Comparison>,
-    unit: &Unit,
-) -> bool {
-    let predicate = predicate.trim();
-    !assertion.is_null()
-        && (predicate == "*"
-            || if family {
-                assertion["families"]
-                    .as_array()
-                    .into_iter()
-                    .flatten()
-                    .any(|value| value.as_str() == Some(predicate))
-            } else {
-                assertion["predicate_uid"].as_str() == Some(predicate)
-                    || assertion["predicate"].as_str() == Some(predicate)
-            })
-        && quantity.is_none_or(|comparison| comparison.matches(&assertion["quantity"]))
-        && unit.matches(assertion)
 }
 
 fn set(world: &mut World, entity: Entity, colors: Colors) {
@@ -446,35 +311,46 @@ pub(super) fn apply(
     rows: &[Value],
     records: &HashMap<String, Entity>,
 ) {
+    let _application = nucleus::performance::Span::new("relation-style-application");
     let empty = Settings::default();
     let settings = if config.relations && config.enabled {
         &config.relation_styles
     } else {
         &empty
     };
-    let data: HashMap<_, _> = rows
-        .iter()
-        .filter_map(|row| row["uid"].as_str().map(|uid| (uid, row)))
-        .collect();
-    let assertions: HashMap<_, _> = rows
-        .iter()
-        .flat_map(|row| {
-            row["relation_context"]["assertions"]
-                .as_array()
-                .into_iter()
-                .flatten()
-        })
-        .filter_map(|row| row["uid"].as_str().map(|uid| (uid, row)))
-        .collect();
+    let cards = preparation::Rules::new(settings, Target::Card);
+    let links = preparation::Rules::new(settings, Target::Link);
+    let data: HashMap<_, _> = if cards.needs_rows || links.needs_rows {
+        rows.iter()
+            .filter_map(|row| row["uid"].as_str().map(|uid| (uid, row)))
+            .collect()
+    } else {
+        HashMap::new()
+    };
+    let assertions: HashMap<_, _> = if links.needs_assertions {
+        rows.iter()
+            .flat_map(|row| {
+                row["relation_context"]["assertions"]
+                    .as_array()
+                    .into_iter()
+                    .flatten()
+            })
+            .filter_map(|row| row["uid"].as_str().map(|uid| (uid, row)))
+            .collect()
+    } else {
+        HashMap::new()
+    };
+    nucleus::performance::add("relation-style-records-indexed", data.len() as u64);
+    nucleus::performance::add("relation-style-assertions-indexed", assertions.len() as u64);
     for (uid, entity) in records {
         let row = data.get(uid.as_str()).copied().unwrap_or(&Value::Null);
         set(
             world,
             *entity,
-            settings.evaluate(Target::Card, row, &Value::Null, &Value::Null, &Value::Null),
+            cards.evaluate(row, &Value::Null, &Value::Null, &Value::Null),
         );
     }
-    let links: Vec<_> = world
+    let targets: Vec<_> = world
         .query::<(
             Entity,
             &super::RelationLink,
@@ -482,27 +358,36 @@ pub(super) fn apply(
         )>()
         .iter(world)
         .filter(|(_, link, _)| link.owner == owner)
-        .map(|(entity, link, arrow)| (entity, link.uid.clone(), arrow.from, arrow.to))
+        .map(|(entity, _, _)| entity)
         .collect();
-    for (entity, uid, from, to) in links {
+    for entity in targets {
+        let arrow = world
+            .get::<crate::native::arrow_sand::ArrowSand>(entity)
+            .unwrap();
         let source = world
-            .get::<crate::native::protein_area::RecordBinding>(from)
+            .get::<crate::native::protein_area::RecordBinding>(arrow.from)
             .and_then(|binding| data.get(binding.uid.as_str()))
             .copied()
             .unwrap_or(&Value::Null);
         let destination = world
-            .get::<crate::native::protein_area::RecordBinding>(to)
+            .get::<crate::native::protein_area::RecordBinding>(arrow.to)
             .and_then(|binding| data.get(binding.uid.as_str()))
             .copied()
             .unwrap_or(&Value::Null);
         let link = assertions
-            .get(uid.as_str())
+            .get(
+                world
+                    .get::<super::RelationLink>(entity)
+                    .unwrap()
+                    .uid
+                    .as_str(),
+            )
             .copied()
             .unwrap_or(&Value::Null);
         set(
             world,
             entity,
-            settings.evaluate(Target::Link, &Value::Null, source, destination, link),
+            links.evaluate(&Value::Null, source, destination, link),
         );
     }
 }

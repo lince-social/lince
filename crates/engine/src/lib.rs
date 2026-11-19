@@ -20,7 +20,7 @@ pub mod checkpoint;
 pub mod collab;
 pub mod collab_guard;
 pub mod commands;
-#[allow(dead_code)]
+#[allow(dead_code, reason = "Retain communication types used by optional paths")]
 pub mod communication;
 pub mod component_presentation;
 pub mod custom_component;
@@ -330,8 +330,6 @@ impl Engine {
         self.query_changed.subscribe()
     }
 
-    /// Watch non-forecast query changes without rerunning canonical-data work
-    /// for completion or expiry of a derived scheduling forecast.
     pub fn watch_general_query_changes(&self) -> GeneralQueryChanges {
         GeneralQueryChanges::new(self.watch_query_changes())
     }

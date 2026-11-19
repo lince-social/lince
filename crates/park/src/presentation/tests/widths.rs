@@ -107,7 +107,7 @@ fn width_presets_use_native_fields_validation_reordering_and_narrow_modal_contro
                 .app
                 .world()
                 .get::<bevy::ui::CalculatedClip>(first)
-                .is_none_or(|clip| clip.clip.contains(point))
+                .is_none_or(|clip| clip.contains_point(point))
         );
     }
     click(&mut canvas, save, size);

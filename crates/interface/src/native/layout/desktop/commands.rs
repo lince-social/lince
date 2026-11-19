@@ -258,7 +258,7 @@ impl CommandContext {
                 .map(|head| u8::from(head.requested < 4.0) | u8::from(head.requested > 1.0) << 1),
             spatial: crate::native::topology::view::spatial(world, root),
             selection: !crate::native::canvas_selection::selected(world, root).is_empty(),
-            workspaces: crate::native::workspace::numbers(world, root).len(),
+            workspaces: crate::native::workspace::ordered_ids(world, root).count(),
             adjacent: [-1, 1].map(|offset| {
                 crate::native::workspace::navigation::destination(world, root, offset).err()
             }),

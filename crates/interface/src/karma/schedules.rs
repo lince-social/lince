@@ -4,6 +4,21 @@ use nucleus::karma::{
     CivilDateTime, FoldPolicy, GapPolicy, TimeZoneId, TimeZoneProvider, TzdbRevision,
 };
 use serde::{Deserialize, Serialize};
+use std::sync::OnceLock;
+
+fn default_timezone_revision() -> TzdbRevision {
+    static REVISION: OnceLock<TzdbRevision> = OnceLock::new();
+    REVISION
+        .get_or_init(|| {
+            let _prepare = nucleus::performance::Span::new("karma-schedule-default-timezone");
+            nucleus::performance::add("karma-schedule-default-timezones-prepared", 1);
+            nucleus::karma::simple_frequency::utc_provider()
+                .unwrap()
+                .revision()
+                .clone()
+        })
+        .clone()
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DateKind {
@@ -24,21 +39,22 @@ pub struct DateDraft {
 
 impl Default for DateDraft {
     fn default() -> Self {
-        Self {
-            kind: DateKind::After,
-            value: "1d".into(),
-            timezone: "UTC".into(),
-            tzdb: nucleus::karma::simple_frequency::utc_provider()
-                .unwrap()
-                .revision()
-                .clone(),
-            gap: GapPolicy::Pause,
-            fold: FoldPolicy::First,
-        }
+        Self::with_value(DateKind::After, "1d".into())
     }
 }
 
 impl DateDraft {
+    fn with_value(kind: DateKind, value: String) -> Self {
+        Self {
+            kind,
+            value,
+            timezone: "UTC".into(),
+            tzdb: default_timezone_revision(),
+            gap: GapPolicy::Pause,
+            fold: FoldPolicy::First,
+        }
+    }
+
     pub fn input(&self) -> Result<DateInput, String> {
         match self.kind {
             DateKind::Instant => Ok(DateInput::Instant {
@@ -87,15 +103,14 @@ impl DateDraft {
     }
 
     pub fn from_input(input: &DateInput) -> Self {
-        let mut draft = Self::default();
         match input {
-            DateInput::Instant { at_ms } => {
-                draft.kind = DateKind::Instant;
-                draft.value = chrono::DateTime::from_timestamp_millis(*at_ms)
-                    .map_or_else(String::new, |date| date.to_rfc3339());
-            }
+            DateInput::Instant { at_ms } => Self::with_value(
+                DateKind::Instant,
+                chrono::DateTime::from_timestamp_millis(*at_ms)
+                    .map_or_else(String::new, |date| date.to_rfc3339()),
+            ),
             DateInput::After { milliseconds } => {
-                draft.value = format!("{milliseconds}ms");
+                Self::with_value(DateKind::After, format!("{milliseconds}ms"))
             }
             DateInput::Local {
                 date,
@@ -103,16 +118,15 @@ impl DateDraft {
                 tzdb,
                 gap,
                 fold,
-            } => {
-                draft.kind = DateKind::Local;
-                draft.value = date.to_string();
-                draft.timezone = timezone.as_str().into();
-                draft.tzdb = tzdb.clone();
-                draft.gap = *gap;
-                draft.fold = *fold;
-            }
+            } => Self {
+                kind: DateKind::Local,
+                value: date.to_string(),
+                timezone: timezone.as_str().into(),
+                tzdb: tzdb.clone(),
+                gap: *gap,
+                fold: *fold,
+            },
         }
-        draft
     }
 }
 
@@ -126,19 +140,23 @@ pub struct Draft {
     pub consequences: [String; 2],
 }
 
+fn default_date(index: usize) -> DateDraft {
+    DateDraft::with_value(DateKind::After, ["1d", "2d"][index].into())
+}
+
+fn default_consequence(index: usize) -> String {
+    ["@room = -1", "@room = 0"][index].into()
+}
+
 impl Default for Draft {
     fn default() -> Self {
-        let end = DateDraft {
-            value: "2d".into(),
-            ..Default::default()
-        };
         Self {
             uid: None,
             revision: None,
             name: "Scheduled change".into(),
             range: false,
-            dates: [DateDraft::default(), end],
-            consequences: ["@room = -1".into(), "@room = 0".into()],
+            dates: std::array::from_fn(default_date),
+            consequences: std::array::from_fn(default_consequence),
         }
     }
 }
@@ -180,12 +198,9 @@ impl Draft {
     }
 
     pub fn from_value(value: &serde_json::Value) -> Result<Self, String> {
-        let mut draft = Self {
-            uid: value["uid"].as_str().map(str::to_owned),
-            revision: value["revision"].as_i64(),
-            name: value["name"].as_str().unwrap_or_default().into(),
-            ..Default::default()
-        };
+        let mut range = false;
+        let mut dates = [None, None];
+        let mut consequences = [None, None];
         let boundaries = value["boundaries"]
             .as_array()
             .ok_or("Schedule boundaries are unavailable")?;
@@ -193,18 +208,33 @@ impl Draft {
             .iter()
             .filter(|boundary| boundary["current"] == true)
         {
-            let input: BoundaryInput = serde_json::from_value(boundary["input"].clone())
+            let input = BoundaryInput::deserialize(&boundary["input"])
                 .map_err(|error| error.to_string())?;
             let index = usize::from(input.purpose == Purpose::End);
-            draft.range |= input.purpose != Purpose::Once;
-            draft.dates[index] = DateDraft::from_input(&input.date);
-            draft.consequences[index] = RuleConsequence {
-                target: input.target,
-                consequences: input.consequences,
-            }
-            .as_text();
+            range |= input.purpose != Purpose::Once;
+            dates[index] = Some(DateDraft::from_input(&input.date));
+            consequences[index] = Some(
+                RuleConsequence {
+                    target: input.target,
+                    consequences: input.consequences,
+                }
+                .as_text(),
+            );
         }
-        Ok(draft)
+        Ok(Self {
+            uid: value["uid"].as_str().map(str::to_owned),
+            revision: value["revision"].as_i64(),
+            name: value["name"].as_str().unwrap_or_default().into(),
+            range,
+            dates: std::array::from_fn(|index| {
+                dates[index].take().unwrap_or_else(|| default_date(index))
+            }),
+            consequences: std::array::from_fn(|index| {
+                consequences[index]
+                    .take()
+                    .unwrap_or_else(|| default_consequence(index))
+            }),
+        })
     }
 }
 

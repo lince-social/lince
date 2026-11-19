@@ -183,7 +183,7 @@ async fn accepted_with_storage(disk: bool) -> Accepted {
             "social_pickup_work",
         ] {
             let errors: Vec<Option<String>> =
-                store::sqlx::query_scalar(&format!("SELECT error FROM {table} LIMIT 8"))
+                store::sqlx::query_scalar(store::sqlx::AssertSqlSafe(format!("SELECT error FROM {table} LIMIT 8")))
                     .fetch_all(&engine.store.pool)
                     .await
                     .unwrap();
@@ -449,8 +449,9 @@ async fn expired_resend_rolls_back_on_failure_and_preserves_logical_history_afte
         let status = store::records::get_extension(&fixture.sender.store.pool,message,nucleus::social::requests::DELIVERY_NAMESPACE).await.unwrap().unwrap();
         let destinations: Vec<(String,String,String)> = store::sqlx::query_as("SELECT envelope,service,state FROM social_private_destination WHERE envelope IN (SELECT id FROM social_private_outbox WHERE record_uid=?) ORDER BY envelope,service")
             .bind(message).fetch_all(&fixture.sender.store.pool).await.unwrap();
-        let trigger = format!("CREATE TRIGGER resend_failure BEFORE UPDATE ON record_extension WHEN NEW.record_uid='{message}' AND NEW.namespace='lince.social.delivery' BEGIN SELECT RAISE(ABORT,'injected resend rollback'); END");
-        store::sqlx::query(&trigger).execute(&fixture.sender.store.pool).await.unwrap();
+        let escaped_message = message.replace('\'', "''");
+        let trigger = format!("CREATE TRIGGER resend_failure BEFORE UPDATE ON record_extension WHEN NEW.record_uid='{escaped_message}' AND NEW.namespace='lince.social.delivery' BEGIN SELECT RAISE(ABORT,'injected resend rollback'); END");
+        store::sqlx::query(store::sqlx::AssertSqlSafe(trigger)).execute(&fixture.sender.store.pool).await.unwrap();
         assert!(fixture.sender.act(Action::Social { request: Command::ResendExpiredPrivate { message: message.into() } },None).await.is_err());
         let retained: Vec<(String,String,String)> = store::sqlx::query_as("SELECT id,body,state FROM social_private_outbox WHERE record_uid=? ORDER BY id")
             .bind(message).fetch_all(&fixture.sender.store.pool).await.unwrap();

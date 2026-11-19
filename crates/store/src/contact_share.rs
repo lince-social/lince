@@ -9,7 +9,7 @@ async fn flagged(
 ) -> Result<HashSet<String>, StoreError> {
     let sql =
         format!("SELECT record_uid FROM contact_share WHERE contact_organ = ? AND {flag} = 1");
-    Ok(sqlx::query(&sql)
+    Ok(sqlx::query(sqlx::AssertSqlSafe(sql.as_str()))
         .bind(contact_organ)
         .fetch_all(pool)
         .await?

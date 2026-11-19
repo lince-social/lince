@@ -33,7 +33,7 @@ use accesskit::{Node, NodeId, TreeUpdate};
 // so wrapping is fine. This could only fail if exactly
 // `u32::MAX` generations happen between drawing
 // operations. This is implausible and so can be ignored.
-#[derive(PartialEq, Eq, Default, Clone, Copy)]
+#[derive(PartialEq, Eq, Default, Clone, Copy, Debug)]
 pub struct Generation(u32);
 
 impl Generation {
@@ -107,7 +107,7 @@ impl<'source> IntoIterator for SplitString<'source> {
 /// Internally, this is a wrapper around a string buffer and its corresponding [`Layout`],
 /// which is kept up-to-date as needed.
 /// This layout is invalidated by a number.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct PlainEditor<T>
 where
     T: Brush + Clone + Debug + PartialEq + Default,
@@ -1248,7 +1248,7 @@ where
 
         // This debug code is quite useful when diagnosing selection problems.
         #[cfg(feature = "std")]
-        #[allow(clippy::print_stderr)] // reason = "unreachable debug code"
+        #[allow(clippy::print_stderr, reason = "Keep this upstream diagnostic available for manual editor debugging")] // reason = "unreachable debug code"
         if false {
             use std::{eprint, eprintln};
 

@@ -1,11 +1,31 @@
 use super::*;
+use crate::host::performance::{self, Count, Stage};
 use std::ops::Range;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub(super) struct Option {
     text: String,
     label: String,
     range: Range<usize>,
+}
+
+#[derive(Default)]
+pub(super) struct State {
+    input: std::option::Option<Input>,
+    dirty: bool,
+}
+
+struct Input {
+    value: String,
+    caret: usize,
+    range: std::option::Option<(Range<usize>, bool)>,
+    visible: bool,
+}
+
+impl State {
+    pub(super) fn invalidate(&mut self) {
+        self.dirty = true;
+    }
 }
 
 fn token(text: &str, caret: usize) -> std::option::Option<(Range<usize>, bool)> {
@@ -13,25 +33,26 @@ fn token(text: &str, caret: usize) -> std::option::Option<(Range<usize>, bool)> 
     let mut start = 0;
     let mut quoted = false;
     let mut escaped = false;
-    let mut ranges = Vec::new();
+    let mut end = text.len();
     for (index, ch) in text.char_indices() {
         if !quoted && (ch.is_whitespace() || matches!(ch, ',' | ';' | ':')) {
-            if start < index {
-                ranges.push(start..index);
+            if start < caret && caret <= index {
+                end = index;
+                break;
             }
             start = index + ch.len_utf8();
+            if start >= caret {
+                return None;
+            }
         } else if ch == '"' && !escaped {
             quoted = !quoted;
         }
         escaped = quoted && ch == '\\' && !escaped;
     }
-    if start < text.len() {
-        ranges.push(start..text.len());
+    if !(start < caret && caret <= end) {
+        return None;
     }
-    let range = ranges
-        .into_iter()
-        .find(|range| range.start < caret && caret <= range.end)?;
-    let start = range.start;
+    let range = start..end;
     let prefix = &text[start..caret];
     if prefix.starts_with('^') {
         return None;
@@ -59,12 +80,12 @@ fn token(text: &str, caret: usize) -> std::option::Option<(Range<usize>, bool)> 
     Some((range, prefix.starts_with('@') && !amount))
 }
 
-pub(super) fn keys(world: &mut World) {
+pub(super) fn keys(world: &mut World, fields: &mut QueryState<(Entity, &'static Field)>) {
+    let _keys = performance::Span::new(Stage::AssertionEditorKeys);
     let Some(focused) = world.resource::<InputFocus>().get() else {
         return;
     };
-    let Some(entity) = world
-        .query::<(Entity, &Field)>()
+    let Some(entity) = fields
         .iter(world)
         .find(|(_, field)| field.input == focused)
         .map(|(entity, _)| entity)
@@ -91,7 +112,7 @@ pub(super) fn keys(world: &mut World) {
         - i32::from(keys.just_pressed(KeyCode::ArrowUp));
     let field = world.get::<Field>(entity).unwrap();
     let options = !field.options.is_empty();
-    let mut text = world.get_mut::<EditableText>(focused).unwrap();
+    let text = world.get::<EditableText>(focused).unwrap();
     if text.is_composing()
         || text.pending_paste.is_some()
         || text.pending_edits.iter().any(|edit| {
@@ -103,24 +124,44 @@ pub(super) fn keys(world: &mut World) {
     {
         return;
     }
-    if enter || tab && options {
-        text.pending_edits.retain(|edit| !matches!(edit, bevy::text::TextEdit::Insert(value) if value.contains(['\n', '\r', '\t'])));
+    let captured = |edit: &bevy::text::TextEdit| {
+        ((enter || tab && options)
+            && matches!(edit, bevy::text::TextEdit::Insert(value) if value.contains(['\n', '\r', '\t'])))
+            || (options
+                && step != 0
+                && matches!(
+                    edit,
+                    bevy::text::TextEdit::Up(_) | bevy::text::TextEdit::Down(_)
+                ))
+    };
+    let strip = text.pending_edits.iter().any(captured);
+    let dismissed = (escape
+        && field
+            .dismissed
+            .as_deref()
+            .is_none_or(|value| text.value() != value))
+    .then(|| text.value().to_string());
+    let submit = enter && !options;
+    let complete = (tab || enter) && options;
+    let changed = field.submit != submit
+        || field.complete != complete
+        || field.step != step
+        || dismissed.is_some();
+    if strip {
+        world
+            .get_mut::<EditableText>(focused)
+            .unwrap()
+            .pending_edits
+            .retain(|edit| !captured(edit));
     }
-    if options && step != 0 {
-        text.pending_edits.retain(|edit| {
-            !matches!(
-                edit,
-                bevy::text::TextEdit::Up(_) | bevy::text::TextEdit::Down(_)
-            )
-        });
-    }
-    let value = text.value().to_string();
-    let mut field = world.get_mut::<Field>(entity).unwrap();
-    field.submit = enter && !options;
-    field.complete = (tab || enter) && options;
-    field.step = step;
-    if escape {
-        field.dismissed = Some(value);
+    if changed {
+        let mut field = world.get_mut::<Field>(entity).unwrap();
+        field.submit = submit;
+        field.complete = complete;
+        field.step = step;
+        if let Some(value) = dismissed {
+            field.dismissed = Some(value);
+        }
     }
 }
 
@@ -194,18 +235,23 @@ impl Action for Complete {
         let mut field = world.get_mut::<Field>(entity).unwrap();
         field.dismissed = Some(value);
         field.options.clear();
-        field.signature.clear();
+        field.completion.invalidate();
         let suggestions = field.suggestions;
         world.get_mut::<Node>(suggestions).unwrap().display = Display::None;
     }
 }
 
 pub(super) fn update(world: &mut World, entity: Entity) {
+    let _update = performance::Span::new(Stage::AssertionCompletion);
     let field = world.get::<Field>(entity).unwrap();
     let input = field.input;
     let suggestions = field.suggestions;
     if world.get::<bevy::ui::InteractionDisabled>(input).is_some() {
-        world.get_mut::<Node>(suggestions).unwrap().display = Display::None;
+        world
+            .get_mut::<Node>(suggestions)
+            .unwrap()
+            .map_unchanged(|node| &mut node.display)
+            .set_if_neq(Display::None);
         return;
     }
     let mut focus = world.resource::<InputFocus>().get();
@@ -220,48 +266,74 @@ pub(super) fn update(world: &mut World, entity: Entity) {
     if text.is_composing() || text.pending_paste.is_some() {
         return;
     }
-    let value = value(world, input);
+    let previous = field.completion.input.as_ref();
+    let changed = previous.is_none_or(|previous| text.value() != previous.value.as_str());
+    let owned = changed.then(|| {
+        performance::add(Count::AssertionCompletionInputsCopied, 1);
+        text.value().to_string()
+    });
+    let value = owned
+        .as_deref()
+        .unwrap_or_else(|| previous.unwrap().value.as_str());
     let caret = text.editor.raw_selection().focus().index();
-    let range = token(&value, caret);
-    let visible = focused && field.dismissed.as_ref() != Some(&value) && range.is_some();
-    let signature = format!("{value}:{caret}:{visible}");
-    if field.signature != signature {
+    let moved = changed || previous.is_none_or(|previous| previous.caret != caret);
+    let range = if moved {
+        token(value, caret)
+    } else {
+        previous.unwrap().range.clone()
+    };
+    let visible = focused && field.dismissed.as_deref() != Some(value) && range.is_some();
+    if moved
+        || previous.is_none_or(|previous| previous.visible != visible)
+        || field.completion.dirty
+    {
+        performance::add(Count::AssertionCompletionRefreshes, 1);
         let mut options = Vec::new();
         if visible {
-            let (range, records) = range.unwrap();
+            let (range, records) = range.as_ref().unwrap();
             let query = value[range.start..caret]
                 .trim_start_matches(['#', '@'])
                 .trim_matches('"');
             let query = store::vocabulary::term_text(query)
                 .unwrap_or_else(|_| query.into())
                 .to_lowercase();
-            let rows = if records {
+            let rows = if *records {
                 &field.records
             } else {
                 &field.concepts
             };
-            for row in rows {
-                let name = if records {
+            let mut search = String::new();
+            for row in rows.iter() {
+                let name = if *records {
                     row["slug"].as_str().unwrap_or_default()
                 } else {
                     row["name"].as_str().unwrap_or_default()
                 };
+                if name.is_empty() {
+                    continue;
+                }
                 let head = row["head"].as_str().unwrap_or_default();
-                let alternatives = row["terms"]
+                search.clear();
+                search.push_str(name);
+                search.push(' ');
+                search.push_str(head);
+                search.push(' ');
+                for (index, alternative) in row["terms"]
                     .as_array()
                     .into_iter()
                     .flatten()
                     .filter_map(|term| term["name"].as_str())
-                    .collect::<Vec<_>>()
-                    .join(" ");
-                if name.is_empty()
-                    || !format!("{name} {head} {alternatives}")
-                        .to_lowercase()
-                        .contains(&query)
+                    .enumerate()
                 {
+                    if index != 0 {
+                        search.push(' ');
+                    }
+                    search.push_str(alternative);
+                }
+                if !search.to_lowercase().contains(&query) {
                     continue;
                 }
-                let marker = if records || value[range.clone()].starts_with('@') {
+                let marker = if *records || value[range.clone()].starts_with('@') {
                     '@'
                 } else {
                     '#'
@@ -276,7 +348,7 @@ pub(super) fn update(world: &mut World, entity: Entity) {
                 } else {
                     readable.clone()
                 };
-                let label = if records && !head.is_empty() {
+                let label = if *records && !head.is_empty() {
                     format!("{readable} · {head}")
                 } else {
                     format!(
@@ -291,30 +363,66 @@ pub(super) fn update(world: &mut World, entity: Entity) {
                     range: range.clone(),
                 });
             }
-            options.sort_by_key(|option| {
+            options.sort_by_cached_key(|option| {
                 let name = option.text[1..].to_lowercase();
                 (name != query, !name.starts_with(&query), name)
             });
             options.truncate(12);
         }
         let mut field = world.get_mut::<Field>(entity).unwrap();
-        field.options = options;
+        let options_changed = field.options != options;
+        let redraw_needed = options_changed || field.selected != 0;
+        if options_changed {
+            field.options = options;
+        }
         field.selected = 0;
-        field.signature = signature;
-        redraw(world, entity);
+        match field.completion.input.as_mut() {
+            Some(previous) => {
+                if let Some(value) = owned {
+                    previous.value = value;
+                }
+                previous.caret = caret;
+                previous.range = range;
+                previous.visible = visible;
+            }
+            None => {
+                field.completion.input = Some(Input {
+                    value: owned.unwrap(),
+                    caret,
+                    range,
+                    visible,
+                });
+            }
+        }
+        field.completion.dirty = false;
+        if redraw_needed {
+            redraw(world, entity);
+        }
     }
-    let mut field = world.get_mut::<Field>(entity).unwrap();
-    let step = std::mem::take(&mut field.step);
-    field.selected = (field.selected as i32 + step)
+    let field = world.get::<Field>(entity).unwrap();
+    let step = field.step;
+    let selected = (field.selected as i32 + step)
         .clamp(0, field.options.len().saturating_sub(1) as i32) as usize;
-    let complete = std::mem::take(&mut field.complete);
-    let submit = std::mem::take(&mut field.submit);
-    let option = field.options.get(field.selected).cloned();
+    let changed = selected != field.selected;
+    let complete = field.complete;
+    let submit = field.submit;
+    let option = if complete {
+        field.options.get(selected).cloned()
+    } else {
+        None
+    };
+    if step != 0 || complete || submit || changed {
+        let mut field = world.get_mut::<Field>(entity).unwrap();
+        field.step = 0;
+        field.complete = false;
+        field.submit = false;
+        field.selected = selected;
+    }
     if complete && let Some(option) = option {
         Complete(option).apply(world, entity);
     } else if submit {
         super::submit(world, entity);
-    } else if step != 0 {
+    } else if changed {
         redraw(world, entity);
     }
     let show =
@@ -327,6 +435,7 @@ pub(super) fn update(world: &mut World, entity: Entity) {
 }
 
 fn redraw(world: &mut World, entity: Entity) {
+    performance::add(Count::AssertionCompletionRedraws, 1);
     let field = world.get::<Field>(entity).unwrap();
     let parent = field.suggestions;
     let options = field.options.clone();
@@ -425,8 +534,9 @@ mod tests {
         let input = super::super::input(app.world(), parent).unwrap();
         {
             let mut field = app.world_mut().get_mut::<Field>(parent).unwrap();
-            field.concepts = vec![json!({"name":"planned"}), json!({"name":"day"})];
-            field.records = vec![json!({"uid":"project", "slug":"project", "head":"My project"})];
+            field.concepts = vec![json!({"name":"planned"}), json!({"name":"day"})].into();
+            field.records =
+                vec![json!({"uid":"project", "slug":"project", "head":"My project"})].into();
         }
         for (text, caret, expected, key) in [
             ("#pla #done", 4, "#planned #done", KeyCode::Tab),
@@ -444,7 +554,7 @@ mod tests {
             app.world_mut()
                 .resource_mut::<ButtonInput<KeyCode>>()
                 .press(key);
-            keys(app.world_mut());
+            app.world_mut().run_system_cached(keys).unwrap();
             update(app.world_mut(), parent);
             app.world_mut()
                 .resource_mut::<ButtonInput<KeyCode>>()

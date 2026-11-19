@@ -1,8 +1,7 @@
 use bevy::prelude::*;
 use bevy::{
     light::{NotShadowCaster, NotShadowReceiver, PointLightShadowMap},
-    render::Extract,
-    ui_render::{ExtractedUiItem, ExtractedUiNodes, NodeType},
+    ui_render::SuppressUiBackground,
 };
 use nucleus::canvas::appearance::{self as model, LightDrive};
 use serde::{Deserialize, Serialize};
@@ -11,8 +10,8 @@ use std::sync::Arc;
 
 mod lighting;
 mod overlay;
+mod preparation;
 mod room_order;
-pub(crate) use overlay::extract_images;
 pub(crate) use room_order::install as install_room_order;
 mod shapes;
 #[cfg(test)]
@@ -54,28 +53,6 @@ struct Painted {
     material: Handle<StandardMaterial>,
     settings: Option<Arc<model::Material>>,
     texture: Option<Handle<Image>>,
-}
-
-pub(crate) fn extract_backgrounds(
-    mut nodes: ResMut<ExtractedUiNodes>,
-    materials: Extract<Query<(Entity, &Material, &super::presentation::Surface), With<Applied>>>,
-) {
-    let owners: HashSet<_> = materials
-        .iter()
-        .filter(|(_, value, surface)| value.0.valid() && surface.visible)
-        .map(|(entity, _, _)| entity)
-        .collect();
-    nodes.uinodes.retain(|node| {
-        !(owners.contains(&node.main_entity.id())
-            && node.image == bevy::asset::AssetId::default()
-            && matches!(
-                node.item,
-                ExtractedUiItem::Node {
-                    node_type: NodeType::Rect,
-                    ..
-                }
-            ))
-    });
 }
 
 fn shadows(world: &mut World, entity: Entity, cast: bool, receive: bool) {
@@ -146,7 +123,9 @@ pub(crate) fn mesh_texture(world: &mut World, key: &model::Texture) -> Option<Ha
         return None;
     }
     let texture = textures::get(world, &mut runtime.textures, &mut runtime.texture_keys, key);
-    runtime.mesh_textures.insert(key.clone());
+    if !runtime.mesh_textures.contains(key) {
+        runtime.mesh_textures.insert(key.clone());
+    }
     world.insert_resource(runtime);
     texture
 }
@@ -156,35 +135,64 @@ pub fn update(world: &mut World) {
     if !super::presentation::ready(world) {
         return;
     }
+    world
+        .run_system_cached(present)
+        .expect("present current canvas appearance");
+}
+
+fn present(
+    world: &mut World,
+    surfaces_query: &mut QueryState<(Entity, &'static super::presentation::Surface)>,
+    lights_query: &mut QueryState<(Entity, &'static super::presentation::Surface), With<Light>>,
+    mut pass: Local<preparation::Pass>,
+) {
+    let _presentation = nucleus::performance::Span::new("appearance-presentation");
     let mut runtime = world.remove_resource::<Runtime>().unwrap_or_default();
     textures::poll(world, &mut runtime.textures);
-    let mut surfaces: Vec<_> = world
-        .query::<(Entity, &super::presentation::Surface)>()
-        .iter(world)
-        .filter(|(_, surface)| surface.visible)
-        .map(|(owner, surface)| (owner, surface.visual, surface.body, surface.face))
-        .collect();
+    let preparation::Pass {
+        surfaces,
+        living,
+        retired,
+        text_owners,
+        used_textures,
+        lights,
+    } = &mut *pass;
+    surfaces.clear();
+    living.clear();
+    retired.clear();
+    text_owners.clear();
+    used_textures.clear();
+    surfaces.extend(
+        surfaces_query
+            .iter(world)
+            .filter(|(_, surface)| surface.visible)
+            .map(|(owner, surface)| (owner, surface.visual, surface.body, surface.face)),
+    );
+    let has_surfaces = !surfaces.is_empty();
+    nucleus::performance::add("appearance-visible-surfaces", surfaces.len() as u64);
     surfaces.sort_by_key(|(owner, _, _, _)| owner.to_bits());
-    let living: HashMap<_, _> = surfaces
-        .iter()
-        .filter(|(owner, _, _, _)| {
-            world
-                .get::<Material>(*owner)
-                .is_some_and(|value| value.0.valid())
-        })
-        .take(model::MAX_MATERIALS)
-        .map(|(owner, _, body, _)| (*owner, *body))
-        .collect();
-    let stale: Vec<_> = runtime
-        .materials
-        .keys()
-        .copied()
-        .filter(|owner| living.get(owner) != Some(&runtime.materials[owner].body))
-        .collect();
-    let mut text_owners = stale.clone();
-    for owner in stale {
+    living.extend(
+        surfaces
+            .iter()
+            .filter(|(owner, _, _, _)| {
+                world
+                    .get::<Material>(*owner)
+                    .is_some_and(|value| value.0.valid())
+            })
+            .take(model::MAX_MATERIALS)
+            .map(|(owner, _, body, _)| (*owner, *body)),
+    );
+    retired.extend(
+        runtime
+            .materials
+            .keys()
+            .copied()
+            .filter(|owner| living.get(owner) != Some(&runtime.materials[owner].body)),
+    );
+    for owner in retired.drain(..) {
+        text_owners.push(owner);
         if let Ok(mut entity) = world.get_entity_mut(owner) {
-            entity.remove::<Applied>();
+            entity.remove::<(Applied, SuppressUiBackground)>();
         }
         let mut painted = runtime.materials.remove(&owner).unwrap();
         overlay::release(world, owner, &mut painted.overlay);
@@ -200,14 +208,15 @@ pub fn update(world: &mut World) {
             .resource_mut::<Assets<StandardMaterial>>()
             .remove(painted.material.id());
     }
-    let mut used_textures = std::mem::take(&mut runtime.mesh_textures);
-    for (owner, visual, body, face) in surfaces {
+    used_textures.extend(runtime.mesh_textures.drain());
+    for (owner, visual, body, face) in surfaces.drain(..) {
         room_order::foreground(world, owner, face);
-        let opacity = opacity(world, owner);
+        let admitted = living.contains_key(&owner);
+        let opacity = if admitted { opacity(world, owner) } else { 0.0 };
         shadows(world, face, false, false);
         if let Some(settings) = world
             .get::<Material>(owner)
-            .filter(|_| living.contains_key(&owner))
+            .filter(|_| admitted)
             .map(|value| {
                 runtime
                     .materials
@@ -220,12 +229,12 @@ pub fn update(world: &mut World) {
         {
             text_owners.push(owner);
             if world.get::<Applied>(owner).is_none() {
-                world.entity_mut(owner).insert(Applied);
+                world.entity_mut(owner).insert((Applied, SuppressUiBackground));
             }
             let texture = textures::get(
                 world,
                 &mut runtime.textures,
-                &mut used_textures,
+                used_textures,
                 &settings.texture,
             );
             if !runtime.materials.contains_key(&owner) {
@@ -335,14 +344,15 @@ pub fn update(world: &mut World) {
         }
     }
     crate::native::shader_effects::refresh_text_protection(world, text_owners);
-    let (lights, shadow_size) = lighting::synchronize(world, &mut runtime);
-    let stale: Vec<_> = runtime
-        .lights
-        .keys()
-        .copied()
-        .filter(|owner| !lights.contains(owner))
-        .collect();
-    for owner in stale {
+    let shadow_size = lighting::synchronize(world, &mut runtime, lights_query, lights);
+    retired.extend(
+        runtime
+            .lights
+            .keys()
+            .copied()
+            .filter(|owner| !lights.live.contains(owner)),
+    );
+    for owner in retired.drain(..) {
         let entity = runtime.lights.remove(&owner).unwrap();
         if let Ok(entity) = world.get_entity_mut(entity) {
             entity.despawn();
@@ -355,8 +365,8 @@ pub fn update(world: &mut World) {
         world.resource_mut::<Assets<Image>>().remove(texture.id());
         false
     });
-    textures::retain(world, &used_textures);
-    runtime.texture_keys = used_textures;
+    textures::retain(world, used_textures);
+    std::mem::swap(&mut runtime.texture_keys, used_textures);
     if shadow_size > 0 {
         let mut map = world.get_resource_or_init::<PointLightShadowMap>();
         runtime.shadow_size.get_or_insert(map.size);
@@ -364,7 +374,12 @@ pub fn update(world: &mut World) {
             map.size = shadow_size;
         }
     } else if let Some(size) = runtime.shadow_size.take() {
-        world.get_resource_or_init::<PointLightShadowMap>().size = size;
+        let mut map = world.get_resource_or_init::<PointLightShadowMap>();
+        if map.size != size {
+            map.size = size;
+        }
     }
+    let dormant = !has_surfaces && runtime.lights.is_empty() && runtime.texture_keys.is_empty();
+    pass.finish(dormant);
     world.insert_resource(runtime);
 }

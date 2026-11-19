@@ -4,14 +4,15 @@ use nucleus::{
     projection::{Context, OccurrenceLink},
     simulation::RuleOccurrence,
 };
+use std::collections::hash_map::Entry;
 use store::sqlx::Row;
 
 pub(super) async fn entries(
     store: &store::Store,
     context: &Context,
-    records: &HashMap<String, Value>,
-    work: &HashMap<String, Value>,
-    visible: Option<&HashSet<String>>,
+    records: &HashMap<&str, &Value>,
+    work: &occurrences::Work<'_>,
+    materialized: &occurrences::Materialized<'_, '_>,
 ) -> Result<(Vec<Value>, bool), ProteinError> {
     if records.is_empty() {
         return Ok((Vec::new(), false));
@@ -26,23 +27,10 @@ pub(super) async fn entries(
         .fetch_all(&store.pool)
         .await?;
     let budget = rows.len() > nucleus::projection::MAX_SPANS;
-    let materialized: HashSet<_> = work
-        .iter()
-        .filter(|(uid, _)| visible.is_none_or(|visible| visible.contains(*uid)))
-        .filter_map(|(_, work)| work.get("projection_occurrence").cloned())
-        .filter_map(|value| serde_json::from_value::<OccurrenceLink>(value).ok())
-        .map(|link| {
-            (
-                link.record.as_str().to_owned(),
-                link.occurrence.rule_uid,
-                link.occurrence.revision,
-                link.occurrence.event_id,
-            )
-        })
-        .collect();
+    let _publish = nucleus::performance::Span::new("protein-schedule-admitted-publication");
     let mut entries = Vec::new();
     let mut ids = HashSet::new();
-    let empty = json!({});
+    let mut endpoints = HashMap::new();
     for row in rows.into_iter().take(nucleus::projection::MAX_SPANS) {
         let record_uid: String = row.get("record_uid");
         let intended: String = row.get("intended_at");
@@ -60,23 +48,25 @@ pub(super) async fn entries(
                 .map_err(invalid)?,
             intended_at_ms: Some(at),
         };
-        if materialized.contains(&(
-            record_uid.clone(),
-            occurrence.rule_uid.clone(),
-            occurrence.revision,
-            occurrence.event_id.clone(),
-        )) {
+        if materialized.contains(&record_uid, &occurrence) {
             continue;
         }
-        let work = work.get(&record_uid).unwrap_or(&empty);
-        let Some(time) = nucleus::schedule::range(
-            work["start"].as_str(),
-            work["due"].as_str(),
-            work["estimate_min"].as_f64(),
-            Some(at),
-        )
-        .map_err(invalid)?
-        else {
+        let time = if let Some((uid, work)) = work.row(&record_uid) {
+            let endpoints = match endpoints.entry(uid) {
+                Entry::Occupied(entry) => {
+                    nucleus::performance::add("protein-schedule-endpoint-reuses", 1);
+                    entry.into_mut()
+                }
+                Entry::Vacant(entry) => entry.insert(
+                    Endpoints::parse(work["start"].as_str(), work["due"].as_str())
+                        .map_err(invalid)?,
+                ),
+            };
+            endpoints.range(work["estimate_min"].as_f64(), Some(at))
+        } else {
+            nucleus::schedule::range(None, None, None, Some(at))
+        };
+        let Some(time) = time.map_err(invalid)? else {
             continue;
         };
         if !time.overlaps(context.window.from_ms, context.window.until_ms) {
@@ -94,10 +84,11 @@ pub(super) async fn entries(
             occurrence,
             consequence: 0,
         };
-        let mut entry = records[&record_uid].clone();
+        let mut entry = Value::clone(records[record_uid.as_str()]);
         entry["uid"] = json!(id);
         entry["record_uid"] = json!(record_uid);
-        entry["record_kind"] = entry["kind"].clone();
+        let kind = entry["kind"].take();
+        entry["record_kind"] = kind;
         entry["kind"] = json!("schedule-entry");
         entry["category"] = json!("timed");
         entry["time"] = json!(time);

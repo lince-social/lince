@@ -489,9 +489,8 @@ async fn main() {
     app.cleanup();
     println!(
         "Renderer: {:?}",
-        app.world()
+        &**app.world()
             .resource::<bevy::render::renderer::RenderAdapterInfo>()
-            .0
     );
     settle(&mut app, 0.5);
     let root = app

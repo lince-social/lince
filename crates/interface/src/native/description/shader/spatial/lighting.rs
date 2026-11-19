@@ -42,26 +42,91 @@ pub(super) fn install(app: &mut App) {
     );
 }
 
-fn shadows(world: &mut World, entity: Entity, cast: bool, receive: bool) {
+fn casting(world: &mut World, entity: Entity, cast: bool) -> bool {
+    if world.get::<NotShadowCaster>(entity).is_some() != cast {
+        return false;
+    }
     if cast {
         world.entity_mut(entity).remove::<NotShadowCaster>();
-    } else if world.get::<NotShadowCaster>(entity).is_none() {
+    } else {
         world.entity_mut(entity).insert(NotShadowCaster);
     }
-    if receive {
+    true
+}
+
+pub(super) fn publish_base(
+    world: &mut World,
+    entity: Entity,
+    base: &Handle<MeshMaterial>,
+    volume: bool,
+) -> bool {
+    let current = world.get::<MeshMaterial3d<MeshMaterial>>(entity);
+    let styled = !volume
+        && current.is_some_and(|current| {
+            world.get_resource::<Styles>().is_some_and(|styles| {
+                styles.materials.get(&entity).is_some_and(|style| {
+                    current.0 == style.material
+                        && &style.original == base
+                        && world
+                            .resource::<Assets<MeshMaterial>>()
+                            .contains(style.material.id())
+                })
+            })
+        });
+    if styled {
+        return false;
+    }
+    let mut changed = current.is_none_or(|current| &current.0 != base);
+    if changed {
+        world
+            .entity_mut(entity)
+            .insert(MeshMaterial3d(base.clone()));
+    }
+    if casting(world, entity, !volume) {
+        changed = true;
+    }
+    changed
+}
+
+fn shadows(world: &mut World, entity: Entity, cast: bool, receive: bool) {
+    casting(world, entity, cast);
+    let excluded = world.get::<NotShadowReceiver>(entity).is_some();
+    if receive && excluded {
         world.entity_mut(entity).remove::<NotShadowReceiver>();
-    } else if world.get::<NotShadowReceiver>(entity).is_none() {
+    } else if !receive && !excluded {
         world.entity_mut(entity).insert(NotShadowReceiver);
     }
 }
 
-fn same(a: &MeshMaterial, b: &MeshMaterial) -> bool {
-    a.inputs == b.inputs
+fn same(
+    a: &MeshMaterial,
+    b: &MeshMaterial,
+    lighting: Parameters,
+    texture: &Option<Handle<Image>>,
+) -> bool {
+    a.inputs.same_uniform(&b.inputs)
         && a.parameters == b.parameters
         && a.geometry == b.geometry
         && a.key == b.key
-        && a.lighting == b.lighting
-        && a.texture == b.texture
+        && a.lighting == lighting
+        && &a.texture == texture
+}
+
+fn material(
+    world: &World,
+    base: &Handle<MeshMaterial>,
+    lighting: Parameters,
+    texture: &Option<Handle<Image>>,
+) -> MeshMaterial {
+    let mut material = world
+        .resource::<Assets<MeshMaterial>>()
+        .get(base)
+        .unwrap()
+        .clone();
+    material.lighting = lighting;
+    material.texture = texture.clone();
+    nucleus::performance::add("shader-lighting-material-copies", 1);
+    material
 }
 
 fn release(world: &mut World, entity: Entity, style: Styled) {
@@ -79,7 +144,10 @@ fn release(world: &mut World, entity: Entity, style: Styled) {
             .get(&base)
             .is_some_and(|material| material.key.volume);
         if world.resource::<Assets<MeshMaterial>>().contains(base.id()) {
-            world.entity_mut(entity).insert(MeshMaterial3d(base));
+            if world.get::<MeshMaterial3d<MeshMaterial>>(entity).unwrap().0 != base {
+                world.entity_mut(entity).insert(MeshMaterial3d(base));
+                nucleus::performance::add("shader-lighting-bindings", 1);
+            }
             shadows(world, entity, style.cast && !volume, style.receive);
         } else {
             world
@@ -92,21 +160,49 @@ fn release(world: &mut World, entity: Entity, style: Styled) {
         .remove(style.material.id());
 }
 
+#[derive(Default)]
+struct Scratch {
+    targets: Vec<(Entity, Entity, Option<Entity>)>,
+    alive: HashSet<Entity>,
+    cameras: HashSet<Entity>,
+    stale: Vec<Entity>,
+}
+
 fn update(world: &mut World) {
     if !world.contains_resource::<Assets<MeshMaterial>>() {
         return;
     }
-    let mut styles = world.remove_resource::<Styles>().unwrap_or_default();
-    let mut targets: Vec<_> = world
-        .query::<(
-            Entity,
-            &crate::native::shader_effects::RecordMesh,
-            &Visibility,
-        )>()
-        .iter(world)
-        .filter(|(_, _, visibility)| **visibility == Visibility::Visible)
-        .map(|(entity, record, _)| (entity, record.0, None))
-        .collect();
+    world
+        .run_system_cached(update_lighting)
+        .expect("publish current mesh lighting");
+}
+
+fn update_lighting(
+    world: &mut World,
+    instances: &mut QueryState<(
+        Entity,
+        &'static crate::native::shader_effects::RecordMesh,
+        &'static Visibility,
+    )>,
+    mut scratch: Local<Scratch>,
+) {
+    let _lighting = nucleus::performance::Span::new("shader-lighting-publication");
+    let Scratch {
+        targets,
+        alive,
+        cameras,
+        stale,
+    } = &mut *scratch;
+    targets.clear();
+    alive.clear();
+    cameras.clear();
+    stale.clear();
+    targets.extend(
+        instances
+            .iter(world)
+            .filter(|(_, _, visibility)| **visibility == Visibility::Visible)
+            .map(|(entity, record, _)| (entity, record.0, None)),
+    );
     if let Some(effects) = world.get_resource::<MeshEffects>() {
         for (preview, state) in &effects.0 {
             if enabled(world, *preview)
@@ -120,43 +216,63 @@ fn update(world: &mut World) {
             }
         }
     }
+    world.init_resource::<Styles>();
+    if targets.is_empty() {
+        let styles = world.resource::<Styles>();
+        if styles.materials.is_empty() && styles.cameras.is_empty() && styles.light.is_none() {
+            *scratch = default();
+            return;
+        }
+    }
+    let mut styles = world.remove_resource::<Styles>().unwrap();
     targets.sort_by_key(|(entity, owner, _)| (owner.to_bits(), entity.to_bits()));
-    let mut owners = HashSet::new();
-    let mut alive = HashSet::new();
-    let mut cameras = HashSet::new();
+    let has_targets = !targets.is_empty();
+    let mut owner_count = 0;
+    let mut group = None;
+    let mut appearance = None;
+    let mut texture = None;
+    let mut admitted = false;
     let mut lit_preview = false;
-    for (entity, owner, camera) in targets {
+    for (entity, owner, camera) in targets.drain(..) {
         if alive.len() >= nucleus::canvas::appearance::MAX_MATERIALS * 2 {
             break;
         }
-        let Some((settings, opacity)) = appearance::mesh_appearance(world, owner) else {
+        if group != Some(owner) {
+            group = Some(owner);
+            appearance = appearance::mesh_appearance(world, owner);
+            texture = None;
+            admitted = false;
+            nucleus::performance::add("shader-lighting-owner-preparations", 1);
+        }
+        let Some((settings, opacity)) = appearance.as_ref() else {
             continue;
         };
-        if !owners.contains(&owner) && owners.len() >= nucleus::canvas::appearance::MAX_MATERIALS {
+        let opacity = *opacity;
+        if !admitted && owner_count >= nucleus::canvas::appearance::MAX_MATERIALS {
             continue;
         }
-        let Some(current) = world
-            .get::<MeshMaterial3d<MeshMaterial>>(entity)
-            .map(|material| material.0.clone())
-        else {
+        let Some(current) = world.get::<MeshMaterial3d<MeshMaterial>>(entity) else {
             continue;
         };
         let base = styles
             .materials
             .get(&entity)
-            .filter(|style| style.material == current)
-            .map_or(current, |style| style.original.clone());
-        let Some(mut desired) = world
+            .filter(|style| style.material == current.0)
+            .map_or(&current.0, |style| &style.original)
+            .clone();
+        if world
             .resource::<Assets<MeshMaterial>>()
             .get(&base)
-            .cloned()
-            .filter(|material| !material.key.volume)
-        else {
+            .is_none_or(|material| material.key.volume)
+        {
             continue;
-        };
-        owners.insert(owner);
+        }
+        if !admitted {
+            owner_count += 1;
+            admitted = true;
+        }
         alive.insert(entity);
-        desired.lighting = Parameters {
+        let lighting = Parameters {
             parameters: Vec4::new(
                 settings.roughness,
                 settings.metallic,
@@ -165,28 +281,39 @@ fn update(world: &mut World) {
             ),
             repeat_opacity: Vec4::new(settings.repeat[0], settings.repeat[1], opacity, 0.0),
         };
-        desired.texture = appearance::mesh_texture(world, &settings.texture);
+        let texture =
+            texture.get_or_insert_with(|| appearance::mesh_texture(world, &settings.texture));
         let style = styles.materials.entry(entity).or_insert_with(|| Styled {
-            material: world
-                .resource_mut::<Assets<MeshMaterial>>()
-                .add(desired.clone()),
+            material: {
+                let desired = material(world, &base, lighting, texture);
+                world.resource_mut::<Assets<MeshMaterial>>().add(desired)
+            },
             original: base.clone(),
             cast: world.get::<NotShadowCaster>(entity).is_none(),
             receive: world.get::<NotShadowReceiver>(entity).is_none(),
         });
-        style.original = base;
+        if style.original != base {
+            style.original = base.clone();
+        }
         if !world
             .resource::<Assets<MeshMaterial>>()
             .contains(style.material.id())
         {
-            style.material = world
-                .resource_mut::<Assets<MeshMaterial>>()
-                .add(desired.clone());
+            let desired = material(world, &base, lighting, texture);
+            style.material = world.resource_mut::<Assets<MeshMaterial>>().add(desired);
         } else if world
             .resource::<Assets<MeshMaterial>>()
             .get(&style.material)
-            .is_none_or(|material| !same(material, &desired))
+            .is_none_or(|material| {
+                !same(
+                    material,
+                    world.resource::<Assets<MeshMaterial>>().get(&base).unwrap(),
+                    lighting,
+                    texture,
+                )
+            })
         {
+            let desired = material(world, &base, lighting, texture);
             *world
                 .resource_mut::<Assets<MeshMaterial>>()
                 .get_mut(&style.material)
@@ -196,6 +323,7 @@ fn update(world: &mut World) {
             world
                 .entity_mut(entity)
                 .insert(MeshMaterial3d(style.material.clone()));
+            nucleus::performance::add("shader-lighting-bindings", 1);
         }
         shadows(
             world,
@@ -217,22 +345,24 @@ fn update(world: &mut World) {
             lit_preview |= settings.lit;
         }
     }
-    let stale: Vec<_> = styles
-        .materials
-        .keys()
-        .copied()
-        .filter(|entity| !alive.contains(entity))
-        .collect();
-    for entity in stale {
+    stale.extend(
+        styles
+            .materials
+            .keys()
+            .copied()
+            .filter(|entity| !alive.contains(entity)),
+    );
+    for entity in stale.drain(..) {
         release(world, entity, styles.materials.remove(&entity).unwrap());
     }
-    let stale: Vec<_> = styles
-        .cameras
-        .keys()
-        .copied()
-        .filter(|camera| !cameras.contains(camera))
-        .collect();
-    for camera in stale {
+    stale.extend(
+        styles
+            .cameras
+            .keys()
+            .copied()
+            .filter(|camera| !cameras.contains(camera)),
+    );
+    for camera in stale.drain(..) {
         let original = styles.cameras.remove(&camera).unwrap();
         if let Ok(mut entity) = world.get_entity_mut(camera) {
             if let Some(original) = original {
@@ -266,6 +396,9 @@ fn update(world: &mut World) {
         entity.despawn();
     }
     world.insert_resource(styles);
+    if !has_targets {
+        *scratch = default();
+    }
 }
 
 #[cfg(test)]

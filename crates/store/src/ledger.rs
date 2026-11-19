@@ -83,7 +83,7 @@ pub async fn records_with_concept(
           WHERE r.deleted_at IS NULL AND a.retracted_at IS NULL
             AND a.predicate_uid IN ({placeholders})"
     );
-    let mut query = sqlx::query(&sql);
+    let mut query = sqlx::query(sqlx::AssertSqlSafe(sql.as_str()));
     for concept in &concepts {
         query = query.bind(concept.clone());
     }
@@ -95,9 +95,6 @@ pub async fn records_with_concept(
         .collect())
 }
 
-/// Concept memberships of one live Record, including inherited memberships.
-/// This is the inverse of `records_with_concept`: predicate ancestry is walked
-/// inside one read instead of materializing every subject of each ancestor.
 pub async fn record_concept_ancestors(
     pool: &SqlitePool,
     record_uid: &str,
@@ -311,7 +308,7 @@ async fn window_rows(
           ORDER BY f.at, f.rowid",
         placeholders(window.record_uids.len())
     );
-    let mut query = sqlx::query(&sql);
+    let mut query = sqlx::query(sqlx::AssertSqlSafe(sql.as_str()));
     for uid in window.record_uids {
         query = query.bind(uid.clone());
     }

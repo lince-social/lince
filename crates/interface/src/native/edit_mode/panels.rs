@@ -1,4 +1,5 @@
 use crate::native::actions::Action;
+use bevy::ecs::query::QueryState;
 use bevy::prelude::*;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -99,7 +100,7 @@ pub(crate) fn attach(world: &mut World, owner: Entity, root: Entity, kind: Kind)
         },
     ));
     world.entity_mut(header).observe(
-        move |mut event: On<Pointer<Drag>>, mut commands: Commands| {
+        move |mut event: On<PointerDrag>, mut commands: Commands| {
             if event.button == PointerButton::Primary {
                 let delta = event.delta;
                 commands.queue(move |world: &mut World| move_panel(world, owner, delta));
@@ -109,10 +110,10 @@ pub(crate) fn attach(world: &mut World, owner: Entity, root: Entity, kind: Kind)
     );
     world
         .entity_mut(header)
-        .observe(|mut event: On<Pointer<DragStart>>| event.propagate(false));
+        .observe(|mut event: On<PointerDragStart>| event.propagate(false));
     world
         .entity_mut(header)
-        .observe(|mut event: On<Pointer<DragEnd>>| event.propagate(false));
+        .observe(|mut event: On<PointerDragEnd>| event.propagate(false));
     let (body, toggle) = if kind == Kind::Item {
         let toggle = crate::native::layout::desktop::input_settings::button(
             world, header, owner, "−", Minimize,
@@ -187,19 +188,54 @@ fn constrained(position: Vec2, size: Vec2, bounds: Rect) -> Vec2 {
     position.clamp(bounds.min, (bounds.max - size).max(bounds.min))
 }
 
+type PanelEntry = (
+    Entity,
+    Entity,
+    Kind,
+    Option<Entity>,
+    Option<(Entity, Entity)>,
+);
+
+#[derive(Resource)]
+struct LayoutState {
+    panels: QueryState<(Entity, &'static Panel)>,
+    entries: Vec<PanelEntry>,
+}
+
+impl FromWorld for LayoutState {
+    fn from_world(world: &mut World) -> Self {
+        Self {
+            panels: world.query(),
+            entries: Vec::new(),
+        }
+    }
+}
+
 pub(crate) fn layout(world: &mut World) {
-    let panels: Vec<_> = world
-        .query::<(Entity, &Panel)>()
-        .iter(world)
-        .map(|(entity, panel)| (entity, panel.root, panel.kind, panel.body, panel.toggle))
-        .collect();
-    for &(owner, root, kind, body, toggle) in &panels {
+    let _layout = nucleus::performance::Span::new("edit-panel-layout");
+    world.init_resource::<LayoutState>();
+    world.resource_scope(|world, mut state: Mut<LayoutState>| {
+        let LayoutState { panels, entries } = &mut *state;
+        entries.clear();
+        entries.extend(
+            panels
+                .iter(world)
+                .map(|(entity, panel)| (entity, panel.root, panel.kind, panel.body, panel.toggle)),
+        );
+        layout_panels(world, entries);
+        entries.clear();
+    });
+}
+
+fn layout_panels(world: &mut World, panels: &[PanelEntry]) {
+    for &(owner, root, kind, body, toggle) in panels {
         if world
             .get::<Node>(owner)
             .is_none_or(|node| node.display == Display::None)
         {
             continue;
         }
+        nucleus::performance::add("edit-panel-visible-owners", 1);
         let Some(computed) = world.get::<ComputedNode>(root) else {
             continue;
         };
@@ -326,22 +362,38 @@ pub(crate) fn layout(world: &mut World) {
             Vec2::new(width, height),
             usable,
         );
-        let mut node = world.get::<Node>(owner).unwrap().clone();
-        node.left = px(position.x);
-        node.top = px(position.y);
-        node.right = Val::Auto;
-        node.bottom = Val::Auto;
-        node.max_width = px(max_width);
-        node.max_height = px(usable.height());
-        if kind == Kind::Edit {
-            node.height = px(height);
-        }
-        if kind == Kind::Item {
-            node.width = px(if state.minimized { 180 } else { 300 });
-            node.height = if state.minimized { px(56) } else { Val::Auto };
-        }
-        if *world.get::<Node>(owner).unwrap() != node {
-            *world.get_mut::<Node>(owner).unwrap() = node;
+        let node = world.get::<Node>(owner).unwrap();
+        let width = if kind == Kind::Item {
+            px(if state.minimized { 180 } else { 300 })
+        } else {
+            node.width
+        };
+        let height = if kind == Kind::Edit {
+            px(height)
+        } else if state.minimized {
+            px(56)
+        } else {
+            Val::Auto
+        };
+        if node.left != px(position.x)
+            || node.top != px(position.y)
+            || node.right != Val::Auto
+            || node.bottom != Val::Auto
+            || node.max_width != px(max_width)
+            || node.max_height != px(usable.height())
+            || node.width != width
+            || node.height != height
+        {
+            let mut node = world.get_mut::<Node>(owner).unwrap();
+            node.left = px(position.x);
+            node.top = px(position.y);
+            node.right = Val::Auto;
+            node.bottom = Val::Auto;
+            node.max_width = px(max_width);
+            node.max_height = px(usable.height());
+            node.width = width;
+            node.height = height;
+            nucleus::performance::add("edit-panel-layout-writes", 1);
             wake(world);
         }
         if let Some(body) = body {

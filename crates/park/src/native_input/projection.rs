@@ -47,7 +47,7 @@ struct Context {
     transform: [f32; 6],
     size: Vec2,
     content_origin: Vec2,
-    clip: Option<Rect>,
+    clip: Option<CalculatedClip>,
     caret: [i32; 4],
     source: Source,
 }
@@ -95,18 +95,18 @@ pub(crate) fn prepare(world: &mut World, view: Option<View>) {
     }
 }
 
-fn local_view(world: &World, view: &View) -> Option<OutputViewport> {
+fn local_view<'a>(world: &'a World, view: &View) -> Option<&'a OutputViewport> {
     let root = view.root?;
     if let Some(views) = world
         .get_resource::<native::output_views::OutputViews>()
         .filter(|views| views.applies_to(root))
     {
-        return (views.focused == view.output).then(|| views.focused().clone());
+        return (views.focused == view.output).then(|| views.focused());
     }
     world
         .get::<native::layout::desktop::HostViewport>(root)
         .filter(|viewport| viewport.0.id == view.output)
-        .map(|viewport| viewport.0.clone())
+        .map(|viewport| &viewport.0)
 }
 
 fn descendant(world: &World, mut entity: Entity, owner: Entity) -> bool {
@@ -169,9 +169,7 @@ fn resolve(
     }
     let transform = world.get::<UiGlobalTransform>(entity)?;
     let (area, content_origin) = super::caret_area(world, entity)?;
-    let clip = world
-        .get::<bevy::ui::CalculatedClip>(entity)
-        .map(|clip| clip.clip);
+    let clip = world.get::<CalculatedClip>(entity);
     let (source, caret) = if image == view.image {
         (
             Source::Final,
@@ -204,10 +202,7 @@ fn resolve(
         }
         let corners = super::caret_corners(transform, area, content_origin)?;
         let bounds = Rect::from_corners(Vec2::ZERO, surface.pixels.as_vec2());
-        let bounds = clip.map_or(bounds, |clip| Rect {
-            min: bounds.min.max(clip.min),
-            max: bounds.max.min(clip.max),
-        });
+        let bounds = clip.map_or(bounds, |clip| native::clipped_rect(bounds, clip));
         if bounds.size().min_element() <= 0.0 {
             return None;
         }
@@ -254,7 +249,7 @@ fn resolve(
         sensitive: native::protected_text_input(world, entity),
         camera,
         image,
-        local: local_view(world, &view),
+        local: local_view(world, &view).cloned(),
         workspace: view
             .root
             .and_then(|root| world.get::<native::workspace::Workspaces>(root))
@@ -263,7 +258,7 @@ fn resolve(
         transform: transform.to_cols_array(),
         size: node.size(),
         content_origin,
-        clip,
+        clip: clip.cloned(),
         caret,
         source,
     })
@@ -399,13 +394,10 @@ fn projected(
     ])
 }
 
-/// Geometry prepared for one immutable-world accessibility export. Borrowed
-/// components prevent this from surviving a world mutation or becoming a
-/// cross-frame ownership cache.
 pub(crate) struct AccessibilityProjection<'a> {
     transform: &'a UiGlobalTransform,
     size: Vec2,
-    clip: Option<Rect>,
+    clip: Option<&'a CalculatedClip>,
     source: AccessibilitySource<'a>,
 }
 
@@ -472,9 +464,7 @@ impl<'a> AccessibilityProjection<'a> {
         Some(Self {
             transform,
             size: node.size(),
-            clip: world
-                .get::<bevy::ui::CalculatedClip>(entity)
-                .map(|clip| clip.clip),
+            clip: world.get::<CalculatedClip>(entity),
             source,
         })
     }
@@ -492,19 +482,14 @@ impl<'a> AccessibilityProjection<'a> {
             return None;
         }
         if let Some(clip) = self.clip {
-            let low = corners
-                .iter()
-                .copied()
-                .fold(Vec2::splat(f32::INFINITY), Vec2::min)
-                .max(clip.min);
-            let high = corners
-                .iter()
-                .copied()
-                .fold(Vec2::splat(f32::NEG_INFINITY), Vec2::max)
-                .min(clip.max);
-            if (high - low).min_element() < 0.0 {
-                return None;
-            }
+            let vertices = corners.map(|corner| (corner, ()));
+            let polygon = bevy::ui_render::clipping::clip_polygon(
+                Some(clip), &vertices, |(), (), _| (),
+            );
+            let (first, ()) = *polygon.first()?;
+            let (low, high) = polygon.iter().fold((first, first), |(low, high), (point, ())| {
+                (low.min(*point), high.max(*point))
+            });
             corners = [
                 low,
                 Vec2::new(high.x, low.y),
@@ -595,11 +580,14 @@ pub(super) fn capture(world: &mut World, geometry: Option<&GeometrySnapshot>) ->
     if !same_session {
         state.generation = state.generation.checked_add(1).expect("native editor session");
     }
-    state.context = context.clone();
+    let target = context
+        .as_ref()
+        .map(|context| (context.entity, context.caret));
+    state.context = context;
     let generation = state.generation;
     drop(state);
-    let context = context?;
-    let mut editor = super::text_state(world, context.entity, context.caret)?;
+    let (entity, caret) = target?;
+    let mut editor = super::text_state(world, entity, caret)?;
     editor.projection = generation;
     Some(editor)
 }
@@ -614,31 +602,42 @@ pub(super) fn current(world: &mut World, requested: &Editor) -> Option<Editor> {
     if state.generation != requested.projection {
         return None;
     }
-    let context = state.context.clone()?;
+    let context = state.context.as_ref()?;
     if world.get_resource::<bevy::input_focus::InputFocus>()?.get() != Some(context.entity) { return None; }
     let view = state.view.clone()?;
     let local = local_view(world, &view);
     if context.owner.is_some() {
-        if !view.same_owner(&context.view) || local.is_none() { return None; }
-    } else if view != context.view || local != context.local { return None; }
-    let camera = world.get::<bevy::ui::ComputedUiTargetCamera>(context.entity)?.get()?;
+        if !view.same_owner(&context.view) || local.is_none() {
+            return None;
+        }
+    } else if view != context.view || local != context.local.as_ref() {
+        return None;
+    }
+    let entity = context.entity;
+    let camera = world
+        .get::<bevy::ui::ComputedUiTargetCamera>(entity)?
+        .get()?;
     let item = match world.get::<native::topology::presentation::VisualOwner>(camera) {
         Some(owner) => {
             let id = world.get::<native::layout::LayoutBox>(owner.0)?.id;
             let root = view.root?;
-            let local = local.as_ref()?;
-            let current = native::topology::output_views::geometry(world, root, local)
-                .into_iter()
-                .find(|candidate| candidate.id == ItemId::Native(id) && candidate.output == view.output)?;
+            let local = local?.clone();
+            let current = native::topology::output_views::item_geometry(
+                world,
+                root,
+                &local,
+                ItemId::Native(id),
+            )?;
             Some(translated(current, view.origin)?)
         },
         None => None,
     };
-    let live = resolve(world, view, context.entity, item)?;
+    let live = resolve(world, view, entity, item)?;
+    let context = world.resource::<CaptureState>().context.as_ref()?;
     if !context.same_session(&live) {
         return None;
     }
-    let mut editor = super::text_state(world, context.entity, live.caret)?;
+    let mut editor = super::text_state(world, entity, live.caret)?;
     editor.projection = requested.projection;
     Some(editor)
 }

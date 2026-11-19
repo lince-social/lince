@@ -388,7 +388,7 @@ fn hints(world: &mut World) {
         let b = transform.transform_point2(node.size() * 0.5);
         if world.get::<AnchoredTooltip>(target).is_some()
             && world.get::<bevy::ui::CalculatedClip>(target).is_some_and(|clip| {
-                Rect::from_corners(a, b).intersect(clip.clip).size().min_element() <= 0.0
+                crate::native::canvas_clip::clipped_rect(Rect::from_corners(a, b), clip).is_empty()
             }) { return None; }
         let mut root = target;
         loop {
@@ -927,29 +927,23 @@ pub(crate) mod tests {
             position: Vec2::ZERO,
         };
         let hit = HitData::new(window, 0.0, None, None);
-        app.world_mut().trigger(Pointer::new(
-            PointerId::Mouse,
-            location.clone(),
-            Press {
-                button: PointerButton::Primary,
+        app.world_mut().trigger(PointerPress {
+            entity: icon,
+            pointer: Pointer::new(PointerId::Mouse, location.clone()),
+            button: PointerButton::Primary,
                 hit: hit.clone(),
                 count: 1,
-            },
-            icon,
-        ));
+        });
         app.world_mut().flush();
         assert!(app.world().get::<bevy::ui::Pressed>(source).is_none());
-        app.world_mut().trigger(Pointer::new(
-            PointerId::Mouse,
-            location,
-            Click {
-                button: PointerButton::Primary,
+        app.world_mut().trigger(PointerClick {
+            entity: icon,
+            pointer: Pointer::new(PointerId::Mouse, location),
+            button: PointerButton::Primary,
                 hit,
                 duration: std::time::Duration::from_millis(50),
                 count: 1,
-            },
-            icon,
-        ));
+        });
         app.world_mut().flush();
         assert_eq!(app.world().resource::<Activations>().0, [icon]);
     }
@@ -1126,7 +1120,12 @@ pub(crate) mod tests {
             app.update();
             app.update();
             assert_eq!(*app.world().get::<Visibility>(tip).unwrap(), Visibility::Inherited);
-            app.world_mut().entity_mut(button).insert(bevy::ui::CalculatedClip { clip: Rect::from_corners(Vec2::ZERO, Vec2::splat(10.0)) });
+            let mut clip = bevy::ui::CalculatedClip::default();
+            clip.push_rect(
+                Rect::from_corners(Vec2::ZERO, Vec2::splat(10.0)),
+                bevy::math::Affine2::IDENTITY,
+            );
+            app.world_mut().entity_mut(button).insert(clip);
             app.update();
             assert_eq!(app.world().get::<Node>(tip).unwrap().display, Display::None);
             app.world_mut().entity_mut(button).remove::<bevy::ui::CalculatedClip>();

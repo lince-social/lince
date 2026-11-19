@@ -1003,7 +1003,7 @@
                 outputHashes = {
                   "best-tts-0.1.0" = "sha256-7EQfXCyF+v+i3DvIXDN/2rSG56N9HBI2DpZRUss8H/k=";
                   "flexaudio-0.3.0" = "sha256-Cku6qBC22XC3xmtJ2u1oG3oUUEpX+XkP8UpSYk4qUWQ=";
-                  "galileo-0.2.1" = "sha256-4UUmoj1fK9D8+7c2MWYdUpY+WCLbG/wqgzURdBh2Pw4=";
+                  "galileo-0.2.1" = "sha256-ovyXp0yPxLZtkSSGhzOxdFVVyZthP5KG1VjuN7z4pio=";
                 };
               };
 

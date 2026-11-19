@@ -139,6 +139,42 @@ pub async fn conversations_with(
         .collect())
 }
 
+pub async fn conversations_with_many(
+    pool: &SqlitePool,
+    contacts: &[&str],
+) -> Result<std::collections::HashMap<String, Vec<SharedConversation>>, StoreError> {
+    let _read = nucleus::performance::Span::new("store-conversation-presentation-await");
+    let mut output = std::collections::HashMap::<String, Vec<SharedConversation>>::new();
+    if contacts.is_empty() {
+        return Ok(output);
+    }
+    let selected =
+        serde_json::to_string(contacts).map_err(|error| StoreError::Protocol(error.to_string()))?;
+    let rows = sqlx::query(
+        "SELECT g.contact_organ, r.uid, r.head, g.state
+         FROM replica_grant g
+         JOIN record r ON r.uid = g.root_record
+         WHERE g.contact_organ IN (SELECT value FROM json_each(?))
+           AND r.kind = 'conversation'
+         ORDER BY g.contact_organ, r.created_at DESC",
+    )
+    .bind(selected)
+    .fetch_all(pool)
+    .await?;
+    nucleus::performance::add("conversation-presentation-rows", rows.len() as u64);
+    for row in rows {
+        output
+            .entry(row.get("contact_organ"))
+            .or_default()
+            .push(SharedConversation {
+                uid: row.get("uid"),
+                head: row.get("head"),
+                state: row.get("state"),
+            });
+    }
+    Ok(output)
+}
+
 pub async fn root_for_op_tx(
     tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
     tbl: &str,

@@ -8,7 +8,6 @@ use bevy::{
         render_asset::RenderAssets,
         renderer::{
             RenderAdapter, RenderAdapterInfo, RenderDevice, RenderInstance, RenderQueue,
-            WgpuWrapper,
         },
         settings::RenderCreation,
         texture::GpuImage,
@@ -619,10 +618,10 @@ impl Presentation {
         let client_formats = Arc::new(renderer.client_import_formats());
         let render_creation = RenderCreation::manual(
             RenderDevice::from(renderer.device.clone()),
-            RenderQueue(Arc::new(WgpuWrapper::new(renderer.queue.clone()))),
-            RenderAdapterInfo(WgpuWrapper::new(renderer.adapter.get_info())),
-            RenderAdapter(Arc::new(WgpuWrapper::new(renderer.adapter.clone()))),
-            RenderInstance(Arc::new(WgpuWrapper::new(renderer._instance.clone()))),
+            RenderQueue::new(renderer.queue.clone()),
+            RenderAdapterInfo::new(renderer.adapter.get_info()),
+            RenderAdapter::new(renderer.adapter.clone()),
+            RenderInstance::new(renderer._instance.clone()),
         );
         let plugins = DefaultPlugins
             .build()
@@ -1182,8 +1181,6 @@ impl Presentation {
             }));
         }
         if self.pipelines_pending() {
-            // Imported pixels have their own retained texture. Retire their
-            // client uploads after submitted GPU work even while shaders wait.
             self.release_capture_uploads();
             return Ok(None);
         }
@@ -1582,8 +1579,9 @@ impl Presentation {
                         .into_iter()
                         .fold(Vec2::splat(f32::NEG_INFINITY), Vec2::max);
                     if let Some(clip) = world.get::<bevy::ui::CalculatedClip>(entity) {
-                        low = low.max(clip.clip.min);
-                        high = high.min(clip.clip.max);
+                        let bounds = native::clipped_rect(Rect { min: low, max: high }, clip);
+                        low = bounds.min;
+                        high = bounds.max;
                     }
                     if (high - low).min_element() <= 0.0 {
                         return None;

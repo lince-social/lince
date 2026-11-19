@@ -57,7 +57,7 @@ pub(crate) async fn execute(
             .parsed()
             .map_err(|error| store::karma_fields::invalid(&error.to_string()))?;
         let mut allowed = true;
-        for read in parsed.reads() {
+        for read in parsed.reads_ref() {
             if nucleus::transfer::karma::is_reading(&read.func) {
                 let names: Vec<_> = read.slug.split('|').collect();
                 let state =

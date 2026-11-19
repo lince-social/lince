@@ -28,12 +28,16 @@ pub struct EncodedSave {
 }
 
 impl SavePoint {
-    pub fn encode(self) -> EncodedSave {
-        EncodedSave {
-            update: self.doc.export_json_updates(&self.from, &self.to),
+    pub fn encode(self) -> Result<EncodedSave> {
+        let update = self
+            .doc
+            .export_json_updates(&self.from, &self.to)
+            .map_err(|error| error.to_string())?;
+        Ok(EncodedSave {
+            update,
             text: self.text,
             revision: self.revision,
-        }
+        })
     }
 }
 
@@ -114,7 +118,10 @@ impl Buffer {
             .map_err(|e| e.to_string())?;
         disk.commit();
         let doc = LoroDoc::new();
-        doc.import_json_updates(disk.export_json_updates(&Default::default(), &disk.oplog_vv()))
+        let update = disk
+            .export_json_updates(&Default::default(), &disk.oplog_vv())
+            .map_err(|error| error.to_string())?;
+        doc.import_json_updates(update)
             .map_err(|e| e.to_string())?;
         disk.set_peer_id(LoroDoc::new().peer_id())
             .map_err(|e| e.to_string())?;
@@ -368,7 +375,7 @@ impl Buffer {
 
     pub fn saved(&mut self, point: SavePoint) -> Result<()> {
         let text = point.text.to_string().into();
-        self.saved_with_text(point.encode(), text)
+        self.saved_with_text(point.encode()?, text)
     }
 
     pub fn saved_with_text(&mut self, point: EncodedSave, text: Arc<str>) -> Result<()> {
@@ -437,7 +444,10 @@ fn apply(doc: &LoroDoc, edits: &[Edit]) -> Result<()> {
 }
 
 fn transfer(from: &LoroDoc, to: &LoroDoc) -> Result<()> {
-    to.import_json_updates(from.export_json_updates(&to.oplog_vv(), &from.oplog_vv()))
+    let update = from
+        .export_json_updates(&to.oplog_vv(), &from.oplog_vv())
+        .map_err(|error| error.to_string())?;
+    to.import_json_updates(update)
         .map_err(|error| error.to_string())?;
     Ok(())
 }

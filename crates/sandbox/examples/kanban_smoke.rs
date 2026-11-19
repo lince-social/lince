@@ -94,21 +94,18 @@ fn exercise(world: &mut World) {
         let Some(card) = card else {
             return;
         };
-        world.trigger(Pointer::new(
-            lince_sandbox::topology::input::CONTENT_POINTER,
-            bevy::picking::pointer::Location {
+        world.trigger(PointerScroll {
+            entity: card.0,
+            pointer: Pointer::new(lince_sandbox::topology::input::CONTENT_POINTER, bevy::picking::pointer::Location {
                 target: bevy::camera::NormalizedRenderTarget::Image(card.2.into()),
                 position: Vec2::ZERO,
-            },
-            bevy::picking::events::Scroll {
-                unit: bevy::input::mouse::MouseScrollUnit::Pixel,
+            }),
+            unit: bevy::input::mouse::MouseScrollUnit::Pixel,
                 x: 0.0,
                 y: -150.0,
                 phase: bevy::input::touch::TouchPhase::Moved,
                 hit: bevy::picking::backend::HitData::new(card.1, 0.0, None, None),
-            },
-            card.0,
-        ));
+        });
         assert_eq!(world.get::<LayoutRuntime>(area).unwrap().scroll.y, 150.0);
         world.resource_mut::<Trial>().scrolled = Some(frame);
     }

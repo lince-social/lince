@@ -247,14 +247,10 @@ pub(super) fn apply(
                 && entities.contains_key(&old.id)
         })
         .collect();
-    // Disposal can invoke component lifecycle hooks. Preserve its original
-    // pre-disposal workspace snapshot only when something will be disposed.
     let previous_entries = (!removed_placements.is_empty())
         .then(|| world.get::<Workspaces>(root).unwrap().entries.clone());
     let restored = {
         let mut spaces = world.get_mut::<Workspaces>(root).unwrap();
-        // Only deleted workspaces need a separate retained history copy. Keep
-        // the old live-then-trash order, including first-match restore priority.
         let deleted: Vec<_> = spaces
             .entries
             .iter()
@@ -285,8 +281,6 @@ pub(super) fn apply(
         .get_resource::<crate::native::layout::desktop::DefaultLayout>()
         .map_or(crate::host::WorkspaceLayout::Free, |mode| mode.0);
     let mut spaces = world.get_mut::<Workspaces>(root).unwrap();
-    // Move retained desktop/layout state or the required pre-disposal snapshot
-    // into its next owner; do not clone it a second time during selection.
     let entries = previous_entries.unwrap_or_else(|| std::mem::take(&mut spaces.entries));
     let mut previous = HashMap::new();
     for entry in entries.into_iter().chain(restored) {

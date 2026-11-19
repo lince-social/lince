@@ -1,15 +1,11 @@
+use super::raster::{self, Pixels};
 use super::*;
-use std::sync::{Arc, Mutex, mpsc};
+use std::sync::{Arc, OnceLock};
 
-type Pixels = Result<(u32, u32, Vec<u8>), String>;
 #[derive(Component)]
 struct Diagram {
-    source: String,
+    source: Arc<str>,
     label: Entity,
-}
-#[derive(Resource, Default)]
-struct Worker {
-    active: Option<(String, Arc<Mutex<mpsc::Receiver<Pixels>>>)>,
 }
 
 pub(super) fn spawn(world: &mut World, parent: Entity, source: &str) {
@@ -24,6 +20,7 @@ pub(super) fn spawn(world: &mut World, parent: Entity, source: &str) {
 }
 
 pub(super) fn rasterize(source: &str) -> Pixels {
+    let _raster = nucleus::performance::Span::new("description-diagram-rasterize");
     if source.len() > 16_384 || source.lines().count() > 256 {
         return Err("Diagram is too large to render (256 lines / 16 KB).".into());
     }
@@ -33,16 +30,11 @@ pub(super) fn rasterize(source: &str) -> Pixels {
         .map_err(|error| error.to_string())?;
     let mut options = resvg::usvg::Options {
         font_family: "Lato".into(),
+        fontdb: fonts().clone(),
         ..default()
     };
     options.image_href_resolver.resolve_string = Box::new(|_, _| None);
     options.image_href_resolver.resolve_data = Box::new(|_, _, _| None);
-    options.fontdb_mut().load_font_data(
-        include_bytes!("../../../../../institute/assets/fonts/Lato/Lato-Regular.ttf").to_vec(),
-    );
-    options.fontdb_mut().set_sans_serif_family("Lato");
-    options.fontdb_mut().set_serif_family("Lato");
-    options.fontdb_mut().set_monospace_family("Lato");
     let tree = resvg::usvg::Tree::from_str(&svg, &options).map_err(|error| error.to_string())?;
     let size = tree.size();
     let scale = (1600.0 / size.width().max(size.height())).min(1.5);
@@ -66,92 +58,52 @@ pub(super) fn rasterize(source: &str) -> Pixels {
     Ok((width, height, pixels))
 }
 
-pub(super) fn update(world: &mut World) {
-    world.init_resource::<Worker>();
-    let completed = world
-        .resource::<Worker>()
-        .active
-        .as_ref()
-        .and_then(|(source, receiver)| {
-            let result = receiver.lock().ok()?.try_recv();
-            match result {
-                Ok(result) => Some((source.clone(), result)),
-                Err(mpsc::TryRecvError::Disconnected) => {
-                    Some((source.clone(), Err("Diagram renderer stopped.".into())))
-                }
-                Err(_) => None,
-            }
-        });
-    if let Some((source, result)) = completed {
-        world.resource_mut::<Worker>().active = None;
-        let waiting: Vec<_> = world
-            .query::<(Entity, &Diagram)>()
-            .iter(world)
-            .filter(|(_, diagram)| diagram.source == source)
-            .map(|(entity, diagram)| (entity, diagram.label))
-            .collect();
-        let image = result.as_ref().ok().map(|(width, height, pixels)| {
-            world.init_resource::<Assets<Image>>();
-            world.resource_mut::<Assets<Image>>().add(Image::new(
-                bevy::render::render_resource::Extent3d {
-                    width: *width,
-                    height: *height,
-                    depth_or_array_layers: 1,
-                },
-                bevy::render::render_resource::TextureDimension::D2,
-                pixels.clone(),
-                bevy::render::render_resource::TextureFormat::Rgba8UnormSrgb,
-                bevy::asset::RenderAssetUsages::RENDER_WORLD,
-            ))
-        });
-        for (owner, label) in waiting {
-            world.entity_mut(owner).remove::<Diagram>();
-            if let Some(image) = image.clone() {
-                world.despawn(label);
-                world.spawn((
-                    ImageNode::new(image),
-                    Node {
-                        width: percent(100),
-                        height: Val::Auto,
-                        ..default()
-                    },
-                    ChildOf(
-                        world
-                            .get::<crate::native::embedded_media::Media>(owner)
-                            .unwrap()
-                            .content,
-                    ),
-                ));
-            } else if let Some(mut text) = world.get_mut::<Text>(label) {
-                text.0 = format!(
-                    "Diagram could not be rendered: {}\n\n{source}",
-                    result.as_ref().unwrap_err()
-                );
-            }
+fn fonts() -> &'static Arc<resvg::usvg::fontdb::Database> {
+    static FONTS: OnceLock<Arc<resvg::usvg::fontdb::Database>> = OnceLock::new();
+    FONTS.get_or_init(|| {
+        let _fonts = nucleus::performance::Span::new("description-diagram-font-preparation");
+        let mut database = resvg::usvg::fontdb::Database::new();
+        database.load_font_data(
+            include_bytes!("../../../../../institute/assets/fonts/Lato/Lato-Regular.ttf").to_vec(),
+        );
+        database.set_sans_serif_family("Lato");
+        database.set_serif_family("Lato");
+        database.set_monospace_family("Lato");
+        nucleus::performance::add("description-diagram-font-databases-prepared", 1);
+        Arc::new(database)
+    })
+}
+
+impl raster::Request for Diagram {
+    const CAPACITY: usize = 1;
+    const STOPPED: &'static str = "Diagram renderer stopped.";
+    const PANICKED: &'static str = "Diagram syntax could not be rendered.";
+
+    fn source(&self) -> &Arc<str> {
+        &self.source
+    }
+
+    fn label(&self) -> Entity {
+        self.label
+    }
+
+    fn render(source: &str) -> Pixels {
+        rasterize(source)
+    }
+
+    fn layout(_: u32) -> Node {
+        Node {
+            width: percent(100),
+            height: Val::Auto,
+            ..default()
         }
     }
-    if world.resource::<Worker>().active.is_some() {
-        return;
+
+    fn failure(source: &str, error: &str) -> String {
+        format!("Diagram could not be rendered: {error}\n\n{source}")
     }
-    let source = world
-        .query::<&Diagram>()
-        .iter(world)
-        .next()
-        .map(|diagram| diagram.source.clone());
-    if let Some(source) = source {
-        let (sender, receiver) = mpsc::channel();
-        world.resource_mut::<Worker>().active =
-            Some((source.clone(), Arc::new(Mutex::new(receiver))));
-        let wake = world
-            .get_resource::<crate::native::wake::WakeSignal>()
-            .cloned();
-        std::thread::spawn(move || {
-            let result = std::panic::catch_unwind(|| rasterize(&source))
-                .unwrap_or_else(|_| Err("Diagram syntax could not be rendered.".into()));
-            let _ = sender.send(result);
-            if let Some(wake) = wake {
-                wake.ring();
-            }
-        });
-    }
+}
+
+pub(super) fn update(world: &mut World) {
+    raster::update::<Diagram>(world);
 }

@@ -73,7 +73,7 @@ async fn corrupt_revision_guards(store: &Store) {
             name.bytes()
                 .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
         );
-        store::sqlx::query(&format!("DROP TRIGGER {name}"))
+        store::sqlx::query(store::sqlx::AssertSqlSafe(format!("DROP TRIGGER {name}")))
             .execute(&store.pool)
             .await
             .unwrap();

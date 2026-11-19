@@ -6,7 +6,7 @@
 use alloc::vec::Vec;
 
 #[cfg(feature = "libm")]
-#[allow(unused_imports)]
+#[allow(unused_imports, reason = "The no-std layout path uses these float methods")]
 use core_maths::CoreFloat;
 
 use crate::analysis::Boundary;
@@ -194,20 +194,17 @@ impl BreakerState {
     pub fn append_cluster_to_line(&mut self, next_x: f32, clusters_height: f32) {
         self.line.items.end = self.item_idx + 1;
         self.line.clusters.end = self.cluster_idx + 1;
+        self.cluster_idx += 1;
         self.line.x = next_x;
         self.add_line_height(clusters_height);
-        // Would like to add:
-        // self.cluster_idx += 1;
     }
 
     /// Add inline box to line
     pub fn append_inline_box_to_line(&mut self, next_x: f32, box_height: f32) {
-        // self.item_idx += 1;
+        self.item_idx += 1;
         self.line.items.end += 1;
         self.line.x = next_x;
         self.add_line_height(box_height);
-        // Would like to add:
-        // self.item_idx += 1;
     }
 
     /// Store the current iteration state so that we can revert to it if we later want to take
@@ -230,6 +227,14 @@ impl BreakerState {
             cluster_idx: self.cluster_idx,
             state: self.line.clone(),
         });
+    }
+
+    /// Revert boundary state to prev state
+    fn reset_to(&mut self, prev_state: PrevBoundaryState) {
+        self.item_idx = prev_state.item_idx;
+        self.run_idx = prev_state.run_idx;
+        self.cluster_idx = prev_state.cluster_idx;
+        self.line = prev_state.state;
     }
 
     #[inline(always)]
@@ -321,7 +326,21 @@ impl<'a, B: Brush> BreakLines<'a, B> {
     }
 
     /// Reset state when a line has been committed
-    fn start_new_line(&mut self, reason: BreakReason) -> Option<YieldData> {
+    fn start_new_line(
+        &mut self,
+        reason: BreakReason,
+        max_advance: f32,
+        line_indent: f32,
+    ) -> Option<YieldData> {
+        commit_line(
+            self.layout,
+            &mut self.lines,
+            &mut self.state.line,
+            max_advance,
+            reason,
+            line_indent,
+        );
+
         let line_height = self.state.line.running_line_height;
         let line_y_start = self.state.line_y;
 
@@ -369,6 +388,25 @@ impl<'a, B: Brush> BreakLines<'a, B> {
     #[inline(always)]
     pub fn state_mut(&mut self) -> &mut BreakerState {
         &mut self.state
+    }
+
+    /// Set the max-advance of the previous line.
+    ///
+    /// This is an escape-hatch for allowing a custom width for
+    /// alignment on each line, which is different to the breaking width.
+    ///
+    /// Should be used in combination with [`AlignmentOptions`](crate::AlignmentOptions::align_when_overflowing).
+    ///
+    /// This method changes a line's reported [`inline_max_coord`](LineMetrics::inline_max_coord), so
+    /// if you use this method and read that value, you should be cautious.
+    // This escape hatch has not been carefully evaluated for unexpected consequences.
+    // It's current motivation is cases where Parley gives different line breaking results
+    // than blink, for reasons which haven't been fully understood.
+    #[doc(hidden)]
+    pub fn set_prior_line_width(&mut self, advance: f32) {
+        if let Some(line) = self.lines.lines.last_mut() {
+            line.metrics.inline_max_coord = line.metrics.inline_min_coord + advance;
+        }
     }
 
     /// Reverts the to an externally saved state.
@@ -436,26 +474,8 @@ impl<'a, B: Brush> BreakLines<'a, B> {
 
         let max_advance = max_advance - line_indent;
 
-        // This macro simply calls the `commit_line` with the provided arguments and some parts of self.
-        // It exists solely to cut down on the boilerplate for accessing the self variables while
-        // keeping the borrow checker happy
-        macro_rules! try_commit_line {
-            ($break_reason:expr) => {
-                try_commit_line(
-                    self.layout,
-                    &mut self.lines,
-                    &mut self.state.line,
-                    max_advance,
-                    $break_reason,
-                    line_indent,
-                )
-            };
-        }
-
-        // dbg!(&self.layout.items);
 
         // println!("\nBREAK NEXT");
-        // dbg!(&self.state.line.items);
 
         // Iterate over remaining runs in the Layout
         let item_count = self.layout.data.items.len();
@@ -466,7 +486,6 @@ impl<'a, B: Brush> BreakLines<'a, B> {
             //     "\nitem = {} {:?}. x: {}",
             //     self.state.item_idx, item.kind, self.state.line.x
             // );
-            // dbg!(&self.state.line.items);
 
             match item.kind {
                 LayoutItemKind::InlineBox => {
@@ -478,7 +497,6 @@ impl<'a, B: Brush> BreakLines<'a, B> {
                         // If the box is a `CustomOutOfFlow` box then we yield control flow back to the caller.
                         // It is then the caller's responsibility to handle placement of the box.
                         InlineBoxKind::CustomOutOfFlow => {
-                            self.state.item_idx += 1;
                             return Some(YieldData::InlineBoxBreak(BoxBreakData {
                                 inline_box_id: inline_box.id,
                                 inline_box_index: item.index,
@@ -503,8 +521,6 @@ impl<'a, B: Brush> BreakLines<'a, B> {
                     {
                         // println!("BOX FITS");
 
-                        self.state.item_idx += 1;
-
                         self.state
                             .append_inline_box_to_line(next_x, height_contribution);
 
@@ -512,20 +528,16 @@ impl<'a, B: Brush> BreakLines<'a, B> {
                         self.state.mark_line_break_opportunity();
                     } else {
                         // If we're at the start of the line, this box will never fit, so consume it and accept the overflow.
-                        if self.state.line.x == 0.0 {
+                        let reason = if self.state.line.x == 0.0 {
                             // println!("BOX EMERGENCY BREAK");
                             self.state
                                 .append_inline_box_to_line(next_x, height_contribution);
-                            if try_commit_line!(BreakReason::Emergency) {
-                                self.state.item_idx += 1;
-                                return self.start_new_line(BreakReason::Emergency);
-                            }
+                            BreakReason::Emergency
                         } else {
                             // println!("BOX BREAK");
-                            if try_commit_line!(BreakReason::Regular) {
-                                return self.start_new_line(BreakReason::Regular);
-                            }
-                        }
+                            BreakReason::Regular
+                        };
+                        return self.start_new_line(reason, max_advance, line_indent);
                     }
                 }
                 LayoutItemKind::TextRun => {
@@ -571,11 +583,11 @@ impl<'a, B: Brush> BreakLines<'a, B> {
                             }
                             self.state
                                 .append_cluster_to_line(self.state.line.x, line_height);
-                            if try_commit_line!(BreakReason::Explicit) {
-                                // TODO: can this be hoisted out of the conditional?
-                                self.state.cluster_idx += 1;
-                                return self.start_new_line(BreakReason::Explicit);
-                            }
+                            return self.start_new_line(
+                                BreakReason::Explicit,
+                                max_advance,
+                                line_indent,
+                            );
                         } else if
                         // This text can contribute "emergency" line breaks.
                         style.overflow_wrap != OverflowWrap::Normal && !is_ligature_continuation
@@ -613,7 +625,6 @@ impl<'a, B: Brush> BreakLines<'a, B> {
                                 return self.max_height_break_data(line_height);
                             }
                             self.state.append_cluster_to_line(next_x, line_height);
-                            self.state.cluster_idx += 1;
                             if is_space {
                                 self.state.line.num_spaces += 1;
                             }
@@ -632,30 +643,23 @@ impl<'a, B: Brush> BreakLines<'a, B> {
                                     return self.max_height_break_data(line_height);
                                 }
                                 self.state.append_cluster_to_line(next_x, line_height);
-                                if try_commit_line!(BreakReason::Regular) {
-                                    // TODO: can this be hoisted out of the conditional?
-                                    self.state.cluster_idx += 1;
-                                    return self.start_new_line(BreakReason::Regular);
-                                }
+                                return self.start_new_line(
+                                    BreakReason::Regular,
+                                    max_advance,
+                                    line_indent,
+                                );
                             }
                             // Case: we have previously encountered a REGULAR line-breaking opportunity in the current line
                             //
                             // We "take" the line-breaking opportunity by starting a new line and resetting our
                             // item/run/cluster iteration state back to how it was when the line-breaking opportunity was encountered
                             else if let Some(prev) = self.state.prev_boundary.take() {
-                                // println!("REVERT");
-                                // debug_assert!(prev.state.x != 0.0);
-
-                                // Q: Why do we revert the line state here, but only revert the indexes if the commit succeeds?
-                                self.state.line = prev.state;
-                                if try_commit_line!(BreakReason::Regular) {
-                                    // Revert boundary state to prev state
-                                    self.state.item_idx = prev.item_idx;
-                                    self.state.run_idx = prev.run_idx;
-                                    self.state.cluster_idx = prev.cluster_idx;
-
-                                    return self.start_new_line(BreakReason::Regular);
-                                }
+                                self.state.reset_to(prev);
+                                return self.start_new_line(
+                                    BreakReason::Regular,
+                                    max_advance,
+                                    line_indent,
+                                );
                             }
                             // Case: we have previously encountered an EMERGENCY line-breaking opportunity in the current line
                             //
@@ -664,15 +668,12 @@ impl<'a, B: Brush> BreakLines<'a, B> {
                             else if let Some(prev_emergency) =
                                 self.state.emergency_boundary.take()
                             {
-                                self.state.line = prev_emergency.state;
-                                if try_commit_line!(BreakReason::Emergency) {
-                                    // Revert boundary state to prev state
-                                    self.state.item_idx = prev_emergency.item_idx;
-                                    self.state.run_idx = prev_emergency.run_idx;
-                                    self.state.cluster_idx = prev_emergency.cluster_idx;
-
-                                    return self.start_new_line(BreakReason::Emergency);
-                                }
+                                self.state.reset_to(prev_emergency);
+                                return self.start_new_line(
+                                    BreakReason::Emergency,
+                                    max_advance,
+                                    line_indent,
+                                );
                             }
                             // Case: no line-breaking opportunities available
                             //
@@ -685,7 +686,6 @@ impl<'a, B: Brush> BreakLines<'a, B> {
                                     return self.max_height_break_data(line_height);
                                 }
                                 self.state.append_cluster_to_line(next_x, line_height);
-                                self.state.cluster_idx += 1;
                             }
                         }
                     }
@@ -698,12 +698,8 @@ impl<'a, B: Brush> BreakLines<'a, B> {
         if self.state.line.items.end == 0 {
             self.state.line.items.end = 1;
         }
-        if try_commit_line!(BreakReason::None) {
-            self.done = true;
-            return self.start_new_line(BreakReason::None);
-        }
-
-        None
+        self.done = true;
+        self.start_new_line(BreakReason::None, max_advance, line_indent)
     }
 
     /// Computes the next line in the paragraph by character count.
@@ -727,20 +723,6 @@ impl<'a, B: Brush> BreakLines<'a, B> {
         // Track cluster count for this line
         let mut char_count: u32 = 0;
 
-        // This macro simply calls the `commit_line` with the provided arguments and some parts of self.
-        macro_rules! try_commit_line {
-            ($break_reason:expr) => {
-                try_commit_line(
-                    self.layout,
-                    &mut self.lines,
-                    &mut self.state.line,
-                    f32::MAX, // No advance limit
-                    $break_reason,
-                    line_indent,
-                )
-            };
-        }
-
         let item_count = self.layout.data.items.len();
         while self.state.item_idx < item_count {
             let item = &self.layout.data.items[self.state.item_idx];
@@ -750,7 +732,6 @@ impl<'a, B: Brush> BreakLines<'a, B> {
                     let inline_box = &self.layout.data.inline_boxes[item.index];
 
                     if inline_box.kind != InlineBoxKind::InFlow {
-                        self.state.item_idx += 1;
                         self.state.append_inline_box_to_line(self.state.line.x, 0.0);
                         continue;
                     }
@@ -758,15 +739,12 @@ impl<'a, B: Brush> BreakLines<'a, B> {
                     // Check if adding this box would exceed the limit
                     if char_count >= max_chars && max_chars != 0 {
                         // Break before this box
-                        if try_commit_line!(BreakReason::Regular) {
-                            self.start_new_line(BreakReason::Regular);
-                            return Some(());
-                        }
+                        self.start_new_line(BreakReason::Regular, f32::MAX, line_indent);
+                        return Some(());
                     }
 
                     // Compute the x position for the line width tracking
                     let next_x = self.state.line.x + inline_box.width;
-                    self.state.item_idx += 1;
                     self.state
                         .append_inline_box_to_line(next_x, inline_box.height);
                     char_count += 1;
@@ -781,13 +759,11 @@ impl<'a, B: Brush> BreakLines<'a, B> {
                             BreakReason::Regular
                         };
 
-                        if try_commit_line!(break_reason) {
-                            if break_reason == BreakReason::None {
-                                self.done = true;
-                            }
-                            self.start_new_line(break_reason);
-                            return Some(());
+                        if break_reason == BreakReason::None {
+                            self.done = true;
                         }
+                        self.start_new_line(break_reason, f32::MAX, line_indent);
+                        return Some(());
                     }
                 }
                 LayoutItemKind::TextRun => {
@@ -801,11 +777,8 @@ impl<'a, B: Brush> BreakLines<'a, B> {
                         let cluster = run.get(self.state.cluster_idx - cluster_start).unwrap();
 
                         // Check if we should break before this cluster
-                        if char_count >= max_chars
-                            && max_chars != 0
-                            && try_commit_line!(BreakReason::Regular)
-                        {
-                            self.start_new_line(BreakReason::Regular);
+                        if char_count >= max_chars && max_chars != 0 {
+                            self.start_new_line(BreakReason::Regular, f32::MAX, line_indent);
                             return Some(());
                         }
 
@@ -823,7 +796,6 @@ impl<'a, B: Brush> BreakLines<'a, B> {
                         };
                         let line_height = run.metrics().line_height;
                         self.state.append_cluster_to_line(next_x, line_height);
-                        self.state.cluster_idx += 1;
                         char_count += 1;
 
                         if is_space {
@@ -847,13 +819,11 @@ impl<'a, B: Brush> BreakLines<'a, B> {
                                 BreakReason::Regular
                             };
 
-                            if try_commit_line!(break_reason) {
-                                if break_reason == BreakReason::None {
-                                    self.done = true;
-                                }
-                                self.start_new_line(BreakReason::None);
-                                return Some(());
+                            if break_reason == BreakReason::None {
+                                self.done = true;
                             }
+                            self.start_new_line(break_reason, f32::MAX, line_indent);
+                            return Some(());
                         }
                     }
                     self.state.run_idx += 1;
@@ -866,13 +836,9 @@ impl<'a, B: Brush> BreakLines<'a, B> {
         if self.state.line.items.end == 0 {
             self.state.line.items.end = 1;
         }
-        if try_commit_line!(BreakReason::None) {
-            self.done = true;
-            self.start_new_line(BreakReason::None);
-            return Some(());
-        }
-
-        None
+        self.done = true;
+        self.start_new_line(BreakReason::None, f32::MAX, line_indent);
+        Some(())
     }
 
     /// Breaks all remaining lines with the specified maximum advance. This
@@ -1182,54 +1148,7 @@ impl<B: Brush> Drop for BreakLines<'_, B> {
     }
 }
 
-// fn cluster_range_is_valid(
-//     mut cluster_range: Range<usize>,
-//     state_cluster_range: Range<usize>,
-//     is_first: bool,
-//     is_last: bool,
-//     is_empty: bool,
-// ) -> bool {
-//     // Compute cluster range
-//     if is_first {
-//         cluster_range.start = state_cluster_range.start;
-//     }
-//     if is_last {
-//         cluster_range.end = state_cluster_range.end;
-//     }
-
-//     // Return true if cluster is valid. Else false.
-//     cluster_range.start < cluster_range.end
-//         || (cluster_range.start == cluster_range.end && is_empty)
-// }
-
-// fn should_commit_line<B: Brush>(
-//     layout: &LayoutData<B>,
-//     state: &mut LineState,
-//     is_last: bool,
-// ) -> bool {
-//     // Compute end cluster
-//     state.clusters.end = state.clusters.end.min(layout.clusters.len());
-//     if state.runs.end == 0 && is_last {
-//         state.runs.end = 1;
-//     }
-
-//     let last_run = state.runs.len() - 1;
-//     let is_empty = layout.text_len == 0;
-
-//     // Iterate over runs. Checking if any have a valid cluster range.
-//     let runs = &layout.runs[state.runs.clone()];
-//     runs.iter().enumerate().any(|(i, run_data)| {
-//         cluster_range_is_valid(
-//             run_data.cluster_range.clone(),
-//             state.clusters.clone(),
-//             i == 0,
-//             i == last_run,
-//             is_empty,
-//         )
-//     })
-// }
-
-fn try_commit_line<B: Brush>(
+fn commit_line<B: Brush>(
     layout: &Layout<B>,
     lines: &mut LineLayout,
     state: &mut LineState,
@@ -1250,15 +1169,6 @@ fn try_commit_line<B: Brush>(
     let is_text_run = |item: &LayoutItem| item.kind == LayoutItemKind::TextRun;
     let first_run_pos = items_to_commit.iter().position(is_text_run).unwrap_or(0);
     let last_run_pos = items_to_commit.iter().rposition(is_text_run).unwrap_or(0);
-
-    // // Return if line contains no runs
-    // let (Some(first_run_pos), Some(last_run_pos)) = (first_run_pos, last_run_pos) else {
-    //     return false;
-    // };
-
-    //let runs = &layout.runs[state.runs.clone()];
-    // let start_run_idx = items_to_commit[first_run_pos].index;
-    // let end_run_idx = items_to_commit[last_run_pos].index;
 
     // Iterate over the items to commit
     // println!("\nCOMMIT LINE");
@@ -1301,8 +1211,6 @@ fn try_commit_line<B: Brush>(
 
                 if cluster_range.start >= run_data.cluster_range.end {
                     // println!("INVALID CLUSTER");
-                    // dbg!(&run_data.text_range);
-                    // dbg!(cluster_range);
                     continue;
                 }
 
@@ -1338,13 +1246,6 @@ fn try_commit_line<B: Brush>(
     }
     // let end_run_idx = lines.line_items.last().map(|item| item.index).unwrap_or(0);
     let end_item_idx = lines.line_items.len();
-
-    // Return false and don't commit line if there were no items to process
-    // FIXME: support lines with only inlines boxes
-    // if start_item_idx == end_item_idx {
-    //     // } || first_run_pos == last_run_pos {
-    //     return false;
-    // }
 
     // Exclude the trailing space from justification space count.
     // Only subtract if the line actually ends with a space — with

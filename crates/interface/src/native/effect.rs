@@ -49,7 +49,7 @@ impl Plugin for EffectPlugin {
             .add_plugins(crate::native::time_limit::TimeLimitPlugin)
             .init_resource::<InputFocus>()
             .add_observer(
-                |event: On<Pointer<Enter>>,
+                |event: On<PointerEnter>,
                  sources: Query<(), With<HoverEvents>>,
                  mut commands: Commands| {
                     if sources.contains(event.entity) {
@@ -60,7 +60,7 @@ impl Plugin for EffectPlugin {
                 },
             )
             .add_observer(
-                |event: On<Pointer<Leave>>,
+                |event: On<PointerLeave>,
                  sources: Query<(), With<HoverEvents>>,
                  mut commands: Commands| {
                     if sources.contains(event.entity) {
@@ -155,7 +155,7 @@ pub(crate) mod tests {
         input_focus::{FocusCause, InputDispatchPlugin, InputFocusPlugin},
         picking::{
             backend::HitData,
-            events::{Click, Pointer, Press},
+            events::{PointerClick, Pointer, PointerPress},
             pointer::{Location, PointerButton, PointerId},
         },
         ui_widgets::{Button as WidgetButton, ButtonPlugin},
@@ -274,29 +274,23 @@ pub(crate) mod tests {
         };
         let hit = HitData::new(window, 0.0, None, None);
         app.world_mut().flush();
-        app.world_mut().trigger(Pointer::new(
-            PointerId::Mouse,
-            location.clone(),
-            Press {
-                button: PointerButton::Primary,
+        app.world_mut().trigger(PointerPress {
+            entity: label,
+            pointer: Pointer::new(PointerId::Mouse, location.clone()),
+            button: PointerButton::Primary,
                 hit: hit.clone(),
                 count: 1,
-            },
-            label,
-        ));
+        });
         app.world_mut().flush();
         assert!(app.world().get::<bevy::ui::Pressed>(trigger).is_some());
-        app.world_mut().trigger(Pointer::new(
-            PointerId::Mouse,
-            location,
-            Click {
-                button: PointerButton::Primary,
+        app.world_mut().trigger(PointerClick {
+            entity: label,
+            pointer: Pointer::new(PointerId::Mouse, location),
+            button: PointerButton::Primary,
                 hit,
                 duration: Duration::from_millis(50),
                 count: 1,
-            },
-            label,
-        ));
+        });
         app.world_mut().flush();
         assert_eq!(
             *app.world().get::<Visibility>(reply).unwrap(),
@@ -409,25 +403,19 @@ pub(crate) mod tests {
         };
         let hit = HitData::new(window, 0.0, None, None);
         for entity in [source, unrelated] {
-            app.world_mut().trigger(Pointer::new(
-                PointerId::Mouse,
-                location.clone(),
-                Enter {
-                    hit: hit.clone(),
+            app.world_mut().trigger(PointerEnter {
+                entity: entity,
+                pointer: Pointer::new(PointerId::Mouse, location.clone()),
+                hit: hit.clone(),
                     is_in_bounds: true,
-                },
-                entity,
-            ));
+            });
             app.world_mut().flush();
-            app.world_mut().trigger(Pointer::new(
-                PointerId::Mouse,
-                location.clone(),
-                Leave {
-                    hit: hit.clone(),
+            app.world_mut().trigger(PointerLeave {
+                entity: entity,
+                pointer: Pointer::new(PointerId::Mouse, location.clone()),
+                hit: hit.clone(),
                     was_in_bounds: true,
-                },
-                entity,
-            ));
+            });
             app.world_mut().flush();
         }
         assert_eq!(

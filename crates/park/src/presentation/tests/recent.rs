@@ -428,8 +428,11 @@ fn recent_window_keys_pointer_and_queued_monitor_commits_keep_native_drafts_and_
             .translation;
         let clip = world
             .get::<bevy::ui::CalculatedClip>(selected)
-            .unwrap()
-            .clip;
+            .unwrap();
+        let clip = lince_interface::native::clipped_rect(
+            Rect::from_corners(Vec2::ZERO, Vec2::new(size[0] as f32, size[1] as f32)),
+            clip,
+        );
         assert!(center.y - node.size().y * 0.5 >= clip.min.y - 1.0);
         assert!(center.y + node.size().y * 0.5 <= clip.max.y + 1.0);
         assert!(

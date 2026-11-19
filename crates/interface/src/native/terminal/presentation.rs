@@ -57,8 +57,6 @@ pub(super) fn render(world: &mut World, owner: Entity, frame: std::sync::Arc<vt:
         world.resource::<Mono>().1.clone(),
     );
     for (y, cells) in frame.lines.iter().enumerate() {
-        // Blank runs are omitted against the screen background, so a change to
-        // that background also changes their presentation demand.
         if previous.as_ref().is_some_and(|previous| {
             previous.background == frame.background && previous.lines.get(y) == Some(cells)
         }) {

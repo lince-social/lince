@@ -2906,8 +2906,6 @@ pub async fn list_all(pool: &SqlitePool) -> Result<Vec<TransferListRow>, StoreEr
     .collect())
 }
 
-/// The presence relation used by `get`, without decoding an unused Transfer.
-/// This deliberately does not add active/visibility/revision policy filters.
 pub async fn exists(pool: &SqlitePool, uid: &str) -> Result<bool, StoreError> {
     let _read = nucleus::performance::Span::new("transfer-exists-await");
     sqlx::query_scalar(
@@ -5471,7 +5469,7 @@ pub async fn occurrence(
     occurrence_uid: &str,
 ) -> Result<Option<TransferOccurrenceRow>, StoreError> {
     let sql = format!("{OCCURRENCE_SELECT} WHERE o.uid = ?");
-    Ok(sqlx::query(&sql)
+    Ok(sqlx::query(sqlx::AssertSqlSafe(sql.as_str()))
         .bind(occurrence_uid)
         .fetch_optional(pool)
         .await?
@@ -5483,7 +5481,7 @@ pub async fn occurrences_of(
     transfer_uid: &str,
 ) -> Result<Vec<TransferOccurrenceRow>, StoreError> {
     let sql = format!("{OCCURRENCE_SELECT} WHERE o.transfer_uid = ? ORDER BY o.created_at, o.uid");
-    Ok(sqlx::query(&sql)
+    Ok(sqlx::query(sqlx::AssertSqlSafe(sql.as_str()))
         .bind(transfer_uid)
         .fetch_all(pool)
         .await?
@@ -5497,7 +5495,7 @@ pub async fn occurrence_for_promise(
     promise_uid: &str,
 ) -> Result<Option<TransferOccurrenceRow>, StoreError> {
     let sql = format!("{OCCURRENCE_SELECT} WHERE o.promise_uid = ?");
-    Ok(sqlx::query(&sql)
+    Ok(sqlx::query(sqlx::AssertSqlSafe(sql.as_str()))
         .bind(promise_uid)
         .fetch_optional(pool)
         .await?
@@ -5539,7 +5537,7 @@ async fn activation_outcome_for_request(
     let actor_person_uid: String = event.get("actor_person_uid");
     let fact_uid: String = event.get("fact_uid");
     let sql = format!("{OCCURRENCE_SELECT} WHERE o.activation_event_uid = ? ORDER BY o.uid");
-    let occurrences = sqlx::query(&sql)
+    let occurrences = sqlx::query(sqlx::AssertSqlSafe(sql.as_str()))
         .bind(&event_uid)
         .fetch_all(pool)
         .await?
@@ -6403,7 +6401,7 @@ where
         OccurrenceClaimRole::Receipt => "receipt_claimed",
     };
     let sql = format!("UPDATE transfer_occurrence SET {column} = ? WHERE uid = ?");
-    sqlx::query(&sql)
+    sqlx::query(sqlx::AssertSqlSafe(sql.as_str()))
         .bind(input.asserted as i64)
         .bind(&input.occurrence_uid)
         .execute(&mut *tx)
@@ -6712,7 +6710,7 @@ where
             OccurrenceClaimRole::Receipt => "receipt_claimed",
         };
         let sql = format!("UPDATE transfer_occurrence SET {column} = 1 WHERE uid = ?");
-        sqlx::query(&sql)
+        sqlx::query(sqlx::AssertSqlSafe(sql.as_str()))
             .bind(&item.occurrence_uid)
             .execute(&mut *tx)
             .await?;

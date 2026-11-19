@@ -1838,7 +1838,6 @@ pub fn receive(world: &mut World, id: &str, data: Result<serde_json::Value, Stri
     receive_ref(world, id, data.as_ref().map_err(String::as_str))
 }
 
-/// Match pending ownership before decoding or copying any part of a wire reply.
 pub fn receive_ref(world: &mut World, id: &str, data: Result<&serde_json::Value, &str>) -> bool {
     if receive_saved(world, id, data) {
         return true;

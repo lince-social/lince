@@ -1,10 +1,11 @@
 use super::*;
 use crate::native::topology::surface_budget::{Entry, Grant, Request};
+use bevy::ecs::system::InRef;
 
-#[cfg(test)]
-mod pressure;
 #[cfg(any(test, feature = "behavior-checks"))]
 pub(crate) mod checks;
+#[cfg(test)]
+mod pressure;
 
 #[derive(Clone, Copy)]
 struct Consumer {
@@ -19,6 +20,31 @@ struct Consumer {
 struct Consumers {
     epoch: u64,
     entries: HashMap<(Entity, Entity), Consumer>,
+}
+
+#[derive(Default)]
+struct MeasurementScratch {
+    images: HashMap<AssetId<Image>, Entity>,
+    nodes: Vec<(
+        Entity,
+        Entity,
+        Vec2,
+        Option<UiGlobalTransform>,
+        Option<Entity>,
+    )>,
+}
+
+struct Demand {
+    entry: Entry,
+    base: Option<Vec2>,
+    enabled: bool,
+}
+
+#[derive(Default)]
+struct RequestScratch {
+    images: HashMap<AssetId<Image>, Entity>,
+    materials: Vec<(Entity, Entity, Entity, bool)>,
+    owners: HashMap<Entity, Demand>,
 }
 
 #[derive(Component, PartialEq)]
@@ -69,35 +95,48 @@ pub(crate) fn release_extent(world: &mut World, source: Entity, consumer: Entity
     }
 }
 
-fn material_consumers(world: &mut World, native: &HashMap<Entity, (Request, u8)>) {
-    let images: HashMap<_, _> = world
-        .get_resource::<EffectAssets>()
-        .map(|assets| {
+fn current_images(world: &World, images: &mut HashMap<AssetId<Image>, Entity>) {
+    images.clear();
+    if let Some(assets) = world.get_resource::<EffectAssets>() {
+        images.extend(
             assets
                 .owned
                 .iter()
-                .map(|(owner, (_, _, image, _))| (image.id(), *owner))
-                .collect()
-        })
-        .unwrap_or_default();
+                .map(|(owner, (_, _, image, _))| (image.id(), *owner)),
+        );
+    }
+}
+
+fn material_consumers(
+    world: &mut World,
+    native: &HashMap<Entity, (Request, u8)>,
+    images: &HashMap<AssetId<Image>, Entity>,
+    materials: &mut QueryState<(
+        Entity,
+        &'static SurfaceConsumer,
+        Option<&'static Visibility>,
+    )>,
+    consumers: &mut Vec<(Entity, Entity, Entity, bool)>,
+) {
+    consumers.clear();
     if images.is_empty() {
         return;
     }
-    let consumers: Vec<_> = world
-        .query::<(Entity, &SurfaceConsumer, Option<&Visibility>)>()
-        .iter(world)
-        .filter_map(|(entity, consumer, visibility)| {
-            images.get(&consumer.image.id()).map(|source| {
-                (
-                    entity,
-                    *source,
-                    consumer.surface,
-                    visibility != Some(&Visibility::Hidden),
-                )
-            })
-        })
-        .collect();
-    for (entity, source, surface, visible) in consumers {
+    consumers.extend(
+        materials
+            .iter(world)
+            .filter_map(|(entity, consumer, visibility)| {
+                images.get(&consumer.image.id()).map(|source| {
+                    (
+                        entity,
+                        *source,
+                        consumer.surface,
+                        visibility != Some(&Visibility::Hidden),
+                    )
+                })
+            }),
+    );
+    for (entity, source, surface, visible) in consumers.drain(..) {
         let Some((request, _)) = native
             .get(&surface)
             .filter(|(request, _)| visible && request.visible && request.size.is_finite())
@@ -127,35 +166,50 @@ fn material_consumers(world: &mut World, native: &HashMap<Entity, (Request, u8)>
 }
 
 pub(crate) fn measure(world: &mut World) {
+    world
+        .run_system_cached(measure_current)
+        .expect("measure current shader consumers");
+}
+
+fn measure_current(
+    world: &mut World,
+    images: &mut QueryState<(
+        Entity,
+        &'static ImageNode,
+        &'static ComputedNode,
+        Option<&'static UiGlobalTransform>,
+        Option<&'static bevy::ui::ComputedUiTargetCamera>,
+    )>,
+    mut scratch: Local<MeasurementScratch>,
+) {
+    let _measurement = nucleus::performance::Span::new("shader-extent-measurement");
     world.init_resource::<Consumers>();
-    let images: HashMap<_, _> = world
-        .resource::<EffectAssets>()
-        .owned
-        .iter()
-        .map(|(owner, (_, _, image, _))| (image.id(), *owner))
-        .collect();
-    let nodes: Vec<_> = world
-        .query::<(
-            Entity,
-            &ImageNode,
-            &ComputedNode,
-            Option<&UiGlobalTransform>,
-            Option<&bevy::ui::ComputedUiTargetCamera>,
-        )>()
-        .iter(world)
-        .filter_map(|(entity, image, node, transform, camera)| {
-            images.get(&image.image.id()).map(|source| {
-                (
-                    entity,
-                    *source,
-                    node.size(),
-                    transform.copied(),
-                    camera.and_then(|camera| camera.get()),
-                )
-            })
-        })
-        .collect();
-    for (entity, source, size, transform, camera) in nodes {
+    current_images(world, &mut scratch.images);
+    if scratch.images.is_empty() {
+        *scratch = MeasurementScratch::default();
+        return;
+    }
+    let MeasurementScratch {
+        images: sources,
+        nodes,
+    } = &mut *scratch;
+    nodes.clear();
+    nodes.extend(
+        images
+            .iter(world)
+            .filter_map(|(entity, image, node, transform, camera)| {
+                sources.get(&image.image.id()).map(|source| {
+                    (
+                        entity,
+                        *source,
+                        node.size(),
+                        transform.copied(),
+                        camera.and_then(|camera| camera.get()),
+                    )
+                })
+            }),
+    );
+    for (entity, source, size, transform, camera) in nodes.drain(..) {
         if !visible(world, entity) || !size.is_finite() || size.min_element() <= 0.0 {
             release_extent(world, source, entity);
             continue;
@@ -215,111 +269,134 @@ pub(crate) fn requests(
     world: &mut World,
     native: &HashMap<Entity, (Request, u8)>,
 ) -> Vec<(Entity, Entry)> {
+    world
+        .run_system_cached_with(prepare_requests, native)
+        .expect("prepare current shader extent requests")
+}
+
+fn prepare_requests(
+    InRef(native): InRef<HashMap<Entity, (Request, u8)>>,
+    world: &mut World,
+    materials: &mut QueryState<(
+        Entity,
+        &'static SurfaceConsumer,
+        Option<&'static Visibility>,
+    )>,
+    windows: &mut QueryState<&'static Window>,
+    mut scratch: Local<RequestScratch>,
+) -> Vec<(Entity, Entry)> {
+    let _requests = nucleus::performance::Span::new("shader-extent-requests");
     world.init_resource::<Consumers>();
-    material_consumers(world, native);
+    let RequestScratch {
+        images,
+        materials: consumers,
+        owners,
+    } = &mut *scratch;
+    current_images(world, images);
+    material_consumers(world, native, images, materials, consumers);
     let epoch = world.resource::<Consumers>().epoch.saturating_add(1);
-    let entries: Vec<_> = world
-        .resource::<Consumers>()
-        .entries
-        .iter()
-        .filter(|((source, consumer), entry)| {
+    world.resource_scope(|world, mut consumers: Mut<Consumers>| {
+        consumers.epoch = epoch;
+        consumers.entries.retain(|(source, consumer), entry| {
             entry.seen.saturating_add(1) >= epoch
                 && world.get::<EffectPreview>(*source).is_some()
                 && world.get_entity(*consumer).is_ok()
-        })
-        .map(|(key, entry)| (*key, *entry))
-        .collect();
-    {
-        let mut consumers = world.resource_mut::<Consumers>();
-        consumers.epoch = epoch;
-        consumers.entries = entries.iter().copied().collect();
-    }
-    let mut owners: Vec<_> = world
-        .get_resource::<EffectAssets>()
-        .map(|assets| assets.owned.keys().copied().collect())
-        .unwrap_or_default();
-    owners.sort_unstable_by_key(|entity| entity.to_bits());
-    if owners.is_empty() {
+        });
+        if consumers.entries.is_empty() {
+            consumers.entries = HashMap::new();
+        }
+    });
+    owners.clear();
+    if images.is_empty() {
+        *scratch = RequestScratch::default();
         return Vec::new();
     }
-    let window_scale = world
-        .query::<&Window>()
-        .iter(world)
-        .next()
-        .map_or(1.0, Window::scale_factor);
-    owners
-        .into_iter()
-        .filter_map(|owner| {
-            let preview = world.get::<EffectPreview>(owner)?;
-            let mut size = Vec2::ONE;
-            let base = entries
-                .iter()
-                .find(|((source, consumer), _)| {
-                    *source == owner && *consumer == world.get::<Preview>(owner).unwrap().surface
-                })
-                .map(|(_, consumer)| consumer.size);
-            let mut priority = if preview.priority { 4 } else { 1 };
-            let mut showing = false;
-            for ((source, _), consumer) in &entries {
-                if *source != owner {
-                    continue;
-                }
-                let (scale, present, rank) = if let Some(captured) = consumer.captured {
-                    let Some((request, priority)) = native.get(&captured) else {
-                        continue;
-                    };
-                    (request.density, request.visible, *priority)
-                } else {
-                    let scale = consumer
-                        .camera
-                        .and_then(|camera| world.get::<RenderTarget>(camera))
-                        .map_or(consumer.scale, |target| match target {
-                            RenderTarget::Image(image) => image.scale_factor,
-                            RenderTarget::Window(_) => window_scale,
-                            _ => consumer.scale,
-                        });
-                    (scale, true, 2)
-                };
-                if present {
-                    let desired = consumer.size * scale;
-                    let desired =
-                        base.map_or(desired, |base| base * (desired / base).max_element());
-                    size = size.max(desired);
-                    showing = true;
-                    priority = priority.max(rank);
-                }
-            }
-            showing &= !preview.disabled && !crate::native::shader_effects::disabled(world);
-            let modes = preview
-                .working
-                .iter()
-                .map(|effect| &effect.mode)
-                .chain(std::iter::once(&preview.effect.mode));
-            let bytes_per_pixel = modes
-                .map(|mode| match mode {
-                    nucleus::shader_effect::spatial::Mode::Surface => 12,
-                    nucleus::shader_effect::spatial::Mode::Mesh(_) => 16,
-                    nucleus::shader_effect::spatial::Mode::Volume(_) => 20,
-                })
-                .max()
-                .unwrap();
-            Some((
-                owner,
-                Entry {
+    let window_scale = windows.iter(world).next().map_or(1.0, Window::scale_factor);
+    let entries = &world.resource::<Consumers>().entries;
+    let disabled = crate::native::shader_effects::disabled(world);
+    for owner in world.resource::<EffectAssets>().owned.keys().copied() {
+        let Some(preview) = world.get::<EffectPreview>(owner) else {
+            continue;
+        };
+        let base = world
+            .get::<Preview>(owner)
+            .and_then(|preview| entries.get(&(owner, preview.surface)))
+            .map(|consumer| consumer.size);
+        let modes = preview
+            .working
+            .iter()
+            .map(|effect| &effect.mode)
+            .chain(std::iter::once(&preview.effect.mode));
+        let bytes_per_pixel = modes
+            .map(|mode| match mode {
+                nucleus::shader_effect::spatial::Mode::Surface => 12,
+                nucleus::shader_effect::spatial::Mode::Mesh(_) => 16,
+                nucleus::shader_effect::spatial::Mode::Volume(_) => 20,
+            })
+            .max()
+            .unwrap();
+        owners.insert(
+            owner,
+            Demand {
+                entry: Entry {
                     request: Request {
-                        size,
+                        size: Vec2::ONE,
                         density: 1.0,
                         previous: 0.0,
-                        visible: showing,
+                        visible: false,
                         text: false,
                         exact: true,
                     },
-                    priority,
+                    priority: if preview.priority { 4 } else { 1 },
                     bytes_per_pixel,
                 },
-            ))
+                base,
+                enabled: !preview.disabled && !disabled,
+            },
+        );
+    }
+    let mut visits = 0;
+    for ((source, _), consumer) in entries {
+        let Some(demand) = owners.get_mut(source) else {
+            continue;
+        };
+        visits += 1;
+        let (scale, present, rank) = if let Some(captured) = consumer.captured {
+            let Some((request, priority)) = native.get(&captured) else {
+                continue;
+            };
+            (request.density, request.visible, *priority)
+        } else {
+            let scale = consumer
+                .camera
+                .and_then(|camera| world.get::<RenderTarget>(camera))
+                .map_or(consumer.scale, |target| match target {
+                    RenderTarget::Image(image) => image.scale_factor,
+                    RenderTarget::Window(_) => window_scale,
+                    _ => consumer.scale,
+                });
+            (scale, true, 2)
+        };
+        if present {
+            let desired = consumer.size * scale;
+            let desired = demand
+                .base
+                .map_or(desired, |base| base * (desired / base).max_element());
+            demand.entry.request.size = demand.entry.request.size.max(desired);
+            demand.entry.request.visible = true;
+            demand.entry.priority = demand.entry.priority.max(rank);
+        }
+    }
+    nucleus::performance::add("shader-extent-consumer-visits", visits);
+    let mut requests: Vec<_> = owners
+        .drain()
+        .map(|(owner, mut demand)| {
+            demand.entry.request.visible &= demand.enabled;
+            (owner, demand.entry)
         })
-        .collect()
+        .collect();
+    requests.sort_unstable_by_key(|(owner, _)| owner.to_bits());
+    requests
 }
 
 #[cfg(test)]

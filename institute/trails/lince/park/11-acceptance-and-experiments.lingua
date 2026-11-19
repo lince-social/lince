@@ -18,7 +18,7 @@ Use the same workload identities and numerical targets across the stages. Headle
 
 A temporary regression in an intermediate slice stays attached to the specific failing case and its repair task; keep the original benchmark target. The user permits net-positive tradeoffs and has not requested a new regression policy. Report the combined measured cost/benefit and preserve an explicit outstanding failure rather than turning a missing result into a pass.
 
-Coordinate monitor/lock/VT/logout/resume actions explicitly. Local development checks/test compilation are allowed in Niri, outside measured runs. Existing correctness passes retain their provenance. Coordinate necessary physical actions, verify the installed executable and avoid private content. The established final runner is reused with CI-precompiled artifacts, not another provider/hardware matrix. A reviewed Niri coding batch hands off after pushing; the Park visit ends after measurement and Markdown updates. Documentation-only discussion does not start delivery or compilation.
+Coordinate monitor/lock/VT/logout/resume actions explicitly. In a later authorized execution phase, local development checks/test compilation may run in Niri, outside measured runs. They remain prohibited in the current source-only phase. Existing correctness passes retain their provenance. Coordinate necessary physical actions, verify the installed executable and avoid private content. The established final runner is reused with CI-precompiled artifacts, not another provider/hardware matrix. A reviewed Niri coding batch hands off after pushing; the Park visit ends after measurement and Markdown updates. Documentation-only discussion does not start delivery or compilation.
 
 **Continue through these Records:**
 

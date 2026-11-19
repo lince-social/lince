@@ -24,12 +24,13 @@ fn key(
 }
 
 pub(super) fn order(world: &World, entities: &mut [Entity], frame: u64) {
-    entities.sort_by_key(|entity| {
+    let _order = nucleus::performance::Span::new("shader-render-order");
+    entities.sort_by_cached_key(|entity| {
         let preview = world.get::<EffectPreview>(*entity).unwrap();
         let dirty = preview.painted < 3
             || preview.last_quantity != preview.quantity
             || preview.last_numeric != preview.numeric
-            || preview.observed.as_ref() != Some(&preview.effect)
+            || preview.observed.as_deref() != Some(&preview.effect)
             || preview.pending.is_some()
             || !preview.candidates.is_empty();
         let priority = world

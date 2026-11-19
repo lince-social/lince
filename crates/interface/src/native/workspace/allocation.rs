@@ -29,12 +29,11 @@ impl Numbered {
         let spaces = world
             .get::<Workspaces>(root)
             .ok_or("The workspace is unavailable.")?;
-        if spaces
+        if !spaces
             .entries
             .iter()
             .map(|entry| entry.id)
-            .collect::<Vec<_>>()
-            != self.origin
+            .eq(self.origin.iter().copied())
             || spaces
                 .canvas_state
                 .as_ref()
@@ -73,10 +72,14 @@ pub(crate) fn numbered(world: &World, root: Entity, number: u32) -> Result<Numbe
     let index = number
         .checked_sub(1)
         .ok_or("Workspace numbers start at one.")? as usize;
-    let numbers = numbers(world, root);
-    if let Some(id) = numbers.get(index) {
+    let mut existing = 0;
+    for (position, id) in ordered_ids(world, root).enumerate() {
+        if position != index {
+            existing += 1;
+            continue;
+        }
         return Ok(Numbered {
-            id: *id,
+            id,
             entries: Vec::new(),
             origin: spaces.entries.iter().map(|entry| entry.id).collect(),
             next: spaces
@@ -88,23 +91,18 @@ pub(crate) fn numbered(world: &World, root: Entity, number: u32) -> Result<Numbe
     if number > 9 {
         return Err("Only missing keyboard destinations 1–9 are created automatically.".into());
     }
-    new(world, root, index + 1 - numbers.len())
+    new(world, root, index + 1 - existing)
 }
 
 pub(crate) fn new(world: &World, root: Entity, count: usize) -> Result<Numbered, String> {
     let spaces = world
         .get::<Workspaces>(root)
         .ok_or("The workspace is unavailable.")?;
-    let numbers = numbers(world, root);
-    if count == 0 || count > 9 || numbers.len() + count > 64 {
+    if count == 0 || count > 9 || ordered_ids(world, root).count() + count > 64 {
         return Err("A canvas supports up to 64 workspaces.".into());
     }
-    let mut next = spaces
-        .entries
-        .iter()
-        .filter(|entry| numbers.contains(&entry.id))
-        .chain(spaces.trash.iter().map(|entry| &entry.workspace))
-        .map(|entry| entry.id)
+    let mut next = ordered_ids(world, root)
+        .chain(spaces.trash.iter().map(|entry| entry.workspace.id))
         .max()
         .unwrap_or(0)
         .checked_add(1)

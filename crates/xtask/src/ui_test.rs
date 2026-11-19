@@ -155,18 +155,13 @@ fn parse(xml: &str) -> Result<Vec<Node>> {
             .read_event()
             .map_err(|_| "Invalid UI hierarchy XML")?
         {
-            Event::Start(event) | Event::Empty(event) if event.name().as_ref() == b"node" => {
+            Event::Start(event) | Event::Empty(event) if event.name().as_ref() == "node" => {
                 let mut attrs = BTreeMap::new();
                 for attr in event.attributes() {
                     let attr = attr.map_err(|_| "Invalid UI hierarchy attribute")?;
-                    let key = std::str::from_utf8(attr.key.as_ref())
-                        .map_err(|_| "Invalid UI attribute name")?
-                        .to_string();
+                    let key = attr.key.into_inner().to_owned();
                     let value = attr
-                        .decoded_and_normalized_value(
-                            quick_xml::XmlVersion::Implicit1_0,
-                            reader.decoder(),
-                        )
+                        .normalized_value(quick_xml::XmlVersion::Implicit1_0)
                         .map_err(|_| "Invalid UI attribute value")?
                         .into_owned();
                     attrs.insert(key, value);

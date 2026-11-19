@@ -52,11 +52,12 @@ pub(crate) fn reconcile(
     rows: &[Value],
     records: &HashMap<String, Entity>,
 ) {
-    let mut existing: HashMap<_, _> = world
-        .query::<(Entity, &RelationLink)>()
+    let _reconcile = nucleus::performance::Span::new("relation-link-reconciliation");
+    let mut query = world.query::<(Entity, &RelationLink)>();
+    let mut existing: HashMap<_, _> = query
         .iter(world)
         .filter(|(_, link)| link.owner == owner)
-        .map(|(entity, link)| (link.uid.clone(), entity))
+        .map(|(entity, link)| (link.uid.as_str(), entity))
         .collect();
     let mut links = BTreeMap::new();
     if config.relations && config.enabled {
@@ -76,9 +77,7 @@ pub(crate) fn reconcile(
                 let (Some(from), Some(to)) = (records.get(from), records.get(to)) else {
                     continue;
                 };
-                links
-                    .entry(uid.to_string())
-                    .or_insert((*from, *to, kind.to_string()));
+                links.entry(uid).or_insert((*from, *to, kind, None));
                 if links.len() >= 4096 {
                     break;
                 }
@@ -88,18 +87,35 @@ pub(crate) fn reconcile(
             }
         }
     }
-    for (uid, (from, to, label)) in links {
-        if let Some(entity) = existing.remove(&uid) {
+    for (uid, (_, _, _, entity)) in &mut links {
+        *entity = existing.remove(*uid);
+    }
+    let stale: Vec<_> = existing.into_values().collect();
+    nucleus::performance::add("relation-links-prepared", links.len() as u64);
+    for (uid, (from, to, label, entity)) in links {
+        if let Some(entity) = entity {
             if let Some(mut arrow) = world.get_mut::<crate::native::arrow_sand::ArrowSand>(entity) {
-                arrow.from = from;
-                arrow.to = to;
-                arrow.label = label;
+                if arrow.from != from {
+                    arrow.from = from;
+                }
+                if arrow.to != to {
+                    arrow.to = to;
+                }
+                if arrow.label != label {
+                    arrow.label.clear();
+                    arrow.label.push_str(label);
+                }
             }
-        } else if let Some(entity) = crate::native::arrow_sand::spawn(world, from, to, label) {
-            world.entity_mut(entity).insert(RelationLink { owner, uid });
+        } else if let Some(entity) =
+            crate::native::arrow_sand::spawn(world, from, to, label.to_owned())
+        {
+            world.entity_mut(entity).insert(RelationLink {
+                owner,
+                uid: uid.to_owned(),
+            });
         }
     }
-    for entity in existing.into_values() {
+    for entity in stale {
         world.despawn(entity);
     }
     styles::apply(world, owner, config, rows, records);

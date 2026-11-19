@@ -59,3 +59,35 @@ pub async fn get(pool: &SqlitePool, organ: &str) -> Result<Option<Status>, Store
         .bind(organ).fetch_optional(pool).await?
         .map(|(organ_uid, generation, granted)| Status { organ_uid, generation, granted }))
 }
+
+pub async fn get_many(
+    pool: &SqlitePool,
+    organs: &[&str],
+) -> Result<std::collections::HashMap<String, Status>, StoreError> {
+    let mut output = std::collections::HashMap::new();
+    if organs.is_empty() {
+        return Ok(output);
+    }
+    let selected =
+        serde_json::to_string(organs).map_err(|error| StoreError::Protocol(error.to_string()))?;
+    let rows = sqlx::query_as::<_, (String, i64, bool)>(
+        "SELECT a.organ_uid, a.generation, a.granted
+         FROM organ_access_catalog a
+         JOIN organ_contact c ON c.record_uid = a.organ_uid
+         WHERE a.organ_uid IN (SELECT value FROM json_each(?)) AND c.trust = 'known'",
+    )
+    .bind(selected)
+    .fetch_all(pool)
+    .await?;
+    for (organ_uid, generation, granted) in rows {
+        output.insert(
+            organ_uid.clone(),
+            Status {
+                organ_uid,
+                generation,
+                granted,
+            },
+        );
+    }
+    Ok(output)
+}

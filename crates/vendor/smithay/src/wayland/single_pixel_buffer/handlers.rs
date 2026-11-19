@@ -53,6 +53,8 @@ where
                 data_init.init(buffer, SinglePixelBufferUserData { r, g, b, a });
             }
             wp_single_pixel_buffer_manager_v1::Request::Destroy => {}
+            // Preserve Smithay's existing fallback for an unhandled request.
+            #[allow(clippy::todo)]
             _ => todo!(),
         }
     }

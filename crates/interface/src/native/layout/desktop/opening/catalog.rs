@@ -293,8 +293,6 @@ pub(super) fn update(world: &mut World) {
     if timed_out { catalog.advance(); }
     let mut references = catalog.references.take().unwrap_or_else(|| ui::References::from_world(world));
     references.refresh(world, &catalog.window_refs);
-    // Selection preparation is retained, but subscription service still runs:
-    // retries, retirement and loading deadlines are independent of membership.
     subscribe(&mut catalog.rules, references.rules(), catalog.sender.as_ref());
     subscribe(&mut catalog.windows, references.windows(), catalog.sender.as_ref());
     catalog.references = Some(references);

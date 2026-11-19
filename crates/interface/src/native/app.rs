@@ -133,7 +133,6 @@ pub fn presentation_app(directory: std::path::PathBuf, plugins: impl PluginGroup
         .add_plugins(crate::native::workspace_sync::WorkspaceSyncPlugin)
         .add_plugins(crate::native::location::LocationPlugin)
         .add_plugins(crate::native::map_castle::MapPlugin)
-        .add_plugins(crate::native::kamalie::KamaliePlugin)
         .add_plugins(crate::native::visibility_castle::VisibilityCastlePlugin)
         .add_plugins(crate::native::trust_castle::TrustCastlePlugin)
         .add_plugins(crate::native::hand_camera::HandCameraPlugin)

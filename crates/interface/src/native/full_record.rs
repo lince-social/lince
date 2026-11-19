@@ -158,7 +158,7 @@ impl Action for Open {
 }
 
 #[derive(Component)]
-struct Creating(String);
+pub(crate) struct Creating(String);
 
 #[derive(Clone)]
 struct AddCastle;
@@ -265,46 +265,77 @@ fn create(world: &mut World, root: Entity) {
 pub(crate) fn receive(
     world: &mut World,
     mut cursor: Local<bevy::ecs::message::MessageCursor<crate::native::cell_bridge::CellMessage>>,
+    mut wave: Local<crate::native::cell_bridge::replies::Wave>,
+    creating: &mut QueryState<(Entity, &'static Creating)>,
+    mut pending: Local<Vec<Entity>>,
 ) {
-    let Some(messages) = world.get_resource::<Messages<crate::native::cell_bridge::CellMessage>>()
-    else {
+    use crate::native::cell_bridge::{CONNECTION, CellMessage, replies};
+    use cell::ServerMessage;
+    let _receive = nucleus::performance::Span::new("record-opening-replies");
+    let Some(messages) = world.get_resource::<Messages<CellMessage>>() else {
         return;
     };
-    let events: Vec<_> = cursor
-        .read(messages)
-        .map(|message| message.0.clone())
-        .collect();
-    for event in events.iter().map(|message| message.as_ref()) {
-        if let cell::ServerMessage::Error { id, message, .. } = &event
-            && id == crate::native::cell_bridge::CONNECTION
+    if creating.iter(world).next().is_none() {
+        cursor.clear(messages);
+        *wave = Default::default();
+        pending.clear();
+        pending.shrink_to_fit();
+        return;
+    }
+    wave.capture(&mut cursor, messages, |message| {
+        matches!(
+            message,
+            ServerMessage::Fiote { .. }
+                | ServerMessage::ActionOk { .. }
+                | ServerMessage::Error { .. }
+        )
+    });
+    if wave.len() == 0 {
+        pending.shrink_to_fit();
+    }
+    for sequence in wave.drain() {
+        let event = replies::message(world.resource::<Messages<CellMessage>>(), sequence);
+        if let ServerMessage::Error { id, .. } = event.as_ref()
+            && id == CONNECTION
         {
-            let pending: Vec<_> = world
-                .query_filtered::<Entity, With<Creating>>()
-                .iter(world)
-                .collect();
+            pending.clear();
+            pending.extend(creating.iter(world).map(|(entity, _)| entity));
             if !pending.is_empty() {
-                for entity in pending {
+                let event = event.clone();
+                nucleus::performance::add("record-opening-reply-payloads", 1);
+                for entity in pending.drain(..) {
                     world.despawn(entity);
                 }
+                let ServerMessage::Error { message, .. } = event.as_ref() else {
+                    unreachable!()
+                };
                 crate::native::notifications::report(world, "interface::record", message);
             }
             continue;
         }
-        let (id, result) = match event {
-            cell::ServerMessage::Fiote { id, status } => (id, Ok(status.record.clone())),
-            cell::ServerMessage::ActionOk { id, created, .. } => (
-                id,
-                created.clone().ok_or_else(|| "The Organ did not return the new Record.".to_string()),
-            ),
-            cell::ServerMessage::Error { id, message, .. } => (id, Err(message.clone())),
-            _ => continue,
+        let id = match event.as_ref() {
+            ServerMessage::Fiote { id, .. }
+            | ServerMessage::ActionOk { id, .. }
+            | ServerMessage::Error { id, .. } => id,
+            _ => unreachable!(),
         };
-        let area = world
-            .query::<(Entity, &Creating)>()
+        let area = creating
             .iter(world)
             .find(|(_, pending)| pending.0 == *id)
             .map(|(entity, _)| entity);
-        let Some(entity) = area else { continue };
+        let Some(entity) = area else {
+            continue;
+        };
+        let event = event.clone();
+        nucleus::performance::add("record-opening-reply-payloads", 1);
+        let result = match event.as_ref() {
+            ServerMessage::Fiote { status, .. } => Ok(status.record.as_str()),
+            ServerMessage::ActionOk { created, .. } => created
+                .as_deref()
+                .ok_or("The Organ did not return the new Record."),
+            ServerMessage::Error { message, .. } => Err(message.as_str()),
+            _ => unreachable!(),
+        };
         world.entity_mut(entity).remove::<Creating>();
         match result {
             Ok(uid) => {
@@ -317,7 +348,7 @@ pub(crate) fn receive(
             }
             Err(error) => {
                 world.despawn(entity);
-                crate::native::notifications::report(world, "interface::record", &error);
+                crate::native::notifications::report(world, "interface::record", error);
             }
         }
     }

@@ -4,12 +4,57 @@ use crate::native::{
 };
 use bevy::text::EditableText;
 
+mod choices;
+mod maintenance;
+mod presentation;
+pub(crate) use choices::{Target as RecordingTarget, recordings as recording_choices};
+
 #[derive(Component)]
 pub(super) struct Name(pub Entity);
 #[derive(Component)]
 struct Search {
     owner: Entity,
     last: String,
+}
+
+#[derive(Clone, Copy)]
+enum EffectField {
+    Drive,
+    Tone,
+    Crush,
+    Mix,
+    Level,
+}
+
+impl EffectField {
+    const ALL: [(Self, &'static str); 5] = [
+        (Self::Drive, "Drive"),
+        (Self::Tone, "Tone"),
+        (Self::Crush, "Bit crush"),
+        (Self::Mix, "Wet / dry"),
+        (Self::Level, "Output level"),
+    ];
+
+    fn get(self, effect: &Effects) -> f32 {
+        match self {
+            Self::Drive => effect.drive,
+            Self::Tone => effect.tone,
+            Self::Crush => effect.crush,
+            Self::Mix => effect.mix,
+            Self::Level => effect.level,
+        }
+    }
+
+    fn set(self, effect: &mut Effects, value: f32) {
+        let target = match self {
+            Self::Drive => &mut effect.drive,
+            Self::Tone => &mut effect.tone,
+            Self::Crush => &mut effect.crush,
+            Self::Mix => &mut effect.mix,
+            Self::Level => &mut effect.level,
+        };
+        *target = value;
+    }
 }
 
 #[derive(Clone)]
@@ -47,6 +92,7 @@ impl Action for Control {
         }
     }
     fn apply(&self, world: &mut World, owner: Entity) {
+        let _action = nucleus::performance::Span::new("recorder-control-action");
         if matches!(self, Self::Create) {
             let workspace = world
                 .get::<crate::native::workspace::Workspaces>(owner)
@@ -61,7 +107,7 @@ impl Action for Control {
             return;
         }
         inputs(world);
-        let Some(castle) = world.get::<RecorderCastle>(owner).cloned() else {
+        let Some(castle) = world.get::<RecorderCastle>(owner) else {
             return;
         };
         let command = match self {
@@ -88,7 +134,9 @@ impl Action for Control {
                 if !crate::native::sound::library::valid_path(path) {
                     return;
                 }
-                world.get_mut::<RecorderCastle>(owner).unwrap().selected = path.clone();
+                if castle.selected != *path {
+                    path.clone_into(&mut world.get_mut::<RecorderCastle>(owner).unwrap().selected);
+                }
                 effects(world, owner);
                 list(world, owner);
                 return;
@@ -209,6 +257,11 @@ pub(super) fn transport(world: &mut World, owner: Entity) {
         return;
     };
     let (parent, recording) = (view.transport, view.recording);
+    if crate::native::retained::Presentation::matches(world, parent, |old: &(Entity, bool)| {
+        *old == (owner, recording)
+    }) {
+        return;
+    }
     clear(world, parent);
     button(
         world,
@@ -227,24 +280,36 @@ pub(super) fn transport(world: &mut World, owner: Entity) {
     );
     button(world, parent, owner, "▶ Preview FX", Control::Play);
     button(world, parent, owner, "■ Stop playback", Control::Stop);
+    crate::native::retained::Presentation::remember(world, parent, (owner, recording));
 }
 
 pub(super) fn effects(world: &mut World, owner: Entity) {
+    let _effects = nucleus::performance::Span::new("recorder-effect-presentation");
     let parent = world.get::<View>(owner).unwrap().effects;
+    if presentation::effects_match(world, owner, parent) {
+        nucleus::performance::add("recorder-effect-controls-retained", 1);
+        return;
+    }
+    let castle = world.get::<RecorderCastle>(owner).unwrap();
+    let state = presentation::EffectState {
+        owner,
+        selected: castle.selected.clone(),
+        effect: (!castle.selected.is_empty()).then(|| castle.effect()),
+    };
     clear(world, parent);
-    let castle = world.get::<RecorderCastle>(owner).unwrap().clone();
+    nucleus::performance::add("recorder-effect-controls-built", 1);
     label(world, parent, "TRACK FX · selected recording", 18.0);
-    if castle.selected.is_empty() {
+    let Some(effect) = state.effect else {
         label(
             world,
             parent,
             "Record or select a take below to shape its sound.",
             13.0,
         );
+        presentation::remember_effects(world, parent, state);
         return;
-    }
-    label(world, parent, &castle.selected, 13.0);
-    let effect = castle.effect();
+    };
+    label(world, parent, &state.selected, 13.0);
     let modes = row(world, parent);
     button(
         world,
@@ -265,13 +330,7 @@ pub(super) fn effects(world: &mut World, owner: Entity) {
         };
         button(world, modes, owner, &title, Control::Mode(mode));
     }
-    for (index, title, value) in [
-        (0, "Drive", effect.drive),
-        (1, "Tone", effect.tone),
-        (2, "Bit crush", effect.crush),
-        (3, "Wet / dry", effect.mix),
-        (4, "Output level", effect.level),
-    ] {
+    for (field, title) in EffectField::ALL {
         let slider = crate::native::slider::spawn(
             world,
             parent,
@@ -282,7 +341,7 @@ pub(super) fn effects(world: &mut World, owner: Entity) {
                 step: 0.01,
                 decimals: 2,
             },
-            value,
+            field.get(&effect),
             "",
         )
         .unwrap();
@@ -293,22 +352,24 @@ pub(super) fn effects(world: &mut World, owner: Entity) {
                     if !value.is_finite() || crate::native::laboratory::suspended(world, owner) {
                         return;
                     }
-                    let Some(mut castle) = world.get_mut::<RecorderCastle>(owner) else {
+                    let Some(castle) = world.get::<RecorderCastle>(owner) else {
                         return;
                     };
-                    let selected = castle.selected.clone();
-                    if selected.is_empty() {
+                    if castle.selected.is_empty() {
                         return;
                     }
+                    let value = value.clamp(0.0, 1.0);
+                    if castle
+                        .effects
+                        .get(&castle.selected)
+                        .is_some_and(|effect| field.get(effect).to_bits() == value.to_bits())
+                    {
+                        return;
+                    }
+                    let selected = castle.selected.clone();
+                    let mut castle = world.get_mut::<RecorderCastle>(owner).unwrap();
                     let effect = castle.effects.entry(selected).or_default();
-                    let field = match index {
-                        0 => &mut effect.drive,
-                        1 => &mut effect.tone,
-                        2 => &mut effect.crush,
-                        3 => &mut effect.mix,
-                        _ => &mut effect.level,
-                    };
-                    *field = value.clamp(0.0, 1.0);
+                    field.set(effect, value);
                 });
             },
         );
@@ -328,24 +389,13 @@ pub(super) fn effects(world: &mut World, owner: Entity) {
         "Preview hears these controls. Save FX updates the WAV; the original take is kept.",
         12.0,
     );
+    presentation::remember_effects(world, parent, state);
 }
 
 pub(super) fn list(world: &mut World, owner: Entity) {
-    let parent = world.get::<View>(owner).unwrap().list;
     let query = world
-        .query::<(&Search, &EditableText)>()
-        .iter(world)
-        .find(|(search, _)| search.owner == owner)
-        .map(|(_, text)| text.value().to_string())
-        .unwrap_or_default();
-    clear(world, parent);
-    label(world, parent, "Recordings", 18.0);
-    button(world, parent, owner, "Refresh recordings", Control::Refresh);
-    let search = input(world, parent, "Find a recording", &query);
-    world.entity_mut(search).insert(Search {
-        owner,
-        last: query.clone(),
-    });
+        .run_system_cached_with(presentation::current_query, owner)
+        .expect("read current recording search");
     render_matches(world, owner, &query);
 }
 
@@ -353,86 +403,19 @@ pub(super) fn list(world: &mut World, owner: Entity) {
 struct Matches(Entity);
 
 fn render_matches(world: &mut World, owner: Entity, query: &str) {
-    let old: Vec<_> = world
-        .query::<(Entity, &Matches)>()
-        .iter(world)
-        .filter(|(_, m)| m.0 == owner)
-        .map(|(e, _)| e)
-        .collect();
-    for entity in old {
-        world.despawn(entity);
-    }
-    let parent = world.get::<View>(owner).unwrap().list;
-    let matches = stack(world, parent);
-    world.entity_mut(matches).insert(Matches(owner));
-    let selected = world.get::<RecorderCastle>(owner).unwrap().selected.clone();
-    let paths: Vec<_> = crate::native::sound::audio_for(world, owner)
-        .map(|audio| {
-            crate::native::sound::library::suggestions(&audio.paths, query)
-                .into_iter()
-                .map(str::to_owned)
-                .collect()
-        })
-        .unwrap_or_default();
-    if paths.is_empty() {
-        label(world, matches, "No matching recordings yet.", 13.0);
-    }
-    for path in paths {
-        let title = if path == selected {
-            format!("● {path}")
-        } else {
-            path.clone()
-        };
-        button(world, matches, owner, &title, Control::Select(path));
-    }
+    presentation::matches(world, owner, query);
 }
 
 pub(super) fn inputs(world: &mut World) {
-    let names: Vec<_> = world
-        .query::<(&Name, &EditableText)>()
-        .iter(world)
-        .filter(|(name, text)| {
-            world
-                .get::<RecorderCastle>(name.0)
-                .is_some_and(|castle| text.value() != castle.name.as_str())
-        })
-        .map(|(name, text)| (name.0, text.value().to_string()))
-        .collect();
-    for (owner, name) in names {
-        if let Some(mut castle) = world.get_mut::<RecorderCastle>(owner)
-            && castle.name != name
-        {
-            castle.name = name;
-        }
-    }
-    let searches: Vec<_> = world
-        .query::<(Entity, &Search, &EditableText)>()
-        .iter(world)
-        .filter(|(_, search, text)| text.value() != search.last.as_str())
-        .map(|(e, search, text)| (e, search.owner, text.value().to_string()))
-        .collect();
-    for (entity, owner, value) in searches {
-        world.get_mut::<Search>(entity).unwrap().last = value.clone();
-        render_matches(world, owner, &value);
-    }
+    world
+        .run_system_cached(maintenance::inputs)
+        .expect("capture current Recorder inputs");
 }
 
 pub(super) fn refresh(world: &mut World) {
-    let owners: Vec<_> = world
-        .query::<(Entity, &View)>()
-        .iter(world)
-        .filter_map(|(owner, view)| {
-            let audio = crate::native::sound::audio_for(world, owner)?;
-            (view.revision != audio.revision).then(|| (owner, audio.revision, audio.error.clone()))
-        })
-        .collect();
-    for (owner, revision, error) in owners {
-        world.get_mut::<View>(owner).unwrap().revision = revision;
-        list(world, owner);
-        if let Some(error) = &error {
-            status(world, owner, error);
-        }
-    }
+    world
+        .run_system_cached(maintenance::refresh)
+        .expect("refresh current recording libraries");
 }
 
 pub(crate) fn preview(world: &mut World, owner: Entity) {

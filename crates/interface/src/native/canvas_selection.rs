@@ -11,7 +11,7 @@ use bevy::{
     ecs::query::QueryState,
     picking::{
         hover::{HoverMap, generate_hovermap},
-        pointer::{Location, PointerAction, PointerButton, PointerId, PointerInput, PointerPress},
+        pointer::{Location, PointerAction, PointerButton, PointerId, PointerInput, PointerPressState},
     },
     prelude::*,
     window::WindowEvent,
@@ -130,7 +130,7 @@ pub(crate) fn selected(world: &World, root: Entity) -> Vec<Entity> {
     selected_iter(world, root).collect()
 }
 
-fn selected_iter(world: &World, root: Entity) -> impl Iterator<Item = Entity> + '_ {
+pub(crate) fn selected_iter(world: &World, root: Entity) -> impl Iterator<Item = Entity> + '_ {
     world
         .get::<SandSelection>(root)
         .into_iter()
@@ -335,8 +335,6 @@ fn input(
         cleanup.clear();
         cleanup.extend(roots.iter(world).filter(|root| {
             let selection = &world.get::<SandSelection>(*root).unwrap().0;
-            // Recheck live eligibility, but only normalize/copy a selection that
-            // changed. Restored selections may arrive unordered or duplicated.
             escape
                 || !selection.windows(2).all(|pair| pair[0] < pair[1])
                 || selection
@@ -479,11 +477,11 @@ fn input(
     world.insert_resource(events);
     if consumed {
         for (id, mut press) in world
-            .query::<(&PointerId, &mut PointerPress)>()
+            .query::<(&PointerId, &mut PointerPressState)>()
             .iter_mut(world)
         {
             if *id == PointerId::Mouse {
-                *press = PointerPress::default();
+                *press = PointerPressState::default();
             }
         }
     }

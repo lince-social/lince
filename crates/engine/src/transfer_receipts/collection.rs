@@ -5,59 +5,13 @@ use nucleus::transfer::{
 };
 use serde_json::{Value, json};
 
-pub(super) fn project_history(
-    saved: &store::transfer_receipts::Saved,
-    resolution: &Resolution,
-) -> Result<(Vec<nucleus::transfer::receipt_history::Copy>, Vec<Value>), EngineError> {
-    let bundle = saved
-        .document
-        .public_bundle()
-        .ok_or_else(|| invalid("Choose original public proof evidence"))?;
-    let scope = &bundle.publication.scope;
-    let scope_id = scope.id().map_err(invalid)?;
-    let accepted = resolution
-        .projections
-        .iter()
-        .map(|row| (&row.event, row))
-        .collect::<BTreeMap<_, _>>();
-    let withheld = resolution
-        .unresolved
-        .iter()
-        .map(|row| (&row.event, row))
-        .collect::<BTreeMap<_, _>>();
-    let mut copies = Vec::new();
-    let mut pending = Vec::new();
-    for signed in &bundle.publication.events {
-        let event = &signed.event;
-        let id = event.id().map_err(invalid)?;
-        if let Some(projection) = accepted.get(&id) {
-            copies.push(
-                nucleus::transfer::receipt_history::project_copy(
-                    scope,
-                    event,
-                    projection,
-                    nucleus::transfer::receipt_history::Provenance::Record {
-                        record: saved.record.clone(),
-                        version: saved.version,
-                    },
-                )
-                .map_err(invalid)?,
-            );
-        } else if let Some(issue) = withheld.get(&id) {
-            pending.push(json!({"record":saved.record,"version":saved.version,"scope":scope_id,"event":id,"state":issue.state,"reason":issue.reason,"content":event.content,"issuer":scope.organ(event.content.role())}));
-        } else {
-            return Err(invalid(
-                "Selected proof event is absent from its resolution",
-            ));
-        }
-    }
-    Ok((copies, pending))
-}
+mod artifact;
+use artifact::Artifact;
 
 pub(super) struct Collection {
     origin: String,
     occurrence: CanonicalHash,
-    pub artifacts: BTreeMap<(String, u64), store::transfer_receipts::Saved>,
+    artifacts: BTreeMap<(String, u64), Artifact>,
     pub selected: BTreeSet<(String, u64)>,
     pub events: BTreeMap<CanonicalHash, Event>,
     scopes: BTreeMap<CanonicalHash, Scope>,
@@ -146,13 +100,18 @@ impl Collection {
             .iter()
             .map(|signed| signed.event.id().map_err(invalid))
             .collect::<Result<BTreeSet<_>, _>>()?;
-        for saved in self.artifacts.values() {
-            let other = saved.document.public_bundle().unwrap();
-            if other.publication.scope.id().map_err(invalid)? != scope {
+        for artifact in self.artifacts.values() {
+            let other = artifact.saved().document.public_bundle().unwrap();
+            nucleus::performance::add("receipt-artifact-identities-reused", 1);
+            if artifact.scope() != &scope {
                 return Err(invalid("Proof context contains a different approved scope"));
             }
-            for event in &other.publication.events {
-                if seen.insert(event.event.id().map_err(invalid)?) {
+            nucleus::performance::add(
+                "receipt-artifact-identities-reused",
+                artifact.events().len() as u64,
+            );
+            for (event, id) in other.publication.events.iter().zip(artifact.events()) {
+                if seen.insert(id.clone()) {
                     bundle.publication.events.push(event.clone());
                 }
             }
@@ -168,7 +127,7 @@ impl Collection {
     pub fn has_fragments(&self) -> bool {
         self.artifacts
             .values()
-            .any(|saved| matches!(saved.document, Document::ProofFragment(_)))
+            .any(|artifact| matches!(artifact.saved().document, Document::ProofFragment(_)))
     }
 
     pub fn new(origin: &str, occurrence: &CanonicalHash) -> Self {
@@ -200,19 +159,23 @@ impl Collection {
         (self.bytes, self.work)
     }
 
-    fn choose(&mut self, key: &(String, u64)) -> Result<(), EngineError> {
-        let saved = &self.artifacts[key];
-        let bundle = saved
-            .document
-            .public_bundle()
-            .ok_or_else(|| invalid("Choose an original public proof artifact"))?;
-        let scope = bundle.publication.scope.id().map_err(invalid)?;
-        let chosen = self.chosen.entry(scope).or_default();
-        for signed in &bundle.publication.events {
-            chosen.insert(signed.event.id().map_err(invalid)?);
-        }
+    pub fn artifacts(&self) -> impl Iterator<Item = &store::transfer_receipts::Saved> {
+        self.artifacts.values().map(Artifact::saved)
+    }
+
+    pub fn artifact(&self, key: &(String, u64)) -> &Artifact {
+        &self.artifacts[key]
+    }
+
+    fn choose(&mut self, key: &(String, u64)) {
+        let artifact = &self.artifacts[key];
+        let chosen = self.chosen.entry(artifact.scope().clone()).or_default();
+        chosen.extend(artifact.events().iter().cloned());
+        nucleus::performance::add(
+            "receipt-artifact-identities-reused",
+            (artifact.events().len() + 1) as u64,
+        );
         self.selected.insert(key.clone());
-        Ok(())
     }
 
     pub async fn load(
@@ -225,7 +188,7 @@ impl Collection {
         let key = (candidate.record.clone(), candidate.version as u64);
         if self.tried.contains(&key) {
             if selected && self.artifacts.contains_key(&key) {
-                self.choose(&key)?;
+                self.choose(&key);
             }
             return Ok(true);
         }
@@ -265,25 +228,28 @@ impl Collection {
         .await;
         match loaded {
             Ok(Some(saved)) => {
-                let bundle = saved.document.public_bundle().unwrap();
+                let artifact = Artifact::new(saved)?;
+                let bundle = artifact.saved().document.public_bundle().unwrap();
                 let scope = &bundle.publication.scope;
-                self.scopes
-                    .insert(scope.id().map_err(invalid)?, scope.clone());
-                for signed in &bundle.publication.events {
-                    let id = signed.event.id().map_err(invalid)?;
-                    if let Some(previous) = self.events.get(&id)
-                        && previous != &signed.event
-                    {
-                        return Err(invalid(
-                            "One original proof identifier has conflicting event bytes",
-                        ));
-                    }
-                    self.events.insert(id, signed.event.clone());
+                if self.scopes.get(artifact.scope()) != Some(scope) {
+                    self.scopes.insert(artifact.scope().clone(), scope.clone());
                 }
-                self.artifacts.insert(key.clone(), saved);
+                for (signed, id) in bundle.publication.events.iter().zip(artifact.events()) {
+                    if let Some(previous) = self.events.get(id) {
+                        if previous != &signed.event {
+                            return Err(invalid(
+                                "One original proof identifier has conflicting event bytes",
+                            ));
+                        }
+                        nucleus::performance::add("receipt-identical-event-copies-avoided", 1);
+                    } else {
+                        self.events.insert(id.clone(), signed.event.clone());
+                    }
+                }
+                self.artifacts.insert(key.clone(), artifact);
                 self.tried.insert(key.clone());
                 if selected {
-                    self.choose(&key)?;
+                    self.choose(&key);
                 }
                 Ok(true)
             }

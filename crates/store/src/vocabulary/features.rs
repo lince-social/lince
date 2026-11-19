@@ -203,7 +203,7 @@ pub async fn feature_preview_on(
     } else {
         "(role!='ordinary' OR object_uid IS NULL OR subject_uid=object_uid OR quantity_mantissa IS NOT NULL OR unit_uid IS NOT NULL)"
     };
-    let (uses, incompatible): (i64, i64) = sqlx::query_as(&format!("SELECT COUNT(*),COALESCE(SUM({shape}),0) FROM record_assertion WHERE predicate_uid=? AND retracted_at IS NULL"))
+    let (uses, incompatible): (i64, i64) = sqlx::query_as(sqlx::AssertSqlSafe(format!("SELECT COUNT(*),COALESCE(SUM({shape}),0) FROM record_assertion WHERE predicate_uid=? AND retracted_at IS NULL")))
         .bind(concept).fetch_one(connection).await?;
     Ok(
         json!({"concept_uid":concept,"enabled":enabled,"write":write,"before":before,"after":after,"active_assertions":uses,"incompatible_assertions":incompatible,"can_apply":!enabled || incompatible==0}),

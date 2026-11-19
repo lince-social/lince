@@ -12,7 +12,7 @@ pub(super) fn install(world: &mut World, viewport: Entity) {
 }
 
 fn focus(
-    mut event: On<Pointer<Press>>,
+    mut event: On<PointerPress>,
     viewports: Query<&Viewport>,
     mut focus: ResMut<InputFocus>,
 ) {

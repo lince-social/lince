@@ -1,6 +1,6 @@
 use super::*;
 use crate::native::{actions::ActionButton, topology::presentation::VisualOwner};
-use bevy::picking::events::Scroll;
+use bevy::picking::events::PointerScroll;
 
 const HEIGHT: f32 = crate::layout::desktop::COMPACT_HEADER_HEIGHT as f32;
 
@@ -33,7 +33,7 @@ fn open(world: &mut World, target: Target, members: Vec<Target>, scroll: f32) ->
         min_width: px(0), height: percent(100), flex_grow: 1.0, flex_shrink: 1.0,
         flex_direction: FlexDirection::Row, column_gap: px(4), overflow: Overflow::scroll_x(), ..default()
     }, ScrollPosition(Vec2::new(scroll, 0.0)), crate::native::edit_mode::FocusScroll, ChildOf(panel))).id();
-    world.entity_mut(list).observe(|mut event: On<Pointer<Scroll>>| event.propagate(false));
+    world.entity_mut(list).observe(|mut event: On<PointerScroll>| event.propagate(false));
     let mut buttons = Vec::new();
     for (index, member) in members.iter().enumerate() {
         let caption = title(world, member, index);

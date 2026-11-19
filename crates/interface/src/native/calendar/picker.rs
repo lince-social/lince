@@ -5,7 +5,6 @@ use crate::native::{
 };
 use bevy::text::EditableText;
 use chrono::Datelike;
-use std::sync::Arc;
 
 #[derive(Component)]
 pub(super) struct DateField {
@@ -22,7 +21,7 @@ struct ParsedFields {
     start: Option<String>,
     end: Option<String>,
     selecting_end: bool,
-    key: Arc<str>,
+    revision: u64,
 }
 
 #[derive(Clone)]
@@ -203,7 +202,18 @@ impl Action for Endpoint {
     }
 }
 
-pub(super) fn sync(world: &mut World, owner: Entity) -> Option<Arc<str>> {
+pub(super) fn signature(world: &World, owner: Entity) -> Option<(Entity, Entity, u64)> {
+    let picker = world.get::<Picker>(owner)?;
+    Some((
+        picker.row,
+        picker.editor,
+        world
+            .get::<ParsedFields>(owner)
+            .map_or(0, |fields| fields.revision),
+    ))
+}
+
+pub(super) fn sync(world: &mut World, owner: Entity) -> Option<u64> {
     let _sync = nucleus::performance::Span::new("calendar-picker-sync");
     let picker = world.get::<Picker>(owner)?;
     let row = picker.row;
@@ -233,13 +243,10 @@ pub(super) fn sync(world: &mut World, owner: Entity) -> Option<Arc<str>> {
         let mut start = None;
         let mut end = None;
         let mut selecting_end = false;
-        let mut key = String::new();
         let fields = inputs
             .into_iter()
             .map(|(entity, field, text)| {
                 let value = text.value().to_string();
-                key.push_str(&value);
-                key.push('|');
                 let date =
                     nucleus::schedule::timezone_date(&value, timezone).map(|date| date.to_string());
                 if field.property == "start_date" {
@@ -253,10 +260,7 @@ pub(super) fn sync(world: &mut World, owner: Entity) -> Option<Arc<str>> {
                 (entity, field.property.clone(), value)
             })
             .collect::<Vec<_>>();
-        let key = match previous.filter(|previous| previous.key.as_ref() == key.as_str()) {
-            Some(previous) => previous.key.clone(),
-            None => Arc::<str>::from(key),
-        };
+        let revision = previous.map_or(1, |previous| previous.revision.wrapping_add(1));
         let prepared = ParsedFields {
             row,
             editor,
@@ -265,7 +269,7 @@ pub(super) fn sync(world: &mut World, owner: Entity) -> Option<Arc<str>> {
             start,
             end,
             selecting_end,
-            key,
+            revision,
         };
         nucleus::performance::add(
             "calendar-picker-fields-prepared",
@@ -276,7 +280,7 @@ pub(super) fn sync(world: &mut World, owner: Entity) -> Option<Arc<str>> {
         drop(inputs);
     }
     let prepared = world.get::<ParsedFields>(owner).unwrap();
-    let key = prepared.key.clone();
+    let revision = prepared.revision;
     let current = &world.get::<CalendarSand>(owner).unwrap().0;
     if current.start != prepared.start
         || current.end != prepared.end
@@ -292,7 +296,7 @@ pub(super) fn sync(world: &mut World, owner: Entity) -> Option<Arc<str>> {
         sand.0.end = values.1;
         sand.0.selecting_end = values.2;
     }
-    Some(key)
+    Some(revision)
 }
 
 fn selected(event: On<SandEvent>, mut commands: Commands) {

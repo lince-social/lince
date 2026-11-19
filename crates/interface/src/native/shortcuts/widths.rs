@@ -374,7 +374,7 @@ fn open(world: &mut World, root: Entity) {
     ));
     world
         .entity_mut(list)
-        .observe(|mut event: On<Pointer<Scroll>>| event.propagate(false));
+        .observe(|mut event: On<PointerScroll>| event.propagate(false));
     label(world, list, "Workspace navigation", 16.0);
     let workspace_back_and_forth = origin.workspace_back_and_forth;
     let workspace_button = button(world, list, overlay, Change::WorkspaceBackAndForth, &workspace_text(workspace_back_and_forth));

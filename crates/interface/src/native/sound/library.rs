@@ -189,7 +189,11 @@ fn error(error: impl std::fmt::Display) -> String {
 }
 
 pub fn suggestions<'a>(paths: &'a [String], query: &str) -> Vec<&'a str> {
-    let query = query.trim().to_ascii_lowercase();
+    let query = query.trim();
+    if query.is_empty() {
+        return paths.iter().take(8).map(String::as_str).collect();
+    }
+    let query = query.to_ascii_lowercase();
     paths
         .iter()
         .filter(|p| p.to_ascii_lowercase().contains(&query))

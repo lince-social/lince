@@ -406,7 +406,7 @@ impl Action for Control {
     }
 }
 
-fn press(mut event: On<Pointer<Press>>, parents: Query<&ChildOf>, mut focus: ResMut<InputFocus>) {
+fn press(mut event: On<PointerPress>, parents: Query<&ChildOf>, mut focus: ResMut<InputFocus>) {
     let Ok(parent) = parents.get(event.entity) else {
         return;
     };
@@ -418,7 +418,7 @@ fn press(mut event: On<Pointer<Press>>, parents: Query<&ChildOf>, mut focus: Res
 }
 
 fn drag(
-    mut event: On<Pointer<Drag>>,
+    mut event: On<PointerDrag>,
     parents: Query<&ChildOf>,
     mut models: Query<&mut Model>,
     mut focus: ResMut<InputFocus>,
@@ -453,7 +453,7 @@ fn drag(
 }
 
 fn scroll(
-    mut event: On<Pointer<Scroll>>,
+    mut event: On<PointerScroll>,
     parents: Query<&ChildOf>,
     mut models: Query<&mut Model>,
     wake_signal: Option<Res<crate::native::wake::WakeSignal>>,
@@ -1083,31 +1083,25 @@ mod tests {
             target: bevy::camera::NormalizedRenderTarget::Image(Handle::<Image>::default().into()),
             position: Vec2::ZERO,
         };
-        world.trigger(Pointer::new(
-            PointerId::Mouse,
-            location.clone(),
-            Drag {
-                button: PointerButton::Primary,
+        world.trigger(PointerDrag {
+            entity: viewport,
+            pointer: Pointer::new(PointerId::Mouse, location.clone()),
+            button: PointerButton::Primary,
                 distance: Vec2::new(50.0, 20.0),
                 delta: Vec2::new(50.0, 20.0),
-            },
-            viewport,
-        ));
+        });
         let model = world.get::<Model>(frame.owner).unwrap();
         assert!(model.yaw.abs() > 0.1);
         assert!(model.pitch > 0.1);
-        world.trigger(Pointer::new(
-            PointerId::Mouse,
-            location,
-            Scroll {
-                unit: bevy::input::mouse::MouseScrollUnit::Line,
+        world.trigger(PointerScroll {
+            entity: viewport,
+            pointer: Pointer::new(PointerId::Mouse, location),
+            unit: bevy::input::mouse::MouseScrollUnit::Line,
                 x: 0.0,
                 y: 1.0,
                 phase: bevy::input::touch::TouchPhase::Moved,
                 hit: HitData::new(viewport, 0.0, None, None),
-            },
-            viewport,
-        ));
+        });
         assert!(world.get::<Model>(frame.owner).unwrap().distance < 3.0);
         assert_eq!(world.get::<ScrollPosition>(parent).unwrap().0, Vec2::ZERO);
         assert_eq!(

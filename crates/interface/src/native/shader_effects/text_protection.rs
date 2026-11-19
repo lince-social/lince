@@ -1,19 +1,49 @@
 use super::{Background, Surface, disabled, shader};
 use crate::native::{token_style::Tokens, tokens::Token, topology::appearance::Material};
 use bevy::{
-    ecs::{entity_disabling::Disabled, query::Allow},
+    ecs::{entity_disabling::Disabled, query::Allow, system::InRef},
     prelude::*,
     text::{EditableText, TextBackgroundColor},
 };
-use std::collections::HashMap;
+use std::collections::HashSet;
 
 #[derive(Component)]
 struct ProtectedText;
 
-pub(crate) fn refresh(world: &mut World, owners: impl IntoIterator<Item = Entity>) {
-    let mut targets = HashMap::new();
-    let mut pending = Vec::new();
-    for owner in owners {
+#[derive(Default)]
+struct Scratch {
+    visited: HashSet<Entity>,
+    pending: Vec<Entity>,
+    targets: Vec<(Entity, bool)>,
+    active: Vec<Entity>,
+}
+
+pub(crate) fn refresh(world: &mut World, owners: &[Entity]) {
+    world
+        .run_system_cached_with(refresh_current, owners)
+        .expect("refresh current effect text protection");
+}
+
+fn refresh_current(InRef(owners): InRef<[Entity]>, world: &mut World, mut scratch: Local<Scratch>) {
+    let _protection = nucleus::performance::Span::new("effect-text-protection-preparation");
+    if owners.is_empty() {
+        *scratch = Scratch::default();
+        return;
+    }
+    let Scratch {
+        visited,
+        pending,
+        targets,
+        active,
+    } = &mut *scratch;
+    visited.clear();
+    pending.clear();
+    targets.clear();
+    active.clear();
+    for &owner in owners.iter().rev() {
+        if visited.contains(&owner) {
+            continue;
+        }
         let enabled = world
             .get::<Material>(owner)
             .is_some_and(|material| material.0.valid())
@@ -27,16 +57,19 @@ pub(crate) fn refresh(world: &mut World, owners: impl IntoIterator<Item = Entity
                     .is_some_and(|preview| !preview.disabled));
         pending.push(owner);
         while let Some(entity) = pending.pop() {
+            if !visited.insert(entity) {
+                continue;
+            }
             if let Some(children) = world.get::<Children>(entity) {
                 pending.extend(children.iter());
             }
             if world.get::<Text>(entity).is_some() || world.get::<EditableText>(entity).is_some() {
-                targets.insert(entity, enabled);
+                targets.push((entity, enabled));
             }
         }
     }
-    let mut active = Vec::new();
-    for (entity, enabled) in targets {
+    nucleus::performance::add("effect-text-protection-visits", visited.len() as u64);
+    for (entity, enabled) in targets.drain(..) {
         let protected = world.get::<ProtectedText>(entity).is_some();
         if !enabled {
             if protected {
@@ -55,20 +88,22 @@ pub(crate) fn refresh(world: &mut World, owners: impl IntoIterator<Item = Entity
     if !active.is_empty() {
         world.init_resource::<crate::native::tokens::ThemeSettings>();
         world
-            .run_system_cached_with(style, active)
+            .run_system_cached_with(style, active.as_slice())
             .expect("style protected text");
     }
 }
 
 fn style(
-    In(entities): In<Vec<Entity>>,
+    InRef(entities): InRef<[Entity]>,
     mut tokens: Tokens,
     mut texts: Query<(Has<ProtectedText>, Option<&mut TextBackgroundColor>), Allow<Disabled>>,
     mut commands: Commands,
+    mut pending: Local<Vec<Entity>>,
 ) {
+    let _style = nucleus::performance::Span::new("effect-text-protection-style");
     tokens.refresh();
-    let mut pending = Vec::new();
-    for entity in entities {
+    pending.clear();
+    for &entity in entities {
         let Ok((protected, background)) = texts.get_mut(entity) else {
             continue;
         };
@@ -84,7 +119,11 @@ fn style(
         pending.push(entity);
     }
     tokens.finish_preparing();
-    for entity in pending {
+    if pending.is_empty() {
+        *pending = Vec::new();
+        return;
+    }
+    for entity in pending.drain(..) {
         let Ok((protected, background)) = texts.get_mut(entity) else {
             continue;
         };

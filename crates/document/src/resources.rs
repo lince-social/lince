@@ -79,29 +79,25 @@ pub(super) fn markup(
             .map_err(|error| format!("Invalid EPUB markup: {error}"))?;
         match &event {
             Event::Start(tag) | Event::Empty(tag) => {
-                let svg = tag.local_name().as_ref() == b"svg";
+                let svg = tag.local_name().as_ref() == "svg";
                 if svg && matches!(event, Event::Start(_)) {
                     svg_depth += 1;
                 }
                 if svg_depth > 0 || svg {
-                    let name = String::from_utf8_lossy(tag.name().as_ref()).into_owned();
-                    let mut clean = BytesStart::new(name);
+                    let mut clean = BytesStart::new(tag.name().into_inner());
                     for attribute in tag.attributes() {
                         let attribute = attribute.map_err(|error| error.to_string())?;
-                        let key = String::from_utf8_lossy(attribute.key.as_ref());
-                        if attribute.key.local_name().as_ref() == b"href" {
+                        let key = attribute.key.into_inner();
+                        if attribute.key.local_name().as_ref() == "href" {
                             let value = attribute
-                                .decoded_and_normalized_value(
-                                    quick_xml::XmlVersion::Implicit1_0,
-                                    reader.decoder(),
-                                )
+                                .normalized_value(quick_xml::XmlVersion::Implicit1_0)
                                 .map_err(|error| error.to_string())?;
                             let value = if value.starts_with('#') {
                                 value.into_owned()
                             } else {
                                 embed(book, base, &value, depth + 1).unwrap_or_default()
                             };
-                            clean.push_attribute((key.as_ref(), value.as_str()));
+                            clean.push_attribute((key, value.as_str()));
                         } else {
                             clean.push_attribute(attribute);
                         }
@@ -117,7 +113,7 @@ pub(super) fn markup(
                     continue;
                 }
             }
-            Event::End(tag) if tag.local_name().as_ref() == b"svg" => {
+            Event::End(tag) if tag.local_name().as_ref() == "svg" => {
                 svg_depth = svg_depth.saturating_sub(1);
             }
             Event::Eof => break,
@@ -148,10 +144,10 @@ fn is_svg(bytes: &[u8]) -> bool {
     loop {
         match reader.read_event() {
             Ok(Event::Start(tag) | Event::Empty(tag)) => {
-                return tag.local_name().as_ref() == b"svg";
+                return tag.local_name().as_ref() == "svg";
             }
             Ok(Event::Decl(_) | Event::Comment(_) | Event::DocType(_)) => {}
-            Ok(Event::Text(text)) if text.iter().all(u8::is_ascii_whitespace) => {}
+            Ok(Event::Text(text)) if text.bytes().all(|byte| byte.is_ascii_whitespace()) => {}
             _ => return false,
         }
     }

@@ -1,7 +1,14 @@
+use std::sync::Arc;
 use super::*;
 use bevy::input_focus::{FocusCause, InputFocus};
 use serde_json::Value;
-use std::collections::{HashMap, VecDeque};
+use std::{
+    borrow::{Borrow, Cow},
+    collections::{HashMap, VecDeque},
+    hash::Hash,
+};
+
+mod preparation;
 
 #[derive(Resource, Default)]
 pub(super) struct Searches {
@@ -13,14 +20,31 @@ pub(super) struct Searches {
 struct Search {
     rows: Arc<Vec<Value>>,
     concepts: Arc<Vec<Value>>,
-    signature: String,
-    options: Vec<(String, String)>,
+    filter: Option<preparation::PreparedFilter>,
+    presented: Option<(Arc<Filter>, Option<Entity>)>,
+    references: Option<preparation::References>,
+    options: Arc<Vec<(String, String)>>,
     selected: usize,
     total: usize,
     message: String,
     enter: bool,
     step: i32,
     dismissed: bool,
+}
+
+impl Search {
+    fn changed(&self, anchor: Option<Entity>) -> bool {
+        let current = &self
+            .filter
+            .as_ref()
+            .expect("prepared creation filter")
+            .value;
+        self.presented
+            .as_ref()
+            .is_none_or(|(previous, old_anchor)| {
+                *old_anchor != anchor || !Arc::ptr_eq(previous, current)
+            })
+    }
 }
 
 pub(super) fn start(world: &mut World, form: Entity, root: Entity) {
@@ -69,8 +93,10 @@ pub(super) fn start(world: &mut World, form: Entity, root: Entity) {
     world.entity_mut(form).insert(Search {
         rows: Arc::default(),
         concepts: Arc::default(),
-        signature: String::new(),
-        options: Vec::new(),
+        filter: None,
+        presented: None,
+        references: None,
+        options: Arc::default(),
         selected: 0,
         total: 0,
         message: "Loading Records…".into(),
@@ -96,7 +122,7 @@ fn editors(form: &Form) -> impl Iterator<Item = Entity> + '_ {
         .chain(form.logs.iter().flat_map(|(_, start, end)| [*start, *end]))
 }
 
-pub(super) fn keys(world: &mut World) {
+pub(super) fn keys(world: &mut World, forms: &mut QueryState<(Entity, &'static Form)>) {
     let Some(focused) = world.resource::<InputFocus>().get() else {
         return;
     };
@@ -120,8 +146,7 @@ pub(super) fn keys(world: &mut World) {
     if !enter && step == 0 && !escape {
         return;
     }
-    let owner = world
-        .query::<(Entity, &Form)>()
+    let owner = forms
         .iter(world)
         .find(|(_, form)| form.pending.is_none() && editors(form).any(|entity| entity == focused))
         .map(|(entity, _)| entity);
@@ -156,11 +181,11 @@ pub(super) fn keys(world: &mut World) {
     search.dismissed = escape;
 }
 
-fn text(value: &Value) -> String {
+fn text(value: &Value) -> Cow<'_, str> {
     match value {
-        Value::String(value) => value.clone(),
-        Value::Null => String::new(),
-        other => other.to_string(),
+        Value::String(value) => Cow::Borrowed(value),
+        Value::Null => Cow::Borrowed(""),
+        other => Cow::Owned(other.to_string()),
     }
 }
 
@@ -168,7 +193,7 @@ fn contains(actual: &Value, query: &str) -> bool {
     query.is_empty() || text(actual).to_lowercase().contains(query)
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 struct Filter {
     fields: Vec<(&'static str, String)>,
     relations: Vec<(bool, Vec<String>)>,
@@ -176,49 +201,25 @@ struct Filter {
 }
 
 impl Filter {
-    fn read(world: &World, form: &Form) -> Self {
-        let read = |entity| value(world, entity).trim().to_lowercase();
-        Self {
-            fields: form
-                .fields
-                .iter()
-                .map(|(key, entity)| (*key, read(*entity)))
-                .collect(),
-            relations: form
-                .relations
-                .iter()
-                .map(|(_, assignee, fields)| {
-                    (
-                        *assignee,
-                        fields.iter().map(|entity| read(*entity)).collect(),
-                    )
-                })
-                .chain(
-                    crate::native::assertion_editor::draft(world, form.assertions)
-                        .unwrap_or_default()
-                        .into_iter()
-                        .map(|assertion| {
-                            (
-                                false,
-                                vec![
-                                    assertion.predicate.to_lowercase(),
-                                    assertion.object.unwrap_or_default().to_lowercase(),
-                                    assertion.quantity.unwrap_or_default(),
-                                    assertion.unit.unwrap_or_default().to_lowercase(),
-                                ],
-                            )
-                        }),
-                )
-                .collect(),
-            logs: form
-                .logs
-                .iter()
-                .map(|(_, start, end)| (read(*start), read(*end)))
-                .collect(),
-        }
+    fn uses_references(&self) -> bool {
+        self.relations.iter().any(|(assignee, fields)| {
+            if *assignee {
+                fields.first().is_some_and(|value| !value.is_empty())
+            } else {
+                fields
+                    .first()
+                    .is_some_and(|value| !value.trim_start_matches('#').is_empty())
+                    || fields.get(1).is_some_and(|value| !value.is_empty())
+                    || fields.get(3).is_some_and(|value| !value.is_empty())
+            }
+        })
     }
 
-    fn matches(&self, row: &Value, references: &HashMap<&str, String>) -> bool {
+    fn matches<K: Borrow<str> + Eq + Hash>(
+        &self,
+        row: &Value,
+        references: &HashMap<K, String>,
+    ) -> bool {
         let reference = |value: &Value, query: &str| {
             contains(value, query)
                 || value
@@ -296,7 +297,70 @@ impl Action for Open {
     }
 }
 
+#[derive(Component)]
+struct PopupPresentation {
+    choices: Vec<Entity>,
+    children: Vec<Entity>,
+    selected: usize,
+    font: Handle<Font>,
+}
+
+impl PopupPresentation {
+    fn current(&self, world: &World, popup: Entity) -> bool {
+        if self.font != world.resource::<crate::native::theme::Typography>().0 {
+            return false;
+        }
+        let mut children = world
+            .get::<Children>(popup)
+            .into_iter()
+            .flat_map(|children| children.iter());
+        self.children
+            .iter()
+            .all(|expected| children.by_ref().any(|child| child == *expected))
+    }
+}
+
+fn scroll_to_selection(world: &mut World, popup: Entity, selected: usize) {
+    let offset = (selected.saturating_sub(5) * 32) as f32;
+    let mut position = world.get_mut::<ScrollPosition>(popup).unwrap();
+    if position.0.y != offset {
+        position.0.y = offset;
+    }
+}
+
+fn select(world: &mut World, form: Entity, popup: Entity) {
+    let _selection = nucleus::performance::Span::new("record-creation-search-selection");
+    let Some(presented) = world
+        .get::<PopupPresentation>(popup)
+        .filter(|view| view.current(world, popup))
+    else {
+        draw(world, form, popup);
+        return;
+    };
+    let selected = world.get::<Search>(form).unwrap().selected;
+    if presented.selected != selected {
+        let previous = presented.choices.get(presented.selected).copied();
+        let next = presented.choices.get(selected).copied();
+        if let Some(previous) = previous {
+            world
+                .entity_mut(previous)
+                .remove::<crate::native::token_style::BackgroundToken>()
+                .insert(BackgroundColor::default());
+        }
+        if let Some(next) = next {
+            world
+                .entity_mut(next)
+                .insert(crate::native::token_style::background(
+                    crate::native::tokens::Token::Accent,
+                ));
+        }
+        world.get_mut::<PopupPresentation>(popup).unwrap().selected = selected;
+    }
+    scroll_to_selection(world, popup, selected);
+}
+
 fn draw(world: &mut World, form: Entity, popup: Entity) {
+    let _draw = nucleus::performance::Span::new("record-creation-search-draw");
     if let Some(children) = world.get::<Children>(popup) {
         for child in children.iter().collect::<Vec<_>>() {
             world.despawn(child);
@@ -307,6 +371,7 @@ fn draw(world: &mut World, form: Entity, popup: Entity) {
     let selected = search.selected;
     let total = search.total;
     let message = search.message.clone();
+    let mut choices = Vec::new();
     if !message.is_empty() {
         crate::native::edit_mode::label(world, popup, &message, 13.0);
     } else if options.is_empty() {
@@ -317,11 +382,11 @@ fn draw(world: &mut World, form: Entity, popup: Entity) {
             13.0,
         );
     } else {
-        for (index, (uid, label)) in options.into_iter().enumerate() {
+        for (index, (uid, label)) in options.iter().enumerate() {
             let button = world
                 .spawn((
                     crate::native::sand::button(0),
-                    ActionButton::new(form, crate::native::actions![Open(uid)]),
+                    ActionButton::new(form, crate::native::actions![Open(uid.clone())]),
                     Node {
                         width: percent(100),
                         min_height: px(32),
@@ -332,6 +397,7 @@ fn draw(world: &mut World, form: Entity, popup: Entity) {
                     ChildOf(popup),
                 ))
                 .id();
+            choices.push(button);
             if index == selected {
                 world
                     .entity_mut(button)
@@ -339,7 +405,7 @@ fn draw(world: &mut World, form: Entity, popup: Entity) {
                         crate::native::tokens::Token::Accent,
                     ));
             }
-            crate::native::edit_mode::label(world, button, &label, 14.0);
+            crate::native::edit_mode::label(world, button, label, 14.0);
         }
         if total > 100 {
             crate::native::edit_mode::label(
@@ -350,43 +416,83 @@ fn draw(world: &mut World, form: Entity, popup: Entity) {
             );
         }
     }
-    world.get_mut::<ScrollPosition>(popup).unwrap().0.y = (selected.saturating_sub(5) * 32) as f32;
+    nucleus::performance::add("record-creation-search-rows-created", choices.len() as u64);
+    let children = world
+        .get::<Children>(popup)
+        .into_iter()
+        .flat_map(|children| children.iter())
+        .collect();
+    let font = world
+        .resource::<crate::native::theme::Typography>()
+        .0
+        .clone();
+    world.entity_mut(popup).insert(PopupPresentation {
+        choices,
+        children,
+        selected,
+        font,
+    });
+    scroll_to_selection(world, popup, selected);
 }
 
 pub(super) fn update(
     world: &mut World,
     mut cursor: Local<bevy::ecs::message::MessageCursor<crate::native::cell_bridge::CellMessage>>,
+    mut wave: Local<crate::native::cell_bridge::replies::Wave>,
+    mut recipients: Local<Vec<Entity>>,
+    mut forms: Local<Vec<(Entity, Entity)>>,
 ) {
-    let events: Vec<_> = world
-        .get_resource::<Messages<crate::native::cell_bridge::CellMessage>>()
-        .map(|messages| {
-            cursor
-                .read(messages)
-                .map(|message| message.0.clone())
-                .collect()
-        })
-        .unwrap_or_default();
-    for event in events.iter().map(|message| message.as_ref()) {
-        let (id, result) = match event {
+    use crate::native::cell_bridge::{CONNECTION, CellMessage, replies};
+    let _update = nucleus::performance::Span::new("record-creation-search-update");
+    if let Some(messages) = world.get_resource::<Messages<CellMessage>>() {
+        wave.capture(&mut cursor, messages, |message| {
+            matches!(
+                message,
+                cell::ServerMessage::Snapshot { .. }
+                    | cell::ServerMessage::Update { .. }
+                    | cell::ServerMessage::Error { .. }
+            )
+        });
+    }
+    if wave.len() == 0 {
+        recipients.shrink_to_fit();
+    }
+    for sequence in wave.drain() {
+        let event = replies::message(world.resource::<Messages<CellMessage>>(), sequence);
+        let id = match event.as_ref() {
+            cell::ServerMessage::Snapshot { id, .. }
+            | cell::ServerMessage::Update { id, .. }
+            | cell::ServerMessage::Error { id, .. } => id,
+            _ => unreachable!(),
+        };
+        recipients.clear();
+        recipients.extend(
+            world
+                .resource::<Searches>()
+                .active
+                .iter()
+                .filter(|(_, (subscription, _))| {
+                    subscription == id
+                        || id.strip_suffix("-concepts") == Some(subscription.as_str())
+                        || id == CONNECTION
+                })
+                .map(|(form, _)| *form),
+        );
+        if recipients.is_empty() {
+            continue;
+        }
+        let event = event.clone();
+        nucleus::performance::add("record-creation-search-payloads", 1);
+        let (id, result) = match event.as_ref() {
             cell::ServerMessage::Snapshot { id, rows }
             | cell::ServerMessage::Update { id, rows } => (id, Ok(rows)),
             cell::ServerMessage::Error { id, message, .. } => (id, Err(message)),
-            _ => continue,
+            _ => unreachable!(),
         };
-        let forms: Vec<_> = world
-            .resource::<Searches>()
-            .active
-            .iter()
-            .filter(|(_, (subscription, _))| {
-                subscription == id
-                    || format!("{subscription}-concepts") == *id
-                    || id == crate::native::cell_bridge::CONNECTION
-            })
-            .map(|(form, _)| *form)
-            .collect();
-        for form in forms {
+        for form in recipients.drain(..) {
             if let Some(mut search) = world.get_mut::<Search>(form) {
-                search.signature.clear();
+                search.presented = None;
+                search.references = None;
                 match &result {
                     Ok(rows) if id.ends_with("-concepts") => {
                         search.concepts = (*rows).clone();
@@ -404,16 +510,26 @@ pub(super) fn update(
             }
         }
     }
-    let forms: Vec<_> = world
-        .resource::<Searches>()
-        .active
-        .iter()
-        .map(|(form, (id, popup))| (*form, id.clone(), *popup))
-        .collect();
-    for (entity, id, popup) in forms {
+    forms.clear();
+    forms.extend(
+        world
+            .resource::<Searches>()
+            .active
+            .iter()
+            .map(|(form, (_, popup))| (*form, *popup)),
+    );
+    if forms.is_empty() {
+        forms.shrink_to_fit();
+        recipients.shrink_to_fit();
+    }
+    for (entity, popup) in forms.drain(..) {
         let Some(form) = world.get::<Form>(entity) else {
             world.despawn(popup);
-            world.resource_mut::<Searches>().active.remove(&entity);
+            let (id, _) = world
+                .resource_mut::<Searches>()
+                .active
+                .remove(&entity)
+                .unwrap();
             world
                 .resource_mut::<Searches>()
                 .outgoing
@@ -435,9 +551,21 @@ pub(super) fn update(
         }
         let focused = world.resource::<InputFocus>().get();
         let anchor = editors(form).find(|field| Some(*field) == focused);
-        let filter = Filter::read(world, form);
-        let signature = format!("{filter:?}:{anchor:?}");
-        if signature != world.get::<Search>(entity).unwrap().signature {
+        let prepared = preparation::PreparedFilter::changed(
+            world,
+            form,
+            world.get::<Search>(entity).unwrap().filter.as_ref(),
+        );
+        if let Some(mut prepared) = prepared {
+            if let Some((presented, _)) = &world.get::<Search>(entity).unwrap().presented
+                && !Arc::ptr_eq(presented, &prepared.value)
+                && presented == &prepared.value
+            {
+                prepared.value = Arc::clone(presented);
+            }
+            world.get_mut::<Search>(entity).unwrap().filter = Some(prepared);
+        }
+        if world.get::<Search>(entity).unwrap().changed(anchor) {
             world.get_mut::<Search>(entity).unwrap().dismissed = false;
         }
         let form = world.get::<Form>(entity).unwrap();
@@ -453,79 +581,69 @@ pub(super) fn update(
             && active_workspace
             && form.pending.is_none()
             && !world.get::<Search>(entity).unwrap().dismissed;
-        world.get_mut::<Node>(popup).unwrap().display = if visible {
+        let display = if visible {
             Display::Flex
         } else {
             Display::None
         };
+        world
+            .get_mut::<Node>(popup)
+            .unwrap()
+            .map_unchanged(|node| &mut node.display)
+            .set_if_neq(display);
         if !visible {
             continue;
         }
         let search = world.get::<Search>(entity).unwrap();
-        let changed = signature != search.signature;
+        let changed = search.changed(anchor);
         if changed {
-            let mut references: HashMap<_, _> = search
-                .rows
-                .iter()
-                .filter_map(|row| {
-                    Some((
-                        row["uid"].as_str()?,
-                        format!("{} {}", text(&row["head"]), text(&row["slug"])).to_lowercase(),
-                    ))
-                })
-                .collect();
-            references.extend(
-                search.concepts.iter().filter_map(|row| {
-                    Some((row["uid"].as_str()?, text(&row["name"]).to_lowercase()))
-                }),
-            );
-            let matches: Vec<_> = search
-                .rows
-                .iter()
-                .filter(|row| filter.matches(row, &references))
-                .collect();
-            let total = matches.len();
-            let options: Vec<_> = matches
-                .into_iter()
-                .take(100)
-                .filter_map(|row| {
-                    let uid = row["uid"].as_str()?.to_owned();
-                    let head = row["head"]
-                        .as_str()
-                        .filter(|head| !head.is_empty())
-                        .unwrap_or("Untitled");
-                    let label = row["slug"]
-                        .as_str()
-                        .map_or_else(|| head.to_string(), |slug| format!("{head}  @{slug}"));
-                    Some((uid, label))
-                })
-                .collect();
+            let uses_references = search.filter.as_ref().unwrap().value.uses_references();
+            if uses_references
+                && search
+                    .references
+                    .as_ref()
+                    .is_none_or(|references| !references.current(&search.rows, &search.concepts))
+            {
+                let references = preparation::References::capture(&search.rows, &search.concepts);
+                world.get_mut::<Search>(entity).unwrap().references = Some(references);
+            } else if !uses_references && search.references.is_some() {
+                world.get_mut::<Search>(entity).unwrap().references = None;
+            }
+            let search = world.get::<Search>(entity).unwrap();
+            let filter = Arc::clone(&search.filter.as_ref().unwrap().value);
+            let (total, options) =
+                preparation::options(&filter, &search.rows, search.references.as_ref());
             let mut search = world.get_mut::<Search>(entity).unwrap();
-            search.options = options;
+            search.options = Arc::new(options);
             search.total = total;
             search.selected = 0;
-            search.signature = signature;
+            search.presented = Some((filter, anchor));
         }
         let mut search = world.get_mut::<Search>(entity).unwrap();
         let moved = search.step != 0;
-        search.selected = (search.selected as i32 + search.step)
-            .clamp(0, search.options.len().saturating_sub(1) as i32)
-            as usize;
-        search.step = 0;
-        let selected = std::mem::take(&mut search.enter)
-            .then(|| {
-                search
-                    .options
-                    .get(search.selected)
-                    .map(|(uid, _)| uid.clone())
-            })
-            .flatten();
+        if moved {
+            search.selected = (search.selected as i32 + search.step)
+                .clamp(0, search.options.len().saturating_sub(1) as i32)
+                as usize;
+            search.step = 0;
+        }
+        let selected = if search.enter {
+            search.enter = false;
+            search
+                .options
+                .get(search.selected)
+                .map(|(uid, _)| uid.clone())
+        } else {
+            None
+        };
         if let Some(uid) = selected {
             open_record(world, entity, &uid);
             continue;
         }
-        if changed || moved {
+        if changed {
             draw(world, entity, popup);
+        } else if moved {
+            select(world, entity, popup);
         }
         let anchor = anchor.unwrap();
         if let Some(bounds) = crate::native::topology::presentation::bounds(world, anchor)
@@ -545,10 +663,18 @@ pub(super) fn update(
                 bounds.min.y - height
             };
             let mut node = world.get_mut::<Node>(popup).unwrap();
-            node.width = px(width);
-            node.left =
+            let left =
                 px((bounds.min.x - viewport.min.x).clamp(0.0, (viewport.width() - width).max(0.0)));
-            node.top = px((top - viewport.min.y).max(0.0));
+            let top = px((top - viewport.min.y).max(0.0));
+            if node.width != px(width) {
+                node.width = px(width);
+            }
+            if node.left != left {
+                node.left = left;
+            }
+            if node.top != top {
+                node.top = top;
+            }
         }
     }
     while let Some(message) = world.resource_mut::<Searches>().outgoing.pop_front() {
@@ -568,7 +694,6 @@ pub(super) fn update(
         }
     }
 }
-
 #[cfg(test)]
 mod tests {
     use super::super::tests::{app, fill};

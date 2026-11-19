@@ -25,6 +25,8 @@ pub(super) struct State {
 }
 
 #[derive(Resource, Default, Clone, ExtractResource)]
+
+#[extract_app(bevy::render::RenderApp)]
 pub(super) struct Diagnostics(pub Arc<Mutex<State>>);
 
 fn sample(values: &mut VecDeque<u64>, value: u64) {

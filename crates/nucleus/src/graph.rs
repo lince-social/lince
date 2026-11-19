@@ -26,10 +26,25 @@ impl Edge {
 }
 
 pub fn topo_order(candidates: &[String], edges: &[Edge]) -> Vec<String> {
+    topological(candidates, edges, |index| candidates[index].clone())
+}
+
+pub fn topo_order_indices(candidates: &[impl AsRef<str>], edges: &[Edge]) -> Vec<usize> {
+    topological(candidates, edges, |index| index)
+}
+
+fn topological<T>(
+    candidates: &[impl AsRef<str>],
+    edges: &[Edge],
+    mut emit: impl FnMut(usize) -> T,
+) -> Vec<T> {
+    if candidates.len() <= 1 {
+        return (0..candidates.len()).map(emit).collect();
+    }
     let index: HashMap<&str, usize> = candidates
         .iter()
         .enumerate()
-        .map(|(i, c)| (c.as_str(), i))
+        .map(|(i, c)| (c.as_ref(), i))
         .collect();
     let mut indegree: Vec<usize> = vec![0; candidates.len()];
     let mut succ: Vec<Vec<usize>> = vec![Vec::new(); candidates.len()];
@@ -52,7 +67,7 @@ pub fn topo_order(candidates: &[String], edges: &[Edge]) -> Vec<String> {
             continue;
         }
         done[i] = true;
-        out.push(candidates[i].clone());
+        out.push(emit(i));
         for &t in &succ[i] {
             indegree[t] = indegree[t].saturating_sub(1);
             if indegree[t] == 0 && !done[t] {
@@ -60,9 +75,9 @@ pub fn topo_order(candidates: &[String], edges: &[Edge]) -> Vec<String> {
             }
         }
     }
-    for (i, c) in candidates.iter().enumerate() {
+    for i in 0..candidates.len() {
         if !done[i] {
-            out.push(c.clone());
+            out.push(emit(i));
         }
     }
     out

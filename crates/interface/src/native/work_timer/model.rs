@@ -21,8 +21,6 @@ impl Entry {
     }
 }
 
-// Immutable presentation derived when the source log changes. The persisted
-// Entry/LocalTimer representation stays independent of this prepared view.
 #[derive(Default)]
 pub(super) struct Logs {
     entries: Vec<Entry>,
@@ -62,8 +60,6 @@ impl Timing {
 
     fn seconds(&self, now: DateTime<Utc>) -> i64 {
         self.completed.unwrap_or_else(|| {
-            // A dynamic duration always has a valid start. An invalid stored
-            // end retains the existing running-duration fallback.
             (now - self.start.unwrap().with_timezone(&Utc))
                 .num_seconds()
                 .max(0)

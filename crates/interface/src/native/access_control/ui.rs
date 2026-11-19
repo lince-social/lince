@@ -584,7 +584,7 @@ pub(super) fn populate(world: &mut World, sand: Entity) {
             ScrollPosition::default(),
         ))
         .observe(
-            |mut event: On<Pointer<bevy::picking::events::Scroll>>,
+            |mut event: On<PointerScroll>,
              mut scrolls: Query<&mut ScrollPosition>| {
                 if let Ok(mut scroll) = scrolls.get_mut(event.entity) {
                     let step = if event.unit == bevy::input::mouse::MouseScrollUnit::Line {
@@ -1118,7 +1118,7 @@ fn open_selector(world: &mut World, owner: Entity, grant: Option<usize>) {
     );
     let control = world
         .spawn((
-            Button,
+            bevy::ui_widgets::Button,
             Node::default(),
             ChildOf(castle),
             ActionButton::new(
@@ -1288,10 +1288,10 @@ pub(super) fn policy_controls(world: &mut World, owner: Entity) {
     let _controls = nucleus::performance::Span::new("access-policy-controls");
     let parent = form.controls;
     let field = form.raw;
-    let Ok(input) = ready_input(world, form.raw) else {
+    let Ok(field_value) = ready_input(world, form.raw) else {
         return;
     };
-    let raw = input.value();
+    let raw = field_value.value();
     if raw == form.signature.as_str()
         || form
             .invalid
@@ -1305,8 +1305,6 @@ pub(super) fn policy_controls(world: &mut World, owner: Entity) {
     let parsed = serde_json::from_str::<protein::authority::RolePolicy>(&raw);
     let mut form = world.get_mut::<PolicyForm>(owner).unwrap();
     let Ok(policy) = parsed else {
-        // Retain the last valid controls while avoiding repeated invalid-draft parsing.
-        // Explicit saves still validate the current text independently.
         form.invalid = Some(raw);
         return;
     };
@@ -1577,7 +1575,7 @@ fn refresh_role(world: &mut World, owner: Entity) {
     let field = world.get::<RoleForm>(owner).unwrap().0;
     let pristine = world
         .get::<EditableText>(field)
-        .is_some_and(|text| !text.is_composing() && text.value() == edit.original_name)
+        .is_some_and(|text| !text.is_composing() && text.value() == edit.original_name.as_str())
         && world
             .get::<Node>(edit.confirm)
             .is_some_and(|node| node.display == Display::None);
@@ -1647,8 +1645,6 @@ fn role_permissions(world: &mut World, owner: Entity, parent: Entity, entry: &Va
     {
         return;
     }
-    // Retire only this presentation's children. The permissions-only editor shares
-    // its parent with a Role heading that must survive permission refreshes.
     if let Some(previous) = world.entity_mut(parent).take::<PermissionsView>() {
         for child in previous.children {
             if world
@@ -1783,15 +1779,8 @@ pub(super) fn masks(world: &mut World) {
 
 pub(super) fn protect_passwords(forms: Query<&UserForm>, mut fields: Query<&mut EditableText>) {
     for form in &forms {
-        if let Ok(mut field) = fields.get_mut(form.password)
-            && field
-                .pending_edits
-                .iter()
-                .any(|edit| matches!(edit, bevy::text::TextEdit::Copy | bevy::text::TextEdit::Cut))
-        {
-            field.pending_edits.retain(|edit| {
-                !matches!(edit, bevy::text::TextEdit::Copy | bevy::text::TextEdit::Cut)
-            });
+        if let Ok(field) = fields.get_mut(form.password) {
+            crate::controls::protect_password(field);
         }
     }
 }

@@ -25,9 +25,6 @@ impl<P: WasmParams, R: WasmResults> Function<P, R> {
     }
 }
 
-// These exports belong to one instance and are type-checked once at creation.
-// The hot cell traversal then calls the typed handles directly; it does not
-// look up export names or rebuild their type checks for each cell property.
 macro_rules! exports {
     ($($field:ident: $params:ty => $result:ty = $name:literal;)*) => {
         pub(super) struct Api {

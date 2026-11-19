@@ -88,7 +88,7 @@ impl Default for Draft {
                 String::new(),
                 String::new(),
                 "1 minute".into(),
-                chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                default_date(),
             ],
             original_fields: None,
             cadence_editable: true,
@@ -105,32 +105,35 @@ impl Draft {
             revision: Some(row.handle_revision),
             original: Some(row.definition.clone()),
             cadence_editable: false,
-            ..Default::default()
+            fields: [
+                row.slug.clone(),
+                row.definition.purpose.clone(),
+                "1 minute".into(),
+                String::new(),
+            ],
+            original_fields: None,
+            weekdays: Vec::new(),
+            original_weekdays: Vec::new(),
         };
-        draft.fields[0] = row.slug.clone();
-        draft.fields[1] = row.definition.purpose.clone();
+        let mut date = None;
         if let FrequencyCadenceAst::Elapsed {
             interval: DurationBinding::Literal { value },
             anchor,
         } = &row.definition.cadence
         {
             draft.fields[2] = super::interval::elapsed(value.get());
-            draft.fields[3] = chrono::DateTime::from_timestamp_millis(
-                row.next_at_ms.unwrap_or(anchor.as_millis()),
-            )
-            .unwrap()
-            .to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
+            date = Some(elapsed_date(row, anchor.as_millis()));
             draft.cadence_editable = super::interval::parse(&draft.fields[2]).is_ok();
         }
-        if let Ok(compiled) = row.definition.compile(&Default::default())
+        if matches!(
+            &row.definition.cadence,
+            FrequencyCadenceAst::Calendar { .. }
+        ) && let Ok(compiled) = row.definition.compile(&Default::default())
             && let nucleus::karma::CompiledSchedule::Calendar { schedule } = compiled.schedule
         {
             let step = schedule.cadence.every;
             draft.fields[2] = super::interval::describe(step);
-            draft.fields[3] = row
-                .next_local
-                .clone()
-                .unwrap_or_else(|| schedule.anchor.to_string());
+            date = Some(calendar_date(row, schedule.anchor));
             draft.weekdays = schedule
                 .cadence
                 .land_on
@@ -139,6 +142,7 @@ impl Draft {
                 .unwrap_or_default();
             draft.cadence_editable = row.definition.parameters.is_empty();
         }
+        draft.fields[3] = date.unwrap_or_else(default_date);
         draft.original_fields = Some(draft.fields.clone());
         draft.original_weekdays = draft.weekdays.clone();
         draft
@@ -262,6 +266,40 @@ impl Draft {
     }
 }
 
+fn default_date() -> String {
+    chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
+}
+
+fn elapsed_date(row: &Frequency, anchor: i64) -> String {
+    chrono::DateTime::from_timestamp_millis(row.next_at_ms.unwrap_or(anchor))
+        .unwrap()
+        .to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
+}
+
+fn calendar_date(row: &Frequency, anchor: impl ToString) -> String {
+    row.next_local.clone().unwrap_or_else(|| anchor.to_string())
+}
+
+pub fn edit_date(row: &Frequency) -> String {
+    let _prepare = nucleus::performance::Span::new("frequency-edit-date-preparation");
+    if let FrequencyCadenceAst::Elapsed {
+        interval: DurationBinding::Literal { .. },
+        anchor,
+    } = &row.definition.cadence
+    {
+        return elapsed_date(row, anchor.as_millis());
+    }
+    if matches!(
+        &row.definition.cadence,
+        FrequencyCadenceAst::Calendar { .. }
+    ) && let Ok(compiled) = row.definition.compile(&Default::default())
+        && let nucleus::karma::CompiledSchedule::Calendar { schedule } = compiled.schedule
+    {
+        return calendar_date(row, schedule.anchor);
+    }
+    default_date()
+}
+
 pub fn schedule(frequency: &Frequency) -> String {
     match &frequency.definition.cadence {
         FrequencyCadenceAst::Elapsed { interval, .. } => match interval {
@@ -291,31 +329,77 @@ pub fn schedule(frequency: &Frequency) -> String {
 }
 
 pub fn details(frequency: &Frequency, now: i64) -> String {
-    format!("{} | Next: {}", schedule(frequency), next(frequency, now))
+    format!(
+        "{} | Next: {}",
+        schedule(frequency),
+        Next::new(frequency, now)
+    )
 }
 
 pub fn next(frequency: &Frequency, now: i64) -> String {
-    let Some(at) = frequency.next_at_ms else {
-        return "No scheduled beat".into();
-    };
-    let Some(date) = chrono::DateTime::from_timestamp_millis(at) else {
-        return "Date unavailable".into();
-    };
-    let seconds = at.saturating_sub(now).max(0).saturating_add(999) / 1000;
-    let remaining = if seconds == 0 {
-        "Due now".into()
-    } else {
-        format!(
-            "{}d {:02}h {:02}m {:02}s",
-            seconds / 86400,
-            seconds / 3600 % 24,
-            seconds / 60 % 60,
-            seconds % 60
-        )
-    };
-    format!(
-        "{} · {remaining}",
-        date.with_timezone(&chrono::Local)
-            .format("%Y-%m-%d %H:%M:%S%.3f %:z")
-    )
+    Next::new(frequency, now).to_string()
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Next(NextValue);
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum NextValue {
+    None,
+    Unavailable,
+    Scheduled { at: i64, offset: i32, seconds: i64 },
+}
+
+impl Next {
+    pub fn new(frequency: &Frequency, now: i64) -> Self {
+        let Some(at) = frequency.next_at_ms else {
+            return Self(NextValue::None);
+        };
+        let Some(date) = chrono::DateTime::from_timestamp_millis(at) else {
+            return Self(NextValue::Unavailable);
+        };
+        Self(NextValue::Scheduled {
+            at,
+            offset: date
+                .with_timezone(&chrono::Local)
+                .offset()
+                .local_minus_utc(),
+            seconds: at.saturating_sub(now).max(0).saturating_add(999) / 1000,
+        })
+    }
+
+    pub fn scheduled(self) -> bool {
+        !matches!(self.0, NextValue::None)
+    }
+}
+
+impl std::fmt::Display for Next {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.0 {
+            NextValue::None => f.write_str("No scheduled beat"),
+            NextValue::Unavailable => f.write_str("Date unavailable"),
+            NextValue::Scheduled {
+                at,
+                offset,
+                seconds,
+            } => {
+                let date = chrono::DateTime::from_timestamp_millis(at)
+                    .expect("prepared Frequency countdown date")
+                    .with_timezone(&chrono::FixedOffset::east_opt(offset).expect("local offset"));
+                write!(f, "{} · ", date.format("%Y-%m-%d %H:%M:%S%.3f %:z"))?;
+                if seconds == 0 {
+                    f.write_str("Due now")
+                } else {
+                    write!(
+                        f,
+                        "{}d {:02}h {:02}m {:02}s",
+                        seconds / 86400,
+                        seconds / 3600 % 24,
+                        seconds / 60 % 60,
+                        seconds % 60
+                    )
+                }
+            }
+        }
+    }
 }

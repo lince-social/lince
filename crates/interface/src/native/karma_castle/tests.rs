@@ -50,7 +50,7 @@ fn header_filter_hides_unmatched_rules_without_changing_the_draft() {
         state: "active".into(),
         bindings: Vec::new(),
         record: String::new(),
-    }];
+    }].into();
     ui::Command::New.apply(app.world_mut(), owner);
     let form = app.world().get::<View>(owner).unwrap().form;
     let children: Vec<_> = app.world().get::<Children>(form).unwrap().iter().collect();
@@ -438,7 +438,7 @@ fn cells_edit_individually_and_rows_confirm_deletion() {
             bindings: Vec::new(),
             record: String::new(),
         })
-        .collect();
+        .collect::<Vec<_>>().into();
     ui::render_list(world, owner);
     let controls = world.get::<View>(owner).unwrap().controls;
     assert_eq!(world.get::<Children>(controls).unwrap().len(), 1);
@@ -575,7 +575,7 @@ fn row_actions_are_hidden_until_hover_and_selection_requires_confirmation() {
             bindings: Vec::new(),
             record: String::new(),
         })
-        .collect();
+        .collect::<Vec<_>>().into();
     ui::render_list(world, owner);
     let list = world.get::<View>(owner).unwrap().list;
     let row = world.get::<Children>(list).unwrap()[0];
@@ -769,7 +769,7 @@ fn table_text_has_visible_glyphs_and_editing_preserves_cell_bounds() {
         state: "active".into(),
         bindings: Vec::new(),
         record: String::new(),
-    }];
+    }].into();
     ui::render_list(app.world_mut(), owner);
     preview_ui::toggle(app.world_mut(), owner);
     for scheme in [

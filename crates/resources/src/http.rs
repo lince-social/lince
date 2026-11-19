@@ -209,11 +209,16 @@ impl Library {
             .map_err(|error| error.to_string())?;
         let response_at = now();
         let received_headers = headers(response.headers());
-        let not_modified = response.status() == StatusCode::NOT_MODIFIED;
-        let (mut values, resolved) = if not_modified {
-            let stored = stored
-                .as_ref()
-                .ok_or("Unexpected 304 without a stored representation")?;
+        let cached = if response.status() == StatusCode::NOT_MODIFIED {
+            Some(
+                stored
+                    .as_ref()
+                    .ok_or("Unexpected 304 without a stored representation")?,
+            )
+        } else {
+            None
+        };
+        let (mut values, resolved) = if let Some(stored) = cached {
             let mut values = stored.headers.clone();
             values.remove("age");
             values.remove("date");
@@ -252,8 +257,8 @@ impl Library {
         let mut bytes = 0u64;
         let mut buffer = [0u8; 65536];
         let mut previous;
-        let input: &mut dyn Read = if not_modified {
-            previous = fs::File::open(directory.join(&stored.as_ref().unwrap().body))
+        let input: &mut dyn Read = if let Some(stored) = cached {
+            previous = fs::File::open(directory.join(&stored.body))
                 .map_err(|error| error.to_string())?;
             &mut previous
         } else {
@@ -322,7 +327,7 @@ impl Library {
         Ok(HttpFile {
             path,
             uri: resolved,
-            cached: not_modified,
+            cached: cached.is_some(),
             _temporary: None,
         })
     }

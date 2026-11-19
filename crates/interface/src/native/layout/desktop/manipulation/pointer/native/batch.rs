@@ -70,7 +70,6 @@ impl Batch {
                         Event::FocusLost(event.window)
                     }
                     WindowEvent::KeyboardInput(event) => {
-                        // Every key advances matching, even when only Escape needs dispatch.
                         let modifiers = keys[next_key..]
                             .iter()
                             .position(|key| key.input == *event)
@@ -92,8 +91,6 @@ impl Batch {
         }
         engine::performance::add("native-manipulation-window-events", observed);
         engine::performance::add("native-manipulation-button-events", raw_count);
-        // Matching removes the first equal occurrence; unmatched raw input follows window input.
-        // Both cursors read the same immutable Messages, without a raw-event snapshot copy.
         if let Some(messages) = raw {
             for event in unmatched.read(messages) {
                 let copies = self.copies.get_mut(&identity(event)).unwrap();
@@ -112,7 +109,6 @@ impl Batch {
 #[derive(Default)]
 pub(super) struct Decisions {
     events: Vec<(MouseButtonInput, bool)>,
-    // Affected buttons map to their last swallowed event, if this batch has one.
     affected: HashMap<MouseButton, Option<usize>>,
     matching: HashMap<(MouseButton, bool), Vec<usize>>,
 }
@@ -144,7 +140,6 @@ impl Decisions {
         for button in self.affected.keys() {
             buttons.reset(*button);
         }
-        // Buttons have independent state; replay their unconsumed suffixes in one pass.
         for (index, (event, consumed)) in self.events.iter().enumerate() {
             if !consumed
                 && self

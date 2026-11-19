@@ -384,7 +384,6 @@ pub async fn calculate(
             &mut result.schedule,
             &std::collections::HashMap::new(),
         )?;
-        // Preserve the seed validation and budgets of an isolated calculation.
         for record in &inputs.records {
             TypedUid::new(ReferenceKind::Record, &record.uid).map_err(boundary)?;
             if let Some(unit) = &record.unit_uid {
@@ -530,7 +529,6 @@ pub async fn calculate(
             }
         }
         if !complete && result.incomplete.is_none() { result.incomplete = Some(Incomplete::Budget {}); }
-        // An unchanged private calculation already has its complete manual schedule.
         let data_changed = store::projection::revision(&private.pool).await? != initial_revision;
         let schedule_origins = if data_changed {
             active.iter().filter(|(uid, _)| !existing_records.contains(*uid)).map(|(uid, span)| (uid.clone(), span.cause.clone())).collect()

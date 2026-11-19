@@ -155,7 +155,7 @@ pub(in crate::graphics) fn read(
         .recv_timeout(Duration::from_secs(1))
         .unwrap()
         .unwrap();
-    let mapped = slice.get_mapped_range();
+    let mapped = slice.get_mapped_range().unwrap();
     let bytes = mapped
         .chunks_exact(stride as usize)
         .flat_map(|row_bytes| row_bytes[..row as usize].iter().copied())

@@ -142,7 +142,7 @@ fn button_borders(
             outline.width = px(0);
         }
         if let Some(mut feedback) = feedback.filter(|_| unsaved) {
-            feedback.style_border(border);
+            crate::native::save_feedback::SaveFeedback::style_border(&mut feedback, border);
         } else if node.border != border {
             node.border = border;
         }

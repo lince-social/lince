@@ -1197,8 +1197,6 @@ fn apply_status(world: &mut World, owner: Entity, saved: impl Into<Arc<FioteStat
     let step = panel.step;
     let record_changed = panel.binding.uid != saved.record;
     let first = panel.saved.is_none() && panel.automatic;
-    // Only these panels consume the full comparison. Ordinary closed/streaming
-    // views should not serialize an entire reply just to discard the result.
     let changed = matches!(step, Step::Manage | Step::Connections)
         && panel.saved.as_ref().is_none_or(|previous| {
             if Arc::ptr_eq(previous, &saved) {
@@ -1559,10 +1557,8 @@ fn masks(fields: Query<&EditableText>, mut masks: Query<(&Mask, &mut Text)>) {
     }
 }
 fn protect_keys(mut fields: Query<&mut EditableText, With<SecretField>>) {
-    for mut field in &mut fields {
-        field
-            .pending_edits
-            .retain(|edit| !matches!(edit, bevy::text::TextEdit::Copy | bevy::text::TextEdit::Cut));
+    for field in &mut fields {
+        crate::controls::protect_password(field);
     }
 }
 

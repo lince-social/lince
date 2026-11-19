@@ -858,8 +858,6 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
         } = message
         && !data["result"].is_object()
     {
-        // Progress changes the status label and poll lifetime, not the editor
-        // or result tree. Keep focus, composition and unfinished fields intact.
         world.get_mut::<View>(owner).unwrap().running =
             ["running", "cancelling"].contains(&data["state"].as_str().unwrap_or_default());
         status(world, owner, solve_status(data));

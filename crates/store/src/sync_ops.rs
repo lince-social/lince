@@ -166,9 +166,6 @@ pub async fn append(
     Ok(Some(seq))
 }
 
-// Resolve provenance and target routing in one statement. These are fresh
-// database values, not a retained permission/identity cache. Keep the same root
-// relation as replica::root_for_op[_tx], including missing/deleted targets.
 const LOCAL_CONTEXT: &str = "
     SELECT device.uid, device.organ_uid,
            CASE
@@ -209,8 +206,6 @@ async fn local_context_on<'e>(
 
 const LOCAL_STAMP_ATTEMPTS: usize = 8;
 
-// One borrowed operation description drives pool and transactional insertion.
-// It owns no payload and cannot outlive the caller's provenance/target values.
 struct LocalOperation<'a> {
     tbl: &'a str,
     uid: &'a str,
@@ -238,8 +233,6 @@ impl LocalOperation<'_> {
             })
     }
 
-    // A collision retries on the caller's connection/transaction, without
-    // reacquiring the pool for each insert or current-clock read.
     async fn try_insert_on(
         &self,
         connection: &mut SqliteConnection,
@@ -680,7 +673,7 @@ pub async fn ops_missing_from_vector(
           ORDER BY seq LIMIT ?",
         uncovered_clause(theirs)
     );
-    let mut query = sqlx::query(&sql).bind(organ_uid);
+    let mut query = sqlx::query(sqlx::AssertSqlSafe(sql.as_str())).bind(organ_uid);
     for entry in theirs {
         query = query.bind(&entry.actor_cell).bind(entry.max_hlc);
     }
@@ -703,7 +696,7 @@ pub async fn sibling_ops_missing_from_vector(
         "SELECT * FROM sync_op WHERE organ_uid = ? AND replica_root IS NULL AND NOT (kind = 'fact' AND EXISTS (SELECT 1 FROM fact f JOIN transfer_sync_journal j ON j.commit_sequence = f.commit_sequence WHERE f.uid = sync_op.uid AND j.cell_uid = sync_op.actor_cell AND j.organ_uid = sync_op.organ_uid)){} ORDER BY seq LIMIT ?",
         uncovered_clause(theirs)
     );
-    let mut query = sqlx::query(&sql).bind(organ_uid);
+    let mut query = sqlx::query(sqlx::AssertSqlSafe(sql.as_str())).bind(organ_uid);
     for entry in theirs {
         query = query.bind(&entry.actor_cell).bind(entry.max_hlc);
     }
@@ -728,7 +721,7 @@ pub async fn ops_missing_from_vector_in_root(
           ORDER BY seq LIMIT ?",
         uncovered_clause(theirs)
     );
-    let mut query = sqlx::query(&sql).bind(root);
+    let mut query = sqlx::query(sqlx::AssertSqlSafe(sql.as_str())).bind(root);
     for entry in theirs {
         query = query.bind(&entry.actor_cell).bind(entry.max_hlc);
     }
@@ -771,7 +764,7 @@ pub async fn seq_covered_by_vector(
           WHERE organ_uid = ? AND replica_root IS NULL{}",
         uncovered_clause(theirs)
     );
-    let mut query = sqlx::query_scalar::<_, Option<i64>>(&sql).bind(organ_uid);
+    let mut query = sqlx::query_scalar::<_, Option<i64>>(sqlx::AssertSqlSafe(sql.as_str())).bind(organ_uid);
     for entry in theirs {
         query = query.bind(&entry.actor_cell).bind(entry.max_hlc);
     }
@@ -933,9 +926,9 @@ pub async fn prune(pool: &SqlitePool, dry_run: bool) -> Result<PruneReport, Stor
                                    AND s.replica_root IS sync_op.replica_root
                                    AND s.seq > sync_op.seq)))";
 
-    let removable: i64 = sqlx::query(&format!(
+    let removable: i64 = sqlx::query(sqlx::AssertSqlSafe(format!(
         "SELECT COUNT(*) AS n FROM sync_op WHERE {PRUNABLE}"
-    ))
+    )))
     .bind(floor)
     .fetch_one(pool)
     .await?
@@ -947,7 +940,7 @@ pub async fn prune(pool: &SqlitePool, dry_run: bool) -> Result<PruneReport, Stor
         .get("n");
 
     if !dry_run && removable > 0 {
-        sqlx::query(&format!("DELETE FROM sync_op WHERE {PRUNABLE}"))
+        sqlx::query(sqlx::AssertSqlSafe(format!("DELETE FROM sync_op WHERE {PRUNABLE}")))
             .bind(floor)
             .execute(pool)
             .await?;

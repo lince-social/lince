@@ -254,8 +254,6 @@ pub struct ContentMapping {
     pub corners: Option<[[f64; 2]; 4]>,
 }
 
-/// A surface-to-canvas projection prepared for multiple points in one mapping.
-/// Perspective coefficients depend on the mapping, not on each queried point.
 #[derive(Clone, Copy, Debug)]
 pub struct CanvasProjection {
     canvas: Rectangle,

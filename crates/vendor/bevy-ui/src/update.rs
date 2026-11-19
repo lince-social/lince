@@ -1,180 +1,20 @@
 //! This module contains systems that update the UI when something changes
 
 use crate::{
-    CalculatedClip, ComputedUiRenderTargetInfo, ComputedUiTargetCamera, DefaultUiCamera, Display,
-    Node, OverrideClip, UiClippingBoundary, UiScale, UiTargetCamera,
     experimental::{UiChildren, UiRootNodes},
-    ui_transform::UiGlobalTransform,
+    ComputedUiRenderTargetInfo, ComputedUiTargetCamera, DefaultUiCamera, UiScale, UiTargetCamera,
 };
 
-use super::ComputedNode;
+pub use crate::layout::clipping::update_clipping_system;
+
 use bevy_app::Propagate;
 use bevy_camera::Camera;
 use bevy_ecs::{
-    entity::{Entity, EntityHashSet},
-    entity_disabling::Disabled,
-    hierarchy::{ChildOf, Children},
-    lifecycle::RemovedComponents,
-    query::{Added, Allow, Changed, Has, Or, With},
-    system::{Commands, Local, ParamSet, Query, Res},
+    entity::Entity,
+    query::{Or, With},
+    system::{Commands, Query, Res},
 };
-use bevy_math::{Rect, UVec2};
-
-/// Updates clipping for all nodes
-pub fn update_clipping_system(
-    mut commands: Commands,
-    root_nodes: UiRootNodes,
-    mut queries: ParamSet<(
-        Query<(
-            &Node,
-            &ComputedNode,
-            &UiGlobalTransform,
-            Option<&mut CalculatedClip>,
-            Has<OverrideClip>,
-            Option<&mut UiClippingBoundary>,
-        )>,
-        Query<
-            Entity,
-            Or<(
-                Changed<Node>,
-                Changed<ComputedNode>,
-                Changed<UiGlobalTransform>,
-                Changed<Children>,
-                Changed<ChildOf>,
-                Changed<OverrideClip>,
-                Changed<CalculatedClip>,
-                Added<UiClippingBoundary>,
-            )>,
-        >,
-    )>,
-    ui_children: UiChildren,
-    disabled: Query<(), (Added<Disabled>, Allow<Disabled>)>,
-    mut removed: (
-        RemovedComponents<Node>,
-        RemovedComponents<Children>,
-        RemovedComponents<ChildOf>,
-        RemovedComponents<OverrideClip>,
-        RemovedComponents<CalculatedClip>,
-        RemovedComponents<Disabled>,
-        RemovedComponents<UiClippingBoundary>,
-    ),
-    #[cfg(feature = "ghost_nodes")] ghosts: Query<Entity, Added<crate::experimental::GhostNode>>,
-    #[cfg(feature = "ghost_nodes")] mut removed_ghosts: RemovedComponents<
-        crate::experimental::GhostNode,
-    >,
-    mut dirty: Local<EntityHashSet>,
-) {
-    dirty.clear();
-    let reset = removed.5.read().count() != 0 || !disabled.is_empty();
-    for entity in queries
-        .p1()
-        .iter()
-        .chain(removed.0.read())
-        .chain(removed.1.read())
-        .chain(removed.2.read())
-        .chain(removed.3.read())
-        .chain(removed.4.read())
-        .chain(removed.6.read())
-    {
-        ui_children.affected_roots(entity, &mut dirty);
-    }
-    #[cfg(feature = "ghost_nodes")]
-    for entity in ghosts.iter().chain(removed_ghosts.read()) {
-        ui_children.affected_roots(entity, &mut dirty);
-    }
-    let mut node_query = queries.p0();
-    for root_node in root_nodes.iter() {
-        if !reset && !dirty.contains(&root_node) {
-            continue;
-        }
-        update_clipping(
-            &mut commands,
-            &ui_children,
-            &mut node_query,
-            root_node,
-            None,
-        );
-    }
-}
-
-fn update_clipping(
-    commands: &mut Commands,
-    ui_children: &UiChildren,
-    node_query: &mut Query<(
-        &Node,
-        &ComputedNode,
-        &UiGlobalTransform,
-        Option<&mut CalculatedClip>,
-        Has<OverrideClip>,
-        Option<&mut UiClippingBoundary>,
-    )>,
-    entity: Entity,
-    mut maybe_inherited_clip: Option<Rect>,
-) {
-    let Ok((node, computed_node, transform, maybe_calculated_clip, has_override_clip, boundary)) =
-        node_query.get_mut(entity)
-    else {
-        return;
-    };
-
-    if let Some(mut boundary) = boundary {
-        if boundary.inherited_clip != maybe_inherited_clip {
-            boundary.inherited_clip = maybe_inherited_clip;
-        }
-        return;
-    }
-
-    // If the UI node entity has an `OverrideClip` component, discard any inherited clip rect
-    if has_override_clip {
-        maybe_inherited_clip = None;
-    }
-
-    // If `display` is None, clip the entire node and all its descendants by replacing the inherited clip with a default rect (which is empty)
-    if node.display == Display::None {
-        maybe_inherited_clip = Some(Rect::default());
-    }
-
-    // Update this node's CalculatedClip component
-    if let Some(mut calculated_clip) = maybe_calculated_clip {
-        if let Some(inherited_clip) = maybe_inherited_clip {
-            // Replace the previous calculated clip with the inherited clipping rect
-            if calculated_clip.clip != inherited_clip {
-                *calculated_clip = CalculatedClip {
-                    clip: inherited_clip,
-                };
-            }
-        } else {
-            // No inherited clipping rect, remove the component
-            commands.entity(entity).remove::<CalculatedClip>();
-        }
-    } else if let Some(inherited_clip) = maybe_inherited_clip {
-        // No previous calculated clip, add a new CalculatedClip component with the inherited clipping rect
-        commands.entity(entity).try_insert(CalculatedClip {
-            clip: inherited_clip,
-        });
-    }
-
-    // Calculate new clip rectangle for children nodes
-    let children_clip = if node.overflow.is_visible() {
-        // The current node doesn't clip, propagate the optional inherited clipping rect to any children
-        maybe_inherited_clip
-    } else {
-        // Find the current node's clipping rect and intersect it with the inherited clipping rect, if one exists
-        // Content isn't clipped at the edges of the node but at the edges of the region specified by [`Node::overflow_clip_margin`].
-        //
-        // `clip_inset` should always fit inside `node_rect`.
-        // Even if `clip_inset` were to overflow, we won't return a degenerate result as `Rect::intersect` will clamp the intersection, leaving it empty.
-        let mut clip_rect =
-            computed_node.resolve_clip_rect(node.overflow, node.overflow_clip_margin);
-        clip_rect.min += transform.translation;
-        clip_rect.max += transform.translation;
-        Some(maybe_inherited_clip.map_or(clip_rect, |c| c.intersect(clip_rect)))
-    };
-
-    for child in ui_children.iter_ui_children(entity) {
-        update_clipping(commands, ui_children, node_query, child, children_clip);
-    }
-}
+use bevy_math::UVec2;
 
 pub fn propagate_ui_target_cameras(
     mut commands: Commands,
@@ -208,16 +48,14 @@ pub fn propagate_ui_target_cameras(
             .get(root_entity)
             .ok()
             .map(UiTargetCamera::entity)
-            .or(default_camera_entity)
-            .unwrap_or(Entity::PLACEHOLDER);
+            .or(default_camera_entity);
 
         commands
             .entity(root_entity)
             .try_insert(Propagate(ComputedUiTargetCamera { camera }));
 
-        let (scale_factor, physical_size) = camera_query
-            .get(camera)
-            .ok()
+        let (scale_factor, physical_size) = camera
+            .and_then(|camera| camera_query.get(camera).ok())
             .map(|camera| {
                 (
                     camera.target_scaling_factor().unwrap_or(1.) * ui_scale.0,
@@ -237,10 +75,15 @@ pub fn propagate_ui_target_cameras(
 
 #[cfg(test)]
 mod tests {
+    use crate::update::{propagate_ui_target_cameras, update_clipping_system};
+    use crate::CalculatedClip;
     use crate::ComputedUiRenderTargetInfo;
     use crate::ComputedUiTargetCamera;
+    use crate::FixedNode;
     use crate::IsDefaultUiCamera;
     use crate::Node;
+    use crate::Overflow;
+    use crate::OverrideClip;
     use crate::UiScale;
     use crate::UiTargetCamera;
     use crate::update::propagate_ui_target_cameras;
@@ -313,7 +156,9 @@ mod tests {
 
         assert_eq!(
             *world.get::<ComputedUiTargetCamera>(uinode).unwrap(),
-            ComputedUiTargetCamera { camera }
+            ComputedUiTargetCamera {
+                camera: Some(camera)
+            }
         );
 
         assert_eq!(
@@ -385,7 +230,9 @@ mod tests {
         ] {
             assert_eq!(
                 *world.get::<ComputedUiTargetCamera>(uinode).unwrap(),
-                ComputedUiTargetCamera { camera }
+                ComputedUiTargetCamera {
+                    camera: Some(camera)
+                }
             );
 
             assert_eq!(
@@ -728,6 +575,74 @@ mod tests {
                 .scale_factor(),
             2.
         );
+    }
+
+    #[test]
+    fn fixed_node_opens_new_clipping_context() {
+        let mut app = App::new();
+        app.add_systems(bevy_app::Update, update_clipping_system);
+
+        let grandchild = app.world_mut().spawn(Node::default()).id();
+        let child = app
+            .world_mut()
+            .spawn(Node::default())
+            .add_child(grandchild)
+            .id();
+        app.world_mut()
+            .spawn(Node {
+                overflow: Overflow::clip(),
+                ..default()
+            })
+            .add_child(child);
+
+        app.update();
+        assert_eq!(
+            app.world()
+                .get::<CalculatedClip>(grandchild)
+                .unwrap()
+                .rects()
+                .unwrap()
+                .len(),
+            1
+        );
+
+        app.world_mut().entity_mut(child).insert(FixedNode);
+        app.update();
+        assert!(app.world().get::<CalculatedClip>(grandchild).is_none());
+
+        app.world_mut().entity_mut(child).remove::<FixedNode>();
+        app.update();
+        assert_eq!(
+            app.world()
+                .get::<CalculatedClip>(grandchild)
+                .unwrap()
+                .rects()
+                .unwrap()
+                .len(),
+            1
+        );
+    }
+
+    #[test]
+    fn override_clip_opens_new_clipping_context() {
+        let mut app = App::new();
+        app.add_systems(bevy_app::Update, update_clipping_system);
+
+        let grandchild = app.world_mut().spawn(Node::default()).id();
+        let child = app
+            .world_mut()
+            .spawn((Node::default(), OverrideClip))
+            .add_child(grandchild)
+            .id();
+        app.world_mut()
+            .spawn(Node {
+                overflow: Overflow::clip(),
+                ..default()
+            })
+            .add_child(child);
+
+        app.update();
+        assert!(app.world().get::<CalculatedClip>(grandchild).is_none());
     }
 }
 

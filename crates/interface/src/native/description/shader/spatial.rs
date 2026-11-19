@@ -14,8 +14,10 @@ use bevy::{
 use nucleus::shader_effect::spatial::{MESH_TYPES, MeshEntry, MeshSettings, Mode, Shape};
 
 mod geometry;
+mod instances;
 mod lighting;
 mod volume;
+use instances::{AnchoredAt, InstanceOf, WorldInstance};
 
 const DEPTH_VERTEX: Handle<Shader> =
     bevy::asset::uuid_handle!("de1e71d0-63c5-4d2e-980d-25677e2188cd");
@@ -133,7 +135,7 @@ impl Material for MeshMaterial {
 }
 
 struct Bundle {
-    effect: Effect,
+    effect: Arc<Effect>,
     mesh: Handle<Mesh>,
     materials: BTreeMap<String, Handle<MeshMaterial>>,
     world_materials: BTreeMap<String, Handle<MeshMaterial>>,
@@ -148,14 +150,6 @@ struct State {
     working: Option<Bundle>,
     preview: Option<Entity>,
     selected: Option<String>,
-}
-
-#[derive(Component)]
-struct WorldInstance {
-    preview: Entity,
-    anchor: Entity,
-    extent: f32,
-    requested_visible: bool,
 }
 
 #[derive(Resource, Default)]
@@ -175,11 +169,11 @@ enum Stage {
 }
 
 impl Stage {
-    fn label(self) -> &'static str {
+    fn prefix(self) -> &'static str {
         match self {
-            Self::Vertex => "vertex",
-            Self::Fragment => "fragment",
-            Self::Compute => "compute",
+            Self::Vertex => "mesh:vertex:",
+            Self::Fragment => "mesh:fragment:",
+            Self::Compute => "mesh:compute:",
         }
     }
 }
@@ -243,12 +237,12 @@ pub(super) fn install(app: &mut App) {
         .resource_mut::<Assets<Shader>>()
         .insert(
             DEPTH_VERTEX.id(),
-            Shader::from_wgsl(
+            Shader::from_wesl(
                 vertex_source(&Effect {
                     mode: Mode::Mesh(default()),
                     ..default()
                 }),
-                "record-mesh-depth.wgsl",
+                "record-mesh-depth.wesl",
             ),
         )
         .unwrap();
@@ -266,30 +260,36 @@ pub(super) fn install(app: &mut App) {
 }
 
 fn extract(mut requests: ResMut<Requests>, effects: Extract<Res<MeshEffects>>) {
-    requests.0 = effects
-        .0
-        .values()
-        .filter_map(|state| state.candidate.as_ref())
-        .flat_map(|bundle| {
-            bundle
-                .materials
-                .iter()
-                .map(|(name, material)| Request {
-                    material: material.id(),
-                    mesh: bundle.mesh.id(),
-                    key: bundle.keys[name].clone(),
-                })
-                .chain(bundle.world_materials.iter().map(|(name, material)| {
-                    let mut key = bundle.keys[name].clone();
-                    key.offscreen = false;
-                    Request {
+    let _requests = nucleus::performance::Span::new("shader-spatial-pipeline-requests");
+    requests.0.clear();
+    requests.0.extend(
+        effects
+            .0
+            .values()
+            .filter_map(|state| state.candidate.as_ref())
+            .flat_map(|bundle| {
+                bundle
+                    .materials
+                    .iter()
+                    .map(|(name, material)| Request {
                         material: material.id(),
                         mesh: bundle.mesh.id(),
-                        key,
-                    }
-                }))
-        })
-        .collect();
+                        key: bundle.keys[name].clone(),
+                    })
+                    .chain(bundle.world_materials.iter().map(|(name, material)| {
+                        let mut key = bundle.keys[name].clone();
+                        key.offscreen = false;
+                        Request {
+                            material: material.id(),
+                            mesh: bundle.mesh.id(),
+                            key,
+                        }
+                    }))
+            }),
+    );
+    if requests.0.is_empty() {
+        requests.0 = Vec::new();
+    }
 }
 
 fn prepare(
@@ -302,22 +302,27 @@ fn prepare(
     mut pipelines: ResMut<SpecializedMeshPipelines<Preflight>>,
     cache: Res<PipelineCache>,
     views: Query<&ExtractedView, With<bevy::render::camera::ExtractedCamera>>,
+    mut formats: Local<HashSet<TextureFormat>>,
 ) {
+    if requests.0.is_empty() {
+        *formats = HashSet::new();
+        return;
+    }
+    let _preparation = nucleus::performance::Span::new("shader-spatial-pipeline-preparation");
     let Some(pipeline) = pipeline else {
         return;
     };
-    let formats: HashSet<_> = views
-        .iter()
-        .map(|view| view.target_format)
-        .filter(|format| !format.is_depth_stencil_format())
-        .collect();
+    formats.clear();
+    formats.extend(
+        views
+            .iter()
+            .map(|view| view.target_format)
+            .filter(|format| !format.is_depth_stencil_format()),
+    );
     if formats.is_empty() {
         return;
     }
-    let preflight = Preflight {
-        mesh: pipeline.mesh_pipeline.clone(),
-        layout: MeshMaterial::bind_group_layout_descriptor(&device),
-    };
+    let mut preflight = None;
     for request in &requests.0 {
         let Some(mesh) = meshes.get(request.mesh) else {
             continue;
@@ -325,9 +330,13 @@ fn prepare(
         if materials.get(request.material).is_none() {
             continue;
         }
+        let preflight = preflight.get_or_insert_with(|| Preflight {
+            mesh: pipeline.mesh_pipeline.clone(),
+            layout: MeshMaterial::bind_group_layout_descriptor(&device),
+        });
         let mut ready = true;
         let mut error = None;
-        for format in &formats {
+        for format in formats.iter() {
             for projection in [
                 MeshPipelineKey::VIEW_PROJECTION_PERSPECTIVE,
                 MeshPipelineKey::VIEW_PROJECTION_ORTHOGRAPHIC,
@@ -349,7 +358,7 @@ fn prepare(
                     }
                     match pipelines.specialize(
                         &cache,
-                        &preflight,
+                        preflight,
                         (key, request.key.clone(), depth),
                         &mesh.layout,
                     ) {
@@ -377,8 +386,8 @@ fn prepare(
 
 fn header() -> String {
     format!(
-        "{}{}\n@group(#{{MATERIAL_BIND_GROUP}}) @binding(1) var<uniform> lince_parameters: vec4<f32>;\n{}",
-        nucleus::shader_effect::HEADER.replace("@group(1)", "@group(#{MATERIAL_BIND_GROUP})"),
+        "{}{}\n@group(constants::MATERIAL_BIND_GROUP) @binding(1) var<uniform> lince_parameters: vec4<f32>;\n{}",
+        nucleus::shader_effect::HEADER.replace("@group(1)", "@group(constants::MATERIAL_BIND_GROUP)"),
         MESH_TYPES,
         include_str!("varyings.wgsl")
     )
@@ -392,11 +401,11 @@ fn vertex_source(effect: &Effect) -> String {
     let deformation = settings.and_then(|settings| settings.deformation.as_ref()).map(|stage| stage.source.as_str())
         .unwrap_or("fn deform_vertex(vertex: MeshVertex, inputs: ShaderInputs) -> MeshVertex { return vertex; }");
     format!(
-        "{}\nconst LINCE_GENERATED_GEOMETRY: bool = {};\n{}\n{}",
+        "{}\n{}\nconst LINCE_GENERATED_GEOMETRY: bool = {};\n{}",
+        include_str!("mesh_vertex.wesl"),
         header(),
         settings.is_some_and(|settings| settings.geometry.is_some()),
-        deformation,
-        include_str!("mesh_vertex.wgsl")
+        deformation
     )
 }
 
@@ -412,9 +421,9 @@ fn fragment_source(effect: &Effect, source: &str) -> Result<String, String> {
     };
     Ok(format!(
         "{}\n{}\n{}\n@fragment fn lince_fragment(input: LinceVaryings) -> @location(0) vec4<f32> {{ return lince_lit_color(input, {}); }}",
+        include_str!("spatial/lighting.wesl"),
         header(),
         source,
-        include_str!("spatial/lighting.wgsl"),
         call
     ))
 }
@@ -425,14 +434,14 @@ fn shader(
     priority: bool,
     stage: Stage,
 ) -> Result<Handle<Shader>, String> {
-    let key = format!("mesh:{}:{source}", stage.label());
+    let key = format!("{}{source}", stage.prefix());
     if let Some(handle) = world.resource::<EffectAssets>().shaders.get(&key) {
         return Ok(handle.clone());
     }
     if world.resource::<EffectAssets>().shaders.len() >= if priority { 72 } else { 64 } {
         return Err("Shader cache is full. Close unused effect views before editing.".into());
     }
-    let mut shader = Shader::from_wgsl(source, "record-mesh.wgsl");
+    let mut shader = Shader::from_wesl(source, "record-mesh.wesl");
     shader.validate_shader = ValidateShader::Enabled;
     let available = {
         let mut pools = world.resource_mut::<ShaderPools>();
@@ -485,7 +494,7 @@ fn release(world: &mut World, bundle: Bundle) {
 pub(super) fn candidate(
     world: &mut World,
     owner: Entity,
-    effect: &Effect,
+    effect: &Arc<Effect>,
 ) -> Result<BTreeMap<String, Handle<Shader>>, String> {
     let settings = match &effect.mode {
         Mode::Mesh(settings) => settings.clone(),
@@ -496,14 +505,7 @@ pub(super) fn candidate(
         Mode::Surface => return Err("Choose mesh or volume mode.".into()),
     };
     let is_volume = matches!(effect.mode, Mode::Volume(_));
-    if is_volume
-        && world
-            .query::<(&WorldInstance, &Visibility)>()
-            .iter(world)
-            .any(|(instance, visibility)| {
-                instance.preview == owner && *visibility == Visibility::Visible
-            })
-    {
+    if is_volume && instances::visible(world, owner) {
         volume::world_views(world);
     }
     if !world.contains_resource::<Assets<MeshMaterial>>() {
@@ -514,7 +516,7 @@ pub(super) fn candidate(
         .0
         .get(&owner)
         .and_then(|state| state.candidate.as_ref())
-        && bundle.effect == *effect
+        && bundle.effect.as_ref() == effect.as_ref()
     {
         return Ok(bundle
             .keys
@@ -713,7 +715,7 @@ pub(super) fn recycle(
 ) -> Option<Handle<Shader>> {
     if let Some(mut pools) = world.get_resource_mut::<ShaderPools>() {
         for stage in [Stage::Vertex, Stage::Fragment, Stage::Compute] {
-            if key.starts_with(&format!("mesh:{}:", stage.label())) {
+            if key.starts_with(stage.prefix()) {
                 pools.available[stage as usize].push(handle);
                 return None;
             }
@@ -722,7 +724,7 @@ pub(super) fn recycle(
     Some(handle)
 }
 
-pub(super) fn shaders(world: &World) -> Vec<AssetId<Shader>> {
+pub(super) fn shaders(world: &World) -> impl Iterator<Item = AssetId<Shader>> + '_ {
     world
         .get_resource::<MeshEffects>()
         .into_iter()
@@ -735,7 +737,6 @@ pub(super) fn shaders(world: &World) -> Vec<AssetId<Shader>> {
                 .flat_map(|key| [key.vertex.id(), key.fragment.id()])
                 .chain(bundle.compute.iter().map(Handle::id))
         })
-        .collect()
 }
 
 fn extent(effect: &Effect) -> f32 {
@@ -750,7 +751,60 @@ fn extent(effect: &Effect) -> f32 {
     }
 }
 
+fn publish_body(
+    world: &mut World,
+    entity: Entity,
+    mesh: &Handle<Mesh>,
+    material: &Handle<MeshMaterial>,
+    extent: f32,
+    source: Option<Entity>,
+    volume: bool,
+) {
+    let mut changed = false;
+    if world
+        .get::<Mesh3d>(entity)
+        .is_none_or(|current| &current.0 != mesh)
+    {
+        world.entity_mut(entity).insert(Mesh3d(mesh.clone()));
+        changed = true;
+    }
+    if lighting::publish_base(world, entity, material, volume) {
+        changed = true;
+    }
+    if let Some(source) = source
+        && world
+            .get::<crate::native::capture::render::TargetSource>(entity)
+            .is_none_or(|current| current.0 != source)
+    {
+        world
+            .entity_mut(entity)
+            .insert(crate::native::capture::render::TargetSource(source));
+        changed = true;
+    }
+    let bounds = Aabb {
+        center: Vec3::ZERO.into(),
+        half_extents: Vec3::splat(extent).into(),
+    };
+    if world.get::<Aabb>(entity).is_none_or(|current| {
+        current.center != bounds.center || current.half_extents != bounds.half_extents
+    }) {
+        world.entity_mut(entity).insert(bounds);
+        changed = true;
+    }
+    if changed {
+        nucleus::performance::add("shader-spatial-body-updates", 1);
+    }
+}
+
+fn publish_transform(world: &mut World, entity: Entity, transform: Transform) {
+    if world.get::<Transform>(entity) != Some(&transform) {
+        world.entity_mut(entity).insert(transform);
+        nucleus::performance::add("shader-spatial-transform-updates", 1);
+    }
+}
+
 pub(super) fn draw(world: &mut World, owner: Entity, program: &str, inputs: ShaderInputs) {
+    let _publication = nucleus::performance::Span::new("shader-spatial-draw-publication");
     let (mesh, material, world_material, geometry, slot, entity, extent, is_volume) = {
         let effects = world.resource::<MeshEffects>();
         let state = &effects.0[&owner];
@@ -770,16 +824,26 @@ pub(super) fn draw(world: &mut World, owner: Entity, program: &str, inputs: Shad
         geometry::update(world, &geometry, inputs);
     }
     for handle in std::iter::once(&material).chain(world_material.as_ref()) {
-        world
-            .resource_mut::<Assets<MeshMaterial>>()
-            .get_mut(handle)
+        if !world
+            .resource::<Assets<MeshMaterial>>()
+            .get(handle)
             .unwrap()
-            .inputs = inputs;
+            .inputs
+            .same_uniform(&inputs)
+        {
+            world
+                .resource_mut::<Assets<MeshMaterial>>()
+                .get_mut(handle)
+                .unwrap()
+                .inputs = inputs;
+            nucleus::performance::add("shader-spatial-input-updates", 1);
+        }
     }
     let data = world.get::<EffectPreview>(owner).unwrap();
     let camera = data.camera;
     let render_surface = data.render_surface;
-    let layer = RenderLayers::none().with(crate::native::render_layers::SHADERS.get(slot).unwrap());
+    let layer =
+        || RenderLayers::none().with(crate::native::render_layers::SHADERS.get(slot).unwrap());
     if camera != Entity::PLACEHOLDER && world.get::<Camera3d>(camera).is_none() {
         world.entity_mut(camera).remove::<Camera2d>().insert((
             Camera3d::default(),
@@ -787,20 +851,23 @@ pub(super) fn draw(world: &mut World, owner: Entity, program: &str, inputs: Shad
             Projection::Perspective(PerspectiveProjection::default()),
             Transform::from_translation(Vec3::new(1.4, 0.9, 1.7).normalize() * extent * 5.0)
                 .looking_at(Vec3::ZERO, Vec3::Y),
-            layer.clone(),
+            layer(),
         ));
     }
     if camera != Entity::PLACEHOLDER
-        && let Some(mut transform) = world.get_mut::<Transform>(camera)
+        && let Some(transform) = world.get::<Transform>(camera)
     {
         let direction = transform
             .translation
             .normalize_or(Vec3::new(1.4, 0.9, 1.7).normalize());
-        *transform =
+        let transform =
             Transform::from_translation(direction * extent * 5.0).looking_at(Vec3::ZERO, Vec3::Y);
+        publish_transform(world, camera, transform);
     }
     volume::preview(world, camera, is_volume);
-    world.get_mut::<Node>(render_surface).unwrap().display = Display::None;
+    if world.get::<Node>(render_surface).unwrap().display != Display::None {
+        world.get_mut::<Node>(render_surface).unwrap().display = Display::None;
+    }
     let entity = entity.unwrap_or_else(|| {
         world
             .spawn((
@@ -808,80 +875,35 @@ pub(super) fn draw(world: &mut World, owner: Entity, program: &str, inputs: Shad
                 MeshMaterial3d(material.clone()),
                 Transform::default(),
                 Visibility::Visible,
-                layer,
+                layer(),
                 bevy::picking::Pickable::IGNORE,
             ))
             .id()
     });
-    world.entity_mut(entity).insert((
-        Mesh3d(mesh.clone()),
-        MeshMaterial3d(material.clone()),
-        crate::native::capture::render::TargetSource(owner),
-        Aabb {
-            center: Vec3::ZERO.into(),
-            half_extents: Vec3::splat(extent).into(),
-        },
-    ));
-    if is_volume {
-        world
-            .entity_mut(entity)
-            .insert(bevy::light::NotShadowCaster);
-    } else {
-        world
-            .entity_mut(entity)
-            .remove::<bevy::light::NotShadowCaster>();
-    }
-    let instances: Vec<_> = world
-        .query::<(Entity, &WorldInstance, &Transform, &Visibility)>()
-        .iter(world)
-        .filter(|(_, instance, _, _)| instance.preview == owner)
-        .map(|(entity, instance, transform, visible)| {
-            (
-                entity,
-                instance.extent,
-                *transform,
-                *visible == Visibility::Visible,
-            )
-        })
-        .collect();
-    if is_volume && instances.iter().any(|(_, _, _, visible)| *visible) {
-        volume::world_views(world);
-    }
+    publish_body(
+        world,
+        entity,
+        &mesh,
+        &material,
+        extent,
+        Some(owner),
+        is_volume,
+    );
     let world_material = world_material.as_ref().unwrap_or(&material);
-    for (entity, previous_extent, mut transform, _) in instances {
-        transform.scale *= previous_extent / extent;
-        world.entity_mut(entity).insert((
-            Mesh3d(mesh.clone()),
-            MeshMaterial3d(world_material.clone()),
-            transform,
-            Aabb {
-                center: Vec3::ZERO.into(),
-                half_extents: Vec3::splat(extent).into(),
-            },
-        ));
-        world.get_mut::<WorldInstance>(entity).unwrap().extent = extent;
-        if is_volume {
-            world
-                .entity_mut(entity)
-                .insert(bevy::light::NotShadowCaster);
-        } else {
-            world
-                .entity_mut(entity)
-                .remove::<bevy::light::NotShadowCaster>();
+    instances::publish(world, owner, &mesh, world_material, extent, is_volume);
+    let state = &world.resource::<MeshEffects>().0[&owner];
+    let preview_changed = state.preview != Some(entity);
+    let program_changed = state.selected.as_deref() != Some(program);
+    if preview_changed || program_changed {
+        let mut effects = world.resource_mut::<MeshEffects>();
+        let state = effects.0.get_mut(&owner).unwrap();
+        if preview_changed {
+            state.preview = Some(entity);
+        }
+        if program_changed {
+            state.selected = Some(program.to_owned());
         }
     }
-    world
-        .resource_mut::<MeshEffects>()
-        .0
-        .get_mut(&owner)
-        .unwrap()
-        .preview = Some(entity);
-    world
-        .resource_mut::<MeshEffects>()
-        .0
-        .get_mut(&owner)
-        .unwrap()
-        .selected = Some(program.to_owned());
 }
 
 pub(crate) fn place(
@@ -892,13 +914,10 @@ pub(crate) fn place(
     mut transform: Transform,
     visible: bool,
 ) -> bool {
+    let _publication = nucleus::performance::Span::new("shader-spatial-placement-publication");
     let requested_visible = visible;
     let visible = visible && enabled(world, preview);
-    let existing = world
-        .query::<(Entity, &WorldInstance)>()
-        .iter(world)
-        .find(|(_, instance)| instance.anchor == anchor)
-        .map(|(entity, _)| entity);
+    let existing = instances::at(world, anchor);
     let assets = world.get_resource::<MeshEffects>().and_then(|effects| {
         let state = effects.0.get(&preview)?;
         let bundle = state.working.as_ref()?;
@@ -950,9 +969,9 @@ pub(crate) fn place(
         world
             .spawn((
                 crate::native::shader_effects::RecordMesh(record),
+                InstanceOf(preview),
+                AnchoredAt(anchor),
                 WorldInstance {
-                    preview,
-                    anchor,
                     extent,
                     requested_visible,
                 },
@@ -965,35 +984,47 @@ pub(crate) fn place(
             ))
             .id()
     });
-    world.entity_mut(entity).insert((
-        Mesh3d(mesh),
-        MeshMaterial3d(material),
-        crate::native::capture::render::TargetSource(preview),
-        layers,
-        transform,
-        if visible {
-            Visibility::Visible
-        } else {
-            Visibility::Hidden
-        },
-        Aabb {
-            center: Vec3::ZERO.into(),
-            half_extents: Vec3::splat(extent).into(),
-        },
-    ));
-    world.get_mut::<WorldInstance>(entity).unwrap().extent = extent;
-    world
-        .get_mut::<WorldInstance>(entity)
-        .unwrap()
-        .requested_visible = requested_visible;
-    if is_volume {
+    if world
+        .get::<InstanceOf>(entity)
+        .is_none_or(|owner| owner.0 != preview)
+    {
+        world.entity_mut(entity).insert(InstanceOf(preview));
+    }
+    if world
+        .get::<crate::native::shader_effects::RecordMesh>(entity)
+        .is_none_or(|source| source.0 != record)
+    {
         world
             .entity_mut(entity)
-            .insert(bevy::light::NotShadowCaster);
+            .insert(crate::native::shader_effects::RecordMesh(record));
+    }
+    publish_body(
+        world,
+        entity,
+        &mesh,
+        &material,
+        extent,
+        Some(preview),
+        is_volume,
+    );
+    if world.get::<RenderLayers>(entity) != Some(&layers) {
+        world.entity_mut(entity).insert(layers);
+    }
+    publish_transform(world, entity, transform);
+    let visibility = if visible {
+        Visibility::Visible
     } else {
-        world
-            .entity_mut(entity)
-            .remove::<bevy::light::NotShadowCaster>();
+        Visibility::Hidden
+    };
+    if world.get::<Visibility>(entity) != Some(&visibility) {
+        world.entity_mut(entity).insert(visibility);
+    }
+    let mut instance = world.get_mut::<WorldInstance>(entity).unwrap();
+    if instance.extent != extent {
+        instance.extent = extent;
+    }
+    if instance.requested_visible != requested_visible {
+        instance.requested_visible = requested_visible;
     }
     true
 }
@@ -1028,15 +1059,7 @@ pub(super) fn surface(world: &mut World, owner: Entity) {
     if let Some(entity) = state.preview {
         world.despawn(entity);
     }
-    let instances: Vec<_> = world
-        .query::<(Entity, &WorldInstance)>()
-        .iter(world)
-        .filter(|(_, instance)| instance.preview == owner)
-        .map(|(entity, _)| entity)
-        .collect();
-    for entity in instances {
-        world.despawn(entity);
-    }
+    instances::remove(world, owner);
     for bundle in state.working.into_iter().chain(state.candidate) {
         release(world, bundle);
     }
@@ -1073,40 +1096,32 @@ pub(super) fn prune(world: &mut World, alive: &HashSet<Entity>) {
     if !world.contains_resource::<MeshEffects>() {
         return;
     }
+    world
+        .run_system_cached_with(prune_effects, alive)
+        .expect("retire unused spatial effects");
+}
+
+fn prune_effects(
+    bevy::ecs::system::InRef(alive): bevy::ecs::system::InRef<HashSet<Entity>>,
+    world: &mut World,
+    mut dead: Local<Vec<Entity>>,
+) {
     geometry::begin(world);
-    let dead: Vec<_> = world
-        .resource::<MeshEffects>()
-        .0
-        .keys()
-        .filter(|owner| !alive.contains(owner))
-        .copied()
-        .collect();
-    for owner in dead {
+    dead.clear();
+    dead.extend(
+        world
+            .resource::<MeshEffects>()
+            .0
+            .keys()
+            .filter(|owner| !alive.contains(owner))
+            .copied(),
+    );
+    for owner in dead.drain(..) {
         surface(world, owner);
     }
-    let stale: Vec<_> = world
-        .query::<(Entity, &WorldInstance)>()
-        .iter(world)
-        .filter(|(_, instance)| !world.entities().contains(instance.anchor))
-        .map(|(entity, _)| entity)
-        .collect();
-    for entity in stale {
-        world.despawn(entity);
-    }
-    let visibility: Vec<_> = world
-        .query::<(Entity, &WorldInstance, &Visibility)>()
-        .iter(world)
-        .filter_map(|(entity, instance, current)| {
-            let next = if instance.requested_visible && enabled(world, instance.preview) {
-                Visibility::Visible
-            } else {
-                Visibility::Hidden
-            };
-            (*current != next).then_some((entity, next))
-        })
-        .collect();
-    for (entity, visibility) in visibility {
-        world.entity_mut(entity).insert(visibility);
-    }
+    instances::prune(world);
     volume::prune(world);
+    if world.resource::<MeshEffects>().0.is_empty() {
+        *dead = Vec::new();
+    }
 }

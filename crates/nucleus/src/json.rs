@@ -1,16 +1,7 @@
-//! Compact JSON consumers that do not need to retain the encoded payload.
-//!
-//! Keep the standard serializer as the byte-format authority: escaping, number
-//! formatting, raw values and serialization failures match `serde_json::to_vec`.
-//! Counting runs to completion, so a size limit does not hide a later error.
-
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 use std::io::{self, Write};
 
-/// Compare retained JSON inputs without encoding or conflating signed zero.
-/// Object iteration order is significant if `preserve_order` is enabled.
-/// This is deliberately separate from semantic JSON/Record equality.
 pub fn same_value_encoding(left: &serde_json::Value, right: &serde_json::Value) -> bool {
     use serde_json::Value;
     match (left, right) {
@@ -31,8 +22,6 @@ pub fn same_value_encoding(left: &serde_json::Value, right: &serde_json::Value) 
     }
 }
 
-/// Compare an immutable row/array sequence using exact JSON representation.
-/// Reusing the same slice requires no element traversal.
 pub fn same_values_encoding(left: &[serde_json::Value], right: &[serde_json::Value]) -> bool {
     std::ptr::eq(left, right)
         || left.len() == right.len()
@@ -42,7 +31,6 @@ pub fn same_values_encoding(left: &[serde_json::Value], right: &[serde_json::Val
                 .all(|(left, right)| same_value_encoding(left, right))
 }
 
-/// Returns the exact compact JSON byte length without allocating its output.
 pub fn encoded_len<T: Serialize + ?Sized>(value: &T) -> serde_json::Result<usize> {
     let _preparation = crate::performance::Span::new("json-size-preparation");
     let bytes = encode(value, |_| {})?;
@@ -51,7 +39,6 @@ pub fn encoded_len<T: Serialize + ?Sized>(value: &T) -> serde_json::Result<usize
     Ok(bytes)
 }
 
-/// Hashes exactly the compact JSON bytes, without retaining an encoded copy.
 pub fn sha256<T: Serialize + ?Sized>(value: &T) -> serde_json::Result<[u8; 32]> {
     let _preparation = crate::performance::Span::new("json-hash-preparation");
     let mut digest = Sha256::new();
@@ -61,7 +48,6 @@ pub fn sha256<T: Serialize + ?Sized>(value: &T) -> serde_json::Result<[u8; 32]> 
     Ok(digest.finalize().into())
 }
 
-/// Hashes compact JSON directly into its lowercase SHA-256 hex representation.
 pub fn sha256_hex<T: Serialize + ?Sized>(value: &T) -> serde_json::Result<String> {
     use std::fmt::Write as _;
     let digest = sha256(value)?;

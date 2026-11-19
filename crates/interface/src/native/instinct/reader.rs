@@ -3,7 +3,7 @@ use crate::native::{actions::ActionButton, edit_mode::label, tokens::Token};
 use bevy::{
     input::keyboard::KeyboardInput,
     input_focus::{FocusCause, FocusedInput, InputFocus, tab_navigation::TabIndex},
-    picking::events::Scroll,
+    picking::events::PointerScroll,
 };
 
 pub(super) fn button(
@@ -38,7 +38,7 @@ pub(super) fn button(
     entity
 }
 
-fn scroll(mut event: On<Pointer<Scroll>>, mut scrolls: Query<&mut ScrollPosition>) {
+fn scroll(mut event: On<PointerScroll>, mut scrolls: Query<&mut ScrollPosition>) {
     if !event.y.is_finite() {
         return;
     }

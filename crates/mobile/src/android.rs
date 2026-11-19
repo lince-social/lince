@@ -536,7 +536,7 @@ fn with_activity<T>(
 }
 
 pub fn edit(
-    event: On<Pointer<Click>>,
+    event: On<PointerClick>,
     inputs: Query<(
         Option<&crate::app::Input>,
         Option<&lince_interface::controls::Editor>,

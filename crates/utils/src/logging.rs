@@ -9,7 +9,7 @@ use tracing_subscriber::{
 static QUIET: AtomicBool = AtomicBool::new(false);
 const LOG_INFO: bool = false;
 
-#[allow(dead_code)]
+#[allow(dead_code, reason = "Retain the Info variant for optional callers even when it is unused")]
 pub enum LogEntry {
     Error(ErrorKind, String),
     Info(String),

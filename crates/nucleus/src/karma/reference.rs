@@ -155,11 +155,11 @@ impl Serialize for TypedUid {
     where
         S: Serializer,
     {
-        TypedUidWire {
-            kind: self.kind,
-            uid: self.uid.clone(),
-        }
-        .serialize(serializer)
+        use serde::ser::SerializeStruct as _;
+        let mut wire = serializer.serialize_struct("TypedUidWire", 2)?;
+        wire.serialize_field("kind", &self.kind)?;
+        wire.serialize_field("uid", &self.uid)?;
+        wire.end()
     }
 }
 

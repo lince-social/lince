@@ -5,7 +5,7 @@ const PAGE: usize = 32;
 
 pub(super) fn description(content: &Value) -> String {
     use nucleus::transfer::receipt::Content;
-    match serde_json::from_value::<Content>(content.clone()) {
+    match Content::deserialize(content) {
         Ok(Content::Need { requested, .. }) => format!("Receiver Need · requested {requested}"),
         Ok(Content::Statement {
             role,

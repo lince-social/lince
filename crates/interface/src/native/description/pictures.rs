@@ -1,22 +1,14 @@
+use super::raster::{self, Pixels};
 use super::*;
 use base64::Engine;
-use std::{
-    collections::HashMap,
-    sync::{Arc, Mutex, mpsc},
-};
+use std::sync::Arc;
 
 const MAX_BYTES: usize = 8 * 1024 * 1024;
-type Pixels = Result<(u32, u32, Vec<u8>), String>;
 
 #[derive(Component)]
 struct Picture {
-    source: String,
+    source: Arc<str>,
     label: Entity,
-}
-
-#[derive(Resource, Default)]
-struct Downloads {
-    active: HashMap<String, Arc<Mutex<mpsc::Receiver<Pixels>>>>,
 }
 
 pub(super) fn spawn(world: &mut World, parent: Entity, source: &str, alt: &str) {
@@ -72,6 +64,7 @@ pub(super) fn decode(bytes: Vec<u8>) -> Pixels {
 }
 
 fn load(source: &str) -> Pixels {
+    let _load = nucleus::performance::Span::new("description-picture-load");
     let bytes = if let Some(data) = source.strip_prefix("data:") {
         let (format, payload) = data.split_once(',').ok_or("Invalid embedded image")?;
         if !matches!(
@@ -86,7 +79,6 @@ fn load(source: &str) -> Pixels {
             .map_err(|e| e.to_string())?
     } else {
         let uri = lince_resources::address(source)?;
-        let library = engine::sources::library().map_err(|error| error.to_string())?;
         if uri.scheme() == "file" {
             let path = uri
                 .to_file_path()
@@ -100,6 +92,7 @@ fn load(source: &str) -> Pixels {
             .map_err(|error| error.to_string())?;
             bytes
         } else {
+            let library = engine::sources::library().map_err(|error| error.to_string())?;
             let file = library.http_file(source, Default::default(), MAX_BYTES as u64, false)?;
             std::fs::read(file.path).map_err(|error| error.to_string())?
         }
@@ -107,102 +100,39 @@ fn load(source: &str) -> Pixels {
     decode(bytes)
 }
 
-pub(super) fn update(world: &mut World) {
-    world.init_resource::<Downloads>();
-    let completed: Vec<_> = world
-        .resource::<Downloads>()
-        .active
-        .iter()
-        .filter_map(
-            |(source, receiver)| match receiver.lock().ok()?.try_recv() {
-                Ok(result) => Some((source.clone(), result)),
-                Err(mpsc::TryRecvError::Disconnected) => {
-                    Some((source.clone(), Err("Image loader stopped.".into())))
-                }
-                Err(_) => None,
-            },
-        )
-        .collect();
-    for (source, result) in completed {
-        world.resource_mut::<Downloads>().active.remove(&source);
-        let targets: Vec<_> = world
-            .query::<(Entity, &Picture)>()
-            .iter(world)
-            .filter(|(_, image)| image.source == source)
-            .map(|(entity, image)| (entity, image.label))
-            .collect();
-        let image = result.as_ref().ok().map(|(width, height, pixels)| {
-            world.init_resource::<Assets<Image>>();
-            world.resource_mut::<Assets<Image>>().add(Image::new(
-                bevy::render::render_resource::Extent3d {
-                    width: *width,
-                    height: *height,
-                    depth_or_array_layers: 1,
-                },
-                bevy::render::render_resource::TextureDimension::D2,
-                pixels.clone(),
-                bevy::render::render_resource::TextureFormat::Rgba8UnormSrgb,
-                bevy::asset::RenderAssetUsages::RENDER_WORLD,
-            ))
-        });
-        for (entity, label) in targets {
-            world.entity_mut(entity).remove::<Picture>();
-            if let Some(image) = image.clone() {
-                world.despawn(label);
-                world.spawn((
-                    ImageNode::new(image),
-                    Node {
-                        width: px(result.as_ref().unwrap().0 as f32),
-                        max_width: percent(100),
-                        height: Val::Auto,
-                        flex_shrink: 0.0,
-                        ..default()
-                    },
-                    ChildOf(
-                        world
-                            .get::<crate::native::embedded_media::Media>(entity)
-                            .unwrap()
-                            .content,
-                    ),
-                ));
-            } else if let Some(mut text) = world.get_mut::<Text>(label) {
-                text.0 = format!(
-                    "Image could not be loaded: {}",
-                    result.as_ref().unwrap_err()
-                );
-            }
+impl raster::Request for Picture {
+    const CAPACITY: usize = 4;
+    const STOPPED: &'static str = "Image loader stopped.";
+
+    fn source(&self) -> &Arc<str> {
+        &self.source
+    }
+
+    fn label(&self) -> Entity {
+        self.label
+    }
+
+    fn render(source: &str) -> Pixels {
+        load(source)
+    }
+
+    fn layout(width: u32) -> Node {
+        Node {
+            width: px(width as f32),
+            max_width: percent(100),
+            height: Val::Auto,
+            flex_shrink: 0.0,
+            ..default()
         }
     }
-    let capacity = 4_usize.saturating_sub(world.resource::<Downloads>().active.len());
-    let sources: std::collections::HashSet<_> = world
-        .query::<&Picture>()
-        .iter(world)
-        .filter(|image| {
-            !world
-                .resource::<Downloads>()
-                .active
-                .contains_key(&image.source)
-        })
-        .take(capacity)
-        .map(|image| image.source.clone())
-        .collect();
-    for source in sources {
-        let (sender, receiver) = mpsc::channel();
-        world
-            .resource_mut::<Downloads>()
-            .active
-            .insert(source.clone(), Arc::new(Mutex::new(receiver)));
-        let wake = world
-            .get_resource::<crate::native::wake::WakeSignal>()
-            .cloned();
-        std::thread::spawn(move || {
-            let result = load(&source);
-            let _ = sender.send(result);
-            if let Some(wake) = wake {
-                wake.ring();
-            }
-        });
+
+    fn failure(_: &str, error: &str) -> String {
+        format!("Image could not be loaded: {error}")
     }
+}
+
+pub(super) fn update(world: &mut World) {
+    raster::update::<Picture>(world);
 }
 
 #[cfg(test)]

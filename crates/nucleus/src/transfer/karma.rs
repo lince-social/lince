@@ -57,26 +57,38 @@ pub struct Snapshot {
 
 impl Snapshot {
     pub fn validate(&self) -> Result<(), String> {
-        use crate::karma::{ReferenceKind, TimestampMs, TypedUid};
-        TypedUid::new(ReferenceKind::Transfer, self.transfer.clone())
-            .map_err(|error| error.to_string())?;
-        for (person, state) in &self.participants {
-            TypedUid::new(ReferenceKind::Person, person.clone())
-                .map_err(|error| error.to_string())?;
-            if state.guard.level > 2 {
-                return Err("Transfer agreement level is outside 0–2".into());
-            }
-            if let Some(at) = state.changed_at_ms {
-                TimestampMs::from_millis(at).map_err(|error| error.to_string())?;
-            }
-            if state.guard.change_uid.as_ref().is_some_and(|uid| {
-                uid.is_empty() || uid.len() > 200 || uid.chars().any(char::is_control)
-            }) {
-                return Err("Transfer agreement change identity is invalid".into());
-            }
-        }
-        Ok(())
+        validate_evidence(&self.transfer, &self.participants)
     }
+}
+
+fn validate_evidence(
+    transfer: &str,
+    participants: &BTreeMap<String, Participant>,
+) -> Result<(), String> {
+    use crate::karma::{ReferenceKind, TimestampMs, TypedUid};
+    let _validation = crate::performance::Span::new("transfer-automation-evidence-validation");
+    crate::performance::add("transfer-automation-evidence-validations", 1);
+    TypedUid::new(ReferenceKind::Transfer, transfer.to_owned())
+        .map_err(|error| error.to_string())?;
+    for (person, state) in participants {
+        TypedUid::new(ReferenceKind::Person, person.clone()).map_err(|error| error.to_string())?;
+        if state.guard.level > 2 {
+            return Err("Transfer agreement level is outside 0–2".into());
+        }
+        if let Some(at) = state.changed_at_ms {
+            TimestampMs::from_millis(at).map_err(|error| error.to_string())?;
+        }
+        if state.guard.change_uid.as_ref().is_some_and(|uid| {
+            uid.is_empty() || uid.len() > 200 || uid.chars().any(char::is_control)
+        }) {
+            return Err("Transfer agreement change identity is invalid".into());
+        }
+    }
+    crate::performance::add(
+        "transfer-automation-participants-validated",
+        participants.len() as u64,
+    );
+    Ok(())
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
@@ -142,14 +154,6 @@ impl Guard {
     }
 
     pub fn validate(&self) -> Result<(), String> {
-        Snapshot {
-            transfer: self.transfer.clone(),
-            revision: self.revision,
-            active: false,
-            published: false,
-            ready: false,
-            participants: self.participants.clone(),
-        }
-        .validate()
+        validate_evidence(&self.transfer, &self.participants)
     }
 }

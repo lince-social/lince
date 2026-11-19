@@ -37,10 +37,19 @@ pub(crate) fn prepare(query: &Protein) -> Result<Cow<'_, Protein>, ProteinError>
     {
         return Ok(Cow::Borrowed(query));
     }
-    let mut prepared = query.clone();
-    prepared.filter.clear();
+    let _preparation = nucleus::performance::Span::new("protein-conjunction-preparation");
+    let mut filter = Vec::with_capacity(query.filter.len());
     for predicate in &query.filter {
-        append(predicate, &mut prepared.filter)?;
+        append(predicate, &mut filter)?;
     }
-    Ok(Cow::Owned(prepared))
+    nucleus::performance::add("protein-conjunction-leaves", filter.len() as u64);
+    Ok(Cow::Owned(Protein {
+        source: query.source,
+        filter,
+        fields: query.fields.clone(),
+        include: query.include.clone(),
+        aggregate: query.aggregate.clone(),
+        order: query.order.clone(),
+        limit: query.limit,
+    }))
 }

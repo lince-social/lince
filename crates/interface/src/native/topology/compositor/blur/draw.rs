@@ -26,7 +26,7 @@ use bevy::{
         },
         renderer::{RenderAdapter, RenderContext, RenderDevice, RenderQueue, ViewQuery},
         sync_world::MainEntity,
-        view::{ExtractedView, RetainedViewEntity, ViewDepthTexture, ViewTarget},
+        view::{ExtractedView, RetainedViewEntity, ViewDepthStencilTexture, ViewTarget},
         Render, RenderSystems,
     },
     shader::ShaderCacheError,
@@ -308,7 +308,7 @@ fn route(
 
 fn draw(
     world: &World,
-    view: ViewQuery<(Entity, &MainEntity, &Request, &ExtractedCamera, &ExtractedView, &ViewTarget, &ViewDepthTexture, &Prepared)>,
+    view: ViewQuery<(Entity, &MainEntity, &Request, &ExtractedCamera, &ExtractedView, &ViewTarget, &ViewDepthStencilTexture, &Prepared)>,
     phases: Res<Phases>,
     mut context: RenderContext,
 ) {
@@ -334,7 +334,7 @@ fn draw_range(
     entity: Entity,
     camera: &ExtractedCamera,
     target: &ViewTarget,
-    depth: &ViewDepthTexture,
+    depth: &ViewDepthStencilTexture,
     phase: &SortedRenderPhase<Transparent3d>,
     range: std::ops::Range<usize>,
     context: &mut RenderContext,

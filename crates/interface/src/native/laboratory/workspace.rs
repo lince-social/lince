@@ -705,7 +705,7 @@ fn render(world: &mut World) {
                 ScrollPosition::default(),
             ))
             .observe(
-                |mut event: On<Pointer<bevy::picking::events::Scroll>>,
+                |mut event: On<PointerScroll>,
                  mut scrolls: Query<&mut ScrollPosition, With<LaboratoryPanel>>| {
                     if let Ok(mut scroll) = scrolls.get_mut(event.entity) {
                         let scale = if event.unit == bevy::input::mouse::MouseScrollUnit::Line {

@@ -1,9 +1,6 @@
 use super::*;
 use std::{any::Any, sync::Arc};
 
-// Equal source values must have identical deterministic JSON. Keep the supported
-// types explicit: these settings use exact integer/string/enum equality, and
-// Settings equality excludes only its nonserialized derived caches.
 mod sealed {
     pub trait Source {}
     impl Source for super::Settings {}

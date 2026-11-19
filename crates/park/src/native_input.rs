@@ -352,9 +352,11 @@ fn apply(world: &mut World) {
     let focus = world
         .get_resource::<bevy::input_focus::InputFocus>()
         .and_then(|focus| focus.get());
-    let previous = std::mem::replace(&mut world.resource_mut::<Pending>().focus, focus);
+    let previous = world.resource::<Pending>().focus;
     if previous != focus {
-        world.resource_mut::<Pending>().ime = None;
+        let mut pending = world.resource_mut::<Pending>();
+        pending.focus = focus;
+        pending.ime = None;
     }
     if previous != focus
         && let Some(previous) = previous
@@ -363,14 +365,18 @@ fn apply(world: &mut World) {
     {
         input.queue_edit(TextEdit::clear_ime_compose());
     }
-    let edits = std::mem::take(&mut world.resource_mut::<Pending>().edits);
+    if world.resource::<Pending>().edits.is_empty() {
+        return;
+    }
     if !world.contains_resource::<FontCx>()
         || !world.contains_resource::<LayoutCx>()
         || !world.contains_resource::<bevy::clipboard::Clipboard>()
     {
+        world.resource_mut::<Pending>().edits.clear();
         return;
     }
-    for edit in edits {
+    let mut edits = std::mem::take(&mut world.resource_mut::<Pending>().edits);
+    for edit in edits.drain(..) {
         let Some(entity) = world
             .get_resource::<bevy::input_focus::InputFocus>()
             .and_then(|focus| focus.get())
@@ -420,13 +426,24 @@ fn apply(world: &mut World) {
             });
         });
     }
+    let mut pending = world.resource_mut::<Pending>();
+    if pending.edits.is_empty() {
+        pending.edits = edits;
+    }
 }
 
 fn finish(world: &mut World) {
-    let applied = std::mem::take(&mut world.resource_mut::<Pending>().applied);
-    for entity in applied {
+    if world.resource::<Pending>().applied.is_empty() {
+        return;
+    }
+    let mut applied = std::mem::take(&mut world.resource_mut::<Pending>().applied);
+    for entity in applied.drain() {
         let revision = text_state(world, entity, [0, 0, 1, 1]).map(|editor| editor.revision);
         world.resource_mut::<Pending>().ime = revision.map(|revision| (entity, revision));
+    }
+    let mut pending = world.resource_mut::<Pending>();
+    if pending.applied.is_empty() {
+        pending.applied = applied;
     }
 }
 

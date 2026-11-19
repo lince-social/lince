@@ -108,7 +108,7 @@ struct FrequencyActivationEpochWire {
 }
 
 impl FrequencyActivationEpoch {
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments, reason = "The persisted record constructor mirrors the stored identity and state fields")]
     pub fn new(
         frequency_uid: String,
         activating_handle_revision: u64,

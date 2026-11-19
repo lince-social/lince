@@ -7,6 +7,9 @@ use serde_json::{Value, json};
 
 use crate::{Engine, EngineError, actions::ActionOutcome};
 
+mod validation;
+pub(crate) use validation::{AssertionFields, DraftFields};
+
 #[derive(Clone, Debug, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Assertion {
@@ -63,28 +66,40 @@ impl Draft {
         quantity: DecimalValue,
         kind: RecordKind,
     ) -> Option<bool> {
+        let _evaluation = nucleus::performance::Span::new("record-draft-selector-evaluation");
+        self.evaluate(predicate, family, quantity, kind)
+    }
+
+    fn evaluate(
+        &self,
+        predicate: &protein::Predicate,
+        family: &HashSet<String>,
+        quantity: DecimalValue,
+        kind: RecordKind,
+    ) -> Option<bool> {
         use protein::Predicate;
         Some(match predicate {
-            Predicate::All(children) => children
-                .iter()
-                .map(|child| self.matches_kind(child, family, quantity, kind))
-                .collect::<Option<Vec<_>>>()?
-                .into_iter()
-                .all(|value| value),
-            Predicate::Any(children) => children
-                .iter()
-                .map(|child| self.matches_kind(child, family, quantity, kind))
-                .collect::<Option<Vec<_>>>()?
-                .into_iter()
-                .any(|value| value),
-            Predicate::Not(child) => !self.matches_kind(child, family, quantity, kind)?,
+            Predicate::All(children) => children.iter().try_fold(true, |matched, child| {
+                self.evaluate(child, family, quantity, kind)
+                    .map(|value| matched && value)
+            })?,
+            Predicate::Any(children) => children.iter().try_fold(false, |matched, child| {
+                self.evaluate(child, family, quantity, kind)
+                    .map(|value| matched || value)
+            })?,
+            Predicate::Not(child) => !self.evaluate(child, family, quantity, kind)?,
             Predicate::ConceptIn(uid) => family.contains(uid),
             Predicate::KindEq(value) => value == kind.as_str(),
             Predicate::UidEq(uid) => uid == &self.uid,
             Predicate::SlugEq(slug) => self.slug.as_ref() == Some(slug),
             Predicate::TextContains(text) => {
-                self.head.to_lowercase().contains(&text.to_lowercase())
-                    || self.body.to_lowercase().contains(&text.to_lowercase())
+                if text.is_empty() {
+                    true
+                } else {
+                    let query = text.to_lowercase();
+                    self.head.to_lowercase().contains(&query)
+                        || self.body.to_lowercase().contains(&query)
+                }
             }
             Predicate::QuantityEq(value) => quantity.exact_numeric_cmp(*value).is_eq(),
             Predicate::QuantityLt(value) => quantity.exact_numeric_cmp(*value).is_lt(),
@@ -96,42 +111,21 @@ impl Draft {
     }
 
     pub fn validate(&self) -> Result<DecimalValue, EngineError> {
-        if !nucleus::valid_uid(&self.uid, "r")
-            || self.head.len() > 65536
-            || self.body.len() > 262144
-            || self.assertions.len() > 40
-            || self.quantity.len() > 128
-            || self
-                .slug
-                .as_ref()
-                .is_some_and(|slug| slug.is_empty() || slug.len() > 128 || slug.trim() != slug)
-            || self.assertions.iter().any(|assertion| {
-                if assertion.object.as_ref().is_some_and(|value| {
-                    value.is_empty()
-                        || value.len()
-                            > if lince_resources::reference::is_uri(value) {
-                                8192
-                            } else {
-                                128
-                            }
-                }) {
-                    return true;
-                }
-                [&assertion.predicate]
-                    .into_iter()
-                    .chain(assertion.unit.iter())
-                    .chain(assertion.quantity.iter())
-                    .any(|value| value.is_empty() || value.len() > 128)
-            })
-        {
-            return Err(invalid(
-                "Check the Record fields and use at most 40 assertions",
-            ));
+        DraftFields {
+            uid: &self.uid,
+            head: &self.head,
+            body: &self.body,
+            slug: self.slug.as_deref(),
+            quantity: &self.quantity,
+            assertions: self.assertions.iter().map(|assertion| AssertionFields {
+                predicate: &assertion.predicate,
+                object: assertion.object.as_deref(),
+                quantity: assertion.quantity.as_deref(),
+                unit: assertion.unit.as_deref(),
+            }),
+            work: &self.work,
         }
-        crate::private_work::WorkMetadata::validate(&self.work)
-            .map_err(|error| invalid(error.to_string()))?;
-        DecimalValue::parse_inferred(&self.quantity)
-            .map_err(|_| invalid("Enter an exact decimal quantity"))
+        .validate()
     }
 }
 
@@ -229,10 +223,10 @@ impl Engine {
                             grant.operation == Operation::Create && matches(&grant.selector)
                         })
                         .collect();
-                    let allowed: BTreeSet<_> = grants
-                        .iter()
-                        .flat_map(|grant| grant.properties.iter().cloned())
-                        .collect();
+                    let _properties =
+                        nucleus::performance::Span::new("record-draft-role-properties");
+                    let allowed: BTreeSet<_> =
+                        grants.iter().flat_map(|grant| &grant.properties).collect();
                     let mut required = BTreeSet::from([
                         Property::Kind,
                         Property::Head,
@@ -248,7 +242,7 @@ impl Engine {
                             field: field.clone(),
                         })
                     }));
-                    if !required.is_subset(&allowed)
+                    if required.iter().any(|property| !allowed.contains(property))
                         || draft.assertions.iter().any(|assertion| {
                             !grants
                                 .iter()

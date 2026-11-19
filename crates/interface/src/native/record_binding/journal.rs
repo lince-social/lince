@@ -79,12 +79,14 @@ pub(super) struct Journal {
     version: VersionVector,
     atoms: usize,
     pending_imports: Vec<Vec<u8>>,
+    pending_import_bytes: usize,
 }
 
 pub(super) struct Cursor {
     version: VersionVector,
     atoms: usize,
     imports: usize,
+    import_bytes: usize,
 }
 
 impl Default for Journal {
@@ -100,6 +102,7 @@ impl Default for Journal {
             version: VersionVector::default(),
             atoms: 0,
             pending_imports: Vec::new(),
+            pending_import_bytes: 0,
         }
     }
 }
@@ -131,16 +134,12 @@ impl Journal {
     }
 
     pub fn pending_import(&mut self, bytes: Vec<u8>) -> Result<(), String> {
-        let total = self
-            .pending_imports
-            .iter()
-            .map(Vec::len)
-            .sum::<usize>()
-            .saturating_add(bytes.len());
+        let total = self.pending_import_bytes.saturating_add(bytes.len());
         if self.pending_imports.len() >= 4096 || total > store::record_edit_drafts::MAX_BYTES {
             return Err("Pending collaboration history exceeds its recovery limit".into());
         }
         self.pending_imports.push(bytes);
+        self.pending_import_bytes = total;
         Ok(())
     }
 
@@ -162,8 +161,9 @@ impl Journal {
             self.atoms = doc.len_ops();
         }
         let version = doc.oplog_vv();
-        let mut updates = Vec::new();
-        if version != self.version {
+        let changed = version != self.version;
+        let mut updates = Vec::with_capacity(self.pending_imports.len() + usize::from(changed));
+        if changed {
             updates.push(
                 doc.export(ExportMode::updates(&self.version))
                     .map_err(|error| error.to_string())?,
@@ -191,6 +191,7 @@ impl Journal {
                 version,
                 atoms,
                 imports: self.pending_imports.len(),
+                import_bytes: self.pending_import_bytes,
             },
         ))
     }
@@ -200,6 +201,7 @@ impl Journal {
         self.version = cursor.version;
         self.atoms = cursor.atoms;
         self.pending_imports.drain(..cursor.imports);
+        self.pending_import_bytes -= cursor.import_bytes;
         self.initializing = false;
         self.checkpoint = None;
         self.failed = false;

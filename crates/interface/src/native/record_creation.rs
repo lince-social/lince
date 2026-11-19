@@ -65,37 +65,45 @@ impl Plugin for RecordCreationPlugin {
     }
 }
 
-fn fit(world: &mut World) {
-    let forms: Vec<_> = world
-        .query::<(Entity, &Form)>()
-        .iter(world)
-        .map(|(entity, form)| (entity, form.area))
-        .collect();
-    for (entity, area) in forms {
+fn fit(
+    world: &mut World,
+    forms: &mut QueryState<(Entity, &'static Form)>,
+    mut targets: Local<Vec<(Entity, Entity)>>,
+) {
+    let _fit = nucleus::performance::Span::new("record-creation-fit");
+    targets.clear();
+    targets.extend(forms.iter(world).map(|(entity, form)| (entity, form.area)));
+    nucleus::performance::add("record-creation-fit-targets", targets.len() as u64);
+    if targets.is_empty() {
+        targets.shrink_to_fit();
+    }
+    for (entity, area) in targets.drain(..) {
         if world
             .get::<crate::native::layout::LayoutBox>(entity)
             .is_none()
         {
-            let nodes: Vec<_> = world
+            let (count, content) = world
                 .get::<Children>(entity)
                 .into_iter()
                 .flatten()
                 .filter_map(|child| world.get::<ComputedNode>(*child))
-                .collect();
-            let height = 24.0
-                + nodes.len().saturating_sub(1) as f32 * 8.0
-                + nodes
-                    .iter()
-                    .map(|node| {
-                        node.size().y.max(node.content_size.y) * node.inverse_scale_factor()
-                    })
-                    .sum::<f32>();
+                .fold((0usize, 0.0f32), |(count, height), node| {
+                    (
+                        count + 1,
+                        height
+                            + node.size().y.max(node.content_size.y) * node.inverse_scale_factor(),
+                    )
+                });
+            let height = 24.0 + count.saturating_sub(1) as f32 * 8.0 + content;
             if height > 48.0 {
-                world
+                let mut item = world
                     .get_mut::<crate::native::canvas::CanvasItem>(entity)
-                    .unwrap()
-                    .size
-                    .y = height.clamp(120.0, 1000.0);
+                    .unwrap();
+                let height = height.clamp(120.0, 1000.0);
+                if item.size.y != height {
+                    item.size.y = height;
+                    nucleus::performance::add("record-creation-size-publications", 1);
+                }
             }
         }
         crate::native::full_record::fit_source(world, area, entity);
@@ -247,15 +255,12 @@ pub fn open(world: &mut World, target: Entity) -> Option<Entity> {
     let assertions = column(world, content);
     let body = column(world, content);
     let properties = column(world, content);
-    for field in protein::record_schema::FIELDS
-        .iter()
-        .filter(|field| {
-            matches!(
-                field.key,
-                "head" | "body" | "slug" | "quantity" | "start_date" | "due_date" | "estimate_min"
-            )
-        })
-    {
+    for field in protein::record_schema::FIELDS.iter().filter(|field| {
+        matches!(
+            field.key,
+            "head" | "body" | "slug" | "quantity" | "start_date" | "due_date" | "estimate_min"
+        )
+    }) {
         let parent = if matches!(field.key, "slug" | "quantity") {
             let parent = column(world, identity);
             let mut node = world.get_mut::<Node>(parent).unwrap();
@@ -533,8 +538,12 @@ fn freeze(world: &mut World, entity: Entity, frozen: bool) {
 
 fn gate(mut fields: Query<&mut EditableText, With<Frozen>>) {
     for mut text in &mut fields {
-        text.pending_edits.clear();
-        text.pending_paste = None;
+        if !text.pending_edits.is_empty() {
+            text.pending_edits.clear();
+        }
+        if text.pending_paste.is_some() {
+            text.pending_paste = None;
+        }
     }
 }
 
@@ -599,35 +608,50 @@ impl Action for Cancel {
 fn receive(
     world: &mut World,
     mut cursor: Local<bevy::ecs::message::MessageCursor<crate::native::cell_bridge::CellMessage>>,
+    mut wave: Local<crate::native::cell_bridge::replies::Wave>,
+    forms: &mut QueryState<(Entity, &'static Form)>,
+    mut pending: Local<Vec<Entity>>,
 ) {
+    use crate::native::cell_bridge::{CONNECTION, CellMessage, replies};
+    let _receive = nucleus::performance::Span::new("record-creation-receive");
     let Some(messages) = world.get_resource::<Messages<crate::native::cell_bridge::CellMessage>>()
     else {
         return;
     };
-    let events: Vec<_> = cursor
-        .read(messages)
-        .map(|message| message.0.clone())
-        .collect();
-    for event in events.iter().map(|message| message.as_ref()) {
-        let (id, result) = match event {
-            cell::ServerMessage::ActionOk { id, created, .. } => (
-                id,
-                created.clone().ok_or_else(|| "The Organ did not return the new Record".to_string()),
-            ),
-            cell::ServerMessage::Error { id, message, .. } => (id, Err(message.clone())),
-            _ => continue,
-        };
-        let forms: Vec<_> = world
-            .query::<(Entity, &Form)>()
-            .iter(world)
-            .filter(|(_, form)| {
-                form.pending.as_ref().is_some_and(|pending| {
-                    pending == id || id == crate::native::cell_bridge::CONNECTION
+    wave.capture(&mut cursor, messages, |message| {
+        replies::action_id(message).is_some()
+    });
+    if wave.len() == 0 {
+        pending.shrink_to_fit();
+        return;
+    }
+    for sequence in wave.drain() {
+        let event = replies::message(world.resource::<Messages<CellMessage>>(), sequence);
+        let id = replies::action_id(event).unwrap();
+        pending.clear();
+        pending.extend(
+            forms
+                .iter(world)
+                .filter(|(_, form)| {
+                    form.pending
+                        .as_ref()
+                        .is_some_and(|pending| pending == id || id == CONNECTION)
                 })
-            })
-            .map(|(entity, _)| entity)
-            .collect();
-        for entity in forms {
+                .map(|(entity, _)| entity),
+        );
+        if pending.is_empty() {
+            continue;
+        }
+        let event = event.clone();
+        nucleus::performance::add("record-creation-action-payloads", 1);
+        let result = match event.as_ref() {
+            cell::ServerMessage::ActionOk { created, .. } => created
+                .as_deref()
+                .ok_or("The Organ did not return the new Record"),
+            cell::ServerMessage::Error { message, .. } => Err(message.as_str()),
+            _ => unreachable!(),
+        };
+        for entity in pending.drain(..) {
             match &result {
                 Ok(uid) => {
                     search::open_record(world, entity, uid);
@@ -641,7 +665,6 @@ fn receive(
         }
     }
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -33,7 +33,7 @@ fn actual_native_camera_and_export_preserve_linear_values_above_sdr_white() {
         slice.map_async(wgpu::MapMode::Read, move |result| { let _ = sender.send(result); });
         canvas.renderer.device.poll(wgpu::PollType::Wait { submission_index: None, timeout: Some(std::time::Duration::from_secs(5)) }).unwrap();
         receiver.recv_timeout(std::time::Duration::from_secs(1)).unwrap().unwrap();
-        let bytes = slice.get_mapped_range();
+        let bytes = slice.get_mapped_range().unwrap();
         let offset = 4 * 256 + 4 * 8;
         let channels = std::array::from_fn::<_, 4, _>(|channel| u16::from_le_bytes([bytes[offset + channel * 2], bytes[offset + channel * 2 + 1]]));
         assert_eq!(channels, [0x4000, 0x3800, 0x3400, 0x3c00]);

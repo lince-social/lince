@@ -525,10 +525,26 @@ fn apply(world: &mut World, plan: SurfacePlan) {
             entity.despawn();
         }
     }
-    for (((entity, item, root, _), request), grant) in entities
+    let orders: Vec<_> = {
+        let mut keys = super::stacking::Keys::new(world);
+        entities
+            .iter()
+            .map(|(entity, item, _, _)| {
+                (item.size.is_finite()
+                    && item.size.min_element() > 0.0
+                    && world
+                        .get::<crate::native::sand_placement::Pinned>(*entity)
+                        .is_none()
+                    && world.get::<super::assets::ImportedAsset>(*entity).is_none())
+                .then(|| keys.key(*entity))
+            })
+            .collect()
+    };
+    for ((((entity, item, root, _), request), grant), order) in entities
         .into_iter()
         .zip(requests)
         .zip(&grants[..native_count])
+        .zip(orders)
     {
         let pixels = grant.pixels.max(UVec2::ONE);
         let density = if grant.pixels == UVec2::ZERO {
@@ -556,13 +572,9 @@ fn apply(world: &mut World, plan: SurfacePlan) {
             }
             continue;
         }
-        if world.get::<super::assets::ImportedAsset>(entity).is_some()
-            || world
-                .get::<crate::native::sand_placement::Pinned>(entity)
-                .is_some()
-        {
+        let Some(order) = order else {
             continue;
-        }
+        };
         let visible = request.visible && grant.pixels != UVec2::ZERO;
         if visible { crate::host::performance::count(crate::host::performance::Count::NativeSurfacesVisible); }
         if world.get::<Surface>(entity).is_none() {
@@ -877,7 +889,7 @@ fn apply(world: &mut World, plan: SurfacePlan) {
                 .transform_point3(world.get::<Transform>(face).unwrap().translation)
                 .as_dvec3(),
         );
-        super::stacking::synchronize(world, entity, face, plane);
+        super::stacking::synchronize(world, face, order, plane);
         let displayed_ready = world
             .get::<DisplayedImage>(entity)
             .is_some_and(|displayed| {

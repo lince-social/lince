@@ -198,9 +198,9 @@ fn receive(
 }
 
 fn assert_send_resources(app: &SubApp) {
-    for info in app.world().components().iter_registered() {
+    for (id, info) in app.world().components().iter_registered() {
         assert!(
-            info.is_send_and_sync() || app.world().get_non_send_by_id(info.id()).is_none(),
+            info.is_send_and_sync() || app.world().get_non_send_by_id(id).is_none(),
             "Render resource cannot move: {}",
             info.name()
         );

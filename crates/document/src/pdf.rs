@@ -60,9 +60,11 @@ impl Pdf {
             self.cached = Some((section, layout, pixmap.data_as_u8_slice().to_vec()));
         }
         let stride = layout.width as usize * 4;
-        let rgba = self.cached.as_ref().unwrap().2
-            [top as usize * stride..(top + height) as usize * stride]
-            .to_vec();
+        let (_, _, pixels) = self
+            .cached
+            .as_ref()
+            .expect("the PDF page cache is populated before reading its pixels");
+        let rgba = pixels[top as usize * stride..(top + height) as usize * stride].to_vec();
         Ok(Tile {
             width: layout.width,
             height,

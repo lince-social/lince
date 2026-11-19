@@ -38,6 +38,7 @@ fn main() -> Result<(), geist::Error> {
         }
     }
     let rollout = model.rollout(&[0.3, 0.0], &[[0.2]; 8])?;
-    println!("eight_step_predicted_latent={:?}", rollout.last().unwrap());
+    let final_latent = rollout.last().expect("eight actions produce eight predictions");
+    println!("eight_step_predicted_latent={final_latent:?}");
     Ok(())
 }

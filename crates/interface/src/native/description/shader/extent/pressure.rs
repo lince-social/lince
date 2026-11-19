@@ -178,12 +178,15 @@ fn reveal(app: &mut App, entity: Entity) {
             .get::<UiGlobalTransform>(entity)
             .unwrap()
             .transform_point2(Vec2::ZERO);
-        let Some(clip) = world.get::<CalculatedClip>(entity).map(|clip| clip.clip) else {
+        let Some(clip) = world.get::<CalculatedClip>(entity) else {
             return;
         };
-        if clip.contains(center) {
+        if clip.contains_point(center) {
             return;
         }
+        let target = world.get::<ComputedUiRenderTargetInfo>(entity).unwrap();
+        let viewport = Rect::from_corners(Vec2::ZERO, target.physical_size().as_vec2());
+        let clip = crate::native::canvas_clip::clipped_rect(viewport, clip);
         let mut parent = world.get::<ChildOf>(entity).map(ChildOf::parent);
         let mut scroll = None;
         for _ in 0..64 {

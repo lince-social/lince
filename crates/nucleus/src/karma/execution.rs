@@ -177,7 +177,7 @@ pub struct ProgramStateEvent {
 }
 
 impl ProgramStateEvent {
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments, reason = "Execution construction keeps caller inputs and context explicit")]
     pub fn new(
         program_uid: impl Into<String>,
         node_id: LocalId,
@@ -297,7 +297,7 @@ pub struct KarmaCandidateProposal {
 }
 
 impl KarmaCandidateProposal {
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments, reason = "Execution construction keeps caller inputs and context explicit")]
     pub fn new(
         source_run_hash: CanonicalHash,
         occurrence_hash: CanonicalHash,
@@ -396,7 +396,7 @@ pub struct KarmaRun {
 }
 
 impl KarmaRun {
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments, reason = "Execution construction keeps caller inputs and context explicit")]
     pub fn new(
         occurrence_hash: CanonicalHash,
         cell_sequence: u64,

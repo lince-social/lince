@@ -9,7 +9,7 @@ use bevy::{
         renderer::RenderDevice,
         texture::GpuImage,
         view::{
-            ViewDepthTexture, ViewTarget,
+            ViewDepthStencilTexture, ViewTarget,
             screenshot::{Screenshot, ScreenshotCaptured, save_to_disk},
         },
     },
@@ -61,13 +61,14 @@ struct Trial {
 }
 
 #[derive(Resource, Default, Clone, ExtractResource)]
+#[extract_app(bevy::render::RenderApp)]
 struct ReleasedCaptures(Vec<AssetId<Image>>);
 
 fn verify_targets(
     cameras: Query<(
         &ExtractedCamera,
         Option<&ViewTarget>,
-        Option<&ViewDepthTexture>,
+        Option<&ViewDepthStencilTexture>,
         Option<&Camera2d>,
         Option<&bevy::ui_render::UiCameraView>,
         Option<&bevy::render::view::visibility::RenderVisibleEntities>,

@@ -164,12 +164,20 @@ impl State {
 
     fn synchronize(&mut self) {
         if self.text.is_none() { return; }
-        let requested = self.entered.then(|| self.requested.clone()).flatten();
-        if requested == self.sent { return; }
-        if self.sent.as_ref().zip(requested.as_ref()).is_some_and(|(old, new)| old.same_text(new)) {
-            self.sent = requested;
+        let requested = self.entered.then_some(self.requested.as_ref()).flatten();
+        if requested == self.sent.as_ref() {
             return;
         }
+        if self
+            .sent
+            .as_ref()
+            .zip(requested)
+            .is_some_and(|(old, new)| old.same_text(new))
+        {
+            self.sent = requested.cloned();
+            return;
+        }
+        let requested = requested.cloned();
         let changed_owner = self.sent.as_ref().zip(requested.as_ref()).is_none_or(|(old, new)| !old.same_owner(new));
         if changed_owner && self.sent.is_some() {
             self.text.as_ref().unwrap().disable();

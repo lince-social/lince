@@ -2,7 +2,7 @@ use bevy::{
     camera::{NormalizedRenderTarget, RenderTarget},
     picking::pointer::{PointerId, PointerLocation},
     prelude::*,
-    ui::{ComputedUiTargetCamera, OverrideClip, RelativeCursorPosition, clip_check_recursive},
+    ui::{CalculatedClip, ComputedUiTargetCamera, RelativeCursorPosition},
     window::PrimaryWindow,
 };
 
@@ -11,18 +11,16 @@ pub(crate) fn relative(
     pointers: Query<(&PointerId, &PointerLocation)>,
     cameras: Query<(&Camera, &RenderTarget)>,
     mut cursors: Query<(
-        Entity,
         &ComputedNode,
         &UiGlobalTransform,
         &ComputedUiTargetCamera,
         &InheritedVisibility,
+        Option<&CalculatedClip>,
         &mut RelativeCursorPosition,
     )>,
-    clipping: Query<(&ComputedNode, &UiGlobalTransform, &Node)>,
-    parents: Query<&ChildOf, Without<OverrideClip>>,
 ) {
     let primary = primary.iter().next();
-    for (entity, node, transform, camera, visibility, mut cursor) in &mut cursors {
+    for (node, transform, camera, visibility, clip, mut cursor) in &mut cursors {
         let Some((camera, target)) = camera.get().and_then(|camera| cameras.get(camera).ok())
         else {
             continue;
@@ -56,7 +54,7 @@ pub(crate) fn relative(
         let cursor_over = visibility.get()
             && position.is_some_and(|position| {
                 node.contains_point(*transform, position)
-                    && clip_check_recursive(position, entity, &clipping, &parents)
+                    && clip.is_none_or(|clip| clip.contains_point(position))
             });
         cursor.set_if_neq(RelativeCursorPosition {
             cursor_over,

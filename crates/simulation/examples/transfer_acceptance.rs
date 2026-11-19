@@ -52,7 +52,7 @@ fn run() -> simulation::Result<()> {
             for table in names.into_iter().filter(|name| store::transfer_replication::schema::allowed(name) && (name.starts_with("transfer") || name == "promise")) {
                 let schema = store::transfer_replication::schema::Table::read(&mut connection, &table).await?;
                 let query = format!("SELECT {} FROM {} ORDER BY {}", schema.json(""), store::transfer_replication::schema::quoted(&table), schema.keys.iter().map(|key| store::transfer_replication::schema::quoted(key)).collect::<Vec<_>>().join(","));
-                let rows: Vec<String> = store::sqlx::query_scalar(&query).fetch_all(&mut *connection).await?;
+                let rows: Vec<String> = store::sqlx::query_scalar(store::sqlx::AssertSqlSafe(query)).fetch_all(&mut *connection).await?;
                 tables.insert(table, nucleus::karma::canonical_hash("lince.transfer.acceptance.table.v1", &rows)?);
             }
             metadata.insert(name.clone(), tables);

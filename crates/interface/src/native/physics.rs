@@ -24,11 +24,7 @@ const STEP: Duration = Duration::from_nanos(8_333_333);
 mod manipulation;
 
 fn collider(size: Vec2) -> Collider {
-    Collider::cuboid(
-        f64::from(size.x),
-        f64::from(size.y),
-        f64::from(size.max_element()) * 2.0,
-    )
+    Collider::cuboid(size.x, size.y, size.max_element() * 2.0)
 }
 
 pub(crate) fn sleep_threshold(force: DVec3, mass: f64) -> SleepThreshold {
@@ -167,7 +163,7 @@ impl Plugin for WorkspacePhysicsPlugin {
                 .build()
                 .disable::<ColliderHierarchyPlugin>(),
         )
-        .insert_resource(Gravity(DVec3::ZERO))
+        .insert_resource(Gravity(Vec3::ZERO))
         .init_resource::<Simulation>()
         .add_systems(WorkspaceStep, apply_forces.before(PhysicsSystems::First))
         .add_systems(
@@ -184,7 +180,6 @@ impl Plugin for WorkspacePhysicsPlugin {
     }
 }
 
-/// Captures the focused hierarchy once for a synchronous physics preparation pass.
 pub(crate) struct HeldItems {
     focus: Option<Entity>,
     ancestors: EntityHashSet,
@@ -262,8 +257,8 @@ pub(crate) fn room_transform(
             .insert(Position((point - origin).extend(0.0)));
         world.get_mut::<BodyLink>(entity).unwrap().last = point;
         if let Some(mut velocity) = world.get_mut::<LinearVelocity>(entity) {
-            let rotated = rotation * DVec3::new(velocity.0.x, 0.0, velocity.0.y);
-            velocity.0 = DVec3::new(rotated.x, rotated.z, 0.0);
+            let rotated = rotation * DVec3::new(f64::from(velocity.0.x), 0.0, f64::from(velocity.0.y));
+            velocity.0 = DVec3::new(rotated.x, rotated.z, 0.0).as_vec3();
         }
     }
 }
@@ -506,7 +501,7 @@ fn synchronize_groups(world: &mut World, edited: &HashSet<Entity>) -> bool {
                 continue;
             }
             let joint =
-                FixedJoint::new(first, second).with_local_anchor1((next - position).extend(0.0));
+                FixedJoint::new(first, second).with_local_anchor1((next - position).as_vec2().extend(0.0));
             if let Some(entity) = entity {
                 world.entity_mut(entity).insert(joint);
             } else {
@@ -560,8 +555,8 @@ fn apply_forces(
                 .unwrap_or_default()
         };
         let next = (total + DVec2::new(extra.x, extra.z)).extend(0.0);
-        if force.0 != next {
-            force.0 = next;
+        if force.0 != next.as_vec3() {
+            force.0 = next.as_vec3();
             commands
                 .entity(entity)
                 .insert((SleepTimer(0.0), sleep_threshold(next, 1.0)))
@@ -879,7 +874,7 @@ pub(crate) mod tests {
         app.add_plugins((MinimalPlugins, WorkspacePhysicsPlugin))
             .init_resource::<topology::physics::Runtime>()
             .insert_resource(TimeUpdateStrategy::ManualDuration(STEP))
-            .insert_resource(Gravity(-DVec3::Y * 500.0));
+            .insert_resource(Gravity(-Vec3::Y * 500.0));
         app.finish();
         let world = app.world_mut();
         let root = world.spawn(Workspaces::default()).id();
@@ -1606,7 +1601,7 @@ pub(crate) mod tests {
             app.world_mut()
                 .query::<&ConstantForce>()
                 .iter(app.world())
-                .all(|force| force.0 == DVec3::ZERO)
+                .all(|force| force.0 == Vec3::ZERO)
         );
     }
 
@@ -1662,7 +1657,7 @@ pub(crate) mod tests {
         advance(&mut app, 2);
         assert_eq!(
             app.world().get::<ConstantForce>(body).unwrap().0,
-            DVec3::ZERO
+            Vec3::ZERO
         );
         assert_eq!(
             app.world().get::<BodyLink>(body).unwrap().size,

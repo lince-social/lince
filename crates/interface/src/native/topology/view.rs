@@ -359,13 +359,13 @@ fn collide(
         + movement.depenetrate(
             &shape,
             position,
-            bevy::math::DQuat::IDENTITY,
+            Quat::IDENTITY,
             &DepenetrationConfig::default(),
             &filter,
-        );
+        ).as_dvec3();
     let start = if movement
         .spatial_query
-        .shape_intersections(&shape, recovered, bevy::math::DQuat::IDENTITY, &filter)
+        .shape_intersections(&shape, recovered, Quat::IDENTITY, &filter)
         .is_empty()
     {
         recovered
@@ -373,7 +373,7 @@ fn collide(
         let clear = DVec3::from_array(clear?);
         if !movement
             .spatial_query
-            .shape_intersections(&shape, clear, bevy::math::DQuat::IDENTITY, &filter)
+            .shape_intersections(&shape, clear, Quat::IDENTITY, &filter)
             .is_empty()
         {
             return None;
@@ -385,8 +385,8 @@ fn collide(
             .move_and_slide(
                 &shape,
                 start,
-                bevy::math::DQuat::IDENTITY,
-                delta,
+                Quat::IDENTITY,
+                delta.as_vec3(),
                 std::time::Duration::from_secs(1),
                 &MoveAndSlideConfig::default(),
                 &filter,

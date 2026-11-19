@@ -442,8 +442,11 @@ fn native_widget_selection_and_replacement_keep_each_events_modifier_context() {
         .init_resource::<bevy::clipboard::Clipboard>()
         .init_resource::<UiScale>()
         .add_message::<bevy::window::Ime>()
-        .add_message::<bevy::picking::events::Pointer<bevy::picking::events::Release>>()
-        .add_plugins(bevy::ui_widgets::EditableTextInputPlugin)
+        .add_message::<PointerRelease>()
+        .add_plugins((
+        bevy::ui_widgets::TextInputPlugin,
+        crate::controls::editing::TextEditingPlugin,
+    ))
         .add_systems(
             PostUpdate,
             bevy::text::apply_text_edits.in_set(bevy::text::EditableTextSystems),

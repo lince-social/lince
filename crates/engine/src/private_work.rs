@@ -80,13 +80,10 @@ impl WorkMetadata {
         Self::read(value, |entries| entries.iter().map(parse_log).collect())
     }
 
-    /// Apply the same validation without retaining a vector of parsed logs.
     pub fn validate(value: &Value) -> Result<(), WorkError> {
         Self::read_without_logs(value).map(|_| ())
     }
 
-    /// Validate the same single-log metadata request without constructing its
-    /// temporary object/array or copying the log. Include the envelope's budget.
     pub fn validate_log(value: &Value) -> Result<(), WorkError> {
         let _validation = nucleus::performance::Span::new("work-log-validation");
         nucleus::performance::add("work-log-validation-requests", 1);
@@ -96,7 +93,6 @@ impl WorkMetadata {
         parse_log(value).map(|_| ())
     }
 
-    /// Validate all metadata, then derive its range from the already parsed fields.
     pub fn time_range(
         value: &Value,
         occurrence_ms: Option<i64>,

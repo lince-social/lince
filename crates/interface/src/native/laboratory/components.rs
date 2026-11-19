@@ -201,7 +201,7 @@ pub(crate) fn show(world: &mut World, root: Entity, index: usize) {
             ScrollPosition::default(),
         ))
         .observe(
-            |mut event: On<Pointer<bevy::picking::events::Scroll>>,
+            |mut event: On<PointerScroll>,
              mut scrolls: Query<&mut ScrollPosition>| {
                 if let Ok(mut scroll) = scrolls.get_mut(event.entity) {
                     let scale = if event.unit == bevy::input::mouse::MouseScrollUnit::Line {

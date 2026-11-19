@@ -25,6 +25,11 @@ pub(crate) struct Stamp {
 }
 
 impl Stamp {
+    #[cfg(all(test, feature = "nested", feature = "server-tests"))]
+    pub(crate) fn origin(self) -> u64 {
+        self.id
+    }
+
     pub(crate) fn earliest(left: Option<Self>, right: Option<Self>) -> Option<Self> {
         match (left, right) {
             (Some(left), Some(right)) => Some(if left.time <= right.time { left } else { right }),

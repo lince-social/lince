@@ -14,6 +14,7 @@ struct Queued {
 #[derive(Default)]
 struct State {
     events: VecDeque<Queued>,
+    queued: [usize; 2],
     closed: bool,
     retired: Arc<AtomicU64>,
 }
@@ -51,7 +52,7 @@ impl Sender {
     #[cfg(any(feature = "nested", test))]
     pub(super) fn can_send_controls(&self, count: usize) -> bool {
         let state = self.0.lock().unwrap();
-        count <= CAPACITY.saturating_sub(state.events.iter().filter(|event| !scroll(&event.input)).count())
+        count <= CAPACITY.saturating_sub(state.queued[0])
     }
 
     pub(super) fn try_send(&self, (serial, input): (u64, Input)) -> Result<(), TrySendError<(u64, Input)>> {
@@ -70,10 +71,11 @@ impl Sender {
                 return Ok(());
             }
         let scrolling = scroll(&input);
-        if state.events.iter().filter(|event| scroll(&event.input) == scrolling).count() >= CAPACITY {
+        if state.queued[usize::from(scrolling)] >= CAPACITY {
             return Err(TrySendError::Full((serial, input)));
         }
         state.events.push_back(Queued { serial, input, started, latency });
+        state.queued[usize::from(scrolling)] += 1;
         if let Some(stamp) = latency { stamp.checkpoint(lince_interface::host::performance::InputStage::NativeEnqueued, serial, 0); }
         lince_interface::host::performance::count(lince_interface::host::performance::Count::InputAccepted);
         Ok(())
@@ -87,7 +89,12 @@ impl Receiver {
     }
 
     pub(super) fn pop_timed(&self) -> Option<(u64, Input, Option<super::latency::Stamp>)> {
-        let event = self.0.lock().unwrap().events.pop_front()?;
+        let event = {
+            let mut state = self.0.lock().unwrap();
+            let event = state.events.pop_front()?;
+            state.queued[usize::from(scroll(&event.input))] -= 1;
+            event
+        };
         if let Some(stamp) = event.latency { stamp.checkpoint(lince_interface::host::performance::InputStage::NativeDequeued, event.serial, 0); }
         lince_interface::host::performance::record_since(lince_interface::host::performance::Stage::InputQueueWait, event.started);
         Some((event.serial, event.input, event.latency))
@@ -99,6 +106,7 @@ impl Drop for Receiver {
         let mut state = self.0.lock().unwrap();
         state.closed = true;
         state.events.clear();
+        state.queued = [0; 2];
     }
 }
 

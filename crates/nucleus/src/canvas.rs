@@ -295,8 +295,6 @@ impl Component {
         records
     }
 
-    /// Visits declared references in presentation order, including duplicates.
-    /// The visitor can stop without allocating a complete reference list.
     pub fn visit_records<'a, B>(
         &'a self,
         visit: &mut impl FnMut(&'a str) -> ControlFlow<B>,

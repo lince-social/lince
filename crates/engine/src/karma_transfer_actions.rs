@@ -77,7 +77,7 @@ impl Engine {
         Ok(())
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments, reason = "The action carries distinct transfer, execution, and delivery inputs")]
     pub(crate) async fn publish_transfer_action(
         &self,
         transfer: String,
@@ -162,7 +162,7 @@ impl Engine {
         Ok(outcome)
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments, reason = "The action carries distinct transfer, execution, and fulfillment inputs")]
     pub(crate) async fn activate_transfer_fulfillment_action(
         &self,
         transfer: String,

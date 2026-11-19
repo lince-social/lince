@@ -101,7 +101,7 @@ pub fn spawn(
         ))
         .observe(change)
         .observe(
-            |event: On<Pointer<Press>>, mut focus: ResMut<bevy::input_focus::InputFocus>| {
+            |event: On<PointerPress>, mut focus: ResMut<bevy::input_focus::InputFocus>| {
                 if event.button == bevy::picking::pointer::PointerButton::Primary {
                     focus.set(event.entity, bevy::input_focus::FocusCause::Pressed);
                 }

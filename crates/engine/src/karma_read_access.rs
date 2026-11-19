@@ -11,6 +11,8 @@ impl Engine {
         condition: Condition,
         actor: Option<&str>,
     ) -> Result<Vec<String>, EngineError> {
+        let _resolution =
+            nucleus::performance::Span::new("karma-condition-record-resolution-await");
         let mut pending = vec![(condition, 0)];
         let mut records = BTreeSet::new();
         let mut budget = 128usize;
@@ -18,26 +20,31 @@ impl Engine {
             if depth >= 4 {
                 return Err(crate::karma_preview::invalid("Reading nesting is too deep"));
             }
-            for token in condition.reads() {
+            for token in condition.reads_ref() {
                 budget = budget
                     .checked_sub(1)
                     .ok_or_else(|| invalid("Too many readings"))?;
                 if nucleus::transfer::karma::is_reading(&token.func) {
                     self.require_permission(actor, "transfer:read").await?;
-                    let references: Vec<_> = token.slug.split('|').collect();
-                    let state = self.cached_transfer_snapshot(references[0], actor).await?;
+                    let mut references = token.slug.split('|');
+                    let state = self
+                        .cached_transfer_snapshot(references.next().unwrap(), actor)
+                        .await?;
                     if nucleus::transfer::karma::is_agreement_reading(&token.func) {
-                        let person = store::records::resolve(&self.store.pool, references[1])
-                            .await?
-                            .filter(|record| record.kind == "person")
-                            .ok_or_else(|| invalid("Agreement Person is unavailable"))?;
+                        let person = store::records::resolve_kind(
+                            &self.store.pool,
+                            references.next().unwrap(),
+                        )
+                        .await?
+                        .filter(|record| record.kind == "person")
+                        .ok_or_else(|| invalid("Agreement Person is unavailable"))?;
                         if !state.participants.contains_key(&person.uid) {
                             return Err(invalid(
                                 "This Person's agreement is unavailable or hidden",
                             ));
                         }
                     }
-                    records.insert(state.transfer);
+                    records.insert(state.transfer.clone());
                     continue;
                 }
                 if token.func == nucleus::expr::ASSERTION {
@@ -50,14 +57,13 @@ impl Engine {
                     continue;
                 }
                 if token.func == nucleus::expr::HAS_ASSERTION {
-                    let references = token.slug.split('|').collect::<Vec<_>>();
-                    store::concepts::resolve(&self.store.pool, references[1])
+                    let mut references = token.slug.split('|');
+                    let first = references.next().unwrap();
+                    store::concepts::resolve(&self.store.pool, references.next().unwrap())
                         .await?
                         .ok_or_else(|| invalid("Condition concept is unavailable"))?;
-                    for (position, reference) in references.into_iter().enumerate() {
-                        if position != 1 {
-                            records.insert(self.resolve(reference).await?);
-                        }
+                    for reference in std::iter::once(first).chain(references) {
+                        records.insert(self.resolve(reference).await?);
                     }
                     continue;
                 }
@@ -67,7 +73,7 @@ impl Engine {
                     continue;
                 }
                 if token.func == "startup" {
-                    let record = store::records::resolve(&self.store.pool, &token.slug)
+                    let record = store::records::resolve_kind(&self.store.pool, &token.slug)
                         .await?
                         .filter(|record| record.kind == "device")
                         .ok_or_else(|| invalid("startup() needs a Cell Record"))?;
@@ -96,12 +102,11 @@ impl Engine {
                     self.require_permission(actor, "organ:update").await?;
                 }
                 for name in token.slug.split('|') {
-                    let record = store::records::resolve(&self.store.pool, name)
+                    let record = store::records::resolve_uid(&self.store.pool, name)
                         .await?
                         .ok_or_else(|| invalid("Condition Record is unavailable"))?;
-                    records.insert(record.uid.clone());
                     if token.func == "value" {
-                        let rule = store::recurrence::for_record(&self.store.pool, &record.uid)
+                        let rule = store::recurrence::for_record(&self.store.pool, &record)
                             .await?
                             .into_iter()
                             .find(|rule| rule.condition.is_some() && !rule.is_paused())
@@ -111,6 +116,7 @@ impl Engine {
                             depth + 1,
                         ));
                     }
+                    records.insert(record);
                 }
             }
         }

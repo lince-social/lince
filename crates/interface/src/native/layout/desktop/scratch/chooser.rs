@@ -1,6 +1,6 @@
 use super::*;
 use crate::native::{actions::{Action, KeyBinding, KeyBindings, Modifiers}, edit_mode::label, shortcuts};
-use bevy::{input_focus::tab_navigation::TabGroup, picking::events::Scroll};
+use bevy::{input_focus::tab_navigation::TabGroup, picking::events::PointerScroll};
 
 #[derive(Component)]
 struct Chooser {
@@ -35,7 +35,7 @@ pub(super) fn open(world: &mut World, destination: Destination, choices: Vec<Tar
     let list = world.spawn((Node { width: percent(100), min_width: px(0), min_height: px(0), flex_direction: FlexDirection::Column,
         flex_grow: 1.0, flex_shrink: 1.0, row_gap: px(6), overflow: Overflow::scroll_y(), ..default()
     }, ScrollPosition::default(), crate::native::edit_mode::FocusScroll, ChildOf(panel))).id();
-    world.entity_mut(list).observe(|mut event: On<Pointer<Scroll>>| event.propagate(false));
+    world.entity_mut(list).observe(|mut event: On<PointerScroll>| event.propagate(false));
     let choices = choices.into_iter().enumerate().map(|(index, target)| {
         let name = caption(world, &target, index);
         let button = input_settings::button(world, list, overlay, &name, Edit::Choose(index));

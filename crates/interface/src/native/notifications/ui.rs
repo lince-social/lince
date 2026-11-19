@@ -16,15 +16,23 @@ use bevy::{
     input_focus::{FocusCause, InputFocus, tab_navigation::TabGroup},
     prelude::*,
 };
-use std::{collections::HashSet, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
-pub(super) fn setup(world: &mut World) {
-    let roots: Vec<_> = world
-        .query_filtered::<(Entity, &EditMode), Without<NotificationCenter>>()
-        .iter(world)
-        .map(|(root, mode)| (root, mode.toggle))
-        .collect();
-    for (root, edit) in roots {
+pub(super) fn setup(
+    world: &mut World,
+    roots: &mut QueryState<(Entity, &'static EditMode), Without<NotificationCenter>>,
+    mut pending: Local<Vec<(Entity, Entity)>>,
+) {
+    pending.clear();
+    pending.extend(roots.iter(world).map(|(root, mode)| (root, mode.toggle)));
+    if pending.is_empty() {
+        *pending = Vec::new();
+        return;
+    }
+    for (root, edit) in pending.drain(..) {
         let toolbar = world.get::<ChildOf>(edit).unwrap().parent();
         let toggle = control(
             world,
@@ -50,14 +58,21 @@ pub(super) fn setup(world: &mut World) {
     }
 }
 
-pub(super) fn render_badges(world: &mut World) {
+pub(super) fn render_badges(
+    world: &mut World,
+    buttons: &mut QueryState<Entity, With<NotificationCount>>,
+    mut pending: Local<Vec<Entity>>,
+) {
+    let _presentation = nucleus::performance::Span::new("notification-badge-presentation");
+    pending.clear();
+    pending.extend(buttons.iter(world));
+    if pending.is_empty() {
+        *pending = Vec::new();
+        return;
+    }
     let snapshot = Arc::clone(&world.resource::<Notifications>().snapshot);
     let count = snapshot.notices.len();
-    let buttons: Vec<_> = world
-        .query_filtered::<Entity, With<NotificationCount>>()
-        .iter(world)
-        .collect();
-    for button in buttons {
+    for button in pending.drain(..) {
         let badge = world.get::<Children>(button).and_then(|children| {
             children
                 .iter()
@@ -262,17 +277,32 @@ pub(super) fn anchor(
 
 pub(super) fn remove_toast(world: &mut World, id: u64) {
     Arc::make_mut(&mut world.resource_mut::<Notifications>().toasts).remove(&id);
-    let entities: Vec<_> = world
-        .query::<(Entity, &NotificationToast)>()
-        .iter(world)
-        .filter(|(_, toast)| toast.id == id)
-        .map(|(entity, _)| entity)
-        .collect();
-    for entity in entities {
+    world
+        .run_system_cached_with(remove_toast_items, id)
+        .expect("dismiss notification toast items");
+}
+
+fn remove_toast_items(
+    In(id): In<u64>,
+    world: &mut World,
+    toasts: &mut QueryState<(Entity, &'static NotificationToast)>,
+    mut pending: Local<Vec<Entity>>,
+) {
+    pending.clear();
+    pending.extend(
+        toasts
+            .iter(world)
+            .filter(|(_, toast)| toast.id == id)
+            .map(|(entity, _)| entity),
+    );
+    for entity in pending.drain(..) {
         preserve_focus(world, entity);
         world.despawn(entity);
     }
     remove_empty_stacks(world);
+    if toasts.iter(world).next().is_none() {
+        *pending = Vec::new();
+    }
 }
 
 fn preserve_focus(world: &mut World, subtree: Entity) {
@@ -293,49 +323,110 @@ fn preserve_focus(world: &mut World, subtree: Entity) {
 }
 
 fn remove_empty_stacks(world: &mut World) {
-    let stacks: Vec<_> = world
-        .query_filtered::<(Entity, &Children), With<ToastStack>>()
-        .iter(world)
-        .filter(|(_, children)| {
-            !children
-                .iter()
-                .any(|child| world.get::<NotificationToast>(child).is_some())
-        })
-        .map(|(entity, _)| entity)
-        .collect();
-    for stack in stacks {
+    world
+        .run_system_cached(prune_empty_stacks)
+        .expect("retire empty notification stacks");
+}
+
+fn prune_empty_stacks(
+    world: &mut World,
+    stacks: &mut QueryState<(Entity, &'static Children), With<ToastStack>>,
+    mut pending: Local<Vec<Entity>>,
+) {
+    pending.clear();
+    pending.extend(
+        stacks
+            .iter(world)
+            .filter(|(_, children)| {
+                !children
+                    .iter()
+                    .any(|child| world.get::<NotificationToast>(child).is_some())
+            })
+            .map(|(entity, _)| entity),
+    );
+    for stack in pending.drain(..) {
         world.despawn(stack);
+    }
+    if stacks.iter(world).next().is_none() {
+        *pending = Vec::new();
     }
 }
 
-pub(super) fn render_toasts(world: &mut World) {
+#[derive(Default)]
+pub(super) struct ToastPreparation {
+    stale: Vec<Entity>,
+    roots: Vec<Entity>,
+    stacks: HashMap<Entity, Entity>,
+    existing: HashSet<u64>,
+}
+
+impl ToastPreparation {
+    fn retire(&mut self) {
+        self.stale = Vec::new();
+        self.roots = Vec::new();
+        self.stacks.clear();
+        self.stacks.shrink_to_fit();
+        self.existing.clear();
+        self.existing.shrink_to_fit();
+    }
+}
+
+pub(super) fn render_toasts(
+    world: &mut World,
+    toast_query: &mut QueryState<(Entity, &'static NotificationToast)>,
+    roots_query: &mut QueryState<Entity, With<NotificationCenter>>,
+    stacks_query: &mut QueryState<(Entity, &'static ToastStack)>,
+    mut preparation: Local<ToastPreparation>,
+) {
+    let _presentation = nucleus::performance::Span::new("notification-toast-presentation");
     let state = world.resource::<Notifications>();
     let snapshot = Arc::clone(&state.snapshot);
     let toasts = Arc::clone(&state.toasts);
-    let stale: Vec<_> = world
-        .query::<(Entity, &NotificationToast)>()
-        .iter(world)
-        .filter(|(_, toast)| toasts.get(&toast.id) != Some(&toast.occurrences))
-        .map(|(entity, _)| entity)
-        .collect();
-    for entity in stale {
+    let ToastPreparation {
+        stale,
+        roots,
+        stacks,
+        existing,
+    } = &mut *preparation;
+    stale.clear();
+    stale.extend(
+        toast_query
+            .iter(world)
+            .filter(|(_, toast)| toasts.get(&toast.id) != Some(&toast.occurrences))
+            .map(|(entity, _)| entity),
+    );
+    for entity in stale.drain(..) {
         preserve_focus(world, entity);
         world.despawn(entity);
     }
     remove_empty_stacks(world);
     if toasts.is_empty() {
+        preparation.retire();
         return;
     }
-    let roots: Vec<_> = world
-        .query_filtered::<Entity, With<NotificationCenter>>()
-        .iter(world)
-        .collect();
-    for root in roots {
-        let stack = world
-            .query::<(Entity, &ToastStack)>()
-            .iter(world)
-            .find(|(_, stack)| stack.0 == root)
-            .map(|(entity, _)| entity);
+    roots.clear();
+    roots.extend(roots_query.iter(world));
+    if roots.is_empty() {
+        preparation.retire();
+        return;
+    }
+    let indexed = roots.len() > 1;
+    stacks.clear();
+    if indexed {
+        for (entity, stack) in stacks_query.iter(world) {
+            stacks.entry(stack.0).or_insert(entity);
+        }
+    }
+    nucleus::performance::add("notification-toast-roots-prepared", roots.len() as u64);
+    for root in roots.drain(..) {
+        let stack = if indexed {
+            stacks.get(&root).copied()
+        } else {
+            stacks_query
+                .iter(world)
+                .find(|(_, stack)| stack.0 == root)
+                .map(|(entity, _)| entity)
+        };
         let stack = stack.unwrap_or_else(|| {
             let stack = world
                 .spawn((
@@ -359,12 +450,14 @@ pub(super) fn render_toasts(world: &mut World) {
             crate::native::scroll_sand::attach(world, stack);
             stack
         });
-        let mut existing: HashSet<_> = world
-            .get::<Children>(stack)
-            .into_iter()
-            .flat_map(|children| children.iter())
-            .filter_map(|child| world.get::<NotificationToast>(child).map(|toast| toast.id))
-            .collect();
+        existing.clear();
+        existing.extend(
+            world
+                .get::<Children>(stack)
+                .into_iter()
+                .flat_map(|children| children.iter())
+                .filter_map(|child| world.get::<NotificationToast>(child).map(|toast| toast.id)),
+        );
         for notice in snapshot
             .notices
             .iter()
@@ -380,21 +473,32 @@ pub(super) fn render_toasts(world: &mut World) {
             });
         }
     }
+    stacks.clear();
+    existing.clear();
 }
 
-pub(super) fn render_panels(world: &mut World) {
+pub(super) fn render_panels(
+    world: &mut World,
+    panels: &mut QueryState<(Entity, &'static NotificationPanel)>,
+    mut pending: Local<Vec<Entity>>,
+) {
+    let _presentation = nucleus::performance::Span::new("notification-panel-presentation");
     let revision = world.resource::<Notifications>().revision;
-    let panels: Vec<_> = world
-        .query::<(Entity, &NotificationPanel)>()
-        .iter(world)
-        .filter(|(_, panel)| panel.0 != Some(revision))
-        .map(|(entity, _)| entity)
-        .collect();
-    if panels.is_empty() {
+    pending.clear();
+    pending.extend(
+        panels
+            .iter(world)
+            .filter(|(_, panel)| panel.0 != Some(revision))
+            .map(|(entity, _)| entity),
+    );
+    if pending.is_empty() {
+        if panels.iter(world).next().is_none() {
+            *pending = Vec::new();
+        }
         return;
     }
     let snapshot = Arc::clone(&world.resource::<Notifications>().snapshot);
-    for panel in panels {
+    for panel in pending.drain(..) {
         let root = root(world, panel).unwrap();
         preserve_focus(world, panel);
         world.entity_mut(panel).despawn_children();

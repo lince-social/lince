@@ -21,13 +21,18 @@ use std::{
 mod text_protection;
 pub(crate) use text_protection::refresh as refresh_text_protection;
 
+mod authoring;
 mod catalog;
 #[cfg(test)]
 mod cleaning_tests;
+pub(crate) mod compositor;
+mod feeds;
+mod labels;
 mod mesh;
 mod numeric;
-pub(crate) mod compositor;
 mod placement;
+mod presentations;
+mod publication;
 mod sphere;
 pub use sphere::RecordSphere;
 
@@ -45,10 +50,14 @@ pub(crate) fn appearance_owner(world: &World, preview: Entity) -> Option<Entity>
 
 pub(crate) fn capture_sources(world: &World, entity: Entity) -> impl Iterator<Item = Entity> {
     [
-        world.get::<Floating>(entity).map(|floating| floating.record),
+        world
+            .get::<Floating>(entity)
+            .map(|floating| floating.record),
         world.get::<RecordMesh>(entity).map(|mesh| mesh.0),
         world.get::<RecordSphere>(entity).map(|sphere| sphere.0),
-    ].into_iter().flatten()
+    ]
+    .into_iter()
+    .flatten()
 }
 
 #[derive(bevy::ecs::query::QueryData)]
@@ -60,7 +69,11 @@ pub(crate) struct CaptureOwners {
 
 impl CaptureOwnersItem<'_, '_> {
     pub(crate) fn entities(&self) -> [Option<Entity>; 3] {
-        [self.floating.map(|floating| floating.record), self.mesh.map(|mesh| mesh.0), self.sphere.map(|sphere| sphere.0)]
+        [
+            self.floating.map(|floating| floating.record),
+            self.mesh.map(|mesh| mesh.0),
+            self.sphere.map(|sphere| sphere.0),
+        ]
     }
 }
 
@@ -476,10 +489,7 @@ struct Feed {
 }
 
 #[derive(Resource, Default)]
-struct Feeds(
-    HashMap<(Source, String), Feed>,
-    Vec<(RecordBinding, String)>,
-);
+struct Feeds(feeds::Map, Vec<(RecordBinding, String)>);
 
 #[derive(Resource, Default, Clone, Copy, Serialize, Deserialize)]
 pub(crate) struct ShaderSettings {
@@ -501,13 +511,18 @@ pub(crate) fn disabled(world: &World) -> bool {
 }
 
 pub fn set_compositor_presentation_active(world: &mut World, active: bool) {
-    if world.get_resource::<compositor::PresentationActive>().is_none_or(|current| current.0 != active) {
+    if world
+        .get_resource::<compositor::PresentationActive>()
+        .is_none_or(|current| current.0 != active)
+    {
         world.insert_resource(compositor::PresentationActive(active));
     }
 }
 
 pub(crate) fn compositor_presentation_active(world: &World) -> bool {
-    world.get_resource::<compositor::PresentationActive>().is_none_or(|current| current.0)
+    world
+        .get_resource::<compositor::PresentationActive>()
+        .is_none_or(|current| current.0)
 }
 
 pub(crate) fn lighting_inputs(world: &World, entity: Entity) -> Option<model::ResolvedInputs> {
@@ -632,14 +647,12 @@ fn root(world: &World, mut entity: Entity) -> Option<Entity> {
     Some(entity)
 }
 
+#[cfg(test)]
 fn feed_key(binding: &RecordBinding) -> (Source, String) {
     (binding.source.clone(), binding.uid.clone())
 }
 
-fn sender(
-    world: &World,
-    binding: &RecordBinding,
-) -> Option<crate::native::cell_bridge::Sender> {
+fn sender(world: &World, binding: &RecordBinding) -> Option<crate::native::cell_bridge::Sender> {
     crate::native::protein_area::editor_sender(world, binding)
 }
 
@@ -1217,34 +1230,42 @@ fn render_editor(world: &mut World, owner: Entity) {
 }
 
 fn set_record_quantity(world: &mut World, owner: Entity, quantity: Option<String>) {
-    let preview = world.get::<Editor>(owner).unwrap().preview;
-    world.get_mut::<Editor>(owner).unwrap().quantity = quantity.clone();
-    let inputs: Vec<_> = world
-        .query::<(Entity, &Input)>()
-        .iter(world)
-        .filter(|(_, input)| input.editor == owner && matches!(input.key, InputKey::Quantity))
-        .map(|(entity, _)| entity)
-        .collect();
-    for input in inputs {
-        let mut text = world.get_mut::<EditableText>(input).unwrap();
-        if text.value() != quantity.as_deref().unwrap_or("") {
-            text.editor.set_text(quantity.as_deref().unwrap_or(""));
-        }
-    }
     world
-        .get_mut::<shader::EffectPreview>(preview)
-        .unwrap()
-        .quantity = quantity;
+        .run_system_cached_with(authoring::set_record_quantity, (owner, quantity))
+        .expect("publish the current Record quantity");
 }
 
 fn capture(world: &mut World, owner: Entity) {
-    let values: Vec<_> = world
-        .query::<(&Input, &EditableText)>()
-        .iter(world)
-        .filter(|(input, _)| input.editor == owner)
-        .map(|(input, text)| (input.key.clone(), text.value().to_string()))
-        .collect();
-    for (key, value) in values {
+    let _capture = nucleus::performance::Span::new("shader-authoring-capture");
+    world
+        .run_system_cached_with(capture_editor_fields, owner)
+        .expect("capture current shader editor fields");
+}
+
+fn capture_editor_fields(
+    In(owner): In<Entity>,
+    world: &mut World,
+    inputs: &mut QueryState<(Entity, &'static Input), With<EditableText>>,
+    labels: &mut QueryState<(Entity, &'static MappingStatus), With<Text>>,
+    mut targets: Local<Vec<Entity>>,
+) {
+    let field_capture = nucleus::performance::Span::new("shader-authoring-field-capture");
+    targets.clear();
+    targets.extend(
+        inputs
+            .iter(world)
+            .filter(|(_, input)| input.editor == owner)
+            .map(|(entity, _)| entity),
+    );
+    let has_inputs = !targets.is_empty();
+    for entity in targets.drain(..) {
+        let input = world.get::<Input>(entity).unwrap();
+        let text = world.get::<EditableText>(entity).unwrap();
+        if !authoring::input_changed(world, owner, &input.key, text) {
+            continue;
+        }
+        let (key, value) = (input.key.clone(), text.value().to_string());
+        nucleus::performance::add("shader-authoring-fields-captured", 1);
         let target = world.get::<Editor>(owner).unwrap().target.clone();
         match key {
             InputKey::GeometrySource => {
@@ -1304,13 +1325,16 @@ fn capture(world: &mut World, owner: Entity) {
                 let editor = world.get::<Editor>(owner).unwrap();
                 let customized = matches!(target, Target::Record(_))
                     && value != editor.quantity.as_deref().unwrap_or("");
-                if customized {
+                if customized && !editor.custom_quantity {
                     world.get_mut::<Editor>(owner).unwrap().custom_quantity = true;
                 }
-                world.get_mut::<Editor>(owner).unwrap().quantity =
-                    model::quantity(&Value::String(value.clone()));
+                let quantity = model::quantity_text(&value);
+                if world.get::<Editor>(owner).unwrap().quantity.as_deref() != quantity {
+                    world.get_mut::<Editor>(owner).unwrap().quantity = quantity.map(str::to_owned);
+                }
                 if let Target::Surface(entity) = target
                     && let Some(mut surface) = world.get_mut::<Surface>(entity)
+                    && surface.quantity != value
                 {
                     surface.quantity = value;
                 }
@@ -1370,108 +1394,34 @@ fn capture(world: &mut World, owner: Entity) {
             }
         }
     }
-    let active = world.get::<Editor>(owner).unwrap().effect.clone();
-    if matches!(
-        world.get::<Editor>(owner).unwrap().target,
-        Target::Record(_)
-    ) {
-        let preview = world.get::<Editor>(owner).unwrap().preview;
-        let working = shader::working(world, preview).cloned();
-        let mut editor = world.get_mut::<Editor>(owner).unwrap();
-        let waiting = editor
-            .bootstrap
-            .as_ref()
-            .is_some_and(|bootstrap| working.as_ref() != Some(bootstrap));
-        editor.catalog.capture(&active);
-        if !waiting {
-            editor.catalog.capture_working(&active, working.as_ref());
-        }
+    drop(field_capture);
+    if let Some((preview, context)) = world
+        .run_system_cached_with(authoring::publish_preview, owner)
+        .expect("publish current shader authoring")
+    {
+        world.entity_mut(preview).insert(context);
     }
-    let editor = world.get::<Editor>(owner).unwrap();
-    let (effect, quantity, preview, target) = (
-        editor.effect.clone(),
-        editor.quantity.clone(),
-        editor.preview,
-        editor.target.clone(),
+    targets.extend(
+        labels
+            .iter(world)
+            .filter(|(_, status)| status.0 == owner)
+            .map(|(entity, _)| entity),
     );
-    let bootstrap = world.get::<Editor>(owner).unwrap().bootstrap.clone();
-    let bootstrapping = bootstrap
-        .as_ref()
-        .is_some_and(|effect| shader::working(world, preview) != Some(effect));
-    if !bootstrapping {
-        world.get_mut::<Editor>(owner).unwrap().bootstrap = None;
-    }
-    if let Some(mut shader) = world.get_mut::<shader::EffectPreview>(preview) {
-        if !bootstrapping {
-            shader.effect = effect.clone();
-        } else if let Some(bootstrap) = bootstrap {
-            shader.effect = bootstrap;
+    if targets.is_empty() {
+        if world.get::<labels::EditorText>(owner).is_some() {
+            world.entity_mut(owner).remove::<labels::EditorText>();
         }
-        shader.quantity = quantity;
+        if !has_inputs {
+            *targets = Vec::new();
+        }
+        return;
     }
-    if let Target::Surface(entity) = &target
-        && let Some(surface) = world.get::<Surface>(*entity).cloned()
-        && let Some(mut shader) = world.get_mut::<shader::EffectPreview>(preview)
-    {
-        shader.strength = surface.strength.min(0.65);
-        shader.motion = surface.motion;
-        shader.frozen = surface.frozen;
-        shader.disabled = surface.disabled;
-    }
-    if let Target::Surface(entity) = &target
-        && let Some(surface) = world.get::<Surface>(*entity).cloned()
-    {
-        world.entity_mut(preview).insert(numeric::Context {
-            record: surface.record,
-            source: surface.source,
-        });
-    }
-    let reference = match &target {
-        Target::Surface(entity) => world
-            .get::<Surface>(*entity)
-            .map(|surface| catalog::reference_status(world, surface))
-            .unwrap_or_default(),
-        Target::Record(_) => String::new(),
-    };
-    if let Target::Surface(entity) = target
-        && let Some(mut surface) = world.get_mut::<Surface>(entity)
-    {
-        surface.draft = Some(effect);
-    }
-    let live = if let Target::Surface(entity) = target {
-        surface_reading(world, entity)
-    } else {
-        None
-    };
-    let editor = world.get::<Editor>(owner).unwrap();
-    let mut label = editor
-        .effect
-        .inputs
-        .resolve(editor.quantity.as_deref())
-        .label();
-    if let Some(live) = live {
-        label.push_str(&format!(
-            "\nLive Sand: quantity {}; {}{}",
-            live.quantity.as_deref().unwrap_or("unavailable"),
-            live.inputs
-                .map_or_else(|| "inactive".into(), model::ResolvedInputs::label),
-            if live.enabled {
-                ""
-            } else {
-                " · disabled or source unavailable"
-            }
-        ));
-    }
-    let numeric = numeric::status(world, preview);
-    if !numeric.is_empty() {
-        label.push_str(&format!(" · {numeric}"));
-    }
-    if !reference.is_empty() {
-        label.push_str(&format!(" · {reference}"));
-    }
-    for (status, mut text) in world.query::<(&MappingStatus, &mut Text)>().iter_mut(world) {
-        if status.0 == owner && text.0 != label {
-            text.0.clone_from(&label);
+    let label = labels::editor(world, owner);
+    for target in targets.drain(..) {
+        let mut text = world.get_mut::<Text>(target).unwrap();
+        if text.0.as_str() != label.as_ref() {
+            text.0.clear();
+            text.0.push_str(&label);
         }
     }
 }
@@ -1617,18 +1567,12 @@ impl Action for Command {
             }
             Self::ReferenceEffect => {
                 if let Target::Surface(entity) = target
-                    && let Some(surface) = world.get::<Surface>(entity).cloned()
+                    && let Some(surface) = world.get::<Surface>(entity)
                     && let Some(uid) = &surface.record
                 {
-                    let binding = RecordBinding {
-                        area: Entity::PLACEHOLDER,
-                        uid: uid.clone(),
-                        source: surface.source.clone(),
-                    };
                     let extension = world
                         .resource::<Feeds>()
-                        .0
-                        .get(&feed_key(&binding))
+                        .get(&surface.source, uid)
                         .and_then(|feed| feed.row.as_ref())
                         .and_then(|row| row.extension.as_ref());
                     if let Some(extension) = extension {
@@ -1657,8 +1601,7 @@ impl Action for Command {
                 if let Target::Record(binding) = &target {
                     let quantity = world
                         .resource::<Feeds>()
-                        .0
-                        .get(&feed_key(binding))
+                        .get(&binding.source, &binding.uid)
                         .and_then(|feed| feed.row.as_ref())
                         .and_then(|row| row.quantity.clone());
                     world.get_mut::<Editor>(owner).unwrap().custom_quantity = false;
@@ -1672,8 +1615,7 @@ impl Action for Command {
                 if let Target::Record(binding) = &target {
                     let data = world
                         .resource::<Feeds>()
-                        .0
-                        .get(&feed_key(binding))
+                        .get(&binding.source, &binding.uid)
                         .and_then(|feed| feed.row.clone());
                     if let Some(data) = data {
                         catalog::load(
@@ -2273,260 +2215,135 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
 fn release_obsolete_feeds(
     world: &mut World,
     feeds: &mut Feeds,
-    bindings: &HashMap<(Source, String), RecordBinding>,
-) {
-    let obsolete: Vec<_> = feeds
-        .0
-        .keys()
-        .filter(|key| !bindings.contains_key(*key))
-        .cloned()
-        .collect();
-    for key in obsolete {
-        if feeds.1.len() >= 32 {
-            break;
-        }
-        if let Some(feed) = feeds.0.remove(&key) {
-            feeds.1.push((feed.binding, feed.id));
-        }
-    }
-    feeds.1.retain(|(binding, id)| {
-        let message = ClientMessage::Unsubscribe { id: id.clone() };
-        if let Some(sender) = sender(world, binding)
-            && matches!(
-                sender.try_send(message.clone()),
-                Err(tokio::sync::mpsc::error::TrySendError::Full(_))
-            )
-        {
-            return true;
-        }
-        crate::native::protein_area::auxiliary_subscribed(world, &binding.source, &message);
-        false
-    });
+    demands: &feeds::Demands,
+) -> Vec<feeds::Owner> {
+    feeds::release_obsolete(world, feeds, demands)
+}
+
+#[derive(Default)]
+struct UpdateScratch {
+    selections: Vec<(Entity, Option<String>)>,
+    placements: Vec<(Entity, u8, f32)>,
+    messages: Vec<Arc<ServerMessage>>,
+    editors: Vec<Entity>,
+    demands: feeds::Demands,
 }
 
 fn update(
     world: &mut World,
+    selections: &mut QueryState<
+        (&'static placement::EffectInput, &'static EditableText),
+        Changed<EditableText>,
+    >,
+    placements: &mut QueryState<
+        (&'static PlacementInput, &'static EditableText),
+        Changed<EditableText>,
+    >,
+    editors: &mut QueryState<(Entity, &'static Editor)>,
+    surfaces: &mut QueryState<(Entity, &'static Surface)>,
     mut cursor: Local<bevy::ecs::message::MessageCursor<crate::native::cell_bridge::CellMessage>>,
+    mut scratch: Local<UpdateScratch>,
 ) {
-    let selections: Vec<_> = world
-        .query_filtered::<(&placement::EffectInput, &EditableText), Changed<EditableText>>()
-        .iter(world)
-        .map(|(input, text)| (input.0, text.value().to_string()))
-        .collect();
-    for (owner, id) in selections {
-        let id = id.trim();
-        if id.is_empty() || model::valid_effect_id(id) {
-            placement::change(world, owner, |settings| {
-                settings.effect_id = (!id.is_empty()).then(|| id.to_owned())
-            });
-        }
+    let input_dispatch = nucleus::performance::Span::new("shader-update-input-dispatch");
+    let UpdateScratch {
+        selections: selected,
+        placements: placed,
+        messages,
+        editors: owners,
+        demands,
+    } = &mut *scratch;
+    selected.clear();
+    selected.extend(selections.iter(world).filter_map(|(input, text)| {
+        let text = text.value().to_cow();
+        let id = text.trim();
+        (id.is_empty() || model::valid_effect_id(id))
+            .then(|| (input.0, (!id.is_empty()).then(|| id.to_owned())))
+    }));
+    for (owner, id) in selected.drain(..) {
+        placement::change(world, owner, |settings| settings.effect_id = id);
     }
-    let placements: Vec<_> = world
-        .query_filtered::<(&PlacementInput, &EditableText), Changed<EditableText>>()
-        .iter(world)
-        .map(|(input, text)| (input.area, input.key, text.value().to_string()))
-        .collect();
-    for (area, key, text) in placements {
-        if let Ok(value) = text.parse::<f32>() {
-            placement::change(world, area, |settings| match key {
-                0 => settings.size = value,
-                1 => settings.gap = value,
-                2 => settings.elevation = value,
-                _ => settings.min_pixels = value,
-            });
-        }
+    placed.clear();
+    placed.extend(placements.iter(world).filter_map(|(input, text)| {
+        text.value()
+            .to_cow()
+            .parse::<f32>()
+            .ok()
+            .map(|value| (input.area, input.key, value))
+    }));
+    for (area, key, value) in placed.drain(..) {
+        placement::change(world, area, |settings| match key {
+            0 => settings.size = value,
+            1 => settings.gap = value,
+            2 => settings.elevation = value,
+            _ => settings.min_pixels = value,
+        });
     }
-    let messages = world
-        .get_resource::<Messages<crate::native::cell_bridge::CellMessage>>()
-        .map(|messages| {
+    messages.clear();
+    if let Some(incoming) =
+        world.get_resource::<Messages<crate::native::cell_bridge::CellMessage>>()
+    {
+        messages.extend(
             cursor
-                .read(messages)
-                .map(|message| message.0.clone())
-                .collect::<Vec<_>>()
-        })
-        .unwrap_or_default();
-    for message in messages.iter().map(|message| message.as_ref()) {
+                .read(incoming)
+                .filter(|message| {
+                    matches!(
+                        message.0.as_ref(),
+                        ServerMessage::Snapshot { .. }
+                            | ServerMessage::Update { .. }
+                            | ServerMessage::ActionOk { .. }
+                            | ServerMessage::Error { .. }
+                            | ServerMessage::LiveHello {
+                                login_required: true
+                            }
+                            | ServerMessage::SessionAuthenticated { .. }
+                    )
+                })
+                .map(|message| message.0.clone()),
+        );
+    }
+    for message in messages.drain(..) {
         receive(world, &Source::Local, &message);
     }
-    let editors: Vec<_> = world
-        .query_filtered::<Entity, With<Editor>>()
-        .iter(world)
-        .filter(|entity| !crate::native::laboratory::blocked(world, *entity))
-        .collect();
-    for editor in &editors {
-        capture(world, *editor);
+    drop(input_dispatch);
+    owners.clear();
+    owners.extend(
+        editors
+            .iter(world)
+            .filter(|(entity, _)| !crate::native::laboratory::blocked(world, *entity))
+            .map(|(entity, _)| entity),
+    );
+    for &owner in owners.iter() {
+        capture(world, owner);
     }
-    let mut bindings = HashMap::new();
-    for (entity, editor) in world.query::<(Entity, &Editor)>().iter(world) {
-        if crate::native::laboratory::blocked(world, entity) {
-            continue;
-        }
-        if let Target::Record(binding) = &editor.target {
-            bindings.insert(feed_key(binding), binding.clone());
-        }
+    demands.0.clear();
+    demands.0.extend(
+        editors
+            .iter(world)
+            .filter(|(entity, editor)| {
+                matches!(editor.target, Target::Record(_))
+                    && !crate::native::laboratory::blocked(world, *entity)
+            })
+            .map(|(entity, _)| feeds::Owner::Editor(entity)),
+    );
+    demands.0.extend(
+        surfaces
+            .iter(world)
+            .filter(|(entity, surface)| {
+                !crate::native::laboratory::blocked(world, *entity)
+                    && surface
+                        .record
+                        .as_deref()
+                        .is_some_and(|uid| nucleus::valid_uid(uid, "r"))
+            })
+            .map(|(entity, _)| feeds::Owner::Surface(entity)),
+    );
+    feeds::maintain(world, demands);
+    feeds::prepare_rows(world);
+    for owner in owners.iter().copied() {
+        publication::update_editor(world, owner);
     }
-    for (entity, surface) in world.query::<(Entity, &Surface)>().iter(world) {
-        if crate::native::laboratory::blocked(world, entity) {
-            continue;
-        }
-        if let Some(uid) = &surface.record
-            && nucleus::valid_uid(uid, "r")
-        {
-            let binding = RecordBinding {
-                area: Entity::PLACEHOLDER,
-                uid: uid.clone(),
-                source: surface.source.clone(),
-            };
-            bindings.insert(feed_key(&binding), binding);
-        }
-    }
-    let mut feeds = world.remove_resource::<Feeds>().unwrap_or_default();
-    release_obsolete_feeds(world, &mut feeds, &bindings);
-    let retiring = !feeds.1.is_empty();
-    for (key, binding) in bindings {
-        if feeds.0.len() >= 64 && !feeds.0.contains_key(&key) {
-            continue;
-        }
-        let feed = feeds.0.entry(key).or_insert_with(|| Feed {
-            binding,
-            id: nucleus::new_uid("shader-feed"),
-            sent: false,
-            row: None,
-            error: String::new(),
-            retry: Instant::now(),
-        });
-        crate::native::protein_area::ensure_auxiliary(world, &feed.binding.source);
-        if !retiring
-            && !feed.sent
-            && feed.retry <= Instant::now()
-            && crate::native::laboratory::normal(world)
-            && let Some(sender) = sender(world, &feed.binding)
-        {
-            let protein = protein::Protein {
-                source: protein::Source::Record,
-                filter: vec![protein::Predicate::UidEq(feed.binding.uid.clone())],
-                fields: Some(
-                    ["uid", "quantity", "shader_effect"]
-                        .map(str::to_string)
-                        .into(),
-                ),
-                include: protein::Include {
-                    shader_effect: true,
-                    ..default()
-                },
-                aggregate: None,
-                order: vec![],
-                limit: Some(1),
-            };
-            let message = ClientMessage::Subscribe {
-                id: feed.id.clone(),
-                protein,
-            };
-            feed.sent = sender.try_send(message.clone()).is_ok();
-            if feed.sent {
-                crate::native::protein_area::auxiliary_subscribed(
-                    world,
-                    &feed.binding.source,
-                    &message,
-                );
-            }
-            feed.retry = Instant::now() + Duration::from_secs(3);
-        }
-    }
-    world.insert_resource(feeds);
-    for owner in editors {
-        let (target, loaded, dirty, pending) = {
-            let editor = world.get::<Editor>(owner).unwrap();
-            (
-                editor.target.clone(),
-                editor.loaded,
-                editor.catalog.dirty(&editor.effect),
-                editor.pending.is_some(),
-            )
-        };
-        if let Target::Record(binding) = target {
-            let data = world
-                .resource::<Feeds>()
-                .0
-                .get(&feed_key(&binding))
-                .map(|feed| (feed.row.clone(), feed.error.clone()));
-            if let Some((Some(row), _)) = data {
-                let fallback;
-                let extension = match row
-                    .extension
-                    .as_ref()
-                    .filter(|extension| extension.bounded())
-                {
-                    Some(extension) => extension,
-                    None => {
-                        fallback = Extension::single(0, Effect::default());
-                        &fallback
-                    }
-                };
-                let revision = extension.revision;
-                let previous_revision = world.get::<Editor>(owner).unwrap().revision;
-                if (!loaded || revision != previous_revision) && !dirty && !pending {
-                    catalog::load(world, owner, extension.clone(), false);
-                    let mut editor = world.get_mut::<Editor>(owner).unwrap();
-                    editor.loaded = true;
-                    if !editor.custom_quantity {
-                        editor.quantity.clone_from(&row.quantity);
-                    }
-                    editor.rebuild = true;
-                } else if !loaded
-                    && revision == previous_revision
-                    && extension == &world.get::<Editor>(owner).unwrap().catalog.base
-                {
-                    let mut editor = world.get_mut::<Editor>(owner).unwrap();
-                    editor.loaded = true;
-                    if !editor.custom_quantity {
-                        editor.quantity.clone_from(&row.quantity);
-                    }
-                    editor.message = "Draft restored".into();
-                    editor.rebuild = true;
-                } else if !loaded {
-                    world.get_mut::<Editor>(owner).unwrap().message = "The Record loaded while the draft was being edited. Reload working before saving.".into();
-                } else if revision != previous_revision && dirty {
-                    world.get_mut::<Editor>(owner).unwrap().message =
-                        "Record effect changed elsewhere. Reload working before saving.".into();
-                }
-                let editor = world.get::<Editor>(owner).unwrap();
-                let quantity = row.quantity.clone();
-                if editor.loaded && !editor.custom_quantity && editor.quantity != quantity {
-                    set_record_quantity(world, owner, quantity);
-                }
-            } else if let Some((_, error)) = data {
-                world.get_mut::<Editor>(owner).unwrap().message = error;
-                world.get_mut::<Editor>(owner).unwrap().loaded = false;
-                if !world.get::<Editor>(owner).unwrap().custom_quantity {
-                    set_record_quantity(world, owner, None);
-                }
-            }
-        }
-        let (status, message, rebuild) = {
-            let editor = world.get::<Editor>(owner).unwrap();
-            (editor.status, editor.message.clone(), editor.rebuild)
-        };
-        if let Some(mut text) = world.get_mut::<Text>(status)
-            && text.0 != message
-        {
-            text.0 = message;
-        }
-        if world
-            .get::<Editor>(owner)
-            .unwrap()
-            .pending
-            .as_ref()
-            .is_some_and(|pending| pending.1.elapsed() > Duration::from_secs(20))
-        {
-            world.get_mut::<Editor>(owner).unwrap().message =
-                "Save confirmation timed out. Reload working before retrying.".into();
-            world.get_mut::<Editor>(owner).unwrap().pending = None;
-            world.get_mut::<Editor>(owner).unwrap().catalog.pending = None;
-        }
-        if rebuild {
-            render_editor(world, owner);
-        }
+    if owners.is_empty() && demands.0.is_empty() {
+        *scratch = UpdateScratch::default();
     }
     update_presentations(world);
     numeric::update(world);
@@ -2538,362 +2355,8 @@ fn update(
 }
 
 fn update_presentations(world: &mut World) {
-    let off = disabled(world);
-    let floating: Vec<_> = world
-        .query::<(Entity, &Floating)>()
-        .iter(world)
-        .map(|(entity, floating)| (entity, floating.record, floating.preview))
-        .collect();
-    let mut slots: HashMap<Entity, Vec<Entity>> = HashMap::new();
-    let mut labels: HashMap<Entity, Vec<(Entity, f32)>> = HashMap::new();
-    let camera_rotation = if floating.is_empty() {
-        None
-    } else {
-        for (entity, slot) in world.query::<(Entity, &EffectSlot)>().iter(world) {
-            slots.entry(slot.0).or_default().push(entity);
-        }
-        for (entity, label, node) in world
-            .query::<(Entity, &RecordStateLabel, Option<&ComputedNode>)>()
-            .iter(world)
-        {
-            let height = node.map_or(18.0, |node| {
-                node.size().y * node.inverse_scale_factor() + 4.0
-            });
-            labels.entry(label.0).or_default().push((entity, height));
-        }
-        world
-            .query_filtered::<&Transform, With<crate::native::topology::presentation::WorldCamera>>(
-            )
-            .iter(world)
-            .next()
-            .map(|transform| transform.rotation.as_dquat())
-    };
-    for (entity, record, preview) in floating {
-        let Some(item) = world
-            .get::<crate::native::canvas::CanvasItem>(record)
-            .copied()
-        else {
-            world.despawn(entity);
-            continue;
-        };
-        let Some(data) = world.get::<RecordData>(record).cloned() else {
-            world.despawn(entity);
-            continue;
-        };
-        let config = crate::native::protein_area::configuration_ref(world, data.binding.area);
-        if !config.as_ref().is_some_and(|config| config.shader_effects) {
-            world.despawn(entity);
-            continue;
-        }
-        let settings =
-            placement::effective(world, &data.binding, &config.unwrap().shader_placement);
-        let spatial = crate::native::topology::spatial(world, record);
-        let offset = spatial.rotation()
-            * DVec3::new(
-                0.0,
-                f64::from(settings.elevation),
-                -f64::from(item.size.y) * 0.5 + f64::from(settings.size) * 0.5,
-            );
-        let mut placement = spatial;
-        placement.elevation += offset.y;
-        placement.depth = Some(1.0);
-        if settings.billboard
-            && root(world, record)
-                .and_then(|root| world.get::<crate::native::topology::view::View>(root))
-                .is_some_and(|view| view.spatial)
-            && let Some(rotation) = camera_rotation
-        {
-            placement.rotation = (rotation
-                * bevy::math::DQuat::from_rotation_x(std::f64::consts::FRAC_PI_2))
-            .to_array();
-        }
-        let item = crate::native::canvas::CanvasItem {
-            position: item.position + DVec2::new(offset.x, offset.z),
-            size: Vec2::splat(settings.size),
-        };
-        if world
-            .get::<crate::native::canvas::CanvasItem>(entity)
-            .is_none_or(|current| current.position != item.position || current.size != item.size)
-        {
-            world.entity_mut(entity).insert(item);
-        }
-        if world.get::<crate::native::topology::Spatial>(entity) != Some(&placement) {
-            world.entity_mut(entity).insert(placement);
-        }
-        if let Some(mut node) = world.get_mut::<Node>(entity) {
-            let size = px(settings.size);
-            if node.width != size {
-                node.width = size;
-            }
-            if node.height != size {
-                node.height = size;
-            }
-        }
-        let distant = placement::distant(world, entity, record, &settings);
-        if let Some(mut floating) = world.get_mut::<Floating>(entity)
-            && floating.distant != distant
-        {
-            floating.distant = distant;
-        }
-        let frozen = settings.frozen || distant && settings.distance == DistancePolicy::Thumbnail;
-        let selected = data
-            .extension
-            .as_ref()
-            .and_then(|extension| extension.selected(settings.effect_id.as_deref()));
-        if let Some(mut shader) = world.get_mut::<shader::EffectPreview>(preview) {
-            if shader.quantity != data.quantity {
-                shader.quantity = data.quantity.clone();
-            }
-            if let Some(effect) = selected
-                && &shader.effect != effect
-            {
-                shader.effect.clone_from(effect);
-            }
-            let disabled =
-                off || selected.is_none() || distant && settings.distance == DistancePolicy::Hide;
-            if shader.disabled != disabled {
-                shader.disabled = disabled;
-            }
-            if shader.motion != settings.motion {
-                shader.motion = settings.motion;
-            }
-            if shader.frozen != frozen {
-                shader.frozen = frozen;
-            }
-        }
-        let effect =
-            selected.and_then(|selected| shader::working(world, preview).or(Some(selected)));
-        let mut label = effect
-            .filter(|effect| effect.inputs.task.is_some() || effect.inputs.progress.is_some())
-            .map(|effect| effect.inputs.resolve(data.quantity.as_deref()).label())
-            .unwrap_or_default();
-        if selected.is_none() {
-            label = "Selected effect unavailable".into();
-        }
-        let numeric = if selected.is_some() {
-            numeric::status(world, preview)
-        } else {
-            String::new()
-        };
-        if !numeric.is_empty() {
-            if !label.is_empty() {
-                label.push_str(" · ");
-            }
-            label.push_str(&numeric);
-        }
-        if frozen {
-            if !label.is_empty() {
-                label.push_str(" · ");
-            }
-            label.push_str("Effect snapshot frozen");
-        }
-        let label_height = if label.is_empty() {
-            0.0
-        } else {
-            labels
-                .get(&record)
-                .into_iter()
-                .flatten()
-                .map(|(_, height)| *height)
-                .fold(18.0_f32, f32::max)
-        };
-        for &slot in slots.get(&record).into_iter().flatten() {
-            if let Some(mut node) = world.get_mut::<Node>(slot) {
-                let height = px(settings.size + settings.gap + label_height);
-                if node.height != height {
-                    node.height = height;
-                }
-            }
-        }
-        for &(entity, _) in labels.get(&record).into_iter().flatten() {
-            if let Some(mut text) = world.get_mut::<Text>(entity)
-                && text.0 != label
-            {
-                text.0.clone_from(&label);
-            }
-            let display = if label.is_empty() {
-                Display::None
-            } else {
-                Display::Flex
-            };
-            if let Some(mut node) = world.get_mut::<Node>(entity)
-                && node.display != display
-            {
-                node.display = display;
-            }
-        }
-    }
-    let backgrounds: Vec<_> = world
-        .query::<(Entity, &Background)>()
-        .iter(world)
-        .map(|(entity, background)| (entity, background.preview))
-        .collect();
-    let mut text_owners = Vec::new();
-    for (entity, preview) in backgrounds {
-        if world.get::<Surface>(entity).is_none() {
-            if let Ok(preview) = world.get_entity_mut(preview) {
-                preview.despawn();
-            }
-            world.entity_mut(entity).remove::<Background>();
-            text_owners.push(entity);
-        }
-    }
-    let surfaces: Vec<_> = world
-        .query::<(Entity, &Surface)>()
-        .iter(world)
-        .map(|(entity, _)| entity)
-        .collect();
-    for entity in surfaces {
-        let surface = world.get::<Surface>(entity).unwrap();
-        let bound = surface.record.as_ref().map(|uid| RecordBinding {
-            area: Entity::PLACEHOLDER,
-            uid: uid.clone(),
-            source: surface.source.clone(),
-        });
-        let data = bound
-            .as_ref()
-            .and_then(|binding| world.resource::<Feeds>().0.get(&feed_key(binding)))
-            .and_then(|feed| feed.row.clone());
-        let extension = data
-            .as_ref()
-            .and_then(|row| row.extension.as_ref())
-            .filter(|extension| extension.bounded());
-        let selected = extension
-            .as_ref()
-            .and_then(|extension| extension.selected(surface.effect_id.as_deref()));
-        let valid_reference = bound.is_none()
-            || if surface.quantity_only {
-                data.is_some()
-            } else {
-                selected.is_some()
-            };
-        let effect = if bound.is_some() && !surface.quantity_only {
-            selected.map_or_else(
-                || std::borrow::Cow::Owned(preset(model::GRADIENT)),
-                std::borrow::Cow::Borrowed,
-            )
-        } else {
-            std::borrow::Cow::Borrowed(&surface.effect)
-        };
-        let quantity = if bound.is_some() {
-            data.as_ref().and_then(|row| row.quantity.clone())
-        } else {
-            model::quantity(&Value::String(surface.quantity.clone()))
-        };
-        let preview = world
-            .get::<Background>(entity)
-            .map(|background| background.preview)
-            .filter(|preview| world.get_entity(*preview).is_ok());
-        let mut effect = preview
-            .and_then(|preview| world.get::<shader::EffectPreview>(preview))
-            .is_none_or(|preview| &preview.effect != effect.as_ref())
-            .then(|| effect.into_owned());
-        let context = preview
-            .and_then(|preview| world.get::<numeric::Context>(preview))
-            .is_none_or(|context| {
-                context.record != surface.record || context.source != surface.source
-            })
-            .then(|| numeric::Context {
-                record: surface.record.clone(),
-                source: surface.source.clone(),
-            });
-        let enabled = !surface.disabled
-            && !off
-            && valid_reference
-            && (!surface.room_ambient
-                || crate::native::topology::rooms::ambient_enabled(world, entity));
-        let (strength, glow, motion, frozen) = (
-            surface.strength,
-            surface.glow,
-            surface.motion,
-            surface.frozen,
-        );
-        let preview = preview.unwrap_or_else(|| {
-            let preview = shader::effect(
-                world,
-                entity,
-                effect.take().expect("new surface effect"),
-                quantity.clone(),
-            );
-            let output = shader::background_output(world, preview);
-            world.entity_mut(preview).insert((
-                Node {
-                    position_type: PositionType::Absolute,
-                    left: px(0),
-                    top: px(0),
-                    width: percent(100),
-                    height: percent(100),
-                    ..default()
-                },
-                ZIndex(-1),
-                bevy::picking::Pickable::IGNORE,
-            ));
-            world.entity_mut(output).insert((
-                Node {
-                    width: percent(100),
-                    height: percent(100),
-                    ..default()
-                },
-                bevy::picking::Pickable::IGNORE,
-            ));
-            world.entity_mut(entity).insert(Background { preview });
-            preview
-        });
-        if let Some(context) = context {
-            world.entity_mut(preview).insert(context);
-        }
-        let radius = world
-            .get::<Node>(entity)
-            .map(|node| node.border_radius)
-            .unwrap_or_default();
-        world
-            .get_mut::<Node>(preview)
-            .unwrap()
-            .map_unchanged(|node| &mut node.border_radius)
-            .set_if_neq(radius);
-        let shadow = BoxShadow(if enabled && glow > 0.0 {
-            vec![ShadowStyle {
-                color: Color::srgba(0.2, 0.45, 1.0, strength.min(0.35)),
-                x_offset: px(0),
-                y_offset: px(0),
-                spread_radius: px(0),
-                blur_radius: px(glow / 3.0),
-            }]
-        } else {
-            vec![]
-        });
-        if world.get::<BoxShadow>(preview) != Some(&shadow) {
-            world.entity_mut(preview).insert(shadow);
-        }
-        let output = shader::output(world, preview);
-        world
-            .get_mut::<Node>(output)
-            .unwrap()
-            .map_unchanged(|node| &mut node.border_radius)
-            .set_if_neq(radius);
-        if let Some(mut shader) = world.get_mut::<shader::EffectPreview>(preview) {
-            if let Some(effect) = effect {
-                shader.effect = effect;
-            }
-            if shader.quantity != quantity {
-                shader.quantity = quantity;
-            }
-            if shader.strength != strength.min(0.65) {
-                shader.strength = strength.min(0.65);
-            }
-            if shader.motion != motion {
-                shader.motion = motion;
-            }
-            if shader.frozen != frozen {
-                shader.frozen = frozen;
-            }
-            if shader.disabled == enabled {
-                shader.disabled = !enabled;
-            }
-        }
-        text_owners.push(entity);
-    }
-    refresh_text_protection(world, text_owners);
+    feeds::prepare_rows(world);
+    presentations::update(world);
 }
 
 #[derive(Clone)]
@@ -2934,10 +2397,17 @@ pub(crate) fn controls(world: &mut World, root: Entity, panel: Entity) {
 }
 
 #[derive(Component, Clone, Copy)]
-enum SettingsToggle { Effects, Motion }
+enum SettingsToggle {
+    Effects,
+    Motion,
+}
 
 fn update_settings_controls(world: &mut World) {
-    let controls = world.query::<(Entity, &SettingsToggle)>().iter(world).map(|(entity, kind)| (entity, *kind)).collect::<Vec<_>>();
+    let controls = world
+        .query::<(Entity, &SettingsToggle)>()
+        .iter(world)
+        .map(|(entity, kind)| (entity, *kind))
+        .collect::<Vec<_>>();
     for (entity, kind) in controls {
         let caption = match kind {
             SettingsToggle::Effects if disabled(world) => "Shader effects: Off",
@@ -2945,12 +2415,27 @@ fn update_settings_controls(world: &mut World) {
             SettingsToggle::Motion if motion_allowed(world) => "Shader reduced motion: Off",
             SettingsToggle::Motion => "Shader reduced motion: On",
         };
-        let children = world.get::<Children>(entity).map(|children| children.into_iter().copied().collect::<Vec<_>>()).unwrap_or_default();
+        let children = world
+            .get::<Children>(entity)
+            .map(|children| children.into_iter().copied().collect::<Vec<_>>())
+            .unwrap_or_default();
         for child in children {
-            if let Some(mut text) = world.get_mut::<Text>(child) && text.0 != caption { text.0 = caption.into(); }
+            if let Some(mut text) = world.get_mut::<Text>(child)
+                && text.0 != caption
+            {
+                text.0 = caption.into();
+            }
         }
-        if let Some(mut node) = world.get_mut::<bevy::a11y::AccessibilityNode>(entity) && node.label() != Some(caption) { node.set_label(caption); }
-        if let Some(mut tooltip) = world.get_mut::<crate::native::icons::Tooltip>(entity) && tooltip.0 != caption { tooltip.0 = caption.into(); }
+        if let Some(mut node) = world.get_mut::<bevy::a11y::AccessibilityNode>(entity)
+            && node.label() != Some(caption)
+        {
+            node.set_label(caption);
+        }
+        if let Some(mut tooltip) = world.get_mut::<crate::native::icons::Tooltip>(entity)
+            && tooltip.0 != caption
+        {
+            tooltip.0 = caption.into();
+        }
     }
 }
 

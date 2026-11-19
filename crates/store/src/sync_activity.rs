@@ -2,6 +2,8 @@ use crate::StoreError;
 use nucleus::sync::{Activity, Change, Direction, Instance, Outcome, Pending, Retention, Summary};
 use sqlx::{Row, SqlitePool};
 
+mod encoding;
+
 pub const PAGE_SIZE: i64 = 100;
 
 const PRUNE_QUERY: &str = "DELETE FROM sync_activity WHERE at <= ? - (SELECT seconds FROM sync_history_policy WHERE id = 1) OR seq < (SELECT seq FROM sync_activity ORDER BY seq DESC LIMIT 1 OFFSET (SELECT max_entries - 1 FROM sync_history_policy WHERE id = 1))";
@@ -55,21 +57,12 @@ pub async fn append(
         return Ok(());
     }
     let preparing = nucleus::performance::Span::new("sync-history-prepare");
-    let mut summary = summary.clone();
-    summary.subjects.truncate(32);
-    for subject in &mut summary.subjects {
-        *subject = subject.chars().take(256).collect();
-    }
-    summary.message = summary
-        .message
-        .map(|message| message.chars().take(1024).collect());
     let activity =
         serde_json::to_string(activity).map_err(|error| StoreError::Protocol(error.to_string()))?;
     if activity.len() > 16 * 1024 {
         return Err(StoreError::Protocol("Sync description is too large".into()));
     }
-    let summary =
-        serde_json::to_string(&summary).map_err(|error| StoreError::Protocol(error.to_string()))?;
+    let summary = encoding::summary(summary)?;
     drop(preparing);
     let mut tx = {
         let _begin = nucleus::performance::Span::new("sync-history-begin-await");

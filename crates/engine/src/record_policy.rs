@@ -147,24 +147,35 @@ pub(crate) fn check(
         predicate_nodes: 65536,
         ..Default::default()
     };
-    let current_ceiling = VisibilityCeiling {
-        records: ceiling
-            .records
-            .iter()
-            .filter(|uid| before.records.iter().any(|record| &record.uid == *uid))
-            .cloned()
-            .collect(),
-        concepts: ceiling
-            .concepts
-            .iter()
-            .filter(|uid| before.concepts.iter().any(|concept| &concept.uid == *uid))
-            .cloned()
-            .collect(),
-        places: ceiling
-            .places
-            .intersection(&before.places)
-            .cloned()
-            .collect(),
+    let current_ceiling = {
+        let _preparation = crate::performance::Span::new("record-policy-ceiling-preparation");
+        VisibilityCeiling {
+            records: if ceiling.records.is_empty() {
+                BTreeSet::new()
+            } else {
+                before
+                    .records
+                    .iter()
+                    .filter(|record| ceiling.records.contains(&record.uid))
+                    .map(|record| record.uid.clone())
+                    .collect()
+            },
+            concepts: if ceiling.concepts.is_empty() {
+                BTreeSet::new()
+            } else {
+                before
+                    .concepts
+                    .iter()
+                    .filter(|concept| ceiling.concepts.contains(&concept.uid))
+                    .map(|concept| concept.uid.clone())
+                    .collect()
+            },
+            places: ceiling
+                .places
+                .intersection(&before.places)
+                .cloned()
+                .collect(),
+        }
     };
     authority::authorize_record_changes(
         Some(policy),
@@ -184,12 +195,15 @@ async fn actor_readable_on(
     actor: &str,
     graph: &GraphSnapshot,
 ) -> Result<BTreeSet<String>, EngineError> {
+    let _read = nucleus::performance::Span::new("record-policy-role-read");
     let filter = store::auth::person_access_on(tx, actor)
         .await?
         .and_then(|person| person.read_filter)
         .map(|raw| serde_json::from_str::<protein::Predicate>(&raw))
         .transpose()?;
     let mut result = BTreeSet::new();
+    let limits = authority::Limits::default();
+    let mut prepared = None;
     for role in store::person_roles::ids_on(tx, actor).await? {
         if !store::auth::role_permission_keys_by_id_on(tx, role)
             .await?
@@ -215,15 +229,15 @@ async fn actor_readable_on(
             .await?
             .into_iter()
             .collect();
-        result.extend(
-            authority::readable_records(
-                Some(&policy),
-                graph,
-                &ceiling(graph, records),
-                &Default::default(),
-            )
-            .map_err(denied)?,
-        );
+        if prepared.is_none() {
+            prepared = Some((
+                authority::ReadGraph::new(graph, &limits).map_err(denied)?,
+                ceiling(graph, BTreeSet::new()),
+            ));
+        }
+        let (graph, ceiling) = prepared.as_mut().unwrap();
+        ceiling.records = records;
+        result.extend(graph.readable_records(&policy, ceiling).map_err(denied)?);
     }
     Ok(result)
 }
@@ -611,22 +625,22 @@ impl Engine {
                 .bind(uid).bind(uid).fetch_one(&mut **tx).await?;
             if automated { return Err(denied("Fiote configuration and assigned task data require the local interface session")); }
         }
-        let mut policy = protein::role_authority::policy_for_on(tx, actor, Some(operation)).await?;
-        let mut read = protein::role_authority::policy_for_on(tx, actor, None)
-            .await?
-            .unwrap_or(RolePolicy {
-                read: protein::Predicate::All(vec![]),
-                grants: vec![],
-            });
+        let [mut policy, read] =
+            protein::role_authority::policies_for_on(tx, actor, [Some(operation), None]).await?;
+        let mut read = read.unwrap_or(RolePolicy {
+            read: protein::Predicate::All(vec![]),
+            grants: vec![],
+        });
         if let Some(filter) = store::auth::person_access_on(tx, actor)
             .await?
             .and_then(|person| person.read_filter)
         {
             let filter: protein::Predicate = serde_json::from_str(&filter)?;
-            read.read = protein::Predicate::All(vec![read.read, filter.clone()]);
-            if let Some(policy) = policy.as_mut() {
-                policy.read = protein::Predicate::All(vec![policy.read.clone(), filter]);
-            }
+            policy = policy.map(|mut policy| {
+                policy.read = protein::Predicate::All(vec![policy.read, filter.clone()]);
+                policy
+            });
+            read.read = protein::Predicate::All(vec![read.read, filter]);
         }
         let before = crate::access::policy_graph_on(tx, &targets)
             .await

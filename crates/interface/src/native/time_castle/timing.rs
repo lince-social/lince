@@ -15,6 +15,11 @@ pub(super) fn refresh(world: &mut World, owner: Entity, now: i64) {
     }) {
         return;
     }
+    let _span = nucleus::performance::Span::new("time-label-preparation");
+    crate::host::performance::add(
+        crate::host::performance::Count::TimeLabelsPrepared,
+        view.entries.len() as u64,
+    );
     let values = view
         .entries
         .iter()

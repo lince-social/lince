@@ -43,7 +43,6 @@ pub(super) fn update(
     changed: bool,
     palette: &palette::Palette,
 ) -> Vec<model::Label> {
-    timing::refresh(world, owner, now);
     let previous: Vec<_> = world
         .get::<Annotations>(owner)
         .map(|annotations| annotations.0.clone())
@@ -304,6 +303,10 @@ pub(super) fn update(
             .get(&label.id)
             .is_some_and(|entity| is_held(world, *entity))
     });
+    if !labels.is_empty() {
+        timing::refresh(world, owner, now);
+    }
+    let curve = std::cell::OnceCell::new();
     for label in &mut labels {
         if let Some(entry) = world
             .get::<View>(owner)
@@ -343,7 +346,13 @@ pub(super) fn update(
             .and_then(|motion| motion.bands.get(&label.id))
             .map(|band| {
                 (
-                    band.anchor(&settings, now, size, palette.width, unwind),
+                    band.anchor_in(
+                        curve.get_or_init(|| settings.geometry(now, size.to_array(), unwind)),
+                        &settings,
+                        now,
+                        size,
+                        palette.width,
+                    ),
                     band.opacity(),
                     band.retiring,
                 )

@@ -266,7 +266,7 @@ pub(super) fn scroll(world: &mut World, parent: Entity, width: f32) -> Entity {
             ChildOf(parent),
         ))
         .observe(
-            |mut event: On<Pointer<Scroll>>, mut scrolls: Query<&mut ScrollPosition>| {
+            |mut event: On<PointerScroll>, mut scrolls: Query<&mut ScrollPosition>| {
                 if let Ok(mut position) = scrolls.get_mut(event.entity) {
                     let multiplier = if event.unit == bevy::input::mouse::MouseScrollUnit::Line {
                         24.0

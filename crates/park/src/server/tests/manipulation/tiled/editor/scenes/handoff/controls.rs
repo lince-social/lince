@@ -144,7 +144,7 @@ fn reveal(fixture: &mut Fixture, entity: Entity) -> [f64; 2] {
             if Rect::from_corners(Vec2::ZERO, size).contains(point)
                 && world
                     .get::<bevy::ui::CalculatedClip>(entity)
-                    .is_none_or(|clip| clip.clip.contains(point))
+                    .is_none_or(|clip| clip.contains_point(point))
             {
                 return (point, None);
             }
@@ -161,7 +161,7 @@ fn reveal(fixture: &mut Fixture, entity: Entity) -> [f64; 2] {
                     let center = transform.transform_point2(Vec2::ZERO);
                     let mut bounds = Rect::from_center_size(center, node.size());
                     if let Some(clip) = world.get::<bevy::ui::CalculatedClip>(current) {
-                        bounds = bounds.intersect(clip.clip);
+                        bounds = lince_interface::native::clipped_rect(bounds, clip);
                     }
                     bounds = bounds.intersect(Rect::from_corners(Vec2::ZERO, size));
                     if bounds.size().min_element() > 0.0 {

@@ -4,6 +4,53 @@ use std::{
     hash::Hash,
 };
 
+#[derive(Component)]
+pub(crate) struct Presentation<T: Send + Sync + 'static> {
+    state: T,
+    children: Vec<Entity>,
+    font: Handle<Font>,
+}
+
+impl<T: Send + Sync + 'static> Presentation<T> {
+    pub(crate) fn state(world: &World, entity: Entity) -> Option<&T> {
+        world.get::<Self>(entity).map(|presented| &presented.state)
+    }
+
+    pub(crate) fn update_state(world: &mut World, entity: Entity, update: impl FnOnce(&mut T)) {
+        if let Some(mut presented) = world.get_mut::<Self>(entity) {
+            update(&mut presented.state);
+        }
+    }
+
+    pub(crate) fn matches(world: &World, entity: Entity, matches: impl FnOnce(&T) -> bool) -> bool {
+        world.get::<Self>(entity).is_some_and(|old| {
+            matches(&old.state)
+                && old.font == world.resource::<crate::native::theme::Typography>().0
+                && world.get::<bevy::prelude::Children>(entity).map_or_else(
+                    || old.children.is_empty(),
+                    |children| children.iter().eq(old.children.iter().copied()),
+                )
+        })
+    }
+
+    pub(crate) fn remember(world: &mut World, entity: Entity, state: T) {
+        let children = world
+            .get::<bevy::prelude::Children>(entity)
+            .into_iter()
+            .flat_map(|children| children.iter())
+            .collect();
+        let font = world
+            .resource::<crate::native::theme::Typography>()
+            .0
+            .clone();
+        world.entity_mut(entity).insert(Self {
+            state,
+            children,
+            font,
+        });
+    }
+}
+
 pub(crate) struct Children<K> {
     entities: HashMap<K, Entity>,
 }

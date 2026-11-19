@@ -2028,17 +2028,14 @@ fn clicking_any_property_reports_the_record_and_source_once() {
             .unwrap(),
         position: Vec2::ZERO,
     };
-    app.world_mut().trigger(bevy::picking::events::Pointer::new(
-        bevy::picking::pointer::PointerId::Mouse,
-        location,
-        bevy::picking::events::Click {
-            button: bevy::picking::pointer::PointerButton::Primary,
+    app.world_mut().trigger(PointerClick {
+        entity: text,
+        pointer: Pointer::new(bevy::picking::pointer::PointerId::Mouse, location),
+        button: bevy::picking::pointer::PointerButton::Primary,
             hit: bevy::picking::backend::HitData::new(window, 0.0, None, None),
             duration: std::time::Duration::from_millis(20),
             count: 1,
-        },
-        text,
-    ));
+    });
     app.world_mut().flush();
     let clicks = &app.world().resource::<Clicks>().0;
     assert_eq!(clicks.len(), 1);
@@ -2881,7 +2878,8 @@ fn protein_filter_errors_clear_membership_and_quiet_updates_reuse_the_cache() {
         .get_mut::<InfluenceArea>(owner)
         .unwrap()
         .filter = Some(config.clone());
-    filter::maintain(app.world_mut());
+    let mut filters = filter::Preparation::from_world(app.world_mut());
+    filters.maintain(app.world_mut());
     let subscription = app
         .world_mut()
         .query::<(Entity, &filter::Subscription)>()
@@ -2906,7 +2904,7 @@ fn protein_filter_errors_clear_membership_and_quiet_updates_reuse_the_cache() {
             rows: vec![json!({"uid":"a"})].into(),
         },
     );
-    filter::publish(app.world_mut());
+    filters.publish(app.world_mut());
     let matches = app.world().get::<filter::Matches>(owner).unwrap();
     let record = crate::native::area::RecordProperties(json!({"uid":"a"}).into());
     let binding = RecordBinding {
@@ -2924,7 +2922,7 @@ fn protein_filter_errors_clear_membership_and_quiet_updates_reuse_the_cache() {
         .last_changed();
     for _ in 0..10 {
         app.world_mut().increment_change_tick();
-        filter::publish(app.world_mut());
+        filters.publish(app.world_mut());
     }
     assert_eq!(
         app.world()
@@ -2943,7 +2941,7 @@ fn protein_filter_errors_clear_membership_and_quiet_updates_reuse_the_cache() {
             code: None,
         },
     );
-    filter::publish(app.world_mut());
+    filters.publish(app.world_mut());
     assert!(
         !app.world()
             .get::<filter::Matches>(owner)

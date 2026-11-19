@@ -60,7 +60,7 @@ fn project(
     let field = Rect::from_center_size(center, node.size());
     let mut clip = Rect::from_corners(Vec2::ZERO, surface.pixels.as_vec2());
     if let Some(bounds) = world.get::<bevy::ui::CalculatedClip>(entity) {
-        clip = clip.intersect(bounds.clip);
+        clip = lince_interface::native::clipped_rect(clip, bounds);
     }
     let field = field.intersect(clip);
     if field.size().min_element() < 2.0 {

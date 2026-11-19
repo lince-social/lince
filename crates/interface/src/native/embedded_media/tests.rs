@@ -1,6 +1,7 @@
 use super::*;
 use bevy::picking::{
     backend::HitData,
+    events::PointerOver,
     pointer::{Location, PointerId},
 };
 
@@ -33,17 +34,19 @@ fn controls_open_only_on_explicit_input_and_hiding_restores_focus() {
             .alpha,
         0.0
     );
-    world.trigger(Pointer::new(
-        PointerId::Mouse,
-        Location {
-            target: bevy::camera::NormalizedRenderTarget::Image(Handle::<Image>::default().into()),
-            position: Vec2::ZERO,
-        },
-        Over {
-            hit: HitData::new(frame.content, 0.0, None, None),
-        },
-        frame.content,
-    ));
+    world.trigger(PointerOver {
+        entity: frame.content,
+        pointer: Pointer::new(
+            PointerId::Mouse,
+            Location {
+                target: bevy::camera::NormalizedRenderTarget::Image(
+                    Handle::<Image>::default().into(),
+                ),
+                position: Vec2::ZERO,
+            },
+        ),
+        hit: HitData::new(frame.content, 0.0, None, None),
+    });
     assert_eq!(
         world.get::<Node>(frame.controls).unwrap().display,
         Display::None
@@ -53,22 +56,19 @@ fn controls_open_only_on_explicit_input_and_hiding_restores_focus() {
         (PointerButton::Secondary, Display::Flex),
         (PointerButton::Secondary, Display::None),
     ] {
-        world.trigger(Pointer::new(
-            PointerId::Mouse,
-            Location {
+        world.trigger(PointerClick {
+            entity: frame.content,
+            pointer: Pointer::new(PointerId::Mouse, Location {
                 target: bevy::camera::NormalizedRenderTarget::Image(
                     Handle::<Image>::default().into(),
                 ),
                 position: Vec2::ZERO,
-            },
-            Click {
-                button,
+            }),
+            button,
                 hit: HitData::new(frame.content, 0.0, None, None),
                 duration: std::time::Duration::ZERO,
                 count: 1,
-            },
-            frame.content,
-        ));
+        });
         world.flush();
         assert_eq!(world.get::<Node>(frame.controls).unwrap().display, expected);
     }

@@ -1,6 +1,11 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 
+use serde::Deserialize;
+
+mod graph;
+mod preparation;
+
 use nucleus::RecordKind;
 use protein::Predicate;
 use protein::authority::{
@@ -110,6 +115,11 @@ struct AuthoritySource {
     unrestricted: BTreeSet<String>,
 }
 
+struct AuthorityRead {
+    source: AuthoritySource,
+    roles: Vec<i64>,
+}
+
 struct Snapshot {
     metadata: AccessMetadataSnapshot,
     content: BTreeMap<String, TargetRecordContent>,
@@ -152,7 +162,7 @@ async fn dependency_catalog_on(
             continue;
         };
         let policy: RolePolicy =
-            serde_json::from_value(policy.clone()).map_err(|_| AccessError::InvalidAuthority)?;
+            RolePolicy::deserialize(policy).map_err(|_| AccessError::InvalidAuthority)?;
         selectors.push(policy.read);
         selectors.extend(policy.grants.into_iter().map(|grant| grant.selector));
     }
@@ -172,7 +182,9 @@ async fn dependency_catalog_on(
 async fn authority_on(
     transaction: &mut Transaction<'_, Sqlite>,
     admission: &DeviceAdmission,
-) -> Result<AuthoritySource, AccessError> {
+    mut policy_permissions: Option<&mut BTreeMap<i64, Vec<String>>>,
+) -> Result<AuthorityRead, AccessError> {
+    let _read = crate::performance::Span::new("access-authority-read-await");
     session_access::require_admission_on(transaction, admission)
         .await
         .map_err(|_| AccessError::InvalidSession)?;
@@ -183,13 +195,20 @@ async fn authority_on(
     let mut policies = Vec::new();
     let mut permissions = BTreeSet::new();
     let mut unrestricted = BTreeSet::new();
-    for role in store::person_roles::ids_on(transaction, &person.person_uid).await? {
+    let roles = store::person_roles::ids_on(transaction, &person.person_uid).await?;
+    for &role in &roles {
         let keys = store::auth::role_permission_keys_by_id_on(transaction, role).await?;
+        crate::performance::add("access-role-permission-reads", 1);
         let row = store::role_policies::get_on(transaction, role).await?;
         if row.as_ref().is_none_or(|row| row.policy.is_none()) {
             unrestricted.extend(keys.iter().cloned());
+            permissions.extend(keys);
+        } else if let Some(role_permissions) = policy_permissions.as_deref_mut() {
+            permissions.extend(keys.iter().cloned());
+            role_permissions.insert(role, keys);
+        } else {
+            permissions.extend(keys);
         }
-        permissions.extend(keys);
         if let Some(row) = row {
             policies.push(row);
         }
@@ -197,11 +216,14 @@ async fn authority_on(
     if !permissions.contains("record:read") {
         return Err(AuthorityError::Denied.into());
     }
-    Ok(AuthoritySource {
-        person,
-        policies,
-        permissions,
-        unrestricted,
+    Ok(AuthorityRead {
+        source: AuthoritySource {
+            person,
+            policies,
+            permissions,
+            unrestricted,
+        },
+        roles,
     })
 }
 
@@ -226,18 +248,20 @@ pub async fn load_on<'operation, 'database>(
     {
         return Err(AccessError::InvalidMutation);
     }
-    let source = authority_on(transaction, admission).await?;
+    let mut role_permissions = BTreeMap::new();
+    let AuthorityRead { source, roles } =
+        authority_on(transaction, admission, Some(&mut role_permissions)).await?;
     let mut policy = RolePolicy {
         read: Predicate::Any(vec![]),
         grants: Vec::new(),
     };
     let mut reads = Vec::new();
     for row in &source.policies {
-        let permissions =
-            store::auth::role_permission_keys_by_id_on(transaction, row.role_id).await?;
         if let Some(raw) = &row.policy {
-            let role: RolePolicy =
-                serde_json::from_value(raw.clone()).map_err(|_| AccessError::InvalidAuthority)?;
+            let permissions = role_permissions
+                .get(&row.role_id)
+                .ok_or(AccessError::InvalidAuthority)?;
+            let role = RolePolicy::deserialize(raw).map_err(|_| AccessError::InvalidAuthority)?;
             if permissions.iter().any(|key| key == "record:read") {
                 reads.push(role.read);
             }
@@ -264,7 +288,7 @@ pub async fn load_on<'operation, 'database>(
             serde_json::from_str(raw).map_err(|_| AccessError::InvalidAuthority)?;
         policy.read = Predicate::All(vec![policy.read, filter]);
     }
-    let roles = store::person_roles::ids_on(transaction, &source.person.person_uid).await?;
+    drop(role_permissions);
     let current = snapshot_on(
         transaction,
         admission,
@@ -363,7 +387,8 @@ impl<'operation, 'database> Access<'operation, 'database> {
         {
             return Err(AccessError::InvalidMutation);
         }
-        let source = authority_on(self.transaction, &self.admission).await?;
+        let AuthorityRead { source, roles } =
+            authority_on(self.transaction, &self.admission, None).await?;
         if source.person != self.source.person
             || source.policies != self.source.policies
             || source.permissions != self.source.permissions
@@ -377,8 +402,6 @@ impl<'operation, 'database> Access<'operation, 'database> {
         {
             return Err(AccessError::AuthorityChanged);
         }
-        let roles =
-            store::person_roles::ids_on(self.transaction, &source.person.person_uid).await?;
         let proposed = snapshot_on(
             self.transaction,
             &self.admission,
@@ -396,93 +419,14 @@ impl<'operation, 'database> Access<'operation, 'database> {
             assertion_intents,
             &self.hosted_organ,
         )?;
-        let mut policy = self.policy.clone();
-        let mut properties = BTreeSet::from([
-            authority::Property::Kind,
-            authority::Property::Slug,
-            authority::Property::Head,
-            authority::Property::Body,
-            authority::Property::Quantity,
-            authority::Property::Unit,
-            authority::Property::Place,
-            authority::Property::Organ,
-        ]);
-        properties.extend(
-            targets
-                .iter()
-                .flat_map(|target| target.touched_properties.iter().cloned()),
+        let mut policy = self.policy;
+        preparation::unrestricted_grants(
+            &mut policy,
+            &self.current.graph,
+            &proposed.graph,
+            targets,
+            &source.unrestricted,
         );
-        for record in self
-            .current
-            .graph
-            .records
-            .iter()
-            .chain(&proposed.graph.records)
-        {
-            if let Some(content) = &record.content {
-                properties.extend(
-                    content
-                        .extensions
-                        .keys()
-                        .cloned()
-                        .map(authority::Property::Extension),
-                );
-            }
-        }
-        let assertions = self
-            .current
-            .graph
-            .concepts
-            .iter()
-            .chain(&proposed.graph.concepts)
-            .map(|concept| concept.uid.clone())
-            .collect::<BTreeSet<_>>()
-            .into_iter()
-            .flat_map(|predicate_uid| {
-                vec![
-                    authority::AssertionGrant {
-                        predicate_uid: predicate_uid.clone(),
-                        target: authority::AssertionTarget::Unary,
-                        role: authority::AssertionRole::Ordinary,
-                        properties: BTreeSet::from([
-                            authority::AssertionProperty::Quantity,
-                            authority::AssertionProperty::Unit,
-                        ]),
-                    },
-                    authority::AssertionGrant {
-                        predicate_uid: predicate_uid.clone(),
-                        target: authority::AssertionTarget::AnyReadableRecord,
-                        role: authority::AssertionRole::Ordinary,
-                        properties: BTreeSet::from([
-                            authority::AssertionProperty::Quantity,
-                            authority::AssertionProperty::Unit,
-                        ]),
-                    },
-                    authority::AssertionGrant {
-                        predicate_uid,
-                        target: authority::AssertionTarget::Unary,
-                        role: authority::AssertionRole::Identity,
-                        properties: BTreeSet::new(),
-                    },
-                ]
-            })
-            .collect::<Vec<_>>();
-        for (key, operation) in [
-            ("record:create", Operation::Create),
-            ("record:update", Operation::Update),
-            ("record:update", Operation::Restore),
-            ("record:delete", Operation::Delete),
-        ] {
-            if source.unrestricted.contains(key) {
-                policy.grants.push(authority::MutationGrant {
-                    operation,
-                    selector: Predicate::All(vec![]),
-                    properties: properties.clone(),
-                    assertions_add: assertions.clone(),
-                    assertions_remove: assertions.clone(),
-                });
-            }
-        }
         let records = match assertion_intents {
             Some(intents) => authority::authorize_record_changes_with_assertion_intents(
                 Some(&policy),
@@ -680,7 +624,7 @@ async fn snapshot_on(
     if content.len() != existing_targets.len() {
         return Err(AccessError::InvalidMutation);
     }
-    let graph = graph(&metadata, &content)?;
+    let graph = graph::project(&metadata, graph::Content::Borrowed(&content))?;
     let (mut ceiling, linguas) = ceilings(&metadata, admission, hosted_organ, roles);
     let denied = store::data_visibility::denied_for_person_on(
         transaction,
@@ -732,96 +676,7 @@ pub(crate) async fn policy_graph_on(
         .map(|record| record.uid.clone())
         .collect::<Vec<_>>();
     let content = access_snapshot::content_on(transaction, &records, &limits).await?;
-    graph(&metadata, &content)
-}
-
-fn graph(
-    metadata: &AccessMetadataSnapshot,
-    content: &BTreeMap<String, TargetRecordContent>,
-) -> Result<GraphSnapshot, AccessError> {
-    let mut parents: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
-    for parent in &metadata.concept_parents {
-        parents
-            .entry(parent.concept_uid.clone())
-            .or_default()
-            .insert(parent.parent_uid.clone());
-    }
-    let records = metadata
-        .records
-        .iter()
-        .map(|record| {
-            let body = content.get(&record.uid);
-            if body.is_some_and(|body| {
-                body.uid != record.uid
-                    || body.kind != record.kind
-                    || body.organ_uid != record.organ_uid
-                    || body.deleted != record.deleted
-                    || body.replica_root != record.replica_root
-            }) {
-                return Err(AccessError::InvalidMutation);
-            }
-            Ok(RecordState {
-                uid: record.uid.clone(),
-                kind: record.kind,
-                organ_uid: record.organ_uid.clone(),
-                deleted: record.deleted,
-                content: body.map(|body| RecordContent {
-                    slug: body.slug.clone(),
-                    head: body.head.clone(),
-                    body: body.body.clone(),
-                    quantity: body.quantity,
-                    unit_uid: body.unit_uid.clone(),
-                    place_uid: body.place_uid.clone(),
-                    extensions: body
-                        .extensions
-                        .iter()
-                        .flat_map(|(namespace, extension)| {
-                            extension.fields.iter().map(move |(field, value)| {
-                                (
-                                    ExtensionProperty {
-                                        namespace: namespace.clone(),
-                                        field: field.clone(),
-                                    },
-                                    value.clone(),
-                                )
-                            })
-                        })
-                        .collect(),
-                }),
-            })
-        })
-        .collect::<Result<_, AccessError>>()?;
-    Ok(GraphSnapshot {
-        records,
-        concepts: metadata
-            .concepts
-            .iter()
-            .map(|concept| ConceptState {
-                uid: concept.uid.clone(),
-                name: concept.name.clone(),
-                parents: parents.remove(&concept.uid).unwrap_or_default(),
-            })
-            .collect(),
-        assertions: metadata
-            .assertions
-            .iter()
-            .map(|assertion| AssertionState {
-                uid: assertion.uid.clone(),
-                subject_uid: assertion.subject_uid.clone(),
-                predicate_uid: assertion.predicate_uid.clone(),
-                object_uid: assertion.object_uid.clone(),
-                object_uri: assertion.object_uri.clone(),
-                role: match assertion.role {
-                    access_snapshot::AssertionRole::Ordinary => authority::AssertionRole::Ordinary,
-                    access_snapshot::AssertionRole::Identity => authority::AssertionRole::Identity,
-                },
-                quantity: assertion.quantity,
-                unit_uid: assertion.unit_uid.clone(),
-            })
-            .collect(),
-        places: metadata.places.clone(),
-        resolved_links: metadata.resolved_links.clone(),
-    })
+    graph::project(&metadata, graph::Content::Owned(content))
 }
 
 #[derive(Default)]

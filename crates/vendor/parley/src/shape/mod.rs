@@ -7,6 +7,7 @@
 use alloc::vec::Vec;
 use core::mem;
 use core::ops::RangeInclusive;
+use harfrust::ShapeOptions;
 
 use super::layout::Layout;
 use super::resolve::{ResolveContext, Resolved, ResolvedStyle};
@@ -62,7 +63,7 @@ struct Item {
     letter_spacing: f32,
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, reason = "Preserve the upstream shaping entry point and its separate inputs")]
 pub(crate) fn shape_text<'a, B: Brush>(
     rcx: &'a ResolveContext,
     mut fq: Query<'a>,
@@ -91,9 +92,10 @@ pub(crate) fn shape_text<'a, B: Brush>(
     }
 
     // Setup mutable state for iteration
-    let mut style = &styles[0];
+    let initial_style_index = infos.first().map_or(0, |(_, style_index)| *style_index);
+    let mut style = &styles[initial_style_index as usize];
     let mut item = Item {
-        style_index: 0,
+        style_index: initial_style_index,
         size: style.font_size,
         level: levels.first().copied().unwrap_or(0),
         script: infos
@@ -249,7 +251,23 @@ fn fill_cluster_in_place(
         is_emoji_or_pictograph |= info.is_emoji_or_pictograph();
         *code_unit_offset_in_string += ch.len_utf8();
 
-        let contributes_to_shaping = info.contributes_to_shaping();
+        // TODO: Explore ignoring other modifiers in determining `contributes_to_shaping`:
+        //  regional indicators, subdivision flag tag sequences, skin tone modifiers
+        //  See also: https://github.com/google/emoji-segmenter
+
+        // If the color emoji has a non-printing variation selector, ignore the variation selector.
+        // Its presentation depends on the platform and font.
+        //
+        // e.g.
+        //  - `U+270C + U+FE0F`: `✌`, force basic presentation
+        //  - `U+270C + U+FE0F`: `✌️`, force emoji presentation
+        //
+        // <https://www.unicode.org/reports/tr37/>
+        let is_emoji_with_non_printing_variation_selector =
+            is_emoji_or_pictograph && info.is_variation_selector();
+
+        let contributes_to_shaping =
+            info.contributes_to_shaping() && !is_emoji_with_non_printing_variation_selector;
         if contributes_to_shaping {
             map_len += 1;
         }
@@ -398,7 +416,6 @@ fn shape_item<'a, B: Brush>(
         let harf_shaper = shaper_data
             .shaper(&font_ref)
             .instance(Some(instance))
-            .point_size(Some(item.size))
             .build();
         let result_key = cache::ShapeResultKey {
             plan: cache::ShapePlanKey::new(
@@ -454,7 +471,13 @@ fn shape_item<'a, B: Brush>(
                 buffer.set_language(lang);
             }
 
-            Some(harf_shaper.shape_with_plan(shaper_plan, buffer, &scx.features))
+            Some(harf_shaper.shape(
+                buffer,
+                ShapeOptions::new()
+                    .plan(Some(shaper_plan))
+                    .features(&scx.features)
+                    .point_size(Some(item.size)),
+            ))
         } else {
             None
         };

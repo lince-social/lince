@@ -47,8 +47,6 @@ pub(super) fn synchronize(world: &mut World) -> OpeningSettings {
                 (workspace.desktop.gap() != gap).then_some((root, workspace.id))
             })
         }));
-        // Preserve the original read/apply boundary and first workspace-ID
-        // lookup, including imported state with repeated workspace identities.
         for &(root, id) in changed.iter() {
             if let Some(workspace) = world.get_mut::<Workspaces>(root).and_then(|spaces| {
                 spaces

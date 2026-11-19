@@ -1,16 +1,30 @@
 use super::*;
+use crate::native::retained::Presentation;
+use cell::fiote_communication::acp::{AvailableCommandInput, SessionConfigOption};
 use serde_json::Value;
+use std::{collections::BTreeMap, path::PathBuf};
 
-#[derive(Component, Default)]
-struct Choices(Option<Arc<Value>>);
+enum Choices {
+    Direct,
+    Agent(SessionChoices),
+}
+
+struct SessionChoices {
+    options: Vec<SessionConfigOption>,
+    pending: BTreeMap<String, Value>,
+    connected: bool,
+    directories: Vec<PathBuf>,
+    supports_directories: bool,
+    capabilities: [bool; 3],
+}
 
 pub(super) fn invalidate(world: &mut World, owner: Entity) {
     if let Some(content) = world
         .get::<ThreadControl>(owner)
         .map(|control| control.choices)
     {
-        if let Some(mut choices) = world.get_mut::<Choices>(content) {
-            choices.0 = None;
+        if let Ok(mut content) = world.get_entity_mut(content) {
+            content.remove::<Presentation<Choices>>();
         }
     }
 }
@@ -24,7 +38,6 @@ pub(super) fn create(world: &mut World, parent: Entity, owner: Entity) -> Entity
                 ..default()
             },
             ChildOf(parent),
-            Choices::default(),
         ))
         .id();
     crate::native::description::button(
@@ -45,17 +58,16 @@ pub(super) fn create(world: &mut World, parent: Entity, owner: Entity) -> Entity
 }
 
 pub(super) fn update(world: &mut World, owner: Entity, saved: &FioteStatus) {
+    let _presentation = nucleus::performance::Span::new("fiote-live-choices-presentation");
     let Some(control) = world.get::<ThreadControl>(owner) else {
         return;
     };
     let content = control.choices;
     let thread = control.thread.clone();
     if saved.agent.is_none() {
-        if world
-            .get::<Choices>(content)
-            .is_some_and(|choices| choices.0.as_deref().and_then(Value::as_str) != Some("direct"))
-        {
-            world.get_mut::<Choices>(content).unwrap().0 = Some(Arc::new(Value::from("direct")));
+        if !Presentation::matches(world, content, |choices: &Choices| {
+            matches!(choices, Choices::Direct)
+        }) {
             world.entity_mut(content).despawn_children();
             crate::native::edit_mode::label(
                 world,
@@ -63,46 +75,47 @@ pub(super) fn update(world: &mut World, owner: Entity, saved: &FioteStatus) {
                 "Direct-model settings are changed in Fiote setup. Live session choices and agent commands are advertised by ACP agents. Attachment support depends on the connection and model; unsupported media is reported before sending.",
                 13.0,
             );
+            Presentation::remember(world, content, Choices::Direct);
+            nucleus::performance::add("fiote-live-choices-rebuilt", 1);
+        } else {
+            nucleus::performance::add("fiote-live-choices-retained", 1);
         }
         crate::native::message_commands::update(world, &thread, Vec::new());
         return;
     }
-    let commands = saved
+    let mut commands = saved
         .agent_session
         .as_ref()
         .filter(|session| session.connected && session.thread == thread)
         .map(|session| {
-            let mut commands = session
+            session
                 .state
                 .commands
                 .iter()
                 .filter(|command| valid_name(&command.name))
-                .peekable();
-            if commands.peek().is_none() {
-                return Vec::new();
-            }
-            let title = saved
-                .fiotes
-                .iter()
-                .find(|choice| choice.record == saved.record)
-                .map(|choice| choice.title.as_str())
-                .unwrap_or(&saved.record);
-            let target = format!("Agent · {title}");
-            commands
-                .map(|command| {
-                    let input = serde_json::to_value(&command.input).unwrap_or_default();
-                    crate::native::message_commands::Command {
-                        name: command.name.clone(),
-                        description: command.description.clone(),
-                        hint: input["hint"].as_str().unwrap_or_default().into(),
-                        target: target.clone(),
-                        insert: format!("/agent:{}", command.name),
-                    }
+                .map(|command| crate::native::message_commands::AgentCommand {
+                    name: &command.name,
+                    description: &command.description,
+                    hint: match command.input.as_ref() {
+                        Some(AvailableCommandInput::Unstructured(input)) => &input.hint,
+                        _ => "",
+                    },
                 })
-                .collect()
         })
-        .unwrap_or_default();
-    crate::native::message_commands::update(world, &thread, commands);
+        .into_iter()
+        .flatten()
+        .peekable();
+    if commands.peek().is_some() {
+        let title = saved
+            .fiotes
+            .iter()
+            .find(|choice| choice.record == saved.record)
+            .map(|choice| choice.title.as_str())
+            .unwrap_or(&saved.record);
+        crate::native::message_commands::update_agent(world, &thread, title, commands);
+    } else {
+        crate::native::message_commands::update(world, &thread, Vec::new());
+    }
     let Some(control) = world.get::<ThreadControl>(owner) else {
         return;
     };
@@ -113,15 +126,45 @@ pub(super) fn update(world: &mut World, owner: Entity, saved: &FioteStatus) {
     else {
         return;
     };
-    let value = serde_json::json!({"state":{"options": session.state.options}, "pending":session.pending, "connected":session.connected, "directories":session.directories, "supports_directories":session.supports_directories, "capabilities":session.prompt_capabilities});
-    if world
-        .get::<Choices>(content)
-        .is_some_and(|choices| choices.0.as_deref() == Some(&value))
-    {
+    let capabilities =
+        ["image", "audio", "embeddedContext"].map(|key| session.prompt_capabilities[key] == true);
+    if Presentation::matches(world, content, |choices: &Choices| {
+        let Choices::Agent(previous) = choices else {
+            return false;
+        };
+        previous.connected == session.connected
+            && previous.capabilities == capabilities
+            && (!session.connected
+                || (previous.options == session.state.options
+                    && previous.pending == session.pending
+                    && previous.supports_directories == session.supports_directories
+                    && (!session.supports_directories
+                        || previous.directories == session.directories)))
+    }) {
+        nucleus::performance::add("fiote-live-choices-retained", 1);
         return;
     }
-    let value = Arc::new(value);
-    world.get_mut::<Choices>(content).unwrap().0 = Some(Arc::clone(&value));
+    let choices = Choices::Agent(SessionChoices {
+        options: if session.connected {
+            session.state.options.clone()
+        } else {
+            Vec::new()
+        },
+        pending: if session.connected {
+            session.pending.clone()
+        } else {
+            BTreeMap::new()
+        },
+        connected: session.connected,
+        directories: if session.connected && session.supports_directories {
+            session.directories.clone()
+        } else {
+            Vec::new()
+        },
+        supports_directories: session.supports_directories,
+        capabilities,
+    });
+    nucleus::performance::add("fiote-live-choices-rebuilt", 1);
     world.entity_mut(content).despawn_children();
     crate::native::edit_mode::label(world, content, "This conversation", 16.0);
     crate::native::description::button(
@@ -169,6 +212,7 @@ pub(super) fn update(world: &mut World, owner: Entity, saved: &FioteStatus) {
             "Reload choices · no tokens",
             Load,
         );
+        Presentation::remember(world, content, choices);
         return;
     }
     if session.supports_directories {
@@ -188,7 +232,8 @@ pub(super) fn update(world: &mut World, owner: Entity, saved: &FioteStatus) {
             13.0,
         );
     }
-    for option in value["state"]["options"].as_array().into_iter().flatten() {
+    let options = serde_json::json!(session.state.options);
+    for option in options.as_array().into_iter().flatten() {
         let Some(id) = option["id"].as_str() else {
             continue;
         };
@@ -234,6 +279,7 @@ pub(super) fn update(world: &mut World, owner: Entity, saved: &FioteStatus) {
             crate::native::edit_mode::label(world, content, &format!("Next turn: {value}"), 13.0);
         }
     }
+    Presentation::remember(world, content, choices);
 }
 
 fn submit(world: &mut World, owner: Entity, build: impl FnOnce(String) -> FioteRequest) {

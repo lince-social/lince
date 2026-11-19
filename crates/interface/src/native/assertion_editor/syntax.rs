@@ -133,29 +133,57 @@ pub(super) fn from_value(value: &Value) -> Assertion {
 }
 
 pub(super) fn format(assertion: &Assertion) -> String {
-    let mut text = format!("#{}", term_text(&assertion.predicate));
-    if let Some(object) = &assertion.object {
+    format_parts(
+        &assertion.predicate,
+        assertion.object.as_deref(),
+        assertion.quantity.as_deref(),
+        assertion.unit.as_deref(),
+    )
+}
+
+pub(super) fn format_parts(
+    predicate: &str,
+    object: Option<&str>,
+    quantity: Option<&str>,
+    unit: Option<&str>,
+) -> String {
+    let mut text = String::from("#");
+    push_term(&mut text, predicate);
+    if let Some(object) = object {
+        text.push(' ');
         if lince_resources::reference::is_uri(object) || object.contains('/') {
-            text.push(' ');
             text.push_str(&serde_json::to_string(object).expect("reference text"));
         } else {
-            text.push_str(&format!(" @{object}"));
+            text.push('@');
+            text.push_str(object);
         }
     }
-    if let Some(quantity) = &assertion.quantity {
-        text.push_str(&format!(": {quantity}"));
+    if let Some(quantity) = quantity {
+        text.push_str(": ");
+        text.push_str(quantity);
     }
-    if let Some(unit) = &assertion.unit {
-        text.push_str(&format!(" @{}", term_text(unit)));
+    if let Some(unit) = unit {
+        text.push_str(" @");
+        push_term(&mut text, unit);
     }
     text
 }
 
-pub(super) fn term_text(name: &str) -> String {
-    if name
-        .chars()
+fn quoted(name: &str) -> bool {
+    name.chars()
         .any(|ch| ch.is_whitespace() || ",;:#@\"^".contains(ch))
-    {
+}
+
+fn push_term(text: &mut String, name: &str) {
+    if quoted(name) {
+        text.push_str(&serde_json::to_string(name).expect("term text"));
+    } else {
+        text.push_str(name);
+    }
+}
+
+pub(super) fn term_text(name: &str) -> String {
+    if quoted(name) {
         serde_json::to_string(name).expect("term text")
     } else {
         name.into()

@@ -10,6 +10,9 @@ use crate::native::{
 };
 use bevy::{a11y::AccessibilityNode, math::DVec2, prelude::*, text::EditableText};
 
+mod maintenance;
+mod presentation;
+
 #[derive(Component, Default)]
 pub struct AreaEditor {
     pub selected: Option<Entity>,
@@ -110,14 +113,15 @@ pub(crate) fn insert(world: &mut World, root: Entity, mut area: InfluenceArea) -
             ShapeKind::Circle => "Circle",
             ShapeKind::Drawn => "Drawn",
         };
+        let mut query = world.query::<(&InfluenceArea, &ChildOf)>();
+        let names: std::collections::HashSet<_> = query.iter(world)
+            .filter(|(_, parent)| parent.parent() == root)
+            .map(|(area, _)| area.name.as_str())
+            .collect();
         let mut index = 1;
         loop {
             let name = format!("{shape} area {index}");
-            if !world
-                .query::<(&InfluenceArea, &ChildOf)>()
-                .iter(world)
-                .any(|(area, parent)| parent.parent() == root && area.name == name)
-            {
+            if !names.contains(name.as_str()) {
                 area.name = name;
                 break;
             }
@@ -331,14 +335,15 @@ fn force_status(area: &InfluenceArea) -> &'static str {
 }
 
 fn force_controls(world: &mut World, root: Entity, panel: Entity, entity: Entity) {
-    let area = world.get::<InfluenceArea>(entity).unwrap().clone();
+    let area = world.get::<InfluenceArea>(entity).unwrap();
+    let (direction, strength, message) = (area.direction, area.strength, force_status(area));
     label(world, panel, "Force", 18.0);
     select(
         world,
         root,
         panel,
         "Force direction",
-        if area.direction == Direction::Attract {
+        if direction == Direction::Attract {
             "Attract"
         } else {
             "Repel"
@@ -355,18 +360,18 @@ fn force_controls(world: &mut World, root: Entity, panel: Entity, entity: Entity
         "Area force strength",
         crate::native::slider::SliderSand {
             start: 0.0,
-            end: 1000.0_f32.max(area.strength as f32),
+            end: 1000.0_f32.max(strength as f32),
             step: 0.1,
             decimals: 1,
         },
-        area.strength as f32,
+        strength as f32,
         "",
     )
     .unwrap();
     world
         .entity_mut(slider)
         .insert((
-            crate::native::icons::Tooltip(force_status(&area).into()),
+            crate::native::icons::Tooltip(message.into()),
             ForceSlider { root, area: entity },
         ))
         .observe(
@@ -394,9 +399,9 @@ fn force_controls(world: &mut World, root: Entity, panel: Entity, entity: Entity
                     else {
                         return;
                     };
-                    let mut next = world.get::<InfluenceArea>(area).unwrap().clone();
-                    next.strength = f64::from(value);
-                    if !next.validate() || next == *world.get::<InfluenceArea>(area).unwrap() {
+                    let edit = crate::native::area::editing::Edit::Strength(f64::from(value));
+                    let current = world.get::<InfluenceArea>(area).unwrap();
+                    if !edit.differs(current) || !edit.valid(current) {
                         return;
                     }
                     crate::native::area_mutation::disarm(
@@ -404,7 +409,7 @@ fn force_controls(world: &mut World, root: Entity, panel: Entity, entity: Entity
                         area,
                         "Property changes inactive after an edit. Configured changes resume automatically.",
                     );
-                    *world.get_mut::<InfluenceArea>(area).unwrap() = next;
+                    edit.apply(&mut world.get_mut::<InfluenceArea>(area).unwrap());
                 });
             },
         );
@@ -447,16 +452,6 @@ fn field(
             Field::Target(_) => "Target offset from the Area center in workspace units. Moving the Area carries it; resizing preserves this offset. The target does not extend reach.",
             Field::Rule(_) => "Exact property value. All or Any determines how filters combine.",
         }.into()),
-        EditableText {
-            allow_newlines: false,
-            visible_lines: Some(1.0),
-            max_characters: Some(if matches!(field, Field::Name) {
-                80
-            } else {
-                4096
-            }),
-            ..crate::native::sand::editable(&value)
-        },
         Node {
             width: percent(100),
             min_height: px(32),
@@ -464,6 +459,16 @@ fn field(
             ..default()
         },
     ));
+    {
+        let mut text = world.get_mut::<EditableText>(input).unwrap();
+        text.allow_newlines = false;
+        text.visible_lines = Some(1.0);
+        text.max_characters = Some(if matches!(field, Field::Name) {
+            80
+        } else {
+            4096
+        });
+    }
     world
         .get_mut::<AccessibilityNode>(input)
         .unwrap()
@@ -479,163 +484,8 @@ fn field(
     });
 }
 
-pub(crate) fn autosave(world: &mut World) {
-    let edits: Vec<_> = world
-        .query::<(Entity, &AreaField, &EditableText)>()
-        .iter(world)
-        .filter(|(_, field, text)| {
-            !text.is_composing()
-                && text.pending_paste.is_none()
-                && world
-                    .get::<EditMode>(field.root)
-                    .is_some_and(|mode| mode.enabled && mode.areas)
-                && text.value() != field.observed.as_str()
-        })
-        .map(|(entity, field, text)| {
-            (
-                entity,
-                field.root,
-                field.area,
-                field.field,
-                field.status,
-                text.value().to_string(),
-            )
-        })
-        .collect();
-    for (entity, root, target, field, status, value) in edits {
-        if !owns(world, root, target) {
-            continue;
-        }
-        crate::native::area_mutation::disarm(
-            world,
-            target,
-            "Property changes inactive after an edit. Configured changes resume automatically.",
-        );
-        let mut next = world.get::<InfluenceArea>(target).unwrap().clone();
-        let number = value
-            .trim()
-            .parse::<f64>()
-            .ok()
-            .filter(|number| number.is_finite());
-        let parsed = match field {
-            Field::Name => {
-                next.name = value.clone();
-                true
-            }
-            Field::Rule(index) => {
-                if let Some(rule) = next.rules.get_mut(index) {
-                    rule.value = value.clone();
-                    true
-                } else {
-                    false
-                }
-            }
-            _ => {
-                if let Some(number) = number {
-                    match field {
-                        Field::Center(axis) => next.center[axis] = number,
-                        Field::Size(axis) => {
-                            next.size[axis] = number;
-                            if next.shape.kind() != ShapeKind::Drawn {
-                                next.size = [number; 2];
-                            }
-                        }
-                        Field::Radius => next.reach.radius = number,
-                        Field::Depth => next.depth = number,
-                        Field::Target(axis) => {
-                            let mut offset = (next.target_position()
-                                - DVec2::from_array(next.center))
-                            .to_array();
-                            offset[axis] = number;
-                            next.target = AttractionTarget::Point(offset);
-                        }
-                        _ => {}
-                    }
-                    true
-                } else {
-                    false
-                }
-            }
-        };
-        let valid = parsed && next.validate();
-        if valid {
-            if matches!(field, Field::Depth) {
-                let mut placement = crate::native::topology::spatial(world, target);
-                placement.depth = Some(next.depth);
-                world.entity_mut(target).insert(placement);
-            }
-            if let Some(before) = world
-                .get::<crate::native::canvas::CanvasItem>(target)
-                .copied()
-            {
-                let after = crate::native::canvas::CanvasItem {
-                    position: DVec2::from_array(next.center),
-                    size: DVec2::from_array(next.size).as_vec2(),
-                };
-                if before.position != after.position || before.size != after.size {
-                    crate::native::layout::edited(world, target, before, after);
-                }
-            }
-            *world.get_mut::<InfluenceArea>(target).unwrap() = next;
-        }
-        world.get_mut::<AreaField>(entity).unwrap().observed = value;
-        if let Some(mut text) = world.get_mut::<Text>(status) {
-            text.0 = if valid { "" } else { "Invalid value" }.into();
-        }
-    }
-    let updates: Vec<_> = world
-        .query::<(Entity, &AreaField, &EditableText)>()
-        .iter(world)
-        .filter_map(|(entity, field, text)| {
-            if world.resource::<bevy::input_focus::InputFocus>().get() == Some(entity)
-                || crate::native::record_view::pending_text(text)
-                || text.is_composing()
-                || text.value() != field.observed.as_str()
-                || world
-                    .get::<Text>(field.status)
-                    .is_none_or(|status| !status.0.is_empty())
-            {
-                return None;
-            }
-            let area = world.get::<InfluenceArea>(field.area)?;
-            let value = match field.field {
-                Field::Center(axis) => area.center[axis],
-                Field::Size(axis) => area.size[axis],
-                Field::Radius => area.reach.radius,
-                Field::Depth => area.depth,
-                Field::Target(axis) => {
-                    (area.target_position() - DVec2::from_array(area.center))[axis]
-                }
-                _ => return None,
-            };
-            (field.observed.parse::<f64>().ok() != Some(value))
-                .then_some((entity, value.to_string()))
-        })
-        .collect();
-    for (entity, value) in updates {
-        world
-            .get_mut::<EditableText>(entity)
-            .unwrap()
-            .editor
-            .set_text(&value);
-        world.get_mut::<AreaField>(entity).unwrap().observed = value;
-    }
-    let sliders: Vec<_> = world
-        .query::<(Entity, &ForceSlider)>()
-        .iter(world)
-        .filter_map(|(entity, slider)| {
-            let area = world.get::<InfluenceArea>(slider.area)?;
-            Some((entity, area.strength as f32, force_status(area)))
-        })
-        .collect();
-    for (entity, value, message) in sliders {
-        crate::native::slider::set_value(world, entity, value);
-        if let Some(mut tip) = world.get_mut::<crate::native::icons::Tooltip>(entity)
-            && tip.0 != message
-        {
-            tip.0 = message.into();
-        }
-    }
+pub(crate) fn autosave(world: &mut World, mut preparation: Local<maintenance::Preparation>) {
+    maintenance::refresh(world, &mut preparation);
 }
 
 pub(crate) fn row(world: &mut World, parent: Entity) -> Entity {
@@ -723,7 +573,7 @@ fn matching_controls(
     root: Entity,
     panel: Entity,
     entity: Entity,
-    area: &InfluenceArea,
+    area: &presentation::Values,
 ) {
     label(world, panel, "Filter", 18.0);
     let mode = button(
@@ -781,7 +631,7 @@ fn reach_controls(
     root: Entity,
     panel: Entity,
     entity: Entity,
-    area: &InfluenceArea,
+    area: &presentation::Values,
 ) {
     label(world, panel, "Reach", 18.0);
     select(
@@ -941,7 +791,7 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
             crate::native::actions::ControlOwner(entity),
         ))
         .id();
-    let area = world.get::<InfluenceArea>(entity).unwrap().clone();
+    let area = presentation::Values::from(world.get::<InfluenceArea>(entity).unwrap());
     let section = |world: &mut World, key: &str, title: &str| {
         crate::native::customization::section(
             world,
@@ -1026,7 +876,7 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
     crate::native::protein_area::controls(world, root, protein, entity);
     let matching = section(world, "matching", "Matching Sands");
     crate::native::protein_area::filter::controls(world, matching, entity);
-    if area.filter.is_none() {
+    if !area.has_filter {
         matching_controls(world, root, matching, entity, &area);
     }
     let effects = section(world, "effects", "Presentation and sound");
@@ -1077,7 +927,7 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
         root,
         shape,
         "Area shape",
-        match area.shape.kind() {
+        match area.shape {
             ShapeKind::Square => "Square",
             ShapeKind::Circle => "Circle",
             ShapeKind::Drawn => "Free outline",
@@ -1111,14 +961,14 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
         shape,
         entity,
         Field::Size(0),
-        if area.shape.kind() == ShapeKind::Drawn {
+        if area.shape == ShapeKind::Drawn {
             "Width"
         } else {
             "Size"
         },
         area.size[0].to_string(),
     );
-    if area.shape.kind() == ShapeKind::Drawn {
+    if area.shape == ShapeKind::Drawn {
         field(
             world,
             root,

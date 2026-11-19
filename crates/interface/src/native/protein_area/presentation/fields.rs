@@ -197,8 +197,8 @@ pub(super) fn prepare(world: &mut World, row: Entity) {
         for definition in &mut definitions {
             definition.default = view.settings.resolve(definition);
         }
-    } else if let Some(config) = base(world, row) {
-        definitions[1].default = Setting::Toggle(config.show_labels);
+    } else if let Some(show_labels) = base_ref(world, row).map(|config| config.show_labels) {
+        definitions[1].default = Setting::Toggle(show_labels);
         apply_native(world, row);
     }
     if let Some(mut declaration) = world.get_mut::<Declaration>(row) {

@@ -39,7 +39,12 @@ impl Changes {
     }
 
     pub async fn changed(&mut self) -> bool {
-        self.receiver.as_mut().unwrap().changed().await.is_ok()
+        self.receiver
+            .as_mut()
+            .expect("the watch receiver is present until Changes is dropped")
+            .changed()
+            .await
+            .is_ok()
     }
 }
 

@@ -45,7 +45,7 @@ async fn bind(
     if let Some(source) = source {
         for token in Condition::parse(source)
             .map_err(|error| invalid(error.to_string()))?
-            .reads()
+            .reads_ref()
         {
             for (position, authored) in token.slug.split('|').enumerate() {
                 let reading = if token.func == nucleus::expr::HAS_ASSERTION {

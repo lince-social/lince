@@ -4,8 +4,6 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
-/// Display data and its lookup preparation have the same lifetime. Editor and
-/// workspace snapshots share them; an actual catalog edit invalidates indexes.
 #[derive(Clone, Default)]
 pub struct Catalog(Arc<Snapshot>);
 
@@ -85,8 +83,6 @@ impl Catalog {
             let mut index: Vec<_> = (0..values.len())
                 .filter(|&i| rows.key(&values[i]).is_some())
                 .collect();
-            // Stable ordering and lower-bound lookup preserve the first row
-            // when a source contains duplicate identities.
             index.sort_by(|&a, &b| rows.key(&values[a]).cmp(&rows.key(&values[b])));
             nucleus::performance::add("demeter-catalog-indexes-prepared", 1);
             nucleus::performance::add("demeter-catalog-index-entries", index.len() as u64);

@@ -549,8 +549,6 @@ fn render(world: &mut World, owner: Entity, snapshot: impl Into<Arc<Snapshot>>) 
     if first {
         panel::status(world, status, "Ready");
     }
-    // Snapshot consumers (including practice steps) stay current independently
-    // of presentation. Retain the old UI until it has real output demand.
     if shown || !crate::native::output_views::presents_entity(world, owner) {
         return;
     }

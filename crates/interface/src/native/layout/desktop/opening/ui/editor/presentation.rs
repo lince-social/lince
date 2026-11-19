@@ -70,8 +70,6 @@ impl Presentation {
             );
         }
         for &entity in &self.content.controls {
-            // Controls come from this private editor's construction paths. Recheck
-            // ownership before applying a later state transition to a retained ID.
             if belongs(world, entity, root)
                 && (world.get::<EditableText>(entity).is_some()
                     || world.get::<ActionButton>(entity).is_some())

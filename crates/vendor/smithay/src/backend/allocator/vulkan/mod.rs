@@ -672,6 +672,7 @@ impl VulkanAllocator {
         assert!(height > 0);
 
         // Ensure maximum allocations are not exceeded.
+        #[allow(clippy::todo)]
         if self.remaining_allocations == 0 {
             todo!()
         }

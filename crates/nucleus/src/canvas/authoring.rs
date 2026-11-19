@@ -624,7 +624,6 @@ pub fn edits(component: &Component) -> Edits {
     edits_ref(component).cloned().unwrap_or_default()
 }
 
-/// Read an authored definition without copying its parts, defaults and actions.
 pub fn edits_ref(component: &Component) -> Option<&Edits> {
     match component {
         Component::Authored { edits, .. } => Some(edits),

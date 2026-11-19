@@ -1,6 +1,8 @@
 pub mod actions;
 pub mod fields;
+mod list;
 pub mod matching;
+pub use list::{Hierarchy, depth, filtered, filtered_ref};
 pub mod transport;
 pub mod workflows;
 pub mod workspace;
@@ -61,6 +63,10 @@ pub fn capability(value: &Value, key: &str) -> bool {
 }
 
 pub fn title(value: &Value) -> String {
+    title_ref(value).into_owned()
+}
+
+pub fn title_ref(value: &Value) -> Cow<'_, str> {
     if value.pointer("/disclosed/title") == Some(&Value::Bool(false)) {
         return "Title unavailable".into();
     }
@@ -74,7 +80,7 @@ pub fn title(value: &Value) -> String {
         "uid",
     ]
     .into_iter()
-    .map(|key| text(value, key))
+    .map(|key| display_ref(&value[key]))
     .find(|value| !value.is_empty())
     .unwrap_or_else(|| "Untitled".into())
 }
@@ -84,58 +90,19 @@ pub fn human(value: &str) -> String {
 }
 
 pub fn status(value: &Value) -> String {
+    status_ref(value).into_owned()
+}
+
+pub fn status_ref(value: &Value) -> Cow<'_, str> {
     ["primary_status", "operational_status", "status"]
         .into_iter()
-        .map(|key| text(value, key))
+        .map(|key| display_ref(&value[key]))
         .find(|value| !value.is_empty())
         .unwrap_or_else(|| "draft".into())
 }
 
 pub fn facet(value: &Value, key: &str) -> bool {
     key == "all" || value["inbox_facets"][key].as_bool() == Some(true)
-}
-
-pub fn filtered(rows: &[Value], mine: bool, filter: &str, query: &str, sort: &str) -> Vec<Value> {
-    let query = query.trim().to_lowercase();
-    let mut result: Vec<_> = rows
-        .iter()
-        .filter(|row| {
-            (!mine || facet(row, "mine"))
-                && facet(row, filter)
-                && (query.is_empty() || row.to_string().to_lowercase().contains(&query))
-        })
-        .cloned()
-        .collect();
-    result.sort_by_key(|row| {
-        let priority = match sort {
-            "name" => 0,
-            _ if sort == "attention" && facet(row, "awaiting_me") => 0,
-            _ if sort == "attention" && facet(row, "awaiting_others") => 1,
-            _ => match status(row).as_str() {
-                "system_disputed" | "participant_disputed" | "broken" => 2,
-                "active" | "partially_settled" => 3,
-                "draft" | "open" => 4,
-                "completed" | "settled" | "kept" => 5,
-                _ => 6,
-            },
-        };
-        (priority, title(row).to_lowercase(), text(row, "uid"))
-    });
-    result
-}
-
-pub fn depth(row: &Value, rows: &[Value]) -> usize {
-    let mut parent = text(row, "parent");
-    let mut seen = HashSet::from([text(row, "uid")]);
-    let mut depth = 0;
-    while !parent.is_empty() && seen.insert(parent.clone()) {
-        let Some(row) = rows.iter().find(|row| text(row, "uid") == parent) else {
-            break;
-        };
-        parent = text(row, "parent");
-        depth += 1;
-    }
-    depth
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -274,8 +241,6 @@ impl Form {
 
     pub fn commit_fields(&mut self) -> Result<(), String> {
         let _preparation = nucleus::performance::Span::new("transfer-form-preparation");
-        // Keep validation and overlapping JSON-pointer edits in their original
-        // order. A failed field discards the candidate without touching data.
         let mut data = Cow::Borrowed(&self.data);
         for field in &self.fields {
             let raw = field.value.trim();

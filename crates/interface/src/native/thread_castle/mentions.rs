@@ -1,4 +1,6 @@
 use super::*;
+mod links;
+mod popup;
 use bevy::{
     input_focus::{FocusCause, InputFocus},
     text::{FontCx, LayoutCx},
@@ -42,15 +44,15 @@ struct Rendered {
     selected: usize,
     error: Option<String>,
     loaded: bool,
+    form: Entity,
+    choices: Vec<(Entity, Entity)>,
+    children: Vec<Entity>,
+    font: Handle<Font>,
 }
 
-impl Rendered {
-    fn matches(&self, draft: &Draft) -> bool {
-        self.selected == draft.selected
-            && self.error == draft.error
-            && self.loaded == draft.loaded
-            && (Arc::ptr_eq(&self.options, &draft.options) || self.options == draft.options)
-    }
+struct QueryAt {
+    caret: usize,
+    range: Option<Range<usize>>,
 }
 
 #[derive(Component, Default)]
@@ -61,6 +63,7 @@ struct Draft {
     options: Arc<[Candidate]>,
     filter: Option<String>,
     query: Option<Range<usize>>,
+    query_at: Option<QueryAt>,
     dismissed: Option<(String, usize)>,
     selected: usize,
     popup: Option<Entity>,
@@ -120,6 +123,7 @@ fn reconcile(draft: &mut Draft, text: &str) {
         }
     });
     draft.text = text.into();
+    draft.query_at = None;
     draft.links.retain(|link| {
         !text[link.range.end..]
             .chars()
@@ -161,6 +165,19 @@ fn query(text: &str, caret: usize) -> Option<Range<usize>> {
         }
     }
     (code == 0).then_some(start..caret)
+}
+
+fn current_query(draft: &mut Mut<Draft>, caret: usize) -> Option<Range<usize>> {
+    if draft
+        .query_at
+        .as_ref()
+        .is_none_or(|query| query.caret != caret)
+    {
+        let range = query(&draft.text, caret);
+        draft.query_at = Some(QueryAt { caret, range });
+        nucleus::performance::add("mention-query-scans", 1);
+    }
+    draft.query_at.as_ref().unwrap().range.clone()
 }
 
 fn candidates(rows: &[PreparedCandidate], query: &str) -> Arc<[Candidate]> {
@@ -210,12 +227,22 @@ pub(super) fn body(world: &mut World, input: Entity, text: &str) -> String {
     body
 }
 
+fn candidate_rows(rows: &[Value]) -> impl Iterator<Item = (&str, &str, &str)> {
+    rows.iter().filter_map(|row| {
+        Some((
+            row["uid"].as_str()?,
+            row["slug"].as_str().unwrap_or(""),
+            row["head"].as_str().unwrap_or(""),
+        ))
+    })
+}
+
 pub(crate) fn receive_message(world: &mut World, event: &ServerMessage) {
     let (id, rows, error) = match event {
         ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows } => {
             (id, Some(rows), None)
         }
-        ServerMessage::Error { id, message, .. } => (id, None, Some(message.clone())),
+        ServerMessage::Error { id, message, .. } => (id, None, Some(message.as_str())),
         _ => return,
     };
     let input = world
@@ -228,240 +255,245 @@ pub(crate) fn receive_message(world: &mut World, event: &ServerMessage) {
     if draft.subscription.as_ref() != Some(id) {
         return;
     }
-    draft.error = error;
-    if let Some(rows) = rows {
-        draft.loaded = true;
-        draft.rows = rows
-            .iter()
-            .filter_map(|row| {
-                Some(PreparedCandidate::new(Candidate {
-                    uid: row["uid"].as_str()?.into(),
-                    slug: row["slug"].as_str().unwrap_or("").into(),
-                    head: row["head"].as_str().unwrap_or("").into(),
-                }))
-            })
-            .collect();
+    let _reply = nucleus::performance::Span::new("mention-catalog-preparation");
+    let mut changed = false;
+    if draft.error.as_deref() != error {
+        draft.error = error.map(str::to_owned);
+        changed = true;
     }
-    draft.filter = None;
+    if let Some(rows) = rows {
+        if !draft.loaded {
+            draft.loaded = true;
+            changed = true;
+        }
+        if !draft
+            .rows
+            .iter()
+            .map(|row| {
+                (
+                    row.row.uid.as_str(),
+                    row.row.slug.as_str(),
+                    row.row.head.as_str(),
+                )
+            })
+            .eq(candidate_rows(rows))
+        {
+            draft.rows = candidate_rows(rows)
+                .map(|(uid, slug, head)| {
+                    PreparedCandidate::new(Candidate {
+                        uid: uid.into(),
+                        slug: slug.into(),
+                        head: head.into(),
+                    })
+                })
+                .collect();
+            nucleus::performance::add("mention-catalog-rows-prepared", draft.rows.len() as u64);
+            changed = true;
+        }
+    }
+    if changed && draft.filter.is_some() {
+        draft.filter = None;
+    }
 }
 
 pub(super) fn sync(world: &mut World) {
     let _sync = nucleus::performance::Span::new("mention-input-preparation");
+    world
+        .run_system_cached(sync_current)
+        .expect("synchronize current mention inputs");
+}
+
+fn sync_current(
+    world: &mut World,
+    forms: &mut QueryState<(Entity, &'static ThreadForm)>,
+    editors: &mut QueryState<
+        (&'static mut Draft, &'static EditableText),
+        bevy::ecs::query::Allow<bevy::ecs::entity_disabling::Disabled>,
+    >,
+    drafts: &mut QueryState<&'static Draft>,
+    mut pending_forms: Local<Vec<(Entity, Entity, bool)>>,
+) {
     let focused = world
         .get_resource::<InputFocus>()
         .and_then(|focus| focus.get());
-    let forms: Vec<_> = world
-        .query::<(Entity, &ThreadForm)>()
-        .iter(world)
-        .filter(|(_, form)| form.thread.is_some())
-        .map(|(form, state)| (form, state.input, state.pending.is_some()))
-        .collect();
-    for (form, input, pending) in forms {
-        let Some(mut draft) = world.entity_mut(input).take::<Draft>() else {
+    pending_forms.clear();
+    pending_forms.extend(
+        forms
+            .iter(world)
+            .filter(|(_, form)| form.thread.is_some())
+            .map(|(form, state)| (form, state.input, state.pending.is_some())),
+    );
+    if pending_forms.is_empty() {
+        pending_forms.shrink_to_fit();
+    }
+    for (form, input, pending) in pending_forms.drain(..) {
+        let Some(draft) = world.get::<Draft>(input) else {
             continue;
         };
-        let editor = world.get::<EditableText>(input).unwrap();
-        let caret = editor.editor.raw_selection().focus().index();
-        let composing = editor.is_composing();
-        let value = editor.value();
-        if value != draft.text.as_str() {
-            reconcile(&mut draft, &value.to_cow());
-        }
-        let mut focus = focused;
         let mut picker_focused = false;
-        while let Some(entity) = focus {
-            if draft.popup == Some(entity) {
-                picker_focused = true;
-                break;
-            }
-            focus = world.get::<ChildOf>(entity).map(ChildOf::parent);
-        }
-        let active = if (focused == Some(input) || picker_focused)
-            && !pending
-            && !composing
-            && !draft
-                .dismissed
-                .as_ref()
-                .is_some_and(|(text, index)| text == &draft.text && *index == caret)
+        if let Some(popup) = draft.popup
+            && focused != Some(input)
         {
-            query(&draft.text, caret).filter(|range| {
-                !draft
-                    .links
-                    .iter()
-                    .any(|link| link.range.start <= range.start && link.range.end >= range.end)
-            })
-        } else {
-            None
-        };
-        if draft.query != active {
-            draft.selected = 0;
+            let mut focus = focused;
+            while let Some(entity) = focus {
+                if popup == entity {
+                    picker_focused = true;
+                    break;
+                }
+                focus = world.get::<ChildOf>(entity).map(ChildOf::parent);
+            }
         }
-        draft.query = active;
-        if let Some(range) = &draft.query {
-            if draft.subscription.is_none() {
-                if let Some(sender) = world.get::<ThreadForm>(form).and_then(|form| {
-                    crate::native::protein_area::editor_sender(world, &form.binding)
-                }) {
-                    let id = nucleus::new_uid("mention");
-                    let protein = serde_json::from_value(serde_json::json!({
-                        "source":"record", "fields":["uid","head","slug"], "limit":null
-                    }))
-                    .unwrap();
-                    if sender
-                        .try_send(ClientMessage::Subscribe {
-                            id: id.clone(),
-                            protein,
-                        })
-                        .is_ok()
-                    {
-                        world.init_resource::<Subscriptions>();
-                        world
-                            .resource_mut::<Subscriptions>()
-                            .0
-                            .insert(id.clone(), (input, sender));
-                        draft.subscription = Some(id);
-                        draft.error = None;
-                        draft.loaded = false;
-                    } else {
-                        draft.error = Some("Record search is busy. Try again.".into());
+        {
+            let (mut draft, editor) = editors
+                .get_mut(world, input)
+                .expect("mention composer has an editor");
+            let caret = editor.editor.raw_selection().focus().index();
+            let value = editor.value();
+            if value != draft.text.as_str() {
+                reconcile(&mut draft, &value.to_cow());
+            }
+            let active = if (focused == Some(input) || picker_focused)
+                && !pending
+                && !editor.is_composing()
+                && !draft
+                    .dismissed
+                    .as_ref()
+                    .is_some_and(|(text, index)| text == &draft.text && *index == caret)
+            {
+                current_query(&mut draft, caret).filter(|range| {
+                    !draft
+                        .links
+                        .iter()
+                        .any(|link| link.range.start <= range.start && link.range.end >= range.end)
+                })
+            } else {
+                None
+            };
+            if draft.query != active {
+                draft.selected = 0;
+                draft.query = active;
+            }
+        }
+        if world.get::<Draft>(input).unwrap().query.is_some() {
+            subscribe(world, form, input);
+            {
+                let mut draft = world.get_mut::<Draft>(input).unwrap();
+                let range = draft.query.as_ref().unwrap();
+                let filter = &draft.text[range.start + 1..range.end];
+                if draft.filter.as_deref() != Some(filter) {
+                    let options = candidates(&draft.rows, filter);
+                    let filter = filter.to_owned();
+                    if draft.options != options {
+                        draft.options = options;
                     }
-                } else {
-                    draft.error = Some("Record search is disconnected.".into());
+                    draft.filter = Some(filter);
+                }
+                let selected = draft.selected.min(draft.options.len().saturating_sub(1));
+                if draft.selected != selected {
+                    draft.selected = selected;
                 }
             }
-            let filter = &draft.text[range.start + 1..range.end];
-            if draft.filter.as_deref() != Some(filter) {
-                draft.options = candidates(&draft.rows, filter);
-                draft.filter = Some(filter.into());
-            }
-            draft.selected = draft.selected.min(draft.options.len().saturating_sub(1));
-            render(world, form, input, &mut draft);
+            popup::render(world, form, input);
         } else {
+            let mut draft = world.get_mut::<Draft>(input).unwrap();
             if !draft.options.is_empty() {
                 draft.options = Arc::default();
             }
-            draft.filter = None;
-            draft.subscription = None;
-            draft.rows.clear();
-            draft.rendered = None;
-            if let Some(popup) = draft.popup.take() {
+            if draft.filter.is_some() {
+                draft.filter = None;
+            }
+            if draft.subscription.is_some() {
+                draft.subscription = None;
+            }
+            if draft.rows.capacity() != 0 {
+                draft.rows = Vec::new();
+            }
+            if draft.rendered.is_some() {
+                draft.rendered = None;
+            }
+            let popup = draft.popup;
+            if popup.is_some() {
+                draft.popup = None;
+            }
+            if let Some(popup) = popup {
                 world.despawn(popup);
             }
         }
-        world.entity_mut(input).insert(draft);
     }
     if world
         .get_resource::<Subscriptions>()
         .is_some_and(|subscriptions| !subscriptions.0.is_empty())
     {
         world.resource_scope(|world, mut subscriptions: Mut<Subscriptions>| {
-            let mut drafts = world.query::<&Draft>();
             let active: HashSet<_> = drafts
                 .iter(world)
                 .filter_map(|draft| draft.subscription.as_deref())
                 .collect();
             subscriptions.0.retain(|id, (_, sender)| {
                 active.contains(id.as_str())
-                    || (sender
-                        .try_send(ClientMessage::Unsubscribe { id: id.clone() })
-                        .is_err()
-                        && !sender.is_closed())
+                    || match sender.try_reserve() {
+                        Ok(permit) => {
+                            permit.send(ClientMessage::Unsubscribe { id: id.clone() });
+                            false
+                        }
+                        Err(tokio::sync::mpsc::error::TrySendError::Full(())) => {
+                            !sender.is_closed()
+                        }
+                        Err(tokio::sync::mpsc::error::TrySendError::Closed(())) => false,
+                    }
             });
         });
     }
 }
 
-fn render(world: &mut World, form: Entity, input: Entity, draft: &mut Draft) {
-    if draft
-        .rendered
-        .as_ref()
-        .is_some_and(|rendered| rendered.matches(draft))
-    {
+fn subscription_error(world: &mut World, input: Entity, error: &str) {
+    let mut draft = world.get_mut::<Draft>(input).unwrap();
+    if draft.error.as_deref() != Some(error) {
+        draft.error = Some(error.into());
+    }
+}
+
+fn subscribe(world: &mut World, form: Entity, input: Entity) {
+    if world.get::<Draft>(input).unwrap().subscription.is_some() {
         return;
     }
-    draft.rendered = Some(Rendered {
-        options: Arc::clone(&draft.options),
-        selected: draft.selected,
-        error: draft.error.clone(),
-        loaded: draft.loaded,
-    });
-    let popup = *draft.popup.get_or_insert_with(|| {
-        world
-            .spawn((
-                Node {
-                    position_type: PositionType::Absolute,
-                    bottom: percent(100),
-                    left: px(0),
-                    width: percent(100),
-                    max_height: px(260),
-                    flex_direction: FlexDirection::Column,
-                    border: UiRect::all(px(1)),
-                    padding: UiRect::all(px(4)),
-                    overflow: Overflow::scroll_y(),
-                    ..default()
-                },
-                ScrollPosition::default(),
-                crate::native::scroll_sand::ScrollSand,
-                crate::native::token_style::background(crate::native::tokens::Token::Surface),
-                crate::native::token_style::border(crate::native::tokens::Token::Accent),
-                GlobalZIndex(80),
-                ChildOf(world.get::<ChildOf>(input).unwrap().parent()),
-            ))
-            .id()
-    });
-    if let Some(children) = world.get::<Children>(popup) {
-        for child in children.iter().collect::<Vec<_>>() {
-            world.despawn(child);
+    let Some(sender) = world
+        .get::<ThreadForm>(form)
+        .and_then(|form| crate::native::protein_area::editor_sender(world, &form.binding))
+    else {
+        subscription_error(world, input, "Record search is disconnected.");
+        return;
+    };
+    let permit = match sender.try_reserve() {
+        Ok(permit) => permit,
+        Err(_) => {
+            subscription_error(world, input, "Record search is busy. Try again.");
+            return;
         }
-    }
-    if draft.options.is_empty() {
-        crate::native::edit_mode::label(
-            world,
-            popup,
-            draft.error.as_deref().unwrap_or(if draft.loaded {
-                "No matching Records"
-            } else {
-                "Searching Records…"
-            }),
-            14.0,
-        );
-    }
-    for (index, row) in draft.options.iter().enumerate() {
-        let slug = if row.slug.is_empty() {
-            &row.uid
-        } else {
-            &row.slug
-        };
-        let title = format!(
-            "{}@{} · {}",
-            if index == draft.selected {
-                "› "
-            } else {
-                "  "
-            },
-            slug,
-            row.head
-        );
-        let button = control(
-            world,
-            popup,
-            form,
-            &title,
-            Choose {
-                input,
-                uid: row.uid.clone(),
-            },
-        );
-        world
-            .entity_mut(button)
-            .insert(crate::native::sand::Borderless);
-        if index == draft.selected {
-            world.entity_mut(button).insert((
-                SelectedOption,
-                crate::native::token_style::border(crate::native::tokens::Token::Accent),
-            ));
-        }
-    }
+    };
+    let id = nucleus::new_uid("mention");
+    let protein = protein::Protein {
+        source: protein::Source::Record,
+        filter: Vec::new(),
+        fields: Some(["uid", "head", "slug"].map(str::to_owned).into()),
+        include: Default::default(),
+        aggregate: None,
+        order: Vec::new(),
+        limit: None,
+    };
+    permit.send(ClientMessage::Subscribe {
+        id: id.clone(),
+        protein,
+    });
+    world.init_resource::<Subscriptions>();
+    world
+        .resource_mut::<Subscriptions>()
+        .0
+        .insert(id.clone(), (input, sender));
+    let mut draft = world.get_mut::<Draft>(input).unwrap();
+    draft.subscription = Some(id);
+    draft.error = None;
+    draft.loaded = false;
 }
 
 #[derive(Clone)]
@@ -471,17 +503,23 @@ struct Choose {
 }
 impl Action for Choose {
     fn apply(&self, world: &mut World, _: Entity) {
-        let Some(mut draft) = world.entity_mut(self.input).take::<Draft>() else {
+        if world.get::<Draft>(self.input).is_none() {
             return;
-        };
+        }
         let editor = world.get::<EditableText>(self.input).unwrap();
         let text = editor.value().to_string();
         let caret = editor.editor.raw_selection().focus().index();
-        reconcile(&mut draft, &text);
-        let range = query(&text, caret);
-        if let Some(mut range) = range
-            && let Some(row) = draft.options.iter().find(|row| row.uid == self.uid)
-        {
+        let (range, label, value, end) = {
+            let mut draft = world.get_mut::<Draft>(self.input).unwrap();
+            if draft.text != text {
+                reconcile(&mut draft, &text);
+            }
+            let Some(mut range) = current_query(&mut draft, caret) else {
+                return;
+            };
+            let Some(row) = draft.options.iter().find(|row| row.uid == self.uid) else {
+                return;
+            };
             range.end += text[range.end..]
                 .chars()
                 .take_while(|ch| ch.is_alphanumeric() || *ch == '_' || *ch == '-')
@@ -505,8 +543,9 @@ impl Action for Choose {
             .split_whitespace()
             .collect::<Vec<_>>()
             .join(" ");
+            let insertion = format!("{label} ");
             let mut value = text;
-            value.replace_range(range.clone(), &format!("{label} "));
+            value.replace_range(range.clone(), &insertion);
             reconcile(&mut draft, &value);
             let end = range.start + label.len();
             draft.links.push(Mention {
@@ -514,33 +553,35 @@ impl Action for Choose {
                 uid: self.uid.clone(),
             });
             draft.links.sort_by_key(|link| link.range.start);
-            if world.contains_resource::<FontCx>() && world.contains_resource::<LayoutCx>() {
-                let mut fonts = world.remove_resource::<FontCx>().unwrap();
-                let mut layout = world.remove_resource::<LayoutCx>().unwrap();
-                let mut text = world.get_mut::<EditableText>(self.input).unwrap();
-                let mut driver = text.editor.driver(&mut fonts.context, &mut layout.0);
-                driver.select_byte_range(range.start, range.end);
-                driver.insert_or_replace_selection(&format!("{label} "));
-                world.insert_resource(fonts);
-                world.insert_resource(layout);
-            } else {
-                world
-                    .get_mut::<EditableText>(self.input)
-                    .unwrap()
-                    .editor
-                    .set_text(&value);
-            }
-            draft.query = None;
-            draft.dismissed = Some((value, end + 1));
-            draft.options = Arc::default();
-            if let Some(popup) = draft.popup.take() {
-                world.despawn(popup);
-            }
-            if let Some(mut focus) = world.get_resource_mut::<InputFocus>() {
-                focus.set(self.input, FocusCause::Pressed);
-            }
+            (range, insertion, value, end)
+        };
+        if world.contains_resource::<FontCx>() && world.contains_resource::<LayoutCx>() {
+            let mut fonts = world.remove_resource::<FontCx>().unwrap();
+            let mut layout = world.remove_resource::<LayoutCx>().unwrap();
+            let mut text = world.get_mut::<EditableText>(self.input).unwrap();
+            let mut driver = text.editor.driver(&mut fonts.context, &mut layout.0);
+            driver.select_byte_range(range.start, range.end);
+            driver.insert_or_replace_selection(&label);
+            world.insert_resource(fonts);
+            world.insert_resource(layout);
+        } else {
+            world
+                .get_mut::<EditableText>(self.input)
+                .unwrap()
+                .editor
+                .set_text(&value);
         }
-        world.entity_mut(self.input).insert(draft);
+        let mut draft = world.get_mut::<Draft>(self.input).unwrap();
+        draft.query = None;
+        draft.dismissed = Some((value, end + 1));
+        draft.options = Arc::default();
+        let popup = draft.popup.take();
+        if let Some(popup) = popup {
+            world.despawn(popup);
+        }
+        if let Some(mut focus) = world.get_resource_mut::<InputFocus>() {
+            focus.set(self.input, FocusCause::Pressed);
+        }
     }
 }
 
@@ -593,19 +634,26 @@ pub(super) fn keys(world: &mut World) -> bool {
     text.pending_edits.retain(|edit| !matches!(edit,
         bevy::text::TextEdit::Insert(value) if enter && (value.as_str() == "\n" || value.as_str() == "\r"))
         && !(step != 0 && matches!(edit, bevy::text::TextEdit::Up(_) | bevy::text::TextEdit::Down(_))));
-    let value = text.value().to_string();
-    let caret = text.editor.raw_selection().focus().index();
+    let dismiss = escape || {
+        let draft = world.get::<Draft>(input).unwrap();
+        enter && draft.options.is_empty() && (draft.loaded || draft.error.is_some())
+    };
+    if dismiss {
+        let text = world.get::<EditableText>(input).unwrap();
+        let value = text.value().to_string();
+        let caret = text.editor.raw_selection().focus().index();
+        world.get_mut::<Draft>(input).unwrap().dismissed = Some((value, caret));
+        return escape;
+    }
     let mut draft = world.get_mut::<Draft>(input).unwrap();
-    if escape {
-        draft.dismissed = Some((value, caret));
-    } else if enter && draft.options.is_empty() && (draft.loaded || draft.error.is_some()) {
-        draft.dismissed = Some((value, caret));
-        return false;
-    } else if !draft.options.is_empty() {
-        draft.selected =
+    if !draft.options.is_empty() {
+        let selected =
             (draft.selected as i32 + step).rem_euclid(draft.options.len() as i32) as usize;
-        let uid = draft.options[draft.selected].uid.clone();
+        if draft.selected != selected {
+            draft.selected = selected;
+        }
         if enter {
+            let uid = draft.options[selected].uid.clone();
             Choose { input, uid }.apply(world, input);
         }
     }
@@ -613,211 +661,30 @@ pub(super) fn keys(world: &mut World) -> bool {
 }
 
 pub(super) fn paint(world: &mut World) {
-    let _paint = nucleus::performance::Span::new("mention-link-presentation");
-    let selected: Vec<_> = world
-        .query_filtered::<(Entity, &ChildOf, &ComputedNode), With<SelectedOption>>()
-        .iter(world)
-        .map(|(entity, parent, _)| (entity, parent.parent()))
-        .collect();
-    for (entity, popup) in selected {
-        let Some(children) = world.get::<Children>(popup) else {
-            continue;
-        };
-        let mut top = 0.0;
-        let mut selected = None;
-        for child in children.iter() {
-            let height = world
-                .get::<ComputedNode>(child)
-                .map_or(0.0, |node| node.size.y * node.inverse_scale_factor);
-            if world.get::<SelectedOption>(child).is_some() {
-                selected = Some((top, top + height));
-            }
-            top += height;
-        }
-        let height = world.get::<ComputedNode>(popup).map_or(0.0, |node| {
-            node.content_box().height() * node.inverse_scale_factor
-        });
-        if height > 0.0
-            && let Some((top, bottom)) = selected
-            && let Some(mut scroll) = world.get_mut::<ScrollPosition>(popup)
-        {
-            if top < scroll.0.y {
-                scroll.0.y = top;
-            } else if bottom > scroll.0.y + height {
-                scroll.0.y = bottom - height;
-            }
-            world.entity_mut(entity).remove::<SelectedOption>();
-        }
-    }
-    if !world.contains_resource::<FontCx>() || !world.contains_resource::<LayoutCx>() {
-        return;
-    }
-    let mut old: HashMap<_, _> = world
-        .query::<(Entity, &InlineLink)>()
-        .iter(world)
-        .map(|(entity, link)| {
-            (
-                (
-                    link.input,
-                    link.range.start,
-                    link.range.end,
-                    link.line,
-                    link.uid.clone(),
-                ),
-                entity,
-            )
-        })
-        .collect();
-    let inputs: Vec<_> = world
-        .query::<(Entity, &Draft)>()
-        .iter(world)
-        .filter(|(_, draft)| !draft.links.is_empty())
-        .map(|(input, _)| input)
-        .collect();
-    for input in inputs {
-        let Some(text) = world.get::<EditableText>(input) else {
-            continue;
-        };
-        let draft = world.get::<Draft>(input).unwrap();
-        let mut boxes = Vec::new();
-        let ready = draft.links.iter().all(|link| {
-            text.editor
-                .try_range_geometry_with(link.range.clone(), |rect, line| {
-                    boxes.push((link.clone(), rect, line));
-                })
-        });
-        // Normal post-layout painting only reads the editor. Keep the existing
-        // isolated preparation for a dirty layout or an invalidated link range.
-        let fallback = (!ready).then(|| (text.editor.clone(), draft.links.clone()));
-        let computed = world
-            .get::<ComputedNode>(input)
-            .copied()
-            .unwrap_or_default();
-        let scroll = world
-            .get::<bevy::ui::widget::TextScroll>(input)
-            .map_or(Vec2::ZERO, |scroll| scroll.0);
-        if let Some((mut editor, links)) = fallback {
-            nucleus::performance::add("mention-editor-clone-fallbacks", 1);
-            boxes.clear();
-            let mut fonts = world.remove_resource::<FontCx>().unwrap();
-            let mut layout = world.remove_resource::<LayoutCx>().unwrap();
-            for link in links {
-                editor
-                    .driver(&mut fonts.context, &mut layout.0)
-                    .select_byte_range(link.range.start, link.range.end);
-                editor.selection_geometry_with(|rect, line| {
-                    boxes.push((link.clone(), rect, line));
-                });
-            }
-            world.insert_resource(fonts);
-            world.insert_resource(layout);
-        }
-        for (link, rect, line) in boxes {
-            let min = (Vec2::new(rect.x0 as f32, rect.y0 as f32) - scroll).max(Vec2::ZERO);
-            let max = (Vec2::new(rect.x1 as f32, rect.y1 as f32) - scroll)
-                .min(computed.content_box().size());
-            if max.x <= min.x || max.y <= min.y {
-                continue;
-            }
-            let scale = computed.inverse_scale_factor;
-            let node = Node {
-                position_type: PositionType::Absolute,
-                left: px((computed.padding.min_inset.x + min.x) * scale),
-                top: px((computed.padding.min_inset.y + min.y) * scale),
-                width: px((max.x - min.x) * scale),
-                height: px((max.y - min.y) * scale),
-                border: UiRect::bottom(px(1)),
-                ..default()
-            };
-            let key = (
-                input,
-                link.range.start,
-                link.range.end,
-                line,
-                link.uid.clone(),
-            );
-            if let Some(entity) = old.remove(&key) {
-                if world.get::<Node>(entity) != Some(&node) {
-                    world.entity_mut(entity).insert(node);
-                }
-            } else {
-                let mut accessibility = accesskit::Node::new(accesskit::Role::Link);
-                accessibility.set_label(format!(
-                    "Open {}",
-                    &world.get::<EditableText>(input).unwrap().value().to_cow()[link.range.clone()]
-                ));
-                world
-                    .spawn((
-                        node,
-                        InlineLink {
-                            input,
-                            range: link.range,
-                            line,
-                            uid: link.uid.clone(),
-                        },
-                        crate::native::token_style::border(crate::native::tokens::Token::Accent),
-                        crate::native::icons::Tooltip("Open Record".into()),
-                        AccessibilityNode::from(accessibility),
-                        bevy::input_focus::tab_navigation::TabIndex(0),
-                        ChildOf(input),
-                    ))
-                    .observe(
-                        |mut event: On<Pointer<Click>>,
-                         links: Query<&InlineLink>,
-                         mut commands: Commands| {
-                            if event.button != bevy::picking::pointer::PointerButton::Primary {
-                                return;
-                            }
-                            if let Ok(link) = links.get(event.entity) {
-                                let (input, uid) = (link.input, link.uid.clone());
-                                event.propagate(false);
-                                commands.queue(move |world: &mut World| open(world, input, &uid));
-                            }
-                        },
-                    )
-                    .observe(
-                        |mut event: On<
-                            bevy::input_focus::FocusedInput<bevy::input::keyboard::KeyboardInput>,
-                        >,
-                         links: Query<&InlineLink>,
-                         mut commands: Commands| {
-                            if event.input.state.is_pressed()
-                                && matches!(
-                                    event.input.key_code,
-                                    KeyCode::Enter | KeyCode::NumpadEnter
-                                )
-                                && let Ok(link) = links.get(event.focused_entity)
-                            {
-                                let (input, uid) = (link.input, link.uid.clone());
-                                event.propagate(false);
-                                commands.queue(move |world: &mut World| open(world, input, &uid));
-                            }
-                        },
-                    );
-            }
-        }
-    }
-    for entity in old.into_values() {
-        world.despawn(entity);
-    }
+    links::paint(world);
 }
 
 fn open(world: &mut World, input: Entity, uid: &str) {
-    let binding = world
-        .query::<&ThreadForm>()
-        .iter(world)
-        .find(|form| form.input == input)
-        .map(|form| form.binding.clone());
-    if let Some(binding) = binding {
+    let source = world
+        .run_system_cached_with(source_for_input, input)
+        .expect("find current mention source");
+    if let Some(source) = source {
         crate::native::description::Link {
             reference: uid.into(),
             context: crate::native::description::Context {
                 owner: input,
-                source: binding.source,
+                source,
             },
         }
         .apply(world, input);
     }
+}
+
+fn source_for_input(In(input): In<Entity>, forms: Query<&ThreadForm>) -> Option<Source> {
+    forms
+        .iter()
+        .find(|form| form.input == input)
+        .map(|form| form.binding.source.clone())
 }
 
 #[cfg(test)]
@@ -1097,22 +964,19 @@ mod tests {
             .find(|(_, link)| link.input == input)
             .map(|(entity, _)| entity)
             .expect("The composer must render the selected mention as a clickable link");
-        app.world_mut().trigger(Pointer::new(
-            bevy::picking::pointer::PointerId::Mouse,
-            bevy::picking::pointer::Location {
+        app.world_mut().trigger(PointerClick {
+            entity: link,
+            pointer: Pointer::new(bevy::picking::pointer::PointerId::Mouse, bevy::picking::pointer::Location {
                 target: bevy::camera::NormalizedRenderTarget::Image(
                     Handle::<Image>::default().into(),
                 ),
                 position: Vec2::ZERO,
-            },
-            bevy::picking::events::Click {
-                button: bevy::picking::pointer::PointerButton::Primary,
+            }),
+            button: bevy::picking::pointer::PointerButton::Primary,
                 hit: bevy::picking::backend::HitData::new(link, 0.0, None, None),
                 duration: std::time::Duration::ZERO,
                 count: 1,
-            },
-            link,
-        ));
+        });
         app.world_mut().flush();
         assert_eq!(
             app.world_mut()

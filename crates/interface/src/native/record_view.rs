@@ -115,33 +115,42 @@ fn save(
         {
             continue;
         }
-        let head = value.to_string();
         view.next_request += 1;
-        let id = format!("edit-{}", view.next_request);
-        let request = ClientMessage::Act {
-            id: id.clone(),
-            action: Action::EditRecordText {
-                target: record.uid.clone(),
-                head: Some(head.clone()),
-                body: None,
-            },
-        };
-        let message = match bridge.outgoing.try_send(request) {
-            Ok(()) => {
-                feedback.set_failed(false);
+        let message = match bridge.outgoing.try_reserve() {
+            Ok(permit) => {
+                let _prepare = crate::host::performance::Span::new(
+                    crate::host::performance::Stage::LegacyRecordSavePreparation,
+                );
+                let head = value.to_string();
+                let id = format!("edit-{}", view.next_request);
+                permit.send(ClientMessage::Act {
+                    id: id.clone(),
+                    action: Action::EditRecordText {
+                        target: record.uid.clone(),
+                        head: Some(head.clone()),
+                        body: None,
+                    },
+                });
+                crate::host::performance::count(
+                    crate::host::performance::Count::LegacyRecordSavesPrepared,
+                );
+                crate::native::save_feedback::SaveFeedback::set_failed(&mut feedback, false);
                 automatic.0 = Some(head.clone());
                 view.admit(entity, &mut record, id, head);
                 "Saving…"
             }
             Err(tokio::sync::mpsc::error::TrySendError::Full(_)) => {
+                crate::host::performance::count(
+                    crate::host::performance::Count::LegacyRecordSaveBackpressure,
+                );
                 if let Some(wake) = &wake {
                     wake.ring();
                 }
                 "Waiting to send…"
             }
             Err(tokio::sync::mpsc::error::TrySendError::Closed(_)) => {
-                feedback.set_failed(true);
-                automatic.0 = Some(head);
+                crate::native::save_feedback::SaveFeedback::set_failed(&mut feedback, true);
+                automatic.0 = Some(value.to_string());
                 "Connection closed. Your draft is here; open Configuration and choose Refresh to reconnect."
             }
         };
@@ -174,7 +183,6 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
         .filter(|message| match message.0.as_ref() {
             ServerMessage::Snapshot { id, .. } | ServerMessage::Update { id, .. } => id == RECORDS,
             ServerMessage::ActionOk { id, .. } => view.pending.contains_key(id),
-            // Errors also feed the existing shared notifications, even without a pending save.
             ServerMessage::Error { .. } => true,
             _ => false,
         })

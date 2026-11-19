@@ -148,10 +148,13 @@ impl Receiver {
         let metadata: Value = serde_json::from_slice(&frame.payload).unwrap();
         let frame = self.reader.next().await.unwrap().unwrap();
         assert_eq!(frame.kind, Kind::Data);
-        assert_eq!(
-            frame.payload.len(),
-            self.observations.lock().unwrap().bytes.unwrap_or(64)
-        );
+        let expected_bytes = self
+            .observations
+            .lock()
+            .expect("read the camera test observations")
+            .bytes
+            .unwrap_or(64);
+        assert_eq!(frame.payload.len(), expected_bytes);
         assert_eq!(metadata["content_type"], "image/jpeg");
         metadata
     }
@@ -175,14 +178,12 @@ impl Receiver {
         } = self;
         drop(reader);
         drop(writer);
-        assert!(
-            tokio::time::timeout(Duration::from_secs(1), client)
-                .await
-                .unwrap()
-                .unwrap()
-                .is_err()
-        );
-        let state = observations.lock().unwrap();
+        let result = tokio::time::timeout(Duration::from_secs(1), client)
+            .await
+            .expect("the camera client stops within one second after disconnect")
+            .expect("the camera client task returns a result");
+        assert!(result.is_err());
+        let state = observations.lock().expect("read the final camera test state");
         assert!(!state.active);
         assert_eq!(state.changes.last(), Some(&false));
     }

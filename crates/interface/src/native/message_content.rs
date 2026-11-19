@@ -633,17 +633,3 @@ fn dropped(
         }
     });
 }
-
-pub(crate) fn display(
-    world: &mut World,
-    parent: Entity,
-    binding: &RecordBinding,
-    data: &serde_json::Value,
-) {
-    if data["uid"].as_str().is_none() {
-        return;
-    }
-    let [progress, content] = sections(world, parent);
-    crate::native::message_progress::progress(world, progress, &data["progress"]);
-    stored::refresh(world, content, binding, data);
-}

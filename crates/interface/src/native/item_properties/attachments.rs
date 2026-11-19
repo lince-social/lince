@@ -1,6 +1,11 @@
 use super::*;
 use bevy::ecs::message::MessageCursor;
 use std::collections::HashMap;
+use std::sync::Arc;
+
+mod preparation;
+mod properties;
+use properties::{apply, restore};
 
 #[derive(Component, Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -15,7 +20,7 @@ impl Attachment {
 }
 
 struct Stream {
-    id: String,
+    id: Arc<str>,
     uid: String,
     sender: crate::native::cell_bridge::Sender,
     baseline: Option<crate::native::area::RecordProperties>,
@@ -25,8 +30,24 @@ struct Stream {
 #[derive(Resource, Default)]
 struct Streams {
     active: HashMap<Entity, Stream>,
+    by_id: HashMap<Arc<str>, Entity>,
     retired: Vec<Stream>,
     cursor: MessageCursor<crate::native::cell_bridge::CellMessage>,
+}
+
+impl Streams {
+    fn retire(&mut self, world: &mut World, item: Entity) {
+        if let Some(stream) = self.active.remove(&item) {
+            self.by_id.remove(stream.id.as_ref());
+            restore(world, item, &stream);
+            self.retired.push(stream);
+        }
+    }
+
+    fn admit(&mut self, item: Entity, stream: Stream) {
+        self.by_id.insert(stream.id.clone(), item);
+        self.active.insert(item, stream);
+    }
 }
 
 pub(super) fn install(app: &mut App) {
@@ -70,33 +91,13 @@ pub fn detach(world: &mut World, root: Entity, item: Entity) -> Result<(), &'sta
     }
     world.entity_mut(item).remove::<Attachment>();
     if let Some(mut streams) = world.remove_resource::<Streams>() {
-        if let Some(stream) = streams.active.remove(&item) {
-            restore(world, item, &stream);
-            streams.retired.push(stream);
-        }
+        streams.retire(world, item);
         world.insert_resource(streams);
     }
     if let Some(wake) = world.get_resource::<crate::host::WakeSignal>() {
         wake.ring();
     }
     Ok(())
-}
-
-fn restore(world: &mut World, item: Entity, stream: &Stream) {
-    let metadata = window_metadata(world, item);
-    if let Ok(mut entity) = world.get_entity_mut(item) {
-        entity.remove::<RecordBinding>();
-        if let Some(baseline) = &stream.baseline {
-            let mut baseline = baseline.clone();
-            if let Some((title, app_id)) = metadata {
-                baseline.0["head"] = title;
-                baseline.0["app_id"] = app_id;
-            }
-            entity.insert(baseline);
-        } else {
-            entity.remove::<crate::native::area::RecordProperties>();
-        }
-    }
 }
 
 pub(super) fn status(world: &World, item: Entity) -> &str {
@@ -106,133 +107,98 @@ pub(super) fn status(world: &World, item: Entity) -> &str {
         .map_or("", |stream| stream.message.as_str())
 }
 
-fn apply(world: &mut World, item: Entity, stream: &mut Stream, row: Option<serde_json::Value>) {
-    restore(world, item, stream);
-    let Some(mut row) = row.filter(|row| row.is_object() && row["uid"] == stream.uid) else {
-        stream.message = "Record unavailable.".into();
-        return;
-    };
-    if let Some((title, app_id)) = window_metadata(world, item) {
-        row["window_title"] = title;
-        row["app_id"] = app_id;
-    }
-    world.entity_mut(item).insert((
-        crate::native::area::RecordProperties(row.into()),
-        RecordBinding {
-            area: item,
-            uid: stream.uid.clone(),
-            source: Source::Local,
-        },
-    ));
-    stream.message.clear();
-}
-
-fn synchronize(world: &mut World) {
+fn synchronize(world: &mut World, mut prepared: Local<preparation::Preparation>) {
+    use crate::host::performance::{self, Count, Stage};
+    let _synchronize = performance::Span::new(Stage::AttachmentSynchronize);
     let mut streams = world.remove_resource::<Streams>().unwrap_or_default();
     let sender = world
         .get_non_send::<crate::native::cell_bridge::CellBridge>()
         .map(|bridge| bridge.outgoing.clone())
         .filter(|sender| !sender.is_closed());
-    let items: HashMap<_, _> = world
-        .query_filtered::<(Entity, &Attachment), (
-            With<crate::native::canvas::CanvasItem>,
-            bevy::ecs::query::Allow<bevy::ecs::entity_disabling::Disabled>,
-        )>()
-        .iter(world)
-        .filter(|(item, attachment)| attachment.valid() && source_allowed(world, *item))
-        .map(|(item, attachment)| (item, attachment.uid.clone()))
-        .collect();
-    let stale: Vec<_> = streams
-        .active
-        .iter()
-        .filter(|(item, stream)| {
-            items.get(*item) != Some(&stream.uid)
-                || sender
-                    .as_ref()
-                    .is_none_or(|sender| !sender.same_channel(&stream.sender))
-        })
-        .map(|(item, _)| *item)
-        .collect();
-    for item in stale {
-        let stream = streams.active.remove(&item).unwrap();
-        restore(world, item, &stream);
-        streams.retired.push(stream);
+    prepared.prepare(world, &streams, sender.as_ref());
+    for item in prepared.stale.drain(..) {
+        streams.retire(world, item);
     }
-    streams.retired.retain(|stream| {
-        match stream.sender.try_send(cell::ClientMessage::Unsubscribe {
-            id: stream.id.clone(),
-        }) {
-            Err(tokio::sync::mpsc::error::TrySendError::Full(_)) => true,
-            _ => false,
-        }
-    });
-    let mut retry = !streams.retired.is_empty();
-    if let Some(sender) = sender {
-        for (item, uid) in items {
-            if streams.active.contains_key(&item) {
-                continue;
-            }
-            let mut query = crate::native::full_record::config(&uid, Source::Local)
-                .draft
-                .compile()
-                .unwrap();
-            query.fields = None;
-            query.include.links = Some(protein::LinksInclude {
-                kinds: vec!["*".into()],
-                direction: protein::LinkDirection::Both,
-                depth: 1,
+    let mut retry;
+    {
+        let _subscriptions = performance::Span::new(Stage::AttachmentSubscriptions);
+        streams
+            .retired
+            .retain(|stream| match stream.sender.try_reserve() {
+                Ok(permit) => {
+                    permit.send(cell::ClientMessage::Unsubscribe {
+                        id: stream.id.to_string(),
+                    });
+                    false
+                }
+                Err(tokio::sync::mpsc::error::TrySendError::Full(())) => true,
+                Err(tokio::sync::mpsc::error::TrySendError::Closed(())) => false,
             });
-            let id = format!("item-properties-{}", nucleus::new_uid("op"));
-            if sender
-                .try_send(cell::ClientMessage::Subscribe {
+        retry = !streams.retired.is_empty();
+        if let Some(sender) = sender {
+            for (item, uid) in prepared.pending.drain(..) {
+                let Ok(permit) = sender.try_reserve() else {
+                    performance::count(Count::AttachmentSubscriptionDeferrals);
+                    retry = true;
+                    continue;
+                };
+                let mut query = crate::native::full_record::config(&uid, Source::Local)
+                    .draft
+                    .compile()
+                    .unwrap();
+                query.fields = None;
+                query.include.links = Some(protein::LinksInclude {
+                    kinds: vec!["*".into()],
+                    direction: protein::LinkDirection::Both,
+                    depth: 1,
+                });
+                let id = format!("item-properties-{}", nucleus::new_uid("op"));
+                permit.send(cell::ClientMessage::Subscribe {
                     id: id.clone(),
                     protein: query,
-                })
-                .is_err()
-            {
-                retry = true;
+                });
+                performance::count(Count::AttachmentSubscriptionsPrepared);
+                streams.admit(
+                    item,
+                    Stream {
+                        id: id.into(),
+                        uid,
+                        sender: sender.clone(),
+                        baseline: world
+                            .get::<crate::native::area::RecordProperties>(item)
+                            .cloned(),
+                        message: "Loading Record…".into(),
+                    },
+                );
+            }
+        }
+    }
+    {
+        let _messages = performance::Span::new(Stage::AttachmentMessages);
+        prepared.select_messages(world, &mut streams);
+        for (item, message) in prepared.messages.drain(..) {
+            let Some(stream) = streams.active.get_mut(&item) else {
                 continue;
-            }
-            streams.active.insert(
-                item,
-                Stream {
-                    id,
-                    uid,
-                    sender: sender.clone(),
-                    baseline: world
-                        .get::<crate::native::area::RecordProperties>(item)
-                        .cloned(),
-                    message: "Loading Record…".into(),
-                },
-            );
-        }
-    }
-    let messages: Vec<_> = world
-        .get_resource::<Messages<crate::native::cell_bridge::CellMessage>>()
-        .map(|messages| streams.cursor.read(messages).cloned().collect())
-        .unwrap_or_default();
-    for message in messages {
-        match message.0.as_ref() {
-            cell::ServerMessage::Snapshot { id, rows, .. }
-            | cell::ServerMessage::Update { id, rows, .. } => {
-                for (item, stream) in &mut streams.active {
-                    if stream.id == *id {
-                        let row = rows.iter().find(|row| row["uid"] == stream.uid).cloned();
-                        apply(world, *item, stream, row);
+            };
+            match message.as_ref() {
+                cell::ServerMessage::Snapshot { rows, .. }
+                | cell::ServerMessage::Update { rows, .. } => {
+                    let row = rows.iter().find(|row| row["uid"] == stream.uid);
+                    apply(world, item, stream, row);
+                }
+                cell::ServerMessage::Error { message, .. } => {
+                    restore(world, item, stream);
+                    let message = lince_interface::text::prefix(message, 1024);
+                    if stream.message != message {
+                        stream.message.clear();
+                        stream.message.push_str(message);
                     }
                 }
+                _ => unreachable!("attachment message selection"),
             }
-            cell::ServerMessage::Error { id, message, .. } => {
-                for (item, stream) in &mut streams.active {
-                    if stream.id == *id {
-                        restore(world, *item, stream);
-                        stream.message = message.chars().take(1024).collect();
-                    }
-                }
-            }
-            _ => {}
         }
     }
+    prepared.release_if_unused(&mut streams);
     world.insert_resource(streams);
     if retry && let Some(wake) = world.get_resource::<crate::host::WakeSignal>() {
         wake.after(std::time::Duration::from_millis(50));
@@ -256,17 +222,4 @@ pub(super) fn source_allowed(world: &World, mut item: Entity) -> bool {
         item = parent.parent();
     }
     false
-}
-
-fn window_metadata(world: &World, item: Entity) -> Option<(serde_json::Value, serde_json::Value)> {
-    world.get::<crate::native::layout::desktop::ApplicationWindow>(item)?;
-    let metadata = &world.get::<crate::native::area::RecordProperties>(item)?.0;
-    Some((
-        metadata
-            .get("window_title")
-            .or_else(|| metadata.get("head"))
-            .cloned()
-            .unwrap_or_default(),
-        metadata.get("app_id").cloned().unwrap_or_default(),
-    ))
 }

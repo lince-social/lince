@@ -137,7 +137,8 @@ impl Engine {
         let graph = crate::access::policy_graph_on(tx, &[])
             .await
             .map_err(crate::record_policy::denied)?;
-        if !references(edits).is_subset(&self.readable_on(tx, actor, &graph).await?) {
+        let readable = self.readable_on(tx, actor, &graph).await?;
+        if !references(edits).all(|reference| readable.contains(reference)) {
             return Err(invalid("Assertion reference unavailable"));
         }
         let mut properties = BTreeSet::new();

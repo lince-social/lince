@@ -184,7 +184,11 @@ impl Ghostty {
         Ok(self.u32(0)? as u16)
     }
 
-    pub(super) fn resize(&mut self, cols: u16, rows: u16) -> Result<(), String> {
+    pub(super) fn resize(&mut self, cols: u16, rows: u16) -> Result<bool, String> {
+        if (cols, rows) == (self.cols, self.rows) {
+            nucleus::performance::add("terminal-vt-unchanged-resizes", 1);
+            return Ok(false);
+        }
         self.fuel()?;
         self.ok(
             self.api.terminal_resize,
@@ -192,7 +196,7 @@ impl Ghostty {
         )?;
         self.cols = cols;
         self.rows = rows;
-        Ok(())
+        Ok(true)
     }
 
     fn write(&mut self, bytes: &[u8]) -> Result<(), String> {

@@ -95,13 +95,15 @@ impl Action for Command {
                 castle.selected.clear();
             }
             Self::SimulateChildren => {
-                let rows = world.get::<View>(owner).unwrap().rows.clone();
-                let root = world.get::<TransferCastle>(owner).unwrap().selected.clone();
+                let _prepare = nucleus::performance::Span::new("transfer-action-input-preparation");
+                let rows = &world.get::<View>(owner).unwrap().rows;
+                let root = &world.get::<TransferCastle>(owner).unwrap().selected;
                 let person = person(world, owner);
                 let result = crate::native::simulation_castle::transfer_entry::group_balance(
-                    &rows, &root, &person,
-                )
-                .and_then(|balance| {
+                    rows, root, &person,
+                );
+                drop(_prepare);
+                let result = result.and_then(|balance| {
                     crate::native::simulation_castle::transfer_entry::open_balance(
                         world, owner, &balance,
                     )
@@ -576,8 +578,6 @@ fn capture_fields(world: &mut World, owner: Option<Entity>) -> HashSet<Entity> {
         } else {
             &castle.search
         };
-        // A second control for the same field must still win in query order,
-        // including when it restores the original value.
         let key = (input.owner, input.index);
         let value = text.value();
         if value == values.get(&key).map_or(current.as_str(), String::as_str) {
@@ -631,241 +631,19 @@ pub(super) fn render(world: &mut World, owner: Entity) {
     if super::transport_workspace::render(world, owner) {
         return;
     }
-    let castle = world.get::<TransferCastle>(owner).unwrap().clone();
+    let castle = world.get::<TransferCastle>(owner).unwrap();
     let view = world.get::<View>(owner).unwrap();
-    let (controls, summary, list, detail, page) = (
-        view.controls,
-        view.summary,
-        view.list,
-        view.detail,
-        view.page,
-    );
-    let rows = view.rows.clone();
-    let context = view.context.clone();
-    let ready = view.ready;
-    clear(world, controls);
-    clear(world, summary);
-    clear(world, list);
+    let (controls, summary, list, detail) = (view.controls, view.summary, view.list, view.detail);
+    let mut prepared = super::presentation::prepare(owner, castle, view);
+    if view.page != prepared.page {
+        world.get_mut::<View>(owner).unwrap().page = prepared.page;
+    }
+    let selected = prepared.detail.take();
+    super::presentation::render(world, controls, summary, list, prepared);
     clear(world, detail);
-    button(world, controls, owner, "Transport", Command::Transport);
-    crate::native::trust_castle::entry_controls(world, controls);
-    for (mine, label) in [(false, "All"), (true, "Mine")] {
-        let count = rows
-            .iter()
-            .filter(|row| !mine || model::facet(row, "mine"))
-            .count();
-        button(
-            world,
-            controls,
-            owner,
-            &format!(
-                "{}{} {count}",
-                if castle.mine == mine { "● " } else { "" },
-                label
-            ),
-            Command::Mine(mine),
-        );
-    }
-    let scoped: Vec<_> = rows
-        .iter()
-        .filter(|row| !castle.mine || model::facet(row, "mine"))
-        .collect();
-    for (key, label) in model::FILTERS {
-        let count = scoped.iter().filter(|row| model::facet(row, key)).count();
-        button(
-            world,
-            controls,
-            owner,
-            &format!(
-                "{}{} {count}",
-                if castle.filter == key { "● " } else { "" },
-                label
-            ),
-            Command::Filter(key.into()),
-        );
-    }
-    picker(
-        world,
-        controls,
-        owner,
-        &format!("Sort: {}", castle.sort),
-        ["attention", "name", "status"]
-            .into_iter()
-            .map(|sort| (sort.into(), Command::Sort(sort.into())))
-            .collect(),
-    );
-    button(
-        world,
-        controls,
-        owner,
-        if castle.tree { "● Tree" } else { "List" },
-        Command::Tree(!castle.tree),
-    );
-    for (key, label) in [
-        ("all", "Total"),
-        ("awaiting_me", "Awaiting me"),
-        ("active", "Active"),
-        ("completed", "Completed"),
-    ] {
-        let card = stack(world, summary);
-        world.get_mut::<Node>(card).unwrap().width = percent(23);
-        world.get_mut::<Node>(card).unwrap().padding = UiRect::all(px(10));
-        world
-            .entity_mut(card)
-            .insert(crate::native::token_style::background(
-                crate::native::tokens::Token::CanvasBackground,
-            ));
-        crate::native::edit_mode::label(world, card, label, 12.0);
-        crate::native::edit_mode::label(
-            world,
-            card,
-            &scoped
-                .iter()
-                .filter(|row| model::facet(row, key))
-                .count()
-                .to_string(),
-            24.0,
-        );
-    }
-    if context["viewer"]["local"] == true {
-        let people: Vec<_> = world
-            .get::<View>(owner)
-            .unwrap()
-            .records
-            .iter()
-            .filter(|row| row["kind"] == "person")
-            .map(|row| (title(row), Command::Person(text(row, "uid"))))
-            .collect();
-        picker(
-            world,
-            controls,
-            owner,
-            &format!(
-                "Acting Person: {}",
-                if castle.person.is_empty() {
-                    "Choose"
-                } else {
-                    &castle.person
-                }
-            ),
-            people,
-        );
-    }
-    let mut visible = model::filtered(
-        &rows,
-        castle.mine,
-        &castle.filter,
-        &castle.search,
-        &castle.sort,
-    );
-    if castle.tree {
-        visible.sort_by_key(|row| {
-            let mut path = vec![title(row)];
-            let mut parent = text(row, "parent");
-            let mut seen = HashSet::from([text(row, "uid")]);
-            while !parent.is_empty() && seen.insert(parent.clone()) {
-                let Some(ancestor) = rows.iter().find(|row| text(row, "uid") == parent) else {
-                    break;
-                };
-                path.push(title(ancestor));
-                parent = text(ancestor, "parent");
-            }
-            path.reverse();
-            path
-        });
-    }
-    let page = page.min(visible.len().saturating_sub(1) / 30);
-    world.get_mut::<View>(owner).unwrap().page = page;
-    if visible.is_empty() {
-        crate::native::edit_mode::label(
-            world,
-            list,
-            if !ready {
-                "Waiting for transfers…"
-            } else if rows.is_empty() {
-                "No transfers yet. Create your first commitment."
-            } else {
-                "No transfers match this view."
-            },
-            14.0,
-        );
-    }
-    for transfer in visible.iter().skip(page * 30).take(30) {
-        let uid = text(transfer, "uid");
-        let card = button(
-            world,
-            list,
-            owner,
-            &title(transfer),
-            Command::Select(uid.clone()),
-        );
-        {
-            let mut node = world.get_mut::<Node>(card).unwrap();
-            node.width = percent(100);
-            node.flex_direction = FlexDirection::Column;
-            node.align_items = AlignItems::Start;
-            node.row_gap = px(5);
-            node.padding = UiRect::all(px(12));
-            if castle.tree {
-                node.margin.left = px((model::depth(transfer, &rows).min(8) * 12) as f32);
-            }
-        }
-        if uid == castle.selected {
-            world
-                .entity_mut(card)
-                .insert(crate::native::token_style::border(
-                    crate::native::tokens::Token::Accent,
-                ));
-            world.get_mut::<Node>(card).unwrap().border = UiRect::all(px(1));
-        }
-        crate::native::edit_mode::label(
-            world,
-            card,
-            &format!(
-                "{} · revision {}",
-                model::human(&model::status(transfer)),
-                text(transfer, "revision")
-            ),
-            12.0,
-        );
-        let parties = array(transfer, "parties")
-            .iter()
-            .map(|party| text(party, "actor_head"))
-            .collect::<Vec<_>>()
-            .join(" · ");
-        crate::native::edit_mode::label(world, card, &parties, 12.0);
-        crate::native::edit_mode::label(
-            world,
-            card,
-            &format!(
-                "{} promises · {} occurrences",
-                array(transfer, "promises").len(),
-                array(transfer, "occurrences").len()
-            ),
-            12.0,
-        );
-        if model::facet(transfer, "awaiting_me") {
-            crate::native::edit_mode::label(world, card, "Awaiting your response", 12.0);
-        }
-    }
-    if visible.len() > 30 {
-        let pages = row(world, list);
-        if page > 0 {
-            button(world, pages, owner, "Previous", Command::Page(page - 1));
-        }
-        crate::native::edit_mode::label(
-            world,
-            pages,
-            &format!("{} / {}", page + 1, visible.len().div_ceil(30)),
-            12.0,
-        );
-        if (page + 1) * 30 < visible.len() {
-            button(world, pages, owner, "Next", Command::Page(page + 1));
-        }
-    }
     super::receipts::render(world, owner, detail);
-    if let Some(transfer) = rows.iter().find(|row| text(row, "uid") == castle.selected) {
-        super::detail::render(world, owner, detail, transfer);
+    if let Some(transfer) = selected {
+        super::detail::render(world, owner, detail, &transfer);
     } else {
         crate::native::edit_mode::label(
             world,

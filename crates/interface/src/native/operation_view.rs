@@ -21,8 +21,6 @@ pub(crate) fn create(world: &mut World, parent: Entity) -> Entity {
 
 pub(crate) fn usage(world: &mut World, entity: Entity, reports: &[nucleus::operation::Usage]) {
     let _presentation = nucleus::performance::Span::new("operation-usage-presentation");
-    // The view only renders the latest sixteen reports. Older reports do not
-    // participate in its retained state or invalidate those visible rows.
     let reports = &reports[reports.len().saturating_sub(REPORT_LIMIT)..];
     if world
         .get::<Reports>(entity)

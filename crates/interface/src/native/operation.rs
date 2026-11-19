@@ -8,12 +8,16 @@ use crate::native::{
 };
 use bevy::{
     a11y::AccessibilityNode,
+    ecs::query::QueryState,
     input_focus::{FocusCause, InputFocus, tab_navigation::TabGroup},
     prelude::*,
     text::EditableText,
 };
 use cell::{ClientMessage, ServerMessage};
 use std::collections::{BTreeMap, HashMap};
+
+mod incoming;
+use incoming::receive;
 
 pub(crate) const SIZE: Vec2 = Vec2::new(520.0, 40.0);
 
@@ -208,7 +212,7 @@ impl Action for OperationAction {
                 } else {
                     state.selected
                 };
-                let Some((value, _)) = state.items.get(index).cloned() else {
+                let Some(value) = state.items.get(index).map(|(value, _)| value.clone()) else {
                     return;
                 };
                 let mut text = world.get_mut::<EditableText>(input).unwrap();
@@ -434,8 +438,13 @@ fn suggestions(world: &World, owner: Entity, query: &str) -> Vec<(String, String
             .get::<OperationSand>(owner)
             .map_or(owner, |state| state.root);
         let context = CommandContext::new(world, root);
-        let defaults = Settings::default();
-        let settings = world.get_resource::<Settings>().unwrap_or(&defaults);
+        let defaults;
+        let settings = if let Some(settings) = world.get_resource::<Settings>() {
+            settings
+        } else {
+            defaults = Settings::default();
+            &defaults
+        };
         COMMANDS
             .iter()
             .filter(|(command, _, _)| command.starts_with(query))
@@ -476,32 +485,37 @@ fn pending_text(text: &EditableText) -> bool {
         })
 }
 
-fn refresh(world: &mut World) {
+fn refresh(
+    world: &mut World,
+    mut owners: Local<Option<QueryState<(Entity, &'static OperationSand)>>>,
+) {
+    let _span = nucleus::performance::Span::new("operation-suggestion-refresh");
     let bindings_changed = world
         .get_resource_ref::<Settings>()
         .is_some_and(|settings| settings.is_changed())
         || world.is_resource_changed::<crate::host::input::KeyboardSnapshot>();
     let mut contexts = HashMap::new();
-    let edits: Vec<_> = world
-        .query::<(Entity, &OperationSand)>()
+    let edits: Vec<_> = owners
+        .get_or_insert_with(|| world.query())
         .iter(world)
         .filter_map(|(sand, state)| {
             let text = world.get::<EditableText>(state.input)?;
             if text.is_composing() || pending_text(text) {
                 return None;
             }
-            let query = text.value().to_string();
+            let query = text.value();
             let revision = catalog(world, sand).map_or(0, |catalog| catalog.revision);
             let context = *contexts
                 .entry(state.root)
                 .or_insert_with(|| CommandContext::new(world, state.root));
-            (query != state.query
+            (query != state.query.as_str()
                 || revision != state.revision
                 || state.context != Some(context)
                 || bindings_changed)
-                .then(|| (sand, query, revision, context))
+                .then(|| (sand, query.to_string(), revision, context))
         })
         .collect();
+    nucleus::performance::add("operation-suggestions-refreshed", edits.len() as u64);
     for (sand, query, revision, context) in edits {
         let items = suggestions(world, sand, query.trim());
         let catalog = catalog(world, sand);
@@ -521,15 +535,15 @@ fn refresh(world: &mut World) {
         let clear_command_error =
             state.command_error && (state.context != Some(context) || bindings_changed);
         let selected = (!changed)
-            .then(|| state.items.get(state.selected).map(|item| item.0.clone()))
-            .flatten();
+            .then(|| state.items.get(state.selected))
+            .flatten()
+            .and_then(|selected| items.iter().position(|item| item.0 == selected.0))
+            .unwrap_or(0);
         state.query = query;
         state.revision = revision;
         state.context = Some(context);
         state.items = items;
-        state.selected = selected
-            .and_then(|selected| state.items.iter().position(|item| item.0 == selected))
-            .unwrap_or(0);
+        state.selected = selected;
         state.reveal_selection |= changed;
         let status = state.status;
         let idle = world.get::<Text>(status).is_some_and(|text| {
@@ -546,37 +560,64 @@ fn refresh(world: &mut World) {
 }
 
 fn render_suggestions(world: &mut World, sand: Entity) {
+    let _span = nucleus::performance::Span::new("operation-suggestion-presentation");
     let state = world.get::<OperationSand>(sand).unwrap();
     let parent = state.suggestions;
-    let items = state.items.clone();
-    let selected = state.selected;
-    let mut rows = state.rows.clone();
-    while rows.len() > items.len() {
-        if let Some((button, _)) = rows.pop() {
-            world.despawn(button);
-        }
+    let defaults;
+    let settings = if let Some(settings) = world.get_resource::<Settings>() {
+        settings
+    } else {
+        defaults = Settings::default();
+        &defaults
+    };
+    let keyboard = world.get_resource::<crate::host::input::KeyboardSnapshot>();
+    let items: Vec<_> = state
+        .items
+        .iter()
+        .enumerate()
+        .map(|(index, (value, title))| {
+            let selected = index == state.selected;
+            let marker = if selected { "› " } else { "" };
+            let brief = Shortcut::from_operation(value)
+                .map(|shortcut| shortcut.caption(settings, keyboard));
+            (
+                format!("{marker}{value} — {}", brief.as_deref().unwrap_or(title)),
+                format!("{value} — {title}"),
+                selected,
+            )
+        })
+        .collect();
+    nucleus::performance::add("operation-suggestion-rows-prepared", items.len() as u64);
+    while world.get::<OperationSand>(sand).unwrap().rows.len() > items.len() {
+        let (button, _) = world
+            .get_mut::<OperationSand>(sand)
+            .unwrap()
+            .rows
+            .pop()
+            .unwrap();
+        world.despawn(button);
     }
-    world.get_mut::<Node>(parent).unwrap().display = if items.is_empty() {
+    let display = if items.is_empty() {
         Display::None
     } else {
         Display::Flex
     };
-    for (index, (value, title)) in items.iter().enumerate() {
-        let marker = if index == selected { "› " } else { "" };
-        let brief = Shortcut::from_operation(value).map(|shortcut| {
-            let defaults = Settings::default();
-            shortcut.caption(
-                world.get_resource::<Settings>().unwrap_or(&defaults),
-                world.get_resource::<crate::host::input::KeyboardSnapshot>(),
-            )
-        });
-        let caption = format!("{marker}{value} — {}", brief.as_deref().unwrap_or(title));
-        let help = format!("{value} — {title}");
-        let button = if let Some((button, text)) = rows.get(index).copied() {
+    let mut node = world.get_mut::<Node>(parent).unwrap();
+    if node.display != display {
+        node.display = display;
+    }
+    for (index, (caption, help, selected)) in items.into_iter().enumerate() {
+        let row = world
+            .get::<OperationSand>(sand)
+            .unwrap()
+            .rows
+            .get(index)
+            .copied();
+        let button = if let Some((button, text)) = row {
             if let Some(mut value) = world.get_mut::<Text>(text)
                 && value.0 != caption
             {
-                value.0 = caption.clone();
+                value.0 = caption;
             }
             button
         } else {
@@ -587,12 +628,16 @@ fn render_suggestions(world: &mut World, sand: Entity) {
                 OperationAction::Choose(index),
                 &caption,
             );
-            rows.push(row);
+            world.get_mut::<OperationSand>(sand).unwrap().rows.push(row);
             row.0
         };
         if let Some(mut node) = world.get_mut::<AccessibilityNode>(button) {
-            node.set_label(help.as_str());
-            node.set_selected(index == selected);
+            if node.label() != Some(help.as_str()) {
+                node.set_label(help.as_str());
+            }
+            if node.is_selected() != Some(selected) {
+                node.set_selected(selected);
+            }
         }
         if world
             .get::<crate::native::icons::Tooltip>(button)
@@ -603,18 +648,20 @@ fn render_suggestions(world: &mut World, sand: Entity) {
                 .insert(crate::native::icons::Tooltip(help));
         }
     }
-    world.get_mut::<OperationSand>(sand).unwrap().rows = rows;
 }
 
-fn reveal_selection(world: &mut World) {
+fn reveal_selection(
+    world: &mut World,
+    mut owners: Local<Option<QueryState<(Entity, &'static OperationSand)>>>,
+) {
     if world
         .get_resource::<ButtonInput<MouseButton>>()
         .is_some_and(|buttons| buttons.get_pressed().next().is_some())
     {
         return;
     }
-    let pending: Vec<_> = world
-        .query::<(Entity, &OperationSand)>()
+    let pending: Vec<_> = owners
+        .get_or_insert_with(|| world.query())
         .iter(world)
         .filter(|(_, state)| state.reveal_selection)
         .filter_map(|(entity, state)| {
@@ -635,18 +682,28 @@ fn reveal_selection(world: &mut World) {
 fn status(world: &mut World, sand: Entity, message: impl Into<String>) {
     let entity = world.get::<OperationSand>(sand).unwrap().status;
     let message = message.into();
-    world.get_mut::<Node>(entity).unwrap().display = if message.is_empty() {
+    let display = if message.is_empty() {
         Display::None
     } else {
         Display::Flex
     };
-    world.get_mut::<Text>(entity).unwrap().0 = message;
+    let mut node = world.get_mut::<Node>(entity).unwrap();
+    if node.display != display {
+        node.display = display;
+    }
+    let mut text = world.get_mut::<Text>(entity).unwrap();
+    if text.0 != message {
+        text.0 = message;
+    }
 }
 
-fn feedback_visibility(world: &mut World) {
+fn feedback_visibility(
+    world: &mut World,
+    mut owners: Local<Option<QueryState<(Entity, &'static OperationSand)>>>,
+) {
     let focus = world.resource::<InputFocus>().get();
-    let panels: Vec<_> = world
-        .query::<(Entity, &OperationSand)>()
+    let panels: Vec<_> = owners
+        .get_or_insert_with(|| world.query())
         .iter(world)
         .map(|(sand, state)| {
             let mut current = focus;
@@ -745,12 +802,22 @@ fn submit(world: &mut World, sand: Entity) {
     }
 }
 
-fn source_catalogs(world: &mut World) {
-    let owners: Vec<_> = world
-        .query_filtered::<Entity, (
-            With<OperationSand>,
-            With<crate::native::practice_cells::PracticeSource>,
-        )>()
+fn source_catalogs(
+    world: &mut World,
+    mut query: Local<
+        Option<
+            QueryState<
+                Entity,
+                (
+                    With<OperationSand>,
+                    With<crate::native::practice_cells::PracticeSource>,
+                ),
+            >,
+        >,
+    >,
+) {
+    let owners: Vec<_> = query
+        .get_or_insert_with(|| world.query_filtered())
         .iter(world)
         .collect();
     for owner in &owners {
@@ -763,13 +830,22 @@ fn source_catalogs(world: &mut World) {
         }
         let view = world.get::<ScopedCatalog>(*owner).unwrap();
         if !view.requested {
+            let Some(sender) = crate::native::practice_cells::sender(world, *owner) else {
+                continue;
+            };
+            let Ok(permit) = sender.try_reserve() else {
+                continue;
+            };
             let id = view.subscription.clone();
-            if let Some(sender) = crate::native::practice_cells::sender(world, *owner)
-                && sender.try_send(ClientMessage::Subscribe { id: id.clone(), protein: serde_json::from_value(serde_json::json!({"source":"record","fields":["uid","head","slug"],"limit":null})).unwrap() }).is_ok()
-            {
-                world.resource_mut::<ScopedSubscriptions>().0.insert(id, sender);
-                world.get_mut::<ScopedCatalog>(*owner).unwrap().requested = true;
-            }
+            permit.send(ClientMessage::Subscribe {
+                id: id.clone(),
+                protein: serde_json::from_value(serde_json::json!({"source":"record","fields":["uid","head","slug"],"limit":null})).unwrap(),
+            });
+            world
+                .resource_mut::<ScopedSubscriptions>()
+                .0
+                .insert(id, sender);
+            world.get_mut::<ScopedCatalog>(*owner).unwrap().requested = true;
         }
     }
     let active: std::collections::HashSet<_> = owners
@@ -777,14 +853,14 @@ fn source_catalogs(world: &mut World) {
         .filter_map(|owner| {
             world
                 .get::<ScopedCatalog>(*owner)
-                .map(|view| view.subscription.clone())
+                .map(|view| view.subscription.as_str())
         })
         .collect();
     let stale: Vec<_> = world
         .resource::<ScopedSubscriptions>()
         .0
         .keys()
-        .filter(|id| !active.contains(*id))
+        .filter(|id| !active.contains(id.as_str()))
         .cloned()
         .collect();
     for id in stale {
@@ -817,119 +893,6 @@ pub(crate) fn saved(world: &World, owner: Entity, uid: &str) -> bool {
 
 pub(crate) fn ready(world: &World, owner: Entity, slug: &str) -> bool {
     catalog(world, owner).is_some_and(|catalog| catalog.ready && catalog.records.contains_key(slug))
-}
-
-fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor<CellMessage>>) {
-    let messages: Vec<_> = cursor
-        .read(world.resource::<Messages<CellMessage>>())
-        .map(|message| message.0.clone())
-        .collect();
-    for message in messages.iter().map(|message| message.as_ref()) {
-        let owners: Vec<_> = world.query::<(Entity, &ScopedCatalog)>().iter(world)
-            .filter(|(_, catalog)| matches!(&message, ServerMessage::Snapshot { id, .. } | ServerMessage::Update { id, .. } | ServerMessage::Error { id, .. } if id == &catalog.subscription))
-            .map(|(owner, _)| owner).collect();
-        for owner in owners {
-            let mut scoped = world.get_mut::<ScopedCatalog>(owner).unwrap();
-            match &message {
-                ServerMessage::Snapshot { rows, .. } | ServerMessage::Update { rows, .. } => {
-                    scoped.catalog.records = rows
-                        .iter()
-                        .filter_map(|row| {
-                            Some((
-                                row["slug"].as_str()?.trim_start_matches('@').into(),
-                                (
-                                    row["uid"].as_str()?.into(),
-                                    row["head"].as_str().unwrap_or_default().into(),
-                                ),
-                            ))
-                        })
-                        .collect();
-                    scoped.catalog.ready = true;
-                    scoped.catalog.error = None;
-                }
-                ServerMessage::Error { message, .. } => {
-                    scoped.catalog.ready = false;
-                    scoped.catalog.error = Some(message.clone());
-                }
-                _ => {}
-            }
-            scoped.catalog.revision += 1;
-        }
-        match message {
-            ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows }
-                if id == RECORDS =>
-            {
-                let mut catalog = world.resource_mut::<Catalog>();
-                catalog.records = rows
-                    .iter()
-                    .filter_map(|row| {
-                        let slug = row["slug"].as_str()?.trim_start_matches('@');
-                        let uid = row["uid"].as_str()?;
-                        (!slug.is_empty() && !uid.is_empty()).then(|| {
-                            (
-                                slug.into(),
-                                (uid.into(), row["head"].as_str().unwrap_or(slug).into()),
-                            )
-                        })
-                    })
-                    .collect();
-                catalog.ready = true;
-                catalog.error = None;
-                catalog.revision += 1;
-            }
-            ServerMessage::ActionOk { id, warnings, .. } => acknowledge(world, &id, Ok(warnings.clone())),
-            ServerMessage::Error { id, message, .. } => {
-                if id == RECORDS || id == crate::native::cell_bridge::CONNECTION {
-                    let mut catalog = world.resource_mut::<Catalog>();
-                    catalog.ready = false;
-                    catalog.records.clear();
-                    catalog.error = Some(message.clone());
-                    catalog.revision += 1;
-                }
-                acknowledge(world, &id, Err(message.clone()));
-            }
-            _ => {}
-        }
-    }
-}
-
-fn acknowledge(world: &mut World, id: &str, result: Result<Vec<String>, String>) {
-    let pending: Vec<_> = world
-        .query::<(Entity, &OperationSand)>()
-        .iter(world)
-        .filter_map(|(sand, state)| {
-            let (request, query) = state.pending.as_ref()?;
-            (request == id
-                || id == crate::native::cell_bridge::CONNECTION
-                    && world
-                        .get::<crate::native::practice_cells::PracticeSource>(sand)
-                        .is_none())
-            .then(|| (sand, query.clone()))
-        })
-        .collect();
-    for (sand, query) in pending {
-        if result.is_ok() {
-            let uid = query
-                .trim()
-                .strip_prefix('@')
-                .and_then(|slug| catalog(world, sand)?.records.get(slug))
-                .map(|(uid, _)| uid.clone());
-            world.get_mut::<OperationSand>(sand).unwrap().last_saved = uid;
-        }
-        world.get_mut::<OperationSand>(sand).unwrap().pending = None;
-        let message = match &result {
-            Ok(warnings) => {
-                let suffix = if warnings.is_empty() {
-                    String::new()
-                } else {
-                    format!(" {}", warnings.join("; "))
-                };
-                format!("{}: quantity set to zero.{suffix}", query.trim())
-            }
-            Err(error) => format!("Change not confirmed: {error}"),
-        };
-        status(world, sand, message);
-    }
 }
 
 #[cfg(test)]

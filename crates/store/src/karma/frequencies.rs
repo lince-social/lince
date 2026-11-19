@@ -960,7 +960,7 @@ pub async fn list_activations(
     .collect()
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, reason = "The Store boundary passes the transaction, epoch, and mutation inputs separately")]
 async fn mutate_epoch<F>(
     pool: &SqlitePool,
     request_id: &str,
@@ -1232,7 +1232,7 @@ async fn insert_activation(
     Ok(())
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, reason = "The insert binds distinct persisted request fields")]
 async fn insert_request(
     tx: &mut Transaction<'_, Sqlite>,
     request_id: &str,

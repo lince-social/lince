@@ -90,7 +90,7 @@ impl State {
         }
         doc.commit();
         let delta =
-            doc.export_json_updates_without_peer_compression(&before_version, &doc.oplog_vv());
+            doc.export_json_updates_without_peer_compression(&before_version, &doc.oplog_vv()).map_err(error)?;
         let bytes = serde_json::to_vec(&delta).map_err(error)?;
         if bytes.len() > engine::collab::limits().delta_bytes {
             return Err("Text edit exceeds the collaborative operation limit.".into());

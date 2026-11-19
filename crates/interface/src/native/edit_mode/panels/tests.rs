@@ -164,22 +164,19 @@ fn title_bar_pointer_drag_moves_the_panel_without_recreating_its_contents() {
         .find(|(_, _, parent)| parent.parent() == edit)
         .unwrap()
         .0;
-    world.trigger(Pointer::new(
-        PointerId::Mouse,
-        Location {
+    world.trigger(PointerDrag {
+        entity: header,
+        pointer: Pointer::new(PointerId::Mouse, Location {
             target: bevy::camera::NormalizedRenderTarget::None {
                 width: 1280,
                 height: 800,
             },
             position: before,
-        },
-        Drag {
-            button: PointerButton::Primary,
+        }),
+        button: PointerButton::Primary,
             distance: Vec2::new(100.0, 40.0),
             delta: Vec2::new(100.0, 40.0),
-        },
-        header,
-    ));
+    });
     world.flush();
     layout(&mut world);
     assert_eq!(rectangle(&world, edit).min, before + Vec2::new(100.0, 40.0));

@@ -10,7 +10,7 @@ struct SphereMaterial {
 
 impl Material for SphereMaterial {
     fn fragment_shader() -> ShaderRef {
-        "embedded://lince_interface/native/shader_effects/sphere.wgsl".into()
+        "embedded://lince_interface/native/shader_effects/sphere.wesl".into()
     }
 }
 
@@ -26,9 +26,15 @@ pub struct RecordSphere(pub Entity);
 #[derive(Resource)]
 struct Geometry(Handle<Mesh>);
 
+#[derive(Default)]
+struct PlacementScratch {
+    existing: HashMap<Entity, Entity>,
+    floating: Vec<(Entity, Entity, Entity)>,
+}
+
 pub(super) fn install(app: &mut App) {
     if app.world().contains_resource::<AssetServer>() {
-        embedded_asset!(app, "sphere.wgsl");
+        embedded_asset!(app, "sphere.wesl");
         app.add_plugins(MaterialPlugin::<SphereMaterial>::default())
             .add_systems(
                 PostUpdate,
@@ -42,26 +48,69 @@ pub(super) fn install(app: &mut App) {
 }
 
 fn update(world: &mut World) {
-    let existing: HashMap<_, _> = world
-        .query::<(Entity, &SphereEffect)>()
-        .iter(world)
-        .map(|(entity, effect)| (effect.owner, entity))
-        .collect();
-    for (owner, entity) in &existing {
+    world
+        .run_system_cached(place_floating)
+        .expect("place current floating shader effects");
+    world
+        .run_system_cached(update_surfaces)
+        .expect("place current Surface shader effects");
+}
+
+fn hide(world: &mut World, entity: Entity) {
+    if let Some(mut visibility) = world.get_mut::<Visibility>(entity)
+        && *visibility != Visibility::Hidden
+    {
+        *visibility = Visibility::Hidden;
+        nucleus::performance::add("shader-placement-publications", 1);
+    }
+}
+
+fn output_color(world: &mut World, output: Entity, color: Color) {
+    if let Some(mut image) = world.get_mut::<ImageNode>(output)
+        && image.color != color
+    {
+        image.color = color;
+        nucleus::performance::add("shader-placement-publications", 1);
+    }
+}
+
+fn place_floating(
+    world: &mut World,
+    effects: &mut QueryState<(Entity, &'static SphereEffect)>,
+    floats: &mut QueryState<(Entity, &'static Floating)>,
+    mut scratch: Local<PlacementScratch>,
+) {
+    let _placement = nucleus::performance::Span::new("shader-floating-placement");
+    let PlacementScratch { existing, floating } = &mut *scratch;
+    existing.clear();
+    existing.extend(
+        effects
+            .iter(world)
+            .map(|(entity, effect)| (effect.owner, entity)),
+    );
+    existing.retain(|owner, entity| {
         if world.get::<Floating>(*owner).is_none() {
             let material = world.get::<SphereEffect>(*entity).unwrap().material.id();
             world
                 .resource_mut::<Assets<SphereMaterial>>()
                 .remove(material);
             world.despawn(*entity);
+            false
+        } else {
+            true
         }
+    });
+    floating.clear();
+    floating.extend(
+        floats
+            .iter(world)
+            .map(|(entity, effect)| (entity, effect.record, effect.preview)),
+    );
+    if existing.is_empty() && floating.is_empty() {
+        *scratch = PlacementScratch::default();
+        return;
     }
-    let floating: Vec<_> = world
-        .query::<(Entity, &Floating)>()
-        .iter(world)
-        .map(|(entity, effect)| (entity, effect.record, effect.preview))
-        .collect();
-    for (owner, record, preview) in floating {
+    for (owner, record, preview) in floating.drain(..) {
         let Some(data) = world.get::<RecordData>(record) else {
             continue;
         };
@@ -69,7 +118,8 @@ fn update(world: &mut World) {
         else {
             continue;
         };
-        let settings = placement::effective(world, &data.binding, &config.shader_placement);
+        let settings = placement::effective_ref(world, &data.binding, &config.shader_placement);
+        let (size, sphere) = (settings.size, settings.sphere);
         let Some(root) = root(world, owner) else {
             continue;
         };
@@ -81,13 +131,12 @@ fn update(world: &mut World) {
             && world
                 .get::<crate::native::topology::presentation::Surface>(owner)
                 .is_some_and(|surface| surface.visible);
-        let visible = spatial && settings.sphere && showing;
+        let visible = spatial && sphere && showing;
         if let Some(body) = world
             .get::<crate::native::topology::presentation::Surface>(owner)
             .map(|surface| surface.body)
-            && let Some(mut visibility) = world.get_mut::<Visibility>(body)
         {
-            *visibility = Visibility::Hidden;
+            hide(world, body);
         }
         let mesh_position = crate::native::topology::position(world, owner).unwrap_or(DVec3::ZERO)
             - crate::native::topology::presentation::origin(world, root);
@@ -96,7 +145,7 @@ fn update(world: &mut World) {
             rotation: crate::native::topology::spatial(world, owner)
                 .rotation()
                 .as_quat(),
-            scale: Vec3::splat(settings.size),
+            scale: Vec3::splat(size),
         };
         if shader::spatial::place(
             world,
@@ -117,22 +166,23 @@ fn update(world: &mut World) {
                 && let Some(visual) = world
                     .get::<crate::native::topology::presentation::Surface>(owner)
                     .map(|surface| surface.visual)
-                && let Some(mut visibility) = world.get_mut::<Visibility>(visual)
             {
-                *visibility = Visibility::Hidden;
+                hide(world, visual);
             }
             let output = shader::output(world, preview);
-            world.get_mut::<ImageNode>(output).unwrap().color =
-                if spatial { Color::NONE } else { Color::WHITE };
+            output_color(
+                world,
+                output,
+                if spatial { Color::NONE } else { Color::WHITE },
+            );
             continue;
         }
-        if (!showing || spatial && settings.sphere)
+        if (!showing || spatial && sphere)
             && let Some(visual) = world
                 .get::<crate::native::topology::presentation::Surface>(owner)
                 .map(|surface| surface.visual)
-            && let Some(mut visibility) = world.get_mut::<Visibility>(visual)
         {
-            *visibility = Visibility::Hidden;
+            hide(world, visual);
         }
         let output = shader::output(world, preview);
         let Some(image) = world
@@ -141,11 +191,15 @@ fn update(world: &mut World) {
         else {
             continue;
         };
-        world.get_mut::<ImageNode>(output).unwrap().color = if spatial && settings.sphere {
-            Color::NONE
-        } else {
-            Color::WHITE
-        };
+        output_color(
+            world,
+            output,
+            if spatial && sphere {
+                Color::NONE
+            } else {
+                Color::WHITE
+            },
+        );
         let entity = if let Some(entity) = existing.get(&owner) {
             *entity
         } else {
@@ -181,15 +235,15 @@ fn update(world: &mut World) {
                 ))
                 .id()
         };
-        let material = world.get::<SphereEffect>(entity).unwrap().material.clone();
+        let material = world.get::<SphereEffect>(entity).unwrap().material.id();
         if world
             .resource::<Assets<SphereMaterial>>()
-            .get(&material)
+            .get(material)
             .is_some_and(|material| material.image != image)
         {
             world
                 .resource_mut::<Assets<SphereMaterial>>()
-                .get_mut(&material)
+                .get_mut(material)
                 .unwrap()
                 .image = image.clone();
         }
@@ -200,35 +254,61 @@ fn update(world: &mut World) {
         if world.get::<shader::extent::SurfaceConsumer>(entity) != Some(&consumer) {
             world.entity_mut(entity).insert(consumer);
         }
-        let position = crate::native::topology::position(world, owner).unwrap_or(DVec3::ZERO)
-            - crate::native::topology::presentation::origin(world, root);
         let rotation = crate::native::topology::spatial(world, record)
             .rotation()
             .as_quat();
-        world.entity_mut(entity).insert((
-            Transform {
-                translation: position.as_vec3(),
-                rotation,
-                scale: Vec3::splat(settings.size),
-            },
-            if visible {
-                Visibility::Visible
-            } else {
-                Visibility::Hidden
-            },
-        ));
+        let transform = Transform {
+            translation: mesh_position.as_vec3(),
+            rotation,
+            scale: Vec3::splat(size),
+        };
+        if world.get::<Transform>(entity) != Some(&transform) {
+            world.entity_mut(entity).insert(transform);
+            nucleus::performance::add("shader-placement-publications", 1);
+        }
+        let visibility = if visible {
+            Visibility::Visible
+        } else {
+            Visibility::Hidden
+        };
+        if world.get::<Visibility>(entity) != Some(&visibility) {
+            world.entity_mut(entity).insert(visibility);
+            nucleus::performance::add("shader-placement-publications", 1);
+        }
+        if world
+            .get::<RecordSphere>(entity)
+            .is_none_or(|current| current.0 != record)
+        {
+            world.entity_mut(entity).insert(RecordSphere(record));
+            nucleus::performance::add("shader-placement-publications", 1);
+        }
     }
-    update_surfaces(world);
 }
 
-fn update_surfaces(world: &mut World) {
-    let surfaces: Vec<_> = world
-        .query::<(Entity, &Background, &crate::native::canvas::CanvasItem)>()
-        .iter(world)
-        .filter(|(owner, _, _)| world.get::<Surface>(*owner).is_some())
-        .map(|(owner, background, item)| (owner, background.preview, item.size))
-        .collect();
-    for (owner, preview, size) in surfaces {
+fn update_surfaces(
+    world: &mut World,
+    backgrounds: &mut QueryState<
+        (
+            Entity,
+            &'static Background,
+            &'static crate::native::canvas::CanvasItem,
+        ),
+        With<Surface>,
+    >,
+    mut surfaces: Local<Vec<(Entity, Entity, Vec2)>>,
+) {
+    let _placement = nucleus::performance::Span::new("shader-surface-placement");
+    surfaces.clear();
+    surfaces.extend(
+        backgrounds
+            .iter(world)
+            .map(|(owner, background, item)| (owner, background.preview, item.size)),
+    );
+    if surfaces.is_empty() {
+        *surfaces = Vec::new();
+        return;
+    }
+    for (owner, preview, size) in surfaces.drain(..) {
         let Some(root) = root(world, owner) else {
             continue;
         };
@@ -257,18 +337,19 @@ fn update_surfaces(world: &mut World) {
             && let Some(visual) = world
                 .get::<crate::native::topology::presentation::Surface>(owner)
                 .map(|surface| surface.visual)
-            && let Some(mut visibility) = world.get_mut::<Visibility>(visual)
         {
-            *visibility = Visibility::Hidden;
+            hide(world, visual);
         }
         let output = shader::output(world, preview);
-        if let Some(mut image) = world.get_mut::<ImageNode>(output) {
-            image.color = if placed && spatial && showing {
+        output_color(
+            world,
+            output,
+            if placed && spatial && showing {
                 Color::NONE
             } else {
                 Color::WHITE
-            };
-        }
+            },
+        );
     }
 }
 

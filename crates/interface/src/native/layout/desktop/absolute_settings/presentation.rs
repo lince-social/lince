@@ -73,8 +73,6 @@ impl View {
         } else {
             expected.get(key) == Some(preference)
         };
-        // Compare the same insert/remove result without copying the full map.
-        // Device identity, origin and expected settings are inspected afresh.
         selected_matches
             && expected
                 .iter()

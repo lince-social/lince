@@ -73,10 +73,6 @@ pub async fn check_expected_on(
     Ok(revision)
 }
 
-/// Observe whether captured revisions still describe live Records. This is a
-/// read-only display comparison, not a replacement for guarded-write checks.
-/// Missing revision rows and deleted Records compare unequal. Decode in requested
-/// order so an earlier mismatch still precedes a later malformed revision.
 pub async fn live_match(pool: &SqlitePool, expected: &[(String, i64)]) -> Result<bool, StoreError> {
     let _read = nucleus::performance::Span::new("record-revision-observation-await");
     for expected in expected.chunks(512) {

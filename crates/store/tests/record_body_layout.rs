@@ -25,7 +25,7 @@ async fn snapshot(pool: &store::sqlx::SqlitePool) -> BTreeMap<String, Vec<Vec<St
             "SELECT {expressions} FROM \"{}\"",
             table.replace('"', "\"\"")
         );
-        let rows = store::sqlx::query(&sql).fetch_all(pool).await.unwrap();
+        let rows = store::sqlx::query(store::sqlx::AssertSqlSafe(sql)).fetch_all(pool).await.unwrap();
         let mut values: Vec<Vec<String>> = rows
             .iter()
             .map(|row| (0..columns.len()).map(|index| row.get(index)).collect())
@@ -123,10 +123,15 @@ async fn migration_preserves_every_table_and_rolls_back_without_fake_edits() {
     tx.rollback().await.unwrap();
     assert!(!body_is_last(&store.pool).await);
     assert_eq!(snapshot(&store.pool).await, before);
-    store::sqlx::migrate!("./migrations")
-        .run(&store.pool)
-        .await
-        .unwrap();
+    let mut body_layout = store::sqlx::migrate!("./migrations");
+    body_layout.migrations = std::borrow::Cow::Owned(
+        body_layout
+            .iter()
+            .filter(|migration| migration.version <= 44)
+            .cloned()
+            .collect(),
+    );
+    body_layout.run(&store.pool).await.unwrap();
     assert!(body_is_last(&store.pool).await);
     assert_eq!(snapshot(&store.pool).await, before);
     store::projection::install(&store.pool).await.unwrap();

@@ -1,14 +1,15 @@
-use bevy::{prelude::*, text::EditableText};
+use bevy::{ecs::entity_disabling::Disabled, prelude::*, text::EditableText};
 use engine::signal_endpoints::Request;
 use store::signal_endpoints::Endpoint;
 
 use super::*;
+mod presentation;
 mod setup;
 
 #[derive(Component)]
 struct Devices {
     panel: Entity,
-    rows: Vec<Endpoint>,
+    rows: Arc<Vec<Arc<Endpoint>>>,
     audience: String,
     pending: Option<String>,
     pending_save: bool,
@@ -18,6 +19,40 @@ struct Devices {
     enabled: bool,
     fields: [String; 7],
     issued_token: Option<(String, String)>,
+}
+
+impl replies::Pending for Devices {
+    fn pending_id(&self) -> Option<&str> {
+        self.pending.as_deref()
+    }
+}
+
+pub(super) enum OwnedReply {
+    Setup(Entity),
+    Devices(Entity),
+}
+
+pub(super) struct ReplyOwners {
+    setup: replies::Owners<setup::Form>,
+    devices: replies::Owners<Devices>,
+}
+
+impl FromWorld for ReplyOwners {
+    fn from_world(world: &mut World) -> Self {
+        Self {
+            setup: replies::Owners::from_world(world),
+            devices: replies::Owners::from_world(world),
+        }
+    }
+}
+
+impl ReplyOwners {
+    pub(super) fn select(&mut self, world: &World, id: &str) -> Option<OwnedReply> {
+        self.setup
+            .first(world, id)
+            .map(OwnedReply::Setup)
+            .or_else(|| self.devices.first(world, id).map(OwnedReply::Devices))
+    }
 }
 
 #[derive(Component)]
@@ -57,7 +92,7 @@ pub(super) fn spawn(world: &mut World, owner: Entity, parent: Entity) {
     world.get_mut::<Node>(panel).unwrap().display = Display::None;
     world.entity_mut(owner).insert(Devices {
         panel,
-        rows: Vec::new(),
+        rows: Arc::default(),
         audience: String::new(),
         pending: None,
         editing: false,
@@ -87,16 +122,46 @@ pub(super) fn toggle(world: &mut World, owner: Entity) {
 }
 
 fn capture(world: &mut World, owner: Entity) {
-    let fields: Vec<_> = world
-        .query::<(&Input, &EditableText)>()
-        .iter(world)
-        .filter(|(input, _)| input.owner == owner)
-        .map(|(input, text)| (input.index, text.value().to_string()))
-        .collect();
-    if let Some(mut state) = world.get_mut::<Devices>(owner) {
-        for (index, value) in fields {
-            state.fields[index] = value;
+    world
+        .run_system_cached_with(capture_fields, owner)
+        .expect("capture Ailuros access fields");
+}
+
+fn capture_fields(
+    In(owner): In<Entity>,
+    inputs: Query<(&Input, &EditableText)>,
+    mut devices: Query<&mut Devices, Allow<Disabled>>,
+) {
+    let _capture = nucleus::performance::Span::new("ailuros-field-capture");
+    let Ok(mut state) = devices.get_mut(owner) else { return };
+    for (input, text) in &inputs {
+        if input.owner == owner && text.value() != state.fields[input.index].as_str() {
+            crate::controls::copy_value(text, &mut state.fields[input.index]);
+            nucleus::performance::add("ailuros-fields-captured", 1);
         }
+    }
+}
+
+fn publish(world: &mut World, owner: Entity, rows: Vec<Endpoint>, audience: &str) {
+    let _publish = nucleus::performance::Span::new("ailuros-row-publication");
+    let mut state = world.get_mut::<Devices>(owner).unwrap();
+    let previous = &state.rows;
+    let common = previous.iter().zip(&rows)
+        .take_while(|(old, new)| old.as_ref() == *new)
+        .count();
+    if common != previous.len() || common != rows.len() {
+        let count = rows.len();
+        let rows = rows.into_iter().enumerate().map(|(index, row)| {
+            previous.get(index)
+                .filter(|old| index < common || old.as_ref() == &row)
+                .cloned()
+                .unwrap_or_else(|| Arc::new(row))
+        }).collect();
+        state.rows = Arc::new(rows);
+        nucleus::performance::add("ailuros-rows-published", count as u64);
+    }
+    if state.audience != audience {
+        audience.clone_into(&mut state.audience);
     }
 }
 
@@ -229,16 +294,16 @@ impl crate::native::actions::Action for Control {
                     .cloned();
                 let Some(row) = row else { return };
                 let mut state = world.get_mut::<Devices>(owner).unwrap();
-                state.target = Some(row.uid);
+                state.target = Some(row.uid.clone());
                 state.revision = Some(row.revision);
                 state.enabled = row.enabled;
                 state.fields = [
-                    row.name,
-                    row.public_key,
-                    row.signal_uid,
+                    row.name.clone(),
+                    row.public_key.clone(),
+                    row.signal_uid.clone(),
                     row.cooldown_seconds.to_string(),
-                    row.minimum,
-                    row.maximum,
+                    row.minimum.clone(),
+                    row.maximum.clone(),
                     chrono::DateTime::from_timestamp(row.expires_at, 0)
                         .map(|date| date.to_rfc3339())
                         .unwrap_or_default(),
@@ -277,220 +342,34 @@ impl crate::native::actions::Action for Control {
 }
 
 fn render(world: &mut World, owner: Entity) {
-    let state = world.get::<Devices>(owner).unwrap();
-    let panel = state.panel;
-    let rows = state.rows.clone();
-    let fields = state.fields.clone();
-    let editing = state.editing;
-    let new = state.target.is_none();
-    let audience = state.audience.clone();
-    let token_endpoint = state
-        .issued_token
-        .as_ref()
-        .map(|(endpoint, _)| endpoint.clone());
-    if let Some(children) = world.get::<Children>(panel) {
-        for child in children.iter().collect::<Vec<_>>() {
-            world.entity_mut(child).despawn();
-        }
-    }
-    crate::native::edit_mode::label(world, panel, "Ailuros Signals", 16.0);
-    let line = ui::row(world, panel);
-    crate::native::castle_feed::button(world, line, owner, "Enroll device", Control::New);
-    crate::native::castle_feed::button(world, line, owner, "Refresh access", Control::Refresh);
-    crate::native::edit_mode::label(
-        world,
-        panel,
-        "Each device can update only its granted Signal. Access starts disabled. Use an access token or signed requests; private keys stay on the device.",
-        13.0,
-    );
-    if editing {
-        for (index, label) in [
-            (0, "Device name"),
-            (
-                1,
-                "Optional device public key · P-256 compressed SEC1, lowercase hex",
-            ),
-            (
-                2,
-                if new {
-                    "Signal slug · existing or new"
-                } else {
-                    "Granted Signal UID"
-                },
-            ),
-            (3, "Minimum seconds between readings (1–86400)"),
-            (4, "Minimum accepted value"),
-            (5, "Maximum accepted value"),
-            (6, "Access expiry · RFC3339 date and time"),
-        ] {
-            crate::native::edit_mode::label(world, panel, label, 13.0);
-            if index == 2 && !new {
-                crate::native::edit_mode::label(world, panel, &fields[index], 13.0);
-                continue;
-            }
-            let typography = world.resource::<crate::native::theme::Typography>();
-            let bundle = crate::native::sand::text_editor(&fields[index], typography, 0);
-            let entity = world
-                .spawn(bundle)
-                .insert((
-                    ChildOf(panel),
-                    Input { owner, index },
-                    Node {
-                        width: percent(100),
-                        min_height: px(30),
-                        ..default()
-                    },
-                ))
-                .id();
-            let mut text = world.get_mut::<EditableText>(entity).unwrap();
-            text.allow_newlines = false;
-            text.visible_lines = Some(1.0);
-            text.max_characters = Some(128);
-            let mut accessible = accesskit::Node::new(accesskit::Role::TextInput);
-            accessible.set_label(label);
-            world
-                .entity_mut(entity)
-                .insert(bevy::a11y::AccessibilityNode(accessible));
-        }
-        let line = ui::row(world, panel);
-        crate::native::castle_feed::button(world, line, owner, "Save access", Control::Save);
-        crate::native::castle_feed::button(world, line, owner, "Close editor", Control::Close);
-    }
-    if !audience.is_empty() {
-        crate::native::edit_mode::label(
-            world,
-            panel,
-            &format!("Server identity: {audience}"),
-            12.0,
-        );
-    }
-    for row in rows {
-        let expired = row.expires_at <= chrono::Utc::now().timestamp();
-        let line = ui::row(world, panel);
-        crate::native::edit_mode::label(
-            world,
-            line,
-            &format!(
-                "{} · {} · {}s cooldown · {} to {}",
-                row.name,
-                if !row.enabled {
-                    "disabled"
-                } else if expired {
-                    "expired"
-                } else {
-                    "enabled"
-                },
-                row.cooldown_seconds,
-                row.minimum,
-                row.maximum
-            ),
-            14.0,
-        );
-        let line = ui::row(world, panel);
-        world.get_mut::<Node>(line).unwrap().flex_wrap = FlexWrap::Wrap;
-        crate::native::castle_feed::button(
-            world,
-            line,
-            owner,
-            "Edit access",
-            Control::Edit(row.uid.clone()),
-        );
-        crate::native::castle_feed::button(
-            world,
-            line,
-            owner,
-            "Use for firmware setup",
-            setup::Control::Select(row.uid.clone()),
-        );
-        crate::native::castle_feed::button(
-            world,
-            line,
-            owner,
-            "Copy setup",
-            Control::CopySetup(row.uid.clone()),
-        );
-        crate::native::castle_feed::button(
-            world,
-            line,
-            owner,
-            "Issue token",
-            Control::IssueToken(row.uid.clone(), row.revision),
-        );
-        if token_endpoint.as_deref() == Some(&row.uid) {
-            crate::native::castle_feed::button(
-                world,
-                line,
-                owner,
-                "Copy issued token",
-                Control::CopyToken(row.uid.clone()),
-            );
-        }
-        crate::native::castle_feed::button(
-            world,
-            line,
-            owner,
-            if row.enabled { "Disable" } else { "Enable" },
-            Control::SetEnabled(row.uid.clone(), row.revision, !row.enabled),
-        );
-        crate::native::edit_mode::label(
-            world,
-            panel,
-            &format!(
-                "Device {} · Signal {} · access generation {} · sequence {}",
-                row.uid, row.signal_uid, row.credential_epoch, row.last_sequence
-            ),
-            12.0,
-        );
-        crate::native::edit_mode::label(
-            world,
-            panel,
-            &format!(
-                "Last accepted reading: {} · expires: {}",
-                row.last_received_at
-                    .and_then(chrono::DateTime::from_timestamp_millis)
-                    .map(|at| at.to_rfc3339())
-                    .unwrap_or_else(|| "none".into()),
-                chrono::DateTime::from_timestamp(row.expires_at, 0)
-                    .map(|at| at.to_rfc3339())
-                    .unwrap_or_default()
-            ),
-            12.0,
-        );
-    }
+    presentation::render(world, owner);
 }
 
-pub(super) fn receive(world: &mut World, message: &ServerMessage) -> bool {
-    if setup::receive(world, message) {
-        return true;
-    }
-    let id = match message {
-        ServerMessage::ActionOk { id, .. } | ServerMessage::Error { id, .. } => id,
-        _ => return false,
+pub(super) fn receive(world: &mut World, reply: OwnedReply, message: &ServerMessage) {
+    let owner = match reply {
+        OwnedReply::Setup(owner) => {
+            setup::receive_owned(world, owner, message);
+            return;
+        }
+        OwnedReply::Devices(owner) => owner,
     };
-    let owner = world
-        .query::<(Entity, &Devices)>()
-        .iter(world)
-        .find(|(_, state)| state.pending.as_ref() == Some(id))
-        .map(|(owner, _)| owner);
-    let Some(owner) = owner else { return false };
     capture(world, owner);
     world.get_mut::<Devices>(owner).unwrap().pending = None;
     match message {
         ServerMessage::ActionOk {
             data: Some(data), ..
         } => {
-            let rows = serde_json::from_value(data["endpoints"].clone());
+            let rows = Vec::<Endpoint>::deserialize(&data["endpoints"]);
             let Ok(rows) = rows else {
                 status(
                     world,
                     owner,
                     "Could not read device access; refresh to retry",
                 );
-                return true;
+                return;
             };
+            publish(world, owner, rows, data["audience"].as_str().unwrap_or_default());
             let mut state = world.get_mut::<Devices>(owner).unwrap();
-            state.rows = rows;
-            state.audience = data["audience"].as_str().unwrap_or_default().into();
             if let (Some(endpoint), Some(token)) = (
                 data["issued_token"]["endpoint"].as_str(),
                 data["issued_token"]["token"].as_str(),
@@ -519,7 +398,6 @@ pub(super) fn receive(world: &mut World, message: &ServerMessage) -> bool {
             "Device response unavailable; refresh to retry",
         ),
     }
-    true
 }
 
 pub(super) fn maintain(world: &mut World) {

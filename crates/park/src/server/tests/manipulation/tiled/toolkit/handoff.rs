@@ -110,7 +110,7 @@ fn locate(
     let visible = viewport.contains(point)
         && world
             .get::<bevy::ui::CalculatedClip>(entity)
-            .is_none_or(|clip| clip.clip.contains(point));
+            .is_none_or(|clip| clip.contains_point(point));
     let mut cursor = world.get::<ChildOf>(entity).map(ChildOf::parent);
     let mut scroll = None;
     for _ in 0..64 {
@@ -127,7 +127,7 @@ fn locate(
             let mut rectangle =
                 bevy::prelude::Rect::from_center_size(center, node.size()).intersect(viewport);
             if let Some(clip) = world.get::<bevy::ui::CalculatedClip>(entity) {
-                rectangle = rectangle.intersect(clip.clip);
+                rectangle = lince_interface::native::clipped_rect(rectangle, clip);
             }
             if rectangle.size().min_element() > 0.0 {
                 scroll = Some((

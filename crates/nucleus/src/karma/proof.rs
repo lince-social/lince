@@ -405,7 +405,7 @@ impl Validator {
         }
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments, reason = "Validate the threshold proof against independently supplied inputs")]
     fn validate_threshold(
         &mut self,
         id: &LocalId,
@@ -545,7 +545,7 @@ impl Validator {
         }
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments, reason = "Validate the route proof against independently supplied inputs")]
     fn validate_candidate_route(
         &mut self,
         id: &LocalId,

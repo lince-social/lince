@@ -55,8 +55,6 @@ impl Input {
     }
 }
 
-/// Retains pure field parsing, with every non-field dependency represented in K.
-/// Owner, active configuration, host support and action validity stay with callers.
 pub(crate) struct Prepared<K, T> {
     source: Option<K>,
     inputs: Vec<Input>,
@@ -74,8 +72,6 @@ impl<K, T> Default for Prepared<K, T> {
 }
 
 impl<K, T> Prepared<K, T> {
-    /// The predicate must compare every non-field dependency with the retained K.
-    /// It permits borrowed inspection without constructing an owned key on a hit.
     pub(crate) fn get_matching(
         &self,
         world: &World,
@@ -108,8 +104,6 @@ impl<K, T> Prepared<K, T> {
     ) -> &Result<T, String> {
         if self.get_matching(world, fields.clone(), matches).is_none() {
             let _preparation = engine::performance::Span::new("settings-field-preparation");
-            // Keep the parser's own readiness/error order. This cache only
-            // retains a pure result when all of its source inputs still match.
             let result = build();
             let mut count = 0;
             for (index, entity) in fields.into_iter().enumerate() {

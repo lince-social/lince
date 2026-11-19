@@ -11,7 +11,7 @@ use nucleus::simulation::{
     CheckDefinition, CheckOptions, Comparison, Evaluation, Predicate, Quantity, Stop,
 };
 
-#[allow(dead_code)]
+#[allow(dead_code, reason = "This integration binary exercises a subset of the included Karma fixtures")]
 mod karma {
     include!(concat!(env!("CARGO_MANIFEST_DIR"), "/../engine/tests/support/karma.rs"));
 }

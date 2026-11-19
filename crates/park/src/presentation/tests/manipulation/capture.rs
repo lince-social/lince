@@ -16,8 +16,8 @@ fn observe(canvas: &mut Presentation) {
         .app
         .init_resource::<Delivered>()
         .add_observer(
-            |event: On<Pointer<Press>>, mut delivered: ResMut<Delivered>| {
-                if event.pointer_id == PointerId::Mouse
+            |event: On<PointerPress>, mut delivered: ResMut<Delivered>| {
+                if event.pointer.id == PointerId::Mouse
                     && event.entity == event.original_event_target()
                     && matches!(
                         event.button,
@@ -29,9 +29,9 @@ fn observe(canvas: &mut Presentation) {
             },
         )
         .add_observer(
-            |event: On<Pointer<bevy::picking::events::Release>>,
+            |event: On<PointerRelease>,
              mut delivered: ResMut<Delivered>| {
-                if event.pointer_id == PointerId::Mouse
+                if event.pointer.id == PointerId::Mouse
                     && event.entity == event.original_event_target()
                     && matches!(
                         event.button,

@@ -28,7 +28,7 @@ These changes reuse shared controls, row identities, assets, source deadlines an
 - [P84 — Verify retained File Explorer rows and listing preparation.](record:r_7G4HJRCVP9TZW0S1XS934HDWPQ)
 - [P131 — Verify incremental accessibility publication and prepared text projection.](record:r_1N8KS1ZEKV1WQX606K6MH5NKR1)
 - [P132 — Verify capture contributor reuse within each audit.](record:r_01Z5DC695MDHGNT51DPHKY2J3T)
-- [P133 — Share one repeatedly created immutable asset family.](record:r_3FWBA6PYBR86X5N7S5QN20Z1P8)
+- [P133 — Verify shared immutable diagram fonts.](record:r_3FWBA6PYBR86X5N7S5QN20Z1P8)
 } r_3Y7AZV9CX956FV2KEPFRRT7TPK
 
 P124 — Complete the source-to-workflow inventory for active interface features. (
@@ -46,9 +46,11 @@ P124 — Complete the source-to-workflow inventory for active interface features
 
 **Why:** a rendering optimization cannot be called holistic while unexamined feature families keep doing work or lose behavior. **Scope:** reconcile the explicit family table in 09 against native/app.rs, the Laboratory catalogue, actions/openers and current shipping feature flags. For each reachable feature record its input/control family, data source, presentation update, worker/timer/subscription, persistence, hidden semantics and existing correctness/performance selector. Include feature-gated active Sands; mark absent coverage and optional external services separately. **Close with:** a source-stamped inventory with every active registration assigned and one useful representative per distinct cost path, plus a ranked shortlist of actual unexplained work. This is an executable ownership/coverage inventory, not a requirement to benchmark every label or every permutation. P86 separately ranks removable bloat.
 
-**Completed source coverage:** the shared-workspace, JSON/command, Record/relation, native registry/canvas, workspace storage, work projection/validation, sync insertion, Timer, Clock, Frequency/Karma, feed/Calendar/Todo/Kanban, Map/picker and Shader/Castle preparation reductions are implemented. Their detailed source receipts and named verification obligations are in [Overhaul.md](Overhaul.md); the attribution manifest identifies their actual paths and metric boundaries. They are not pending coding work under this inventory.
+**Completed source coverage:** the shared-workspace, JSON/command, Record/relation, native registry/canvas, workspace storage, work projection/validation, sync insertion, Timer, Clock, Frequency/Karma, feed/Calendar/Todo/Kanban, Map/picker, Shader/Castle, terminal input/service/resize and Transfer list/action/form/choice/review preparation, receipt read/state/artifact/candidate/model ownership, validity/signature preparation, source options, supplier/trust query working sets, Operation catalogue/suggestion/reply preparation, dictation reply ownership, Karma evidence/history reads and immutable per-role authority preparation are implemented. Their detailed source receipts and named verification obligations are in [Overhaul.md](Overhaul.md); the attribution manifest identifies their actual paths and metric boundaries. They are not pending coding work under this inventory.
 
-**Latest inspected families, 2026-11-16:** identity-first focus lookup with shared immutable observations, selective saved-focus restoration, and shared transient-placement visibility/offset/requested-solution preparation are implemented. FOCUS-TARGET-VERIFY, FOCUS-RESTORATION-VERIFY and TRANSIENT-PLACEMENT-VERIFY retain source-phase, owner/lifetime, duplicate/first-match, cold/all-changing, preview and memory checks. Earlier root-scope/preferences/inheritance/validation, geometry/resolver/solver, command/device settings, opening/reference, shared controls, input, canvas, catalogue, workspace, feature and backend families keep verification obligations. No target decision is cached across world mutations or calls; deferred restoration and model authoring remain active. Further P124 work needs an inspected repeated-work path. No runtime acceptance or performance gain is established by these source changes.
+**Latest inspected families, 2026-11-17:** the owner review consolidates 488 recorded source mechanisms across backend, interaction, presentation and canvas. Shared current stacking input preparation is the latest code change. Completed mechanisms remain receipts/verification work, while P124 still lacks a complete registration-to-workflow/oracle reconciliation. P86 separately ranks active bloat. The new count is a registry size, not 488 independently demonstrated gains or proof of complete source coverage. See the review at the start of [Overhaul.md](Overhaul.md); no further implementation occurs during this documentation-only review.
+
+**Implemented, verification pending (2026-11-17):** the former repeated restoration decode finding is closed as coding work. `nucleus/message/restoration` owns exact encoded data and internally derived decoded sizes; the shared final validator reuses only those lengths before the owner is consumed. No global cache, caller-provided trusted size, mutable proof escape or validator bypass is introduced. Integrity checks still precede final metadata/content validation. MESSAGE-RESTORATION-VERIFY in [Overhaul.md](Overhaul.md) owns unrun checks; independent caller protocol validation remains outside this reduction.
 
 } r_3XG5M214AQAQKBTADAR44A0MQ0
 
@@ -137,15 +139,15 @@ P128 — Verify retained terminal and Command output. (
     #part-of @park-dev-05-feature-costs-and-scaling: 25,
     #park-workflow @park-development-cycle
 ) { r_5ZXJ3Y0TZEG0T3PDAH61X596QJ
-**Status — implemented, verification pending (2026-11-15).** Terminal rows/runs now use shared retained presentation. The worker binds typed Wasm exports once, shares immutable frames, skips unchanged screen publications while preserving input/reply wakes, and maintains its queued byte count. Command history avoids its extra full-run reconciliation clone, repeated membership scans and unchanged header/order writes; relevant message filtering and borrowed unchanged cwd reads avoid extra consumer work. Original notifications, output bytes/history, limits, authorization and cancellation remain.
+**Status — implemented, verification pending (2026-11-17).** Terminal rows/runs retain presentation, typed Wasm exports are bound once, immutable frames share ownership and equal screen publications are suppressed. Command history preparation is retained. Worker and UI input now share one byte-counted queue; partial login sends advance offsets, and only a prefix crossing chunks needs copying. Current query descriptions/ordered reply scratch are reused across ordinary, saved-Command and private-login terminals. One geometry conversion serves all three. An unchanged VT resize is a no-op and cannot alone force a full frame extraction. Initial frames, real output/key/paste/scroll work and changed geometry still extract a frame; required polling, retries, playback/history, input/reply wakes, limits and current source/authority checks remain.
 
-**Evidence:** [Overhaul.md — source-only terminal and Command output](Overhaul.md#source-only-terminal-and-command-output--2026-11-15). No build, test or measurement was run. Full Wasm frame extraction and the existing per-command processing boundary are unchanged; their remaining cost is not assumed to be unnecessary.
+**Evidence:** the existing terminal receipt and [the latest continuation](Overhaul.md#source-only-continuation--terminal-input-service-and-resize-ownership-2026-11-17) in Overhaul.md describe the source. No build, test or measurement ran. Full extraction remains for actual visual candidates; broader dirty-row rendering and service-bound changes are not assumed safe from this reduction.
 
-**Why:** A fast local output stream must not make unrelated input late through repeated entity construction, export lookup, history copying or redundant publications.
+**Why:** output service should not repeatedly construct query metadata, rescan queued input, shift partial input buffers or rebuild unchanged emulator geometry and screen data.
 
-**Remaining verification:** TERMINAL-VERIFY in Overhaul.md owns exact output/Unicode/style/cursor/background checks, typed ABI compatibility, ordered playback and live stdin, identical-frame reply wakeups, exit/error/cancellation/removal, multiple instances and another editor under the same sustained stream. Compare complete response and CPU/memory as well as the new snapshot/presentation/history scopes and reuse/publication counters. Any remaining queue/service-bound change needs evidence of its owner; do not add a second terminal implementation, polling or lost output to close the task.
+**Remaining verification:** TERMINAL-VERIFY retains exact output/Unicode/style/cursor/background, ABI, history and full workflow checks. TERMINAL-INPUT-VERIFY adds byte accounting, partial prefixes, limits and unsuccessful-send retention. TERMINAL-SERVICE-VERIFY adds current owner/source routing, order, removal/close retries and geometry parity. TERMINAL-RESIZE-VERIFY adds unchanged versus changed dimensions, mixed batches and independent input/reply wakeups. Charge per-chunk offset storage, cached query/scratch memory, cold/all-changing work and another editor under sustained terminal activity; no whole-app gain has been measured.
 
-**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). The current phase remains source-only.
+**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). Source work only; these implementations are not a request to execute or a missing second terminal implementation.
 } r_5ZXJ3Y0TZEG0T3PDAH61X596QJ
 
 Extension @park-p128 "lince.controls" {
@@ -381,7 +383,7 @@ Extension @park-p132 "lince.controls" {
     }]
 }
 
-P133 — Share one repeatedly created immutable asset family. (
+P133 — Verify shared immutable diagram fonts. (
     @park-p133: 0,
     is #task,
     #park-performance-task,
@@ -389,12 +391,13 @@ P133 — Share one repeatedly created immutable asset family. (
     #part-of @park-dev-05-feature-costs-and-scaling: 65,
     #park-workflow @park-development-cycle
 ) { r_3FWBA6PYBR86X5N7S5QN20Z1P8
-**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+**Status — implemented, verification pending (2026-11-17).** Diagram rasterization shares one lazily initialized, immutable database containing the same bundled Lato font and generic-family assignments. Per-document SVG options remain independent; external image resolvers stay disabled. This fulfills the selected immutable-family implementation. Do not add another cache to close this task.
 
-**Context:** [Source chapter](record:r_3Y7AZV9CX956FV2KEPFRRT7TPK); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1.
+**Still to verify:** DIAGRAM-FONTS-VERIFY in [Overhaul.md](Overhaul.md#remaining-acceptance-obligations) owns cold, repeated and concurrent diagram rendering, exact glyph/fallback output, first-use latency, process-lifetime memory and full raster/interaction cost. License/credits and the bundled input are unchanged. This is a bounded font database, not shared mutable editor/private document state or an unbounded rendered-image cache.
 
+**Why:** identical font bytes should not be copied and parsed for each diagram. Source inspection establishes removed repeated preparation; a useful resource/latency gain remains unmeasured.
 
-**Why:** opening many items may recreate identical font, icon, markup image or pipeline input assets and make both startup and steady work more expensive. **Scope:** from P124/P86 evidence, choose one immutable value family with identical lifetime/usage semantics and reuse its canonical existing asset handle or interning path. Account for load/decode/upload and reference retention, not just allocation counts. **Verify:** multiple instances, live replacement, theme/density changes, close/reopen, device retirement where relevant, license/credits and memory returning to its documented bound. Do not share mutable editor state or private content across owners. **Keep only:** demonstrated startup/input/memory benefit; a global unbounded asset cache is not the objective.
+**Current instruction:** source changes only. No tests, builds, measurements or delivery from this Record. Quantity remains zero until the remaining verification is authorized and completed.
 } r_3FWBA6PYBR86X5N7S5QN20Z1P8
 
 Extension @park-p133 "lince.controls" {

@@ -135,9 +135,6 @@ fn file_list(world: &mut World, parent: Entity, transfer: &Arc<Transfer>) -> Opt
     Some(details)
 }
 
-// Action identity depends on the transfer ID and these predicates, not on its
-// changing progress or status label. Keep held/focused controls until that
-// identity changes; backend actions still revalidate their current authority.
 fn actions(transfer: &Transfer) -> (bool, bool, bool) {
     let incoming = transfer.direction == "incoming";
     let retry = incoming && transfer.state == "accepted" && !transfer.error.is_empty();
@@ -233,8 +230,6 @@ fn apply(
         row.bytes = transfer.manifest.bytes();
         row.extra = file_list(world, row.files, transfer);
     } else if let Some(extra) = row.extra {
-        // Repoint retained details at the latest owned model, so a long-lived
-        // expanded list does not pin a separate old transfer/manifest copy.
         world.get_mut::<FileList>(extra).unwrap().transfer = transfer.clone();
     }
     if manifest_changed

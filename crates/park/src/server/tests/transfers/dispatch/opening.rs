@@ -164,7 +164,7 @@ fn scroll_toward(fixture: &mut Fixture, entity: Entity) -> bool {
             let Some(node) = world.get::<Node>(current) else { continue; };
             let (Some(computed), Some(transform)) = (world.get::<ComputedNode>(current), world.get::<UiGlobalTransform>(current)) else { continue; };
             let mut bounds = Rect::from_center_size(transform.translation, computed.size());
-            if let Some(clip) = world.get::<bevy::ui::CalculatedClip>(current) { bounds = bounds.intersect(clip.clip); }
+            if let Some(clip) = world.get::<bevy::ui::CalculatedClip>(current) { bounds = lince_interface::native::clipped_rect(bounds, clip); }
             if bounds.size().min_element() <= 0.0 { continue; }
             let axes = [node.overflow.x == OverflowAxis::Scroll, node.overflow.y == OverflowAxis::Scroll];
             let delta: [f64; 2] = std::array::from_fn(|axis| {
@@ -807,7 +807,7 @@ fn configured_rules_gate_presented_readiness_reject_late_snapshots_and_leave_a_q
             if schedules.get(PostStartup).is_none() { let _ = schedules.insert(bevy::ecs::schedule::Schedule::new(PostStartup)); }
             let mut incoming = Some(incoming);
             schedules.get_mut(PostStartup).unwrap().add_systems(move |mut bridge: NonSendMut<native::cell_bridge::CellBridge>| {
-                bridge.outgoing = outgoing.clone();
+                bridge.outgoing = outgoing.clone().into();
                 bridge.incoming = incoming.take().unwrap();
                 bridge.outgoing.try_send(native::cell_bridge::records_subscription()).unwrap();
             });

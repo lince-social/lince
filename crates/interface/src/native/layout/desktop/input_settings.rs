@@ -301,7 +301,11 @@ pub(crate) fn disable(world: &mut World, entity: Entity, disabled: bool) {
 
 pub(crate) fn caption(world: &mut World, control: (Entity, Entity), value: &str) {
     text(world, control.1, value);
-    if let Some(mut node) = world.get_mut::<bevy::a11y::AccessibilityNode>(control.0)
+    accessibility_label(world, control.0, value);
+}
+
+pub(crate) fn accessibility_label(world: &mut World, entity: Entity, value: &str) {
+    if let Some(mut node) = world.get_mut::<bevy::a11y::AccessibilityNode>(entity)
         && node.label() != Some(value)
     {
         node.set_label(value);

@@ -48,15 +48,17 @@ struct View {
     scroll: f32,
     rendered: Option<Calendar>,
     feed: Option<crate::native::protein_area::FeedVersion<'static>>,
-    picker_key: String,
+    picker_revision: Option<u64>,
     projection_revision: Option<u64>,
+    source: Option<Entity>,
+    dirty: bool,
     body: Option<Entity>,
     selector: Option<Selector>,
     page: usize,
     error: Option<String>,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Selector {
     Timezone,
     Month,
@@ -127,7 +129,7 @@ pub fn spawn(
 }
 
 fn scroll(
-    mut event: On<Pointer<bevy::picking::events::Scroll>>,
+    mut event: On<PointerScroll>,
     mut views: Query<&mut View>,
     mut commands: Commands,
 ) {
@@ -196,30 +198,33 @@ fn update(world: &mut World) {
             continue;
         }
         picker::position(world, owner);
-        let picker_key = picker::sync(world, owner);
+        let picker_revision = picker::sync(world, owner);
         projection::maintain(world, owner);
-        let feed = area(world, owner)
+        if !crate::native::output_views::presents_entity(world, owner) {
+            continue;
+        }
+        let source = area(world, owner);
+        let feed = source
             .and_then(|a| crate::native::protein_area::calendar_feed(world, a).map(|(_, key)| key));
-        let picker_key = if feed.is_none() {
-            picker_key.as_deref().unwrap_or("")
-        } else {
-            ""
-        };
+        let picker_revision = feed.is_none().then_some(picker_revision).flatten();
         let projection_revision = world
             .get::<projection::Feed>(owner)
             .map(|feed| feed.revision);
         let current = &world.get::<CalendarSand>(owner).unwrap().0;
         let view = world.get::<View>(owner).unwrap();
-        if view.rendered.as_ref() != Some(current)
+        if view.dirty
+            || view.rendered.as_ref() != Some(current)
+            || view.source != source
             || view.feed != feed
-            || view.picker_key != picker_key
+            || view.picker_revision != picker_revision
             || view.projection_revision != projection_revision
         {
             let feed = feed.map(crate::native::protein_area::FeedVersion::into_owned);
             let mut view = world.get_mut::<View>(owner).unwrap();
             view.feed = feed;
-            view.picker_key = picker_key.to_owned();
+            view.picker_revision = picker_revision;
             view.projection_revision = projection_revision;
+            view.source = source;
             ui::render(world, owner);
         }
     }

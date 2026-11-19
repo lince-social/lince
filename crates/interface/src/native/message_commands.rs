@@ -14,6 +14,13 @@ pub(crate) struct Command {
     pub insert: String,
 }
 
+#[derive(Clone, Copy)]
+pub(crate) struct AgentCommand<'a> {
+    pub name: &'a str,
+    pub description: &'a str,
+    pub hint: &'a str,
+}
+
 #[derive(Resource, Default)]
 pub(crate) struct Catalog(HashMap<String, Arc<[PreparedCommand]>>);
 
@@ -164,12 +171,62 @@ pub(crate) fn update(world: &mut World, thread: &str, commands: Vec<Command>) {
             .map(|entry| &entry.command)
             .eq(commands.iter())
     }) {
+        nucleus::performance::add("message-command-catalogs-retained", 1);
         return;
     }
+    publish(world, thread, commands.into_iter());
+}
+
+pub(crate) fn update_agent<'a>(
+    world: &mut World,
+    thread: &str,
+    title: &str,
+    commands: impl Iterator<Item = AgentCommand<'a>> + Clone,
+) {
+    if catalog(world, thread).is_some_and(|previous| {
+        previous
+            .iter()
+            .map(|entry| {
+                let command = &entry.command;
+                (
+                    command.name.as_str(),
+                    command.description.as_str(),
+                    command.hint.as_str(),
+                    command.target.strip_prefix("Agent · "),
+                    command.insert.strip_prefix("/agent:"),
+                )
+            })
+            .eq(commands.clone().map(|command| {
+                (
+                    command.name,
+                    command.description,
+                    command.hint,
+                    Some(title),
+                    Some(command.name),
+                )
+            }))
+    }) {
+        nucleus::performance::add("message-command-catalogs-retained", 1);
+        return;
+    }
+    let target = format!("Agent · {title}");
+    publish(
+        world,
+        thread,
+        commands.map(|command| Command {
+            name: command.name.into(),
+            description: command.description.into(),
+            hint: command.hint.into(),
+            target: target.clone(),
+            insert: format!("/agent:{}", command.name),
+        }),
+    );
+}
+
+fn publish(world: &mut World, thread: &str, commands: impl Iterator<Item = Command>) {
     let _preparation = nucleus::performance::Span::new("message-command-catalog-preparation");
     nucleus::performance::add("message-command-catalogs-prepared", 1);
     let commands: Arc<[PreparedCommand]> = commands
-        .into_iter()
         .map(PreparedCommand::new)
         .collect::<Vec<_>>()
         .into();
@@ -304,8 +361,6 @@ pub(crate) fn keyboard(world: &mut World) {
         .iter(world)
         .find(|(_, picker)| Some(picker.search) == focus)
         .and_then(|(owner, picker)| {
-            // Keyboard input runs before refresh; resolve against current input
-            // and catalog rather than accepting a stale displayed selection.
             let search = world
                 .get::<EditableText>(picker.search)
                 .map(|text| text.value().to_cow().to_lowercase())

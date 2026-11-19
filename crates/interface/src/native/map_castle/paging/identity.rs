@@ -42,7 +42,6 @@ pub(in super::super) struct Key {
 
 impl std::fmt::Debug for Key {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // Request equality must not expose viewer/invitation data in diagnostics.
         f.debug_struct("MapRequestKey").finish_non_exhaustive()
     }
 }
@@ -65,7 +64,6 @@ fn source(world: &World, owner: Entity) -> (Option<&Config>, Option<FeedVersion<
     let Some(id) = &sand.area else {
         return (None, None);
     };
-    // Resolve current scope and source every time; only pure preparation is retained.
     let scope = ui::scope(world, owner);
     let mut stack = scope.map(|(root, _)| root).into_iter().collect::<Vec<_>>();
     while let Some(entity) = stack.pop() {
@@ -147,7 +145,6 @@ pub(super) fn prepare(world: &mut World, owner: Entity) -> Arc<Prepared> {
     };
     let same_query =
         previous.is_some_and(|previous| previous.prepared.key.context.query == query_identity);
-    // Rejected drafts remain live; an unchanged failure has no new page identity.
     if same_config && same_scope && same_version && same_bounds && same_query {
         return previous.unwrap().prepared.clone();
     }
@@ -165,9 +162,6 @@ pub(super) fn prepare(world: &mut World, owner: Entity) -> Arc<Prepared> {
             version: version.map(FeedVersion::into_owned),
         })
     };
-    // Match the former JSON identity: non-finite coordinates encoded as null;
-    // finite signed zero retains its distinct representation. The raw bounds
-    // above remain the actual request values.
     let identity_bounds = bounds.map(|value| value.is_finite().then(|| value.to_bits()));
     let key = previous
         .filter(|previous| {

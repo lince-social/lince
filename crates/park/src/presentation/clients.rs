@@ -56,6 +56,8 @@ impl UiMaterial for ClientMaterial {
 }
 
 #[derive(Resource, ExtractResource, Clone, Default)]
+
+#[extract_app(bevy::render::RenderApp)]
 struct Textures(HashMap<AssetId<Image>, wgpu::Texture>);
 
 fn imported_image(width: u32, height: u32, format: wgpu::TextureFormat) -> Image {
@@ -96,7 +98,7 @@ pub(super) fn install(app: &mut App) -> Result<(), ProbeFailure> {
         .resource_mut::<Assets<Shader>>()
         .insert(
             SHADER.id(),
-            Shader::from_wgsl(include_str!("clients/tree.wgsl"), "park/application.wgsl"),
+            Shader::from_wesl(include_str!("clients/tree.wesl"), "park/application.wesl"),
         )
         .map_err(|error| input_failure(&error.to_string()))?;
     app.sub_app_mut(RenderApp).add_systems(

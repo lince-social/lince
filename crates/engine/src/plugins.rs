@@ -17,9 +17,6 @@ fn invalid(message: impl Into<String>) -> EngineError {
     EngineError::Consequence(message.into())
 }
 
-// A catalog is a descriptive snapshot, never authorization to execute a plugin.
-// Resolve its dependency closure once from that snapshot rather than invoking
-// the live approval reader (and cloning the whole host catalog) for each row.
 fn catalog_availability(packages: &[Package], approvals: &[(String, String)]) -> Vec<bool> {
     let _timing = crate::performance::Span::new("sync-plugin-catalog-dependencies");
     let approvals: HashMap<_, _> = approvals
@@ -61,8 +58,6 @@ fn catalog_availability(packages: &[Package], approvals: &[(String, String)]) ->
             }
         }
     }
-    // As in the live reader, a cycle is acceptable when every reachable
-    // package exists and has its exact current digest approved.
     crate::performance::add("sync-plugin-catalog-dependencies", edges);
     enabled
 }

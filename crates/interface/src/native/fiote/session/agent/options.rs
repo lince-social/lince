@@ -1,6 +1,19 @@
 use super::*;
 use serde_json::Value;
 
+const SETTINGS: [(&str, &[&str]); 4] = [
+    ("Provider", &["provider"]),
+    ("Model", &["model"]),
+    (
+        "Thinking level",
+        &["thought_level", "thinking", "reasoning", "effort"],
+    ),
+    (
+        "Fast / normal",
+        &["speed", "fast", "service_tier", "service tier"],
+    ),
+];
+
 pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Option<&FioteStatus>) {
     crate::native::edit_mode::label(world, content, "Model and response settings", 18.0);
     crate::native::edit_mode::label(
@@ -73,30 +86,8 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
             crate::native::edit_mode::label(world, content, description, 13.0);
         }
     }
-    for (label, hints) in [
-        ("Provider", &["provider"][..]),
-        ("Model", &["model"][..]),
-        (
-            "Thinking level",
-            &["thought_level", "thinking", "reasoning", "effort"][..],
-        ),
-        (
-            "Fast / normal",
-            &["speed", "fast", "service_tier", "service tier"][..],
-        ),
-    ] {
-        if !options.iter().any(|option| {
-            let title = format!(
-                "{} {}",
-                option["id"].as_str().unwrap_or(""),
-                option["name"].as_str().unwrap_or("")
-            )
-            .to_lowercase();
-            !choices(option).is_empty()
-                && hints
-                    .iter()
-                    .any(|hint| title.contains(hint) || option["category"].as_str() == Some(*hint))
-        }) {
+    for ((label, _), offered) in SETTINGS.into_iter().zip(offered(options)) {
+        if !offered {
             let message = if label == "Provider"
                 && saved
                     .and_then(|saved| saved.agent_info.as_ref())
@@ -112,6 +103,53 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
     }
 }
 
+fn offered(options: &[Value]) -> [bool; 4] {
+    let _preparation = nucleus::performance::Span::new("fiote-option-availability-preparation");
+    let mut offered = [false; 4];
+    for option in options {
+        if offered.iter().all(|value| *value) {
+            break;
+        }
+        if option["type"] != "boolean"
+            && (option["type"] != "select" || select_choices(option).next().is_none())
+        {
+            continue;
+        }
+        let title = format!(
+            "{} {}",
+            option["id"].as_str().unwrap_or(""),
+            option["name"].as_str().unwrap_or("")
+        )
+        .to_lowercase();
+        let category = option["category"].as_str();
+        for ((_, hints), present) in SETTINGS.iter().zip(&mut offered) {
+            if !*present {
+                *present = hints
+                    .iter()
+                    .any(|hint| title.contains(hint) || category == Some(*hint));
+            }
+        }
+        nucleus::performance::add("fiote-option-classifications", 1);
+    }
+    offered
+}
+
+fn select_choices(option: &Value) -> impl Iterator<Item = (Option<&str>, &str, &str)> {
+    option["options"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .flat_map(|entry| {
+            let group = entry["options"].as_array();
+            let name = group.map(|_| entry["name"].as_str().unwrap_or("Models"));
+            let entries =
+                group.map_or_else(|| std::slice::from_ref(entry), |group| group.as_slice());
+            entries.iter().filter_map(move |choice| {
+                Some((name, choice["name"].as_str()?, choice["value"].as_str()?))
+            })
+        })
+}
+
 pub(in crate::native::fiote::session) fn choices(option: &Value) -> Vec<(String, Value)> {
     if option["type"] == "boolean" {
         return vec![("Off".into(), false.into()), ("On".into(), true.into())];
@@ -119,25 +157,14 @@ pub(in crate::native::fiote::session) fn choices(option: &Value) -> Vec<(String,
     if option["type"] != "select" {
         return Vec::new();
     }
-    let mut choices = Vec::new();
-    for entry in option["options"].as_array().into_iter().flatten() {
-        if let Some(group) = entry["options"].as_array() {
-            for choice in group {
-                if let (Some(name), Some(value)) =
-                    (choice["name"].as_str(), choice["value"].as_str())
-                {
-                    choices.push((
-                        format!("{} · {name}", entry["name"].as_str().unwrap_or("Models")),
-                        value.into(),
-                    ));
-                }
-            }
-        } else if let (Some(name), Some(value)) = (entry["name"].as_str(), entry["value"].as_str())
-        {
-            choices.push((name.into(), value.into()));
-        }
-    }
-    choices
+    select_choices(option)
+        .map(|(group, name, value)| {
+            (
+                group.map_or_else(|| name.into(), |group| format!("{group} · {name}")),
+                value.into(),
+            )
+        })
+        .collect()
 }
 
 fn submit(

@@ -691,7 +691,6 @@ pub(super) fn render_result(world: &mut World, owner: Entity, result: &Value, pa
 }
 
 pub(super) fn render_local_result(world: &mut World, owner: Entity, result: &Value) {
-    // The remote review's local projection never supplied a checked timestamp.
     render_analysis(world, owner, &result["local"], &Value::Null, 0);
 }
 

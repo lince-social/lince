@@ -12,8 +12,9 @@ use tokio::{
 };
 
 mod requests;
+pub(crate) mod replies;
 pub(crate) use requests::EditSequence;
-pub use requests::Sender;
+pub use requests::{Permit, Sender};
 
 mod recovery;
 mod speech_scope;

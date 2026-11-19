@@ -451,9 +451,6 @@ fn watch_source(
                 result = facts.recv() => !matches!(result, Err(tokio::sync::broadcast::error::RecvError::Closed)),
             };
             if !available { break; }
-            // Facts only invalidate this observation. Consume the backlog
-            // already present, then take one fresh sample; later arrivals stay
-            // queued for another pass. This adds no coalescing timer.
             let mut coalesced = 0;
             for _ in 0..facts.len() {
                 if facts.try_recv().is_err() { break; }
@@ -1336,7 +1333,7 @@ mod tests {
             app.world()
                 .get::<SimulationCastle>(restored)
                 .unwrap()
-                .scenario,
+                .scenario.as_ref(),
             serde_json::to_string_pretty(&edited).unwrap()
         );
     }
@@ -1723,10 +1720,7 @@ mod tests {
                 loop {
                     app.update();
                     if app.world().get::<LiveWatch>(restored).is_some_and(|watch| {
-                        watch
-                            .updates
-                            .borrow()
-                            .starts_with("Captured Records changed")
+                        watch.updates.borrow().records == LiveRecords::Changed
                     }) {
                         break;
                     }

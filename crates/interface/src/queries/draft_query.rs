@@ -6,9 +6,6 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
-/// Authored query JSON and its pure preparation share one lifetime. Mutable
-/// access detaches shared data and retires every derived value before writing.
-/// Serialization contains only the original JSON, never prepared state.
 #[derive(Clone)]
 pub struct DraftQuery(Arc<Snapshot>);
 

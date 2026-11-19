@@ -8,7 +8,6 @@ use std::{
 #[derive(Default)]
 pub(super) struct Held {
     logical: BTreeMap<KeyCode, Key>,
-    // Event consumers retain this immutable membership view across later key changes.
     codes: Option<Arc<[KeyCode]>>,
 }
 

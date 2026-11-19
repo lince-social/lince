@@ -85,6 +85,36 @@ impl TestContext {
         assert_eq!(actual, expected, "Force normalize list mismatch");
         self
     }
+
+    fn expect_is_emoji_or_pictograph_list(self, expected: Vec<bool>) -> Self {
+        let actual: Vec<_> = self
+            .layout_context
+            .info
+            .iter()
+            .map(|(info, _)| info.is_emoji_or_pictograph())
+            .collect();
+        assert_eq!(actual, expected, "Is emoji or pictograph list mismatch");
+        self
+    }
+
+    fn expect_is_variation_selector_list(self, expected: Vec<bool>) -> Self {
+        let actual: Vec<_> = self
+            .layout_context
+            .info
+            .iter()
+            .map(|(info, _)| info.is_variation_selector())
+            .collect();
+        assert_eq!(actual, expected, "Is variation selector list mismatch");
+        self
+    }
+
+    fn boundary_list(&self) -> Vec<Boundary> {
+        self.layout_context
+            .info
+            .iter()
+            .map(|(info, _)| info.boundary)
+            .collect()
+    }
 }
 
 fn verify_analysis(
@@ -108,6 +138,69 @@ fn verify_analysis(
     }
 
     test_context
+}
+
+fn verify_analysis_with_override(
+    text: &str,
+    line_break_override: &crate::LineBreakOverrideFn,
+) -> TestContext {
+    let mut test_context = TestContext::default();
+
+    {
+        let mut builder = test_context.layout_context.ranged_builder(
+            &mut test_context.font_context,
+            text,
+            1.,
+            true,
+        );
+        builder.set_line_break_override(Some(line_break_override));
+        _ = builder.build(text);
+    }
+
+    test_context
+}
+
+#[test]
+fn test_line_break_override_none_matches_default() {
+    let text = "ab/cd ef";
+    let default = verify_analysis(text, |_| {}).boundary_list();
+    let overridden = verify_analysis_with_override(text, &|_| None).boundary_list();
+    assert_eq!(default, overridden);
+}
+
+#[test]
+fn test_line_break_override_suppresses_break_after_slash() {
+    let text = "ab/cd";
+    let default = verify_analysis(text, |_| {}).boundary_list();
+    assert!(default.contains(&Boundary::Line),);
+
+    let overridden = verify_analysis_with_override(text, &|cx| {
+        if cx.before == '/' { Some(false) } else { None }
+    })
+    .boundary_list();
+
+    assert!(!overridden.contains(&Boundary::Line),);
+}
+
+#[test]
+fn test_line_break_override_does_not_suppress_mandatory_break() {
+    let overridden = verify_analysis_with_override("a\nb", &|_| Some(false)).boundary_list();
+
+    assert_eq!(
+        overridden,
+        vec![Boundary::Word, Boundary::Word, Boundary::Mandatory]
+    );
+}
+
+#[test]
+fn test_line_break_override_mandatory_break_takes_precedence() {
+    let overridden = verify_analysis_with_override("a\nb", &|_| Some(true)).boundary_list();
+
+    assert_eq!(
+        overridden,
+        // A mandatory break (e.g. `\n`) takes precedence over a forced line break override.
+        vec![Boundary::Word, Boundary::Line, Boundary::Mandatory]
+    );
 }
 
 #[test]
@@ -1155,4 +1248,11 @@ fn test_whitespace_contiguous_interspersed_in_latin_mixed() {
         Script::Common,
         Script::Latin,
     ]);
+}
+
+#[test]
+fn test_color_emoji_with_non_printing_variation_selector() {
+    verify_analysis("\u{270c}\u{fe0f}", |_| {})
+        .expect_is_emoji_or_pictograph_list(vec![true, false])
+        .expect_is_variation_selector_list(vec![false, true]);
 }

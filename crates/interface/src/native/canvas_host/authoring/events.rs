@@ -213,8 +213,6 @@ pub(super) fn fire(world: &mut World, host: Entity, part: &str, event: &str) {
         };
         for id in &selected.behaviors {
             let behavior = &routes.behaviors[id];
-            // Deserialize at invocation as before: action defaults and current
-            // execution/authority context must not be frozen at installation.
             if let Ok(action) =
                 <engine::actions::Action as serde::Deserialize>::deserialize(&behavior.action)
             {

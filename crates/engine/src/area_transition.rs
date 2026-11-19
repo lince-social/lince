@@ -135,14 +135,14 @@ impl RecordChanges {
         if other.quantity.is_some() {
             next.quantity = other.quantity.clone();
         }
-        next.assign.extend(other.assign.clone());
-        next.unassign.extend(other.unassign.clone());
+        next.assign.extend_from_slice(&other.assign);
+        next.unassign.extend_from_slice(&other.unassign);
         next.assign.sort();
         next.assign.dedup();
         next.unassign.sort();
         next.unassign.dedup();
-        next.assert.extend(other.assert.clone());
-        next.retract.extend(other.retract.clone());
+        next.assert.extend_from_slice(&other.assert);
+        next.retract.extend_from_slice(&other.retract);
         next.assert.sort();
         next.assert.dedup();
         next.retract.sort();
@@ -186,15 +186,7 @@ async fn state(
     target: &str,
     changes: &RecordChanges,
 ) -> Result<RecordState, EngineError> {
-    let exists: i64 = store::sqlx::query_scalar(
-        "SELECT COUNT(*) FROM record WHERE uid = ? AND deleted_at IS NULL",
-    )
-    .bind(target)
-    .fetch_one(&mut **tx)
-    .await?;
-    if exists != 1 {
-        return Err(EngineError::UnknownRecord(target.into()));
-    }
+    let _read = nucleus::performance::Span::new("area-transition-state-read-await");
     let quantity = store::records::quantity_in_transaction(tx, target)
         .await?
         .ok_or_else(|| EngineError::UnknownRecord(target.into()))?

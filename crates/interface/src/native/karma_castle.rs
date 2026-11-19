@@ -3,6 +3,7 @@ use std::sync::Arc;
 mod ailuros_ui;
 pub(crate) mod commands_ui;
 mod history_ui;
+mod incoming;
 mod persistence;
 mod preview_ui;
 mod schedules_ui;
@@ -18,7 +19,7 @@ use std::collections::{HashMap, HashSet};
 
 use crate::native::{
     actions::Action,
-    cell_bridge::{CellMessage, ReceiveCell},
+    cell_bridge::{CellMessage, ReceiveCell, replies},
     workspace::WorkspaceMember,
 };
 pub(crate) use persistence::{SavedKarmaCastle, snapshot};
@@ -79,6 +80,7 @@ pub(crate) fn history(world: &mut World, owner: Entity, uid: &str) {
 
 #[derive(Component)]
 struct View {
+    subscriptions: [String; 4],
     execution: Entity,
     execution_checked: Option<std::time::Instant>,
     controls: Entity,
@@ -93,10 +95,11 @@ struct View {
     form: Entity,
     list: Entity,
     status: Entity,
-    rules: Vec<Rule>,
+    rules: Arc<Vec<Rule>>,
     records: Arc<Vec<Value>>,
     frequencies: Arc<Vec<Value>>,
-    transfers: Vec<Value>,
+    transfers: Arc<Vec<Value>>,
+    completion: ui::choices::Catalog,
     acting_person: Option<String>,
     record_lookup: HashMap<String, usize>,
     frequency_lookup: HashMap<String, usize>,
@@ -104,6 +107,12 @@ struct View {
     submitted: Option<Draft>,
     ready: bool,
     loaded: [bool; 4],
+}
+
+impl replies::Pending for View {
+    fn pending_id(&self) -> Option<&str> {
+        self.pending.as_deref()
+    }
 }
 
 #[derive(Resource, Default)]
@@ -266,6 +275,9 @@ pub fn spawn(
     let status = crate::native::edit_mode::label(world, owner, "", 12.0);
     world.get_mut::<Node>(status).unwrap().display = Display::None;
     world.entity_mut(owner).insert(View {
+        subscriptions: std::array::from_fn(|index| {
+            format!("karma-castle-{}-{index}", owner.to_bits())
+        }),
         execution,
         execution_checked: None,
         controls,
@@ -280,10 +292,11 @@ pub fn spawn(
         form,
         list,
         status,
-        rules: Vec::new(),
+        rules: Arc::default(),
         records: Arc::default(),
         frequencies: Arc::default(),
-        transfers: Vec::new(),
+        transfers: Arc::default(),
+        completion: Default::default(),
         acting_person: None,
         record_lookup: HashMap::new(),
         frequency_lookup: HashMap::new(),
@@ -369,7 +382,7 @@ fn save(world: &mut World, owner: Entity) {
         }),
         rule: draft.rule.clone(),
         expected_revision: draft.revision,
-        fields: draft.fields.clone().map(|field| field.input()),
+        fields: draft.fields.each_ref().map(model::FieldDraft::input),
         request_id: request_id.clone(),
     };
     match send(
@@ -454,7 +467,12 @@ fn lookup(rows: &[Value]) -> HashMap<String, usize> {
         .collect()
 }
 
-fn maintain(world: &mut World) {
+fn maintain(
+    world: &mut World,
+    candidates: &mut QueryState<Entity, With<KarmaCastle>>,
+    mut owners: Local<Vec<Entity>>,
+) {
+    let _maintain = nucleus::performance::Span::new("karma-maintenance");
     let stale: Vec<_> = world
         .resource::<Requests>()
         .subscriptions
@@ -463,7 +481,7 @@ fn maintain(world: &mut World) {
         .map(|(id, _)| id.clone())
         .collect();
     for id in stale {
-        let sender = world.resource::<Requests>().senders.get(&id).cloned();
+        let sender = world.resource::<Requests>().senders.get(&id);
         if sender.is_none_or(|sender| {
             sender.is_closed()
                 || sender
@@ -474,15 +492,23 @@ fn maintain(world: &mut World) {
             world.resource_mut::<Requests>().senders.remove(&id);
         }
     }
-    let owners: Vec<_> = world
-        .query_filtered::<Entity, With<KarmaCastle>>()
-        .iter(world)
-        .collect();
-    world
-        .resource_mut::<Requests>()
+    owners.extend(candidates.iter(world));
+    let count = owners.len();
+    nucleus::performance::add("karma-maintenance-owners", count as u64);
+    let stale: Vec<_> = world
+        .resource::<Requests>()
         .executions
-        .retain(|_, owner| owners.contains(owner));
-    for owner in owners {
+        .iter()
+        .filter(|(_, owner)| candidates.get(world, **owner).is_err())
+        .map(|(id, _)| id.clone())
+        .collect();
+    if !stale.is_empty() {
+        let mut requests = world.resource_mut::<Requests>();
+        for id in stale {
+            requests.executions.remove(&id);
+        }
+    }
+    for owner in owners.drain(..) {
         let due = world
             .get::<View>(owner)
             .unwrap()
@@ -515,10 +541,11 @@ fn maintain(world: &mut World) {
             }
         }
         for index in 0..4 {
-            let id = format!("karma-castle-{}-{index}", owner.to_bits());
-            if world.resource::<Requests>().subscriptions.contains_key(&id) {
+            let id = &world.get::<View>(owner).unwrap().subscriptions[index];
+            if world.resource::<Requests>().subscriptions.contains_key(id) {
                 continue;
             }
+            let id = id.clone();
             match send(
                 world,
                 owner,
@@ -543,83 +570,105 @@ fn maintain(world: &mut World) {
             }
         }
     }
+    if count == 0 {
+        *owners = Vec::new();
+    }
 }
 
-fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor<CellMessage>>) {
-    let messages: Vec<_> = cursor
-        .read(world.resource::<Messages<CellMessage>>())
-        .map(|message| message.0.clone())
-        .collect();
-    for message in messages.iter().map(|message| message.as_ref()) {
-        let execution_id = match &message {
-            ServerMessage::ActionOk { id, .. } | ServerMessage::Error { id, .. } => Some(id),
-            _ => None,
+fn receive(
+    world: &mut World,
+    mut cursor: Local<bevy::ecs::message::MessageCursor<CellMessage>>,
+    mut wave: Local<replies::Wave>,
+    mut routes: Local<incoming::Routes>,
+) {
+    use incoming::Reply;
+    let _receive = nucleus::performance::Span::new("karma-reply-processing");
+    wave.capture(
+        &mut cursor,
+        world.resource::<Messages<CellMessage>>(),
+        |message| replies::ordinary(message).is_some(),
+    );
+    if wave.len() == 0 {
+        routes.owners = Vec::new();
+    }
+    for sequence in wave.drain() {
+        let message = replies::message(world.resource::<Messages<CellMessage>>(), sequence);
+        let Some(reply) = routes.select(world, message) else {
+            continue;
         };
-        if let Some(owner) =
-            execution_id.and_then(|id| world.resource_mut::<Requests>().executions.remove(id))
-        {
-            if let Some(view) = world.get::<View>(owner) {
-                let label = view.execution;
-                let text = match &message {
-                    ServerMessage::ActionOk {
-                        data: Some(data), ..
-                    } if data["karma"]["runtime_failure"]["message"].is_string() => {
-                        format!(
-                            "Karma {}: {}",
-                            if data["karma"]["runtime_failure"]["retrying"] == true {
-                                "is retrying"
-                            } else {
-                                "stopped"
-                            },
-                            data["karma"]["runtime_failure"]["message"]
+        let retained = message.clone();
+        nucleus::performance::add("karma-replies-retained", 1);
+        let message = retained.as_ref();
+        match (reply, message) {
+            (Reply::Execution(owner), _) => {
+                world
+                    .resource_mut::<Requests>()
+                    .executions
+                    .remove(replies::action_id(message).unwrap());
+                if let Some(view) = world.get::<View>(owner) {
+                    let label = view.execution;
+                    let text = match message {
+                        ServerMessage::ActionOk {
+                            data: Some(data), ..
+                        } if data["karma"]["runtime_failure"]["message"].is_string() => {
+                            format!(
+                                "Karma {}: {}",
+                                if data["karma"]["runtime_failure"]["retrying"] == true {
+                                    "is retrying"
+                                } else {
+                                    "stopped"
+                                },
+                                data["karma"]["runtime_failure"]["message"]
+                                    .as_str()
+                                    .unwrap()
+                            )
+                        }
+                        ServerMessage::ActionOk {
+                            data: Some(data), ..
+                        } if data["karma"]["executing"] == true => {
+                            "Karma is running on this Cell.".to_owned()
+                        }
+                        ServerMessage::ActionOk {
+                            data: Some(data), ..
+                        } => format!(
+                            "Karma is not running: {}. Check My devices and Karma authority.",
+                            data["karma"]["reason"]
                                 .as_str()
-                                .unwrap()
-                        )
-                    }
-                    ServerMessage::ActionOk {
-                        data: Some(data), ..
-                    } if data["karma"]["executing"] == true => {
-                        "Karma is running on this Cell.".to_owned()
-                    }
-                    ServerMessage::ActionOk {
-                        data: Some(data), ..
-                    } => format!(
-                        "Karma is not running: {}. Check My devices and Karma authority.",
-                        data["karma"]["reason"]
-                            .as_str()
-                            .unwrap_or("Execution is unavailable")
-                    ),
-                    ServerMessage::Error { message, .. } => {
-                        format!("Could not check Karma execution: {message}")
-                    }
-                    _ => "Could not check Karma execution.".to_owned(),
-                };
-                world.get_mut::<Text>(label).unwrap().0 = text;
+                                .unwrap_or("Execution is unavailable")
+                        ),
+                        ServerMessage::Error { message, .. } => {
+                            format!("Could not check Karma execution: {message}")
+                        }
+                        _ => "Could not check Karma execution.".to_owned(),
+                    };
+                    world.get_mut::<Text>(label).unwrap().0 = text;
+                }
             }
-            continue;
-        }
-        if schedules_ui::receive(world, &message) {
-            continue;
-        }
-        if preview_ui::receive(world, &message) {
-            continue;
-        }
-        if commands_ui::receive(world, &message) {
-            continue;
-        }
-        if ailuros_ui::receive(world, &message) {
-            continue;
-        }
-        if history_ui::receive(world, &message) {
-            continue;
-        }
-        match message {
-            ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows } => {
-                let Some((owner, index)) =
-                    world.resource::<Requests>().subscriptions.get(id).copied()
-                else {
-                    continue;
+            (Reply::Schedule(owner), _) => schedules_ui::receive(world, owner, message),
+            (Reply::Preview(owner), _) => preview_ui::receive(world, owner, message),
+            (Reply::Commands(owner), _) => commands_ui::receive(world, owner, message),
+            (Reply::Devices(reply), _) => ailuros_ui::receive(world, reply, message),
+            (Reply::History(owner), _) => history_ui::receive(world, owner, message),
+            (Reply::Reading(entity), _) => {
+                world
+                    .resource_mut::<Requests>()
+                    .readings
+                    .remove(replies::action_id(message).unwrap());
+                let text = match message {
+                    ServerMessage::ActionOk { data, .. } => data
+                        .as_ref()
+                        .and_then(|data| data["value"].as_str())
+                        .unwrap_or("No reading")
+                        .to_owned(),
+                    ServerMessage::Error { message, .. } => message.clone(),
+                    _ => unreachable!("selected Karma reading reply"),
                 };
+                ui::reading_reply(world, entity, text);
+            }
+            (
+                Reply::Rows(owner, index),
+                ServerMessage::Snapshot { rows, .. } | ServerMessage::Update { rows, .. },
+            ) => {
                 let Some(mut view) = world.get_mut::<View>(owner) else {
                     continue;
                 };
@@ -632,11 +681,11 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                             .collect::<Result<Vec<Rule>, _>>()
                         {
                             Ok(rules) => {
-                                if view.ready && view.rules == rules {
+                                if view.ready && view.rules.as_ref() == &rules {
                                     continue;
                                 }
                                 view.ready = true;
-                                view.rules = rules;
+                                view.rules = Arc::new(rules);
                                 ui::capture(world, owner);
                                 ui::render_list(world, owner);
                             }
@@ -667,17 +716,23 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                         let acting = rows
                             .iter()
                             .find(|row| row["kind"] == "transfer_context")
-                            .and_then(|row| row["acting_person"].as_str())
-                            .map(str::to_owned);
-                        let transfers: Vec<_> = rows
-                            .into_iter()
-                            .filter(|row| row["kind"] != "transfer_context").cloned()
-                            .collect();
-                        if view.transfers == transfers && view.acting_person == acting {
+                            .and_then(|row| row["acting_person"].as_str());
+                        let transfers = rows.iter().filter(|row| row["kind"] != "transfer_context");
+                        let transfers_changed = !transfers.clone().eq(view.transfers.iter());
+                        let acting_changed = view.acting_person.as_deref() != acting;
+                        if !transfers_changed && !acting_changed {
                             continue;
                         }
-                        view.transfers = transfers;
-                        view.acting_person = acting;
+                        if transfers_changed {
+                            view.transfers = Arc::new(transfers.cloned().collect());
+                            nucleus::performance::add(
+                                "karma-transfer-rows-published",
+                                view.transfers.len() as u64,
+                            );
+                        }
+                        if acting_changed {
+                            view.acting_person = acting.map(str::to_owned);
+                        }
                     }
                 }
                 schedules_ui::dirty(world, owner);
@@ -696,26 +751,8 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                     ui::Command::EditCell(uid, 0).apply(world, owner);
                 }
             }
-            ServerMessage::ActionOk { id, data, .. } => {
-                let reading = world.resource_mut::<Requests>().readings.remove(id);
-                if let Some(entity) = reading {
-                    ui::reading_reply(
-                        world,
-                        entity,
-                        data.as_ref()
-                            .and_then(|data| data["value"].as_str())
-                            .unwrap_or("No reading")
-                            .into(),
-                    );
-                    continue;
-                }
-                let owners: Vec<_> = world
-                    .query::<(Entity, &View)>()
-                    .iter(world)
-                    .filter(|(_, view)| view.pending.as_ref() == Some(&id))
-                    .map(|(owner, _)| owner)
-                    .collect();
-                for owner in owners {
+            (Reply::Action, ServerMessage::ActionOk { .. }) => {
+                for owner in routes.owners.drain(..) {
                     ui::capture(world, owner);
                     world.get_mut::<View>(owner).unwrap().pending = None;
                     let submitted = world.get_mut::<View>(owner).unwrap().submitted.take();
@@ -754,7 +791,7 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                             view.editing = None;
                         }
                         view.deleting.retain(|uid| uid != &deleted);
-                        view.rules.retain(|rule| rule.uid != deleted);
+                        Arc::make_mut(&mut view.rules).retain(|rule| rule.uid != deleted);
                         delete_next(world, owner);
                     }
                     ui::render_form(world, owner);
@@ -770,27 +807,8 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                     }
                 }
             }
-            ServerMessage::Error { id, message, .. } => {
-                let reading = world.resource_mut::<Requests>().readings.remove(id);
-                if let Some(entity) = reading {
-                    ui::reading_reply(world, entity, message.clone());
-                    continue;
-                }
-                let owners: Vec<_> = world
-                    .query::<(Entity, &View)>()
-                    .iter(world)
-                    .filter(|(owner, view)| {
-                        view.pending.as_ref() == Some(&id)
-                            || world
-                                .resource::<Requests>()
-                                .subscriptions
-                                .get(id)
-                                .is_some_and(|(entity, _)| entity == owner)
-                            || id == crate::native::cell_bridge::CONNECTION
-                    })
-                    .map(|(owner, _)| owner)
-                    .collect();
-                for owner in owners {
+            (Reply::Error, ServerMessage::Error { message, .. }) => {
+                for owner in routes.owners.drain(..) {
                     let mut view = world.get_mut::<View>(owner).unwrap();
                     view.pending = None;
                     view.submitted = None;
@@ -803,7 +821,7 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                     status(world, owner, message);
                 }
             }
-            _ => {}
+            _ => unreachable!("selected Karma reply kind"),
         }
     }
 }

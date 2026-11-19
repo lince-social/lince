@@ -246,8 +246,6 @@ impl Rows {
         let previous_index = previous
             .as_ref()
             .and_then(|control| self.source.iter().position(|row| row.uid == control.uid));
-        // Only changed entries capture new strings. The ordered source comparison
-        // above does not materialize values on an unchanged refresh.
         for (index, uid) in order.iter().enumerate() {
             let entry = entries.and_then(|entries| entries.get(uid));
             if let Some(previous) = self.source.get_mut(index) {

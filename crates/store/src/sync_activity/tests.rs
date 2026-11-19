@@ -202,7 +202,7 @@ async fn file_backed_retention_query_probe() {
         let mut work = Vec::new();
         for (variant, query) in [("legacy", LEGACY_QUERY), ("candidate", PRUNE_QUERY)] {
             let plan: Vec<(i64, i64, i64, String)> =
-                sqlx::query_as(&format!("EXPLAIN QUERY PLAN {query}"))
+                sqlx::query_as(sqlx::AssertSqlSafe(format!("EXPLAIN QUERY PLAN {query}")))
                     .bind(now)
                     .fetch_all(&mut *connection)
                     .await

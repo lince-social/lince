@@ -1130,7 +1130,7 @@ async fn session_access_out_of_band_epoch_damage_refuses_instead_of_defaulting()
         .fetch_all(&mut *connection).await.unwrap();
     for guard in guards {
         let query = format!("DROP TRIGGER \"{}\"", guard.replace('"', "\"\""));
-        store::sqlx::query(&query)
+        store::sqlx::query(store::sqlx::AssertSqlSafe(query))
             .execute(&mut *connection)
             .await
             .unwrap();

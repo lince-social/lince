@@ -114,10 +114,10 @@ pub async fn install(pool: &SqlitePool) -> Result<(), StoreError> {
                 "(SELECT importing FROM transfer_sync_control WHERE id = 1) = 0 AND {local} IS NOT NULL{promise}{changed}{}",
                 policy::capture_condition(&name, operation, &key)
             );
-            sqlx::query(&format!(
+            sqlx::query(sqlx::AssertSqlSafe(format!(
                 "DROP TRIGGER IF EXISTS {}",
                 schema::quoted(&format!("transfer_sync_{operation}_{name}"))
-            ))
+            )))
             .execute(&mut *tx)
             .await?;
             let sql = format!(
@@ -125,7 +125,7 @@ pub async fn install(pool: &SqlitePool) -> Result<(), StoreError> {
                 schema::quoted(&format!("transfer_sync_{operation}_{name}")),
                 schema::quoted(&name)
             );
-            sqlx::query(&sql).execute(&mut *tx).await?;
+            sqlx::query(sqlx::AssertSqlSafe(sql.as_str())).execute(&mut *tx).await?;
         }
     }
     tx.commit().await
@@ -312,7 +312,7 @@ async fn prerequisites(
     let table = schema::Table::read(connection, "record").await?;
     for uid in records {
         let sql = format!("SELECT {} FROM record WHERE uid = ?", table.json(""));
-        let Some(raw) = sqlx::query_scalar::<_, String>(&sql)
+        let Some(raw) = sqlx::query_scalar::<_, String>(sqlx::AssertSqlSafe(sql.as_str()))
             .bind(uid)
             .fetch_optional(&mut *connection)
             .await?
@@ -335,7 +335,7 @@ async fn prerequisites(
     let table = schema::Table::read(connection, "concept").await?;
     for uid in concepts {
         let sql = format!("SELECT {} FROM concept WHERE uid = ?", table.json(""));
-        if let Some(raw) = sqlx::query_scalar::<_, String>(&sql)
+        if let Some(raw) = sqlx::query_scalar::<_, String>(sqlx::AssertSqlSafe(sql.as_str()))
             .bind(uid)
             .fetch_optional(&mut *connection)
             .await?
@@ -355,7 +355,7 @@ async fn prerequisites(
             "SELECT {} FROM identity_key WHERE actor_uid = ? ORDER BY key_id",
             table.json("")
         );
-        for raw in sqlx::query_scalar::<_, String>(&sql)
+        for raw in sqlx::query_scalar::<_, String>(sqlx::AssertSqlSafe(sql.as_str()))
             .bind(actor)
             .fetch_all(&mut *connection)
             .await?

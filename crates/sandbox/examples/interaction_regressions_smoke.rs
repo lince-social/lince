@@ -119,7 +119,7 @@ fn exercise(world: &mut World) {
             .entity_mut(sand)
             .insert(lince_sandbox::icons::Tooltip("Inspect this Sand".into()))
             .observe(
-                |mut event: On<Pointer<bevy::picking::events::Scroll>>,
+                |mut event: On<PointerScroll>,
                  mut fixture: ResMut<Fixture>| {
                     fixture.scrolls += 1;
                     event.propagate(false);

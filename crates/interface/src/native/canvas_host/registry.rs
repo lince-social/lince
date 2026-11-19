@@ -8,8 +8,6 @@ struct CachedRegistry {
 }
 
 thread_local! {
-    // Retain one current schema per calling thread, not one per workspace or
-    // historical timezone/language. Other defaults are static data.
     static CURRENT: RefCell<Option<CachedRegistry>> = const { RefCell::new(None) };
 }
 
@@ -27,8 +25,6 @@ pub fn registry() -> Vec<api::Descriptor> {
 
 pub(crate) fn shared_registry() -> Arc<Vec<api::Descriptor>> {
     let _prepare = nucleus::performance::Span::new("native-canvas-registry-preparation");
-    // Preserve the previous call-time timezone lookup; do not freeze a machine
-    // setting at startup or rely on an unrelated canvas revision to refresh it.
     let timezone = crate::native::schedule_editor::local_timezone().unwrap_or_else(|| "UTC".into());
     let language = crate::i18n::catalog().language;
     CURRENT.with(|current| {

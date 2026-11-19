@@ -75,6 +75,31 @@ pub struct Window {
     pub timezone: String,
 }
 
+#[derive(Clone, Copy)]
+pub struct Dates(chrono_tz::Tz);
+
+impl Dates {
+    pub fn new(timezone: chrono_tz::Tz) -> Self {
+        Self(timezone)
+    }
+
+    pub fn at(&self, at_ms: i64) -> Option<String> {
+        Some(self.format(chrono::DateTime::from_timestamp_millis(at_ms)?))
+    }
+
+    fn format(&self, time: chrono::DateTime<chrono::Utc>) -> String {
+        time.with_timezone(&self.0).format("%Y-%m-%d").to_string()
+    }
+
+    pub fn value(&self, value: &crate::schedule::TimeValue) -> chrono::NaiveDate {
+        value.date(self.0)
+    }
+
+    pub fn parse(&self, value: &str) -> Option<chrono::NaiveDate> {
+        Some(self.value(&crate::schedule::TimeValue::parse(value).ok()?))
+    }
+}
+
 impl Window {
     pub fn month(year: i32, month: u32, timezone: String) -> Result<Self, String> {
         use chrono::{Datelike, TimeZone};
@@ -104,6 +129,12 @@ impl Window {
         })
     }
     pub fn validate(&self) -> Result<(), String> {
+        self.dates().map(|_| ())
+    }
+
+    pub fn dates(&self) -> Result<Dates, String> {
+        let _prepare = crate::performance::Span::new("projection-window-date-preparation");
+        crate::performance::add("projection-window-date-preparations", 1);
         if self.from_ms < 0
             || self.until_ms <= self.from_ms
             || self.until_ms > (i64::MAX >> crate::hlc::COUNTER_BITS)
@@ -113,17 +144,13 @@ impl Window {
         }
         self.timezone
             .parse::<chrono_tz::Tz>()
-            .map_err(|_| "unknown Calendar timezone".to_string())?;
-        Ok(())
+            .map(Dates)
+            .map_err(|_| "unknown Calendar timezone".to_string())
     }
 
     pub fn date(&self, at_ms: i64) -> Option<String> {
-        Some(
-            chrono::DateTime::from_timestamp_millis(at_ms)?
-                .with_timezone(&self.timezone.parse::<chrono_tz::Tz>().ok()?)
-                .format("%Y-%m-%d")
-                .to_string(),
-        )
+        let time = chrono::DateTime::from_timestamp_millis(at_ms)?;
+        Some(Dates(self.timezone.parse().ok()?).format(time))
     }
 }
 

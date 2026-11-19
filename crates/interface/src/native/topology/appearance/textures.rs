@@ -149,14 +149,23 @@ pub(super) fn import(world: &mut World, owner: Entity, source: PathBuf) -> Resul
 }
 
 pub(super) fn retry(world: &mut World, key: &model::Texture) {
-    if let Some(mut jobs) = world.get_resource_mut::<Jobs>() {
-        jobs.failed.remove(key);
+    if world
+        .get_resource::<Jobs>()
+        .is_some_and(|jobs| jobs.failed.contains_key(key))
+    {
+        world.resource_mut::<Jobs>().failed.remove(key);
     }
 }
 
 pub(super) fn retain(world: &mut World, used: &HashSet<model::Texture>) {
-    if let Some(mut jobs) = world.get_resource_mut::<Jobs>() {
-        jobs.failed.retain(|key, _| used.contains(key));
+    if world
+        .get_resource::<Jobs>()
+        .is_some_and(|jobs| jobs.failed.keys().any(|key| !used.contains(key)))
+    {
+        world
+            .resource_mut::<Jobs>()
+            .failed
+            .retain(|key, _| used.contains(key));
     }
 }
 
@@ -193,16 +202,27 @@ fn upload(world: &mut World, pixels: crate::native::media_sand::Pixels) -> Handl
 }
 
 pub(super) fn poll(world: &mut World, textures: &mut HashMap<model::Texture, Handle<Image>>) {
-    let mut jobs = world.remove_resource::<Jobs>().unwrap_or_default();
-    jobs.pending.retain(
-        |pending| match pending.receiver.lock().unwrap().try_recv() {
+    if world
+        .get_resource::<Jobs>()
+        .is_none_or(|jobs| jobs.pending.is_empty() && jobs.import.is_none())
+    {
+        return;
+    }
+    let _service = nucleus::performance::Span::new("appearance-texture-service");
+    let mut jobs = world.remove_resource::<Jobs>().unwrap();
+    jobs.pending.retain_mut(|pending| {
+        let result = pending.receiver.lock().unwrap().try_recv();
+        if !matches!(&result, Err(mpsc::TryRecvError::Empty)) {
+            nucleus::performance::add("appearance-texture-settlements", 1);
+        }
+        match result {
             Ok(Ok(pixels)) => {
-                textures.insert(pending.key.clone(), upload(world, pixels));
+                textures.insert(std::mem::take(&mut pending.key), upload(world, pixels));
                 false
             }
             Ok(Err(error)) => {
                 jobs.failed.insert(
-                    pending.key.clone(),
+                    std::mem::take(&mut pending.key),
                     format!("Texture unavailable: {error}. Using plain material; Retry to reload."),
                 );
                 false
@@ -210,13 +230,13 @@ pub(super) fn poll(world: &mut World, textures: &mut HashMap<model::Texture, Han
             Err(mpsc::TryRecvError::Empty) => true,
             Err(mpsc::TryRecvError::Disconnected) => {
                 jobs.failed.insert(
-                    pending.key.clone(),
+                    std::mem::take(&mut pending.key),
                     "Texture loading stopped; Retry to reload.".into(),
                 );
                 false
             }
-        },
-    );
+        }
+    });
     let imported =
         jobs.import
             .as_ref()
@@ -228,6 +248,7 @@ pub(super) fn poll(world: &mut World, textures: &mut HashMap<model::Texture, Han
                 }
             });
     if let Some(result) = imported {
+        nucleus::performance::add("appearance-texture-settlements", 1);
         let import = jobs.import.take().unwrap();
         match result {
             Ok(id)
@@ -265,25 +286,28 @@ pub(super) fn get(
     if matches!(kind, model::Texture::Plain) || !kind.valid() {
         return None;
     }
-    if !used.contains(kind) && used.len() >= model::MAX_TEXTURES {
-        return None;
+    if !used.contains(kind) {
+        if used.len() >= model::MAX_TEXTURES {
+            return None;
+        }
+        used.insert(kind.clone());
     }
-    used.insert(kind.clone());
     if let model::Texture::Asset { id } = kind {
         if let Some(image) = textures.get(kind) {
             return Some(image.clone());
+        }
+        if world.get_resource::<Jobs>().is_some_and(|jobs| {
+            jobs.pending.len() >= 2
+                || jobs.failed.contains_key(kind)
+                || jobs.pending.iter().any(|pending| &pending.key == kind)
+        }) {
+            return None;
         }
         let directory = world
             .get_resource::<super::super::assets::AssetDirectory>()?
             .0
             .clone();
         let mut jobs = world.get_resource_or_init::<Jobs>();
-        if jobs.pending.len() >= 2
-            || jobs.failed.contains_key(kind)
-            || jobs.pending.iter().any(|pending| &pending.key == kind)
-        {
-            return None;
-        }
         let source = directory.join(id).join("source.png");
         let (sender, receiver) = mpsc::channel();
         if let Err(error) = std::thread::Builder::new()

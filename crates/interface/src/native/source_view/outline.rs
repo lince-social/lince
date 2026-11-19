@@ -1,5 +1,7 @@
 use super::*;
 use std::collections::BTreeSet;
+#[path = "outline/tree.rs"]
+mod tree;
 
 #[derive(Component, Default)]
 pub(super) struct Outline {
@@ -85,7 +87,7 @@ impl Action for Control {
                 }
             }
         }
-        render(world, owner, data);
+        super::render(world, owner, data);
     }
 }
 
@@ -99,120 +101,33 @@ fn bare(value: &str) -> String {
 }
 
 pub(super) fn render_tree(world: &mut World, owner: Entity, body: Entity, data: &Value) {
+    paint(world, owner, body, tree::Tree::records(data));
+}
+
+fn paint(world: &mut World, owner: Entity, body: Entity, tree: tree::Tree<'_>) {
+    let _prepare = nucleus::performance::Span::new("source-outline-row-preparation");
     if world.get::<Outline>(owner).is_none() {
         world.entity_mut(owner).insert(Outline::default());
     }
     let state = world.get::<Outline>(owner).unwrap();
     let all = state.all;
-    let expanded = state.expanded.clone();
-    let closed = state.closed.clone();
-    let inspecting = state.inspecting.clone();
-    let records = data["records"].as_array().cloned().unwrap_or_default();
-    let documents = data["documents"].as_array().cloned().unwrap_or_default();
-    let titles = records
-        .iter()
-        .filter_map(|record| Some((record["uid"].as_str()?, record["title"].as_str()?)))
-        .collect::<BTreeMap<_, _>>();
-    let mut members_by_base = BTreeMap::<&str, Vec<usize>>::new();
-    for (index, record) in records.iter().enumerate() {
-        if let Some(base) = record["base"].as_str() {
-            members_by_base.entry(base).or_default().push(index);
-        }
-    }
-    let mut nodes: BTreeMap<String, (String, Vec<usize>, Vec<String>)> = BTreeMap::new();
-    for document in &documents {
-        let Some(uri) = document["uri"].as_str() else {
-            continue;
-        };
-        let members = members_by_base.get(uri).cloned().unwrap_or_default();
-        let title = members
-            .first()
-            .and_then(|index| records[*index]["title"].as_str())
-            .map(str::to_owned)
-            .unwrap_or_else(|| link_label(uri));
-        let children = document["children"]
-            .as_array()
-            .into_iter()
-            .flatten()
-            .filter_map(Value::as_str)
-            .map(str::to_owned)
-            .collect();
-        nodes.insert(uri.into(), (title, members, children));
-    }
-    let entry = data["entry"].as_str().map(bare).map(|entry| {
-        documents
-            .iter()
-            .find(|document| document["source_uri"] == entry || document["uri"] == entry)
-            .and_then(|document| document["uri"].as_str())
-            .map(str::to_owned)
-            .unwrap_or(entry)
-    });
-    if let Some(entry) = &entry {
-        if !nodes.contains_key(entry) {
-            let prefix = format!("{}/", entry.trim_end_matches('/'));
-            let descendants = nodes
-                .keys()
-                .filter(|key| key.starts_with(&prefix))
-                .cloned()
-                .collect::<Vec<_>>();
-            if !descendants.is_empty() {
-                nodes.insert(entry.clone(), (link_label(entry), Vec::new(), Vec::new()));
-                for key in descendants {
-                    let relative = key.strip_prefix(&prefix).unwrap();
-                    let parts = relative.split('/').collect::<Vec<_>>();
-                    let mut parent = entry.clone();
-                    for (index, part) in parts.iter().enumerate() {
-                        let child = if index + 1 == parts.len() {
-                            key.clone()
-                        } else {
-                            format!("{}{}", prefix, parts[..=index].join("/"))
-                        };
-                        nodes
-                            .entry(child.clone())
-                            .or_insert_with(|| (part.to_string(), Vec::new(), Vec::new()));
-                        let children = &mut nodes.get_mut(&parent).unwrap().2;
-                        if !children.contains(&child) {
-                            children.push(child.clone());
-                        }
-                        parent = child;
-                    }
-                }
-            }
-        }
-    }
-    let roots = if let Some(entry) = entry.filter(|entry| nodes.contains_key(entry)) {
-        vec![entry]
-    } else if !nodes.is_empty() {
-        nodes.keys().cloned().collect()
-    } else {
-        records
-            .iter()
-            .enumerate()
-            .map(|(index, record)| {
-                let key = record["uid"]
-                    .as_str()
-                    .map(str::to_owned)
-                    .unwrap_or_else(|| format!("record-{index}"));
-                nodes.insert(
-                    key.clone(),
-                    (
-                        record["title"].as_str().unwrap_or("Record").into(),
-                        vec![index],
-                        Vec::new(),
-                    ),
-                );
-                key
-            })
-            .collect()
-    };
+    let expanded = &state.expanded;
+    let closed = &state.closed;
+    let inspecting = &state.inspecting;
+    let tree::Tree {
+        nodes,
+        roots,
+        titles,
+        content,
+    } = tree;
     let mut pending = if all {
         let mut reachable = BTreeSet::new();
         let mut discover = roots.clone();
         while let Some(key) = discover.pop() {
             if reachable.insert(key.clone())
-                && let Some((_, _, children)) = nodes.get(&key)
+                && let Some(branch) = nodes.get(&key)
             {
-                discover.extend(children.iter().cloned());
+                discover.extend(branch.children.iter().cloned());
             }
         }
         nodes
@@ -227,21 +142,39 @@ pub(super) fn render_tree(world: &mut World, owner: Entity, body: Entity, data: 
     };
     pending.extend(roots.into_iter().rev().map(|key| (key, 0usize)));
     let mut visited = BTreeSet::new();
+    let mut rows = Vec::new();
     while let Some((key, depth)) = pending.pop() {
         if !visited.insert(key.clone()) {
             continue;
         }
-        let Some((title, members, children)) = nodes.get(&key) else {
+        let Some(branch) = nodes.get(&key) else {
             continue;
         };
-        let children = children
+        let children = branch
+            .children
             .iter()
             .filter(|child| nodes.contains_key(*child) && !visited.contains(*child))
             .collect::<Vec<_>>();
         let open = (all && !closed.contains(&key)) || expanded.contains(&key);
+        let has_children = !children.is_empty();
+        let inspect = inspecting.contains(&key);
+        if open {
+            pending.extend(
+                children
+                    .into_iter()
+                    .rev()
+                    .map(|child| (child.clone(), depth + 1)),
+            );
+        }
+        rows.push((key, depth, has_children, open, inspect));
+    }
+    nucleus::performance::add("source-outline-rows-prepared", rows.len() as u64);
+    drop(_prepare);
+    for (key, depth, has_children, open, inspect) in rows {
+        let tree::Branch { title, members, .. } = &nodes[&key];
         let row = panel::row(world, body);
         world.get_mut::<Node>(row).unwrap().padding.left = px(depth.min(20) as f32 * 16.0);
-        if !children.is_empty() {
+        if has_children {
             let button = panel::button(
                 world,
                 row,
@@ -279,18 +212,15 @@ pub(super) fn render_tree(world: &mut World, owner: Entity, body: Entity, data: 
                 accessibility.set_label(format!("Preview {title}"));
             }
         }
-        if inspecting.contains(&key) {
+        if inspect {
             for index in members {
-                render_record(world, owner, body, &records[*index], &titles);
+                match &content {
+                    tree::Content::Records(records) => {
+                        render_record(world, owner, body, &records[*index], &titles)
+                    }
+                    tree::Content::Files(files) => render_file(world, owner, body, files[*index]),
+                }
             }
-        }
-        if open {
-            pending.extend(
-                children
-                    .into_iter()
-                    .rev()
-                    .map(|child| (child.clone(), depth + 1)),
-            );
         }
     }
 }
@@ -376,23 +306,7 @@ pub(super) fn details(world: &World, owner: Entity) -> bool {
 }
 
 pub(super) fn render_files(world: &mut World, owner: Entity, body: Entity, data: &Value) {
-    let files = data["files"]
-        .as_array()
-        .into_iter()
-        .flatten()
-        .filter_map(Value::as_str)
-        .collect::<Vec<_>>();
-    let entry = data["entry"].as_str().unwrap_or_default();
-    let records = files
-        .iter()
-        .map(|uri| serde_json::json!({"uid":uri,"base":uri,"title":link_label(uri),"state":"file"}))
-        .collect::<Vec<_>>();
-    let documents = files
-        .iter()
-        .map(|uri| serde_json::json!({"uri":uri,"children":[]}))
-        .collect::<Vec<_>>();
-    let tree = serde_json::json!({"entry":entry,"records":records,"documents":documents});
-    render_tree(world, owner, body, &tree);
+    paint(world, owner, body, tree::Tree::files(data));
 }
 
 #[cfg(test)]

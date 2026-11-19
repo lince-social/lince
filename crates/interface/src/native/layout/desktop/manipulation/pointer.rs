@@ -58,23 +58,30 @@ pub fn targets(world: &World, root: Entity) -> Vec<Target> {
     let Some(output) = viewport(world, root) else {
         return Vec::new();
     };
-    let Some(spaces) = world.get::<Workspaces>(root) else {
-        return Vec::new();
-    };
-    world
-        .get::<Children>(root)
+    targets_on_output(world, root, output.id).collect()
+}
+
+fn targets_on_output(
+    world: &World,
+    root: Entity,
+    output: OutputId,
+) -> impl Iterator<Item = Target> + '_ {
+    let active = world.get::<Workspaces>(root).map(|spaces| spaces.active);
+    active
+        .and_then(|_| world.get::<Children>(root))
         .into_iter()
         .flat_map(|children| children.iter())
-        .filter_map(|entity| {
-            if !focus::eligible(world, root, spaces.active, entity) {
+        .filter_map(move |entity| {
+            let active = active?;
+            if !focus::eligible(world, root, active, entity) {
                 return None;
             }
             let id = world.get::<Managed>(entity)?.id;
             Some(Target {
                 root,
                 entity,
-                workspace: spaces.active,
-                output: output.id,
+                workspace: active,
+                output,
                 placement: id,
                 item: world
                     .get::<ApplicationWindow>(entity)
@@ -83,41 +90,46 @@ pub fn targets(world: &World, root: Entity) -> Vec<Target> {
                     }),
             })
         })
-        .collect()
 }
 
 fn hits(world: &mut World, root: Entity) -> Vec<Hit> {
+    let _preparation = nucleus::performance::Span::new("manipulation-hit-preparation");
     let Some(output) = viewport(world, root) else {
         return Vec::new();
     };
-    let targets = targets(world, root);
-    let geometry =
-        if world.contains_resource::<crate::native::topology::presentation::SceneCamera>() {
-            crate::native::topology::output_views::geometry(world, root, &output)
-        } else {
-            world
-                .get_resource::<PublishedGeometry>()
-                .and_then(|published| published.0.as_ref())
-                .map(|geometry| {
-                    geometry
-                        .items
-                        .iter()
-                        .filter(|item| item.output == output.id)
-                        .cloned()
-                        .collect()
-                })
-                .unwrap_or_default()
-        };
-    geometry
+    let mut targets = std::collections::BTreeMap::new();
+    for target in targets_on_output(world, root, output.id) {
+        targets.entry(target.item).or_insert(target);
+    }
+    nucleus::performance::add("manipulation-hit-targets", targets.len() as u64);
+    if world.contains_resource::<crate::native::topology::presentation::SceneCamera>() {
+        crate::native::topology::output_views::matching_geometry(world, root, &output, |id| {
+            targets.contains_key(&id)
+        })
         .into_iter()
         .filter_map(|geometry| {
-            let target = targets
-                .iter()
-                .find(|target| target.item == geometry.id)
-                .copied()?;
+            let target = *targets.get(&geometry.id)?;
             Some(Hit { target, geometry })
         })
         .collect()
+    } else {
+        let hits: Vec<_> = world
+            .get_resource::<PublishedGeometry>()
+            .and_then(|published| published.0.as_ref())
+            .into_iter()
+            .flat_map(|geometry| geometry.items.iter())
+            .filter(|geometry| geometry.output == output.id)
+            .filter_map(|geometry| {
+                let target = *targets.get(&geometry.id)?;
+                Some(Hit {
+                    target,
+                    geometry: geometry.clone(),
+                })
+            })
+            .collect();
+        nucleus::performance::add("manipulation-hit-geometries-copied", hits.len() as u64);
+        hits
+    }
 }
 
 fn blocked(world: &World, root: Entity, window: Entity, point: Vec2, target: Entity) -> bool {

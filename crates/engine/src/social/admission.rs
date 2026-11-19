@@ -28,11 +28,11 @@ async fn live_slots_on(
         ));
     }
     let sql = format!(
-        "{EFFECTIVE_DECISIONS} SELECT COUNT(CASE WHEN json_extract(body,'$.blocked')=1 OR json_extract(body,'$.window')+{}>now THEN 1 END),COUNT(CASE WHEN typeof(context)<>'text' OR typeof(peer)<>'text' OR COALESCE(json_type(body,'$.blocked'),'') NOT IN ('true','false') OR COALESCE(json_type(body,'$.window'),'')<>'integer' OR json_extract(body,'$.window')<=0 THEN 1 END) FROM ranked,clock WHERE position=1",
-        AUTHORITY_LIFETIME + 30 * 86400
+        "{EFFECTIVE_DECISIONS} SELECT COUNT(CASE WHEN json_extract(body,'$.blocked')=1 OR json_extract(body,'$.window')+?>now THEN 1 END),COUNT(CASE WHEN typeof(context)<>'text' OR typeof(peer)<>'text' OR COALESCE(json_type(body,'$.blocked'),'') NOT IN ('true','false') OR COALESCE(json_type(body,'$.window'),'')<>'integer' OR json_extract(body,'$.window')<=0 THEN 1 END) FROM ranked,clock WHERE position=1"
     );
-    let (count, malformed): (i64, i64) = store::sqlx::query_as(&sql)
+    let (count, malformed): (i64, i64) = store::sqlx::query_as(store::sqlx::AssertSqlSafe(sql))
         .bind(now)
+        .bind(AUTHORITY_LIFETIME + 30 * 86400)
         .fetch_one(&mut **tx)
         .await?;
     if malformed > 0 {
@@ -91,10 +91,11 @@ pub(super) async fn contexts(
     organ: &str,
 ) -> Result<Vec<String>, EngineError> {
     let sql = format!(
-        "{EFFECTIVE_DECISIONS} SELECT DISTINCT context FROM ranked,clock WHERE position=1 AND (json_extract(body,'$.blocked')=1 OR json_extract(body,'$.window')+{AUTHORITY_LIFETIME}>now) AND EXISTS(SELECT 1 FROM record r WHERE r.uid=context AND r.organ_uid=?) ORDER BY context LIMIT 257"
+        "{EFFECTIVE_DECISIONS} SELECT DISTINCT context FROM ranked,clock WHERE position=1 AND (json_extract(body,'$.blocked')=1 OR json_extract(body,'$.window')+?>now) AND EXISTS(SELECT 1 FROM record r WHERE r.uid=context AND r.organ_uid=?) ORDER BY context LIMIT 257"
     );
-    let rows: Vec<String> = store::sqlx::query_scalar(&sql)
+    let rows: Vec<String> = store::sqlx::query_scalar(store::sqlx::AssertSqlSafe(sql))
         .bind(nucleus::execution::now().timestamp())
+        .bind(AUTHORITY_LIFETIME)
         .bind(organ)
         .fetch_all(pool)
         .await?;

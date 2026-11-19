@@ -6,7 +6,7 @@ use avian3d::{
 };
 use bevy::{
     diagnostic::FrameCount,
-    math::{DQuat, DVec2, DVec3},
+    math::{DVec2, DVec3},
     prelude::*,
     winit::WinitSettings,
 };
@@ -154,8 +154,8 @@ fn sweep(In((start, delta)): In<(DVec3, DVec3)>, movement: MoveAndSlide) -> DVec
         .move_and_slide(
             &Collider::sphere(8.0),
             start,
-            DQuat::IDENTITY,
-            delta,
+            Quat::IDENTITY,
+            delta.as_vec3(),
             Duration::from_secs(1),
             &MoveAndSlideConfig::default(),
             &SpatialQueryFilter::default(),

@@ -1,6 +1,8 @@
 use super::*;
 use crate::{host::{control::{Arguments, Context, Error, Failure, Invocation, Item as Target}, launch::Capability}, native::shortcuts::Shortcut};
 
+mod presentation;
+
 #[derive(Component)]
 struct StatusLabel;
 
@@ -38,13 +40,7 @@ pub(crate) fn panel(world: &mut World, parent: Entity) {
 }
 
 fn refresh(world: &mut World) {
-    let status = world.get_resource::<crate::host::control::Status>().cloned().unwrap_or_default();
-    let message = if !status.available { "External desktop automation is available in Park. Sandbox keeps control of its own window.".into() }
-        else { format!("Connected helpers: {} may observe, {} may issue commands · {} pending requests{}. Helpers use the permissions assigned to their launch connection. Revoking closes those automation connections; your external service manager controls restarts.", status.readers, status.controllers, status.pending, if status.locked { " · paused while locked" } else if !status.active { " · paused while inactive" } else { "" }) };
-    let labels: Vec<_> = world.query_filtered::<Entity, With<StatusLabel>>().iter(world).collect();
-    for label in labels { input_settings::text(world, label, &message); }
-    let buttons: Vec<_> = world.query_filtered::<Entity, With<RevokeButton>>().iter(world).collect();
-    for button in buttons { input_settings::disable(world, button, !status.available || !status.active || status.locked || status.readers == 0 && status.controllers == 0); }
+    presentation::refresh(world);
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -145,14 +141,28 @@ pub fn prepare(world: &World, root: Entity, invocation: &Invocation, grants: &[C
     if let Some(reason) = CommandContext::new(world, root).shortcut(shortcut) { return Err(Failure::new(Error::Unavailable, reason)); }
     match (action, invocation.arguments) {
         (DesktopAction::Workspace(number), Arguments::Workspace { id }) => {
-            if number == 0 || crate::native::workspace::numbers(world, root).get(number.saturating_sub(1) as usize) != Some(&id) {
-                return Err(Failure::new(Error::StaleTarget, "The numbered destination no longer refers to the captured workspace identity."));
+            if number == 0
+                || crate::native::workspace::ordered_ids(world, root)
+                    .nth(number.saturating_sub(1) as usize)
+                    != Some(id)
+            {
+                return Err(Failure::new(
+                    Error::StaleTarget,
+                    "The numbered destination no longer refers to the captured workspace identity.",
+                ));
             }
             Ok(Prepared::Workspace { owner: invocation.context.owner, id })
         }
         (DesktopAction::MoveToWorkspace(number), Arguments::Workspace { id }) => {
-            if number == 0 || crate::native::workspace::numbers(world, root).get(number.saturating_sub(1) as usize) != Some(&id) {
-                return Err(Failure::new(Error::StaleTarget, "The destination workspace changed; refresh its published identity."));
+            if number == 0
+                || crate::native::workspace::ordered_ids(world, root)
+                    .nth(number.saturating_sub(1) as usize)
+                    != Some(id)
+            {
+                return Err(Failure::new(
+                    Error::StaleTarget,
+                    "The destination workspace changed; refresh its published identity.",
+                ));
             }
             Ok(Prepared::Action(action))
         }

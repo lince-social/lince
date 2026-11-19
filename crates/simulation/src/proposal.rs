@@ -321,10 +321,6 @@ impl Edit {
                 if !value.is_object() || serde_json::to_vec(value)?.len() > 262_144 {
                     return Err("Choose bounded Work metadata for the appointment".into());
                 }
-                nucleus::schedule::validate_endpoints(
-                    value["start"].as_str(),
-                    value["due"].as_str(),
-                )?;
                 nucleus::schedule::range(
                     value["start"].as_str(),
                     value["due"].as_str(),

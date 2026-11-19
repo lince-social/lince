@@ -36,7 +36,7 @@ fn clamp(node: &ComputedNode, scroll: &mut ScrollPosition, delta: f32) {
 }
 
 fn wheel(
-    mut event: On<Pointer<Scroll>>,
+    mut event: On<PointerScroll>,
     mut content: Query<(&Node, &ComputedNode, &mut ScrollPosition)>,
 ) {
     if let Ok((style, node, mut scroll)) = content.get_mut(event.entity)

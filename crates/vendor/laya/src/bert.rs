@@ -112,7 +112,7 @@ impl Config {
 
 #[derive(Clone)]
 struct Dropout {
-    #[allow(dead_code)]
+    #[allow(dead_code, reason = "Preserve the field for the upstream configuration format")]
     pr: f64,
 }
 

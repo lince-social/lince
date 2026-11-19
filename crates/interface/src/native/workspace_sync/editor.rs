@@ -385,8 +385,6 @@ pub(super) fn records(world: &mut World, owner: Entity, rows: &[Value]) {
             let mut by_uid = BTreeMap::new();
             for row in rows {
                 if let Some(uid) = row["uid"].as_str() {
-                    // Match the former first-row lookup if the result repeats
-                    // an identity. Format only rows with a presented label.
                     by_uid.entry(uid).or_insert((row, None::<String>));
                 }
             }

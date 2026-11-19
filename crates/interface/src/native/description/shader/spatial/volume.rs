@@ -9,11 +9,11 @@ pub(super) fn source(
     settings: &nucleus::shader_effect::spatial::VolumeSettings,
 ) -> String {
     format!(
-        "{}\n{}\nconst LINCE_VOLUME_STEPS: u32 = {}u;\n{}",
+        "{}\n{}\n{}\nconst LINCE_VOLUME_STEPS: u32 = {}u;",
+        include_str!("volume.wesl"),
         header(),
         source,
-        settings.quality.steps(),
-        include_str!("volume.wgsl")
+        settings.quality.steps()
     )
 }
 
@@ -31,50 +31,83 @@ pub(super) fn preview(world: &mut World, camera: Entity, enabled: bool) {
 }
 
 pub(super) fn world_views(world: &mut World) {
-    let cameras: Vec<_> = world
-        .query_filtered::<Entity, Or<(
-            With<crate::native::topology::presentation::WorldCamera>,
-            With<crate::native::topology::output_views::WorldView>,
-        )>>()
-        .iter(world)
-        .collect();
-    for camera in cameras {
+    world
+        .run_system_cached(enable_world_views)
+        .expect("prepare current volume view depth");
+}
+
+fn enable_world_views(
+    world: &mut World,
+    cameras: &mut QueryState<
+        Entity,
+        (
+            Without<DepthPrepass>,
+            Or<(
+                With<crate::native::topology::presentation::WorldCamera>,
+                With<crate::native::topology::output_views::WorldView>,
+            )>,
+        ),
+    >,
+    mut targets: Local<Vec<Entity>>,
+) {
+    let _prepasses = nucleus::performance::Span::new("shader-volume-prepass-maintenance");
+    targets.clear();
+    targets.extend(cameras.iter(world));
+    if targets.is_empty() {
+        *targets = Vec::new();
+        return;
+    }
+    for camera in targets.drain(..) {
         preview(world, camera, true);
     }
 }
 
 pub(super) fn prune(world: &mut World) {
+    world
+        .run_system_cached(prune_world_views)
+        .expect("retire unused volume view depth");
+}
+
+fn prune_world_views(
+    world: &mut World,
+    instances: &mut QueryState<(&'static InstanceOf, &'static Visibility), With<WorldInstance>>,
+    cameras: &mut QueryState<
+        Entity,
+        (
+            With<VolumeDepth>,
+            Or<(
+                With<crate::native::topology::presentation::WorldCamera>,
+                With<crate::native::topology::output_views::WorldView>,
+            )>,
+        ),
+    >,
+    mut targets: Local<Vec<Entity>>,
+) {
+    let _prepasses = nucleus::performance::Span::new("shader-volume-prepass-maintenance");
+    targets.clear();
     let disabled = crate::native::shader_effects::disabled(world);
     let active = !disabled
-        && world
-            .query::<(&WorldInstance, &Visibility)>()
-            .iter(world)
-            .any(|(instance, visible)| {
-                *visible == Visibility::Visible
-                    && world
-                        .resource::<MeshEffects>()
-                        .0
-                        .get(&instance.preview)
-                        .is_some_and(|state| {
-                            state
-                                .working
-                                .iter()
-                                .chain(state.candidate.iter())
-                                .any(|bundle| matches!(bundle.effect.mode, Mode::Volume(_)))
-                        })
-            });
+        && instances.iter(world).any(|(owner, visible)| {
+            *visible == Visibility::Visible
+                && world
+                    .resource::<MeshEffects>()
+                    .0
+                    .get(&owner.0)
+                    .is_some_and(|state| {
+                        state
+                            .working
+                            .iter()
+                            .chain(state.candidate.iter())
+                            .any(|bundle| matches!(bundle.effect.mode, Mode::Volume(_)))
+                    })
+        });
     if !active {
-        let cameras: Vec<_> = world
-            .query_filtered::<Entity, (
-                With<VolumeDepth>,
-                Or<(
-                    With<crate::native::topology::presentation::WorldCamera>,
-                    With<crate::native::topology::output_views::WorldView>,
-                )>,
-            )>()
-            .iter(world)
-            .collect();
-        for camera in cameras {
+        targets.extend(cameras.iter(world));
+        if targets.is_empty() {
+            *targets = Vec::new();
+            return;
+        }
+        for camera in targets.drain(..) {
             preview(world, camera, false);
         }
     }

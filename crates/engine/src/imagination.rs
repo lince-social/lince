@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use nucleus::PromiseState;
-use nucleus::imagination::{ProjMove, ProjPromise, ProjRule, Snapshot, Timeline};
+use nucleus::imagination::{ProjCondition, ProjMove, ProjPromise, ProjRule, Snapshot, Timeline};
+use std::collections::HashMap;
 use store::Store;
 use store::sqlx::Row;
 
@@ -8,17 +9,18 @@ use crate::Engine;
 use crate::error::EngineError;
 
 pub async fn build_snapshot(store: &Store, now: DateTime<Utc>) -> Result<Snapshot, EngineError> {
+    let _read = nucleus::performance::Span::new("imagination-snapshot-await");
     let mut quantities = std::collections::HashMap::new();
     let mut slugs = std::collections::HashMap::new();
-    for r in store::records::list_all(&store.pool).await? {
-        quantities.insert(r.uid.clone(), r.quantity_f64());
+    for r in store::records::named_levels(&store.pool).await? {
         if let Some(slug) = r.slug {
-            slugs.insert(slug, r.uid);
+            slugs.insert(slug, r.uid.clone());
         }
+        quantities.insert(r.uid, r.quantity.to_f64());
     }
 
     let mut promises = Vec::new();
-    for p in store::misc::list_promises(&store.pool).await? {
+    for p in store::misc::promise_projections(&store.pool).await? {
         if !matches!(p.state, PromiseState::Agreed | PromiseState::Active) {
             continue;
         }
@@ -35,9 +37,9 @@ pub async fn build_snapshot(store: &Store, now: DateTime<Utc>) -> Result<Snapsho
         });
     }
 
-    let mut slug_of: std::collections::HashMap<String, String> = Default::default();
+    let mut slug_of: HashMap<&str, &str> = Default::default();
     for (slug, uid) in &slugs {
-        slug_of.insert(uid.clone(), slug.clone());
+        slug_of.insert(uid.as_str(), slug.as_str());
     }
     let mut rules = Vec::new();
     for rule in store::recurrence::all(&store.pool).await? {
@@ -64,29 +66,32 @@ pub async fn build_snapshot(store: &Store, now: DateTime<Utc>) -> Result<Snapsho
                 )),
                 _ => None,
             });
-        let condition = match rule.condition.as_ref() {
+        let condition = match rule.condition {
             None => None,
             Some(stored) => {
-                match nucleus::imagination::proj_condition(
-                    &stored.source,
-                    stored.gate.clone(),
-                    stored.carry.clone(),
-                ) {
-                    Ok(parsed) => Some(parsed),
-                    Err(_) => continue,
-                }
+                let Ok(condition) = nucleus::karma::Condition::parse(&stored.source) else {
+                    continue;
+                };
+                Some(ProjCondition {
+                    condition,
+                    gate: stored.gate,
+                    carry: stored.carry,
+                })
             }
         };
         rules.push(ProjRule {
-            uid: rule.uid.clone(),
-            slug: slug_of.get(&rule.record_uid).cloned(),
-            record_uid: rule.record_uid.clone(),
-            cadence: rule.cadence.clone(),
+            uid: rule.uid,
+            slug: slug_of
+                .get(rule.record_uid.as_str())
+                .map(|slug| (*slug).to_owned()),
+            record_uid: rule.record_uid,
+            cadence: rule.cadence,
             anchor,
             condition,
             movement,
         });
     }
+    drop(slug_of);
 
     Ok(Snapshot {
         now,
@@ -98,10 +103,10 @@ pub async fn build_snapshot(store: &Store, now: DateTime<Utc>) -> Result<Snapsho
 }
 
 pub async fn confidence(store: &Store, promise_uid: &str) -> Result<f64, EngineError> {
-    let Some(p) = store::misc::get_promise(&store.pool, promise_uid).await? else {
+    let Some(party) = store::misc::promise_party(&store.pool, promise_uid).await? else {
         return Ok(0.0);
     };
-    let Some(party) = p.party_uid else {
+    let Some(party) = party else {
         return Ok(0.5);
     };
     let row = store::sqlx::query(
@@ -123,6 +128,7 @@ pub async fn demand(
     concept_token: &str,
     now: DateTime<Utc>,
 ) -> Result<f64, EngineError> {
+    let _read = nucleus::performance::Span::new("imagination-demand-await");
     let Some(concept_uid) = store::concepts::resolve(&store.pool, concept_token).await? else {
         return Err(EngineError::UnknownRecord(concept_token.to_string()));
     };
@@ -132,11 +138,16 @@ pub async fn demand(
             .into_iter()
             .collect();
     let mut in_family: std::collections::HashSet<String> = Default::default();
-    for r in store::records::list_all(&store.pool).await? {
-        if r.identity_predicate_uid
-            .as_ref()
-            .is_some_and(|c| family.contains(c))
-        {
+    for r in store::records::grouping(
+        &store.pool,
+        store::records::GroupingFields {
+            unit: false,
+            identity: true,
+        },
+    )
+    .await?
+    {
+        if r.identity.as_ref().is_some_and(|c| family.contains(c)) {
             in_family.insert(r.uid);
         }
     }
@@ -145,7 +156,7 @@ pub async fn demand(
     let since = (now - chrono::TimeDelta::days(30)).to_rfc3339();
     let mut total = 0u64;
     let mut this_hour = 0u64;
-    for f in store::facts::list_since(&store.pool, Some(&since), 100_000).await? {
+    for f in store::facts::ledger_since(&store.pool, Some(&since), 100_000, false).await? {
         if !in_family.contains(&f.record_uid) {
             continue;
         }
@@ -178,22 +189,47 @@ impl Engine {
     }
 
     pub async fn crossings_pass(&self, now: DateTime<Utc>) -> Result<Vec<String>, EngineError> {
+        let _pass = nucleus::performance::Span::new("imagination-crossings-await");
         let timeline = self
             .project(now, now + chrono::TimeDelta::seconds(CROSSING_HORIZON_SECS))
             .await?;
-        let asked = store::misc::open_decision_subjects(&self.store.pool).await?;
+        let asked = store::misc::open_decision_subjects(&self.store.pool)
+            .await?
+            .into_iter()
+            .filter_map(|(uid, kind)| (kind == "crossing").then_some(uid))
+            .collect::<std::collections::HashSet<_>>();
+        let mut points = timeline.points.iter();
+        let mut crossings = HashMap::new();
         let mut created = Vec::new();
-        for record in store::records::list_all(&self.store.pool).await? {
+        for record in store::records::named_levels(&self.store.pool).await? {
             if record.kind != "plain" || record.quantity.is_negative() {
                 continue;
             }
-            let Some(crossing) = timeline.crossing_below(&record.uid, 0.0) else {
+            let crossing = crossings.get(record.uid.as_str()).copied().or_else(|| {
+                if points.as_slice().is_empty() {
+                    return None;
+                }
+                let _index = nucleus::performance::Span::new("imagination-crossing-index");
+                let mut examined = 0;
+                let crossing = points.by_ref().find_map(|point| {
+                    examined += 1;
+                    if point.quantity <= 0.0 {
+                        let first = *crossings.entry(point.record_uid.as_str()).or_insert(point);
+                        (point.record_uid == record.uid).then_some(first)
+                    } else {
+                        None
+                    }
+                });
+                nucleus::performance::add("imagination-crossing-points", examined);
+                crossing
+            });
+            let Some(crossing) = crossing else {
                 continue;
             };
-            if asked.contains(&(record.uid.clone(), "crossing".to_string())) {
+            if asked.contains(record.uid.as_str()) {
                 continue;
             }
-            let name = record.slug.clone().unwrap_or_else(|| record.uid.clone());
+            let name = record.slug.as_deref().unwrap_or(&record.uid);
             created.push(
                 store::misc::create_decision(
                     &self.store.pool,

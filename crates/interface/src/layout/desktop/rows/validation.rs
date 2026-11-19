@@ -6,8 +6,6 @@ pub(in crate::layout::desktop) struct Membership {
 }
 
 impl Rows {
-    /// The workspace already established unique, valid item identities. Reuse
-    /// that index and its non-floating set for this invocation's row checks.
     pub(in crate::layout::desktop) fn validated(
         &self,
         all: &BTreeMap<PlacementId, &Item>,
@@ -85,9 +83,6 @@ impl Rows {
                 return None;
             }
         }
-        // Each group has exactly its active member arranged. Everything else
-        // non-floating must be arranged; there are no extra row identities.
-        // This is the original expected-set subtraction without a second copy.
         if !arranged.is_subset(tiled)
             || !tiled
                 .iter()

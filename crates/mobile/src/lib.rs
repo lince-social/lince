@@ -74,6 +74,7 @@ pub fn run(directory: std::path::PathBuf) {
         .add_plugins(plugins)
         .add_plugins((
             lince_interface::theme::TypographyPlugin,
+            lince_interface::controls::editing::TextEditingPlugin,
             bevy::input_focus::tab_navigation::TabNavigationPlugin,
             app::MobilePlugin,
             location::LocationPlugin,

@@ -5,10 +5,14 @@ use bevy::{
 };
 use nucleus::terrain::{Anchor, Formula, SpatialBinding, TopologyEffect};
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::{
+    collections::{HashMap, HashSet, VecDeque},
+    sync::Arc,
+};
 
 mod drawing;
 mod overview;
+mod preview;
 pub use drawing::install;
 pub mod editor;
 
@@ -34,7 +38,6 @@ pub struct Fault(pub String, pub TopologyEffect);
 #[derive(Component, Clone)]
 pub struct Preview(pub TopologyEffect);
 
-#[derive(Clone)]
 struct Input {
     id: String,
     entity: Entity,
@@ -55,8 +58,8 @@ impl PartialEq for Input {
 
 #[derive(Clone)]
 struct Field {
-    input: Input,
-    formula: Formula,
+    input: Arc<Input>,
+    formula: Arc<Formula>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -69,7 +72,7 @@ impl Key {
 }
 
 struct Tile {
-    inputs: Vec<Input>,
+    inputs: Vec<Arc<Input>>,
     heights: Vec<f64>,
     collider: Option<Entity>,
     visual: Option<Entity>,
@@ -81,6 +84,7 @@ struct Tile {
 #[derive(Resource, Default)]
 pub struct Terrain {
     fields: HashMap<(Entity, u64), Vec<Field>>,
+    previews: preview::Preparation,
     tiles: HashMap<Key, Tile>,
     render_tiles: HashMap<Key, Tile>,
     flats: HashMap<(Entity, u64), Entity>,
@@ -255,10 +259,13 @@ impl Terrain {
             .get(&key)
             .or_else(|| self.render_tiles.get(&key))
             .filter(|tile| {
-                tile.inputs.iter().eq(fields
-                    .iter()
-                    .filter(|f| affects(&f.input, key))
-                    .map(|f| &f.input))
+                same_inputs(
+                    &tile.inputs,
+                    fields
+                        .iter()
+                        .filter(|f| affects(&f.input, key))
+                        .map(|f| f.input.as_ref()),
+                )
             });
         let [a, b, c, d] = if let Some(tile) = cached {
             [
@@ -284,6 +291,10 @@ impl Terrain {
             d + (c - d) * (1.0 - u) + (b - d) * (1.0 - v)
         }
     }
+}
+
+fn same_inputs<'a>(previous: &[Arc<Input>], current: impl Iterator<Item = &'a Input>) -> bool {
+    previous.iter().map(Arc::as_ref).eq(current)
 }
 
 fn field_height(field: &Field, point: DVec2) -> Result<f64, String> {
@@ -582,7 +593,8 @@ pub fn resolve_bindings(world: &mut World) {
 }
 
 pub fn prepare(world: &mut World) {
-    let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeTerrainPrepare);
+    let _timing =
+        crate::host::performance::Span::new(crate::host::performance::Stage::NativeTerrainPrepare);
     if !world.contains_resource::<Terrain>() {
         return;
     }
@@ -604,55 +616,71 @@ pub fn prepare(world: &mut World) {
                 .is_none()
                 && !crate::native::laboratory::suspended(world, p.parent())
         })
-        .map(|(entity, effect, preview, item, parent, member)| {
-            let _ = preview;
-            let definition = effect.0.clone();
-            let heading = super::spatial(world, entity)
-                .rotation()
-                .to_euler(EulerRot::YXZ)
-                .0;
-            let id = world
-                .get::<crate::native::canvas_host::Identity>(entity)
-                .map_or_else(|| entity.to_bits().to_string(), |id| id.0.clone());
-            (
-                parent.parent(),
-                member.0,
-                Input {
-                    id,
-                    entity,
-                    definition,
-                    center: item.position,
-                    heading,
-                },
-            )
-        })
+        .map(|(entity, _, _, _, parent, member)| (parent.parent(), member.0, entity))
         .collect();
     let mut terrain = world.remove_resource::<Terrain>().unwrap();
     let mut previous = std::mem::take(&mut terrain.fields);
-    for (root, workspace, input) in inputs {
-        if !input.definition.enabled || input.definition.amplitude == 0.0 {
+    for (root, workspace, entity) in inputs {
+        let effect = &world.get::<Effect>(entity).unwrap().0;
+        if !effect.enabled || effect.amplitude == 0.0 {
             continue;
         }
         if world
-            .get::<Fault>(input.entity)
-            .is_some_and(|fault| fault.1 == input.definition)
+            .get::<Fault>(entity)
+            .is_some_and(|fault| fault.1 == *effect)
         {
             continue;
         }
+        let center = world
+            .get::<crate::native::canvas::CanvasItem>(entity)
+            .unwrap()
+            .position;
+        let heading = super::spatial(world, entity)
+            .rotation()
+            .to_euler(EulerRot::YXZ)
+            .0;
+        let id: std::borrow::Cow<'_, str> = world
+            .get::<crate::native::canvas_host::Identity>(entity)
+            .map_or_else(
+                || entity.to_bits().to_string().into(),
+                |id| id.0.as_str().into(),
+            );
         let existing = previous.get_mut(&(root, workspace)).and_then(|fields| {
             fields
                 .iter()
-                .position(|f| f.input.entity == input.entity)
+                .position(|f| f.input.entity == entity)
                 .map(|i| fields.swap_remove(i))
         });
+        if existing.as_ref().is_some_and(|field| {
+            field.input.id == id.as_ref()
+                && field.input.definition == *effect
+                && field.input.center == center
+                && field.input.heading == heading
+        }) {
+            terrain
+                .fields
+                .entry((root, workspace))
+                .or_default()
+                .push(existing.unwrap());
+            continue;
+        }
+        let input = Arc::new(Input {
+            id: id.into_owned(),
+            entity,
+            definition: effect.clone(),
+            center,
+            heading,
+        });
+        nucleus::performance::add("terrain-input-snapshots", 1);
         let formula = if let Some(existing) =
             existing.filter(|f| f.input.definition.same_surface(&input.definition))
         {
             existing.formula
         } else {
             world.entity_mut(input.entity).remove::<Fault>();
+            nucleus::performance::add("terrain-formula-compilations", 1);
             match input.definition.compile() {
-                Ok(formula) => formula,
+                Ok(formula) => Arc::new(formula),
                 Err(error) => {
                     world
                         .entity_mut(input.entity)
@@ -675,23 +703,20 @@ pub fn prepare(world: &mut World) {
 }
 
 fn tile(terrain: &mut Terrain, world: &mut World, key: Key, collision: bool) {
-    let inputs: Vec<_> = terrain
-        .fields
-        .get(&(key.0, key.1))
-        .into_iter()
-        .flatten()
-        .filter(|f| affects(&f.input, key))
-        .map(|f| f.input.clone())
-        .collect();
-    let changed = terrain.tiles.get(&key).is_none_or(|t| t.inputs != inputs);
-    if changed {
-        let fields: Vec<_> = terrain
+    let _preparation = nucleus::performance::Span::new("terrain-tile-preparation");
+    let applicable = || {
+        terrain
             .fields
             .get(&(key.0, key.1))
             .into_iter()
             .flatten()
-            .filter(|f| affects(&f.input, key))
-            .collect();
+            .filter(|field| affects(&field.input, key))
+    };
+    let changed = terrain.tiles.get(&key).is_none_or(|tile| {
+        !same_inputs(&tile.inputs, applicable().map(|field| field.input.as_ref()))
+    });
+    if changed {
+        let fields: Vec<_> = applicable().collect();
         let mut heights = Vec::with_capacity((GRID + 1).pow(2));
         let mut errors = HashMap::new();
         for z in 0..=GRID {
@@ -720,6 +745,7 @@ fn tile(terrain: &mut Terrain, world: &mut World, key: Key, collision: bool) {
             }
             return;
         }
+        let inputs = fields.iter().map(|field| field.input.clone()).collect();
         terrain.rebuilds += 1;
         let old = terrain.tiles.remove(&key);
         if collision {
@@ -751,7 +777,9 @@ fn tile(terrain: &mut Terrain, world: &mut World, key: Key, collision: bool) {
     };
     tile.used = terrain.epoch;
     if collision && tile.collider.is_none() {
-        let vertices = vertices(key, &tile.heights);
+        let vertices = vertices(key, &tile.heights).collect();
+        let mut indices = Vec::with_capacity(GRID * GRID * 2);
+        indices.extend(triangles());
         let entity = world
             .spawn((
                 Ground {
@@ -759,7 +787,7 @@ fn tile(terrain: &mut Terrain, world: &mut World, key: Key, collision: bool) {
                     workspace: key.1,
                 },
                 RigidBody::Static,
-                Collider::trimesh(vertices, triangles()),
+                Collider::trimesh(vertices, indices),
                 Position(DVec3::ZERO),
                 Rotation::IDENTITY,
                 Friction::new(0.05),
@@ -828,7 +856,7 @@ fn flat(terrain: &mut Terrain, world: &mut World, root: Entity, workspace: u64) 
         .spawn((
             Ground { root, workspace },
             RigidBody::Static,
-            Collider::half_space(DVec3::Y),
+            Collider::half_space(Vec3::Y),
             Position(DVec3::ZERO),
             Rotation::IDENTITY,
             Transform::default(),
@@ -841,31 +869,25 @@ fn flat(terrain: &mut Terrain, world: &mut World, root: Entity, workspace: u64) 
     terrain.flats.insert((root, workspace), ground);
 }
 
-fn vertices(key: Key, heights: &[f64]) -> Vec<DVec3> {
-    heights
-        .iter()
-        .enumerate()
-        .map(|(i, height)| {
-            let point = key.minimum()
-                + DVec2::new((i % (GRID + 1)) as f64, (i / (GRID + 1)) as f64)
-                    * (TILE_SIZE / GRID as f64);
-            DVec3::new(point.x, *height, point.y)
-        })
-        .collect()
+fn vertices(key: Key, heights: &[f64]) -> impl ExactSizeIterator<Item = DVec3> + '_ {
+    heights.iter().enumerate().map(move |(i, height)| {
+        let point = key.minimum()
+            + DVec2::new((i % (GRID + 1)) as f64, (i / (GRID + 1)) as f64)
+                * (TILE_SIZE / GRID as f64);
+        DVec3::new(point.x, *height, point.y)
+    })
 }
 
-fn triangles() -> Vec<[u32; 3]> {
-    let mut indices = Vec::with_capacity(GRID * GRID * 2);
-    for z in 0..GRID {
-        for x in 0..GRID {
+fn triangles() -> impl Iterator<Item = [u32; 3]> {
+    (0..GRID).flat_map(|z| {
+        (0..GRID).flat_map(move |x| {
             let a = (z * (GRID + 1) + x) as u32;
             let b = a + 1;
             let c = a + (GRID + 1) as u32;
             let d = c + 1;
-            indices.extend([[a, c, b], [b, c, d]]);
-        }
-    }
-    indices
+            [[a, c, b], [b, c, d]]
+        })
+    })
 }
 
 fn destroy_tile(world: &mut World, tile: Tile) {
@@ -904,7 +926,7 @@ pub fn support(world: &mut World) -> bool {
                 b.workspace,
                 p.0,
                 radius,
-                v.map_or(DVec3::ZERO, |v| v.0),
+                v.map_or(DVec3::ZERO, |v| v.0.as_dvec3()),
             )
         })
         .collect();
@@ -1131,7 +1153,7 @@ fn correct_support(world: &mut World, terrain_changed: bool) {
             let normal = DVec3::new(-dx, 1.0, -dz).normalize();
             let yaw = rotation.to_euler(EulerRot::YXZ).0;
             let next = DQuat::from_rotation_arc(DVec3::Y, normal) * DQuat::from_rotation_y(yaw);
-            world.entity_mut(entity).insert(Rotation(next));
+            world.entity_mut(entity).insert(Rotation(next.as_quat()));
             let mut spatial = super::spatial(world, members[0]);
             spatial.rotation = next.to_array();
             world.entity_mut(members[0]).insert(spatial);

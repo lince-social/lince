@@ -18,7 +18,7 @@ pub fn invalid(message: &str) -> StoreError {
 }
 
 fn read(row: sqlx::sqlite::SqliteRow) -> Result<Field, StoreError> {
-    let kind: String = row.get("kind");
+    let kind: &str = row.get("kind");
     Ok(Field {
         uid: row.get("uid"),
         kind: RuleFieldKind::ALL
@@ -146,6 +146,7 @@ pub async fn save_rule_tx(
     request: &str,
     now: DateTime<Utc>,
 ) -> Result<(), StoreError> {
+    let _save = nucleus::performance::Span::new("karma-field-rule-save-await");
     write_rule(tx, rule, request, now).await?;
     for selection in fields {
         if selection.fresh {
@@ -172,9 +173,10 @@ pub async fn save_rule_tx(
             .bind(&rule.uid)
             .execute(&mut **tx)
             .await?;
+        sqlx::query("UPDATE recurrence_revision SET name = (SELECT name FROM recurrence WHERE uid = ?), slug = (SELECT slug FROM recurrence WHERE uid = ?) WHERE request_id = ?")
+            .bind(&rule.uid).bind(&rule.uid).bind(request).execute(&mut **tx).await?;
+        nucleus::performance::add("karma-rule-identity-history-writes", 1);
     }
-    sqlx::query("UPDATE recurrence_revision SET name = (SELECT name FROM recurrence WHERE uid = ?), slug = (SELECT slug FROM recurrence WHERE uid = ?) WHERE request_id = ?")
-        .bind(&rule.uid).bind(&rule.uid).bind(request).execute(&mut **tx).await?;
     remember(tx, request, &rule.uid).await?;
     Ok(())
 }

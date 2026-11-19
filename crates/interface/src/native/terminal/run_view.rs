@@ -17,6 +17,21 @@ pub(super) struct RunView {
     source: Option<cell::terminal::commands::Source>,
 }
 
+#[derive(Resource)]
+struct Recipients {
+    query: bevy::ecs::query::QueryState<(Entity, &'static RunView)>,
+    owners: Vec<Entity>,
+}
+
+impl FromWorld for Recipients {
+    fn from_world(world: &mut World) -> Self {
+        Self {
+            query: world.query(),
+            owners: Vec::new(),
+        }
+    }
+}
+
 pub(crate) fn attach(world: &mut World, parent: Entity, run: &Run) -> Result<Entity, String> {
     let owner = panel::column(world, parent);
     world.get_mut::<Node>(owner).unwrap().height = px(470);
@@ -156,17 +171,9 @@ fn resize(world: &mut World, owner: Entity) {
     if !terminal.opened || !view.follow || view.pending || Instant::now() < view.next {
         return;
     }
-    let Some(node) = world
-        .get::<ComputedNode>(terminal.screen)
-        .filter(|node| node.size().x > 0.0)
-    else {
+    let Some(geometry) = geometry(world, terminal.screen) else {
         return;
     };
-    let size = node.size() * node.inverse_scale_factor();
-    let geometry = (
-        (size.x / CELL_WIDTH).floor().clamp(10.0, 240.0) as u16,
-        (size.y / CELL_HEIGHT).floor().clamp(4.0, 100.0) as u16,
-    );
     if geometry == terminal.geometry {
         return;
     }
@@ -194,89 +201,113 @@ pub(super) fn receive(world: &mut World, message: &ServerMessage) -> bool {
         ServerMessage::Command { id, .. } | ServerMessage::Error { id, .. } => id,
         _ => return false,
     };
-    let owner = world
-        .query::<(Entity, &RunView)>()
-        .iter(world)
-        .find(|(_, view)| view.request == *id)
-        .map(|(owner, _)| owner);
-    let Some(owner) = owner else {
-        if let ServerMessage::Error { message, .. } = message {
-            let owners: Vec<_> = world
-                .query::<(Entity, &RunView)>()
-                .iter(world)
-                .filter(|(_, view)| view.run == *id)
-                .map(|(owner, _)| owner)
-                .collect();
-            for owner in &owners {
-                let terminal = world.get::<TerminalSand>(*owner).unwrap();
-                panel::status(world, terminal.status, message);
-            }
-            return !owners.is_empty();
-        }
-        return false;
-    };
-    if !current(world, owner) { super::close(world, owner); return true; }
-    let status = world.get::<TerminalSand>(owner).unwrap().status;
-    world.get_mut::<RunView>(owner).unwrap().pending = false;
-    match message {
-        ServerMessage::Command {
-            response:
-                Response::Output {
-                    events,
-                    next_offset,
-                    complete,
-                },
-            ..
-        } => {
-            let following = world.get::<RunView>(owner).unwrap().follow;
-            let live = following && !complete && !world.get::<TerminalSand>(owner).unwrap().exited;
-            if !events.is_empty() && let Err(error) =
-                command(world, owner, worker::Command::Journal(events.clone(), live))
-            {
-                panel::status(world, status, error);
-                let mut view = world.get_mut::<RunView>(owner).unwrap();
-                view.requested = true;
-                view.next = Instant::now() + Duration::from_millis(20);
-                if let Some(changes) = &view.changes { changes.retain(); }
-                if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
-                    wake.after(Duration::from_millis(20));
+    world.init_resource::<Recipients>();
+    world.resource_scope(|world, mut recipients: Mut<Recipients>| {
+        let recipients = &mut *recipients;
+        let owner = recipients
+            .query
+            .iter(world)
+            .find(|(_, view)| view.request == *id)
+            .map(|(owner, _)| owner);
+        let Some(owner) = owner else {
+            if let ServerMessage::Error { message, .. } = message {
+                recipients.owners.clear();
+                recipients.owners.extend(
+                    recipients
+                        .query
+                        .iter(world)
+                        .filter(|(_, view)| view.run == *id)
+                        .map(|(owner, _)| owner),
+                );
+                let handled = !recipients.owners.is_empty();
+                nucleus::performance::add(
+                    "terminal-reply-recipients",
+                    recipients.owners.len() as u64,
+                );
+                if !handled {
+                    recipients.owners = Vec::new();
                 }
-                return true;
+                for owner in recipients.owners.drain(..) {
+                    let terminal = world.get::<TerminalSand>(owner).unwrap();
+                    panel::status(world, terminal.status, message);
+                }
+                return handled;
             }
-            let mut view = world.get_mut::<RunView>(owner).unwrap();
-            view.offset = *next_offset;
-            view.complete = *complete;
-            view.next = Instant::now();
-            view.requested |= following && !complete && !events.is_empty();
-            if *complete { view.changes = None; }
-            let mut terminal = world.get_mut::<TerminalSand>(owner).unwrap();
-            if *complete {
-                terminal.exited = true;
-            }
-            terminal.opened = live;
-            panel::status(
-                world,
-                status,
+            return false;
+        };
+        nucleus::performance::add("terminal-reply-recipients", 1);
+        if !current(world, owner) {
+            super::close(world, owner);
+            return true;
+        }
+        let status = world.get::<TerminalSand>(owner).unwrap().status;
+        world.get_mut::<RunView>(owner).unwrap().pending = false;
+        match message {
+            ServerMessage::Command {
+                response:
+                    Response::Output {
+                        events,
+                        next_offset,
+                        complete,
+                    },
+                ..
+            } => {
+                let following = world.get::<RunView>(owner).unwrap().follow;
+                let live =
+                    following && !complete && !world.get::<TerminalSand>(owner).unwrap().exited;
+                if !events.is_empty()
+                    && let Err(error) =
+                        command(world, owner, worker::Command::Journal(events.clone(), live))
+                {
+                    panel::status(world, status, error);
+                    let mut view = world.get_mut::<RunView>(owner).unwrap();
+                    view.requested = true;
+                    view.next = Instant::now() + Duration::from_millis(20);
+                    if let Some(changes) = &view.changes {
+                        changes.retain();
+                    }
+                    if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
+                        wake.after(Duration::from_millis(20));
+                    }
+                    return true;
+                }
+                let mut view = world.get_mut::<RunView>(owner).unwrap();
+                view.offset = *next_offset;
+                view.complete = *complete;
+                view.next = Instant::now();
+                view.requested |= following && !complete && !events.is_empty();
                 if *complete {
-                    "End of saved output · read-only"
-                } else if following {
-                    "Following output · click the terminal to type"
-                } else {
-                    "Saved output · Next output advances through the full run"
-                },
-            );
+                    view.changes = None;
+                }
+                let mut terminal = world.get_mut::<TerminalSand>(owner).unwrap();
+                if *complete {
+                    terminal.exited = true;
+                }
+                terminal.opened = live;
+                panel::status(
+                    world,
+                    status,
+                    if *complete {
+                        "End of saved output · read-only"
+                    } else if following {
+                        "Following output · click the terminal to type"
+                    } else {
+                        "Saved output · Next output advances through the full run"
+                    },
+                );
+            }
+            ServerMessage::Error { message, .. } => {
+                world.get_mut::<RunView>(owner).unwrap().complete = true;
+                world.get_mut::<RunView>(owner).unwrap().changes = None;
+                let mut terminal = world.get_mut::<TerminalSand>(owner).unwrap();
+                terminal.opened = false;
+                terminal.input.clear();
+                panel::status(world, status, message);
+            }
+            _ => {}
         }
-        ServerMessage::Error { message, .. } => {
-            world.get_mut::<RunView>(owner).unwrap().complete = true;
-            world.get_mut::<RunView>(owner).unwrap().changes = None;
-            let mut terminal = world.get_mut::<TerminalSand>(owner).unwrap();
-            terminal.opened = false;
-            terminal.input.clear();
-            panel::status(world, status, message);
-        }
-        _ => {}
-    }
-    true
+        true
+    })
 }
 
 pub(super) fn detach(world: &mut World, owner: Entity) {

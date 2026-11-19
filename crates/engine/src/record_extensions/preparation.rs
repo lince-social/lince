@@ -6,10 +6,6 @@ use std::{
     sync::Arc,
 };
 
-/// Decode once from the existing snapshot, copy untouched fields and move the
-/// submitted values into their replacements.
-/// Managed assertion receipts belong to the old snapshot; the next receipts
-/// are produced by the transactional assertion path, never copied and cleared.
 pub(super) fn values(
     before: &Value,
     schema_uid: &str,
@@ -63,10 +59,6 @@ pub(super) fn values(
     Ok((old, next))
 }
 
-/// Preserve the original encounter order and resolved-value membership rule.
-/// Different unresolved spellings may still append equal resolved presets;
-/// deduplicating those would change the existing save behavior. Arc shares the
-/// prepared value between order and membership without duplicating its strings.
 #[derive(Default)]
 pub(super) struct Presets {
     ordered: Vec<Arc<Preset>>,
@@ -99,9 +91,6 @@ impl Presets {
     }
 }
 
-/// Borrow assertion identities from the already-read values snapshot. The
-/// transaction still compares that entire snapshot before using the result.
-/// Other schemas retain their tolerant JSON handling, including detached ones.
 pub(super) struct AssertionOwnership<'a> {
     elsewhere: HashSet<&'a str>,
     owned: HashSet<&'a str>,

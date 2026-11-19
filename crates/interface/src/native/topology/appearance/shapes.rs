@@ -17,7 +17,7 @@ struct Inputs<'a> {
     uvs: Cow<'a, [[f32; 2]]>,
     indices: Option<Cow<'a, Indices>>,
     size: Vec2,
-    radii: [f32; 4],
+    radii: [Vec2; 4],
     clip: Rect,
 }
 
@@ -59,10 +59,10 @@ impl Vertices {
     }
 }
 
-fn outline(size: Vec2, radii: [f32; 4]) -> Vec<DVec2> {
-    let mut polygon = Vec::new();
+fn outline(size: Vec2, radii: [Vec2; 4]) -> Vec<DVec2> {
+    let mut polygon = Vec::with_capacity(4 * 9);
     for (index, radius) in radii.into_iter().enumerate() {
-        let radius = (Vec2::splat(radius.clamp(0.0, size.min_element() * 0.5)) / size).as_dvec2();
+        let radius = (radius.clamp(Vec2::ZERO, size * 0.5) / size).as_dvec2();
         let center = match index {
             0 => radius,
             1 => DVec2::new(1.0 - radius.x, radius.y),
@@ -97,7 +97,7 @@ fn inputs(world: &World, owner: Entity, face: Entity) -> Option<Inputs<'_>> {
         radii.bottom_right,
         radii.bottom_left,
     ];
-    if radii.iter().any(|radius| !radius.is_finite()) || radii.iter().all(|radius| *radius <= 0.0) {
+    if radii.iter().any(|radius| !radius.is_finite()) || radii.iter().all(|radius| radius.min_element() <= 0.0) {
         return None;
     }
     let mesh = world
@@ -132,13 +132,15 @@ fn inputs(world: &World, owner: Entity, face: Entity) -> Option<Inputs<'_>> {
 
 fn plate(input: &Inputs<'_>, outline: &[DVec2]) -> Mesh {
     let mut vertices = Vertices::default();
-    let indices: Vec<_> = input
-        .indices
-        .as_ref()
-        .map(|indices| indices.iter().collect())
-        .unwrap_or_else(|| (0..input.positions.len()).collect());
-    for triangle in indices.chunks_exact(3) {
-        let [a, b, c] = [triangle[0], triangle[1], triangle[2]];
+    let indices = input.indices.as_deref();
+    let length = indices.map_or(input.positions.len(), Indices::len);
+    for triangle in 0..length / 3 {
+        let [a, b, c] =
+            [triangle * 3, triangle * 3 + 1, triangle * 3 + 2].map(|index| match indices {
+                Some(Indices::U16(values)) => usize::from(values[index]),
+                Some(Indices::U32(values)) => values[index] as usize,
+                None => index,
+            });
         if [a, b, c].iter().any(|index| *index >= input.uvs.len()) {
             continue;
         }
@@ -235,8 +237,13 @@ impl Geometry {
 
     pub(super) fn release(&mut self, world: &mut World, body: Entity) {
         if let Some((plate, mesh, _)) = self.owned.take() {
-            if let Ok(mut entity) = world.get_entity_mut(body) {
+            if let Ok(mut entity) = world.get_entity_mut(body)
+                && entity
+                    .get::<Mesh3d>()
+                    .is_none_or(|mesh| mesh.0 != self.original)
+            {
                 entity.insert(Mesh3d(self.original.clone()));
+                nucleus::performance::add("appearance-mesh-publications", 1);
             }
             let mut meshes = world.resource_mut::<Assets<Mesh>>();
             meshes.remove(plate.id());
@@ -252,11 +259,14 @@ impl Geometry {
         body_entity: Entity,
         plate_entity: Entity,
     ) {
+        let _geometry = nucleus::performance::Span::new("appearance-geometry");
         let Some(input) = inputs(world, owner, face) else {
             self.release(world, body_entity);
-            let mesh = world.get::<Mesh3d>(face).unwrap().clone();
-            if world.get::<Mesh3d>(plate_entity).unwrap().0 != mesh.0 {
-                world.entity_mut(plate_entity).insert(mesh);
+            let mesh = &world.get::<Mesh3d>(face).unwrap().0;
+            if world.get::<Mesh3d>(plate_entity).unwrap().0 != *mesh {
+                let mesh = mesh.clone();
+                world.entity_mut(plate_entity).insert(Mesh3d(mesh));
+                nucleus::performance::add("appearance-mesh-publications", 1);
             }
             return;
         };
@@ -265,6 +275,7 @@ impl Geometry {
             .as_ref()
             .is_none_or(|(_, _, previous)| previous != &input)
         {
+            nucleus::performance::add("appearance-geometry-builds", 1);
             let outline = outline(input.size, input.radii);
             let plate_mesh = plate(&input, &outline);
             let body_mesh = body(&input, &outline);
@@ -281,9 +292,11 @@ impl Geometry {
         let (plate, body, _) = self.owned.as_ref().unwrap();
         if world.get::<Mesh3d>(plate_entity).unwrap().0 != *plate {
             world.entity_mut(plate_entity).insert(Mesh3d(plate.clone()));
+            nucleus::performance::add("appearance-mesh-publications", 1);
         }
         if world.get::<Mesh3d>(body_entity).unwrap().0 != *body {
             world.entity_mut(body_entity).insert(Mesh3d(body.clone()));
+            nucleus::performance::add("appearance-mesh-publications", 1);
         }
     }
 }

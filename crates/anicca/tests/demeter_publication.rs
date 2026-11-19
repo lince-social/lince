@@ -7,7 +7,7 @@ fn publication(source: &str) -> anicca::ProjectedDocument {
 #[test]
 fn adult_reference_cases_are_unambiguous_and_scoped() {
     let doc = publication(include_str!(
-        "../../../institute/trails/health/Nutrition-needs.lingua"
+        "../../../institute/trails/ergon/gaia/nutrition/Nutrition-needs.lingua"
     ));
     let references: Vec<_> = doc
         .extensions
@@ -55,16 +55,16 @@ fn adult_reference_cases_are_unambiguous_and_scoped() {
 #[test]
 fn production_examples_link_real_species_and_require_confirmation() {
     let species: BTreeSet<_> = [
-        include_str!("../../../institute/trails/health/farming/Crops.lingua"),
-        include_str!("../../../institute/trails/health/farming/Orchards.lingua"),
-        include_str!("../../../institute/trails/health/farming/Livestock.lingua"),
+        include_str!("../../../institute/trails/ergon/gaia/farming/Crops.lingua"),
+        include_str!("../../../institute/trails/ergon/gaia/farming/Orchards.lingua"),
+        include_str!("../../../institute/trails/ergon/gaia/farming/Livestock.lingua"),
     ]
     .into_iter()
     .flat_map(|s| publication(s).records)
     .filter_map(|r| r.slug)
     .collect();
     let production = publication(include_str!(
-        "../../../institute/trails/health/farming/Production.lingua"
+        "../../../institute/trails/ergon/gaia/farming/Production.lingua"
     ));
     let templates: Vec<_> = production
         .extensions
@@ -88,7 +88,7 @@ fn production_examples_link_real_species_and_require_confirmation() {
         assert!(!data["inputs"].as_array().unwrap().is_empty());
     }
     let meal = publication(include_str!(
-        "../../../institute/trails/health/Meal-preparation.lingua"
+        "../../../institute/trails/ergon/gaia/nutrition/Meal-preparation.lingua"
     ));
     assert_eq!(
         meal.extensions[0].fields["dependencies"]

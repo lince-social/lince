@@ -13,7 +13,7 @@ pub struct Stamp<'a> {
 const NOT_SUPERSEDED: &str =
     " AND NOT EXISTS (SELECT 1 FROM sync_op WHERE tbl = ? AND uid = ? AND field = ? AND hlc > ?)";
 
-type SqliteQuery<'q> = sqlx::query::Query<'q, sqlx::Sqlite, sqlx::sqlite::SqliteArguments<'q>>;
+type SqliteQuery<'q> = sqlx::query::Query<'q, sqlx::Sqlite, sqlx::sqlite::SqliteArguments>;
 
 fn bind_stamp<'q>(query: SqliteQuery<'q>, stamp: &Stamp<'q>) -> SqliteQuery<'q> {
     query
@@ -90,7 +90,7 @@ pub async fn set_record_field(
                 "UPDATE record SET {field} = ?, updated_at = ? WHERE uid = ?{NOT_SUPERSEDED}"
             );
             bind_stamp(
-                sqlx::query(&sql)
+                sqlx::query(sqlx::AssertSqlSafe(sql.as_str()))
                     .bind(text.unwrap_or_default())
                     .bind(&now)
                     .bind(uid),
@@ -114,7 +114,7 @@ pub async fn set_record_field(
             let sql =
                 format!("UPDATE record SET slug = ?, updated_at = ? WHERE uid = ?{NOT_SUPERSEDED}");
             bind_stamp(
-                sqlx::query(&sql)
+                sqlx::query(sqlx::AssertSqlSafe(sql.as_str()))
                     .bind(if taken { None } else { text })
                     .bind(&now)
                     .bind(uid),
@@ -130,7 +130,7 @@ pub async fn set_record_field(
             let sql = format!(
                 "UPDATE record SET {field} = ?, updated_at = ? WHERE uid = ?{NOT_SUPERSEDED}"
             );
-            bind_stamp(sqlx::query(&sql).bind(text).bind(&now).bind(uid), &stamp)
+            bind_stamp(sqlx::query(sqlx::AssertSqlSafe(sql.as_str())).bind(text).bind(&now).bind(uid), &stamp)
                 .execute(pool)
                 .await?
                 .rows_affected()
@@ -206,7 +206,7 @@ pub async fn set_record_field(
     };
     if applied && undelete {
         let sql = format!("UPDATE record SET deleted_at = NULL WHERE uid = ?{NOT_SUPERSEDED}");
-        bind_stamp(sqlx::query(&sql).bind(uid), &stamp)
+        bind_stamp(sqlx::query(sqlx::AssertSqlSafe(sql.as_str())).bind(uid), &stamp)
             .execute(pool)
             .await?;
     }
@@ -222,7 +222,7 @@ pub async fn undelete_record(
         "UPDATE record SET deleted_at = NULL, updated_at = ? WHERE uid = ?{NOT_SUPERSEDED}"
     );
     bind_stamp(
-        sqlx::query(&sql)
+        sqlx::query(sqlx::AssertSqlSafe(sql.as_str()))
             .bind(nucleus::execution::now().to_rfc3339())
             .bind(uid),
         &stamp,
@@ -267,7 +267,7 @@ pub async fn tombstone_record(
     let sql = format!(
         "UPDATE record SET deleted_at = ?, slug = NULL, updated_at = ? WHERE uid = ?{NOT_SUPERSEDED}"
     );
-    bind_stamp(sqlx::query(&sql).bind(&now).bind(&now).bind(uid), &stamp)
+    bind_stamp(sqlx::query(sqlx::AssertSqlSafe(sql.as_str())).bind(&now).bind(&now).bind(uid), &stamp)
         .execute(pool)
         .await?;
     Ok(())
@@ -495,7 +495,7 @@ pub async fn retract_assertion(
           WHERE uid = ? AND retracted_at IS NULL{NOT_SUPERSEDED}"
     );
     bind_stamp(
-        sqlx::query(&sql)
+        sqlx::query(sqlx::AssertSqlSafe(sql.as_str()))
             .bind(nucleus::execution::now().to_rfc3339())
             .bind(uid),
         &stamp,

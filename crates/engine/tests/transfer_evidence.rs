@@ -1732,7 +1732,7 @@ fn remote_organ_approves_an_opened_private_request_without_importing_a_foreign_t
             matches!(saved.document, Document::Authority(ref authority) if authority.participation.as_ref() == Some(&request.terms))
         );
         for table in ["transfer", "transfer_occurrence", "transfer_outcome_record"] {
-            let count: i64 = store::sqlx::query_scalar(&format!("SELECT COUNT(*) FROM {table}"))
+            let count: i64 = store::sqlx::query_scalar(store::sqlx::AssertSqlSafe(format!("SELECT COUNT(*) FROM {table}")))
                 .fetch_one(&receiver.store.pool)
                 .await
                 .unwrap();

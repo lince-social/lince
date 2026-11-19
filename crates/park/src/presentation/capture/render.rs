@@ -3,7 +3,7 @@ use bevy::{
     core_pipeline::prepass::ViewPrepassTextures,
     ecs::{component::Component, entity::EntityHashMap},
     pbr::{DirectionalLightViewEntities, ExtractedDirectionalLight, ExtractedPointLight, LightMeta, MeshViewBindGroup, PointAndSpotLightViewEntities, ShadowView, ViewLightEntities, ViewLightsUniformOffset, ViewShadowBindings, ViewTransmissionTexture},
-    render::{Render, texture::TextureCache, view::{ViewDepthTexture, ViewTarget, ViewTargetAttachments}},
+    render::{Render, texture::TextureCache, view::{ViewDepthStencilTexture, ViewTarget, ViewTargetAttachments}},
 };
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
@@ -71,7 +71,7 @@ struct Views {
     textures: TextureCache,
     attachments: ViewTargetAttachments,
     targets: Vec<(Entity, ViewTarget)>,
-    depth: Vec<(Entity, ViewDepthTexture)>,
+    depth: Vec<(Entity, ViewDepthStencilTexture)>,
     prepass: Vec<(Entity, ViewPrepassTextures)>,
     transmission: Vec<(Entity, ViewTransmissionTexture)>,
     mesh_bindings: Vec<(Entity, MeshViewBindGroup)>,
@@ -100,7 +100,7 @@ impl Views {
 
     fn restore(self, world: &mut World) {
         let _ = take::<ViewTarget>(world);
-        let _ = take::<ViewDepthTexture>(world);
+        let _ = take::<ViewDepthStencilTexture>(world);
         let _ = take::<ViewPrepassTextures>(world);
         let _ = take::<ViewTransmissionTexture>(world);
         let _ = take::<MeshViewBindGroup>(world);

@@ -109,9 +109,6 @@ pub fn component_records(component: &Component) -> BTreeSet<String> {
     records
 }
 
-// Includes the workspace adapter's origin/control references in addition to
-// the component's declared bindings. Values from decoded actions are borrowed
-// only for this call; this is preparation, never an authorization cache.
 pub(super) fn visit_component_records<B>(
     component: &Component,
     visit: &mut impl FnMut(&str) -> ControlFlow<B>,
@@ -179,8 +176,6 @@ pub fn controls(component: &Component) -> Vec<(Vec<String>, Option<String>, Valu
     output
 }
 
-/// Walks declared controls in their existing presentation order. Paths are
-/// temporary borrowed views; only consumers that retain controls need copies.
 pub fn visit_controls<'a, B>(
     component: &'a Component,
     mut visit: impl FnMut(&[&'a str], Option<&'a str>, &'a Value) -> ControlFlow<B>,
@@ -188,9 +183,6 @@ pub fn visit_controls<'a, B>(
     walk_controls(component, &mut Vec::new(), None, &mut visit)
 }
 
-// The same declaration walk serves enumeration and invocation. A selected
-// path prunes unrelated branches without assuming IDs in unvalidated input
-// are unique; duplicate matching branches retain the existing any-match rule.
 fn walk_controls<'a, B>(
     component: &'a Component,
     path: &mut Vec<&'a str>,
@@ -410,9 +402,6 @@ impl Engine {
             if hosted.layout.disabled_controls.contains(&element.id) {
                 continue;
             }
-            // Keep the first over-limit action so the same count failure is
-            // reported after the preceding ordered checks, without preparing
-            // an arbitrarily large unvalidated declaration list.
             for action in control_actions(&element.component, 257 - count) {
                 count += 1;
                 if count > 256 {

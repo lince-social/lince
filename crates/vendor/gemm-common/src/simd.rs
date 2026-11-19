@@ -654,6 +654,8 @@ mod x86 {
     }
 
     #[cfg(feature = "f16")]
+    // Preserve the existing unfinished V3Half trait methods.
+    #[allow(clippy::todo, reason = "Preserve the existing incomplete V3Half implementation while linting the rest of the crate")]
     unsafe impl MixedSimd<f16, f16, f16, f32> for V3Half {
         const SIMD_WIDTH: usize = 4;
 
@@ -1821,7 +1823,7 @@ pub mod aarch64 {
     use super::*;
     use core::arch::aarch64::*;
     use core::arch::asm;
-    #[allow(unused_imports)]
+    #[allow(unused_imports, reason = "Retain this import for the feature-gated architecture implementation")]
     use core::mem::transmute;
     use core::mem::MaybeUninit;
     use core::ptr;
@@ -1940,7 +1942,7 @@ pub mod aarch64 {
         result
     }
 
-    #[allow(non_camel_case_types)]
+    #[allow(non_camel_case_types, reason = "Preserve the conventional upstream numeric or SIMD type name")]
     type float16x8_t = uint16x8_t;
 
     /// Floating point multiplication

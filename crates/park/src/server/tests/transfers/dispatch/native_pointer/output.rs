@@ -25,7 +25,7 @@ struct Scrolls(std::collections::BTreeMap<u64, usize>);
 
 fn observe_scroll(world: &mut World, field: u64) {
     world.init_resource::<Scrolls>();
-    world.entity_mut(Entity::from_bits(field)).observe(move |_: On<bevy::picking::events::Pointer<bevy::picking::events::Scroll>>, mut received: ResMut<Scrolls>| {
+    world.entity_mut(Entity::from_bits(field)).observe(move |_: On<PointerScroll>, mut received: ResMut<Scrolls>| {
         *received.0.entry(field).or_default() += 1;
     });
 }

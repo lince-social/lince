@@ -12,7 +12,7 @@ use bevy::{
     math::DVec2,
     picking::{
         hover::{HoverMap, generate_hovermap},
-        pointer::{PointerAction, PointerButton, PointerId, PointerInput, PointerPress},
+        pointer::{PointerAction, PointerButton, PointerId, PointerInput, PointerPressState},
     },
     prelude::*,
     window::WindowEvent,
@@ -368,10 +368,10 @@ fn input(
         if consume {
             event.action = PointerAction::Cancel;
             world.resource_mut::<InputFocus>().clear();
-            let mut pointers = world.query::<(&PointerId, &mut PointerPress)>();
+            let mut pointers = world.query::<(&PointerId, &mut PointerPressState)>();
             for (id, mut press) in pointers.iter_mut(world) {
                 if *id == PointerId::Mouse {
-                    *press = PointerPress::default();
+                    *press = PointerPressState::default();
                 }
             }
         }

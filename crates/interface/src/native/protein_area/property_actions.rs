@@ -1,4 +1,5 @@
 use super::*;
+use crate::host::performance::{self, Count, Stage};
 use crate::native::{
     actions::{Action, ActionButton},
     edit_mode::label,
@@ -7,8 +8,9 @@ use crate::native::{
 };
 use bevy::text::EditableText;
 use serde_json::json;
+use std::sync::Arc;
 
-#[derive(Component, Clone)]
+#[derive(Component)]
 pub(super) struct Form {
     binding: RecordBinding,
     pub(super) property: String,
@@ -90,7 +92,10 @@ pub(super) fn spawn(
     let count = data[property].as_array().map_or(0, Vec::len);
     let index = index.min(count);
     let mut fields = Vec::new();
-    let logs = data["work_logs"].as_array().cloned().unwrap_or_default();
+    let logs = data["work_logs"]
+        .as_array()
+        .map(Vec::as_slice)
+        .unwrap_or_default();
     let row = crate::native::area_panel::row(world, parent);
     button(
         world,
@@ -118,7 +123,7 @@ pub(super) fn spawn(
         Icon::Next,
         "Next work log",
     );
-    let log = logs.get(index).cloned().unwrap_or(Value::Null);
+    let log = logs.get(index).unwrap_or(&Value::Null);
     fields.push(input(
         world,
         parent,
@@ -155,6 +160,7 @@ pub(super) fn spawn(
 }
 
 fn values(world: &World, form: &Form) -> Vec<String> {
+    performance::add(Count::PropertyFieldValuesCopied, form.fields.len() as u64);
     form.fields
         .iter()
         .map(|(entity, _)| {
@@ -164,6 +170,23 @@ fn values(world: &World, form: &Form) -> Vec<String> {
                 .unwrap_or_default()
         })
         .collect()
+}
+
+fn edited(world: &World, form: &Form) -> bool {
+    form.fields.iter().any(|(entity, initial)| {
+        world
+            .get::<EditableText>(*entity)
+            .map_or(!initial.is_empty(), |text| text.value() != initial.as_str())
+    })
+}
+
+fn values_match(world: &World, form: &Form, values: &[String]) -> bool {
+    form.fields.len() == values.len()
+        && form.fields.iter().zip(values).all(|((entity, _), value)| {
+            world
+                .get::<EditableText>(*entity)
+                .map_or(value.is_empty(), |text| text.value() == value.as_str())
+        })
 }
 
 pub(super) fn selection_pending(world: &mut World, owner: Entity) -> bool {
@@ -180,18 +203,23 @@ pub(super) fn selection_pending(world: &mut World, owner: Entity) -> bool {
     })
 }
 
-fn current(world: &World, form: &Form) -> Option<Value> {
-    world
+fn current<'a>(world: &'a World, form: &Form) -> Option<(&'a Arc<Vec<Value>>, usize)> {
+    let data = &world
         .resource::<Runtime>()
         .areas
         .get(&form.binding.area)?
-        .data
+        .data;
+    let row = data
         .iter()
-        .find(|row| row["uid"].as_str() == Some(&form.binding.uid))
-        .cloned()
+        .position(|row| row["uid"].as_str() == Some(&form.binding.uid))?;
+    Some((data, row))
 }
 
-fn rebuild(world: &mut World, entity: Entity, form: &Form, data: &Value, index: usize) {
+fn rebuild(world: &mut World, entity: Entity, data: &Value, index: usize) {
+    let Some(form) = world.get::<Form>(entity) else {
+        return;
+    };
+    performance::count(Count::PropertyFormsRebuilt);
     let focus = world
         .get_resource::<bevy::input_focus::InputFocus>()
         .and_then(|focus| focus.get());
@@ -199,6 +227,8 @@ fn rebuild(world: &mut World, entity: Entity, form: &Form, data: &Value, index: 
         .fields
         .iter()
         .position(|(field, _)| Some(*field) == focus);
+    let property = form.property.clone();
+    let binding = form.binding.clone();
     let children: Vec<_> = world
         .get::<Children>(entity)
         .into_iter()
@@ -208,14 +238,7 @@ fn rebuild(world: &mut World, entity: Entity, form: &Form, data: &Value, index: 
     for child in children {
         world.despawn(child);
     }
-    spawn(
-        world,
-        entity,
-        &form.property,
-        form.binding.clone(),
-        data,
-        index,
-    );
+    spawn(world, entity, &property, binding, data, index);
     if let Some(focused) = focused
         && let Some(field) = world
             .get::<Form>(entity)
@@ -234,14 +257,9 @@ pub(super) fn refresh(world: &mut World, entity: Entity, data: &Value) -> bool {
     if form.pending.is_some() || form.data[&form.property] == data[&form.property] {
         return true;
     }
-    let edited = form.fields.iter().any(|(entity, initial)| {
-        world
-            .get::<EditableText>(*entity)
-            .map_or(!initial.is_empty(), |text| text.value() != initial.as_str())
-    });
-    if !edited {
-        let form = form.clone();
-        rebuild(world, entity, &form, data, form.index);
+    if !edited(world, form) {
+        let index = form.index;
+        rebuild(world, entity, data, index);
     }
     true
 }
@@ -262,40 +280,50 @@ pub(super) fn save_indicators(
 }
 
 pub(super) fn finished(world: &mut World, entity: Entity, error: Option<String>) {
-    let Some(form) = world.get::<Form>(entity).cloned() else {
-        return;
-    };
-    world.get_mut::<Form>(entity).unwrap().pending = None;
-    if form.saving_log {
-        if error.is_none() {
-            let mut current = world.get_mut::<Form>(entity).unwrap();
-            if let Some(sent) = form.pending {
-                for ((_, initial), value) in current.fields.iter_mut().zip(&sent) {
-                    *initial = value.clone();
-                }
-                current.data["work_logs"][form.index]["start"] = json!(sent[0].trim());
-                current.data["work_logs"][form.index]["end"] = if sent[1].trim().is_empty() {
+    let _reply = performance::Span::new(Stage::PropertyFormReply);
+    let pending = {
+        let Some(mut form) = world.get_mut::<Form>(entity) else {
+            return;
+        };
+        let pending = form.pending.take();
+        if form.saving_log {
+            if error.is_none()
+                && let Some(sent) = pending
+            {
+                let index = form.index;
+                form.data["work_logs"][index]["start"] = json!(sent[0].trim());
+                form.data["work_logs"][index]["end"] = if sent[1].trim().is_empty() {
                     Value::Null
                 } else {
                     json!(sent[1].trim())
                 };
+                for ((_, initial), value) in form.fields.iter_mut().zip(sent) {
+                    *initial = value;
+                }
             }
+            return;
         }
-        return;
-    }
+        pending
+    };
+    let form = world.get::<Form>(entity).unwrap();
     if error.is_none()
-        && form
-            .pending
+        && pending
             .as_ref()
-            .is_some_and(|sent| sent == &values(world, &form))
+            .is_some_and(|sent| values_match(world, form, sent))
+        && let Some((data, row)) = current(world, form)
     {
-        if let Some(data) = current(world, &form) {
-            rebuild(world, entity, &form, &data, form.index);
-        }
+        let index = form.index;
+        let data = Arc::clone(data);
+        rebuild(world, entity, &data[row], index);
     }
 }
 
-pub(super) fn commit_edits(world: &mut World, mut previous_focus: Local<Option<Entity>>) {
+pub(super) fn commit_edits(
+    world: &mut World,
+    mut previous_focus: Local<Option<Entity>>,
+    forms: &mut QueryState<(Entity, &Form)>,
+) {
+    let _commit = performance::Span::new(Stage::PropertyFormCommit);
     let focus = world
         .get_resource::<bevy::input_focus::InputFocus>()
         .and_then(|focus| focus.get());
@@ -304,8 +332,7 @@ pub(super) fn commit_edits(world: &mut World, mut previous_focus: Local<Option<E
         .is_some_and(|keys| {
             keys.just_pressed(KeyCode::Enter) || keys.just_pressed(KeyCode::NumpadEnter)
         });
-    let forms: Vec<_> = world
-        .query::<(Entity, &Form)>()
+    let forms: Vec<_> = forms
         .iter(world)
         .filter(|(_, form)| form.pending.is_none())
         .filter(|(_, form)| {
@@ -316,33 +343,32 @@ pub(super) fn commit_edits(world: &mut World, mut previous_focus: Local<Option<E
             })
         })
         .filter_map(|(entity, form)| {
-            let values = values(world, form);
-            let changed = form.attempted.as_ref() != Some(&values)
-                && values
-                    .iter()
-                    .zip(&form.fields)
-                    .any(|(value, (_, initial))| value != initial);
             let focused = form.fields.iter().any(|(entity, _)| Some(*entity) == focus);
             let blurred = form
                 .fields
                 .iter()
                 .any(|(entity, _)| Some(*entity) == *previous_focus)
                 && !focused;
-            let existing_log = form.property == "work_logs"
+            let is_log = form.property == "work_logs";
+            let existing_log = is_log
                 && form.data["work_logs"]
                     .as_array()
                     .is_some_and(|logs| logs.get(form.index).is_some());
-            (changed && (existing_log || blurred || (focused && enter))).then_some((
-                entity,
-                values,
-                form.property.clone(),
-                existing_log,
-            ))
+            if !(existing_log || blurred || (focused && enter))
+                || !edited(world, form)
+                || form
+                    .attempted
+                    .as_ref()
+                    .is_some_and(|attempted| values_match(world, form, attempted))
+            {
+                return None;
+            }
+            Some((entity, values(world, form), is_log, existing_log))
         })
         .collect();
     *previous_focus = focus;
-    for (entity, values, property, existing_log) in forms {
-        if property == "work_logs"
+    for (entity, values, is_log, existing_log) in forms {
+        if is_log
             && !existing_log
             && !values
                 .first()
@@ -362,31 +388,25 @@ pub(super) fn commit_edits(world: &mut World, mut previous_focus: Local<Option<E
 
 impl Action for Command {
     fn apply(&self, world: &mut World, entity: Entity) {
-        let Some(form) = world.get::<Form>(entity).cloned() else {
+        let _command = performance::Span::new(Stage::PropertyFormCommand);
+        let Some(form) = world.get::<Form>(entity) else {
             return;
         };
         if form.pending.is_some() {
             return;
         }
-        let Some(data) = current(world, &form) else {
-            status(world, form.binding.area, "Record is no longer available");
+        let owner = form.binding.area;
+        let Some((data, row)) = current(world, form) else {
+            status(world, owner, "Record is no longer available");
             return;
         };
         if matches!(self, Self::Page(_)) {
             let index = if let Self::Page(next) = self {
-                if values(world, &form)
-                    .iter()
-                    .zip(&form.fields)
-                    .any(|(value, (_, initial))| value != initial)
-                {
-                    status(
-                        world,
-                        form.binding.area,
-                        "Wait for edits to save before changing pages",
-                    );
+                if edited(world, form) {
+                    status(world, owner, "Wait for edits to save before changing pages");
                     return;
                 }
-                let count = data[&form.property].as_array().map_or(0, Vec::len);
+                let count = data[row][&form.property].as_array().map_or(0, Vec::len);
                 let last = if form.property == "work_logs" {
                     count
                 } else {
@@ -400,7 +420,8 @@ impl Action for Command {
             } else {
                 form.index
             };
-            rebuild(world, entity, &form, &data, index);
+            let data = Arc::clone(data);
+            rebuild(world, entity, &data[row], index);
             return;
         }
         if form.fields.iter().any(|(entity, _)| {
@@ -410,7 +431,7 @@ impl Action for Command {
         }) {
             return;
         }
-        let values = values(world, &form);
+        let values = values(world, form);
         let action = match self {
             Self::SaveLog | Self::AddLog | Self::RemoveLog => {
                 let log_id = if matches!(self, Self::AddLog) {
@@ -421,7 +442,7 @@ impl Action for Command {
                         .and_then(|logs| logs.get(form.index))
                         .and_then(|log| log["id"].as_str())
                     else {
-                        status(world, form.binding.area, "Choose a work log");
+                        status(world, owner, "Choose a work log");
                         return;
                     };
                     id.to_owned()
@@ -440,13 +461,14 @@ impl Action for Command {
             }
             _ => return,
         };
-        match execute(world, &form.binding, entity, action) {
+        let binding = form.binding.clone();
+        match execute(world, &binding, entity, action) {
             Ok(()) => {
                 let mut form = world.get_mut::<Form>(entity).unwrap();
                 form.pending = Some(values);
                 form.saving_log = matches!(self, Self::SaveLog);
             }
-            Err(error) => status(world, form.binding.area, error),
+            Err(error) => status(world, owner, error),
         }
     }
 }

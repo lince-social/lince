@@ -2,6 +2,9 @@ use nucleus::karma::rule_field::{RuleFieldInput, RuleFieldKind};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 pub mod transfers;
+mod suggestions;
+pub use suggestions::{Suggestions, suggestions};
+pub use suggestions::tail as suggestion_tail;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SharedField {
@@ -26,9 +29,10 @@ pub struct Rule {
 }
 
 pub fn bound_reading(rule: &Rule, source: &str) -> String {
-    let reads = nucleus::karma::Condition::parse(source)
-        .map(|condition| condition.reads())
-        .unwrap_or_default();
+    let condition = nucleus::karma::Condition::parse(source).ok();
+    let reads = condition
+        .as_ref()
+        .map_or(&[][..], |condition| condition.reads_ref());
     fragments(source)
         .into_iter()
         .map(|(text, slug)| {
@@ -136,8 +140,7 @@ pub fn element_label(element: &str, records: &[Value]) -> String {
     let Ok(condition) = nucleus::karma::Condition::parse(element) else {
         return element.into();
     };
-    let readings = condition.reads();
-    let [reading] = readings.as_slice() else {
+    let [reading] = condition.reads_ref() else {
         return element.into();
     };
     let Some((namespace, property)) = nucleus::expr::extension_parts(&reading.func) else {
@@ -156,120 +159,6 @@ pub fn element_label(element: &str, records: &[Value]) -> String {
     value.map_or_else(|| element.into(), |value| format!("{element} · {value}"))
 }
 
-pub fn suggestions(
-    kind: RuleFieldKind,
-    text: &str,
-    rules: &[Rule],
-    records: &[Value],
-    frequencies: &[Value],
-) -> Vec<Suggestion> {
-    let query = text.trim().to_lowercase();
-    let mut found = Vec::new();
-    let mut seen = std::collections::HashSet::new();
-    for field in rules.iter().flat_map(|rule| &rule.fields) {
-        if field.kind == kind
-            && field.source.to_lowercase().contains(&query)
-            && seen.insert(field.uid.clone())
-        {
-            found.push(Suggestion::Shared(field.clone()));
-        }
-        if found.len() >= 12 {
-            break;
-        }
-    }
-    let tail = text
-        .rsplit(|character: char| {
-            character.is_whitespace()
-                || matches!(character, '(' | ')' | '*' | '/' | '+' | '=' | ',')
-        })
-        .next()
-        .unwrap_or("")
-        .to_lowercase();
-    let mut elements: Vec<String> = match kind {
-        RuleFieldKind::Condition => [
-            "+",
-            "-",
-            "*",
-            "/",
-            "(",
-            ")",
-            "1",
-            "quantity(",
-            "value(",
-            "sum(",
-            "sum_pos(",
-            "sum_neg(",
-            "signal(",
-            "query_command(",
-            "freq(",
-            "extension(",
-        ]
-        .map(str::to_owned)
-        .into(),
-        RuleFieldKind::Threshold => ["!=0", "always", ">0", ">=1", "<0", "<=0", "==0"]
-            .map(str::to_owned)
-            .into(),
-        RuleFieldKind::Consequence => [
-            ": activate-fiote",
-            ": command(\"\")",
-            ": run(@command)",
-            ": show({\"kind\":\"record\",\"mode\":\"full\"})",
-            ": show({\"kind\":\"record\",\"mode\":\"description\"})",
-            ": show({\"kind\":\"record\",\"mode\":\"call\"})",
-            ": show({\"kind\":\"record\",\"mode\":\"call\",\"start_call\":{\"thread\":\"thread\",\"person\":\"me\",\"media\":\"audio\"}})",
-            ": show({\"kind\":\"text\",\"text\":\"Reminder\"})",
-            ": show({\"kind\":\"karma\",\"search\":\"\"})",
-            ": show({\"kind\":\"frequency\",\"search\":\"\"})",
-        ].map(str::to_owned).into(),
-    };
-    if kind != RuleFieldKind::Threshold {
-        elements.extend(
-            records
-                .iter()
-                .filter_map(|record| record["slug"].as_str().map(|slug| format!("@{slug}"))),
-        );
-    }
-    if kind == RuleFieldKind::Condition {
-        elements.extend(records.iter().flat_map(|record| {
-            let slug = record["slug"]
-                .as_str()
-                .or_else(|| record["uid"].as_str())
-                .unwrap_or_default();
-            record["numeric_extensions"]
-                .as_array()
-                .into_iter()
-                .flatten()
-                .filter_map(move |property| {
-                    let namespace = serde_json::to_string(property["namespace"].as_str()?).ok()?;
-                    let name = serde_json::to_string(property["property"].as_str()?).ok()?;
-                    Some(format!("extension(@{slug}, {namespace}, {name})"))
-                })
-        }));
-        elements.extend(frequencies.iter().filter_map(|frequency| {
-            frequency["slug"]
-                .as_str()
-                .map(|slug| format!("freq(@{slug})"))
-        }));
-    }
-    elements.sort();
-    elements.dedup();
-    found.extend(
-        elements
-            .into_iter()
-            .filter(|element| {
-                element
-                    .to_lowercase()
-                    .contains(if kind == RuleFieldKind::Threshold {
-                        &query
-                    } else {
-                        &tail
-                    })
-            })
-            .take(16)
-            .map(Suggestion::Element),
-    );
-    found
-}
 
 pub fn insert_element(text: &str, element: &str, kind: RuleFieldKind) -> String {
     if kind == RuleFieldKind::Threshold {
@@ -421,30 +310,97 @@ pub fn reading_at(source: &str, start: usize, end: usize) -> String {
 }
 
 pub fn frequency_hint(frequency: &Value, now_ms: i64) -> String {
-    let Some(next) = frequency["next_at_ms"].as_i64() else {
-        return format!(
-            "Frequency: {} · no scheduled beat",
-            frequency["status"].as_str().unwrap_or("inactive")
-        );
-    };
-    let date = chrono::DateTime::from_timestamp_millis(next)
-        .map(|date| {
-            date.with_timezone(&chrono::Local)
-                .format("%Y-%m-%d %H:%M:%S %:z")
-                .to_string()
+    FrequencyHint::new(frequency, now_ms).to_string()
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct FrequencyHint<'a>(FrequencyHintValue<'a>);
+
+#[derive(Debug, PartialEq, Eq)]
+enum FrequencyHintValue<'a> {
+    Inactive(std::borrow::Cow<'a, str>),
+    Scheduled {
+        next: i64,
+        offset: Option<i32>,
+        seconds: u64,
+    },
+}
+
+impl<'a> FrequencyHint<'a> {
+    pub fn new(frequency: &'a Value, now_ms: i64) -> Self {
+        let Some(next) = frequency["next_at_ms"].as_i64() else {
+            return Self(FrequencyHintValue::Inactive(
+                frequency["status"].as_str().unwrap_or("inactive").into(),
+            ));
+        };
+        Self(FrequencyHintValue::Scheduled {
+            next,
+            offset: chrono::DateTime::from_timestamp_millis(next).map(|date| {
+                date.with_timezone(&chrono::Local)
+                    .offset()
+                    .local_minus_utc()
+            }),
+            seconds: (next.saturating_sub(now_ms).max(0) as u64).div_ceil(1000),
         })
-        .unwrap_or_else(|| next.to_string());
-    let seconds = (next.saturating_sub(now_ms).max(0) as u64).div_ceil(1000);
-    if seconds == 0 {
-        format!("Next: {date}\nDue now · waiting for the scheduler")
-    } else {
-        format!(
-            "Next: {date}\nIn {}d {:02}h {:02}m {:02}s",
-            seconds / 86400,
-            seconds / 3600 % 24,
-            seconds / 60 % 60,
-            seconds % 60
-        )
+    }
+
+    pub fn scheduled(&self) -> bool {
+        matches!(self.0, FrequencyHintValue::Scheduled { .. })
+    }
+
+    pub fn into_owned(self) -> FrequencyHint<'static> {
+        FrequencyHint(match self.0 {
+            FrequencyHintValue::Inactive(status) => {
+                FrequencyHintValue::Inactive(status.into_owned().into())
+            }
+            FrequencyHintValue::Scheduled {
+                next,
+                offset,
+                seconds,
+            } => FrequencyHintValue::Scheduled {
+                next,
+                offset,
+                seconds,
+            },
+        })
+    }
+}
+
+impl std::fmt::Display for FrequencyHint<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.0 {
+            FrequencyHintValue::Inactive(status) => {
+                write!(f, "Frequency: {status} · no scheduled beat")
+            }
+            FrequencyHintValue::Scheduled {
+                next,
+                offset,
+                seconds,
+            } => {
+                if let Some(offset) = offset {
+                    let date = chrono::DateTime::from_timestamp_millis(*next)
+                        .expect("prepared Frequency date")
+                        .with_timezone(
+                            &chrono::FixedOffset::east_opt(*offset).expect("local offset"),
+                        );
+                    write!(f, "Next: {}\n", date.format("%Y-%m-%d %H:%M:%S %:z"))?;
+                } else {
+                    write!(f, "Next: {next}\n")?;
+                }
+                if *seconds == 0 {
+                    f.write_str("Due now · waiting for the scheduler")
+                } else {
+                    write!(
+                        f,
+                        "In {}d {:02}h {:02}m {:02}s",
+                        seconds / 86400,
+                        seconds / 3600 % 24,
+                        seconds / 60 % 60,
+                        seconds % 60
+                    )
+                }
+            }
+        }
     }
 }
 

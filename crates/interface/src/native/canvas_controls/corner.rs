@@ -137,8 +137,6 @@ fn update_at(world: &mut World, now: std::time::Instant, state: &mut Corners) {
         if world.get::<CanvasToolbar>(corner.0).is_none() {
             state.obsolete.push(entity);
         } else {
-            // Preserve the existing first-match rule if more than one corner
-            // references a toolbar. This is rebuilt from current entities.
             state.by_bar.entry(corner.0).or_insert(entity);
         }
     }

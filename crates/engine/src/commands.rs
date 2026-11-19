@@ -79,7 +79,7 @@ impl Definition {
     fn matches(&self, row: &store::sqlx::sqlite::SqliteRow) -> Result<bool, EngineError> {
         Ok(
             Some(self.revision) == row.get::<Option<i64>, _>("command_revision")
-                && self.host == row.get::<Option<String>, _>("host_uid")
+                && self.host.as_deref() == row.get::<Option<&str>, _>("host_uid")
                 && self.configuration
                     == serde_json::from_str::<Command>(row.get::<&str, _>("configuration"))?,
         )
@@ -110,8 +110,9 @@ impl Engine {
     }
 
     async fn command_definition(&self, name: &str) -> Result<Definition, EngineError> {
+        let _read = nucleus::performance::Span::new("command-definition-read-await");
         let uid = self.resolve(name).await?;
-        let record = store::records::get(&self.store.pool, &uid)
+        let record = store::records::routing(&self.store.pool, &uid)
             .await?
             .ok_or_else(|| invalid("Choose a saved command Signal"))?;
         if record.kind != "signal" {
@@ -120,8 +121,7 @@ impl Engine {
         if let Some(definition) =
             store::records::get_extension(&self.store.pool, &uid, "lince.command").await?
         {
-            let configuration: Command =
-                serde_json::from_value(definition["configuration"].clone())?;
+            let configuration = Command::deserialize(&definition["configuration"])?;
             configuration.validate().map_err(invalid)?;
             return Ok(Definition {
                 uid,
@@ -195,7 +195,7 @@ impl Engine {
         let uid = match target {
             Some(target) => {
                 let definition = self.command_definition(&target).await?;
-                self.refuse_unreadable_karma_inputs(actor, &[definition.uid.clone()])
+                self.refuse_unreadable_karma_inputs(actor, std::slice::from_ref(&definition.uid))
                     .await?;
                 if expected_revision != Some(definition.revision) {
                     return Err(invalid("Command changed; refresh before saving"));
@@ -272,7 +272,7 @@ impl Engine {
     ) -> Result<serde_json::Value, EngineError> {
         self.require_permission(actor, "organ:update").await?;
         let definition = self.command_definition(name).await?;
-        self.refuse_unreadable_karma_inputs(actor, &[definition.uid.clone()])
+        self.refuse_unreadable_karma_inputs(actor, std::slice::from_ref(&definition.uid))
             .await?;
         Ok(
             serde_json::json!({"uid":definition.uid,"revision":definition.revision,"configuration":definition.configuration,"host":definition.host}),
@@ -298,7 +298,7 @@ impl Engine {
         context: Option<&QueryContext>,
     ) -> Result<(), EngineError> {
         self.require_permission(actor, "organ:update").await?;
-        self.refuse_unreadable_karma_inputs(actor, &[definition.uid.clone()])
+        self.refuse_unreadable_karma_inputs(actor, std::slice::from_ref(&definition.uid))
             .await?;
         let now = nucleus::execution::now();
         let mut tx = store::write_tx(&self.store.pool).await?;
@@ -503,13 +503,9 @@ impl Engine {
             .fetch_optional(&self.store.pool)
             .await?;
         if row.is_none() {
-            let configuration = Command::Shell {
-                script: payload["command"].as_str().unwrap_or_default().into(),
-            };
             let signal = payload["signal"]
                 .as_str()
                 .or_else(|| payload["saved_command"].as_str());
-            let definition = signal.map(|signal| self.command_definition(signal));
             let definition = match payload
                 .get("command_snapshot")
                 .filter(|snapshot| !snapshot.is_null())
@@ -522,21 +518,27 @@ impl Engine {
                     revision: snapshot["revision"]
                         .as_i64()
                         .ok_or_else(|| invalid("Missing command revision"))?,
-                    configuration: serde_json::from_value(snapshot["configuration"].clone())?,
+                    configuration: Command::deserialize(&snapshot["configuration"])?,
                     host: snapshot["host"].as_str().map(str::to_owned),
                 }),
-                None => match definition {
-                    Some(future) => Some(future.await?),
+                None => match signal {
+                    Some(signal) => Some(self.command_definition(signal).await?),
                     None => None,
                 },
             };
-            let configuration = definition
-                .as_ref()
-                .map_or(configuration, |definition| definition.configuration.clone());
+            let fallback;
+            let configuration = if let Some(definition) = &definition {
+                &definition.configuration
+            } else {
+                fallback = Command::Shell {
+                    script: payload["command"].as_str().unwrap_or_default().into(),
+                };
+                &fallback
+            };
             configuration.validate().map_err(invalid)?;
             let host = definition
                 .as_ref()
-                .and_then(|definition| definition.host.clone());
+                .and_then(|definition| definition.host.as_deref());
             store::sqlx::query("INSERT OR IGNORE INTO karma_command_invocation(uid, command_uid, command_revision, configuration, host_uid, actor_uid, numeric, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'queued', ?)")
                 .bind(request).bind(signal).bind(definition.as_ref().map(|definition| definition.revision)).bind(serde_json::to_string(&configuration)?).bind(host).bind(actor).bind(payload["signal"].is_string()).bind(nucleus::execution::now().to_rfc3339()).execute(&self.store.pool).await?;
             row = store::sqlx::query("SELECT * FROM karma_command_invocation WHERE uid = ?")
@@ -572,7 +574,7 @@ impl Engine {
             self.require_karma_execution(Some(&rule.record_uid)).await?;
         }
         if let Some(uid) = &command_uid {
-            self.refuse_unreadable_karma_inputs(actor, &[uid.clone()])
+            self.refuse_unreadable_karma_inputs(actor, std::slice::from_ref(uid))
                 .await?;
             let current = self.command_definition(uid).await?;
             if !current.matches(&row)? {
@@ -610,7 +612,7 @@ impl Engine {
             self.require_permission(actor, "organ:update").await?;
             self.require_karma_execution(None).await?;
             if let Some(uid) = &command_uid {
-                self.refuse_unreadable_karma_inputs(actor, &[uid.clone()])
+                self.refuse_unreadable_karma_inputs(actor, std::slice::from_ref(uid))
                     .await?;
                 if !self.command_definition(uid).await?.matches(&row)? {
                     return Err(invalid("Command changed during execution"));
@@ -750,7 +752,7 @@ impl Engine {
         else {
             return Ok(());
         };
-        let context: QueryContext = serde_json::from_value(context.clone())?;
+        let context = QueryContext::deserialize(context)?;
         let Some(rule) = store::recurrence::get(&self.store.pool, &context.rule_uid)
             .await?
             .filter(|rule| rule.revision == context.revision && !rule.is_paused())
@@ -782,6 +784,7 @@ impl Engine {
         &self,
         actor: Option<&str>,
     ) -> Result<serde_json::Value, EngineError> {
+        let _read = nucleus::performance::Span::new("command-inspection-read-await");
         self.require_permission(actor, "organ:update").await?;
         let mut rows = Vec::new();
         for signal in store::sqlx::query_scalar::<_, String>(
@@ -791,7 +794,7 @@ impl Engine {
         .await?
         {
             if self
-                .refuse_unreadable_karma_inputs(actor, &[signal.clone()])
+                .refuse_unreadable_karma_inputs(actor, std::slice::from_ref(&signal))
                 .await
                 .is_err()
             {
@@ -800,9 +803,13 @@ impl Engine {
             let Ok(definition) = self.command_definition(&signal).await else {
                 continue;
             };
-            let record = store::records::get(&self.store.pool, &signal)
-                .await?
-                .ok_or_else(|| invalid("Command deleted"))?;
+            let (slug, head): (Option<String>, String) = store::sqlx::query_as(
+                "SELECT slug, head FROM record WHERE uid = ? AND deleted_at IS NULL",
+            )
+            .bind(&signal)
+            .fetch_optional(&self.store.pool)
+            .await?
+            .ok_or_else(|| invalid("Command deleted"))?;
             let history = store::sqlx::query("SELECT uid, status, stdout, stderr, value, error, context, created_at, finished_at FROM karma_command_invocation WHERE command_uid = ? ORDER BY created_at DESC, uid DESC LIMIT 20").bind(&signal).fetch_all(&self.store.pool).await?;
             let history: Vec<_> = history.iter().map(|row| serde_json::json!({"request":row.get::<String,_>("uid"),"status":row.get::<String,_>("status"),"stdout":row.get::<Option<String>,_>("stdout"),"stderr":row.get::<Option<String>,_>("stderr"),"value":row.get::<Option<String>,_>("value"),"error":row.get::<Option<String>,_>("error"),"context":row.get::<Option<String>,_>("context"),"at":row.get::<String,_>("created_at"),"finished_at":row.get::<Option<String>,_>("finished_at")})).collect();
             let sample = self
@@ -810,7 +817,7 @@ impl Engine {
                 .await
                 .ok()
                 .map(|value| value.to_string());
-            rows.push(serde_json::json!({"uid":definition.uid,"slug":record.slug,"head":record.head,"revision":definition.revision,"configuration":definition.configuration,"host":definition.host,"sample":sample,"history":history}));
+            rows.push(serde_json::json!({"uid":definition.uid,"slug":slug,"head":head,"revision":definition.revision,"configuration":definition.configuration,"host":definition.host,"sample":sample,"history":history}));
         }
         Ok(serde_json::json!({"commands":rows}))
     }

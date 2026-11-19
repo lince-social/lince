@@ -519,11 +519,6 @@ fn update(
                 .get::<LocalTimer>(entity)
                 .is_some_and(|local| local.logs.iter().any(|entry| entry.end.is_none()));
         let (label, control) = (timer.label, timer.control);
-        let state = timer
-            .pending
-            .as_ref()
-            .and_then(|_| timer.binding.as_ref())
-            .and_then(|binding| crate::native::record_binding::status(world, binding));
         let caption = if active { "Pause" } else { "Start" };
         let text = timer.logs.total_caption(now);
         let text = world
@@ -539,8 +534,17 @@ fn update(
         {
             world.get_mut::<Text>(control).unwrap().0 = caption.into();
         }
-        if let Some(state) = state {
-            status(world, entity, &state);
+        let state = world.get::<WorkTimer>(entity).and_then(|timer| {
+            timer.pending.as_ref()?;
+            let binding = timer.binding.as_ref()?;
+            let message = crate::native::record_binding::status(world, binding)?;
+            world
+                .get::<Text>(timer.status)
+                .filter(|text| text.0 != message)
+                .map(|_| (timer.status, message.to_owned()))
+        });
+        if let Some((label, message)) = state {
+            world.get_mut::<Text>(label).unwrap().0 = message;
         }
     }
     ui::tick(world, now);

@@ -957,7 +957,7 @@ fn animate(world: &mut World, active: bool) {
         if render_due {
             scene.rendered = Some(now);
         }
-        if let Some(mut camera) = world.get_mut::<Camera>(scene.camera) {
+        if let Some(camera) = world.get_mut::<Camera>(scene.camera) {
             if camera
                 .map_unchanged(|camera| &mut camera.is_active)
                 .set_if_neq(render_due)

@@ -1,5 +1,7 @@
 use super::*;
+use crate::native::cell_bridge::replies;
 use cell::{ClientMessage, ServerMessage};
+use std::sync::Arc;
 
 #[derive(Component)]
 pub(super) struct TimezoneInput(pub Entity);
@@ -29,11 +31,15 @@ pub(super) struct Feed {
     pub revision: u64,
     pub status: String,
     ready: bool,
+    subscribed: bool,
     outgoing: crate::native::cell_bridge::Sender,
 }
 
 impl Drop for Feed {
     fn drop(&mut self) {
+        if !self.subscribed {
+            return;
+        }
         let message = ClientMessage::Unsubscribe {
             id: self.id.clone(),
         };
@@ -45,12 +51,40 @@ pub(super) fn receive(
     mut messages: MessageReader<crate::native::cell_bridge::CellMessage>,
     mut feeds: Query<&mut Feed>,
 ) {
-    for message in messages.read() {
-        for mut feed in &mut feeds {
-            match message.0.as_ref() {
+    let _receive = nucleus::performance::Span::new("calendar-projection-receive");
+    if feeds.is_empty() {
+        messages.clear();
+        return;
+    }
+    let incoming: Vec<_> = messages
+        .read()
+        .filter(|message| {
+            matches!(
+                message.0.as_ref(),
+                ServerMessage::Snapshot { .. }
+                    | ServerMessage::Update { .. }
+                    | ServerMessage::Error { .. }
+            )
+        })
+        .map(|message| message.0.clone())
+        .collect();
+    if incoming.is_empty() {
+        return;
+    }
+    let batch = replies::Batch::new(&incoming, feeds.iter().nth(1).is_some());
+    for mut feed in &mut feeds {
+        let mut after = 0;
+        while let Some(index) = batch.next(after, std::iter::once(feed.id.as_str())) {
+            after = index + 1;
+            match batch.message(index) {
                 ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows }
                     if id == &feed.id =>
                 {
+                    nucleus::performance::add("calendar-projection-replies", 1);
+                    if feed.ready && (Arc::ptr_eq(&feed.rows, rows) || feed.rows == *rows) {
+                        nucleus::performance::add("calendar-projection-unchanged-replies", 1);
+                        continue;
+                    }
                     feed.rows = rows.clone();
                     feed.status = rows
                         .iter()
@@ -72,7 +106,12 @@ pub(super) fn receive(
                     feed.revision += 1;
                 }
                 ServerMessage::Error { id, message, .. } if id == &feed.id => {
-                    feed.status = message.clone();
+                    nucleus::performance::add("calendar-projection-replies", 1);
+                    if !feed.ready && feed.rows.is_empty() && feed.status == *message {
+                        nucleus::performance::add("calendar-projection-unchanged-replies", 1);
+                        continue;
+                    }
+                    feed.status.clone_from(message);
                     feed.rows = Arc::default();
                     feed.ready = false;
                     feed.revision += 1;
@@ -83,8 +122,38 @@ pub(super) fn receive(
     }
 }
 
+fn retire_hidden(world: &mut World, owner: Entity) {
+    let Some(mut feed) = world.get_mut::<Feed>(owner) else {
+        return;
+    };
+    let retired = match feed.outgoing.try_reserve() {
+        Ok(permit) => {
+            permit.send(ClientMessage::Unsubscribe {
+                id: feed.id.clone(),
+            });
+            true
+        }
+        Err(tokio::sync::mpsc::error::TrySendError::Closed(())) => true,
+        Err(tokio::sync::mpsc::error::TrySendError::Full(())) => false,
+    };
+    if retired {
+        feed.subscribed = false;
+        drop(feed);
+        world.entity_mut(owner).remove::<Feed>();
+        if let Some(mut view) = world.get_mut::<View>(owner) {
+            view.projection_revision = None;
+            view.dirty = true;
+        }
+        nucleus::performance::add("calendar-projection-hidden-retirements", 1);
+    }
+}
+
 pub(super) fn maintain(world: &mut World, owner: Entity) {
     let _maintain = nucleus::performance::Span::new("calendar-projection-update");
+    if !crate::native::output_views::presents_entity(world, owner) {
+        retire_hidden(world, owner);
+        return;
+    }
     let Some(source) = area(world, owner) else {
         world.entity_mut(owner).remove::<Feed>();
         return;
@@ -107,8 +176,6 @@ pub(super) fn maintain(world: &mut World, owner: Entity) {
     {
         return;
     }
-    // Only an already successful Record query is reused. Invalid sources keep
-    // the original live validation/removal path, including time-based errors.
     let _prepare = nucleus::performance::Span::new("calendar-projection-preparation");
     let Ok(mut query) = config.query() else {
         world.entity_mut(owner).remove::<Feed>();
@@ -145,7 +212,6 @@ pub(super) fn maintain(world: &mut World, owner: Entity) {
         .get::<Feed>(owner)
         .is_some_and(|feed| feed.query == key)
     {
-        // Presentation-only source changes can compile to the same wire query.
         world.get_mut::<Feed>(owner).unwrap().preparation = preparation;
         return;
     }
@@ -173,6 +239,7 @@ pub(super) fn maintain(world: &mut World, owner: Entity) {
         revision,
         status: "Projection updating".into(),
         ready: false,
+        subscribed: true,
         outgoing,
     });
 }

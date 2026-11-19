@@ -107,7 +107,7 @@ async fn sqlite_full_refuses_publication_without_partial_authority_and_retries_a
         connections.push(engine.store.pool.acquire().await.unwrap());
     }
     for connection in &mut connections {
-        store::sqlx::query(&format!("PRAGMA max_page_count={}", pages + 8))
+        store::sqlx::query(store::sqlx::AssertSqlSafe(format!("PRAGMA max_page_count={}", pages + 8)))
             .execute(&mut **connection)
             .await
             .unwrap();
@@ -142,7 +142,7 @@ async fn sqlite_full_refuses_publication_without_partial_authority_and_retries_a
     assert!(error.to_string().contains("full"), "{error}");
     for table in ["social_document", "social_posting_authority"] {
         assert_eq!(
-            store::sqlx::query_scalar::<_, i64>(&format!("SELECT COUNT(*) FROM {table}"))
+            store::sqlx::query_scalar::<_, i64>(store::sqlx::AssertSqlSafe(format!("SELECT COUNT(*) FROM {table}")))
                 .fetch_one(&engine.store.pool)
                 .await
                 .unwrap(),
@@ -295,7 +295,7 @@ async fn five_hundred_virtual_sources_cannot_overbook_the_cache_or_prevent_withd
     assert!(admitted > 0 && admitted <= 100);
     for table in ["social_document", "social_posting_authority"] {
         assert_eq!(
-            store::sqlx::query_scalar::<_, i64>(&format!("SELECT COUNT(*) FROM {table}"))
+            store::sqlx::query_scalar::<_, i64>(store::sqlx::AssertSqlSafe(format!("SELECT COUNT(*) FROM {table}")))
                 .fetch_one(&engine.store.pool)
                 .await
                 .unwrap(),

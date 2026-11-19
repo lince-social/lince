@@ -423,7 +423,7 @@ async fn a_rule_can_re_arm_a_task_without_carrying_an_amount() {
     assert_eq!(level(&e, &task).await, "-1");
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, reason = "The fixture names each rule input independently for the test callers")]
 async fn conditional_rule(
     e: &Engine,
     target: &str,

@@ -165,10 +165,10 @@ fn workspace_hole_pixels_and_clicks_reach_only_the_exposed_sand() {
             },
             WorkspaceMember(1),
             ChildOf(root),
-            Button,
+            bevy::ui_widgets::Button,
             BackgroundColor(Color::srgb(0.05, 0.85, 0.15)),
         ))
-        .observe(|_: On<Pointer<Click>>, mut clicks: ResMut<Clicks>| {
+        .observe(|_: On<PointerClick>, mut clicks: ResMut<Clicks>| {
             clicks.0 += 1;
         })
         .id();

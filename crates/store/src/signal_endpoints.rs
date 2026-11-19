@@ -3,7 +3,7 @@ use sqlx::{Sqlite, SqliteConnection, SqlitePool, Transaction};
 
 use crate::StoreError;
 
-#[derive(Clone, Debug, Serialize, Deserialize, sqlx::FromRow)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Endpoint {
     pub uid: String,
     pub name: String,

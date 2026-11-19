@@ -1,7 +1,7 @@
 use crate::native::{
     area::{InfluenceArea, RecordProperties},
     canvas::CanvasItem,
-    cell_bridge::CellMessage,
+    cell_bridge::{CellMessage, replies},
     sand_placement::Pinned,
     workspace::{WorkspaceMember, Workspaces},
 };
@@ -17,7 +17,9 @@ use engine::{
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap, HashSet};
 
+mod admission;
 mod cycles;
+mod snapshot;
 #[path = "area_mutation_tests.rs"]
 pub(crate) mod tests;
 
@@ -147,7 +149,11 @@ pub fn previewed(world: &World, entity: Entity) -> bool {
 }
 
 fn status(world: &mut World, entity: Entity, value: &str) {
-    if world.get_entity(entity).is_ok() {
+    if world.get_entity(entity).is_ok()
+        && world
+            .get::<MutationStatus>(entity)
+            .is_none_or(|status| status.0 != value)
+    {
         world
             .entity_mut(entity)
             .insert(MutationStatus(value.into()));
@@ -198,12 +204,12 @@ pub fn preview(world: &mut World, root: Entity, entity: Entity) {
         return;
     }
     disarm(world, entity, "Property changes inactive");
-    let area = world.get::<InfluenceArea>(entity).unwrap().clone();
-    if world.get::<Preparing>(entity).is_some()
+    let area = world.get::<InfluenceArea>(entity).unwrap();
+    let rejected = world.get::<Preparing>(entity).is_some()
         || crate::native::influence_report::activity(
             world,
             entity,
-            &area,
+            area,
             root,
             world.get::<WorkspaceMember>(entity).map_or(1, |m| m.0),
         ) != crate::native::influence_report::Outcome::Active
@@ -212,21 +218,22 @@ pub fn preview(world: &mut World, root: Entity, entity: Entity) {
         || area.changes.is_empty()
         || (area.change_filter.is_none() && area.filter.is_none() && area.rules.is_empty())
         || ((area.change_filter.is_some() || area.filter.is_some())
-            && !change_matches(world, entity, &area).is_some_and(|filter| {
+            && !change_matches(world, entity, area).is_some_and(|filter| {
                 filter.current
                     && (filter.source == crate::native::protein_area::Source::Local
                         || crate::native::practice_cells::owns_source(world, &filter.source)
                             && world
                                 .get::<crate::native::practice_cells::PracticeArea>(entity)
                                 .is_some_and(|practice| {
-                                    filter.source
-                                        == crate::native::protein_area::Source::Organ(
-                                            practice.0.clone(),
-                                        )
+                                    matches!(
+                                        &filter.source,
+                                        crate::native::protein_area::Source::Organ(source)
+                                            if source == &practice.0
+                                    )
                                 }))
-            }))
-        || crate::native::area_mutation_panel::invalid_fields(world, entity)
-    {
+            }));
+    let area = (!rejected).then(|| area.clone());
+    if area.is_none() || crate::native::area_mutation_panel::invalid_fields(world, entity) {
         status(
             world,
             entity,
@@ -238,7 +245,7 @@ pub fn preview(world: &mut World, root: Entity, entity: Entity) {
     world
         .resource_mut::<Mutations>()
         .previews
-        .insert(entity, area);
+        .insert(entity, area.unwrap());
     status(
         world,
         entity,
@@ -309,131 +316,9 @@ struct Record {
 }
 
 fn records(world: &mut World) -> Vec<Record> {
-    let _preparation = nucleus::performance::Span::new("area-mutation-snapshot");
-    let mut records = BTreeMap::<(Entity, u64, String, String), Record>::new();
-    for (entity, item, properties, parent, member) in world
-        .query_filtered::<(
-            Entity,
-            &CanvasItem,
-            &RecordProperties,
-            &ChildOf,
-            &WorkspaceMember,
-        ), (
-            Without<Pinned>,
-            Without<crate::native::protein_area::placement::Pending>,
-            Or<(
-                Without<crate::native::protein_area::RemoteRecord>,
-                With<crate::native::practice_cells::PracticeRecord>,
-            )>,
-            bevy::ecs::query::Allow<bevy::ecs::entity_disabling::Disabled>,
-        )>()
-        .iter(world)
-    {
-        let Some(uid) = properties
-            .0
-            .get("uid")
-            .and_then(serde_json::Value::as_str)
-            .filter(|uid| !uid.is_empty() && uid.len() <= 128)
-        else {
-            continue;
-        };
-        if !item.position.is_finite() {
-            continue;
-        }
-        let source = world
-            .get::<crate::native::protein_area::RecordBinding>(entity)
-            .map_or(&crate::native::protein_area::Source::Local, |binding| {
-                &binding.source
-            });
-        let key = (
-            parent.parent(),
-            member.0,
-            uid.to_string(),
-            format!("{source:?}"),
-        );
-        let record = records.entry(key).or_insert_with(|| Record {
-            root: parent.parent(),
-            workspace: member.0,
-            uid: uid.into(),
-            points: Vec::new(),
-            immune: HashSet::new(),
-            properties: properties.clone(),
-            filters: HashSet::new(),
-            sources: Vec::new(),
-        });
-        if !record.sources.contains(source) {
-            record.sources.push(source.clone());
-        }
-        record.points.push(
-            world
-                .get::<HeldPoint>(entity)
-                .map(|held| held.0)
-                .or_else(|| crate::native::layout::membership(world, entity))
-                .unwrap_or_else(|| {
-                    crate::native::topology::participation_point(world, entity, item)
-                }),
-        );
-    }
-    let filters: Vec<_> = world
-        .query::<(Entity, &InfluenceArea, &ChildOf, &WorkspaceMember)>()
-        .iter(world)
-        .collect();
-    for record in records.values_mut() {
-        for (entity, area, parent, member) in &filters {
-            if parent.parent() == record.root
-                && member.0 == record.workspace
-                && change_matches(world, *entity, area).is_some_and(|filter| {
-                    filter.current
-                        && record.sources.contains(&filter.source)
-                        && filter.uids.contains(&record.uid)
-                })
-            {
-                record.filters.insert(*entity);
-            }
-        }
-    }
-    let shields = world
-        .query::<&InfluenceArea>()
-        .iter(world)
-        .any(|area| area.immunity != crate::native::area_effects::Immunity::None);
-    let sources: Vec<_> = if shields {
-        world
-            .query::<(Entity, &InfluenceArea)>()
-            .iter(world)
-            .filter(|(_, area)| !area.changes.is_empty())
-            .map(|(entity, _)| entity)
-            .collect()
-    } else {
-        Vec::new()
-    };
-    if !sources.is_empty() && !records.is_empty() {
-        let mut query = crate::native::topology::influence::BlockerQuery::new(world);
-        let mut blockers = HashMap::new();
-        for record in records.values_mut() {
-            for source in &sources {
-                let barriers = blockers
-                    .entry((record.root, record.workspace, *source))
-                    .or_insert_with(|| {
-                        crate::native::topology::influence::Blockers::prepare(
-                            world,
-                            &mut query,
-                            record.root,
-                            record.workspace,
-                            *source,
-                            false,
-                        )
-                    });
-                if record
-                    .points
-                    .iter()
-                    .all(|point| barriers.blocks(*point, Some(&record.properties), None))
-                {
-                    record.immune.insert(*source);
-                }
-            }
-        }
-    }
-    records.into_values().collect()
+    world
+        .run_system_cached(snapshot::prepare)
+        .expect("prepare current Area mutation Records")
 }
 
 fn baseline(grant: &mut Grant, records: &[Record]) {
@@ -457,6 +342,7 @@ fn baseline(grant: &mut Grant, records: &[Record]) {
 }
 
 fn valid_grant(world: &World, entity: Entity, grant: &Grant) -> bool {
+    nucleus::performance::add("area-mutation-grants-checked", 1);
     if crate::native::influence_report::activity(
         world,
         entity,
@@ -492,18 +378,10 @@ fn valid_grant(world: &World, entity: Entity, grant: &Grant) -> bool {
             placement.rotation = grant.placement.rotation;
         }
     }
-    world.get::<InfluenceArea>(entity).is_some_and(|area| {
-        if area == &grant.area {
-            return true;
-        }
-        let mut expected = grant.area.clone();
-        expected.color = area.color;
-        expected.opacity = area.opacity;
-        if follows {
-            expected.center = area.center;
-        }
-        area == &expected
-    }) && placement == grant.placement
+    world
+        .get::<InfluenceArea>(entity)
+        .is_some_and(|area| admission::same_configuration(area, &grant.area, follows))
+        && placement == grant.placement
         && world
             .get::<ChildOf>(entity)
             .is_some_and(|parent| parent.parent() == grant.root)
@@ -536,7 +414,8 @@ fn stop_pending(world: &mut World, pending: &Pending, message: &str) {
     }
 }
 
-fn receive(world: &mut World, messages: Vec<std::sync::Arc<ServerMessage>>, records: &[Record]) {
+fn receive(world: &mut World, wave: &mut replies::Wave, records: &[Record]) {
+    let _receive = nucleus::performance::Span::new("area-mutation-reply-processing");
     let retries: Vec<_> = world
         .resource_mut::<Mutations>()
         .pending
@@ -545,11 +424,12 @@ fn receive(world: &mut World, messages: Vec<std::sync::Arc<ServerMessage>>, reco
         .collect();
     for (id, preview) in retries {
         if let Some(pending) = world.resource_mut::<Mutations>().pending.remove(&id) {
-            submit(world, records, id.clone(), pending, preview);
+            submit(world, records, id, pending, preview);
         }
     }
-    for message in messages.iter().map(|message| message.as_ref()) {
-        if let ServerMessage::Error { id, .. } = message
+    for sequence in wave.drain() {
+        let message = replies::message(world.resource::<Messages<CellMessage>>(), sequence);
+        if let ServerMessage::Error { id, .. } = message.as_ref()
             && id == crate::native::cell_bridge::CONNECTION
         {
             let areas: Vec<_> = world
@@ -568,7 +448,15 @@ fn receive(world: &mut World, messages: Vec<std::sync::Arc<ServerMessage>>, reco
             world.resource_mut::<Mutations>().pending.clear();
             continue;
         }
-        let (id, result) = match message {
+        let Some(id) = replies::action_id(message) else {
+            continue;
+        };
+        if !world.resource::<Mutations>().pending.contains_key(id) {
+            continue;
+        }
+        let message = message.clone();
+        nucleus::performance::add("area-mutation-replies-retained", 1);
+        let (id, result) = match message.as_ref() {
             ServerMessage::ActionOk { id, data, .. } => (id, Ok(data)),
             ServerMessage::Error { id, message, .. } => (id, Err(message)),
             _ => continue,
@@ -606,7 +494,7 @@ fn receive(world: &mut World, messages: Vec<std::sync::Arc<ServerMessage>>, reco
         }
         let preview = data
             .as_ref()
-            .and_then(|data| serde_json::from_value::<TransitionPreview>(data.clone()).ok());
+            .and_then(|data| TransitionPreview::deserialize(data).ok());
         let Some(preview) = preview.filter(|preview| preview.target == pending.target) else {
             stop_pending(
                 world,
@@ -693,7 +581,12 @@ fn submit(
         .insert(apply_id, pending);
 }
 
-fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor<CellMessage>>) {
+fn update(
+    world: &mut World,
+    mut cursor: Local<bevy::ecs::message::MessageCursor<CellMessage>>,
+    mut wave: Local<replies::Wave>,
+) {
+    let _update = nucleus::performance::Span::new("area-mutation-maintenance");
     let expired: Vec<_> = world
         .resource::<Mutations>()
         .previews
@@ -704,10 +597,11 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
     for entity in expired {
         world.resource_mut::<Mutations>().previews.remove(&entity);
     }
-    let messages = cursor
-        .read(world.resource::<Messages<CellMessage>>())
-        .map(|message| message.0.clone())
-        .collect();
+    wave.capture(
+        &mut cursor,
+        world.resource::<Messages<CellMessage>>(),
+        |message| replies::action_id(message).is_some(),
+    );
     activate_configured(world);
     if world.resource::<Mutations>().grants.is_empty()
         && world.resource::<Mutations>().pending.is_empty()
@@ -750,7 +644,7 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
             grant.placement = placement;
         }
     }
-    receive(world, messages, &records);
+    receive(world, &mut wave, &records);
     if !crate::native::laboratory::normal(world) {
         return;
     }
@@ -774,14 +668,14 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
         grant
             .visits
             .retain(|uid, _| record_keys.contains(&(grant.root, grant.workspace, uid.as_str())));
+        let source = crate::native::practice_cells::source(world, *entity).map_or(
+            crate::native::protein_area::Source::Local,
+            crate::native::protein_area::Source::Organ,
+        );
         for record in records
             .iter()
             .filter(|record| record.root == grant.root && record.workspace == grant.workspace)
         {
-            let source = crate::native::practice_cells::source(world, *entity).map_or(
-                crate::native::protein_area::Source::Local,
-                crate::native::protein_area::Source::Organ,
-            );
             if !record.sources.contains(&source) {
                 continue;
             }
@@ -839,7 +733,10 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
                         grant.root,
                         grant.workspace,
                         record.uid.clone(),
-                        crate::native::practice_cells::source(world, *entity),
+                        match &source {
+                            crate::native::protein_area::Source::Local => None,
+                            crate::native::protein_area::Source::Organ(uid) => Some(uid.clone()),
+                        },
                     ))
                     .or_default()
                     .push((*entity, inside, changes.clone()));
@@ -847,17 +744,16 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
         }
     }
     let mut stopped = Vec::new();
-    for ((root, workspace, uid, source), contributions) in candidates {
+    for ((root, workspace, uid, source), mut contributions) in candidates {
         let mut changes = RecordChanges::default();
         let entering_quantity = contributions
             .iter()
             .any(|(_, inside, change)| *inside && change.quantity.is_some());
-        let mut conflict = contributions.iter().any(|(_, inside, change)| {
-            let mut change = change.clone();
-            if !inside && entering_quantity {
+        let mut conflict = contributions.iter_mut().any(|(_, inside, change)| {
+            if !*inside && entering_quantity {
                 change.quantity = None;
             }
-            !changes.merge(&change)
+            !changes.merge(change)
         });
         let mut constraints = changes.clone();
         let mut involved: Vec<_> = contributions.iter().map(|(entity, _, _)| *entity).collect();
@@ -1058,29 +954,9 @@ fn activate_configured(world: &mut World) {
     if !crate::native::laboratory::normal(world) {
         return;
     }
-    let areas: Vec<_> = world
-        .query::<(Entity, &InfluenceArea, &ChildOf, &WorkspaceMember)>()
-        .iter(world)
-        .filter(|(entity, area, parent, member)| {
-            !crate::native::laboratory::blocked(world, *entity)
-                && crate::native::influence_report::activity(
-                    world,
-                    *entity,
-                    area,
-                    parent.parent(),
-                    member.0,
-                ) == crate::native::influence_report::Outcome::Active
-                && area.changes_enabled
-                && crate::native::practice_cells::sender(world, *entity).is_some()
-                && !area.changes.is_empty()
-                && !armed(world, *entity)
-                && world
-                    .get::<Suspended>(*entity)
-                    .is_none_or(|s| &s.0 != *area)
-                && crate::native::topology::holes::live(world, parent.parent(), member.0)
-        })
-        .map(|(entity, _, parent, _)| (entity, parent.parent()))
-        .collect();
+    let areas = world
+        .run_system_cached(admission::candidates)
+        .expect("collect current Area activation candidates");
     for (entity, root) in areas {
         preview(world, root, entity);
         arm(world, root, entity);
@@ -1094,21 +970,21 @@ fn suspend(world: &mut World, entity: Entity, message: &str) {
     }
 }
 
-pub(crate) fn explanation(world: &World, area: Entity, sand: Entity) -> String {
+pub(crate) fn explanation(world: &World, area: Entity, sand: Entity) -> &str {
     let Some(source) = world.get::<InfluenceArea>(area) else {
-        return "Area removed.".into();
+        return "Area removed.";
     };
     if world.get::<Pinned>(sand).is_some() {
-        return "Boundary changes suppressed: Sand pinned to the screen.".into();
+        return "Boundary changes suppressed: Sand pinned to the screen.";
     }
     if world
         .get::<crate::native::protein_area::RemoteRecord>(sand)
         .is_some()
     {
-        return "Boundary changes suppressed: this Record belongs to another Organ.".into();
+        return "Boundary changes suppressed: this Record belongs to another Organ.";
     }
     if !source.changes_enabled {
-        return "Boundary changes switched off.".into();
+        return "Boundary changes switched off.";
     }
     if let Some(state) = world.get_resource::<Mutations>() {
         let uid = world
@@ -1118,8 +994,7 @@ pub(crate) fn explanation(world: &World, area: Entity, sand: Entity) -> String {
             if state.pending.values().any(|pending| {
                 pending.target == uid && pending.areas.iter().any(|(entity, _)| *entity == area)
             }) {
-                return "Boundary change pending; submitted changes may still finish when paused."
-                    .into();
+                return "Boundary change pending; submitted changes may still finish when paused.";
             }
             if let Some(visit) = state
                 .grants
@@ -1127,23 +1002,22 @@ pub(crate) fn explanation(world: &World, area: Entity, sand: Entity) -> String {
                 .and_then(|grant| grant.visits.get(uid))
             {
                 return if visit.deferred {
-                    "Boundary crossing waiting for request capacity.".into()
+                    "Boundary crossing waiting for request capacity."
                 } else if visit.immune {
-                    "Boundary changes suppressed by immunity.".into()
+                    "Boundary changes suppressed by immunity."
                 } else if visit.inside && visit.eligible {
-                    "At least one copy of this Record is inside and eligible for future exit changes.".into()
+                    "At least one copy of this Record is inside and eligible for future exit changes."
                 } else if visit.inside {
-                    "At least one copy of this Record is inside; it does not match the change filter.".into()
+                    "At least one copy of this Record is inside; it does not match the change filter."
                 } else {
-                    "All copies of this Record are outside; an eligible entry can trigger configured changes.".into()
+                    "All copies of this Record are outside; an eligible entry can trigger configured changes."
                 };
             }
         } else {
-            return "Boundary changes require a local Record.".into();
+            return "Boundary changes require a local Record.";
         }
     }
-    world.get::<MutationStatus>(area).map_or_else(
-        || "Boundary changes inactive.".into(),
-        |status| status.0.clone(),
-    )
+    world
+        .get::<MutationStatus>(area)
+        .map_or("Boundary changes inactive.", |status| status.0.as_str())
 }

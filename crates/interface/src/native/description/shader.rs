@@ -26,6 +26,7 @@ use std::{
 };
 
 pub(crate) mod extent;
+mod readings;
 mod scheduling;
 mod snapshot;
 pub(crate) mod spatial;
@@ -53,6 +54,23 @@ pub(crate) struct ShaderInputs {
     numeric1: Vec4,
     present0: UVec4,
     present1: UVec4,
+}
+
+impl ShaderInputs {
+    fn same_uniform(&self, other: &Self) -> bool {
+        self == other
+            && self.size.to_array().map(f32::to_bits) == other.size.to_array().map(f32::to_bits)
+            && self.time.to_bits() == other.time.to_bits()
+            && self.delta.to_bits() == other.delta.to_bits()
+            && self.mouse.to_array().map(f32::to_bits) == other.mouse.to_array().map(f32::to_bits)
+            && self.quantity.to_bits() == other.quantity.to_bits()
+            && self.effect_strength.to_bits() == other.effect_strength.to_bits()
+            && self.progress.to_bits() == other.progress.to_bits()
+            && self.numeric0.to_array().map(f32::to_bits)
+                == other.numeric0.to_array().map(f32::to_bits)
+            && self.numeric1.to_array().map(f32::to_bits)
+                == other.numeric1.to_array().map(f32::to_bits)
+    }
 }
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
@@ -189,7 +207,7 @@ fn visible(world: &World, entity: Entity) -> bool {
         let bounds = Rect::from_center_size(transform.affine().translation, node.size());
         let mut clip = Rect::from_corners(Vec2::ZERO, target.physical_size().as_vec2());
         if let Some(calculated) = world.get::<CalculatedClip>(entity) {
-            clip = clip.intersect(calculated.clip);
+            clip = crate::native::canvas_clip::clipped_rect(clip, calculated);
         }
         if bounds.intersect(clip).is_empty() {
             return false;
@@ -216,22 +234,38 @@ fn visible(world: &World, entity: Entity) -> bool {
 }
 
 fn update(world: &mut World) {
-    let previews: Vec<_> = world
-        .query_filtered::<Entity, (With<Preview>, Without<EffectPreview>)>()
-        .iter(world)
-        .collect();
+    world
+        .run_system_cached(update_inline)
+        .expect("update inline shader previews");
+}
+
+fn update_inline(
+    world: &mut World,
+    previews: &mut QueryState<Entity, (With<Preview>, Without<EffectPreview>)>,
+    mut entities: Local<Vec<Entity>>,
+) {
+    let _update = nucleus::performance::Span::new("shader-inline-update");
+    entities.clear();
+    entities.extend(previews.iter(world));
+    if entities.is_empty() {
+        *entities = Vec::new();
+        return;
+    }
     let mut active = false;
-    for entity in previews {
+    for entity in entities.drain(..) {
         let (surface, label) = {
             let preview = world.get::<Preview>(entity).unwrap();
             (preview.surface, preview.label)
         };
         let disabled = crate::native::shader_effects::disabled(world);
-        world.get_mut::<Node>(surface).unwrap().display = if disabled {
+        let display = if disabled {
             Display::None
         } else {
             Display::Flex
         };
+        if world.get::<Node>(surface).unwrap().display != display {
+            world.get_mut::<Node>(surface).unwrap().display = display;
+        }
         if !visible(world, surface) {
             continue;
         }
@@ -325,11 +359,17 @@ fn update(world: &mut World) {
             ),
             ..default()
         };
-        if let Some(mut material) = world
-            .resource_mut::<Assets<ShaderMaterial>>()
-            .get_mut(&material)
+        if world
+            .resource::<Assets<ShaderMaterial>>()
+            .get(&material)
+            .is_some_and(|material| !material.inputs.same_uniform(&inputs))
         {
-            material.inputs = inputs;
+            world
+                .resource_mut::<Assets<ShaderMaterial>>()
+                .get_mut(&material)
+                .unwrap()
+                .inputs = inputs;
+            nucleus::performance::add("shader-inline-input-updates", 1);
         }
     }
     if active && let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
@@ -363,16 +403,27 @@ struct EffectAssets {
 fn extract_requests(
     mut requests: ResMut<PipelineRequests>,
     previews: Extract<Query<&EffectPreview>>,
+    mut seen: Local<HashSet<AssetId<Shader>>>,
 ) {
-    requests.0 = previews
-        .iter()
-        .filter(|preview| {
-            preview.observed.as_ref().is_some_and(|effect| {
-                matches!(effect.mode, nucleus::shader_effect::spatial::Mode::Surface)
-            })
+    let _requests = nucleus::performance::Span::new("shader-pipeline-requests");
+    requests.0.clear();
+    seen.clear();
+    for preview in previews.iter().filter(|preview| {
+        preview.observed.as_ref().is_some_and(|effect| {
+            matches!(effect.mode, nucleus::shader_effect::spatial::Mode::Surface)
         })
-        .flat_map(|preview| preview.candidates.values().cloned())
-        .collect();
+    }) {
+        for shader in preview.candidates.values() {
+            if seen.insert(shader.id()) {
+                requests.0.push(shader.clone());
+            }
+        }
+    }
+    nucleus::performance::add("shader-pipeline-unique-requests", requests.0.len() as u64);
+    if requests.0.is_empty() {
+        requests.0 = Vec::new();
+        *seen = HashSet::new();
+    }
 }
 
 fn prepare_candidates(
@@ -383,6 +434,10 @@ fn prepare_candidates(
     cache: Res<PipelineCache>,
     views: Query<&ExtractedView, With<bevy::ui_render::UiViewTarget>>,
 ) {
+    if requests.0.is_empty() {
+        return;
+    }
+    let _preparation = nucleus::performance::Span::new("shader-pipeline-preparation");
     let Some(pipeline) = pipeline else { return };
     let formats: HashSet<_> = views
         .iter()
@@ -424,7 +479,7 @@ fn prepare_candidates(
 #[derive(Component)]
 pub(crate) struct EffectPreview {
     pub(crate) effect: Effect,
-    working: Option<Effect>,
+    working: Option<Arc<Effect>>,
     pub(crate) quantity: Option<String>,
     pub(crate) numeric: nucleus::shader_effect::bindings::NumericValues,
     pub(crate) numeric_bindings: Vec<nucleus::shader_effect::bindings::NumericBinding>,
@@ -433,7 +488,7 @@ pub(crate) struct EffectPreview {
     pub(crate) frozen: bool,
     pub(crate) disabled: bool,
     pub(crate) error: String,
-    observed: Option<Effect>,
+    observed: Option<Arc<Effect>>,
     candidates: BTreeMap<String, Handle<Shader>>,
     programs: BTreeMap<String, Handle<Shader>>,
     render_surface: Entity,
@@ -446,11 +501,26 @@ pub(crate) struct EffectPreview {
     last_quantity: Option<String>,
     last_numeric: nucleus::shader_effect::bindings::NumericValues,
     snapshot: snapshot::Snapshot,
+    readings: readings::Prepared,
     budget_blocked: bool,
 }
 
 impl EffectPreview {
-    fn complete_frame(&mut self, program: String, inputs: ShaderInputs) {
+    pub(crate) fn working(&self) -> Option<&Effect> {
+        self.working.as_deref()
+    }
+
+    fn definition_snapshot(&self) -> Arc<Effect> {
+        if let Some(observed) = &self.observed
+            && observed.same_authored(&self.effect)
+        {
+            return observed.clone();
+        }
+        nucleus::performance::add("shader-definition-snapshots", 1);
+        Arc::new(self.effect.clone())
+    }
+
+    fn complete_frame(&mut self, program: Arc<str>, inputs: ShaderInputs) {
         self.painted = self.painted.saturating_add(1);
         self.snapshot.painted(program, inputs);
         self.snapshot.synchronize(self.frozen, self.painted);
@@ -574,6 +644,7 @@ pub(crate) fn effect_with_priority(
         last_quantity: None,
         last_numeric: default(),
         snapshot: default(),
+        readings: default(),
         budget_blocked,
     });
     if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
@@ -583,7 +654,7 @@ pub(crate) fn effect_with_priority(
 }
 
 pub(crate) fn working(world: &World, entity: Entity) -> Option<&Effect> {
-    world.get::<EffectPreview>(entity)?.working.as_ref()
+    world.get::<EffectPreview>(entity)?.working()
 }
 
 pub(crate) fn lighting_inputs(
@@ -599,7 +670,11 @@ pub(crate) fn lighting_inputs(
     } else {
         &state.quantity
     };
-    Some(state.working.as_ref()?.inputs.resolve(quantity.as_deref()))
+    Some(
+        state
+            .readings
+            .mapped(state.working.as_ref()?, quantity.as_deref()),
+    )
 }
 
 pub(crate) fn output(world: &World, entity: Entity) -> Entity {
@@ -625,28 +700,56 @@ pub(crate) fn effect_image(world: &World, entity: Entity) -> Option<Handle<Image
         .map(|owned| owned.2.clone())
 }
 
+#[derive(Default)]
+struct UpdateScratch {
+    entities: Vec<Entity>,
+    alive: HashSet<Entity>,
+    dead: Vec<Entity>,
+    used: HashSet<AssetId<Shader>>,
+    retired: Vec<(String, Handle<Shader>)>,
+}
+
 pub(crate) fn update_effects(world: &mut World) {
+    world
+        .run_system_cached(update_effect_previews)
+        .expect("update current shader effects");
+}
+
+fn update_effect_previews(
+    world: &mut World,
+    previews: &mut QueryState<(Entity, &'static EffectPreview)>,
+    mut scratch: Local<UpdateScratch>,
+) {
+    let preparation = nucleus::performance::Span::new("shader-update-preparation");
+    let UpdateScratch {
+        entities,
+        alive,
+        dead,
+        used,
+        retired,
+    } = &mut *scratch;
     world.init_resource::<EffectAssets>();
     let frame = {
         let mut assets = world.resource_mut::<EffectAssets>();
         assets.frame = assets.frame.saturating_add(1);
         assets.frame
     };
-    let mut entities: Vec<_> = world
-        .query_filtered::<Entity, With<EffectPreview>>()
-        .iter(world)
-        .collect();
-    scheduling::order(world, &mut entities, frame);
-    let alive: HashSet<_> = entities.iter().copied().collect();
-    spatial::prune(world, &alive);
-    let dead: Vec<_> = world
-        .resource::<EffectAssets>()
-        .owned
-        .keys()
-        .filter(|entity| !alive.contains(entity))
-        .copied()
-        .collect();
-    for entity in dead {
+    entities.clear();
+    entities.extend(previews.iter(world).map(|(entity, _)| entity));
+    scheduling::order(world, entities, frame);
+    alive.clear();
+    alive.extend(entities.iter().copied());
+    spatial::prune(world, alive);
+    dead.clear();
+    dead.extend(
+        world
+            .resource::<EffectAssets>()
+            .owned
+            .keys()
+            .filter(|entity| !alive.contains(entity))
+            .copied(),
+    );
+    for entity in dead.drain(..) {
         if let Some((camera, surface, image, material)) =
             world.resource_mut::<EffectAssets>().owned.remove(&entity)
         {
@@ -660,9 +763,10 @@ pub(crate) fn update_effects(world: &mut World) {
             }
         }
     }
+    drop(preparation);
     let mut animated = 0;
     let mut rendered = 0;
-    for entity in entities {
+    for entity in entities.drain(..) {
         let (surface, label, started) = {
             let preview = world.get::<Preview>(entity).unwrap();
             (preview.surface, preview.label, preview.started)
@@ -673,20 +777,19 @@ pub(crate) fn update_effects(world: &mut World) {
             let painted = preview.painted;
             preview.snapshot.synchronize(freeze, painted);
         }
-        let (definition, changed, disabled, camera, render_surface) = {
+        let (changed, disabled, camera, render_surface) = {
             let preview = world.get::<EffectPreview>(entity).unwrap();
-            let changed = preview.observed.as_ref() != Some(&preview.effect);
             (
-                (changed || preview.pending.is_some() || !preview.candidates.is_empty())
-                    .then(|| preview.effect.clone()),
-                changed,
+                preview.observed.as_deref() != Some(&preview.effect),
                 preview.disabled,
                 preview.camera,
                 preview.render_surface,
             )
         };
         if world.get::<EffectPreview>(entity).unwrap().budget_blocked {
-            if let Some(mut text) = world.get_mut::<Text>(label) {
+            if let Some(mut text) = world.get_mut::<Text>(label)
+                && text.0 != "Effect view budget reached. Close unused effect views."
+            {
                 text.0 = "Effect view budget reached. Close unused effect views.".into();
             }
             continue;
@@ -698,10 +801,15 @@ pub(crate) fn update_effects(world: &mut World) {
         let repainting = frozen && world.get::<EffectPreview>(entity).unwrap().painted < 3;
         if !frozen {
             let mut preview = world.get_mut::<EffectPreview>(entity).unwrap();
-            if preview.last_quantity != preview.quantity || preview.last_numeric != preview.numeric
-            {
+            let quantity_changed = preview.last_quantity != preview.quantity;
+            let numeric_changed = preview.last_numeric != preview.numeric;
+            if quantity_changed {
                 preview.last_quantity = preview.quantity.clone();
+            }
+            if numeric_changed {
                 preview.last_numeric = preview.numeric.clone();
+            }
+            if quantity_changed || numeric_changed {
                 preview.painted = 0;
             }
         }
@@ -738,9 +846,14 @@ pub(crate) fn update_effects(world: &mut World) {
         if let Some(mut target) =
             world.get_mut::<crate::native::topology::surface_budget::residency::Target>(camera)
         {
-            target.release = !showing || frozen && !repainting || !eligible;
+            let release = !showing || frozen && !repainting || !eligible;
+            if target.release != release {
+                target.release = release;
+            }
         }
-        if let Some(mut camera) = world.get_mut::<Camera>(camera) {
+        if let Some(mut camera) = world.get_mut::<Camera>(camera)
+            && camera.is_active != render
+        {
             camera.is_active = render;
         }
         if disabled {
@@ -775,7 +888,7 @@ pub(crate) fn update_effects(world: &mut World) {
         }
         if changed && !frozen {
             let mut preview = world.get_mut::<EffectPreview>(entity).unwrap();
-            preview.observed = definition.clone();
+            preview.observed = Some(preview.definition_snapshot());
             preview.pending = Some(Instant::now());
             preview.ready = false;
             preview.painted = 0;
@@ -788,14 +901,18 @@ pub(crate) fn update_effects(world: &mut World) {
                 .pending
                 .is_some_and(|instant| instant.elapsed() >= Duration::from_millis(200))
         {
-            let definition = definition.as_ref().unwrap();
+            let _preparation = nucleus::performance::Span::new("shader-definition-preparation");
+            let definition = world
+                .get::<EffectPreview>(entity)
+                .unwrap()
+                .definition_snapshot();
             let result = definition.validate();
             let mut candidates = BTreeMap::new();
             let result = result.and_then(|()| {
                 match &definition.mode {
                     nucleus::shader_effect::spatial::Mode::Mesh(_)
                     | nucleus::shader_effect::spatial::Mode::Volume(_) => {
-                        candidates = spatial::candidate(world, entity, definition)?;
+                        candidates = spatial::candidate(world, entity, &definition)?;
                         return Ok(());
                     }
                     nucleus::shader_effect::spatial::Mode::Surface => {}
@@ -851,7 +968,7 @@ pub(crate) fn update_effects(world: &mut World) {
                 Ok(())
             });
             let mut preview = world.get_mut::<EffectPreview>(entity).unwrap();
-            preview.observed = Some(definition.clone());
+            preview.observed = Some(definition);
             preview.pending = None;
             preview.ready = false;
             preview.error = result.err().unwrap_or_default();
@@ -861,47 +978,41 @@ pub(crate) fn update_effects(world: &mut World) {
                 BTreeMap::new()
             };
         }
-        let candidates = world
-            .get::<EffectPreview>(entity)
-            .unwrap()
-            .candidates
-            .clone();
-        if !frozen
-            && !candidates.is_empty()
-            && world.get::<EffectPreview>(entity).unwrap().error.is_empty()
-        {
-            let statuses = world
-                .get_resource::<PipelineStatus>()
-                .map(|status| status.0.lock().unwrap().clone())
-                .unwrap_or_default();
-            let renderer =
-                world.contains_resource::<PipelineStatus>() && camera != Entity::PLACEHOLDER;
-            let mut error = candidates.values().find_map(|shader| {
-                statuses
-                    .get(&shader.id())
-                    .and_then(|result| result.as_ref().err())
-                    .cloned()
-            });
-            let mut ready = !renderer
-                || candidates
-                    .values()
-                    .all(|shader| statuses.get(&shader.id()).is_some_and(Result::is_ok));
-            let mesh = definition.as_ref().is_some_and(|effect| {
-                !matches!(effect.mode, nucleus::shader_effect::spatial::Mode::Surface)
-            });
-            if mesh {
+        let pending_candidate = {
+            let preview = world.get::<EffectPreview>(entity).unwrap();
+            !frozen && !preview.candidates.is_empty() && preview.error.is_empty()
+        };
+        if pending_candidate {
+            let _readiness = nucleus::performance::Span::new("shader-candidate-readiness");
+            let mesh = !matches!(
+                world.get::<EffectPreview>(entity).unwrap().effect.mode,
+                nucleus::shader_effect::spatial::Mode::Surface
+            );
+            let (ready, error) = if mesh {
                 match spatial::ready(world, entity) {
-                    Ok(value) => {
-                        ready = value;
-                        error = None;
-                    }
-                    Err(cause) => {
-                        ready = false;
-                        error = Some(cause);
-                    }
+                    Ok(ready) => (ready, None),
+                    Err(error) => (false, Some(error)),
                 }
-            }
-            ready = ready && render;
+            } else {
+                let candidates = &world.get::<EffectPreview>(entity).unwrap().candidates;
+                if let Some(status) = world.get_resource::<PipelineStatus>() {
+                    let statuses = status.0.lock().unwrap();
+                    let error = candidates.values().find_map(|shader| {
+                        statuses
+                            .get(&shader.id())
+                            .and_then(|result| result.as_ref().err())
+                            .cloned()
+                    });
+                    let ready = camera == Entity::PLACEHOLDER
+                        || candidates
+                            .values()
+                            .all(|shader| statuses.get(&shader.id()).is_some_and(Result::is_ok));
+                    (ready, error)
+                } else {
+                    (true, None)
+                }
+            };
+            let ready = ready && render;
             if ready && error.is_none() {
                 if mesh {
                     spatial::commit(world, entity);
@@ -914,9 +1025,10 @@ pub(crate) fn update_effects(world: &mut World) {
                 preview.error = format!("GPU pipeline: {error}");
                 preview.candidates.clear();
             } else if ready {
-                preview.working = definition.clone();
-                preview.programs = candidates;
-                preview.candidates.clear();
+                preview.working = Some(preview.definition_snapshot());
+                let programs = std::mem::take(&mut preview.candidates);
+                preview.programs = programs;
+                preview.readings = default();
                 preview.ready = true;
                 preview.painted = 0;
             }
@@ -933,7 +1045,10 @@ pub(crate) fn update_effects(world: &mut World) {
         } else if let Some(working) = &preview.working
             && (working.inputs.task.is_some() || working.inputs.progress.is_some())
         {
-            working.inputs.resolve(preview.quantity.as_deref()).label()
+            preview
+                .readings
+                .mapped(working, preview.quantity.as_deref())
+                .label()
         } else {
             String::new()
         };
@@ -946,24 +1061,59 @@ pub(crate) fn update_effects(world: &mut World) {
         if !render {
             continue;
         }
+        let frame_inputs = nucleus::performance::Span::new("shader-frame-input-preparation");
+        if world
+            .get::<EffectPreview>(entity)
+            .unwrap()
+            .working
+            .is_none()
+        {
+            continue;
+        }
+        let node = world.get::<ComputedNode>(surface).unwrap();
+        let size = world.get::<extent::Raster>(entity).map_or_else(
+            || node.size() * node.inverse_scale_factor(),
+            |raster| raster.pixels.as_vec2(),
+        );
+        let (program, saved_inputs, values, spatial) = {
+            let mut preview = world.get_mut::<EffectPreview>(entity).unwrap();
+            let spatial = !matches!(
+                preview.working.as_ref().unwrap().mode,
+                nucleus::shader_effect::spatial::Mode::Surface
+            );
+            if let Some(inputs) = preview.snapshot.inputs(size) {
+                (
+                    preview.snapshot.program_handle().unwrap(),
+                    Some(inputs),
+                    None,
+                    spatial,
+                )
+            } else {
+                let EffectPreview {
+                    working,
+                    quantity,
+                    numeric,
+                    numeric_bindings,
+                    readings,
+                    ..
+                } = &mut *preview;
+                let working = working.as_ref().unwrap();
+                let bindings_match = *numeric_bindings == working.bindings;
+                let (program, values) =
+                    readings.resolve(working, quantity.as_deref(), numeric, bindings_match);
+                (program, None, Some(values), spatial)
+            }
+        };
+        let Some(shader) = world
+            .get::<EffectPreview>(entity)
+            .unwrap()
+            .programs
+            .get(program.as_ref())
+            .cloned()
+        else {
+            continue;
+        };
         let preview = world.get::<EffectPreview>(entity).unwrap();
-        let Some(working) = &preview.working else {
-            continue;
-        };
-        let numeric = if preview.numeric_bindings == working.bindings {
-            preview.numeric.clone()
-        } else {
-            default()
-        };
-        let selected = preview
-            .snapshot
-            .program()
-            .unwrap_or_else(|| working.selected_with_inputs(preview.quantity.as_deref(), &numeric));
-        let Some(shader) = preview.programs.get(selected).cloned() else {
-            continue;
-        };
-        let quantity = nucleus::shader_effect::gpu_quantity(preview.quantity.as_deref());
-        let mapped = working.inputs.resolve(preview.quantity.as_deref());
         let motion = !frozen
             && preview.motion
             && crate::native::shader_effects::motion_allowed(world)
@@ -973,26 +1123,34 @@ pub(crate) fn update_effects(world: &mut World) {
             animated += 1;
         }
         let strength = preview.strength;
-        let node = world.get::<ComputedNode>(surface).unwrap();
-        let size = world.get::<extent::Raster>(entity).map_or_else(
-            || node.size() * node.inverse_scale_factor(),
-            |raster| raster.pixels.as_vec2(),
-        );
-        let cursor = world.get::<RelativeCursorPosition>(surface);
-        let inside = cursor.is_some_and(RelativeCursorPosition::cursor_over);
-        let pointer = cursor
-            .and_then(|cursor| cursor.normalized)
-            .map_or(Vec2::ZERO, |position| position + Vec2::splat(0.5))
-            * size;
-        let pressed = inside
-            && world
-                .get_resource::<ButtonInput<MouseButton>>()
-                .is_some_and(|buttons| buttons.pressed(MouseButton::Left));
-        let (values, present) = numeric.gpu();
-        let inputs = preview
-            .snapshot
-            .inputs(size)
-            .unwrap_or_else(|| ShaderInputs {
+        let inputs = saved_inputs.unwrap_or_else(|| {
+            let readings::Values {
+                quantity,
+                mapped,
+                values,
+                present,
+            } = values.unwrap();
+            let mouse = if motion {
+                let cursor = world.get::<RelativeCursorPosition>(surface);
+                let inside = cursor.is_some_and(RelativeCursorPosition::cursor_over);
+                let pointer = cursor
+                    .and_then(|cursor| cursor.normalized)
+                    .map_or(Vec2::ZERO, |position| position + Vec2::splat(0.5))
+                    * size;
+                let pressed = inside
+                    && world
+                        .get_resource::<ButtonInput<MouseButton>>()
+                        .is_some_and(|buttons| buttons.pressed(MouseButton::Left));
+                Vec4::new(
+                    pointer.x,
+                    pointer.y,
+                    u8::from(pressed) as f32,
+                    u8::from(inside) as f32,
+                )
+            } else {
+                Vec4::ZERO
+            };
+            ShaderInputs {
                 numeric0: Vec4::from_array(values[..4].try_into().unwrap()),
                 numeric1: Vec4::from_array(values[4..].try_into().unwrap()),
                 present0: UVec4::from_array(present[..4].try_into().unwrap()),
@@ -1015,20 +1173,12 @@ pub(crate) fn update_effects(world: &mut World) {
                 progress_present: u32::from(mapped.progress.is_some()),
                 effect_strength: strength.clamp(0.0, 1.0),
                 motion_allowed: u32::from(motion),
-                mouse: if motion {
-                    Vec4::new(
-                        pointer.x,
-                        pointer.y,
-                        u8::from(pressed) as f32,
-                        u8::from(inside) as f32,
-                    )
-                } else {
-                    Vec4::ZERO
-                },
+                mouse,
                 ..default()
-            });
-        let program = selected.to_owned();
-        if !matches!(working.mode, nucleus::shader_effect::spatial::Mode::Surface) {
+            }
+        });
+        drop(frame_inputs);
+        if spatial {
             spatial::draw(world, entity, &program, inputs);
             let mut preview = world.get_mut::<EffectPreview>(entity).unwrap();
             preview.complete_frame(program, inputs);
@@ -1039,7 +1189,7 @@ pub(crate) fn update_effects(world: &mut World) {
             let changed = world
                 .resource::<Assets<ShaderMaterial>>()
                 .get(&material)
-                .is_some_and(|value| value.shader != shader || value.inputs != inputs);
+                .is_some_and(|value| value.shader != shader || !value.inputs.same_uniform(&inputs));
             if changed
                 && let Some(mut value) = world
                     .resource_mut::<Assets<ShaderMaterial>>()
@@ -1069,30 +1219,37 @@ pub(crate) fn update_effects(world: &mut World) {
             preview.complete_frame(program, inputs);
         }
     }
-    let mut used: HashSet<_> = world
-        .query::<&EffectPreview>()
-        .iter(world)
-        .flat_map(|preview| {
+    let _retirement = nucleus::performance::Span::new("shader-update-retirement");
+    used.clear();
+    let mut preparing = false;
+    for (_, preview) in previews.iter(world) {
+        used.extend(
             preview
                 .programs
                 .values()
                 .chain(preview.candidates.values())
-                .map(|shader| shader.id())
-        })
-        .collect();
+                .map(Handle::id),
+        );
+        preparing = preparing
+            || !preview.disabled
+                && (!preview.frozen || preview.painted < 3)
+                && (preview.pending.is_some()
+                    || !preview.candidates.is_empty()
+                    || preview.working.is_some() && preview.painted < 3);
+    }
     used.extend(spatial::shaders(world));
-    let removed: Vec<_> = world
-        .resource::<EffectAssets>()
-        .shaders
-        .iter()
-        .filter(|(_, shader)| !used.contains(&shader.id()))
-        .map(|(source, shader)| (source.clone(), shader.id()))
-        .collect();
-    for (source, id) in removed {
-        if let Some(handle) = world.resource_mut::<EffectAssets>().shaders.remove(&source) {
-            if let Some(handle) = spatial::recycle(world, &source, handle) {
-                world.resource_mut::<EffectAssets>().available.push(handle);
-            }
+    retired.clear();
+    retired.extend(
+        world
+            .resource_mut::<EffectAssets>()
+            .shaders
+            .extract_if(|_, shader| !used.contains(&shader.id())),
+    );
+    nucleus::performance::add("shader-assets-retired", retired.len() as u64);
+    for (source, handle) in retired.drain(..) {
+        let id = handle.id();
+        if let Some(handle) = spatial::recycle(world, &source, handle) {
+            world.resource_mut::<EffectAssets>().available.push(handle);
         }
         if let Some(status) = world.get_resource::<PipelineStatus>() {
             status.0.lock().unwrap().remove(&id);
@@ -1103,19 +1260,19 @@ pub(crate) fn update_effects(world: &mut World) {
     {
         wake.ring();
     }
-    let preparing = world.query::<&EffectPreview>().iter(world).any(|preview| {
-        !preview.disabled
-            && (!preview.frozen || preview.painted < 3)
-            && (preview.pending.is_some()
-                || !preview.candidates.is_empty()
-                || preview.working.is_some() && preview.painted < 3)
-    });
-    let wake = world.get_resource::<crate::native::wake::WakeSignal>().cloned();
+    let wake = world
+        .get_resource::<crate::native::wake::WakeSignal>()
+        .cloned();
     let mut assets = world.resource_mut::<EffectAssets>();
     if preparing && let Some(wake) = wake {
-        assets.preparation_wake.after(&wake, Duration::from_millis(30));
+        assets
+            .preparation_wake
+            .after(&wake, Duration::from_millis(30));
     } else {
         assets.preparation_wake.cancel();
+    }
+    if alive.is_empty() {
+        *scratch = default();
     }
 }
 
@@ -1732,7 +1889,13 @@ mod tests {
                 .world()
                 .resource::<Assets<ShaderBuffer>>()
                 .iter()
-                .find(|(_, buffer)| buffer.buffer_description.size == 6 * 48)
+                .find(|(_, buffer)| {
+                    matches!(
+                        buffer.data,
+                        bevy::render::storage::ShaderBufferData::Uninitialized(size)
+                            if size == 6 * 48
+                    )
+                })
                 .unwrap()
                 .0;
             let buffer = app

@@ -52,8 +52,6 @@ impl View {
                 .is_some_and(|child| child.parent() == parent)
                 && world.get::<live::SubscriptionRefused>(*root).is_none()
         }) && (self.block.transclusion.is_none()
-            // One-shot source references have no change feed. Keep their existing
-            // refresh boundary instead of treating an old fetch as current data.
             || self.roots.len() == 1
                 && transclusion::is_view(world, self.roots[0])
                 && live::watched(world, self.roots[0]))
@@ -109,8 +107,6 @@ impl View {
             }
             return;
         }
-        // A compatible paragraph keeps its root, spans, link handlers and focus.
-        // Only changed strings dirty the text renderer.
         let children = world.get::<Children>(self.roots[0]).unwrap().to_vec();
         for ((old, new), child) in self.block.runs.iter().zip(&block.runs).zip(children) {
             if old.text != new.text {
@@ -146,8 +142,6 @@ pub(in crate::native::description) fn render(
     context: &Context,
 ) {
     world.init_resource::<Fonts>();
-    // Parse the complete document: reference definitions, lists and fences can
-    // change blocks outside the edited source range. Retain by parsed meaning.
     let blocks = parse(source);
     let scope = Scope::current(world, parent, context);
     let previous = world.entity_mut(parent).take::<Retained>();
@@ -193,8 +187,6 @@ pub(in crate::native::description) fn render(
         .map(|index| index.and_then(|index| old[index].take()))
         .collect();
     let mut shaders = std::collections::VecDeque::new();
-    // Retire obsolete roots before creating replacements so the transclusion
-    // tree limit counts the surviving views. Subscription retirement stays live.
     for view in old.into_iter().flatten() {
         for root in view.roots {
             if world

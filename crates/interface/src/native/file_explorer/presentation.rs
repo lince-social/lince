@@ -4,9 +4,6 @@ use crate::host::performance::{self, Count, Stage};
 #[derive(Default)]
 pub(super) struct Rows(crate::native::retained::Children<Key>);
 
-// Include the row's current action identity and generation, not just its slot.
-// Retention must never rebind a pressed button to a different file after a
-// listing replacement. The index also distinguishes overlapping root entries.
 #[derive(Clone, PartialEq, Eq, Hash)]
 struct Key {
     generation: u64,
@@ -43,9 +40,6 @@ struct Layout {
 }
 
 pub(super) fn render(world: &mut World, owner: Entity) {
-    // Completions append their already-sorted batches. Only directories that
-    // received a later nonempty batch need a sort, once before model creation,
-    // regardless of how many completions arrived in this worker-drain wave.
     if !world.get::<View>(owner).unwrap().search_results {
         let sorting = std::mem::take(&mut world.get_mut::<View>(owner).unwrap().pending_sorts);
         if !sorting.is_empty() {
@@ -334,8 +328,6 @@ fn update(world: &mut World, entity: Entity, button: &Button, layout: &Layout) {
     let selection_changed = current.selected != button.selected;
     let caption_changed = current.caption != wanted;
     let label = current.label;
-    // Row identity includes index, depth and grid mode; column count is the
-    // only remaining placement input. Theme-owned layout state stays independent.
     if placement_changed {
         let desired = node(button, layout);
         let mut node = world.get_mut::<Node>(entity).unwrap();

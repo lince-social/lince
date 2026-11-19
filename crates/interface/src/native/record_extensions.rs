@@ -1165,7 +1165,6 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
                     Inspection::deserialize(data.as_ref().unwrap_or(&Value::Null))
                         .map_err(|error| error.to_string())
                 }
-                // Preserve the decoder's rejection of an unexpected row reply.
                 ServerMessage::Snapshot { rows, .. } => {
                     serde_json::from_value::<Inspection>(json!(rows))
                         .map_err(|error| error.to_string())
@@ -1200,7 +1199,6 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
             }
             let result = match message {
                 ServerMessage::ActionOk { data, .. } => Ok(data.as_ref().unwrap_or(&Value::Null)),
-                // The old array normalization exposes no schema/revision fields.
                 ServerMessage::Snapshot { .. } => Ok(&Value::Null),
                 ServerMessage::Error { message, .. } => Err(message),
                 _ => unreachable!(),

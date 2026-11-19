@@ -69,80 +69,87 @@ async fn extension_on(
     .bind(namespace)
     .fetch_optional(connection)
     .await?;
-    raw.map(|raw| {
-        if raw.len() > crate::records::MAX_EXTENSION_BYTES {
-            return Err(invalid("Record extension exceeds its byte limit."));
+    raw.map(extension_value).transpose()
+}
+
+fn extension_value(raw: String) -> Result<serde_json::Value, Error> {
+    if raw.len() > crate::records::MAX_EXTENSION_BYTES {
+        return Err(invalid("Record extension exceeds its byte limit."));
+    }
+    serde_json::from_str(&raw).map_err(invalid)
+}
+
+async fn attachment_on(
+    connection: &mut SqliteConnection,
+    uid: &str,
+    part: usize,
+    chunks: usize,
+) -> Result<String, Error> {
+    if chunks == 0 {
+        return Ok(String::new());
+    }
+    let _read = nucleus::performance::Span::new("store-message-attachment-chunks-await");
+    let requested: Vec<_> = (0..chunks)
+        .map(|chunk| message::chunk_namespace(part, chunk))
+        .collect();
+    let requested = serde_json::to_string(&requested).map_err(invalid)?;
+    let mut rows = sqlx::query_scalar::<_, Option<String>>(
+        "SELECT substr(chunk.fds, 1, ?)
+         FROM json_each(?) requested
+         LEFT JOIN record_extension chunk
+           ON chunk.record_uid = ? AND chunk.namespace = requested.value
+         ORDER BY CAST(requested.key AS INTEGER)",
+    )
+    .bind((crate::records::MAX_EXTENSION_BYTES + 1) as i64)
+    .bind(requested)
+    .bind(uid)
+    .fetch(connection);
+    let mut data = String::new();
+    while let Some(raw) = std::future::poll_fn(|context| rows.as_mut().poll_next(context)).await {
+        let value = extension_value(raw?.ok_or_else(|| {
+            invalid("This attachment has not arrived or is no longer available.")
+        })?)?;
+        let piece = value["data"]
+            .as_str()
+            .ok_or_else(|| invalid("Invalid attachment chunk."))?;
+        if piece.len() > message::CHUNK_BYTES {
+            return Err(invalid("Attachment chunk exceeds its size limit."));
         }
-        serde_json::from_str(&raw).map_err(invalid)
-    })
-    .transpose()
+        data.push_str(piece);
+        nucleus::performance::add("message-attachment-chunk-rows", 1);
+        nucleus::performance::add("message-attachment-encoded-bytes", piece.len() as u64);
+    }
+    Ok(data)
 }
 
 pub async fn load_on(
     connection: &mut SqliteConnection,
     uid: &str,
 ) -> Result<Vec<MessagePart>, Error> {
-    let Some(value) = extension_on(connection, uid, "lince.message-content").await? else {
+    let Some(mut value) = extension_on(connection, uid, "lince.message-content").await? else {
         return Ok(Vec::new());
     };
-    let descriptors: Vec<StoredPart> =
-        serde_json::from_value(value["parts"].clone()).map_err(invalid)?;
+    let descriptors: Vec<StoredPart> = serde_json::from_value(
+        value
+            .get_mut("parts")
+            .map(serde_json::Value::take)
+            .unwrap_or_default(),
+    )
+    .map_err(invalid)?;
     if descriptors.len() > message::MAX_PARTS {
         return Err(invalid("Too many message parts."));
     }
-    let mut parts = Vec::new();
-    let mut total = 0;
+    let mut restored = message::Restoration::default();
     for (index, part) in descriptors.into_iter().enumerate() {
-        parts.push(match part {
-            StoredPart::Question { question } => MessagePart::Question { question },
-            StoredPart::Steps { steps } => MessagePart::Steps { steps },
-            StoredPart::Text { text } => MessagePart::Text { text },
-            StoredPart::Reference { name, uri } => MessagePart::Reference { name, uri },
-            StoredPart::Attachment {
-                name,
-                mime_type,
-                bytes,
-                sha256,
-                chunks,
-            } => {
-                total += bytes;
-                if total > message::MAX_CONTENT_BYTES || chunks > 24 {
-                    return Err(invalid("Message attachments exceed their size limit."));
-                }
-                let mut data = String::new();
-                for chunk in 0..chunks {
-                    let value =
-                        extension_on(connection, uid, &message::chunk_namespace(index, chunk))
-                            .await?
-                            .ok_or_else(|| {
-                                invalid(
-                                    "This attachment has not arrived or is no longer available.",
-                                )
-                            })?;
-                    let piece = value["data"]
-                        .as_str()
-                        .ok_or_else(|| invalid("Invalid attachment chunk."))?;
-                    if piece.len() > message::CHUNK_BYTES {
-                        return Err(invalid("Attachment chunk exceeds its size limit."));
-                    }
-                    data.push_str(piece);
-                }
-                let decoded = message::decode(&data).map_err(invalid)?;
-                if decoded.len() != bytes || message::digest(&decoded) != sha256 {
-                    return Err(invalid(
-                        "The attachment is incomplete or its contents changed.",
-                    ));
-                }
-                MessagePart::Attachment {
-                    name,
-                    mime_type,
-                    data,
-                }
-            }
-        });
+        let part = restored.part(part).map_err(invalid)?;
+        let data = if let Some(chunks) = part.chunks() {
+            Some(attachment_on(connection, uid, index, chunks).await?)
+        } else {
+            None
+        };
+        part.finish(data).map_err(invalid)?;
     }
-    message::validate(&parts).map_err(invalid)?;
-    Ok(parts)
+    restored.finish().map_err(invalid)
 }
 
 pub async fn replace(

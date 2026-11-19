@@ -1,13 +1,12 @@
 //! Helpers for this crate's unit tests.
 
-use alloc::sync::Arc;
 use bevy_platform::future::block_on;
 use wgpu::{
     BackendOptions, Backends, DeviceDescriptor, Instance, InstanceDescriptor, InstanceFlags,
     NoopBackendOptions, RequestAdapterOptions,
 };
 
-use crate::renderer::{RenderDevice, RenderQueue, WgpuWrapper};
+use crate::renderer::{RenderDevice, RenderQueue};
 
 /// Creates a dummy [`RenderDevice`] and [`RenderQueue`] on `wgpu`'s noop backend.
 ///
@@ -20,7 +19,10 @@ pub fn create_dummy_device() -> (RenderDevice, RenderQueue) {
         memory_budget_thresholds: Default::default(),
         display: None,
         backend_options: BackendOptions {
-            noop: NoopBackendOptions { enable: true },
+            noop: NoopBackendOptions {
+                enable: true,
+                ..Default::default()
+            },
             ..Default::default()
         },
     });
@@ -33,8 +35,5 @@ pub fn create_dummy_device() -> (RenderDevice, RenderQueue) {
     }))
     .expect("the noop backend should always produce a device");
 
-    (
-        RenderDevice::from(device),
-        RenderQueue(Arc::new(WgpuWrapper::new(queue))),
-    )
+    (RenderDevice::from(device), RenderQueue::new(queue))
 }

@@ -162,8 +162,6 @@ pub(super) fn project(
         );
         groups.insert(source_id, group);
     }
-    // Groups already own contiguous spans of the output vector. Link those
-    // spans directly instead of allocating another map for every character.
     for (source, group) in &groups {
         let (previous, next, range) = &links[source];
         for (index, (_, node)) in nodes[range.clone()].iter_mut().enumerate() {

@@ -51,7 +51,7 @@ impl Store {
                     .bind(&name)
                     .fetch_all(&mut *tx)
                     .await?;
-            let rows = sqlx::query(&format!("SELECT * FROM \"{quoted}\""))
+            let rows = sqlx::query(sqlx::AssertSqlSafe(format!("SELECT * FROM \"{quoted}\"")))
                 .fetch_all(&mut *tx)
                 .await?;
             let mut values = Vec::with_capacity(rows.len());

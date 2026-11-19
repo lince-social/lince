@@ -5,6 +5,8 @@ use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;
 
+pub mod presentation;
+
 pub const LOCAL_ORGAN_SLUG: &str = "local-organ";
 
 const CELL_SURFACE_CONFIG: &str = "lince.cell.surface";
@@ -80,18 +82,20 @@ pub async fn ensure_local(pool: &SqlitePool, base_url: &str) -> Result<OrganReco
 }
 
 pub async fn holds_own_records(pool: &SqlitePool) -> Result<bool, StoreError> {
-    let count: i64 =
-        sqlx::query_scalar("SELECT COUNT(*) FROM record WHERE slug IS NULL OR slug NOT IN (?, ?)")
-            .bind(LOCAL_ORGAN_SLUG)
-            .bind(crate::cells::LOCAL_CELL_SLUG)
-            .fetch_one(pool)
-            .await?;
+    let _presence = nucleus::performance::Span::new("organ-own-record-presence-await");
+    let records: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM record WHERE slug IS NULL OR slug NOT IN (?, ?))",
+    )
+    .bind(LOCAL_ORGAN_SLUG)
+    .bind(crate::cells::LOCAL_CELL_SLUG)
+    .fetch_one(pool)
+    .await?;
     let meanings: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM concept_source WHERE lingua_uid='g_local') OR EXISTS(SELECT 1 FROM organ_vocabulary v JOIN record o ON o.uid=v.organ_uid WHERE o.slug=? AND (v.publication_uid IS NOT NULL OR v.vocabulary_uid NOT IN ('g_local',?)))")
         .bind(LOCAL_ORGAN_SLUG)
         .bind(nucleus::vocabulary::DEFAULT_VOCABULARY_UID)
         .fetch_one(pool)
         .await?;
-    Ok(count > 0 || meanings)
+    Ok(records || meanings)
 }
 
 pub async fn adopt_identity(
@@ -174,17 +178,31 @@ pub async fn adopt_identity(
     local(pool).await?.ok_or(sqlx::Error::RowNotFound.into())
 }
 
+fn local_record_query(columns: &str) -> sqlx::QueryBuilder<sqlx::Sqlite> {
+    let mut query = sqlx::QueryBuilder::new("SELECT ");
+    query
+        .push(columns)
+        .push(" FROM record r WHERE r.slug = ")
+        .push_bind(LOCAL_ORGAN_SLUG)
+        .push(" AND r.kind = ")
+        .push_bind(RecordKind::Organ.as_str())
+        .push(" LIMIT 1");
+    query
+}
+
+pub async fn local_head(pool: &SqlitePool) -> Result<Option<String>, StoreError> {
+    let _head = nucleus::performance::Span::new("organ-local-head-await");
+    local_record_query("r.head")
+        .build_query_scalar::<String>()
+        .fetch_optional(pool)
+        .await
+}
+
 pub async fn local(pool: &SqlitePool) -> Result<Option<OrganRecord>, StoreError> {
-    let row = sqlx::query(
-        "SELECT r.uid, r.slug, r.head, r.body
-           FROM record r
-          WHERE r.slug = ? AND r.kind = ?
-          LIMIT 1",
-    )
-    .bind(LOCAL_ORGAN_SLUG)
-    .bind(RecordKind::Organ.as_str())
-    .fetch_optional(pool)
-    .await?;
+    let row = local_record_query("r.uid, r.slug, r.head, r.body")
+        .build()
+        .fetch_optional(pool)
+        .await?;
 
     let Some(row) = row else {
         return Ok(None);
@@ -650,6 +668,14 @@ pub enum Delivery {
 }
 
 impl Delivery {
+    fn from_mode(mode: &str) -> Self {
+        match mode {
+            "direct" => Self::Direct,
+            "mailbox" => Self::Mailbox,
+            _ => Self::Auto,
+        }
+    }
+
     pub fn as_str(self) -> &'static str {
         match self {
             Delivery::Direct => "direct",
@@ -661,11 +687,7 @@ impl Delivery {
 
 impl Contact {
     pub fn delivery(&self) -> Delivery {
-        match self.mode.as_str() {
-            "direct" => Delivery::Direct,
-            "mailbox" => Delivery::Mailbox,
-            _ => Delivery::Auto,
-        }
+        Delivery::from_mode(&self.mode)
     }
 }
 
@@ -732,9 +754,6 @@ pub async fn contacts(pool: &SqlitePool) -> Result<Vec<Contact>, StoreError> {
     .collect())
 }
 
-/// Read only the cadence input used by the sync runner. Keep the same Record
-/// join and eligibility as `contacts`; display text and scope JSON are not
-/// needed to choose the next catch-up interval.
 pub async fn minimum_catchup_interval(pool: &SqlitePool) -> Result<Option<i64>, StoreError> {
     sqlx::query_scalar(
         "SELECT MIN(c.catchup_interval_secs) FROM organ_contact c
@@ -827,6 +846,40 @@ pub async fn quarantined_for(
     .into_iter()
     .map(|row| (row.get("reason"), row.get("payload"), row.get("at")))
     .collect())
+}
+
+pub async fn quarantined_for_many(
+    pool: &SqlitePool,
+    contacts: &[&str],
+    limit: i64,
+) -> Result<std::collections::HashMap<String, Vec<(String, String, String)>>, StoreError> {
+    let mut output = std::collections::HashMap::<String, Vec<(String, String, String)>>::new();
+    if contacts.is_empty() || limit == 0 {
+        return Ok(output);
+    }
+    let selected =
+        serde_json::to_string(contacts).map_err(|error| StoreError::Protocol(error.to_string()))?;
+    let rows = sqlx::query(
+        "SELECT q.from_organ, q.reason, q.payload, q.at
+         FROM (SELECT DISTINCT value FROM json_each(?1)) selected
+         JOIN sync_quarantine q ON q.rowid IN (
+             SELECT rowid FROM sync_quarantine WHERE from_organ = selected.value
+             ORDER BY rowid DESC LIMIT ?2
+         ) ORDER BY q.from_organ, q.rowid DESC",
+    )
+    .bind(selected)
+    .bind(limit)
+    .fetch_all(pool)
+    .await?;
+    nucleus::performance::add("contact-presentation-quarantine-rows", rows.len() as u64);
+    for row in rows {
+        output.entry(row.get("from_organ")).or_default().push((
+            row.get("reason"),
+            row.get("payload"),
+            row.get("at"),
+        ));
+    }
+    Ok(output)
 }
 
 pub async fn quarantine_by_contact(pool: &SqlitePool) -> Result<Vec<(String, i64)>, StoreError> {

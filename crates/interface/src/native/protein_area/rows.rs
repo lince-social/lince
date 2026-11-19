@@ -1,3 +1,5 @@
+mod geometry;
+
 use super::*;
 use crate::native::{
     actions::{Action, ActionButton},
@@ -159,7 +161,7 @@ pub(super) fn save_indicators(
 }
 
 fn click(
-    mut event: On<Pointer<Click>>,
+    mut event: On<PointerClick>,
     bindings: Query<&RecordBinding>,
     parents: Query<&ChildOf>,
     mut commands: Commands,
@@ -369,7 +371,7 @@ pub(super) fn fields(
                     protein::record_schema::FIELDS
                         .iter()
                         .find(|f| f.key == property.property)
-                        .map_or(property.property.clone(), |f| f.title.into()),
+                        .map_or_else(|| property.property.clone(), |f| f.title.into()),
                 ),
             ))
             .id();
@@ -437,8 +439,8 @@ fn field_content(
         let label = protein::record_schema::FIELDS
             .iter()
             .find(|field| field.key == property.property)
-            .map_or(property.property.clone(), |field| field.title.into());
-        let label = crate::native::edit_mode::label(world, container, &label, 13.0);
+            .map_or(property.property.as_str(), |field| field.title);
+        let label = crate::native::edit_mode::label(world, container, label, 13.0);
         world
             .entity_mut(label)
             .insert((crate::native::record_binding::BindingStatus, PropertyLabel));
@@ -1025,7 +1027,7 @@ pub(super) fn property_containers(world: &World, row: Entity) -> Vec<(Entity, St
 pub(super) fn drafts(world: &World, row: Entity) -> Vec<super::presentation::Draft> {
     let uid = world
         .get::<RecordBinding>(row)
-        .map(|binding| binding.uid.clone())
+        .map(|binding| binding.uid.as_str())
         .unwrap_or_default();
     descendants(world, row)
         .into_iter()
@@ -1035,19 +1037,19 @@ pub(super) fn drafts(world: &World, row: Entity) -> Vec<super::presentation::Dra
             let mut property = None;
             while let Some(entity) = cursor {
                 if let Some(container) = world.get::<PropertyContainer>(entity) {
-                    property = Some(container.0.clone());
+                    property = Some(container.0.as_str());
                     break;
                 }
                 cursor = world.get::<ChildOf>(entity).map(ChildOf::parent);
             }
-            let value = text.value().to_string();
+            let property = property?;
             let dirty = world
                 .get::<crate::native::record_binding::TextBinding>(entity)
-                .map(|binding| binding.unsaved(&value))
+                .map(|binding| binding.editor_unsaved(text))
                 .or_else(|| {
-                    world
-                        .get::<PropertyEditor>(entity)
-                        .map(|editor| editor.pending.is_some() || value != editor.observed)
+                    world.get::<PropertyEditor>(entity).map(|editor| {
+                        editor.pending.is_some() || text.value() != editor.observed.as_str()
+                    })
                 })
                 .unwrap_or_else(|| {
                     world
@@ -1055,9 +1057,9 @@ pub(super) fn drafts(world: &World, row: Entity) -> Vec<super::presentation::Dra
                         .is_some_and(|state| state.0)
                 });
             Some(super::presentation::Draft {
-                uid: uid.clone(),
-                field: property?,
-                text: value,
+                uid: uid.to_owned(),
+                field: property.to_owned(),
+                text: text.value().to_string(),
                 dirty,
                 busy: text.is_composing() || text.pending_paste.is_some(),
             })
@@ -1072,8 +1074,6 @@ fn refresh(world: &mut World, row: Entity, data: &Value) {
             .get::<DeferredFields>(row)
             .is_some_and(|fields| fields.0.iter().any(|(pending, _)| *pending == container))
         {
-            // The first reveal reads the current Row snapshot. There is no
-            // editor or displayed value to refresh before it exists.
             continue;
         }
         if nucleus::record_extension::column_binding(&property).is_some() {
@@ -1225,7 +1225,7 @@ pub(super) fn save_field(world: &mut World, entity: Entity) {
     {
         return;
     }
-    let Some(binding) = world.get::<RecordBinding>(entity).cloned() else {
+    let Some(binding) = world.get::<RecordBinding>(entity) else {
         return;
     };
     let Some(editor) = world.get::<PropertyEditor>(entity) else {
@@ -1247,6 +1247,7 @@ pub(super) fn save_field(world: &mut World, entity: Entity) {
         return;
     }
     let value = value.to_string();
+    let binding = binding.clone();
     let submitted = value.clone();
     let property = editor.property.clone();
     world.get_mut::<PropertyEditor>(entity).unwrap().attempted = Some(value.clone());
@@ -1281,10 +1282,15 @@ pub(super) fn save_field(world: &mut World, entity: Entity) {
             engine::record_change::Mutation::Work { field, value }
         }
         "head" | "body" => {
+            let (head, body) = if property == "head" {
+                (Some(value), None)
+            } else {
+                (None, Some(value))
+            };
             let action = engine::actions::Action::EditRecordText {
                 target: binding.uid.clone(),
-                head: (property == "head").then(|| value.clone()),
-                body: (property == "body").then_some(value),
+                head,
+                body,
             };
             match execute(world, &binding, entity, action) {
                 Ok(()) => {
@@ -1340,169 +1346,7 @@ fn save_changed_fields(
 }
 
 pub(super) fn layout(world: &mut World) {
-    super::placement::begin_frame(world);
-    let mut resized = false;
-    for (text, layout, computed, mut size, mut node, mut wrapping, scroll, settings) in world
-        .query::<(
-            &EditableText,
-            &bevy::text::TextLayoutInfo,
-            &ComputedNode,
-            &mut EditorSize,
-            &mut Node,
-            &mut TextLayout,
-            Option<&mut bevy::ui::widget::TextScroll>,
-            Option<&super::presentation::EditorSettings>,
-        )>()
-        .iter_mut(world)
-    {
-        let settings = settings.map(|settings| &settings.0.0);
-        let fixed_width = settings.is_some_and(|settings| settings.contains_key("width"));
-        let fixed_height = settings.is_some_and(|settings| settings.contains_key("height"));
-        let fixed_wrap = settings.is_some_and(|settings| settings.contains_key("wrap"));
-        if size.mode == OverflowMode::GrowRight && !fixed_width && !fixed_wrap {
-            let content = text.value();
-            if content != size.observed.as_str() {
-                size.observed = content.to_string();
-                size.measuring = true;
-                wrapping.linebreak = bevy::text::LineBreak::NoWrap;
-                resized = true;
-                continue;
-            }
-        }
-        let measured = layout.size * computed.inverse_scale_factor();
-        if size.mode == OverflowMode::GrowDown
-            && measured.y > 0.0
-            && computed.content_box().height() * computed.inverse_scale_factor() >= measured.y
-            && let Some(mut scroll) = scroll
-            && scroll.0 != Vec2::ZERO
-        {
-            scroll.0 = Vec2::ZERO;
-        }
-        let inset = (computed.size().y - computed.content_box().height()).max(0.0)
-            * computed.inverse_scale_factor();
-        let height = (measured.y + inset).ceil().max(size.minimum.y);
-        if !fixed_height && height.is_finite() && node.height != px(height) {
-            node.height = px(height);
-            resized = true;
-        }
-        if !fixed_width && (size.mode == OverflowMode::ScrollRight || size.measuring) {
-            let maximum = if size.mode == OverflowMode::GrowRight {
-                size.maximum_width
-            } else {
-                100_000.0
-            };
-            let width = measured.x.ceil().max(size.minimum.x).min(maximum);
-            if width.is_finite() && node.width != px(width) {
-                node.width = px(width);
-                resized = true;
-            }
-        }
-        if size.measuring {
-            size.measuring = false;
-            if !fixed_wrap {
-                wrapping.linebreak = bevy::text::LineBreak::WordBoundary;
-            }
-            resized = true;
-        }
-    }
-    if resized {
-        if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
-            wake.ring();
-        }
-    }
-    let rows: Vec<_> = world
-        .query::<(Entity, &Row)>()
-        .iter(world)
-        .map(|(entity, row)| (entity, row.area, row.index, row.config.clone()))
-        .collect();
-    let mut heights = HashMap::<Entity, Vec<f32>>::new();
-    let mut grouped = HashMap::<Entity, Vec<(Entity, grouping::Cell, f32)>>::new();
-    for (entity, area, index, config) in &rows {
-        let (count, content_height) = world
-            .get::<Children>(*entity)
-            .into_iter()
-            .flatten()
-            .filter(|child| {
-                world.get::<Node>(**child).is_some_and(|node| {
-                    node.display != Display::None && node.position_type != PositionType::Absolute
-                })
-            })
-            .filter_map(|child| world.get::<ComputedNode>(*child))
-            .fold((0usize, 0.0f32), |(count, height), node| {
-                (
-                    count + 1,
-                    height + node.size().y * node.inverse_scale_factor(),
-                )
-            });
-        let height = content_height + 24.0 + (count.saturating_sub(1) as f32 * 8.0);
-        let height = config
-            .viewport_height
-            .unwrap_or(height)
-            .min(config.max_height.unwrap_or(f32::MAX));
-        if let Some(cell) = world.get::<grouping::Cell>(*entity).copied() {
-            grouped
-                .entry(*area)
-                .or_default()
-                .push((*entity, cell, height.max(48.0)));
-            continue;
-        }
-        let bands = heights.entry(*area).or_default();
-        let band = index / config.columns;
-        if bands.len() <= band {
-            bands.resize(band + 1, 0.0);
-        }
-        let value = &mut bands[band];
-        *value = value.max(height.max(48.0));
-    }
-    let mut offsets = HashMap::<(Entity, u32), Vec<f32>>::new();
-    for (entity, area, index, config) in rows {
-        if let Some(rows) = grouped.remove(&area) {
-            grouping::layout(world, area, &config, &rows);
-        }
-        if world.get::<grouping::Cell>(entity).is_some() {
-            continue;
-        }
-        let Some(influence) = world.get::<InfluenceArea>(area) else {
-            continue;
-        };
-        let origin = DVec2::from_array(influence.center) - DVec2::from_array(influence.size) * 0.5;
-        let group = index / config.columns;
-        let bands = heights.get(&area).map(Vec::as_slice).unwrap_or_default();
-        let height = bands.get(group).copied().unwrap_or(160.0);
-        let offsets = offsets
-            .entry((area, config.gap.to_bits()))
-            .or_insert_with(|| {
-                let mut offset = 0.0;
-                bands
-                    .iter()
-                    .map(|height| {
-                        let current = offset;
-                        offset += height + config.gap;
-                        current
-                    })
-                    .collect()
-            });
-        let y = offsets.get(group).copied().unwrap_or(0.0);
-        let inset = if config.group_with_source { 0.0 } else { 12.0 };
-        let position = if config.group_with_source && index == 0 {
-            DVec2::from_array(influence.center)
-        } else {
-            origin
-                + DVec2::new(
-                    f64::from(
-                        inset
-                            + (index % config.columns) as f32 * (config.width + config.gap)
-                            + config.width / 2.0,
-                    ),
-                    f64::from(inset + y + height / 2.0),
-                )
-        };
-        let size = Vec2::new(config.width, height);
-        place(world, entity, position, size);
-        if config.group_with_source && index == 0 {
-            crate::native::full_record::fit_source(world, area, entity);
-        }
-    }
+    geometry::update(world);
 }
 
 pub(super) fn place(world: &mut World, entity: Entity, position: DVec2, size: Vec2) {

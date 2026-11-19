@@ -11,8 +11,6 @@ pub mod editing;
 
 pub const BUTTON_BORDER_WIDTH: f32 = 1.0;
 
-/// Keep password presentation unchanged without allocating or marking Text changed.
-/// Callers retain control of their existing visible character limit.
 pub fn password_mask(mut text: Mut<'_, Text>, count: usize) {
     if text.0.chars().eq(std::iter::repeat_n('•', count)) {
         return;
@@ -21,6 +19,21 @@ pub fn password_mask(mut text: Mut<'_, Text>, count: usize) {
     value.clear();
     value.extend(std::iter::repeat_n('•', count));
     nucleus::performance::add("password-mask-text-updates", 1);
+}
+
+pub fn protect_password(mut field: Mut<'_, EditableText>) {
+    let exports = |edit: &bevy::text::TextEdit| {
+        matches!(edit, bevy::text::TextEdit::Copy | bevy::text::TextEdit::Cut)
+    };
+    if !field.pending_edits.iter().any(exports) {
+        return;
+    }
+    let before = field.pending_edits.len();
+    field.pending_edits.retain(|edit| !exports(edit));
+    nucleus::performance::add(
+        "password-export-edits-rejected",
+        (before - field.pending_edits.len()) as u64,
+    );
 }
 
 #[derive(Component)]
@@ -142,6 +155,15 @@ pub fn row(world: &mut World, parent: Entity) -> Entity {
             },
         ))
         .id()
+}
+
+pub fn copy_value(input: &EditableText, target: &mut String) {
+    let text = input.value();
+    target.clear();
+    target.reserve(text.into_iter().map(str::len).sum());
+    for part in text {
+        target.push_str(part);
+    }
 }
 
 pub fn value(world: &World, entity: Entity) -> Result<String, String> {

@@ -122,7 +122,7 @@ fn click(desktop: &mut Desktop, caption: &'static str) {
                         .fold(Vec2::splat(f32::NEG_INFINITY), Vec2::max);
                     let mut bounds = Rect::from_corners(min, max);
                     if let Some(clip) = world.get::<bevy::ui::CalculatedClip>(entity) {
-                        bounds = bounds.intersect(clip.clip);
+                        bounds = lince_interface::native::clipped_rect(bounds, clip);
                     }
                     (bounds.size().min_element() > 0.0).then(|| bounds.center().to_array())
                 })

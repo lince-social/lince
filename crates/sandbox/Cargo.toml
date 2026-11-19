@@ -89,7 +89,6 @@ native-runtime = [
 [dependencies]
 lince-hand-input = { path = "../hand-input", optional = true }
 lince-map = { workspace = true, optional = true }
-async-trait = { workspace = true }
 store = { workspace = true, optional = true }
 simulation = { workspace = true, optional = true }
 lince-interface = { workspace = true, optional = true, features = ["ui", "models", "behavior-checks"] }
@@ -103,10 +102,10 @@ cpal = { workspace = true, optional = true }
 tts = { version = "=0.26.3", optional = true, default-features = false }
 ttf-parser = { version = "=0.25.1", optional = true }
 hound = { version = "=3.5.1", optional = true }
-naga = { version = "=29.0.4", features = ["wgsl-in"], optional = true }
-wasmi = { version = "=2.0.0", default-features = false, features = ["std", "validate", "auto-dispatch"], optional = true }
+naga = { version = "=30.0.2", features = ["wgsl-in"], optional = true }
+wasmi = { version = "=2.0.1", default-features = false, features = ["std", "validate", "auto-dispatch"], optional = true }
 reqwest = { workspace = true, optional = true }
-pulldown-cmark = { version = "=0.13.4", default-features = false, optional = true }
+pulldown-cmark = { version = "=0.13.6", default-features = false, optional = true }
 mermaid-rs-renderer = { version = "=0.3.1", default-features = false, optional = true }
 resvg = { version = "=0.48.1", default-features = false, features = ["text"], optional = true }
 accesskit = { version = "=0.24.1", optional = true }
@@ -116,8 +115,8 @@ chrono = { workspace = true, optional = true }
 iana-time-zone = { version = "=0.1.65", optional = true }
 nucleus = { workspace = true, optional = true }
 tempfile = { version = "=3.27.0", optional = true }
-bevy = { version = "=0.19.1", default-features = false, features = ["async_executor", "bevy_asset", "bevy_log", "bevy_render", "multi_threaded", "std"], optional = true }
-bevy_gaussian_splatting = { version = "=8.0.2", default-features = false, features = ["io_flexbuffers", "planar", "buffer_storage", "sh3", "sort_radix"], optional = true }
+bevy = { version = "=0.20.1", default-features = false, features = ["async_executor", "bevy_asset", "bevy_log", "bevy_render", "multi_threaded", "std"], optional = true }
+bevy_gaussian_splatting = { version = "=9.0.0", default-features = false, features = ["io_flexbuffers", "planar", "buffer_storage", "sh3", "sort_radix"], optional = true }
 flexbuffers = { version = "=25.12.19", optional = true }
 cell = { workspace = true, optional = true }
 tokio = { workspace = true, optional = true }
@@ -127,7 +126,7 @@ serde_json = { workspace = true, optional = true, features = ["float_roundtrip"]
 serde = { workspace = true, optional = true }
 image = { version = "=0.25.10", default-features = false, features = ["png", "jpeg", "gif", "webp"], optional = true }
 getrandom = { workspace = true, optional = true }
-avian3d = { version = "=0.7.0", default-features = false, features = ["3d", "f64", "parry-f64", "enhanced-determinism", "xpbd_joints"], optional = true }
+avian3d = { version = "=0.8.0", default-features = false, features = ["3d", "f64", "parry-f64", "enhanced-determinism", "xpbd_joints"], optional = true }
 toml = { workspace = true, optional = true }
 
 [build-dependencies]
@@ -144,14 +143,14 @@ tempfile = "=3.27.0"
 workspace = true
 
 [target.'cfg(unix)'.dependencies]
-rustix = { version = "=1.1.4", features = ["process", "fs", "param"], optional = true }
+rustix = { version = "=1.1.6", features = ["process", "fs", "param"], optional = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 zbus = { version = "=5.19.0", default-features = false, features = ["tokio"], optional = true }
 futures-util = { version = "=0.3.34", default-features = false, features = ["std"], optional = true }
 x11rb = { version = "=0.13.2", optional = true }
 raw-window-handle = { version = "=0.6.2", optional = true }
-ksni = { version = "=0.3.6", default-features = false, features = ["async-io"], optional = true }
+ksni = { version = "=0.3.7", default-features = false, features = ["async-io"], optional = true }
 
 [target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
 tray-icon = { version = "=0.25.0", default-features = false, optional = true }

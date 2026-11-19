@@ -34,10 +34,6 @@ impl Restoration {
         let mut roots = 0;
         let mut examined = 0;
         let mut pending = 0;
-        // Capture before applying, as before. Restoration only clears states
-        // for its own root (before its entries), then inserts states. Therefore
-        // an already-present state on an unchanged owner cannot become missing
-        // in the application phase. Missing entries still need live checks.
         for (root, spaces, owner) in self.roots.iter(world) {
             roots += 1;
             let changed = owner.is_some_and(|owner| owner.0 != spaces.canvas_id);
@@ -72,8 +68,6 @@ pub(super) fn restore_missing(world: &mut World) {
     world.init_resource::<Restoration>();
     world.resource_scope(|world, mut restoration: Mut<Restoration>| {
         restoration.prepare(world);
-        // The queue keeps root and saved-entry order, including duplicate saved
-        // workspace IDs. A successful earlier restore still wins the live check.
         for request in restoration.requests.drain(..) {
             match request {
                 Request::Owner {

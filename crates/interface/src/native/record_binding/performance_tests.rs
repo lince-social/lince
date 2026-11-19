@@ -522,17 +522,16 @@ fn current_unicode_selection_survives_stale_binding_text_and_remote_insertion() 
     let document = Document::new(Source::Local, None);
     document.doc.get_text("body").insert(0, value).unwrap();
     document.doc.commit();
-    let binding = TextBinding {
-        record: RecordBinding {
+    let binding = TextBinding::new(
+        RecordBinding {
             area: Entity::PLACEHOLDER,
             uid: nucleus::new_uid("r"),
             source: Source::Local,
         },
-        property: "body".into(),
-        status: None,
-        observed: "Old text".into(),
-        confirmed: "Old text".into(),
-    };
+        "body",
+        None,
+        "Old text".into(),
+    );
     let mut fonts = FontCx::default();
     let font = Font::from_bytes(
         include_bytes!("../../../../../institute/assets/fonts/DejaVuSans/DejaVuSansMono.ttf")

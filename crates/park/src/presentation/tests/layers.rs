@@ -3,7 +3,7 @@ use super::*;
 use bevy::core_pipeline::prepass::ViewPrepassTextures;
 use bevy::render::{
     sync_world::RenderEntity,
-    view::{ViewDepthTexture, ViewTarget},
+    view::{ViewDepthStencilTexture, ViewTarget},
 };
 use bevy::{asset::AssetId, camera::visibility::RenderLayers, math::DVec2};
 use lince_interface::host::{OutputId, OutputViewport, Rectangle, WorkspaceLayout};
@@ -61,7 +61,7 @@ fn released(canvas: &Presentation, cameras: &[(Entity, AssetId<Image>)]) -> bool
                 .get(*image)
                 .is_some_and(|image| image.texture.width() == 1 && image.texture.height() == 1)
             && render.get::<ViewTarget>(entity).is_none()
-            && render.get::<ViewDepthTexture>(entity).is_none()
+            && render.get::<ViewDepthStencilTexture>(entity).is_none()
             && render.get::<ViewPrepassTextures>(entity).is_none()
     })
 }
@@ -155,7 +155,7 @@ pub(super) fn image_pixels(canvas: &Presentation, id: AssetId<Image>) -> ([u32; 
         .recv_timeout(Duration::from_secs(1))
         .unwrap()
         .unwrap();
-    let mapped = buffer.slice(..).get_mapped_range();
+    let mapped = buffer.slice(..).get_mapped_range().unwrap();
     let mut pixels = Vec::with_capacity((size[0] * size[1] * 4) as usize);
     for bytes in mapped.chunks_exact(row as usize).take(size[1] as usize) {
         pixels.extend_from_slice(&bytes[..size[0] as usize * 4]);

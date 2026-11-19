@@ -103,7 +103,7 @@ struct Geometry {
     blocks: bool,
     node: ComputedNode,
     transform: UiGlobalTransform,
-    clip: Option<Rect>,
+    clip: Option<CalculatedClip>,
     projection: Arc<Projection>,
 }
 
@@ -148,7 +148,7 @@ impl Geometry {
 
     fn hit(&self, point: [f64; 2]) -> bool {
         self.point(point).is_some_and(|point| self.node.contains_point(self.transform, point)
-            && self.clip.is_none_or(|clip| clip.contains(point)))
+            && self.clip.as_ref().is_none_or(|clip| clip.contains_point(point)))
     }
 }
 
@@ -371,14 +371,20 @@ impl Capture<'_> {
         {
             return None;
         }
-        let clip = world
-            .get::<bevy::ui::CalculatedClip>(entity)
-            .map(|clip| clip.clip);
-        if clip.is_some_and(|clip| clip.size().min_element() <= 0.0) {
+        let clip = world.get::<CalculatedClip>(entity);
+        if clip.is_some_and(CalculatedClip::is_fully_clipped) {
             return None;
         }
         let transform = *world.get::<UiGlobalTransform>(entity)?;
-        if exclude_clipped && clip.is_some_and(|clip| clipped_out(&node, transform, clip)) {
+        if exclude_clipped && clip.is_some_and(|clip| {
+            clip.rects().is_some_and(|regions| regions.iter().any(|region| {
+                clipped_out(
+                    &node,
+                    (region.world_to_clip_local * *transform).into(),
+                    region.rect,
+                )
+            }))
+        }) {
             if timing.totals.active {
                 timing.totals.clipped += 1;
             }
@@ -425,7 +431,7 @@ impl Capture<'_> {
             modal: self.modal,
             node,
             transform,
-            clip,
+            clip: clip.cloned(),
             projection,
         })
     }
@@ -506,7 +512,7 @@ pub(crate) fn current(world: &World, views: &[View], geometry: Option<&GeometryS
                     Some(bevy::camera::RenderTarget::Image(target)) => Some(target.handle.id()), _ => None,
                 }), original.owner.as_ref().is_some_and(|owner| native::accessibility::owner_context(world, original.entity, true)
                     .is_some_and(|current| owner.same_owner(&current))), current.as_ref().map(|current|
-                    (current.hit(captured.point), current.eligible, current.node.size(), current.transform, current.clip, format!("{:?}", current.projection))));
+                    (current.hit(captured.point), current.eligible, current.node.size(), current.transform, &current.clip, format!("{:?}", current.projection))));
         }
     }
     current.as_ref().is_some_and(|current| captured.same_hit(current))

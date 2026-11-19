@@ -5,6 +5,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 mod gestures;
 mod overview;
+mod ordering;
 mod placement;
 mod rows;
 pub use rows::{CompactGroup, COMPACT_HEADER_HEIGHT};
@@ -240,9 +241,10 @@ impl Workspace {
     }
 
     pub fn maximized(&self, id: PlacementId) -> bool {
-        if self.mode == WorkspaceLayout::ScrollingColumns && self.column(id).is_some() {
-            self.column(id)
-                .is_some_and(|column| self.columns[column].maximized)
+        if self.mode == WorkspaceLayout::ScrollingColumns
+            && let Some(column) = self.column(id)
+        {
+            self.columns[column].maximized
         } else {
             self.maximized.contains(&id)
         }
@@ -899,11 +901,8 @@ impl Workspace {
         let gap = self.gap.min(usable.size()[0].min(usable.size()[1]) / 4.0);
         let inner = [usable.size()[0] - gap * 2.0, usable.size()[1] - gap * 2.0];
         if self.mode == WorkspaceLayout::ScrollingColumns {
-            self.split_overflow(inner[1], gap);
+            self.split_overflow(inner[1], gap, &hidden);
         }
-        // Free and tiled layouts do not consume the column projection. Free
-        // layouts need the item index only when applying maximized geometry.
-        // Prepare these invocation-local views at their actual first use.
         let source_columns = &self.columns;
         let columns = std::cell::LazyCell::new(|| {
             #[cfg(feature = "native-presentation")]
@@ -1091,21 +1090,59 @@ impl Workspace {
                 floating: true,
             });
         }
-        for item in &mut solved {
-            if self.maximized(item.id)
-                && (!matches!(self.mode, WorkspaceLayout::Tiled | WorkspaceLayout::ScrollingColumns) || item.floating)
-            {
+        {
+            #[cfg(feature = "native-presentation")]
+            let _maximized = engine::performance::Span::new("desktop-maximized-placement");
+            #[cfg(feature = "native-presentation")]
+            let mut candidates = 0;
+            #[cfg(feature = "native-presentation")]
+            let mut applied = 0;
+            for item in &mut solved {
+                if matches!(
+                    self.mode,
+                    WorkspaceLayout::Tiled | WorkspaceLayout::ScrollingColumns
+                ) && !item.floating
+                {
+                    continue;
+                }
+                #[cfg(feature = "native-presentation")]
+                {
+                    candidates += 1;
+                }
+                if !self.maximized.contains(&item.id) {
+                    continue;
+                }
                 let rules = entries[&item.id].rules;
-                let header = if self.mode == WorkspaceLayout::Tiled && self.compact_group(item.id).is_some() { COMPACT_HEADER_HEIGHT } else { 0.0 };
+                let header = if self.mode == WorkspaceLayout::Tiled
+                    && self.compact_group(item.id).is_some()
+                {
+                    COMPACT_HEADER_HEIGHT
+                } else {
+                    0.0
+                };
                 let size = std::array::from_fn(|axis| {
-                    (inner[axis] - if axis == 1 { header } else { 0.0 }).max(1.0).clamp(
-                        f64::from(rules.axes[axis].min),
-                        f64::from(rules.axes[axis].max),
-                    )
+                    (inner[axis] - if axis == 1 { header } else { 0.0 })
+                        .max(1.0)
+                        .clamp(
+                            f64::from(rules.axes[axis].min),
+                            f64::from(rules.axes[axis].max),
+                        )
                 });
-                item.rectangle =
-                    Rectangle::new([usable.origin()[0] + gap, usable.origin()[1] + gap + header], size).unwrap();
+                item.rectangle = Rectangle::new(
+                    [usable.origin()[0] + gap, usable.origin()[1] + gap + header],
+                    size,
+                )
+                .unwrap();
                 item.floating = false;
+                #[cfg(feature = "native-presentation")]
+                {
+                    applied += 1;
+                }
+            }
+            #[cfg(feature = "native-presentation")]
+            {
+                engine::performance::add("desktop-maximized-candidates", candidates);
+                engine::performance::add("desktop-maximized-overrides", applied);
             }
         }
         if let Some(id) = self.fullscreen {
@@ -1161,7 +1198,7 @@ impl Workspace {
         self.columns.retain(|column| !column.items.is_empty());
     }
 
-    fn split_overflow(&mut self, height: f64, gap: f64) {
+    fn split_overflow(&mut self, height: f64, gap: f64, hidden: &BTreeSet<PlacementId>) {
         let minimums: BTreeMap<_, _> = self
             .items
             .iter()
@@ -1173,7 +1210,7 @@ impl Workspace {
             let mut used = 0.0;
             let mut visible = 0;
             let split = column.items.iter().enumerate().find_map(|(row, id)| {
-                if self.hidden(*id) {
+                if hidden.contains(id) {
                     return None;
                 }
                 used += minimums[id] + if visible == 0 { 0.0 } else { gap };
@@ -1197,41 +1234,26 @@ impl Workspace {
     }
 
     fn apply_influence_order(&mut self) {
-        self.rows.order(&self.influences);
-        let rank = |id: &PlacementId| {
-            self.influences
-                .get(id)
-                .and_then(|influence| influence.order)
-        };
+        #[cfg(feature = "native-presentation")]
+        let _ordering = engine::performance::Span::new("desktop-influence-order");
+        if !self
+            .influences
+            .values()
+            .any(|influence| influence.order.is_some())
+        {
+            return;
+        }
+        let mut ordering = ordering::InfluenceOrder::default();
+        self.rows.order(&self.influences, &mut ordering);
+        let influences = &self.influences;
+        let rank = |id: &PlacementId| influences.get(id).and_then(|influence| influence.order);
         for column in &mut self.columns {
-            let positions: Vec<_> = column
-                .items
-                .iter()
-                .enumerate()
-                .filter(|(_, id)| rank(id).is_some())
-                .map(|(index, _)| index)
-                .collect();
-            let mut ordered: Vec<_> = positions.iter().map(|index| column.items[*index]).collect();
-            ordered.sort_by_key(|id| (rank(id), *id));
-            for (position, id) in positions.into_iter().zip(ordered) {
-                column.items[position] = id;
-            }
+            ordering.members(&mut column.items, |id| rank(id).map(|rank| (rank, *id)));
         }
-        let positions: Vec<_> = self
-            .columns
-            .iter()
-            .enumerate()
-            .filter(|(_, column)| column.items.iter().any(|id| rank(id).is_some()))
-            .map(|(index, _)| index)
-            .collect();
-        let mut ordered: Vec<_> = positions
-            .iter()
-            .map(|index| self.columns[*index].clone())
-            .collect();
-        ordered.sort_by_key(|column| column.items.iter().filter_map(rank).min());
-        for (position, column) in positions.into_iter().zip(ordered) {
-            self.columns[position] = column;
-        }
+        ordering.groups(&mut self.columns, |column| {
+            column.items.iter().filter_map(rank).min()
+        });
+        ordering.record();
     }
 }
 

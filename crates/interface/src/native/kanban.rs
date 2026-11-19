@@ -1,5 +1,6 @@
 use lince_interface::records::KANBAN_COLUMNS as COLUMNS;
 mod checks;
+mod headers;
 mod persistence;
 #[cfg(test)]
 mod tests;
@@ -10,7 +11,7 @@ use crate::native::{
     area::{AreaShape, InfluenceArea, RecordProperties},
     area_mutation::{HeldPoint as HeldMembership, Preparing},
     canvas::CanvasItem,
-    cell_bridge::CellMessage,
+    cell_bridge::{CellMessage, replies},
     icons::{Icon, IconButton},
     layout::{Arrangement, LayoutBox, LayoutRuntime, Rules, Sizing},
     protein_area::{Config, RecordBinding},
@@ -168,6 +169,7 @@ struct View {
     setup: bool,
     initialized: bool,
     orders: Vec<Option<Arc<ColumnOrder>>>,
+    header_captions: HashMap<Entity, headers::Captions>,
 }
 
 struct ColumnOrder {
@@ -209,8 +211,6 @@ impl<'a> CardQuantity<'a> {
     fn from_value(value: &'a serde_json::Value) -> Self {
         match value {
             serde_json::Value::String(text) => Self::Text(Cow::Borrowed(text)),
-            // Preserve exact serialized identity for other values, including
-            // signed zero and malformed/non-scalar source data.
             value => Self::Json(Cow::Owned(value.to_string())),
         }
     }
@@ -347,7 +347,7 @@ pub fn spawn(world: &mut World, root: Entity, workspace: u64, position: DVec2) -
     );
     let mut id = [0; 16];
     getrandom::fill(&mut id).expect("Kanban group identity");
-    let board = world.get::<Kanban>(owner).unwrap().clone();
+    let board = world.get::<Kanban>(owner).unwrap();
     let members: Vec<_> = std::iter::once(owner)
         .chain(board.ids().filter_map(|id| area(world, owner, id)))
         .collect();
@@ -455,15 +455,6 @@ fn ui_row(world: &mut World, parent: Entity) -> Entity {
         .id()
 }
 
-fn set_label(world: &mut World, entity: Entity, value: String) {
-    if world
-        .get::<Text>(entity)
-        .is_some_and(|text| text.0 != value)
-    {
-        world.get_mut::<Text>(entity).unwrap().0 = value;
-    }
-}
-
 fn button(
     world: &mut World,
     parent: Entity,
@@ -492,9 +483,7 @@ pub(crate) fn store_entry(world: &mut World, root: Entity, parent: Entity) {
         Command::Create,
         |world, root| {
             let owner = spawn(world, root, 1, DVec2::ZERO).unwrap();
-            let board = world.get::<Kanban>(owner).unwrap().clone();
-            let mut labels = world.query_filtered();
-            maintain(world, owner, &board, &mut labels);
+            maintain(world, owner);
             crate::native::sand_store::preview::compose(world, root)
         },
     );
@@ -542,11 +531,6 @@ fn header(world: &mut World, owner: Entity, column: usize, position: DVec2) -> E
 #[derive(Component)]
 struct ColumnTitle;
 
-type ColumnLabels = QueryState<
-    (Entity, &'static ChildOf, Has<Status>),
-    Or<(With<Status>, With<ColumnTitle>)>,
->;
-
 #[derive(Clone)]
 enum Command {
     Create,
@@ -572,7 +556,7 @@ impl Action for Command {
             }
             return;
         }
-        let Some(board) = world.get::<Kanban>(owner).cloned() else {
+        let Some(board) = world.get::<Kanban>(owner) else {
             return;
         };
         let root = world.get::<ChildOf>(owner).unwrap().parent();
@@ -693,13 +677,29 @@ fn request(
     state.outgoing.push_back((owner, message(id)));
 }
 
-fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor<CellMessage>>) {
-    let messages: Vec<_> = cursor
-        .read(world.resource::<Messages<CellMessage>>())
-        .map(|m| m.0.clone())
-        .collect();
-    for message in messages.iter().map(|message| message.as_ref()) {
-        if matches!(&message, ServerMessage::Error { id, .. } if id == crate::native::cell_bridge::CONNECTION)
+fn reply_id(message: &ServerMessage) -> Option<&str> {
+    match message {
+        ServerMessage::Snapshot { id, .. }
+        | ServerMessage::ActionOk { id, .. }
+        | ServerMessage::Error { id, .. } => Some(id),
+        _ => None,
+    }
+}
+
+fn receive(
+    world: &mut World,
+    mut cursor: Local<bevy::ecs::message::MessageCursor<CellMessage>>,
+    mut incoming: Local<replies::Wave>,
+) {
+    let _receive = nucleus::performance::Span::new("kanban-reply-processing");
+    let messages = world.resource::<Messages<CellMessage>>();
+    nucleus::performance::add("kanban-cell-messages-examined", cursor.len(messages) as u64);
+    incoming.capture(&mut cursor, messages, |message| reply_id(message).is_some());
+    let count = incoming.len();
+    nucleus::performance::add("kanban-reply-candidates", count as u64);
+    for sequence in incoming.drain() {
+        let message = replies::message(world.resource::<Messages<CellMessage>>(), sequence);
+        if matches!(message.as_ref(), ServerMessage::Error { id, .. } if id == crate::native::cell_bridge::CONNECTION)
         {
             world.resource_mut::<Requests>().pending.clear();
             world.resource_mut::<Requests>().outgoing.clear();
@@ -709,25 +709,24 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
             }
             continue;
         }
-        let id = match &message {
-            ServerMessage::Snapshot { id, .. }
-            | ServerMessage::ActionOk { id, .. }
-            | ServerMessage::Error { id, .. } => id.clone(),
-            _ => continue,
-        };
-        let Some((owner, kind)) = world.resource_mut::<Requests>().pending.remove(&id) else {
+        let id = reply_id(message).unwrap();
+        if !world.resource::<Requests>().pending.contains_key(id) {
             continue;
-        };
+        }
+        let message = message.clone();
+        nucleus::performance::add("kanban-replies-retained", 1);
+        let id = reply_id(&message).unwrap();
+        let (owner, kind) = world.resource_mut::<Requests>().pending.remove(id).unwrap();
         if matches!(kind, Request::Concepts) {
             world
                 .resource_mut::<Requests>()
                 .outgoing
-                .push_back((owner, ClientMessage::Unsubscribe { id }));
+                .push_back((owner, ClientMessage::Unsubscribe { id: id.to_owned() }));
         }
         if world.get::<Kanban>(owner).is_none() {
             continue;
         }
-        match message {
+        match message.as_ref() {
             ServerMessage::Snapshot { rows, .. } if matches!(kind, Request::Concepts) => {
                 let names: HashSet<_> =
                     rows.iter().filter_map(|row| row["name"].as_str()).collect();
@@ -764,9 +763,12 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
 fn update(
     world: &mut World,
     parts: &mut QueryState<(Entity, &'static Part)>,
-    boards: &mut QueryState<(Entity, &'static Kanban)>,
-    released_cards: &mut QueryState<Entity, (With<RecordCard>, With<HeldMembership>, Without<Card>)>,
-    labels: &mut ColumnLabels,
+    boards: &mut QueryState<Entity, With<Kanban>>,
+    released_cards: &mut QueryState<
+        Entity,
+        (With<RecordCard>, With<HeldMembership>, Without<Card>),
+    >,
+    mut ready: Local<Vec<Entity>>,
 ) {
     if !crate::native::laboratory::normal(world) {
         return;
@@ -802,19 +804,20 @@ fn update(
             break;
         }
     }
-    let stale: Vec<_> = parts
-        .iter(world)
-        .filter(|(_, part)| world.get::<Kanban>(part.owner).is_none())
-        .map(|(e, _)| e)
-        .collect();
-    for entity in stale {
+    ready.extend(
+        parts
+            .iter(world)
+            .filter(|(_, part)| world.get::<Kanban>(part.owner).is_none())
+            .map(|(e, _)| e),
+    );
+    let mut populated = !ready.is_empty();
+    for entity in ready.drain(..) {
         world.despawn(entity);
     }
-    let owners: Vec<_> = boards
-        .iter(world)
-        .map(|(e, k)| (e, k.clone()))
-        .collect();
-    for (owner, board) in owners {
+    ready.extend(boards.iter(world));
+    populated |= !ready.is_empty();
+    nucleus::performance::add("kanban-owners-prepared", ready.len() as u64);
+    for owner in ready.drain(..) {
         if crate::native::laboratory::blocked(world, owner) {
             continue;
         }
@@ -823,23 +826,45 @@ fn update(
         {
             Command::Initialize.apply(world, owner);
         }
-        maintain(world, owner, &board, labels);
+        maintain(world, owner);
     }
-    let released: Vec<_> = released_cards
-        .iter(world)
-        .filter(|entity| {
-            world
-                .get_resource::<crate::native::topology::input::PointerState>()
-                .is_none_or(|state| state.drag.is_none_or(|(held, _)| held != *entity))
-        })
-        .collect();
-    for entity in released {
+    let held = world
+        .get_resource::<crate::native::topology::input::PointerState>()
+        .and_then(|state| state.drag.map(|(entity, _)| entity));
+    ready.extend(
+        released_cards
+            .iter(world)
+            .filter(|entity| Some(*entity) != held),
+    );
+    populated |= !ready.is_empty();
+    for entity in ready.drain(..) {
         world.entity_mut(entity).remove::<HeldMembership>();
+    }
+    if !populated {
+        *ready = Vec::new();
     }
 }
 
-fn maintain(world: &mut World, owner: Entity, board: &Kanban, labels: &mut ColumnLabels) {
+fn maintain(world: &mut World, owner: Entity) {
     let _maintain = nucleus::performance::Span::new("kanban-maintenance");
+    world
+        .run_system_cached_with(maintain_board, owner)
+        .expect("maintain Kanban board");
+}
+
+fn maintain_board(
+    In(owner): In<Entity>,
+    world: &mut World,
+    records: &mut QueryState<
+        (Entity, &'static RecordBinding),
+        (
+            With<RecordProperties>,
+            Without<crate::native::protein_area::placement::Pending>,
+        ),
+    >,
+    mut cards: Local<Vec<Entity>>,
+) {
+    let board = world.get::<Kanban>(owner).unwrap();
     let Some(source) = area(world, owner, &board.source) else {
         let mut view = world.get_mut::<View>(owner).unwrap();
         if view.status != "Task source Area removed" {
@@ -848,6 +873,10 @@ fn maintain(world: &mut World, owner: Entity, board: &Kanban, labels: &mut Colum
         if !view.orders.is_empty() {
             view.orders.clear();
         }
+        if !view.header_captions.is_empty() {
+            view.header_captions.clear();
+        }
+        *cards = Vec::new();
         return;
     };
     let root = world.get::<ChildOf>(owner).unwrap().parent();
@@ -857,14 +886,7 @@ fn maintain(world: &mut World, owner: Entity, board: &Kanban, labels: &mut Colum
         .map(|c| area(world, owner, &c.area))
         .collect();
     arrange(world, &columns, source);
-    let orders: Vec<_> = columns
-        .iter()
-        .map(|column| {
-            column
-                .and_then(|area| crate::native::protein_area::ordered_records(world, area))
-                .map(|(_, ids)| ids)
-        })
-        .collect();
+    let orders = crate::native::protein_area::ordering::columns(world, &columns);
     let previous = &world.get::<View>(owner).unwrap().orders;
     let ranks: Vec<_> = orders
         .into_iter()
@@ -876,8 +898,6 @@ fn maintain(world: &mut World, owner: Entity, board: &Kanban, labels: &mut Colum
                         return order.clone();
                     }
                     if order.ids == ids {
-                        // Adopt the new allocation so equal publications do not
-                        // leave an O(n) comparison in every later native update.
                         return Arc::new(ColumnOrder {
                             ids,
                             ranks: order.ranks.clone(),
@@ -918,75 +938,7 @@ fn maintain(world: &mut World, owner: Entity, board: &Kanban, labels: &mut Colum
             })
             .collect()
     };
-    for (index, column) in columns.iter().enumerate() {
-        let Some(column) = *column else {
-            continue;
-        };
-        let item = *world.get::<CanvasItem>(column).unwrap();
-        let part = world
-            .query::<(Entity, &Part)>()
-            .iter(world)
-            .find(|(_, p)| p.owner == owner && p.column == index)
-            .map(|(e, _)| e);
-        let position = item.position + DVec2::new(0.0, -f64::from(item.size.y) * 0.5 - 40.0);
-        let part = part.unwrap_or_else(|| header(world, owner, index, position));
-        if world.get::<CanvasItem>(part).unwrap().size.x != item.size.x {
-            world.get_mut::<CanvasItem>(part).unwrap().size.x = item.size.x;
-        }
-        let placement = crate::native::topology::spatial(world, column);
-        let offset = position - item.position;
-        place(
-            world,
-            part,
-            placement.position(item.position)
-                + placement.rotation() * DVec3::new(offset.x, 0.0, offset.y),
-        );
-        rotate(world, part, placement.rotation);
-        if let Some(group) = world
-            .get::<crate::native::canvas_selection::SandGroup>(column)
-            .copied()
-        {
-            if world.get::<crate::native::canvas_selection::SandGroup>(part) != Some(&group) {
-                world.entity_mut(part).insert(group);
-            }
-        } else if world
-            .get::<crate::native::canvas_selection::SandGroup>(part)
-            .is_some()
-        {
-            world
-                .entity_mut(part)
-                .remove::<crate::native::canvas_selection::SandGroup>();
-        }
-        refresh_attachment(world, part, column);
-        let count = counts[index];
-        let area = world.get::<InfluenceArea>(column).unwrap();
-        let title = format!(
-            "{}: {}",
-            area.name,
-            area.changes.enter.quantity.as_deref().unwrap_or("—")
-        );
-        let column_labels: Vec<_> = labels
-            .iter(world)
-            .filter(|(_, parent, _)| {
-                parent.parent() == part
-                    || world
-                        .get::<ChildOf>(parent.parent())
-                        .is_some_and(|p| p.parent() == part)
-            })
-            .map(|(e, _, status)| (e, status))
-            .collect();
-        for (label, status) in column_labels {
-            set_label(
-                world,
-                label,
-                if status {
-                    format!("{count} records")
-                } else {
-                    title.clone()
-                },
-            );
-        }
-    }
+    headers::update(world, owner, &columns, &counts);
     let setup = world.get::<View>(owner).unwrap().setup;
     if setup
         && !world
@@ -1012,18 +964,16 @@ fn maintain(world: &mut World, owner: Entity, board: &Kanban, labels: &mut Colum
             world.get_mut::<View>(owner).unwrap().status = "Ready".into();
         }
     }
-    let cards: Vec<_> = world
-        .query::<(Entity, &RecordBinding, &RecordProperties)>()
-        .iter(world)
-        .filter(|(e, b, _)| {
-            b.area == source
-                && world
-                    .get::<crate::native::protein_area::placement::Pending>(*e)
-                    .is_none()
-        })
-        .map(|(entity, _, record)| (entity, record.0.clone()))
-        .collect();
-    for (entity, record) in cards {
+    let _cards = nucleus::performance::Span::new("kanban-card-maintenance");
+    cards.extend(
+        records
+            .iter(world)
+            .filter(|(_, binding)| binding.area == source)
+            .map(|(entity, _)| entity),
+    );
+    let count = cards.len();
+    nucleus::performance::add("kanban-card-candidates", count as u64);
+    for entity in cards.drain(..) {
         if crate::native::topology::rooms::owned(world, entity) {
             world.entity_mut(entity).remove::<Card>();
             continue;
@@ -1038,21 +988,20 @@ fn maintain(world: &mut World, owner: Entity, board: &Kanban, labels: &mut Colum
             }
             world.entity_mut(entity).remove::<HeldMembership>();
         }
+        let record = world.get::<RecordProperties>(entity).unwrap();
+        let binding = world.get::<RecordBinding>(entity);
         let mut matching = columns
             .iter()
             .enumerate()
             .filter(|(_, column)| {
                 column.is_some_and(|column| {
                     let area = world.get::<InfluenceArea>(column).unwrap();
-                    let record = world.get::<RecordProperties>(entity).unwrap();
                     area.enabled
                         && area.attraction_enabled
                         && if area.filter.is_some() {
                             world
                                 .get::<crate::native::protein_area::filter::Matches>(column)
-                                .is_some_and(|matches| {
-                                    matches.allows(record, world.get::<RecordBinding>(entity))
-                                })
+                                .is_some_and(|matches| matches.allows(record, binding))
                         } else {
                             area.matches(record)
                         }
@@ -1063,7 +1012,7 @@ fn maintain(world: &mut World, owner: Entity, board: &Kanban, labels: &mut Colum
         drop(matching);
         let column = index.and_then(|i| columns[i]);
         let old = world.get::<Card>(entity);
-        let quantity = CardQuantity::from_value(&record["quantity"]);
+        let quantity = CardQuantity::from_value(&record.0["quantity"]);
         let returned = released
             && column.is_some_and(|column| {
                 crate::native::topology::position(world, entity).is_some_and(|point| {
@@ -1075,6 +1024,15 @@ fn maintain(world: &mut World, owner: Entity, board: &Kanban, labels: &mut Colum
                 })
             });
         let changed = returned || old.is_none_or(|c| c.quantity != quantity || c.column != column);
+        let next_card = changed.then(|| Card {
+            column,
+            quantity: quantity.into_owned(),
+        });
+        let uid = record.0["uid"].as_str().unwrap_or_default();
+        let order = index
+            .and_then(|index| ranks[index].as_ref())
+            .and_then(|order| order.ranks.get(uid).copied())
+            .unwrap_or(0) as i32;
         if changed {
             if let Some(column) = column {
                 let _ = crate::native::layout::attach(world, entity, column);
@@ -1086,23 +1044,19 @@ fn maintain(world: &mut World, owner: Entity, board: &Kanban, labels: &mut Colum
                 let _ = crate::native::layout::detach(world, entity);
             }
         }
-        if changed {
-            world.entity_mut(entity).insert(Card {
-                column,
-                quantity: quantity.into_owned(),
-            });
+        if let Some(card) = next_card {
+            world.entity_mut(entity).insert(card);
+            nucleus::performance::add("kanban-card-publications", 1);
         }
-        let uid = record["uid"].as_str().unwrap_or_default();
-        let order = index
-            .and_then(|index| ranks[index].as_ref())
-            .and_then(|order| order.ranks.get(uid).copied())
-            .unwrap_or(0) as i32;
         if world
             .get::<LayoutBox>(entity)
             .is_some_and(|layout| layout.parent.is_some() && layout.order != order)
         {
             world.get_mut::<LayoutBox>(entity).unwrap().order = order;
         }
+    }
+    if count == 0 {
+        *cards = Vec::new();
     }
 }
 

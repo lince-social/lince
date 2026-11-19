@@ -1,6 +1,8 @@
 use super::*;
 use crate::i18n::Token;
 
+mod controls;
+
 #[derive(Component)]
 struct TilingControl {
     root: Entity,
@@ -66,8 +68,8 @@ fn focus_button(world: &mut World, root: Entity, parent: Entity) {
         .insert(FocusControl { root, label });
 }
 
-fn caption(world: &World, root: Entity) -> &'static str {
-    let tiled = world
+fn tiled(world: &World, root: Entity) -> bool {
+    world
         .get::<Workspaces>(root)
         .and_then(|spaces| {
             spaces
@@ -75,12 +77,19 @@ fn caption(world: &World, root: Entity) -> &'static str {
                 .iter()
                 .find(|space| space.id == spaces.active)
         })
-        .is_some_and(|space| space.desktop.mode() != WorkspaceLayout::Free);
+        .is_some_and(|space| space.desktop.mode() != WorkspaceLayout::Free)
+}
+
+fn mode_caption(tiled: bool) -> &'static str {
     if tiled {
         Token::TilingOn.text()
     } else {
         Token::TilingOff.text()
     }
+}
+
+fn caption(world: &World, root: Entity) -> &'static str {
+    mode_caption(tiled(world, root))
 }
 
 fn button(world: &mut World, root: Entity, parent: Entity, toolbar: bool) {
@@ -118,139 +127,11 @@ fn button(world: &mut World, root: Entity, parent: Entity, toolbar: bool) {
 }
 
 pub(crate) fn create_controls(world: &mut World) {
-    let roots: Vec<_> = world
-        .query_filtered::<Entity, (
-            With<Workspaces>,
-            With<crate::native::edit_mode::EditMode>,
-            With<CanvasView>,
-        )>()
-        .iter(world)
-        .collect();
-    for root in roots {
-        if !world
-            .query::<&FocusControl>()
-            .iter(world)
-            .any(|control| control.root == root)
-        {
-            let toolbar = crate::native::canvas_controls::toolbar(world, root);
-            focus_button(world, root, toolbar);
-        }
-        if world
-            .query::<&TilingControl>()
-            .iter(world)
-            .any(|control| control.root == root && control.toolbar)
-        {
-            continue;
-        }
-        let toolbar = crate::native::canvas_controls::toolbar(world, root);
-        button(world, root, toolbar, true);
-    }
+    controls::create(world);
 }
 
 pub(crate) fn label_controls(world: &mut World) {
-    let controls: Vec<_> = world
-        .query::<(Entity, &OverviewControl)>()
-        .iter(world)
-        .filter(|(_, control)| world.get_entity(control.root).is_ok())
-        .map(|(entity, _)| entity)
-        .collect();
-    let chord = world
-        .get_resource::<crate::native::shortcuts::Settings>()
-        .cloned()
-        .unwrap_or_default()
-        .text(crate::native::shortcuts::Shortcut::Overview)
-        .to_owned();
-    for entity in controls {
-        let help = format!("{} · {chord}", Token::ShortcutOverview.text());
-        if world
-            .get::<crate::native::icons::Tooltip>(entity)
-            .is_none_or(|tooltip| tooltip.0 != help)
-        {
-            world
-                .entity_mut(entity)
-                .insert(crate::native::icons::Tooltip(help.clone()));
-        }
-        if let Some(mut accessibility) = world.get_mut::<bevy::a11y::AccessibilityNode>(entity) {
-            accessibility.set_label(help);
-        }
-    }
-    let controls: Vec<_> = world
-        .query::<(Entity, &FocusControl)>()
-        .iter(world)
-        .map(|(entity, control)| (entity, control.root, control.label))
-        .collect();
-    for (entity, root, label) in controls {
-        focus::remember_selection(world, root);
-        let (focused, available) = focus::status(world, root);
-        let value = if focused {
-            Token::UnfocusTarget.text()
-        } else {
-            Token::FocusTarget.text()
-        };
-        if let Some(mut text) = world.get_mut::<Text>(label)
-            && text.0 != value
-        {
-            text.0 = value.into();
-        }
-        if available {
-            world
-                .entity_mut(entity)
-                .remove::<bevy::ui::InteractionDisabled>();
-        } else if world.get::<bevy::ui::InteractionDisabled>(entity).is_none() {
-            world
-                .entity_mut(entity)
-                .insert(bevy::ui::InteractionDisabled);
-        }
-        let chord = world
-            .get_resource::<crate::native::shortcuts::Settings>()
-            .cloned()
-            .unwrap_or_default()
-            .text(crate::native::shortcuts::Shortcut::Unfocus)
-            .to_owned();
-        let help = format!("{value} · {chord}");
-        if world
-            .get::<crate::native::icons::Tooltip>(entity)
-            .is_none_or(|tooltip| tooltip.0 != help)
-        {
-            world
-                .entity_mut(entity)
-                .insert(crate::native::icons::Tooltip(help.clone()));
-        }
-        if let Some(mut accessibility) = world.get_mut::<bevy::a11y::AccessibilityNode>(entity) {
-            accessibility.set_label(help);
-        }
-    }
-    let controls: Vec<_> = world
-        .query::<(Entity, &TilingControl)>()
-        .iter(world)
-        .map(|(entity, control)| (entity, control.root, control.label))
-        .collect();
-    for (entity, root, label) in controls {
-        let value = caption(world, root);
-        if let Some(mut text) = world.get_mut::<Text>(label)
-            && text.0 != value
-        {
-            text.0 = value.into();
-        }
-        let chord = world
-            .get_resource::<crate::native::shortcuts::Settings>()
-            .cloned()
-            .unwrap_or_default()
-            .text(crate::native::shortcuts::Shortcut::Tiling)
-            .to_owned();
-        let help = format!("{} · {value} · {chord}", Token::ShortcutTiling.text());
-        if world
-            .get::<crate::native::icons::Tooltip>(entity)
-            .is_none_or(|tooltip| tooltip.0 != help)
-        {
-            world
-                .entity_mut(entity)
-                .insert(crate::native::icons::Tooltip(help.clone()));
-        }
-        if let Some(mut accessibility) = world.get_mut::<bevy::a11y::AccessibilityNode>(entity) {
-            accessibility.set_label(help);
-        }
-    }
+    controls::labels(world);
 }
 
 pub(crate) fn panel(world: &mut World, root: Entity, panel: Entity) {

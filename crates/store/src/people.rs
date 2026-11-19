@@ -16,7 +16,10 @@ pub const MAX_PERSON_EXTENSION_BYTES: usize = 64 * 1024;
 pub const MAX_STANDING_NOTE_BYTES: usize = 16 * 1024;
 
 pub fn is_standing_field(field: &str) -> bool {
-    field == format!("{NAMESPACE}.{STANDING_KEY}")
+    field
+        .strip_prefix(NAMESPACE)
+        .and_then(|suffix| suffix.strip_prefix('.'))
+        == Some(STANDING_KEY)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -178,6 +181,7 @@ async fn extension_on(
     connection: &mut SqliteConnection,
     person_uid: &str,
 ) -> Result<Option<String>, StoreError> {
+    let _read = nucleus::performance::Span::new("person-extension-read");
     if !nucleus::valid_uid(person_uid, "r") {
         return Err(sqlx::Error::Protocol("invalid Person identity".into()));
     }
@@ -188,7 +192,8 @@ async fn extension_on(
                          AND typeof(namespace) = 'text' AND typeof(fds) = 'text'
                          AND length(CAST(fds AS BLOB)) <= ? THEN 0 ELSE 1 END), 0) AS invalid
                FROM record_extension
-              WHERE CAST(record_uid AS TEXT) = ? AND CAST(namespace AS TEXT) = ?
+              WHERE (record_uid = ? OR record_uid = CAST(? AS BLOB))
+                AND (namespace = ? OR namespace = CAST(? AS BLOB))
          )
          SELECT b.matches, b.invalid, e.fds FROM bounded b
            LEFT JOIN record_extension e ON b.matches = 1 AND b.invalid = 0
@@ -196,6 +201,8 @@ async fn extension_on(
     )
     .bind(MAX_PERSON_EXTENSION_BYTES as i64)
     .bind(person_uid)
+    .bind(person_uid)
+    .bind(NAMESPACE)
     .bind(NAMESPACE)
     .bind(person_uid)
     .bind(NAMESPACE)

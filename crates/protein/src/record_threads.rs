@@ -1,5 +1,5 @@
 use crate::{MessageCursor, ProteinError, ThreadsInclude};
-use serde_json::{Value, json};
+use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 use store::sqlx::Row;
 use store::{Store, records::RecordRow};
@@ -55,7 +55,7 @@ impl Selection {
             ..
         } = self;
         let mut out = Vec::new();
-        let mut organ_names: HashMap<Option<String>, Option<String>> = HashMap::new();
+        let mut organ_names = OrganNames::default();
         let thread_ids: Vec<_> = threads
             .iter()
             .filter(|thread| thread.kind == "thread" && thread.quantity.is_positive())
@@ -90,6 +90,7 @@ impl Selection {
             } else {
                 None
             };
+            let mut social_names = None;
             let messages_limit = settings
                 .message_limits
                 .get(&thread.uid)
@@ -126,11 +127,11 @@ impl Selection {
             let mut extensions = message_extensions(store, &ids).await?;
             let mut replies = match reply_to {
                 Some(predicate) => {
-                    store::assertions::objects_from_subjects::<Option<String>>(
+                    let _parents = nucleus::performance::Span::new("protein-thread-parents-await");
+                    store::assertions::active_object_uids_from_subjects(
                         &store.pool,
                         &ids,
                         predicate,
-                        false,
                     )
                     .await?
                 }
@@ -156,22 +157,25 @@ impl Selection {
                 }
                 let parent_message_uid = replies
                     .remove(&message.uid)
-                    .and_then(|records| records.into_iter().next())
-                    .map(|record| record.uid);
-                let record_references = references_by_message
-                    .remove(&message.uid)
-                    .unwrap_or_default()
-                    .into_iter()
-                    .map(|record| {
-                        json!({
-                            "uid": record.uid,
-                            "slug": record.slug,
-                            "kind": record.kind,
-                            "head": record.head,
-                            "body": record.body,
+                    .and_then(|records| records.into_iter().next());
+                let record_references = {
+                    let _references =
+                        nucleus::performance::Span::new("protein-thread-reference-publish");
+                    references_by_message
+                        .remove(&message.uid)
+                        .unwrap_or_default()
+                        .into_iter()
+                        .map(|record| {
+                            Value::from_iter([
+                                ("uid", Value::String(record.uid)),
+                                ("slug", record.slug.into()),
+                                ("kind", Value::String(record.kind)),
+                                ("head", Value::String(record.head)),
+                                ("body", Value::String(record.body)),
+                            ])
                         })
-                    })
-                    .collect::<Vec<_>>();
+                        .collect::<Vec<_>>()
+                };
                 let held: HashSet<_> = record_references
                     .iter()
                     .filter_map(|record| record["uid"].as_str())
@@ -182,6 +186,7 @@ impl Selection {
                     .into_iter()
                     .filter(|uid| !held.contains(uid.as_str()))
                     .collect();
+                drop(held);
                 let Metadata {
                     created_at,
                     created_by,
@@ -190,9 +195,14 @@ impl Selection {
                 } = message_metadata.remove(&message.uid).unwrap_or_default();
                 let organ_name =
                     organ_name_for(store, &mut organ_names, message.organ_uid.as_deref()).await?;
-                let mut properties = extensions.remove(&message.uid).unwrap_or_default();
-                let lifecycle = properties.remove("lince.message");
-                let social = properties.remove(nucleus::social::requests::MESSAGE_NAMESPACE);
+                let MessageExtensions {
+                    lifecycle,
+                    social,
+                    delivery,
+                    tool_call,
+                    progress,
+                    content,
+                } = extensions.remove(&message.uid).unwrap_or_default();
                 let author = social
                     .as_ref()
                     .and_then(|s| s["content"]["author_owner"].as_str())
@@ -208,27 +218,32 @@ impl Selection {
                     })
                     .unwrap_or_else(|| "local".into());
                 let author_name = if social.is_some() {
-                    if social_participant
-                        .as_ref()
-                        .is_some_and(|p| p["local_owner"] == author)
-                    {
-                        Some("You (private identity)".to_owned())
-                    } else {
-                        social_reveal
+                    let (local_owner, peer_name) = *social_names.get_or_insert_with(|| {
+                        nucleus::performance::add("protein-thread-social-label-preparations", 1);
+                        let owner = social_participant
                             .as_ref()
-                            .and_then(|r| r["peer"]["profile"]["fields"]["name"].as_str())
-                            .filter(|s| !s.is_empty())
-                            .map(str::to_owned)
+                            .and_then(|participant| participant["local_owner"].as_str());
+                        let peer = social_reveal
+                            .as_ref()
+                            .and_then(|reveal| reveal["peer"]["profile"]["fields"]["name"].as_str())
+                            .filter(|name| !name.is_empty())
                             .or_else(|| {
-                                social_participant.as_ref().and_then(|p| {
-                                    p["alias"]
-                                        .as_str()
-                                        .filter(|s| !s.is_empty())
-                                        .map(str::to_owned)
-                                })
+                                social_participant
+                                    .as_ref()
+                                    .and_then(|participant| participant["alias"].as_str())
+                                    .filter(|name| !name.is_empty())
                             })
-                            .or_else(|| Some("Anonymous participant".to_owned()))
-                    }
+                            .unwrap_or("Anonymous participant");
+                        (owner, peer)
+                    });
+                    Some(
+                        if local_owner == Some(author.as_str()) {
+                            "You (private identity)"
+                        } else {
+                            peer_name
+                        }
+                        .to_owned(),
+                    )
                 } else {
                     organ_name_for(store, &mut organ_names, Some(&author)).await?
                 };
@@ -244,31 +259,35 @@ impl Selection {
                     .and_then(Value::as_str)
                     .filter(|value| matches!(*value, "writing" | "finished" | "interrupted"))
                     .unwrap_or("finished");
-                let tool_call = properties.remove("lince.tool-call");
-                messages.push(json!({
-                "uid": message.uid,
-                "head": message.head,
-                "body": message.body,
-                "quantity": message.quantity_f64(),
-                "parent_message_uid": parent_message_uid,
-                "created_at": created_at,
-                "created_by": created_by,
-                "sender": sender,
-                "author": author,
-                "author_name": author_name,
-                "operator": operator,
-                "message_state": message_state,
-                "social": social,
-                "social_delivery": properties.remove(nucleus::social::requests::DELIVERY_NAMESPACE),
-                "tool_call": tool_call,
-                "progress": properties.remove("lince.message-progress"),
-                "content": properties.remove("lince.message-content"),
-                "organ_name": organ_name,
-                "references": record_references,
-                "live_references": live_references,
-                "organ_uid": message.organ_uid,
-                "replica_root": replica_root,
-            }));
+                {
+                    let _message =
+                        nucleus::performance::Span::new("protein-thread-message-publish");
+                    let quantity = message.quantity_f64();
+                    messages.push(Value::from_iter([
+                        ("uid", Value::String(message.uid)),
+                        ("head", Value::String(message.head)),
+                        ("body", Value::String(message.body)),
+                        ("quantity", quantity.into()),
+                        ("parent_message_uid", parent_message_uid.into()),
+                        ("created_at", created_at.into()),
+                        ("created_by", created_by.into()),
+                        ("sender", sender.into()),
+                        ("author", Value::String(author)),
+                        ("author_name", author_name.into()),
+                        ("operator", Value::String(operator)),
+                        ("message_state", message_state.into()),
+                        ("social", social.into()),
+                        ("social_delivery", delivery.into()),
+                        ("tool_call", tool_call.into()),
+                        ("progress", progress.into()),
+                        ("content", content.into()),
+                        ("organ_name", organ_name.into()),
+                        ("references", Value::Array(record_references)),
+                        ("live_references", live_references.into()),
+                        ("organ_uid", message.organ_uid.into()),
+                        ("replica_root", replica_root.into()),
+                    ]));
+                }
                 if messages.len() >= messages_limit {
                     break;
                 }
@@ -290,22 +309,29 @@ impl Selection {
             let thread_organ_name =
                 organ_name_for(store, &mut organ_names, thread.organ_uid.as_deref()).await?;
             let social_conversation = social_participant.is_some();
-            out.push(json!({
-                "uid": thread.uid,
-                "head": thread.head,
-                "body": thread.body,
-                "quantity": thread.quantity_f64(),
-                "created_at": thread_data.created_at,
-                "created_by": thread_data.created_by,
-                "sender": thread_data.sender,
-                "organ_name": thread_organ_name,
-                "messages": messages,
-                "calls": calls,
-                "messages_has_more": has_more,
-                "messages_before": next_cursor,
-                "messages_limit": messages_limit,
-                "social_conversation": social_conversation,
-            }));
+            let _page = nucleus::performance::Span::new("protein-thread-page-publish");
+            let next_cursor = next_cursor.map(|MessageCursor { created_at, uid }| {
+                Value::from_iter([
+                    ("created_at", Value::String(created_at)),
+                    ("uid", Value::String(uid)),
+                ])
+            });
+            out.push(Value::from_iter([
+                ("uid", thread.uid.as_str().into()),
+                ("head", thread.head.as_str().into()),
+                ("body", thread.body.as_str().into()),
+                ("quantity", thread.quantity_f64().into()),
+                ("created_at", thread_data.created_at.into()),
+                ("created_by", thread_data.created_by.into()),
+                ("sender", thread_data.sender.into()),
+                ("organ_name", thread_organ_name.into()),
+                ("messages", Value::Array(messages)),
+                ("calls", Value::Array(calls)),
+                ("messages_has_more", has_more.into()),
+                ("messages_before", next_cursor.into()),
+                ("messages_limit", messages_limit.into()),
+                ("social_conversation", social_conversation.into()),
+            ]));
         }
         Ok(out)
     }
@@ -376,11 +402,21 @@ async fn metadata(
     Ok(metadata)
 }
 
+#[derive(Default)]
+struct MessageExtensions {
+    lifecycle: Option<Value>,
+    social: Option<Value>,
+    delivery: Option<Value>,
+    tool_call: Option<Value>,
+    progress: Option<Value>,
+    content: Option<Value>,
+}
+
 async fn message_extensions(
     store: &Store,
     records: &[&str],
-) -> Result<HashMap<String, HashMap<String, Value>>, ProteinError> {
-    let mut extensions = HashMap::<String, HashMap<String, Value>>::new();
+) -> Result<HashMap<String, MessageExtensions>, ProteinError> {
+    let mut extensions = HashMap::<String, MessageExtensions>::new();
     if records.is_empty() {
         return Ok(extensions);
     }
@@ -400,34 +436,59 @@ async fn message_extensions(
     .bind("lince.message-content")
     .fetch_all(&store.pool)
     .await?;
+    let _decode = nucleus::performance::Span::new("protein-thread-extension-decode");
+    let mut decoded = 0;
     for row in rows {
         if let Ok(value) = serde_json::from_str(row.get::<&str, _>("fds")) {
-            extensions
-                .entry(row.get("record_uid"))
-                .or_default()
-                .insert(row.get("namespace"), value);
+            let fields = extensions.entry(row.get("record_uid")).or_default();
+            let slot = match row.get::<&str, _>("namespace") {
+                "lince.message" => &mut fields.lifecycle,
+                nucleus::social::requests::MESSAGE_NAMESPACE => &mut fields.social,
+                nucleus::social::requests::DELIVERY_NAMESPACE => &mut fields.delivery,
+                "lince.tool-call" => &mut fields.tool_call,
+                "lince.message-progress" => &mut fields.progress,
+                "lince.message-content" => &mut fields.content,
+                _ => continue,
+            };
+            *slot = Some(value);
+            decoded += 1;
         }
     }
+    nucleus::performance::add("protein-thread-extensions-decoded", decoded);
     Ok(extensions)
+}
+
+#[derive(Default)]
+struct OrganNames {
+    organs: HashMap<String, Option<String>>,
+    local: Option<Option<String>>,
 }
 
 async fn organ_name_for(
     store: &Store,
-    cache: &mut HashMap<Option<String>, Option<String>>,
+    cache: &mut OrganNames,
     organ_uid: Option<&str>,
 ) -> Result<Option<String>, ProteinError> {
-    let key = organ_uid.map(str::to_string);
-    if let Some(cached) = cache.get(&key) {
+    let _name = nucleus::performance::Span::new("protein-thread-organ-name-await");
+    let cached = match organ_uid {
+        Some(uid) => cache.organs.get(uid),
+        None => cache.local.as_ref(),
+    };
+    if let Some(cached) = cached {
         return Ok(cached.clone());
     }
+    nucleus::performance::add("protein-thread-organ-name-reads", 1);
     let name = match organ_uid {
         Some(uid) => store::records::live_heads_for(&store.pool, &[uid])
             .await?
             .remove(uid),
-        None => store::organs::local(&store.pool)
-            .await?
-            .map(|organ| organ.head),
+        None => store::organs::local_head(&store.pool).await?,
     };
-    cache.insert(key, name.clone());
+    match organ_uid {
+        Some(uid) => {
+            cache.organs.insert(uid.to_owned(), name.clone());
+        }
+        None => cache.local = Some(name.clone()),
+    }
     Ok(name)
 }

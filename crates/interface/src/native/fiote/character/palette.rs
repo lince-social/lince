@@ -149,9 +149,6 @@ impl Role {
         } else {
             AlphaMode::Blend
         };
-        // Preserve the AssetMut change guard until a rendered value actually
-        // differs. Coercing it to &mut StandardMaterial before comparison
-        // would publish a spurious asset modification on every animation tick.
         if material.base_color != color
             || material.emissive != emission
             || material.alpha_mode != alpha

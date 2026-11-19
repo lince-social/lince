@@ -43,7 +43,7 @@ impl Store {
             hash.update(encode(&name)?);
             hash.update(b",\"rows\":[");
             let quoted = name.replace('"', "\"\"");
-            let rows = sqlx::query(&format!("SELECT * FROM \"{quoted}\""))
+            let rows = sqlx::query(sqlx::AssertSqlSafe(format!("SELECT * FROM \"{quoted}\"")))
                 .fetch_all(&mut *tx)
                 .await?;
             let mut encoded_rows = Vec::with_capacity(rows.len());

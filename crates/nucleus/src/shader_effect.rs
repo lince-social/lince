@@ -104,30 +104,41 @@ impl QuantityRange {
         }
         Ok((start, end))
     }
+}
 
-    fn state(&self, value: DecimalValue) -> Option<TaskState> {
-        let (start, end) = self.endpoints().ok()?;
-        let ascending = end.exact_numeric_cmp(start).is_gt();
-        let from_start = value.exact_numeric_cmp(start);
-        let from_end = value.exact_numeric_cmp(end);
-        Some(
-            if ascending && !from_start.is_gt() || !ascending && !from_start.is_lt() {
-                TaskState::Pending
-            } else if ascending && !from_end.is_lt() || !ascending && !from_end.is_gt() {
-                TaskState::Completed
-            } else {
-                TaskState::Active
-            },
-        )
+#[derive(Clone, Copy)]
+struct MappedRange {
+    start: DecimalValue,
+    end: DecimalValue,
+}
+
+impl MappedRange {
+    fn prepare(range: &QuantityRange) -> Option<Self> {
+        crate::performance::add("shader-mapping-ranges-prepared", 1);
+        let (start, end) = range.endpoints().ok()?;
+        Some(Self { start, end })
     }
 
-    fn progress(&self, value: DecimalValue) -> Option<f32> {
-        match self.state(value)? {
+    fn state(self, value: DecimalValue) -> TaskState {
+        let ascending = self.end.exact_numeric_cmp(self.start).is_gt();
+        let from_start = value.exact_numeric_cmp(self.start);
+        let from_end = value.exact_numeric_cmp(self.end);
+        if ascending && !from_start.is_gt() || !ascending && !from_start.is_lt() {
+            TaskState::Pending
+        } else if ascending && !from_end.is_lt() || !ascending && !from_end.is_gt() {
+            TaskState::Completed
+        } else {
+            TaskState::Active
+        }
+    }
+
+    fn progress(self, value: DecimalValue, state: TaskState) -> Option<f32> {
+        match state {
             TaskState::Pending => Some(0.0),
             TaskState::Completed => Some(1.0),
             TaskState::Active => {
-                let (start, end) = self.endpoints().ok()?;
-                let ratio = Self::difference(value, start)? / Self::difference(end, start)?;
+                let ratio = QuantityRange::difference(value, self.start)?
+                    / QuantityRange::difference(self.end, self.start)?;
                 ratio.is_finite().then(|| ratio.clamp(0.0, 1.0) as f32)
             }
             TaskState::Unknown => None,
@@ -150,17 +161,26 @@ pub struct ResolvedInputs {
 
 impl ResolvedInputs {
     pub fn label(self) -> String {
-        let progress = self.progress.map_or_else(
-            || "unavailable".into(),
-            |value| format!("{:.1}%", value * 100.0),
-        );
-        format!("Task: {} · Progress: {progress}", self.task.label())
+        crate::performance::add("shader-mapping-label-formats", 1);
+        match self.progress {
+            Some(value) => format!(
+                "Task: {} · Progress: {:.1}%",
+                self.task.label(),
+                value * 100.0
+            ),
+            None => format!("Task: {} · Progress: unavailable", self.task.label()),
+        }
     }
 }
 
 impl InputMappings {
     pub fn validate(&self) -> Result<(), String> {
-        for range in [&self.task, &self.progress].into_iter().flatten() {
+        if let Some(range) = &self.task {
+            range.endpoints()?;
+        }
+        if let Some(range) = &self.progress
+            && self.task.as_ref() != Some(range)
+        {
             range.endpoints()?;
         }
         Ok(())
@@ -173,17 +193,21 @@ impl InputMappings {
         else {
             return ResolvedInputs::default();
         };
-        ResolvedInputs {
-            task: self
-                .task
-                .as_ref()
-                .and_then(|range| range.state(value))
-                .unwrap_or_default(),
-            progress: self
-                .progress
-                .as_ref()
-                .and_then(|range| range.progress(value)),
-        }
+        let task_range = self.task.as_ref().and_then(MappedRange::prepare);
+        let task = task_range
+            .map(|range| range.state(value))
+            .unwrap_or_default();
+        let progress = self.progress.as_ref().and_then(|range| {
+            let same = self.task.as_ref() == Some(range);
+            let range = if same {
+                task_range
+            } else {
+                MappedRange::prepare(range)
+            }?;
+            let state = if same { task } else { range.state(value) };
+            range.progress(value, state)
+        });
+        ResolvedInputs { task, progress }
     }
 }
 
@@ -371,13 +395,20 @@ impl Default for Effect {
     }
 }
 
+pub fn quantity_text(value: &str) -> Option<&str> {
+    crate::performance::add("shader-quantity-validations", 1);
+    (value.len() <= 128 && DecimalValue::parse_inferred(value).is_ok()).then_some(value)
+}
+
 pub fn quantity(value: &serde_json::Value) -> Option<String> {
     match value {
-        serde_json::Value::String(value) => Some(value.clone()),
-        serde_json::Value::Number(value) => Some(value.to_string()),
+        serde_json::Value::String(value) => quantity_text(value).map(str::to_owned),
+        serde_json::Value::Number(value) => {
+            let value = value.to_string();
+            quantity_text(&value).is_some().then_some(value)
+        }
         _ => None,
     }
-    .filter(|value| value.len() <= 128 && DecimalValue::parse_inferred(value).is_ok())
 }
 
 pub fn gpu_quantity(value: Option<&str>) -> Option<f32> {
@@ -386,6 +417,26 @@ pub fn gpu_quantity(value: Option<&str>) -> Option<f32> {
 }
 
 impl Effect {
+    pub fn same_authored(&self, other: &Self) -> bool {
+        self == other
+            && match (&self.mode, &other.mode) {
+                (spatial::Mode::Mesh(first), spatial::Mode::Mesh(second)) => {
+                    first
+                        .deformation
+                        .as_ref()
+                        .map(|stage| stage.max_displacement.to_bits())
+                        == second
+                            .deformation
+                            .as_ref()
+                            .map(|stage| stage.max_displacement.to_bits())
+                }
+                (spatial::Mode::Volume(first), spatial::Mode::Volume(second)) => {
+                    first.density.to_bits() == second.density.to_bits()
+                }
+                _ => true,
+            }
+    }
+
     pub fn sources(&self) -> impl Iterator<Item = &str> {
         self.programs
             .values()

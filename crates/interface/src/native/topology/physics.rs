@@ -236,12 +236,12 @@ pub(crate) fn room_transform(
         }
         world
             .entity_mut(entity)
-            .insert((Position(position), Rotation(rotation)));
+            .insert((Position(position), Rotation(rotation.as_quat())));
         if let Some(mut velocity) = world.get_mut::<LinearVelocity>(entity) {
-            velocity.0 = delta * velocity.0;
+            velocity.0 = (delta * velocity.0.as_dvec3()).as_vec3();
         }
         if let Some(mut velocity) = world.get_mut::<AngularVelocity>(entity) {
-            velocity.0 = delta * velocity.0;
+            velocity.0 = (delta * velocity.0.as_dvec3()).as_vec3();
         }
     }
 }
@@ -447,11 +447,7 @@ pub fn synchronize(world: &mut World) -> bool {
                     let scale = super::assets::effective_scale(world, *e, asset);
                     imported_shape(world, *e, scale).ok().flatten()
                 } else {
-                    Some(Collider::cuboid(
-                        f64::from(size.x),
-                        f64::from(size.y),
-                        f64::from(size.z),
-                    ))
+                    Some(Collider::cuboid(size.x, size.y, size.z))
                 };
                 if let Some(collider) = collider {
                     parts.push((
@@ -481,7 +477,7 @@ pub fn synchronize(world: &mut World) -> bool {
             world
                 .spawn((
                     Position(position),
-                    Rotation(rotation),
+                    Rotation(rotation.as_quat()),
                     Transform::default(),
                     kind,
                     Mass(solid.len() as f32),
@@ -531,7 +527,7 @@ pub fn synchronize(world: &mut World) -> bool {
                         Transform::from_translation(local.as_vec3())
                             .with_rotation(local_rotation.as_quat()),
                         Position(position + rotation * local),
-                        Rotation(rotation * local_rotation),
+                        Rotation((rotation * local_rotation).as_quat()),
                         ColliderDensity(0.0),
                         ActiveCollisionHooks::FILTER_PAIRS,
                     ))
@@ -554,7 +550,7 @@ pub fn synchronize(world: &mut World) -> bool {
                 let local_rotation = inverse_rotation * placement.rotation();
                 let local = part_center(world, *member, *size, local_rotation, *relative);
                 let point = position + rotation * local;
-                let orientation = rotation * local_rotation;
+                let orientation = (rotation * local_rotation).as_quat();
                 if world
                     .get::<Position>(part)
                     .is_none_or(|current| current.0 != point)
@@ -588,7 +584,7 @@ pub fn synchronize(world: &mut World) -> bool {
                 .entity_mut(body)
                 .insert((
                     Position(position),
-                    Rotation(rotation),
+                    Rotation(rotation.as_quat()),
                     LinearVelocity::ZERO,
                     AngularVelocity::ZERO,
                 ))
@@ -620,14 +616,14 @@ pub fn synchronize(world: &mut World) -> bool {
                     DVec3::ZERO
                 }
         };
-        if world.get::<ConstantForce>(body).unwrap().0 != force {
+        if world.get::<ConstantForce>(body).unwrap().0 != force.as_vec3() {
             let threshold = crate::native::physics::sleep_threshold(
                 force,
                 f64::from(world.get::<Mass>(body).unwrap().0),
             );
             world
                 .entity_mut(body)
-                .insert((ConstantForce(force), SleepTimer(0.0), threshold))
+                .insert((ConstantForce(force.as_vec3()), SleepTimer(0.0), threshold))
                 .remove::<Sleeping>();
             changed = true;
         }
@@ -763,9 +759,9 @@ mod tests {
                     held: false,
                 },
                 Position(point),
-                Rotation(DQuat::IDENTITY),
-                LinearVelocity(DVec3::X * 10.0),
-                AngularVelocity(DVec3::Y),
+                Rotation(Quat::IDENTITY),
+                LinearVelocity(Vec3::X * 10.0),
+                AngularVelocity(Vec3::Y),
             ))
             .id();
         let before = model::identity_pose();
@@ -787,7 +783,7 @@ mod tests {
             ..default()
         });
         room_transform(&mut world, member, &before, &after);
-        let rotation = DQuat::from_array(after.rotation);
+        let rotation = DQuat::from_array(after.rotation).as_quat();
         assert_eq!(
             world.get::<Body>(body).unwrap().position,
             DVec3::from_array(target.position)
@@ -797,11 +793,11 @@ mod tests {
             target.rotation
         );
         assert!(
-            (world.get::<LinearVelocity>(body).unwrap().0 - rotation * DVec3::X * 10.0).length()
-                < 1e-8
+            (world.get::<LinearVelocity>(body).unwrap().0 - rotation * Vec3::X * 10.0).length()
+                < 1e-5
         );
         assert!(
-            (world.get::<AngularVelocity>(body).unwrap().0 - rotation * DVec3::Y).length() < 1e-8
+            (world.get::<AngularVelocity>(body).unwrap().0 - rotation * Vec3::Y).length() < 1e-6
         );
     }
 

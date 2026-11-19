@@ -327,11 +327,14 @@ pub(crate) async fn attach<Body>(
     query: &Protein,
     records: &[RecordRow<Body>],
     visible: Option<&HashSet<String>>,
-    work: &HashMap<String, Value>,
+    work: &mut HashMap<String, Value>,
     concept_names: &HashMap<String, String>,
 ) -> Result<HashMap<String, Value>, crate::ProteinError> {
     let _schema = nucleus::performance::Span::new("protein-record-schema-await");
     let wants = |key| requests(query, key);
+    let wants_logs = wants("work_logs");
+    let wants_spent = wants("spent_seconds");
+    let wants_running = wants("running_since");
     if ![
         "estimate_min",
         "work_logs",
@@ -346,7 +349,7 @@ pub(crate) async fn attach<Body>(
         return Ok(HashMap::new());
     }
     let mut log_ids = HashMap::<String, Vec<String>>::new();
-    if wants("work_logs") {
+    if wants_logs {
         let owners: Vec<_> = records
             .iter()
             .filter(|record| {
@@ -379,35 +382,37 @@ pub(crate) async fn attach<Body>(
     }
     let mut out = HashMap::new();
     for record in records {
+        let _publish = nucleus::performance::Span::new("protein-record-work-publish");
         let mut value = json!({});
-        let metadata = work.get(&record.uid);
+        let mut metadata = work.get_mut(&record.uid).and_then(Value::as_object_mut);
         if wants("estimate_min") {
             value["estimate_min"] = metadata
-                .and_then(|work| work.get("estimate_min"))
-                .cloned()
+                .as_mut()
+                .and_then(|work| work.remove("estimate_min"))
                 .unwrap_or(Value::Null);
         }
-        let logs = metadata
-            .and_then(|work| work.get("logs"))
-            .and_then(Value::as_array)
-            .map(Vec::as_slice)
-            .unwrap_or_default();
-        if wants("work_logs") {
+        let mut logs = if wants_logs || wants_spent || wants_running {
+            match metadata.and_then(|work| work.remove("logs")) {
+                Some(Value::Array(logs)) => logs,
+                _ => Vec::new(),
+            }
+        } else {
+            Vec::new()
+        };
+        if wants_logs {
             let mut entries = log_ids.remove(&record.uid).unwrap_or_default().into_iter();
-            let mut identified = logs.to_vec();
-            for (index, log) in identified.iter_mut().enumerate() {
+            for (index, log) in logs.iter_mut().enumerate() {
                 log["id"] = Value::String(
                     entries
                         .next()
                         .unwrap_or_else(|| format!("work.log:seed-{index}")),
                 );
             }
-            value["work_logs"] = Value::Array(identified);
         }
-        if wants("spent_seconds") || wants("running_since") {
+        if wants_spent || wants_running {
             let mut spent = 0i64;
-            let mut running = Value::Null;
-            for log in logs {
+            let mut running = None;
+            for (index, log) in logs.iter().enumerate() {
                 let Some(start) = log["start"]
                     .as_str()
                     .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
@@ -417,23 +422,37 @@ pub(crate) async fn attach<Body>(
                 let end = log["end"]
                     .as_str()
                     .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok());
-                if end.is_none() {
-                    running = log["start"].clone();
+                if wants_running && end.is_none() {
+                    running = Some(index);
                 }
-                spent = spent.saturating_add(
-                    (end.map(|v| v.with_timezone(&chrono::Utc))
-                        .unwrap_or_else(chrono::Utc::now)
-                        - start.with_timezone(&chrono::Utc))
-                    .num_seconds()
-                    .max(0),
-                );
+                if wants_spent {
+                    spent = spent.saturating_add(
+                        (end.map(|v| v.with_timezone(&chrono::Utc))
+                            .unwrap_or_else(chrono::Utc::now)
+                            - start.with_timezone(&chrono::Utc))
+                        .num_seconds()
+                        .max(0),
+                    );
+                }
             }
-            if wants("spent_seconds") {
-                value["spent_seconds"] = json!(spent);
+            let running = running.map(|index| {
+                if wants_logs {
+                    logs[index]["start"].clone()
+                } else {
+                    logs[index]["start"].take()
+                }
+            });
+            if wants_logs {
+                value["work_logs"] = Value::Array(logs);
             }
-            if wants("running_since") {
-                value["running_since"] = running;
+            if wants_spent {
+                value["spent_seconds"] = spent.into();
             }
+            if wants_running {
+                value["running_since"] = running.unwrap_or(Value::Null);
+            }
+        } else if wants_logs {
+            value["work_logs"] = Value::Array(logs);
         }
         if wants("assertions") {
             value["assertions"] = json!([]);
@@ -497,7 +516,24 @@ pub(crate) async fn attach<Body>(
                 }));
             }
             if wants("assertions") {
-                row["assertions"].as_array_mut().unwrap().push(json!({"uid":assertion.uid,"role":assertion.role,"predicate":concept_names.get(&assertion.predicate_uid).unwrap_or(&assertion.predicate),"predicate_uid":assertion.predicate_uid,"object":assertion.object_uid,"uri":assertion.object_uri,"resolved_object":assertion.resolved_object_uid,"quantity":assertion.quantity.map(|q| q.to_string()),"unit":assertion.unit_uid}));
+                let predicate = concept_names
+                    .get(&assertion.predicate_uid)
+                    .cloned()
+                    .unwrap_or(assertion.predicate);
+                row["assertions"]
+                    .as_array_mut()
+                    .unwrap()
+                    .push(Value::from_iter([
+                        ("uid", Value::from(assertion.uid)),
+                        ("role", assertion.role.into()),
+                        ("predicate", predicate.into()),
+                        ("predicate_uid", assertion.predicate_uid.into()),
+                        ("object", assertion.object_uid.into()),
+                        ("uri", assertion.object_uri.into()),
+                        ("resolved_object", assertion.resolved_object_uid.into()),
+                        ("quantity", assertion.quantity.map(|q| q.to_string()).into()),
+                        ("unit", assertion.unit_uid.into()),
+                    ]));
             }
         }
     }

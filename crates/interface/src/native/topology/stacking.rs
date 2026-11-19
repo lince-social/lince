@@ -11,7 +11,12 @@ use bevy::{
 };
 use std::collections::HashMap;
 
+mod inputs;
+pub(super) use inputs::Keys;
+
 #[derive(Component, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, ExtractComponent)]
+
+#[extract_app(bevy::render::RenderApp)]
 pub(crate) struct Order {
     floating: bool,
     active: (bool, u8),
@@ -21,6 +26,8 @@ pub(crate) struct Order {
 }
 
 #[derive(Component, Clone, Copy, PartialEq, Eq, Hash, ExtractComponent)]
+
+#[extract_app(bevy::render::RenderApp)]
 pub(crate) struct Plane([u64; 4]);
 
 impl Plane {
@@ -34,68 +41,21 @@ impl Plane {
 }
 
 #[derive(Component, Clone, Copy, ExtractComponent)]
+
+#[extract_app(bevy::render::RenderApp)]
 pub(super) struct OrderedCamera;
 
 #[derive(Component, Clone, Copy, PartialEq, Eq, ExtractComponent)]
+
+#[extract_app(bevy::render::RenderApp)]
 pub(super) struct DecorationAnchor(pub Entity);
 
-pub(super) fn key(world: &World, entity: Entity) -> Order {
-    Order {
-        floating: world
-            .get::<crate::native::layout::desktop::Managed>(entity)
-            .is_none_or(|managed| managed.floating),
-        active: active_family(world, entity).unwrap_or_default(),
-        index: world.get::<ZIndex>(entity).map_or(0, |index| index.0),
-        sibling: world
-            .get::<ChildOf>(entity)
-            .and_then(|parent| world.get::<Children>(parent.parent()))
-            .and_then(|children| children.iter().position(|child| child == entity))
-            .unwrap_or(0),
-        part: 0,
-    }
+#[cfg(test)]
+fn key(world: &World, entity: Entity) -> Order {
+    Keys::new(world).key(entity)
 }
 
-fn active_family(world: &World, entity: Entity) -> Option<(bool, u8)> {
-    use crate::native::{layout::desktop, workspace};
-    world.get::<desktop::ApplicationWindow>(entity)?;
-    if !world.get::<desktop::Managed>(entity)?.floating {
-        return None;
-    }
-    let root = world.get::<ChildOf>(entity)?.parent();
-    let workspace = world.get::<workspace::WorkspaceMember>(entity)?.0;
-    let focused = world
-        .get::<workspace::Workspaces>(root)?
-        .entries
-        .iter()
-        .find(|entry| entry.id == workspace)?
-        .desktop
-        .focused()?;
-    let target = world.get::<Children>(root)?.iter().find(|entity| {
-        world
-            .get::<desktop::Managed>(*entity)
-            .is_some_and(|managed| managed.id == focused)
-            && world.get::<desktop::ApplicationWindow>(*entity).is_some()
-    })?;
-    let family = |mut entity| {
-        for depth in 0..32 {
-            if world.get::<ChildOf>(entity)?.parent() != root
-                || world.get::<workspace::WorkspaceMember>(entity)?.0 != workspace
-            {
-                return None;
-            }
-            let Some(parent) = world.get::<desktop::TransientParent>(entity) else {
-                return Some((entity, depth));
-            };
-            entity = parent.0;
-        }
-        None
-    };
-    let (ancestor, depth) = family(entity)?;
-    (ancestor == family(target)?.0).then_some((true, depth))
-}
-
-pub(super) fn synchronize(world: &mut World, owner: Entity, visual: Entity, plane: Plane) {
-    let key = key(world, owner);
+pub(super) fn synchronize(world: &mut World, visual: Entity, key: Order, plane: Plane) {
     if world.get::<Order>(visual) != Some(&key) {
         world.entity_mut(visual).insert(key);
     }
@@ -139,76 +99,53 @@ pub(super) fn install(app: &mut App) {
     );
 }
 
+mod ordering;
+
 fn sort(
     views: Query<&ExtractedView, With<OrderedCamera>>,
     orders: Query<(&Order, &Plane, &MainEntity, Option<&DecorationAnchor>)>,
     mut phases: ResMut<ViewSortedRenderPhases<Transparent3d>>,
+    mut prepared: Local<ordering::Preparation>,
 ) {
-    if orders.is_empty() {
+    let _ordering = nucleus::performance::Span::new("native-transparent-order");
+    if orders.is_empty()
+        || !views.iter().any(|view| {
+            phases
+                .get(&view.retained_view_entity)
+                .is_some_and(|phase| phase.items.len() > 1)
+        })
+    {
+        *prepared = Default::default();
         return;
     }
-    let anchors: HashMap<_, _> = orders.iter().filter_map(|(order, _, entity, anchor)| {
-        anchor.map(|anchor| (entity.id(), (anchor.0, order.part)))
-    }).collect();
-    let orders: HashMap<_, _> = orders
-        .iter()
-        .map(|(order, plane, entity, _)| (entity.id(), (*order, *plane)))
-        .collect();
-    for view in &views {
-        let Some(phase) = phases.get_mut(&view.retained_view_entity) else {
-            continue;
-        };
-        let mut groups = HashMap::<Plane, Vec<_>>::new();
-        for (index, (entity, item)) in phase.items.iter().enumerate() {
-            if item.distance.is_finite()
-                && let Some((order, plane)) = orders.get(&entity.1.id())
-            {
-                groups
-                    .entry(*plane)
-                    .or_default()
-                    .push((index, *entity, *order));
-            }
+    for (order, plane, entity, anchor) in &orders {
+        prepared.orders.insert(entity.id(), (*order, *plane));
+        if let Some(anchor) = anchor {
+            prepared.anchors.insert(entity.id(), (anchor.0, order.part));
         }
-        if groups
-            .values()
-            .all(|group| group.windows(2).all(|pair| pair[0].2 <= pair[1].2))
-        {
-            group_decorations(phase, &anchors);
-            continue;
-        }
-        let mut ranks: HashMap<_, _> = phase
-            .items
-            .keys()
-            .enumerate()
-            .map(|(index, entity)| (*entity, index))
-            .collect();
-        for mut group in groups
-            .into_values()
-            .filter(|group| group.windows(2).any(|pair| pair[0].2 > pair[1].2))
-        {
-            let slots: Vec<_> = group.iter().map(|entry| entry.0).collect();
-            group.sort_by_key(|entry| entry.2);
-            for (slot, (_, entity, _)) in slots.into_iter().zip(group) {
-                ranks.insert(entity, slot);
-            }
-        }
-        phase.items.sort_by_key(|entity, _| ranks[entity]);
-        group_decorations(phase, &anchors);
     }
+    nucleus::performance::add(
+        "native-stacking-prepared-orders",
+        prepared.orders.len() as u64,
+    );
+    nucleus::performance::add(
+        "native-stacking-prepared-anchors",
+        prepared.anchors.len() as u64,
+    );
+    for view in &views {
+        if let Some(phase) = phases.get_mut(&view.retained_view_entity) {
+            prepared.apply(phase);
+        }
+    }
+    prepared.clear_frame();
 }
 
+#[cfg(test)]
 fn group_decorations(
     phase: &mut bevy::render::render_phase::SortedRenderPhase<Transparent3d>,
     anchors: &HashMap<Entity, (Entity, i8)>,
 ) {
-    if anchors.is_empty() { return; }
-    let original: HashMap<_, _> = phase.items.keys().enumerate().map(|(index, key)| (key.1.id(), index)).collect();
-    let ranks: HashMap<_, _> = phase.items.keys().enumerate().map(|(index, key)| {
-        let rank = anchors.get(&key.1.id()).and_then(|(face, part)| original.get(face).map(|index| (*index, *part)))
-            .unwrap_or((index, 0));
-        (*key, rank)
-    }).collect();
-    phase.items.sort_by_key(|entity, _| ranks[entity]);
+    ordering::Decorations::default().apply(phase, anchors);
 }
 
 #[cfg(test)]

@@ -166,9 +166,9 @@ pub async fn table(
             .bind(name)
             .fetch_all(pool)
             .await?;
-    let rows = sqlx::query(&format!(
+    let rows = sqlx::query(sqlx::AssertSqlSafe(format!(
         "SELECT * FROM \"{name}\" WHERE \"{key}\" IN (SELECT value FROM json_each(?)) LIMIT 20001"
-    ))
+    )))
     .bind(serde_json::to_string(ids).map_err(|e| protocol(e.to_string()))?)
     .fetch_all(pool)
     .await?;
@@ -420,7 +420,7 @@ pub async fn insert_table(
         .ok_or_else(|| protocol("Move table has no identity"))?;
     let names = columns
         .iter()
-        .map(|c| format!("\"{c}\""))
+        .map(|c| format!("\"{}\"", c.replace('"', "\"\"")))
         .collect::<Vec<_>>()
         .join(",");
     let slots = vec!["?"; columns.len()].join(",");
@@ -432,7 +432,7 @@ pub async fn insert_table(
             "INSERT OR IGNORE INTO \"{}\" ({names}) VALUES ({slots})",
             table.name
         );
-        let mut query = sqlx::query(&statement);
+        let mut query = sqlx::query(sqlx::AssertSqlSafe(statement.as_str()));
         for value in row {
             query = match value {
                 Value::Null => query.bind(Option::<String>::None),
@@ -451,15 +451,15 @@ pub async fn insert_table(
             let statement = format!(
                 "SELECT EXISTS(SELECT 1 FROM \"{}\" WHERE \"{}\"=? AND {})",
                 table.name,
-                columns[key_index],
+                columns[key_index].replace('"', "\"\""),
                 columns
                     .iter()
                     .filter(|c| table.name != "concept" || c.as_str() != "created_at")
-                    .map(|c| format!("\"{c}\" IS ?"))
+                    .map(|c| format!("\"{}\" IS ?", c.replace('"', "\"\"")))
                     .collect::<Vec<_>>()
                     .join(" AND ")
             );
-            let mut check = sqlx::query(&statement).bind(key);
+            let mut check = sqlx::query(sqlx::AssertSqlSafe(statement.as_str())).bind(key);
             for (column, value) in columns.iter().zip(row) {
                 if table.name == "concept" && column == "created_at" {
                     continue;
@@ -506,17 +506,20 @@ pub async fn unchanged(
     let rules = ids(table("recurrence"), "uid");
     let fields = ids(table("karma_field_binding"), "field_uid");
     let concepts = ids(table("concept"), "uid");
-    for (table, (_, key)) in bundle.tables.iter().zip(TABLES) {
+    for (table, (name, key)) in bundle.tables.iter().zip(TABLES) {
+        if table.name != *name {
+            return Err(protocol("Unknown move table"));
+        }
         let ids = match table.name.as_str() {
             "concept" | "concept_name" | "concept_parent" => &concepts,
             "recurrence_revision" | "karma_field_binding" | "karma_rule_frequency" => &rules,
             "karma_field" => &fields,
             _ => &records,
         };
-        let count: i64 = sqlx::query_scalar(&format!(
+        let count: i64 = sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
             "SELECT COUNT(*) FROM \"{}\" WHERE \"{key}\" IN (SELECT value FROM json_each(?))",
             table.name
-        ))
+        )))
         .bind(serde_json::to_string(&ids).map_err(|e| protocol(e.to_string()))?)
         .fetch_one(&mut **tx)
         .await?;
@@ -530,11 +533,11 @@ pub async fn unchanged(
                 table
                     .columns
                     .iter()
-                    .map(|c| format!("\"{c}\" IS ?"))
+                    .map(|c| format!("\"{}\" IS ?", c.replace('"', "\"\"")))
                     .collect::<Vec<_>>()
                     .join(" AND ")
             );
-            let mut query = sqlx::query(&statement);
+            let mut query = sqlx::query(sqlx::AssertSqlSafe(statement.as_str()));
             for value in row {
                 query = match value {
                     Value::Null => query.bind(Option::<String>::None),

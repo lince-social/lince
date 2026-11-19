@@ -1,7 +1,5 @@
 use std::{ops::Deref, sync::Arc};
 
-/// A draft and its comparison baseline share data until an actual edit. Views
-/// can retain a read snapshot without copying the schema or field map.
 #[derive(Clone)]
 pub(super) struct DraftData<T> {
     original: Arc<T>,
@@ -50,7 +48,6 @@ impl<T> Deref for DraftData<T> {
     }
 }
 
-/// Shared by draft edits and the acknowledged undo map's added-key tombstones.
 pub(super) fn edit<T: Clone>(snapshot: &mut Arc<T>) -> &mut T {
     if Arc::strong_count(snapshot) > 1 {
         nucleus::performance::add("extension-draft-data-copies", 1);

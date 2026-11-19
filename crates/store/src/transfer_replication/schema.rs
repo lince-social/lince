@@ -173,7 +173,7 @@ impl Table {
             quoted(&self.name)
         );
         let json = row.to_string();
-        let mut query = sqlx::query_scalar::<_, String>(&sql);
+        let mut query = sqlx::query_scalar::<_, String>(sqlx::AssertSqlSafe(sql.as_str()));
         for _ in &self.keys {
             query = query.bind(&json);
         }
@@ -227,7 +227,7 @@ impl Table {
                     "INSERT INTO {} ({columns}) VALUES ({values})",
                     quoted(&self.name)
                 );
-                let mut query = sqlx::query(&sql);
+                let mut query = sqlx::query(sqlx::AssertSqlSafe(sql.as_str()));
                 for _ in &self.columns {
                     query = query.bind(&json);
                 }
@@ -253,7 +253,7 @@ impl Table {
                     "UPDATE {} SET {columns} WHERE {condition}",
                     quoted(&self.name)
                 );
-                let mut query = sqlx::query(&sql);
+                let mut query = sqlx::query(sqlx::AssertSqlSafe(sql.as_str()));
                 for _ in self.columns.iter().chain(self.keys.iter()) {
                     query = query.bind(&json);
                 }
@@ -267,7 +267,7 @@ impl Table {
                     .collect::<Vec<_>>()
                     .join(" AND ");
                 let sql = format!("DELETE FROM {} WHERE {condition}", quoted(&self.name));
-                let mut query = sqlx::query(&sql);
+                let mut query = sqlx::query(sqlx::AssertSqlSafe(sql.as_str()));
                 for _ in &self.keys {
                     query = query.bind(&json);
                 }

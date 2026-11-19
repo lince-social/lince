@@ -1,9 +1,9 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, sync::Arc};
 
 use chrono::{DateTime, Utc};
 use nucleus::DecimalValue;
 use nucleus::karma::{ConditionBinding, Consequence, Consequences, ReferenceKind, TypedUid};
-use nucleus::transfer::karma::{Participant, Snapshot};
+use nucleus::transfer::karma::Participant;
 use serde::{Deserialize, Serialize};
 
 use crate::{Engine, EngineError, actions::Action};
@@ -16,7 +16,7 @@ pub(crate) struct EvaluatedTransfer {
     pub revision: u64,
     pub agreement: Participant,
     pub level: Option<u8>,
-    pub reads: BTreeMap<String, Snapshot>,
+    pub reads: crate::karma_transfers::Snapshots,
     pub guards: BTreeMap<String, nucleus::transfer::karma::Guard>,
 }
 
@@ -94,7 +94,7 @@ impl Engine {
                         self.resolve_karma_transfer(token).await?
                     } else {
                         let uid = self.resolve(token).await?;
-                        let record = store::records::get(&self.store.pool, &uid)
+                        let record = store::records::routing(&self.store.pool, &uid)
                             .await?
                             .ok_or_else(|| invalid("Acting Person is unavailable"))?;
                         if record.kind != "person" {
@@ -212,6 +212,8 @@ impl Engine {
         let Some(transfer) = consequence.transfer_target() else {
             return Ok(None);
         };
+        let _preparation =
+            nucleus::performance::Span::new("karma-transfer-effect-preparation-await");
         let person = consequence
             .transfer_person()
             .ok_or_else(|| invalid("Choose an acting Person"))?;
@@ -232,7 +234,9 @@ impl Engine {
         };
         let reads = crate::karma_transfers::READINGS
             .try_with(|readings| readings.borrow().snapshots.clone())
-            .unwrap_or_else(|_| BTreeMap::from([(state.transfer.clone(), state.clone())]));
+            .ok()
+            .flatten()
+            .unwrap_or_else(|| Arc::new(BTreeMap::from([(state.transfer.clone(), state.clone())])));
         let mut guards = crate::karma_transfers::READINGS
             .try_with(|readings| readings.borrow().guards.clone())
             .unwrap_or_default();

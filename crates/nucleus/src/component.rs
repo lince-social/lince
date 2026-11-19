@@ -208,7 +208,6 @@ impl ComponentState {
         records
     }
 
-    /// Visits declared references in presentation order, including duplicates.
     pub fn visit_records<'a, B>(
         &'a self,
         visit: &mut impl FnMut(&'a str) -> ControlFlow<B>,

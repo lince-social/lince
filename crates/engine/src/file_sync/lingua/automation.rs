@@ -232,13 +232,16 @@ fn rule_condition(
         }
         return Ok(None);
     };
-    nucleus::karma::Condition::parse(source).map_err(invalid)?;
-    Ok(Some(store::recurrence::RuleCondition {
-        source: source.clone(),
-        bindings: Vec::new(),
-        gate: Gate::parse(rule.gate.as_deref().unwrap_or("!=0")).map_err(invalid)?,
-        carry: Carry::parse(rule.carry.as_deref().unwrap_or("value")).map_err(invalid)?,
-    }))
+    let mut condition = store::recurrence::RuleCondition::new(
+        source.clone(),
+        Vec::new(),
+        Gate::Always,
+        Carry::Value,
+    );
+    condition.parsed().map_err(invalid)?;
+    condition.gate = Gate::parse(rule.gate.as_deref().unwrap_or("!=0")).map_err(invalid)?;
+    condition.carry = Carry::parse(rule.carry.as_deref().unwrap_or("value")).map_err(invalid)?;
+    Ok(Some(condition))
 }
 
 impl Engine {

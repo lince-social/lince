@@ -390,21 +390,21 @@ impl Preview {
         let mut remaining = 160;
         let mut first = true;
         for entity in self.ordered.iter().copied() {
-            let mut append = |value: &str| {
+            let mut append = |characters: &mut dyn Iterator<Item = char>| {
                 if !first {
                     text.push(' ');
                     remaining -= 1;
                 }
                 first = false;
-                for ch in value.chars().take(remaining) {
+                for ch in characters.take(remaining) {
                     text.push(ch);
                     remaining -= 1;
                 }
             };
             if let Some(value) = world.get::<Text>(entity) {
-                append(&value.0);
+                append(&mut value.0.chars());
             } else if let Some(value) = world.get::<EditableText>(entity) {
-                append(&value.value());
+                append(&mut value.value().chars());
             }
             if remaining == 0 {
                 break;

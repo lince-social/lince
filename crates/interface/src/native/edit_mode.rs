@@ -11,8 +11,9 @@ use crate::native::{
 };
 use bevy::{
     a11y::AccessibilityNode,
+    ecs::{entity_disabling::Disabled, query::Allow},
     input_focus::{FocusCause, FocusGained, FocusLost, InputFocus, tab_navigation::TabGroup},
-    picking::events::Scroll,
+    picking::events::PointerScroll,
     prelude::*,
     text::EditableText,
 };
@@ -153,6 +154,7 @@ struct WorkspaceName(u64);
 struct StoreFilter {
     input: Entity,
     groups: Vec<StoreFilterGroup>,
+    observed_input: Option<String>,
     observed: String,
 }
 
@@ -310,102 +312,99 @@ fn expand_tabs(
 }
 
 fn autosave_name(world: &mut World) {
-    let edits: Vec<_> = world
-        .query::<(Entity, &EditMode)>()
-        .iter(world)
-        .filter(|(_, mode)| mode.enabled)
-        .filter_map(|(root, mode)| {
-            let field = mode.name?;
-            let workspace = world.get::<WorkspaceName>(field)?.0;
-            let text = world.get::<EditableText>(field)?;
-            if text.is_composing() || text.pending_paste.is_some() {
-                return None;
-            }
-            let name = text.value().to_string();
-            let spaces = world.get::<Workspaces>(root)?;
-            let current = spaces.entries.iter().find(|space| space.id == workspace)?;
-            (!name.trim().is_empty() && name.trim() != current.name)
-                .then_some((root, workspace, name))
-        })
-        .collect();
-    for (root, workspace, name) in edits {
-        if !workspace::rename_id(world, root, workspace, &name) {
-            continue;
-        }
-        let labels: Vec<_> = world
-            .query::<(&EditControl, &Children)>()
-            .iter(world)
-            .filter(|(control, _)| {
-                control.root == root && control.action == EditAction::SwitchWorkspace(workspace)
-            })
-            .flat_map(|(_, children)| children.iter())
-            .collect();
-        for entity in labels {
-            if let Some(mut text) = world.get_mut::<Text>(entity) {
-                text.0 = name.trim().into();
-            }
-        }
-    }
+    workspaces::save_names(world);
 }
 
-fn descendant_text(world: &World, entity: Entity, value: &mut String) {
-    if let Some(text) = world.get::<Text>(entity) {
+fn descendant_text(
+    texts: &Query<&Text, Allow<Disabled>>,
+    hierarchy: &Query<&Children, Allow<Disabled>>,
+    entity: Entity,
+    value: &mut String,
+) {
+    if let Ok(text) = texts.get(entity) {
         value.push_str(&text.0);
         value.push(' ');
     }
-    if let Some(children) = world.get::<Children>(entity) {
+    if let Ok(children) = hierarchy.get(entity) {
         for child in children {
-            descendant_text(world, *child, value);
+            descendant_text(texts, hierarchy, *child, value);
         }
     }
 }
 
-fn filter_store(world: &mut World) {
-    let filters: Vec<_> = world
-        .query::<(Entity, &StoreFilter)>()
-        .iter(world)
-        .filter_map(|(panel, filter)| {
-            let input = world.get::<EditableText>(filter.input)?.value().to_string();
-            let value = input.trim().to_lowercase();
-            (value != filter.observed).then(|| {
-                (
-                    panel,
-                    value,
-                    filter
-                        .groups
-                        .iter()
-                        .map(|group| (group.heading, group.entries.clone()))
-                        .collect::<Vec<_>>(),
-                )
-            })
-        })
-        .collect();
-    for (panel, filter, groups) in filters {
-        for (heading, entries) in groups {
+fn filter_store(
+    mut filters: Query<&mut StoreFilter>,
+    inputs: Query<&EditableText, Allow<Disabled>>,
+    texts: Query<&Text, Allow<Disabled>>,
+    hierarchy: Query<&Children, Allow<Disabled>>,
+    mut nodes: Query<&mut Node, Allow<Disabled>>,
+) {
+    let _filter = nucleus::performance::Span::new("edit-store-filter");
+    let mut prepared = 0;
+    let mut inspected = 0;
+    let mut published = 0;
+    for mut filter in &mut filters {
+        let Ok(input) = inputs.get(filter.input) else {
+            continue;
+        };
+        let input = input.value();
+        if filter
+            .observed_input
+            .as_deref()
+            .is_some_and(|observed| input == observed)
+        {
+            continue;
+        }
+        let observed = filter.observed_input.get_or_insert_with(String::new);
+        observed.clear();
+        for part in input {
+            observed.push_str(part);
+        }
+        let value = observed.trim().to_lowercase();
+        prepared += 1;
+        if value == filter.observed {
+            continue;
+        }
+        let mut text = String::new();
+        for group in &filter.groups {
             let mut visible = false;
-            for entry in entries {
-                let mut value = String::new();
-                descendant_text(world, entry, &mut value);
-                let matches = filter.is_empty() || value.to_lowercase().contains(&filter);
-                if let Some(mut node) = world.get_mut::<Node>(entry) {
-                    node.display = if matches {
+            for &entry in &group.entries {
+                let matches = value.is_empty() || {
+                    text.clear();
+                    descendant_text(&texts, &hierarchy, entry, &mut text);
+                    inspected += 1;
+                    text.to_lowercase().contains(&value)
+                };
+                if let Ok(mut node) = nodes.get_mut(entry) {
+                    let display = if matches {
                         Display::Flex
                     } else {
                         Display::None
                     };
+                    if node.display != display {
+                        node.display = display;
+                        published += 1;
+                    }
                 }
                 visible |= matches;
             }
-            if let Some(mut node) = world.get_mut::<Node>(heading) {
-                node.display = if visible {
+            if let Ok(mut node) = nodes.get_mut(group.heading) {
+                let display = if visible {
                     Display::Flex
                 } else {
                     Display::None
                 };
+                if node.display != display {
+                    node.display = display;
+                    published += 1;
+                }
             }
         }
-        world.get_mut::<StoreFilter>(panel).unwrap().observed = filter;
+        filter.observed = value;
     }
+    nucleus::performance::add("edit-store-filters-prepared", prepared);
+    nucleus::performance::add("edit-store-entries-inspected", inspected);
+    nucleus::performance::add("edit-store-visibility-writes", published);
 }
 
 fn reveal_focus(
@@ -613,7 +612,7 @@ pub(crate) fn setup(world: &mut World) {
                 TabGroup::modal(),
                 ChildOf(root),
             ))
-            .observe(|mut event: On<Pointer<Scroll>>| event.propagate(false))
+            .observe(|mut event: On<PointerScroll>| event.propagate(false))
             .id();
         panels::attach(world, panel, root, panels::Kind::Edit);
         world.entity_mut(root).insert(EditMode {
@@ -1216,7 +1215,6 @@ pub(crate) fn control(
             SandKind::Trust => Icon::Person,
             SandKind::HandCamera => Icon::Person,
             SandKind::Video => Icon::Play,
-            SandKind::Kamalie => Icon::Play,
             SandKind::Sync => Icon::Reset,
             #[cfg(feature = "stuff")]
             SandKind::Freedoom => Icon::Play,
@@ -1504,9 +1502,7 @@ fn render_panel_content(world: &mut World, root: Entity) {
             .get::<crate::native::inspection::Inspection>(root)
             .and_then(|inspection| inspection.selected)
             .or_else(|| {
-                crate::native::canvas_selection::selected(world, root)
-                    .first()
-                    .copied()
+                crate::native::canvas_selection::selected_iter(world, root).next()
             })
         {
             crate::native::sand_panel::button(
@@ -1549,6 +1545,7 @@ fn render_panel_content(world: &mut World, root: Entity) {
     }
     let active = world.get::<Workspaces>(root).unwrap().active;
     if !store {
+        let _presentation = nucleus::performance::Span::new("edit-workspace-presentation");
         let heading = world
             .spawn((
                 Node {
@@ -1569,9 +1566,13 @@ fn render_panel_content(world: &mut World, root: Entity) {
         );
         let spaces = world.get::<Workspaces>(root).unwrap();
         let active = spaces.active;
-        let entries = spaces.entries.clone();
+        let entries: Vec<_> = spaces
+            .entries
+            .iter()
+            .map(|entry| (entry.id, entry.name.clone()))
+            .collect();
         let numbers = workspace::numbers(world, root);
-        for entry in &entries {
+        for (id, name) in &entries {
             let row = world
                 .spawn((
                     Node {
@@ -1584,20 +1585,20 @@ fn render_panel_content(world: &mut World, root: Entity) {
                 .id();
             let number = numbers
                 .iter()
-                .position(|id| *id == entry.id)
+                .position(|numbered| numbered == id)
                 .map_or_else(|| "·".to_owned(), |index| (index + 1).to_string());
             let number = label(world, row, &number, 15.0);
             world.entity_mut(row).insert(workspaces::Row {
-                workspace: entry.id,
+                workspace: *id,
                 number,
             });
-            let switch = if entry.id == active {
-                let bundle = text_editor(&entry.name, world.resource::<Typography>(), 0);
+            let switch = if *id == active {
+                let bundle = text_editor(name, world.resource::<Typography>(), 0);
                 let editor = world
                     .spawn((
                         bundle,
                         EditField::WorkspaceName,
-                        WorkspaceName(entry.id),
+                        WorkspaceName(*id),
                         ChildOf(row),
                     ))
                     .id();
@@ -1607,7 +1608,7 @@ fn render_panel_content(world: &mut World, root: Entity) {
                     allow_newlines: false,
                     visible_lines: Some(1.0),
                     max_characters: Some(80),
-                    ..crate::native::sand::editable(&entry.name)
+                    ..crate::native::sand::editable(name)
                 });
                 world.get_mut::<EditMode>(root).unwrap().name = Some(editor);
                 editor
@@ -1616,8 +1617,8 @@ fn render_panel_content(world: &mut World, root: Entity) {
                     world,
                     root,
                     row,
-                    EditAction::SwitchWorkspace(entry.id),
-                    &entry.name,
+                    EditAction::SwitchWorkspace(*id),
+                    name,
                 )
             };
             {
@@ -1625,11 +1626,11 @@ fn render_panel_content(world: &mut World, root: Entity) {
                 node.flex_grow = 1.0;
                 node.width = px(0);
                 node.min_width = px(0);
-                if entry.id != active {
+                if *id != active {
                     node.flex_direction = FlexDirection::Column;
                 }
             }
-            if entry.id != active {
+            if *id != active {
                 let labels: Vec<_> = world.get::<Children>(switch).unwrap().iter().collect();
                 for label in labels {
                     if world.get::<Text>(label).is_some() {
@@ -1647,12 +1648,20 @@ fn render_panel_content(world: &mut World, root: Entity) {
                     world,
                     root,
                     row,
-                    EditAction::RemoveWorkspace(entry.id),
-                    &format!("Remove {}", entry.name),
+                    EditAction::RemoveWorkspace(*id),
+                    &format!("Remove {}", name),
                 );
             }
         }
-        let trash = world.get::<Workspaces>(root).unwrap().trash.clone();
+        let trash: Vec<_> = world
+            .get::<Workspaces>(root)
+            .unwrap()
+            .trash
+            .iter()
+            .map(|entry| {
+                (entry.workspace.id, entry.workspace.name.clone(), entry.deleted_at)
+            })
+            .collect();
         let retention_days = world.get::<Workspaces>(root).unwrap().trash_retention_days;
         label(
             world,
@@ -1679,30 +1688,30 @@ fn render_panel_content(world: &mut World, root: Entity) {
                 Tr::MoreRetention.text(),
             );
         }
-        for entry in trash {
+        for (id, name, deleted_at) in trash {
             let days = (u64::from(retention_days) * 24 * 60 * 60)
-                .saturating_sub(workspace::unix_time().saturating_sub(entry.deleted_at))
+                .saturating_sub(workspace::unix_time().saturating_sub(deleted_at))
                 .div_ceil(24 * 60 * 60);
             let row = crate::native::area_panel::row(world, panel);
             label(
                 world,
                 row,
-                &format!("{} · {days} days left", entry.workspace.name),
+                &format!("{} · {days} days left", name),
                 15.0,
             );
             control(
                 world,
                 root,
                 row,
-                EditAction::RestoreWorkspace(entry.workspace.id),
-                &format!("Restore {}", entry.workspace.name),
+                EditAction::RestoreWorkspace(id),
+                &format!("Restore {}", name),
             );
         }
         if let Some(removed) = confirm {
             if let Some(name) = entries
                 .iter()
-                .find(|entry| entry.id == removed)
-                .map(|entry| entry.name.as_str())
+                .find(|(id, _)| *id == removed)
+                .map(|(_, name)| name.as_str())
             {
                 label(
                     world,
@@ -1809,6 +1818,7 @@ fn render_panel_content(world: &mut World, root: Entity) {
                     entries: workspace_entries,
                 },
             ],
+            observed_input: None,
             observed: "\0".into(),
         });
     }
@@ -2086,23 +2096,20 @@ pub(crate) mod tests {
             (panel, -10000.0, 600.0),
             (child, 10000.0, 0.0),
         ] {
-            app.world_mut().trigger(Pointer::new(
-                bevy::picking::pointer::PointerId::Mouse,
-                bevy::picking::pointer::Location {
+            app.world_mut().trigger(PointerScroll {
+                entity: target,
+                pointer: Pointer::new(bevy::picking::pointer::PointerId::Mouse, bevy::picking::pointer::Location {
                     target: bevy::camera::NormalizedRenderTarget::Image(
                         Handle::<Image>::default().into(),
                     ),
                     position: Vec2::ZERO,
-                },
-                bevy::picking::events::Scroll {
-                    unit: bevy::input::mouse::MouseScrollUnit::Pixel,
+                }),
+                unit: bevy::input::mouse::MouseScrollUnit::Pixel,
                     x: 0.0,
                     y: delta,
                     phase: bevy::input::touch::TouchPhase::Moved,
                     hit: bevy::picking::backend::HitData::new(target, 0.0, None, None),
-                },
-                target,
-            ));
+            });
             assert_eq!(
                 app.world().get::<ScrollPosition>(panel).unwrap().0.y,
                 expected

@@ -7,8 +7,6 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
-/// The authored JSON remains the saved value. Its decoded form and captured-base
-/// digest belong to that exact immutable text, shared across panels and jobs.
 #[derive(Clone)]
 pub struct Source(Arc<Snapshot>);
 
@@ -88,8 +86,6 @@ impl Source {
             .clone()
     }
 
-    /// An editing/runner boundary needs its own mutable scenario. Presentation
-    /// uses `parsed` and never copies all captured Records just to read them.
     pub(super) fn draft(&self) -> Result<Scenario, String> {
         self.parsed().map(|scenario| scenario.as_ref().clone())
     }

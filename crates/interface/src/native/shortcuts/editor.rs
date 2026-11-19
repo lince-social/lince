@@ -509,7 +509,7 @@ fn scroll_column(world: &mut World, parent: Entity, node: Node) -> Entity {
             ChildOf(parent),
         ))
         .observe(
-            |mut event: On<Pointer<Scroll>>, mut positions: Query<&mut ScrollPosition>| {
+            |mut event: On<PointerScroll>, mut positions: Query<&mut ScrollPosition>| {
                 if let Ok(mut position) = positions.get_mut(event.entity) {
                     let multiplier = if event.unit == bevy::input::mouse::MouseScrollUnit::Line {
                         24.0

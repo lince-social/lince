@@ -1,5 +1,11 @@
 use super::*;
 
+fn clip(rect: Rect) -> CalculatedClip {
+    let mut clip = CalculatedClip::default();
+    clip.push_rect(rect, bevy::math::Affine2::IDENTITY);
+    clip
+}
+
 fn node(entity: Entity, blocks: bool) -> Geometry {
     Geometry {
         entity,
@@ -51,7 +57,7 @@ fn held_guards_allow_geometry_motion_but_retire_replaced_actions_and_terminate_c
     let original = node(entity, true);
     let mut moved = original.clone();
     moved.transform = UiGlobalTransform::from(bevy::math::Affine2::from_translation(Vec2::splat(400.0)));
-    moved.clip = Some(Rect::from_corners(Vec2::ZERO, Vec2::splat(800.0)));
+    moved.clip = Some(clip(Rect::from_corners(Vec2::ZERO, Vec2::splat(800.0))));
     assert!(original.same_owner(&moved));
     moved.actions.push((entity, entity, 1));
     assert!(!original.same_owner(&moved));
@@ -75,11 +81,11 @@ fn queued_hits_survive_clip_changes_only_while_the_original_recipient_and_mappin
     let behind = world.spawn_empty().id();
     let mut snapshot = Snapshot { targets: vec![node(entity, true), node(behind, true)], ..default() };
     let original = snapshot.target([50.0; 2]).unwrap();
-    snapshot.targets[0].clip = Some(Rect::from_corners(Vec2::splat(40.0), Vec2::splat(60.0)));
+    snapshot.targets[0].clip = Some(clip(Rect::from_corners(Vec2::splat(40.0), Vec2::splat(60.0))));
     assert!(original.same_hit(&snapshot.target([50.0; 2]).unwrap()));
-    snapshot.targets[0].clip = Some(Rect::from_corners(Vec2::ZERO, Vec2::splat(40.0)));
+    snapshot.targets[0].clip = Some(clip(Rect::from_corners(Vec2::ZERO, Vec2::splat(40.0))));
     assert!(!original.same_hit(&snapshot.target([50.0; 2]).unwrap()));
-    snapshot.targets[0].clip = Some(Rect::from_corners(Vec2::splat(40.0), Vec2::splat(60.0)));
+    snapshot.targets[0].clip = Some(clip(Rect::from_corners(Vec2::splat(40.0), Vec2::splat(60.0))));
     snapshot.targets[0].actions.push((entity, entity, 1));
     assert!(!original.same_hit(&snapshot.target([50.0; 2]).unwrap()));
     snapshot.targets[0].actions.clear();
@@ -104,7 +110,7 @@ fn rounded_clipped_rotated_scaled_and_projected_node_hits_keep_their_real_source
     target.bounds = Some(Rectangle::new([1000.0, 50.0], [400.0, 300.0]).unwrap());
     assert!(target.hit([1025.0, 75.0]));
     assert!(!target.hit([25.0, 25.0]));
-    target.clip = Some(Rect::from_corners(Vec2::new(40.0, 0.0), Vec2::splat(100.0)));
+    target.clip = Some(clip(Rect::from_corners(Vec2::new(40.0, 0.0), Vec2::splat(100.0))));
     assert!(!target.hit([1005.0, 75.0]));
     target.transform = UiGlobalTransform::from(bevy::math::Affine2::from_scale_angle_translation(Vec2::ONE, std::f32::consts::FRAC_PI_4, Vec2::splat(50.0)));
     assert!(target.hit([1025.0, 75.0]));

@@ -106,22 +106,23 @@ pub fn span(row: &serde_json::Value) -> Option<(NaiveDate, NaiveDate)> {
 }
 
 pub fn span_in(row: &serde_json::Value, timezone: &str) -> Option<(NaiveDate, NaiveDate)> {
-    for property in ["start_date", "due_date"] {
-        if !row[property].is_null()
-            && row[property]
-                .as_str()
-                .and_then(|value| nucleus::schedule::timezone_date(value, timezone))
-                .is_none()
-        {
-            return None;
+    let dates = nucleus::projection::Dates::new(timezone.parse().ok()?);
+    span_with_dates(row, &dates)
+}
+
+pub(crate) fn span_with_dates(
+    row: &serde_json::Value,
+    dates: &nucleus::projection::Dates,
+) -> Option<(NaiveDate, NaiveDate)> {
+    let parse = |value: &serde_json::Value| {
+        if value.is_null() {
+            Some(None)
+        } else {
+            Some(Some(dates.parse(value.as_str()?)?))
         }
-    }
-    let start = row["start_date"]
-        .as_str()
-        .and_then(|value| nucleus::schedule::timezone_date(value, timezone));
-    let end = row["due_date"]
-        .as_str()
-        .and_then(|value| nucleus::schedule::timezone_date(value, timezone));
+    };
+    let start = parse(&row["start_date"])?;
+    let end = parse(&row["due_date"])?;
     match (start, end) {
         (Some(a), Some(b)) if a <= b => Some((a, b)),
         (Some(date), None) | (None, Some(date)) => Some((date, date)),

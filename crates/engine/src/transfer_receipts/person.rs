@@ -45,8 +45,9 @@ impl Engine {
         approval: &PersonApproval,
         now: DateTime<Utc>,
     ) -> Result<(), EngineError> {
+        let _span = nucleus::performance::Span::new("receipt-person-approval-verification");
         approval.validate(scope, now.timestamp()).map_err(invalid)?;
-        match store::records::get(&self.store.pool,&approval.person).await? {
+        match store::records::routing(&self.store.pool,&approval.person).await? {
             Some(record) if record.kind == "person" => {},
             Some(_) => return Err(invalid("Public Person consent cannot use an Organ or another Record kind as a Person")),
             None => return Err(EngineError::Conflict {code:"transfer_receipt_unknown_identity",message:"Independently recognize this Person profile and its signing key before accepting attribution".into()}),

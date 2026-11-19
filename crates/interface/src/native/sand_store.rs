@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SandKind {
+    #[serde(alias = "Kamalie")]
     Square,
     Text,
     EditableText,
@@ -24,7 +25,6 @@ pub enum SandKind {
     HandCamera,
     Video,
     Sync,
-    Kamalie,
     #[cfg(feature = "stuff")]
     Freedoom,
     Terminal,
@@ -35,7 +35,7 @@ pub enum SandKind {
 }
 
 impl SandKind {
-    pub const ALL: [Self; 18 + cfg!(feature = "stuff") as usize] = [
+    pub const ALL: [Self; 17 + cfg!(feature = "stuff") as usize] = [
         Self::Square,
         Self::Text,
         Self::EditableText,
@@ -48,7 +48,6 @@ impl SandKind {
         Self::HandCamera,
         Self::Video,
         Self::Sync,
-        Self::Kamalie,
         #[cfg(feature = "stuff")]
         Self::Freedoom,
         Self::Terminal,
@@ -71,7 +70,6 @@ impl SandKind {
             Self::HandCamera => Tr::HandCamera.text(),
             Self::Video => Tr::Video.text(),
             Self::Sync => Tr::Sync.text(),
-            Self::Kamalie => "Kamalie",
             #[cfg(feature = "stuff")]
             Self::Freedoom => "Freedoom",
             Self::Terminal => Tr::Terminal.text(),
@@ -95,7 +93,6 @@ impl SandKind {
             Self::HandCamera => Tr::HandCameraHelp.text(),
             Self::Video => Tr::VideoHelp.text(),
             Self::Sync => Tr::SyncHelp.text(),
-            Self::Kamalie => "A native dungeon of sticks, bushes and one-way passages.",
             #[cfg(feature = "stuff")]
             Self::Freedoom => "Play Freedoom locally with keyboard controls.",
             Self::Terminal => Tr::TerminalHelp.text(),
@@ -116,7 +113,6 @@ impl SandKind {
             | Self::HandCamera
             | Self::Video
             | Self::Sync
-            | Self::Kamalie
             | Self::Terminal
             | Self::Organ
             | Self::Configuration
@@ -160,7 +156,11 @@ pub(crate) struct PreviewSource(pub Entity);
 pub(crate) struct PreviewKind(pub crate::native::tokens::SandStyleKind);
 
 #[derive(Component)]
-pub(crate) struct Dimensions(Entity);
+pub(crate) struct Dimensions {
+    source: Entity,
+    size_bits: [u32; 2],
+    rendered: String,
+}
 
 fn dimensions(size: Vec2) -> String {
     format!("{:.0} × {:.0}", size.x, size.y)
@@ -169,8 +169,11 @@ fn dimensions(size: Vec2) -> String {
 pub(crate) fn refresh(
     items: Query<(&CanvasItem, &StoredSand)>,
     mut previews: Query<(&PreviewSource, &mut Node, &mut UiTransform)>,
-    mut labels: Query<(&Dimensions, &mut Text)>,
+    mut labels: Query<(&mut Dimensions, &mut Text)>,
 ) {
+    let _refresh = nucleus::performance::Span::new("store-preview-refresh");
+    let mut formatted = 0;
+    let mut published = 0;
     for (source, mut node, mut transform) in &mut previews {
         if let Ok((item, sand)) = items.get(source.0) {
             let scale = (68.0 / item.size.x).min(60.0 / item.size.y).min(1.0);
@@ -186,14 +189,22 @@ pub(crate) fn refresh(
             }
         }
     }
-    for (source, mut text) in &mut labels {
-        if let Ok((item, _)) = items.get(source.0) {
-            let value = dimensions(item.size);
-            if text.0 != value {
-                text.0 = value;
+    for (mut state, mut text) in &mut labels {
+        if let Ok((item, _)) = items.get(state.source) {
+            let bits = [item.size.x.to_bits(), item.size.y.to_bits()];
+            if state.size_bits != bits {
+                state.rendered = dimensions(item.size);
+                state.size_bits = bits;
+                formatted += 1;
+            }
+            if text.0 != state.rendered {
+                text.0.clone_from(&state.rendered);
+                published += 1;
             }
         }
     }
+    nucleus::performance::add("store-dimensions-formatted", formatted);
+    nucleus::performance::add("store-dimensions-published", published);
 }
 
 fn short_name(name: &str) -> String {
@@ -212,6 +223,7 @@ pub(crate) fn entry(
     kind: SandKind,
     existing: Option<(Entity, usize)>,
 ) {
+    let _entry = nucleus::performance::Span::new("store-entry-preparation");
     use crate::native::edit_mode::{EditAction, control, label};
     world.init_resource::<StoreFont>();
     let style_kind = match kind {
@@ -226,7 +238,6 @@ pub(crate) fn entry(
         | SandKind::HandCamera
         | SandKind::Video
         | SandKind::Sync
-        | SandKind::Kamalie
         | SandKind::Terminal
         | SandKind::Organ
         | SandKind::Configuration
@@ -236,48 +247,52 @@ pub(crate) fn entry(
         SandKind::Text => crate::native::tokens::SandStyleKind::Text,
         SandKind::EditableText => crate::native::tokens::SandStyleKind::EditableText,
     };
-    let settings = world.resource::<crate::native::tokens::ThemeSettings>();
-    let width = settings
-        .resolve(
-            crate::native::tokens::Token::Width,
-            Some(style_kind),
-            &Default::default(),
-        )
-        .0
-        .number();
-    let height = settings
-        .resolve(
-            crate::native::tokens::Token::Height,
-            Some(style_kind),
-            &Default::default(),
-        )
-        .0
-        .number();
     let size = existing
         .and_then(|(entity, _)| world.get::<CanvasItem>(entity).map(|item| item.size))
-        .unwrap_or(if kind == SandKind::Operation {
-            crate::native::operation::SIZE
-        } else if kind == SandKind::Terminal {
-            Vec2::new(820.0, 540.0)
-        } else if kind == SandKind::Kamalie {
-            crate::native::kamalie::SIZE
-        } else if kind.is_panel() {
-            Vec2::new(520.0, 540.0)
-        } else {
-            Vec2::new(width, height)
-        });
-    let texts = existing
-        .map(|(entity, _)| sand_text::snapshot(world, entity))
         .unwrap_or_else(|| {
-            if kind == SandKind::Square {
-                Vec::new()
+            if kind == SandKind::Operation {
+                crate::native::operation::SIZE
+            } else if kind == SandKind::Terminal {
+                Vec2::new(820.0, 540.0)
+            } else if kind.is_panel() {
+                Vec2::new(520.0, 540.0)
             } else {
-                vec![SavedText {
-                    area: SandText::new(kind == SandKind::EditableText),
-                    text: kind.name().into(),
-                }]
+                let settings = world.resource::<crate::native::tokens::ThemeSettings>();
+                let number = |token| {
+                    settings
+                        .resolve(token, Some(style_kind), &Default::default())
+                        .0
+                        .number()
+                };
+                Vec2::new(
+                    number(crate::native::tokens::Token::Width),
+                    number(crate::native::tokens::Token::Height),
+                )
             }
         });
+    let text_preview = matches!(
+        kind,
+        SandKind::Square | SandKind::Text | SandKind::EditableText | SandKind::WorkTimer
+    );
+    let texts = if text_preview {
+        existing
+            .map(|(entity, _)| {
+                nucleus::performance::add("store-text-snapshots-prepared", 1);
+                sand_text::snapshot(world, entity)
+            })
+            .unwrap_or_else(|| {
+                if kind == SandKind::Square {
+                    Vec::new()
+                } else {
+                    vec![SavedText {
+                        area: SandText::new(kind == SandKind::EditableText),
+                        text: kind.name().into(),
+                    }]
+                }
+            })
+    } else {
+        Vec::new()
+    };
     let name = existing.map_or_else(
         || kind.name().to_string(),
         |(_, index)| format!("{} {}", kind.name(), index + 1),
@@ -342,10 +357,7 @@ pub(crate) fn entry(
             .set_text("@record");
     }
 
-    if matches!(
-        kind,
-        SandKind::Square | SandKind::Text | SandKind::EditableText | SandKind::WorkTimer
-    ) {
+    if text_preview {
         if let Some(children) = scene.get::<Children>(source) {
             let children: Vec<_> = children.iter().collect();
             for child in children {
@@ -424,9 +436,14 @@ pub(crate) fn entry(
         },
     ));
     label(world, metadata, kind.description(), 13.0);
-    let measurement = label(world, metadata, &dimensions(size), 12.0);
+    let rendered = dimensions(size);
+    let measurement = label(world, metadata, &rendered, 12.0);
     if let Some((source, _)) = existing {
-        world.entity_mut(measurement).insert(Dimensions(source));
+        world.entity_mut(measurement).insert(Dimensions {
+            source,
+            size_bits: [size.x.to_bits(), size.y.to_bits()],
+            rendered,
+        });
     }
     if let Some((entity, index)) = existing {
         let buttons = world
@@ -597,8 +614,6 @@ fn spawn_with_source(
                     crate::native::operation::SIZE
                 } else if kind == SandKind::Terminal {
                     Vec2::new(820.0, 540.0)
-                } else if kind == SandKind::Kamalie {
-                    crate::native::kamalie::SIZE
                 } else if kind.is_panel() {
                     Vec2::new(520.0, 540.0)
                 } else if kind == SandKind::WorkTimer {
@@ -639,7 +654,6 @@ fn spawn_with_source(
         SandKind::HandCamera => Some(crate::native::hand_camera::populate(world, root, sand)),
         SandKind::Video => Some(crate::native::video_castle::populate(world, root, sand)),
         SandKind::Sync => Some(crate::native::sync_castle::populate(world, root, sand)),
-        SandKind::Kamalie => Some(crate::native::kamalie::populate(world, root, sand)),
         #[cfg(feature = "stuff")]
         SandKind::Freedoom => Some(crate::native::freedoom::populate(world, root, sand)),
         SandKind::Terminal => Some(crate::native::terminal::populate(world, root, sand)),

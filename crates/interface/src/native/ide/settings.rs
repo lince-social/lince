@@ -115,7 +115,7 @@ pub(super) fn divider(world: &mut World, parent: Entity, owner: Entity) {
             crate::native::icons::Tooltip("Drag to resize Explorer".into()),
         ))
         .observe(
-            move |mut drag: On<Pointer<Drag>>,
+            move |mut drag: On<PointerDrag>,
                   transforms: Query<&UiGlobalTransform>,
                   mut configs: Query<&mut Ide>| {
                 drag.propagate(false);

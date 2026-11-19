@@ -22,7 +22,6 @@ impl Default for ProteinDraft {
 }
 
 impl ProteinDraft {
-    /// Retained compilation must also notice representation-only input edits.
     pub fn same_preparation_inputs(&self, other: &Self) -> bool {
         self.name == other.name && self.slug == other.slug && self.query.same_encoding(&other.query)
     }
@@ -99,8 +98,6 @@ fn decode_query(value: &Value) -> Result<protein::Protein, String> {
 }
 
 fn validate_compiled(protein: &protein::Protein) -> Result<(), String> {
-    // Rolling-window validation resolves against the current clock. Keep
-    // the original validation and error order live for every compilation.
     let _validation = nucleus::performance::Span::new("protein-draft-validation");
     nucleus::performance::add("protein-draft-validations", 1);
     protein::validate(protein).map_err(|error| error.to_string())?;

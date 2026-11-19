@@ -21,7 +21,7 @@ struct ProjectionMaterial {
 
 impl UiMaterial for ProjectionMaterial {
     fn fragment_shader() -> ShaderRef {
-        "embedded://lince_interface/native/physical_workspace/projection.wgsl".into()
+        "embedded://lince_interface/native/physical_workspace/projection.wesl".into()
     }
 }
 
@@ -239,7 +239,7 @@ fn release(mut world: bevy::ecs::world::DeferredWorld, context: bevy::ecs::lifec
 
 pub(super) fn install(app: &mut App) {
     if app.world().contains_resource::<AssetServer>() {
-        embedded_asset!(app, "projection.wgsl");
+        embedded_asset!(app, "projection.wesl");
         app.add_plugins(UiMaterialPlugin::<ProjectionMaterial>::default());
     }
 }
@@ -586,7 +586,7 @@ fn contains(world: &World, entity: Entity, local: [f64; 2]) -> bool {
         && (point.abs().cmple(node.size() * 0.5)).all()
         && world
             .get::<CalculatedClip>(entity)
-            .is_none_or(|clip| clip.clip.contains(pixel))
+            .is_none_or(|clip| clip.contains_point(pixel))
 }
 
 pub(super) fn pick_task(

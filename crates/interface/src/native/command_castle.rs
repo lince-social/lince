@@ -257,8 +257,8 @@ impl Action for Control {
                 {
                     return;
                 }
-                let script = value(world, castle.script).map(str::to_owned);
-                let cwd = value(world, castle.cwd).map(str::to_owned);
+                let script = value(world, castle.script).map(|value| value.to_string());
+                let cwd = value(world, castle.cwd).map(|value| value.to_string());
                 script.and_then(|script| {
                     cwd.and_then(|cwd| {
                         send(
@@ -301,7 +301,7 @@ impl Action for Control {
     }
 }
 
-fn value(world: &World, entity: Entity) -> Result<&str, String> {
+fn value(world: &World, entity: Entity) -> Result<parley::SplitString<'_>, String> {
     let text = world
         .get::<EditableText>(entity)
         .ok_or("The field is unavailable")?;
@@ -358,10 +358,10 @@ fn settings(world: &mut World) {
         }
         let castle = world.get::<CommandCastle>(owner).unwrap();
         if let Ok(cwd) = value(world, castle.cwd)
-            && cwd != castle.settings.cwd
-            && cwd.len() <= 4096
+            && cwd != castle.settings.cwd.as_str()
+            && cwd.into_iter().map(str::len).sum::<usize>() <= 4096
         {
-            let cwd = cwd.to_owned();
+            let cwd = cwd.to_string();
             world.get_mut::<CommandCastle>(owner).unwrap().settings.cwd = cwd;
             save_settings(world, owner);
         }

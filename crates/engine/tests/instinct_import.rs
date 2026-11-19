@@ -3,7 +3,7 @@
 use engine::{Engine, actions::Action};
 
 async fn count(engine: &Engine, table: &str) -> i64 {
-    store::sqlx::query_scalar(&format!("SELECT COUNT(*) FROM {table}"))
+    store::sqlx::query_scalar(store::sqlx::AssertSqlSafe(format!("SELECT COUNT(*) FROM {table}")))
         .fetch_one(&engine.store.pool).await.unwrap()
 }
 
@@ -58,7 +58,7 @@ async fn failures_during_records_and_assertions_roll_back_every_write() {
             values
         };
         let statement = format!("CREATE TRIGGER refuse_instinct BEFORE INSERT ON {table} WHEN (SELECT COUNT(*) FROM {table}) > {} BEGIN SELECT RAISE(ABORT, 'injected import failure'); END", count(&engine, table).await + 2);
-        store::sqlx::query(&statement).execute(&engine.store.pool).await.unwrap();
+        store::sqlx::query(store::sqlx::AssertSqlSafe(statement)).execute(&engine.store.pool).await.unwrap();
         assert!(engine.import_instinct(&preview.fingerprint, None, chrono::Utc::now()).await.is_err());
         for (table, count_before) in before { assert_eq!(count(&engine, table).await, count_before, "{table}"); }
     }

@@ -28,9 +28,6 @@ impl JsonPart {
     }
 }
 
-/// Immutable reply ownership shared by Trust's controls and retained evidence.
-/// Clearing a view needs no allocation, and no mutable access can invalidate
-/// the derived serialization cached alongside the value.
 #[derive(Clone, Default)]
 pub(super) struct Snapshot(Option<Arc<Payload>>);
 

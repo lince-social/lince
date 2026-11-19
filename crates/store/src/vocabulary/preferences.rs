@@ -1,5 +1,5 @@
 use super::{StoreError, invalid, term_text};
-use serde_json::{Value, json};
+use serde_json::Value;
 use sqlx::{Row, SqliteConnection, SqlitePool};
 use std::collections::{HashMap, HashSet};
 
@@ -45,16 +45,59 @@ pub async fn terminology_state_on(
 ) -> Result<Value, StoreError> {
     let owner = terminology_owner(person);
     let context = terminology_context_on(connection, owner).await?;
-    let choices = sqlx::query("SELECT concept_uid,term_uid,wording,original FROM terminology_choice WHERE owner_key=? AND context=? ORDER BY concept_uid")
-        .bind(owner).bind(&context).fetch_all(&mut *connection).await?.into_iter().map(|row| json!({"concept_uid":row.get::<String,_>("concept_uid"),"term_uid":row.get::<Option<String>,_>("term_uid"),"wording":row.get::<Option<String>,_>("wording"),"original":row.get::<bool,_>("original")})).collect::<Vec<_>>();
-    let hidden: Vec<String> = sqlx::query_scalar(
+    let choices = {
+        let mut query = choices_query(owner, &context, "concept_uid,term_uid,wording,original");
+        query
+            .build()
+            .fetch_all(&mut *connection)
+            .await?
+            .into_iter()
+            .map(|row| {
+                Value::from_iter([
+                    ("concept_uid", Value::String(row.get("concept_uid"))),
+                    ("term_uid", row.get::<Option<String>, _>("term_uid").into()),
+                    ("wording", row.get::<Option<String>, _>("wording").into()),
+                    ("original", row.get::<bool, _>("original").into()),
+                ])
+            })
+            .collect()
+    };
+    let hidden = hidden_terms_on(connection, owner, &context).await?;
+    Ok(Value::from_iter([
+        ("context", context.into()),
+        ("choices", Value::Array(choices)),
+        ("hidden_terms", hidden.into()),
+    ]))
+}
+
+fn choices_query(
+    owner: &str,
+    context: &str,
+    columns: &str,
+) -> sqlx::QueryBuilder<sqlx::Sqlite> {
+    let mut query = sqlx::QueryBuilder::new("SELECT ");
+    query
+        .push(columns)
+        .push(" FROM terminology_choice WHERE owner_key=")
+        .push_bind(owner)
+        .push(" AND context=")
+        .push_bind(context)
+        .push(" ORDER BY concept_uid");
+    query
+}
+
+async fn hidden_terms_on(
+    connection: &mut SqliteConnection,
+    owner: &str,
+    context: &str,
+) -> Result<Vec<String>, StoreError> {
+    Ok(sqlx::query_scalar(
         "SELECT term_uid FROM terminology_hidden WHERE owner_key=? AND context=? ORDER BY term_uid",
     )
     .bind(owner)
-    .bind(&context)
+    .bind(context)
     .fetch_all(connection)
-    .await?;
-    Ok(json!({"context":context,"choices":choices,"hidden_terms":hidden}))
+    .await?)
 }
 
 pub async fn terminology_state(
@@ -194,24 +237,22 @@ pub(super) async fn preferences(
     pool: &SqlitePool,
     person: Option<&str>,
 ) -> Result<(HashMap<String, Option<String>>, HashSet<String>), StoreError> {
-    let state = terminology_state(pool, person).await?;
-    let choices = state["choices"]
-        .as_array()
+    let _preferences = nucleus::performance::Span::new("store-terminology-preferences-await");
+    let mut connection = pool.acquire().await?;
+    let owner = terminology_owner(person);
+    let context = terminology_context_on(&mut connection, owner).await?;
+    let choices = {
+        let mut query = choices_query(owner, &context, "concept_uid,wording");
+        query
+            .build_query_as::<(String, Option<String>)>()
+            .fetch_all(&mut *connection)
+            .await?
+            .into_iter()
+            .collect()
+    };
+    let hidden = hidden_terms_on(&mut connection, owner, &context)
+        .await?
         .into_iter()
-        .flatten()
-        .map(|choice| {
-            (
-                choice["concept_uid"].as_str().unwrap().to_owned(),
-                choice["wording"].as_str().map(str::to_owned),
-            )
-        })
-        .collect();
-    let hidden = state["hidden_terms"]
-        .as_array()
-        .into_iter()
-        .flatten()
-        .filter_map(Value::as_str)
-        .map(str::to_owned)
         .collect();
     Ok((choices, hidden))
 }

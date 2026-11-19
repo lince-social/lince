@@ -1,9 +1,11 @@
 use nucleus::karma::rule_field::RuleFieldKind;
 use nucleus::transfer::karma::Snapshot;
+use serde::Deserialize;
 use serde_json::Value;
+use std::borrow::Cow;
 
 pub fn snapshot(row: &Value) -> Option<Snapshot> {
-    let state: Snapshot = serde_json::from_value(row.get("karma_state")?.clone()).ok()?;
+    let state: Snapshot = Snapshot::deserialize(row.get("karma_state")?).ok()?;
     state.validate().ok()?;
     (row["uid"].as_str() == Some(state.transfer.as_str())).then_some(state)
 }
@@ -18,26 +20,69 @@ pub fn retreated(before: &Snapshot, after: &Snapshot, person: &str) -> bool {
             .is_some_and(|(before, after)| after.guard.level < before.guard.level)
 }
 
-pub fn label(element: &str, rows: &[Value]) -> String {
+fn names(rows: &[Value]) -> impl Iterator<Item = (&str, &str)> {
+    rows.iter().flat_map(|row| {
+        row["uid"]
+            .as_str()
+            .zip(row["head"].as_str().filter(|name| !name.is_empty()))
+            .into_iter()
+            .chain(
+                row["parties"]
+                    .as_array()
+                    .into_iter()
+                    .flatten()
+                    .filter_map(|party| {
+                        party["actor"]
+                            .as_str()
+                            .zip(party["actor_head"].as_str().filter(|name| !name.is_empty()))
+                    }),
+            )
+    })
+}
+
+fn replace<'a>(element: &str, names: impl Iterator<Item = (Cow<'a, str>, &'a str)>) -> String {
     let mut label = element.to_owned();
-    for row in rows {
-        if let Some(uid) = row["uid"].as_str() {
-            if let Some(name) = row["head"].as_str().filter(|name| !name.is_empty()) {
-                label = label.replace(&format!("@{uid}"), name);
-            }
-        }
-        for party in row["parties"].as_array().into_iter().flatten() {
-            if let Some(uid) = party["actor"].as_str() {
-                if let Some(name) = party["actor_head"].as_str().filter(|name| !name.is_empty()) {
-                    label = label.replace(&format!("@{uid}"), name);
-                }
-            }
+    for (needle, name) in names {
+        if needle.as_ref() != name && label.contains(needle.as_ref()) {
+            label = label.replace(needle.as_ref(), name);
         }
     }
     label
 }
 
+pub fn label(element: &str, rows: &[Value]) -> String {
+    replace(
+        element,
+        names(rows).map(|(uid, name)| (format!("@{uid}").into(), name)),
+    )
+}
+
+#[derive(Default)]
+pub struct Labels(Vec<(String, String)>);
+
+impl Labels {
+    pub fn new(rows: &[Value]) -> Self {
+        Self(
+            names(rows)
+                .map(|(uid, name)| (format!("@{uid}"), name.to_owned()))
+                .collect(),
+        )
+    }
+
+    pub fn label(&self, element: &str) -> String {
+        replace(
+            element,
+            self.0
+                .iter()
+                .map(|(needle, name)| (needle.as_str().into(), name.as_str())),
+        )
+    }
+}
+
 pub fn elements(kind: RuleFieldKind, rows: &[Value], acting: Option<&str>) -> Vec<String> {
+    if kind == RuleFieldKind::Threshold || kind == RuleFieldKind::Consequence && acting.is_none() {
+        return Vec::new();
+    }
     let mut values = Vec::new();
     for row in rows {
         let Some(state) = snapshot(row) else {

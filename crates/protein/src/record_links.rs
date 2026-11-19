@@ -30,17 +30,19 @@ impl Graph {
     }
 
     fn new(edges: Vec<BinaryAssertionRow>) -> Self {
+        let _index = nucleus::performance::Span::new("protein-link-graph-index");
         let mut adjacent: HashMap<String, Vec<usize>> = HashMap::new();
+        let mut add = |uid: &str, index| {
+            if let Some(indices) = adjacent.get_mut(uid) {
+                indices.push(index);
+            } else {
+                adjacent.insert(uid.to_owned(), vec![index]);
+            }
+        };
         for (index, edge) in edges.iter().enumerate() {
-            adjacent
-                .entry(edge.subject_uid.clone())
-                .or_default()
-                .push(index);
+            add(&edge.subject_uid, index);
             if edge.subject_uid != edge.object_uid {
-                adjacent
-                    .entry(edge.object_uid.clone())
-                    .or_default()
-                    .push(index);
+                add(&edge.object_uid, index);
             }
         }
         Self { edges, adjacent }
@@ -58,18 +60,22 @@ impl Graph {
         let mut seen_links = HashSet::new();
         let mut out = Vec::new();
         let mut examined = 0;
+        let mut candidates = Vec::new();
+        let mut next = HashSet::new();
         for hop in 1..=settings.depth.max(1) {
-            let mut candidates: Vec<_> = frontier
-                .iter()
-                .filter_map(|record| self.adjacent.get(*record))
-                .flatten()
-                .copied()
-                .collect();
+            candidates.clear();
+            candidates.extend(
+                frontier
+                    .iter()
+                    .filter_map(|record| self.adjacent.get(*record))
+                    .flatten()
+                    .copied(),
+            );
             candidates.sort_unstable();
             candidates.dedup();
             examined += candidates.len() as u64;
-            let mut next = HashSet::new();
-            for index in candidates {
+            next.clear();
+            for index in candidates.iter().copied() {
                 let link = &self.edges[index];
                 let outgoing = frontier.contains(link.subject_uid.as_str());
                 let incoming = frontier.contains(link.object_uid.as_str());
@@ -107,7 +113,7 @@ impl Graph {
                 break;
             }
             visited.extend(next.iter().copied());
-            frontier = next;
+            std::mem::swap(&mut frontier, &mut next);
         }
         nucleus::performance::add("protein-link-edges-visited", examined);
         out
@@ -122,13 +128,13 @@ async fn kind_uids(
     let mut requested = Vec::new();
     for kind in &links.kinds {
         let kind = kind.trim();
-        if !kind.is_empty() && !requested.iter().any(|existing| existing == kind) {
-            requested.push(kind.to_string());
+        if !kind.is_empty() && !requested.iter().any(|existing| *existing == kind) {
+            requested.push(kind);
         }
     }
     let mut out = Vec::new();
     for kind in requested {
-        for uid in store::vocabulary::meaning_family(&store.pool, &kind, subject).await? {
+        for uid in store::vocabulary::meaning_family(&store.pool, kind, subject).await? {
             if !out.iter().any(|existing| existing == &uid) {
                 out.push(uid);
             }

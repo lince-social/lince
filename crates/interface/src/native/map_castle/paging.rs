@@ -322,8 +322,6 @@ pub(super) fn list_page(world: &mut World, owner: Entity, delta: isize) {
 }
 
 pub(super) fn retained_bytes(world: &World, owner: Entity) -> usize {
-    // Tracked row buffers only: the retained request's Config/query/scope and
-    // allocator overhead are not covered by this diagnostic.
     world.get::<Pages>(owner).map_or(0, |pages| {
         pages.rows.capacity() * std::mem::size_of::<(String, String)>()
             + pages

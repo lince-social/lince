@@ -87,7 +87,6 @@ impl Engine {
                 .iter()
                 .map(|(record, _, _)| store::receipt_events::Candidate {
                     record: record.clone(),
-                    bytes: 0,
                     created_at: String::new(),
                     version: 1,
                 })
@@ -189,7 +188,7 @@ impl Engine {
                 continue;
             }
             if publication_inputs
-                && collection.artifacts.values().any(|saved| {
+                && collection.artifacts().any(|saved| {
                     saved
                         .document
                         .public_bundle()
@@ -201,8 +200,7 @@ impl Engine {
             }
             let cached = retained.get(&(origin.clone(), occurrence.clone()));
             let mut inputs = collection
-                .artifacts
-                .values()
+                .artifacts()
                 .map(|saved| nucleus::trust_analysis::evidence::Receipt {
                     document: &saved.document,
                     provenance: nucleus::transfer::receipt_history::Provenance::Record {

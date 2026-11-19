@@ -383,7 +383,7 @@ fn workspace_navigation_operation_commands_preserve_editor_drafts_outputs_and_li
                     .app
                     .world()
                     .get::<bevy::ui::CalculatedClip>(field)
-                    .is_none_or(|clip| clip.clip.contains(point)),
+                    .is_none_or(|clip| clip.contains_point(point)),
             "Reordering scrolled the focused name editor out of view: {point:?}"
         );
         let panel = canvas

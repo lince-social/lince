@@ -1,6 +1,6 @@
 use super::*;
 use crate::native::actions::{Action, ActionButton};
-use bevy::picking::events::{Pointer, Scroll};
+use bevy::picking::events::PointerScroll;
 use nucleus::canvas::{self as api, Mutation};
 use nucleus::terrain::Preset;
 
@@ -751,7 +751,7 @@ fn render(world: &mut World, root: Entity) {
                 crate::native::token_style::background(crate::native::tokens::Token::Surface),
             ))
             .observe(
-                |mut event: On<Pointer<Scroll>>, mut scrolls: Query<&mut ScrollPosition>| {
+                |mut event: On<PointerScroll>, mut scrolls: Query<&mut ScrollPosition>| {
                     if let Ok(mut scroll) = scrolls.get_mut(event.entity) {
                         let scale = if event.unit == bevy::input::mouse::MouseScrollUnit::Line {
                             24.0

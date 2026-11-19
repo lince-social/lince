@@ -1,3 +1,4 @@
+mod display;
 mod features;
 mod preferences;
 mod publications;
@@ -5,6 +6,7 @@ mod references;
 mod translations;
 mod versions;
 
+pub use display::display_names;
 pub use features::*;
 pub use preferences::*;
 pub use publications::*;
@@ -151,99 +153,6 @@ pub async fn resolve(
         )));
     }
     Ok(candidates.pop())
-}
-
-pub async fn display_names(
-    pool: &SqlitePool,
-    person: Option<&str>,
-) -> Result<HashMap<String, String>, StoreError> {
-    let personal_language: Option<String> =
-        sqlx::query_scalar("SELECT language FROM person_terminology WHERE person_uid=?")
-            .bind(person)
-            .fetch_optional(pool)
-            .await?;
-    let language = match personal_language {
-        Some(language) => language,
-        None => crate::config::get(pool)
-            .await?
-            .map_or_else(|| "en".into(), |config| config.language),
-    };
-    let language = language_tag(&language).unwrap_or_else(|_| "en".into());
-    let mut locales = vec![language.clone()];
-    let mut current = language.as_str();
-    while let Some((parent, _)) = current.rsplit_once('-') {
-        locales.push(parent.to_string());
-        current = parent;
-    }
-    let mut grouped = HashMap::<String, Vec<Term>>::new();
-    for term in terms(pool, person).await? {
-        grouped
-            .entry(term.concept_uid.clone())
-            .or_default()
-            .push(term);
-    }
-    let sources = sources(pool).await?;
-    let (choices, hidden) = preferences::preferences(pool, person).await?;
-    let mut out = HashMap::new();
-    for concept in crate::concepts::list_all(pool).await? {
-        let source = sources.get(&concept.uid);
-        if let Some(wording) = choices.get(&concept.uid) {
-            out.insert(
-                concept.uid,
-                wording
-                    .clone()
-                    .or_else(|| source.map(|source| source.original_name.clone()))
-                    .unwrap_or(concept.canonical_name),
-            );
-            continue;
-        }
-        let selected = grouped.get(&concept.uid).and_then(|terms| {
-            terms
-                .iter()
-                .filter(|term| {
-                    !hidden.contains(&term.uid) && (term.preferred || term.owner_uid.is_none())
-                })
-                .min_by_key(|term| {
-                    let personal = term.owner_uid.is_some();
-                    let rank = if personal && term.language.is_empty() {
-                        0
-                    } else if let Some(index) = locales
-                        .iter()
-                        .position(|locale| locale.eq_ignore_ascii_case(&term.language))
-                    {
-                        1 + index * 2 + usize::from(!personal)
-                    } else if term.language.is_empty() {
-                        100
-                    } else if source.is_some_and(|source| {
-                        source.original_name == term.name
-                            && source
-                                .original_language
-                                .eq_ignore_ascii_case(&term.language)
-                    }) {
-                        101
-                    } else {
-                        102
-                    };
-                    (rank, usize::from(!term.preferred), term.uid.as_str())
-                })
-        });
-        out.insert(
-            concept.uid.clone(),
-            selected.map(|term| term.name.clone()).unwrap_or_else(|| {
-                if grouped
-                    .get(&concept.uid)
-                    .is_some_and(|terms| terms.iter().any(|term| hidden.contains(&term.uid)))
-                {
-                    concept.uid.clone()
-                } else {
-                    source
-                        .map(|source| source.original_name.clone())
-                        .unwrap_or(concept.canonical_name)
-                }
-            }),
-        );
-    }
-    Ok(out)
 }
 
 pub async fn resolve_file_meaning(

@@ -6,7 +6,12 @@ use std::{
     collections::{HashMap, HashSet},
     future::Future,
     pin::Pin,
+    sync::Arc,
 };
+
+mod preparation;
+use preparation::Dependencies;
+pub use preparation::Paths;
 
 #[derive(Clone, Debug, serde::Serialize)]
 pub struct ChildReadiness {
@@ -95,7 +100,7 @@ async fn dependency_satisfied(
     connection: &mut SqliteConnection,
     dependency: &nucleus::transfer::TransferRevisionDependency,
     visiting: &mut HashSet<String>,
-    cache: &mut HashMap<String, Evaluated>,
+    cache: &mut HashMap<String, Arc<Evaluated>>,
     now: DateTime<Utc>,
 ) -> Result<Value, StoreError> {
     let mut projection = json!({"uid":dependency.uid, "scope":dependency.scope.as_str(), "promise":dependency.promise_uid,
@@ -124,13 +129,13 @@ async fn dependency_satisfied(
                 if origin != dependency.origin_organ_uid {
                     crate::transfer_outcomes::Outcome::unavailable("upstream_origin_changed")
                 } else {
-                    let (upstream, _) =
+                    let upstream =
                         evaluate(connection, &dependency.upstream_uid, visiting, cache, now)
                             .await?;
                     crate::transfer_outcomes::Outcome {
-                        agreed: upstream.ready,
-                        settled: upstream.settled,
-                        evidence: upstream.evidence,
+                        agreed: upstream.0.ready,
+                        settled: upstream.0.settled,
+                        evidence: upstream.0.evidence.clone(),
                         unavailable: None,
                     }
                 }
@@ -166,6 +171,9 @@ fn direct_readiness(
     input: &crate::transfers::TransferAgreementReadinessInput,
     dependency_status: Vec<Value>,
 ) -> Result<(AgreementReadinessProjection, Vec<Value>), StoreError> {
+    let _direct = nucleus::performance::Span::new("transfer-agreement-direct-readiness");
+    let paths = Paths::new(&input.promises);
+    let dependencies = Dependencies::new(&input.dependencies);
     let levels_by_person = input
         .parties
         .iter()
@@ -182,6 +190,8 @@ fn direct_readiness(
             .iter()
             .collect::<std::collections::BTreeSet<_>>()
     });
+    let unagreed_parties = std::cell::OnceCell::new();
+    let unagreed_coalition = std::cell::OnceCell::new();
     let satisfied_dependencies = dependency_status
         .iter()
         .filter_map(|value| {
@@ -229,9 +239,16 @@ fn direct_readiness(
                 "level": party.map_or(0, |party| party.level),
             }));
         }
+        let mut promise_dependencies = dependencies.matching(&promise.uid).peekable();
         match input.agreement_type.as_str() {
             "full" => {
-                for blocker in input.parties.iter().filter(|party| party.level < 2) {
+                for blocker in unagreed_parties.get_or_init(|| {
+                    input
+                        .parties
+                        .iter()
+                        .filter(|party| party.level < 2)
+                        .collect::<Vec<_>>()
+                }) {
                     readiness.blockers.push(json!({
                         "code": "party_agreement_required",
                         "person": blocker.person_uid,
@@ -253,80 +270,78 @@ fn direct_readiness(
                     }));
                 }
                 (Some(_), Some(members), _) => {
-                    for party_uid in members.iter().filter(|party| {
-                        levels_by_party.get(party.as_str()).copied().unwrap_or(0) < 2
+                    for (party_uid, level) in unagreed_coalition.get_or_init(|| {
+                        members
+                            .iter()
+                            .filter_map(|party| {
+                                let level =
+                                    levels_by_party.get(party.as_str()).copied().unwrap_or(0);
+                                (level < 2).then_some((party.as_str(), level))
+                            })
+                            .collect::<Vec<_>>()
                     }) {
                         readiness.blockers.push(json!({
                             "code": "coalition_party_agreement_required",
                             "party": party_uid,
-                            "level": levels_by_party
-                                .get(party_uid.as_str())
-                                .copied()
-                                .unwrap_or(0),
+                            "level": level,
                         }));
                     }
                 }
                 _ => {}
             },
             "dependency" => {
-                if !input.dependencies.iter().any(|dependency| {
-                    dependency.scope == nucleus::transfer::TransferDependencyScope::Transfer
-                        || dependency.promise_uid.as_deref() == Some(promise.uid.as_str())
-                }) {
+                if promise_dependencies.peek().is_none() {
                     readiness
                         .blockers
                         .push(json!({"code":"upstream_requirement_missing"}));
                 }
             }
             "individual" => {
-                let matches = input
-                    .promises
-                    .iter()
-                    .filter(|counterpart| agreement_path_matches(promise, counterpart))
-                    .collect::<Vec<_>>();
-                let relevant_people = if let Some(exchange) = &promise.exchange {
+                let mut matches = paths.matching(promise).peekable();
+                let mut add_counterparty =
+                    |counterperson: Option<&str>,
+                     counterparty: Option<&crate::transfers::AgreementPartyLevelRow>,
+                     counterpart_promise: Option<&str>| {
+                        if counterparty.is_none_or(|party| party.level < 2) {
+                            readiness.blockers.push(json!({
+                                "code": "counterparty_agreement_required",
+                                "promise": counterpart_promise,
+                                "person": counterperson,
+                                "party": counterparty.map(|party| party.party_uid.as_str()),
+                                "level": counterparty.map_or(0, |party| party.level),
+                            }));
+                        }
+                    };
+                if let Some(exchange) = &promise.exchange {
                     let other = if exchange.giver == person_uid {
                         &exchange.receiver
                     } else {
                         &exchange.giver
                     };
-                    vec![(
+                    add_counterparty(
                         Some(other.as_str()),
                         levels_by_person.get(other.as_str()).copied(),
-                        matches.first().map(|promise| promise.uid.as_str()),
-                    )]
-                } else if matches.is_empty() {
-                    input
+                        matches.next().map(|promise| promise.uid.as_str()),
+                    );
+                } else if matches.peek().is_none() {
+                    for party in input
                         .parties
                         .iter()
                         .filter(|party| party.person_uid != person_uid)
-                        .map(|party| (Some(party.person_uid.as_str()), Some(party), None))
-                        .collect::<Vec<_>>()
+                    {
+                        add_counterparty(Some(party.person_uid.as_str()), Some(party), None);
+                    }
                 } else {
-                    matches
-                        .iter()
-                        .map(|counterpart| {
-                            let counterparty = counterpart
-                                .person_uid
-                                .as_deref()
-                                .and_then(|person| levels_by_person.get(person).copied());
-                            (
-                                counterpart.person_uid.as_deref(),
-                                counterparty,
-                                Some(counterpart.uid.as_str()),
-                            )
-                        })
-                        .collect::<Vec<_>>()
-                };
-                for (counterperson, counterparty, counterpart_promise) in relevant_people {
-                    if counterparty.is_none_or(|party| party.level < 2) {
-                        readiness.blockers.push(json!({
-                            "code": "counterparty_agreement_required",
-                            "promise": counterpart_promise,
-                            "person": counterperson,
-                            "party": counterparty.map(|party| party.party_uid.as_str()),
-                            "level": counterparty.map_or(0, |party| party.level),
-                        }));
+                    for counterpart in matches {
+                        let counterparty = counterpart
+                            .person_uid
+                            .as_deref()
+                            .and_then(|person| levels_by_person.get(person).copied());
+                        add_counterparty(
+                            counterpart.person_uid.as_deref(),
+                            counterparty,
+                            Some(counterpart.uid.as_str()),
+                        );
                     }
                 }
             }
@@ -334,10 +349,7 @@ fn direct_readiness(
                 .blockers
                 .push(json!({ "code": "unknown_agreement_policy" })),
         }
-        for dependency in input.dependencies.iter().filter(|dependency| {
-            dependency.scope == nucleus::transfer::TransferDependencyScope::Transfer
-                || dependency.promise_uid.as_deref() == Some(promise.uid.as_str())
-        }) {
+        for dependency in promise_dependencies {
             if !satisfied_dependencies
                 .get(dependency.uid.as_str())
                 .copied()
@@ -355,32 +367,36 @@ fn direct_readiness(
         readiness.ready = readiness.eligible && readiness.blockers.is_empty();
         projection.promises.insert(promise.uid.clone(), readiness);
     }
-    for party in &input.parties {
-        let owned = input.promises.iter().filter(|promise| {
-            promise.person_uid.as_deref() == Some(party.person_uid.as_str())
-                && projection
-                    .promises
-                    .get(&promise.uid)
-                    .is_some_and(|readiness| readiness.eligible)
-        });
-        let owned = owned.collect::<Vec<_>>();
-        projection.people.insert(
-            party.person_uid.clone(),
-            !owned.is_empty()
-                && owned.iter().all(|promise| {
-                    projection
-                        .promises
-                        .get(&promise.uid)
-                        .is_some_and(|readiness| readiness.ready)
-                }),
-        );
+    let mut people = input
+        .parties
+        .iter()
+        .map(|party| (party.person_uid.as_str(), None::<bool>))
+        .collect::<HashMap<_, _>>();
+    for promise in &input.promises {
+        let Some(person) = promise.person_uid.as_deref() else {
+            continue;
+        };
+        let Some(ready) = people.get_mut(person) else {
+            continue;
+        };
+        if let Some(readiness) = projection
+            .promises
+            .get(&promise.uid)
+            .filter(|row| row.eligible)
+        {
+            *ready = Some(ready.unwrap_or(true) && readiness.ready);
+        }
     }
-    let eligible = projection
+    projection.people = people
+        .into_iter()
+        .map(|(person, ready)| (person.to_owned(), ready.unwrap_or(false)))
+        .collect();
+    let (has_eligible, all_ready) = projection
         .promises
         .values()
         .filter(|readiness| readiness.eligible)
-        .collect::<Vec<_>>();
-    if eligible.is_empty() {
+        .fold((false, true), |(_, ready), row| (true, ready && row.ready));
+    if !has_eligible {
         projection
             .blockers
             .push(json!({ "code": "no_agreeable_promises" }));
@@ -395,7 +411,7 @@ fn direct_readiness(
             );
         }
     }
-    projection.ready = !eligible.is_empty() && eligible.iter().all(|readiness| readiness.ready);
+    projection.ready = has_eligible && all_ready;
     Ok((projection, dependency_status))
 }
 pub async fn read(pool: &SqlitePool, transfer: &str) -> Result<Evaluated, StoreError> {
@@ -408,14 +424,7 @@ pub async fn read_at(
     now: DateTime<Utc>,
 ) -> Result<Evaluated, StoreError> {
     let mut tx = pool.begin().await?;
-    let result = evaluate(
-        &mut tx,
-        transfer,
-        &mut HashSet::new(),
-        &mut HashMap::new(),
-        now,
-    )
-    .await?;
+    let result = evaluate_owned(&mut tx, transfer, now).await?;
     tx.commit().await?;
     Ok(result)
 }
@@ -424,38 +433,53 @@ pub async fn read_on(
     connection: &mut SqliteConnection,
     transfer: &str,
 ) -> Result<Evaluated, StoreError> {
-    evaluate(
-        connection,
-        transfer,
-        &mut HashSet::new(),
-        &mut HashMap::new(),
-        nucleus::execution::now(),
-    )
-    .await
+    evaluate_owned(connection, transfer, nucleus::execution::now()).await
 }
 
 type Evaluated = (AgreementReadinessProjection, Vec<Value>);
+
+async fn evaluate_owned(
+    connection: &mut SqliteConnection,
+    transfer: &str,
+    now: DateTime<Utc>,
+) -> Result<Evaluated, StoreError> {
+    let _evaluation = nucleus::performance::Span::new("transfer-agreement-evaluate-await");
+    let result = {
+        let mut visiting = HashSet::new();
+        let mut cache = HashMap::new();
+        evaluate(connection, transfer, &mut visiting, &mut cache, now).await?
+    };
+    match Arc::try_unwrap(result) {
+        Ok(result) => Ok(result),
+        Err(shared) => {
+            nucleus::performance::add("transfer-agreement-root-copy-fallbacks", 1);
+            Ok((*shared).clone())
+        }
+    }
+}
 
 fn evaluate<'a>(
     connection: &'a mut SqliteConnection,
     transfer: &'a str,
     visiting: &'a mut HashSet<String>,
-    cache: &'a mut HashMap<String, Evaluated>,
+    cache: &'a mut HashMap<String, Arc<Evaluated>>,
     now: DateTime<Utc>,
-) -> Pin<Box<dyn Future<Output = Result<Evaluated, StoreError>> + Send + 'a>> {
+) -> Pin<Box<dyn Future<Output = Result<Arc<Evaluated>, StoreError>> + Send + 'a>> {
     Box::pin(async move {
         if let Some(value) = cache.get(transfer) {
-            return Ok(value.clone());
+            nucleus::performance::add("transfer-agreement-cache-hits", 1);
+            return Ok(Arc::clone(value));
         }
         if visiting.len() >= 128 || cache.len() >= 4096 || !visiting.insert(transfer.into()) {
-            return Ok((
+            return Ok(Arc::new((
                 AgreementReadinessProjection {
                     blockers: vec![json!({"code": "agreement_cycle_or_limit"})],
                     ..Default::default()
                 },
                 vec![],
-            ));
+            )));
         }
+        nucleus::performance::add("transfer-agreement-graph-nodes", 1);
         let input = crate::transfers::agreement_readiness_input_on(connection, transfer).await?;
         let mut statuses = Vec::new();
         for dependency in &input.dependencies {
@@ -466,32 +490,33 @@ fn evaluate<'a>(
         result.revision = input.revision;
         let children = crate::transfer_children::terms_on(connection, transfer).await?;
         for child in children {
-            let (state, _) = evaluate(connection, &child.uid, visiting, cache, now).await?;
+            let state = evaluate(connection, &child.uid, visiting, cache, now).await?;
             result.children.push(ChildReadiness {
                 uid: child.uid,
                 required: child.required,
-                revision: state.revision,
-                ready: state.ready,
-                settled: state.settled,
+                revision: state.0.revision,
+                ready: state.0.ready,
+                settled: state.0.settled,
             });
         }
-        let required = result
-            .children
-            .iter()
-            .filter(|child| child.required)
-            .collect::<Vec<_>>();
-        let own = result
-            .promises
-            .values()
-            .filter(|promise| promise.eligible)
-            .collect::<Vec<_>>();
-        if own.is_empty() && !required.is_empty() {
+        let has_own = result.promises.values().any(|promise| promise.eligible);
+        let mut has_required = false;
+        let mut required_settled = true;
+        let mut blockers = Vec::new();
+        for child in result.children.iter().filter(|child| child.required) {
+            has_required = true;
+            required_settled &= child.settled;
+            if !child.ready {
+                blockers.push(json!({"code": "required_child_not_ready", "child": child.uid}));
+            }
+        }
+        if !has_own && has_required {
             result
                 .blockers
                 .retain(|blocker| blocker["code"] != "no_agreeable_promises");
             result.ready = true;
         }
-        result.settled = (!own.is_empty() || !required.is_empty())
+        result.settled = (has_own || has_required)
             && input
                 .promises
                 .iter()
@@ -502,13 +527,8 @@ fn evaluate<'a>(
                         .is_some_and(|state| state.eligible)
                 })
                 .all(|promise| promise.state == "kept")
-            && required.iter().all(|child| child.settled);
-        let mut blockers = required
-            .iter()
-            .filter(|child| !child.ready)
-            .map(|child| json!({"code": "required_child_not_ready", "child": child.uid}))
-            .collect::<Vec<_>>();
-        if own.is_empty() {
+            && required_settled;
+        if !has_own {
             for dependency in &dependencies {
                 if dependency["scope"] == "transfer" && dependency["satisfied"] != true {
                     blockers.push(
@@ -571,8 +591,9 @@ fn evaluate<'a>(
             "revision_fact":revision_fact, "agreement_facts":agreement_facts, "settlement_facts":settlement_facts,
             "at":now.to_rfc3339()});
         visiting.remove(transfer);
-        cache.insert(transfer.into(), (result.clone(), dependencies.clone()));
-        Ok((result, dependencies))
+        let result = Arc::new((result, dependencies));
+        cache.insert(transfer.into(), Arc::clone(&result));
+        Ok(result)
     })
 }
 

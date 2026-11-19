@@ -225,10 +225,8 @@ impl Action for Submit {
 fn protect(forms: Query<&Form>, mut fields: Query<&mut EditableText>) {
     for form in &forms {
         for field in [form.passphrase, form.confirmation] {
-            if let Ok(mut text) = fields.get_mut(field) {
-                text.pending_edits.retain(|edit| {
-                    !matches!(edit, bevy::text::TextEdit::Copy | bevy::text::TextEdit::Cut)
-                });
+            if let Ok(text) = fields.get_mut(field) {
+                crate::controls::protect_password(text);
             }
         }
     }

@@ -15,6 +15,7 @@ use std::{
 
 pub(crate) mod allocation;
 pub mod navigation;
+mod preparation;
 mod recovery;
 mod scratch;
 pub(crate) mod storage;
@@ -593,10 +594,14 @@ impl Plugin for WorkspacePlugin {
 }
 
 fn initialize(world: &mut World) {
-    let roots: Vec<_> = world
-        .query_filtered::<Entity, (With<BoxRoot>, Without<Workspaces>)>()
-        .iter(world)
-        .collect();
+    let roots: Vec<_> = {
+        let _owners = nucleus::performance::Span::new("workspace-root-discovery");
+        preparation::with(world, |world, queries| {
+            preparation::query(world, &mut queries.new_roots)
+                .iter(world)
+                .collect()
+        })
+    };
     for root in roots {
         let document = world
             .get_resource::<WorkspaceFile>()
@@ -817,9 +822,6 @@ fn initialize(world: &mut World) {
                     if sand.kind == SandKind::Terminal {
                         content = Some(crate::native::terminal::populate(world, root, entity));
                     }
-                    if sand.kind == SandKind::Kamalie {
-                        content = Some(crate::native::kamalie::populate(world, root, entity));
-                    }
                     if sand.kind == SandKind::Organ {
                         content = Some(crate::native::organ_castle::populate(world, root, entity));
                     }
@@ -1012,19 +1014,19 @@ fn switch_inner(world: &mut World, root: Entity, target: u64, preserve_laborator
 }
 
 pub fn numbers(world: &World, root: Entity) -> Vec<u64> {
+    ordered_ids(world, root).collect()
+}
+
+pub(crate) fn ordered_ids(world: &World, root: Entity) -> impl Iterator<Item = u64> + '_ {
     let temporary = crate::native::laboratory::scope(world)
         .filter(|(owner, _, _, _)| *owner == root)
         .map(|(_, _, workspace, _)| workspace);
     world
         .get::<Workspaces>(root)
-        .map_or_else(Vec::new, |spaces| {
-            spaces
-                .entries
-                .iter()
-                .filter(|entry| Some(entry.id) != temporary)
-                .map(|entry| entry.id)
-                .collect()
-        })
+        .into_iter()
+        .flat_map(|spaces| &spaces.entries)
+        .filter(move |entry| Some(entry.id) != temporary)
+        .map(|entry| entry.id)
 }
 
 pub fn create(world: &mut World, root: Entity) {
@@ -1123,12 +1125,14 @@ fn purge_trash(world: &mut World, root: Entity, now: u64) {
     if expired.is_empty() {
         return;
     }
-    let entities: Vec<_> = world
-        .query::<(Entity, &ChildOf, &WorkspaceMember)>()
-        .iter(world)
-        .filter(|(_, parent, member)| parent.parent() == root && expired.contains(&member.0))
-        .map(|(entity, _, _)| entity)
-        .collect();
+    let _retirement = nucleus::performance::Span::new("workspace-trash-retirement");
+    let entities: Vec<_> = preparation::with(world, |world, queries| {
+        preparation::query(world, &mut queries.members)
+            .iter(world)
+            .filter(|(_, parent, member)| parent.parent() == root && expired.contains(&member.0))
+            .map(|(entity, _, _)| entity)
+            .collect()
+    });
     for entity in entities {
         crate::native::record_view::hide_placement(world, root, entity);
         world.despawn(entity);
@@ -1137,16 +1141,15 @@ fn purge_trash(world: &mut World, root: Entity, now: u64) {
     spaces
         .trash
         .retain(|entry| !expired.contains(&entry.workspace.id));
-    let hidden: Vec<_> = spaces
-        .saved_records
-        .values()
-        .filter(|record| expired.contains(&record.workspace))
-        .map(|record| record.uid.clone())
-        .collect();
-    spaces.hidden_records.extend(hidden);
-    spaces
-        .saved_records
-        .retain(|_, record| !expired.contains(&record.workspace));
+    let Workspaces {
+        saved_records,
+        hidden_records,
+        ..
+    } = &mut *spaces;
+    for (_, record) in saved_records.extract_if(|_, record| expired.contains(&record.workspace)) {
+        hidden_records.insert(record.uid);
+        nucleus::performance::add("workspace-trash-records-retired", 1);
+    }
     if let Some(mut layouts) = world.get_mut::<crate::native::layout::records::SavedLayouts>(root) {
         layouts
             .0
@@ -1212,66 +1215,59 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
         .unwrap_or_default();
     let mut records = HashMap::new();
     let mut sands = Vec::new();
-    let mut items = world.query::<(
-        Entity,
-        &ChildOf,
-        &CanvasItem,
-        &WorkspaceMember,
-        Option<&StoredSand>,
-        Option<&RecordPlacement>,
-    )>();
-    for (entity, parent, item, member, sand, record) in items.iter(world) {
-        if parent.parent() != root
-            || crate::native::laboratory::temporary_owner(world, entity)
-            || world
-                .get::<crate::native::canvas_item::Ephemeral>(entity)
-                .is_some()
-        {
-            continue;
-        }
-        if let Some(record) = record {
-            records.insert(
-                record.0.clone(),
-                SavedRecord {
+    preparation::with(world, |world, queries| {
+        let items = preparation::query(world, &mut queries.items);
+        for (entity, parent, item, member, sand, record) in items.iter(world) {
+            if parent.parent() != root
+                || crate::native::laboratory::temporary_owner(world, entity)
+                || world
+                    .get::<crate::native::canvas_item::Ephemeral>(entity)
+                    .is_some()
+            {
+                continue;
+            }
+            if let Some(record) = record {
+                records.insert(
+                    record.0.clone(),
+                    SavedRecord {
+                        placement: crate::native::sand_placement::Placement::capture(world, entity),
+                        uid: record.0.clone(),
+                        tokens: crate::native::token_style::overrides(world, entity),
+                        workspace: member.0,
+                        position: item.position.to_array(),
+                        size: item.size.to_array(),
+                    },
+                );
+            }
+            if let Some(sand) = sand {
+                sands.push(SavedSand {
                     placement: crate::native::sand_placement::Placement::capture(world, entity),
-                    uid: record.0.clone(),
                     tokens: crate::native::token_style::overrides(world, entity),
+                    properties: world
+                        .get::<crate::native::area::RecordProperties>(entity)
+                        .map(|properties| properties.0.as_ref().clone()),
+                    kind: sand.kind,
+                    texts: sand_text::snapshot(world, entity),
+                    video: world
+                        .get::<crate::native::video_castle::Settings>(entity)
+                        .cloned(),
+                    timer: world
+                        .get::<crate::native::work_timer::LocalTimer>(entity)
+                        .cloned(),
+                    time_castle: world
+                        .get::<crate::native::time_castle::TimeSettings>(entity)
+                        .map(|settings| settings.0.clone()),
+                    todo: crate::native::todo::snapshot(world, entity),
+                    visibility: sand
+                        .content
+                        .and_then(|panel| lince_interface::visibility::selection(world, panel)),
                     workspace: member.0,
                     position: item.position.to_array(),
                     size: item.size.to_array(),
-                },
-            );
+                });
+            }
         }
-        if let Some(sand) = sand {
-            sands.push(SavedSand {
-                placement: crate::native::sand_placement::Placement::capture(world, entity),
-                tokens: crate::native::token_style::overrides(world, entity),
-                properties: world
-                    .get::<crate::native::area::RecordProperties>(entity)
-                    .map(|properties| properties.0.as_ref().clone()),
-                kind: sand.kind,
-                texts: sand_text::snapshot(world, entity),
-                video: world
-                    .get::<crate::native::video_castle::Settings>(entity)
-                    .cloned(),
-                timer: world
-                    .get::<crate::native::work_timer::LocalTimer>(entity)
-                    .cloned(),
-                time_castle: world
-                    .get::<crate::native::time_castle::TimeSettings>(entity)
-                    .map(|settings| settings.0.clone()),
-                todo: crate::native::todo::snapshot(world, entity),
-                visibility: sand
-                    .content
-                    .and_then(|panel| lince_interface::visibility::selection(world, panel)),
-                workspace: member.0,
-                position: item.position.to_array(),
-                size: item.size.to_array(),
-            });
-        }
-    }
-    // A visible Record replaces its saved presentation. Do not clone that old
-    // tree merely to discard it; only retained, uncaptured Records need copies.
+    });
     for (uid, saved) in &world.get::<Workspaces>(root).unwrap().saved_records {
         if !records.contains_key(uid) {
             records.insert(uid.clone(), saved.clone());
@@ -1279,21 +1275,17 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
     }
     let mut records: Vec<_> = records.into_values().collect();
     records.sort_by(|a, b| a.uid.cmp(&b.uid));
-    let mut areas: Vec<_> = world
-        .query_filtered::<(
-            Entity,
-            &crate::native::area::InfluenceArea,
-            &WorkspaceMember,
-            &ChildOf,
-        ), Without<crate::native::protein_area::grouping::GeneratedGroup>>()
-        .iter(world)
-        .filter(|(_, _, _, parent)| parent.parent() == root)
-        .map(|(entity, area, member, _)| crate::native::area::SavedArea {
-            placement: crate::native::sand_placement::Placement::capture(world, entity),
-            workspace: member.0,
-            area: crate::native::record_presentation::capture(world, entity, area.clone()),
-        })
-        .collect();
+    let mut areas: Vec<_> = preparation::with(world, |world, queries| {
+        preparation::query(world, &mut queries.areas)
+            .iter(world)
+            .filter(|(_, _, _, parent)| parent.parent() == root)
+            .map(|(entity, area, member, _)| crate::native::area::SavedArea {
+                placement: crate::native::sand_placement::Placement::capture(world, entity),
+                workspace: member.0,
+                area: crate::native::record_presentation::capture(world, entity, area.clone()),
+            })
+            .collect()
+    });
     areas.sort_by(|a, b| a.area.id.cmp(&b.area.id));
     let mut document = Document {
         workspace_focus,
@@ -1403,15 +1395,15 @@ pub(crate) fn persist(world: &mut World) {
     {
         return;
     }
-    let Some(root) = world
-        .query_filtered::<Entity, (
-            With<Workspaces>,
-            Without<crate::native::laboratory::LaboratoryRoot>,
-            Without<crate::native::component_push::composition::GeneratedCanvas>,
-        )>()
-        .iter(world)
-        .next()
-    else {
+    let root = {
+        let _owner = nucleus::performance::Span::new("workspace-persistence-owner");
+        preparation::with(world, |world, queries| {
+            preparation::query(world, &mut queries.owners)
+                .iter(world)
+                .next()
+        })
+    };
+    let Some(root) = root else {
         return;
     };
     purge_trash(world, root, unix_time());

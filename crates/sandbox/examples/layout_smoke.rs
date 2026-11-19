@@ -4,14 +4,14 @@ use bevy::{
     prelude::*,
     render::{ExtractSchedule, RenderApp},
     text::{EditableText, TextLayoutInfo},
-    ui::widget::TextScroll,
+    ui::{CalculatedClip, widget::TextScroll},
     ui_render::{ExtractedUiItem, ExtractedUiNodes, RenderUiSystems},
     winit::WinitSettings,
 };
 use std::sync::{Arc, Mutex};
 
 #[derive(Resource, Clone, Default)]
-struct RenderedClips(Arc<Mutex<Vec<(Entity, Option<Rect>)>>>);
+struct RenderedClips(Arc<Mutex<Vec<(Entity, Option<CalculatedClip>)>>>);
 
 fn capture_clips(nodes: Res<ExtractedUiNodes>, clips: Res<RenderedClips>) {
     let mut clips = clips.0.lock().unwrap();
@@ -20,8 +20,12 @@ fn capture_clips(nodes: Res<ExtractedUiNodes>, clips: Res<RenderedClips>) {
         nodes
             .uinodes
             .iter()
-            .filter(|node| matches!(node.item, ExtractedUiItem::Glyphs { .. }))
-            .map(|node| (*node.main_entity, node.clip)),
+            .flat_map(|(owner, (_, group))| {
+                group.values().filter_map(move |node| {
+                    matches!(node.item, ExtractedUiItem::Glyphs { .. })
+                        .then(|| (owner.id(), node.clip.clone()))
+                })
+            }),
     );
 }
 use lince_sandbox::{
@@ -151,12 +155,14 @@ fn exercise(world: &mut World) {
                 .unwrap()
                 .pixels
                 .as_vec2();
+            let sample = Rect::from_corners(-pixels, 2.0 * pixels);
             assert!(
-                text_clips
-                    .iter()
-                    .all(|(_, clip)| clip
-                        .is_some_and(|clip| clip.size().min_element() > 0.0
-                            && clip.size().cmple(pixels).all())),
+                text_clips.iter().all(|(_, clip)| {
+                    clip.as_ref().is_some_and(|clip| {
+                        let size = lince_interface::native::clipped_rect(sample, clip).size();
+                        size.min_element() > 0.0 && size.cmple(pixels).all()
+                    })
+                }),
                 "Rendered glyphs must stay inside the Sand texture at the current zoom"
             );
             drop(clips);

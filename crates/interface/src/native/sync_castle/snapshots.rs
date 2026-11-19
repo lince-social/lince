@@ -3,9 +3,6 @@ use crate::native::wake::WakeSignal;
 use bevy::prelude::{Component, Entity, World};
 use tokio::sync::watch;
 
-/// Current-state readers whose data does not depend on forecast projections.
-/// Keep periodic freshness and general invalidations, without rereading unrelated
-/// tables for forecast-only notices or replaying missed polling intervals.
 pub(super) struct QueryRefresh {
     changes: watch::Receiver<engine::QueryChanges>,
     general: u64,
@@ -48,10 +45,6 @@ impl QueryRefresh {
     }
 }
 
-/// Retire a display-only snapshot watcher while its panel has no presentation
-/// demand. Its component's Drop cancels the read worker. Returning true asks the
-/// caller to start a fresh watcher, whose first snapshot refreshes a revealed
-/// panel. Action jobs and watchers serving non-UI consumers must stay separate.
 pub(super) fn needs_watch<T: Component>(world: &mut World, owner: Entity) -> bool {
     if !crate::native::output_views::presents_entity(world, owner) {
         if world.get::<T>(owner).is_some() {

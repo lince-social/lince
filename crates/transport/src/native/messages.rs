@@ -201,7 +201,10 @@ impl State {
         if self.extension(uid, "lince.message").await?["state"] != "writing" {
             return Err("This message is no longer writing.".into());
         }
-        let stream = self.messages.get_mut(uid).unwrap();
+        let stream = self
+            .messages
+            .get_mut(uid)
+            .ok_or("This connection does not own an open stream for this message.")?;
         let doc = &stream.doc;
         let version = stream.accepted.clone();
         doc.get_text("body")
@@ -209,7 +212,7 @@ impl State {
             .map_err(error)?;
         doc.commit();
         if version != doc.oplog_vv() {
-            let delta = doc.export_json_updates_without_peer_compression(&version, &doc.oplog_vv());
+            let delta = doc.export_json_updates_without_peer_compression(&version, &doc.oplog_vv()).map_err(error)?;
             let bytes = serde_json::to_vec(&delta).map_err(error)?;
             if bytes.len() > engine::collab::limits().delta_bytes {
                 return Err("Message edit exceeded the collaborative operation limit.".into());

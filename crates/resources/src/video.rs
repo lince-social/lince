@@ -5,20 +5,15 @@ pub fn preview(library: &Library, resource: &Resource, width: u32, height: u32) 
     if width == 0 || height == 0 || width > 1024 || height > 1024 {
         return Err("Choose a bounded video preview size".into());
     }
-    let retained = retained(library, resource)?;
-    let server = if retained.is_none() {
-        Some(MediaInput::open(library, resource)?)
+    let (input, start, _server) = if let Some(entry) = retained(library, resource)? {
+        (entry.path.to_string_lossy().into_owned(), 0, None)
     } else {
-        None
-    };
-    let input = retained
-        .as_ref()
-        .map(|entry| entry.path.to_string_lossy().into_owned())
-        .unwrap_or_else(|| server.as_ref().unwrap().uri.clone());
-    let start = if retained.is_some() {
-        0
-    } else {
-        resource.locator.start_ms.unwrap_or(0)
+        let server = MediaInput::open(library, resource)?;
+        (
+            server.uri.clone(),
+            resource.locator.start_ms.unwrap_or(0),
+            Some(server),
+        )
     };
     let output=Command::new("ffmpeg").args(["-nostdin","-hide_banner","-loglevel","error","-rw_timeout","10000000","-ss"])
         .arg(format!("{:.3}",start as f64/1000.0)).args(["-i",&input,"-an","-frames:v","1","-vf"])

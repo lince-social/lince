@@ -125,23 +125,20 @@ fn exercise(world: &mut World) {
             .map(|(entity, _, _, _)| entity)
             .unwrap();
         world.get_mut::<ScrollPosition>(viewport).unwrap().0.y = 0.0;
-        world.trigger(Pointer::new(
-            bevy::picking::pointer::PointerId::Mouse,
-            bevy::picking::pointer::Location {
+        world.trigger(PointerScroll {
+            entity: viewport,
+            pointer: Pointer::new(bevy::picking::pointer::PointerId::Mouse, bevy::picking::pointer::Location {
                 target: bevy::camera::NormalizedRenderTarget::Image(
                     Handle::<Image>::default().into(),
                 ),
                 position: Vec2::ZERO,
-            },
-            bevy::picking::events::Scroll {
-                unit: bevy::input::mouse::MouseScrollUnit::Line,
+            }),
+            unit: bevy::input::mouse::MouseScrollUnit::Line,
                 x: 0.0,
                 y: 1.0,
                 phase: bevy::input::touch::TouchPhase::Moved,
                 hit: bevy::picking::backend::HitData::new(viewport, 0.0, None, None),
-            },
-            viewport,
-        ));
+        });
         test.stage = 2;
     } else if test.stage == 2 && descriptions(world) == 56 {
         focus_tab(world, "Planning");

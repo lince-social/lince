@@ -48,7 +48,9 @@ pub fn decode_version(value: &str) -> Result<VersionVector, EngineError> {
 }
 
 pub fn encode_update(document: &LoroDoc, before: &VersionVector) -> Result<String, String> {
-    let delta = document.export_json_updates_without_peer_compression(before, &document.oplog_vv());
+    let delta = document
+        .export_json_updates_without_peer_compression(before, &document.oplog_vv())
+        .map_err(|error| error.to_string())?;
     let bytes = serde_json::to_vec(&delta).map_err(|error| error.to_string())?;
     if bytes.len() > limits().delta_bytes {
         return Err("Edit exceeds the change size limit".into());
@@ -489,8 +491,6 @@ impl crate::Engine {
         crate::performance::add("record-canonical-delta-bytes", delta.len() as u64);
         let relay = if let Some((op, _)) = incoming {
             let local = store::cells::local(&self.store.pool).await?;
-            // Preserve the relay decision's fresh ownership read without loading
-            // and decoding the whole Record (including its body) a second time.
             let organ_uid = store::records::organ_uid(&self.store.pool, uid).await?;
             !prepared.is_duplicate()
                 && local.is_some_and(|local| {

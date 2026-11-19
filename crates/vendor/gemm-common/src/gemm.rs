@@ -12,9 +12,9 @@ use dyn_stack::{DynStack, StackReq};
 use half::f16;
 use num_traits::{One, Zero};
 
-#[allow(non_camel_case_types)]
+#[allow(non_camel_case_types, reason = "Preserve the conventional upstream numeric or SIMD type name")]
 pub type c32 = num_complex::Complex32;
-#[allow(non_camel_case_types)]
+#[allow(non_camel_case_types, reason = "Preserve the conventional upstream numeric or SIMD type name")]
 pub type c64 = num_complex::Complex64;
 
 // https://rust-lang.github.io/hashbrown/src/crossbeam_utils/cache_padded.rs.html#128-130

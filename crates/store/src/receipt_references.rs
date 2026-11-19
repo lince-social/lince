@@ -77,8 +77,10 @@ pub async fn lookup(
             "Look up at most 128 original proof references per batch",
         ));
     }
+    let _span = nucleus::performance::Span::new("receipt-candidate-read");
+    nucleus::performance::add("receipt-candidate-queries", 1);
     let mut query = QueryBuilder::<Sqlite>::new(
-        "SELECT DISTINCT r.record_uid AS record,length(CAST(v.document_json AS BLOB)) AS bytes,r.created_at,v.version FROM transfer_receipt_event_reference f JOIN transfer_receipt_record r ON r.record_uid=f.record_uid JOIN transfer_receipt_version v ON v.record_uid=f.record_uid AND v.version=f.version JOIN record d ON d.uid=r.record_uid WHERE d.deleted_at IS NULL AND f.version=(SELECT MAX(x.version) FROM transfer_receipt_version x WHERE x.record_uid=r.record_uid) AND f.scope_id=",
+        "SELECT DISTINCT r.record_uid AS record,r.created_at,v.version FROM transfer_receipt_event_reference f JOIN transfer_receipt_record r ON r.record_uid=f.record_uid JOIN transfer_receipt_version v ON v.record_uid=f.record_uid AND v.version=f.version JOIN record d ON d.uid=r.record_uid WHERE d.deleted_at IS NULL AND f.version=(SELECT MAX(x.version) FROM transfer_receipt_version x WHERE x.record_uid=r.record_uid) AND f.scope_id=",
     );
     query.push_bind(scope.as_str()).push(" AND f.event_id IN (");
     let mut separated = query.separated(",");
@@ -103,6 +105,8 @@ pub async fn scope_candidates(
     scope: &CanonicalHash,
     before: Option<(&str, &str)>,
 ) -> Result<Vec<Candidate>, StoreError> {
-    sqlx::query_as("SELECT DISTINCT r.record_uid AS record,length(CAST(v.document_json AS BLOB)) AS bytes,r.created_at,v.version FROM transfer_receipt_event_reference f JOIN transfer_receipt_record r ON r.record_uid=f.record_uid JOIN transfer_receipt_version v ON v.record_uid=f.record_uid AND v.version=f.version JOIN record d ON d.uid=r.record_uid WHERE d.deleted_at IS NULL AND f.version=(SELECT MAX(x.version) FROM transfer_receipt_version x WHERE x.record_uid=r.record_uid) AND f.scope_id=? AND (? IS NULL OR (r.created_at,r.record_uid)<(?,?)) ORDER BY r.created_at DESC,r.record_uid DESC LIMIT 65")
+    let _span = nucleus::performance::Span::new("receipt-candidate-read");
+    nucleus::performance::add("receipt-candidate-queries", 1);
+    sqlx::query_as("SELECT DISTINCT r.record_uid AS record,r.created_at,v.version FROM transfer_receipt_event_reference f JOIN transfer_receipt_record r ON r.record_uid=f.record_uid JOIN transfer_receipt_version v ON v.record_uid=f.record_uid AND v.version=f.version JOIN record d ON d.uid=r.record_uid WHERE d.deleted_at IS NULL AND f.version=(SELECT MAX(x.version) FROM transfer_receipt_version x WHERE x.record_uid=r.record_uid) AND f.scope_id=? AND (? IS NULL OR (r.created_at,r.record_uid)<(?,?)) ORDER BY r.created_at DESC,r.record_uid DESC LIMIT 65")
         .bind(scope.as_str()).bind(before.map(|position|position.0)).bind(before.map(|position|position.0)).bind(before.map(|position|position.1)).fetch_all(pool).await
 }

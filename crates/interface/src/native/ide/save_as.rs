@@ -137,7 +137,7 @@ fn save(world: &mut World, owner: Entity, path: PathBuf, destination: SaveDestin
     let result = crate::native::file_explorer::worker::run(
         world,
         move || {
-            let point = point.encode();
+            let point = point.encode()?;
             let (file, disk) = destination.save(&point.text.to_string(), bom)?;
             Ok::<_, String>((point, file, disk))
         },

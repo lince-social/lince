@@ -2,6 +2,8 @@ use super::*;
 use crate::native::{actions::Action, castle_feed::button, edit_mode::label};
 use bevy::text::EditableText;
 
+mod maintenance;
+
 #[derive(Clone)]
 enum Change {
     Toggle,
@@ -55,12 +57,20 @@ impl Action for Change {
                 if !path.is_empty() && !crate::native::sound::library::valid_path(path) {
                     return;
                 }
-                if let Some(sound) = &mut world.get_mut::<InfluenceArea>(owner).unwrap().sound {
-                    if *enter {
-                        sound.enter = path.clone();
+                if world
+                    .get::<InfluenceArea>(owner)
+                    .unwrap()
+                    .sound
+                    .as_ref()
+                    .is_some_and(|sound| (if *enter { &sound.enter } else { &sound.leave }) != path)
+                {
+                    let mut area = world.get_mut::<InfluenceArea>(owner).unwrap();
+                    let sound = area.sound.as_mut().unwrap();
+                    path.clone_into(if *enter {
+                        &mut sound.enter
                     } else {
-                        sound.leave = path.clone();
-                    }
+                        &mut sound.leave
+                    });
                 }
                 crate::native::edit_mode::render_panel(world, root);
             }
@@ -191,11 +201,24 @@ pub(crate) fn controls(world: &mut World, _: Entity, panel: Entity, owner: Entit
         move |event: On<crate::native::slider::SliderChanged>, mut commands: Commands| {
             let value = event.value;
             commands.queue(move |world: &mut World| {
-                if allowed(world, owner).is_some()
-                    && value.is_finite()
-                    && let Some(sound) = &mut world.get_mut::<InfluenceArea>(owner).unwrap().sound
+                if allowed(world, owner).is_none() || !value.is_finite() {
+                    return;
+                }
+                let value = value.clamp(0.0, 1.0);
+                if world
+                    .get::<InfluenceArea>(owner)
+                    .unwrap()
+                    .sound
+                    .as_ref()
+                    .is_some_and(|sound| sound.volume.to_bits() != value.to_bits())
                 {
-                    sound.volume = value.clamp(0.0, 1.0);
+                    world
+                        .get_mut::<InfluenceArea>(owner)
+                        .unwrap()
+                        .sound
+                        .as_mut()
+                        .unwrap()
+                        .volume = value;
                 }
             });
         },
@@ -210,94 +233,9 @@ pub(crate) fn controls(world: &mut World, _: Entity, panel: Entity, owner: Entit
 }
 
 pub(super) fn inputs(world: &mut World) {
-    let _capture = nucleus::performance::Span::new("sound-control-capture");
-    let statuses: Vec<_> = world
-        .query::<(Entity, &StatusLabel, &Text)>()
-        .iter(world)
-        .filter_map(|(entity, label, text)| {
-            let message = world
-                .get::<SoundStatus>(label.0)
-                .map(|status| status.0.as_str())
-                .unwrap_or_default();
-            (text.0 != message).then(|| (entity, message.to_owned()))
-        })
-        .collect();
-    for (entity, message) in statuses {
-        if let Some(mut text) = world.get_mut::<Text>(entity)
-            && text.0 != message
-        {
-            text.0 = message;
-            nucleus::performance::add("sound-status-label-updates", 1);
-        }
-    }
-    let fields: Vec<_> = world
-        .query::<(Entity, &Input, &EditableText)>()
-        .iter(world)
-        .filter(|(_, input, text)| {
-            let revision = crate::native::sound::audio_for(world, input.owner)
-                .map_or(0, |audio| audio.revision);
-            input.revision != revision || text.value() != input.last.as_str()
-        })
-        .map(|(e, input, text)| {
-            (
-                e,
-                input.owner,
-                input.enter,
-                input.suggestions,
-                text.value().to_string(),
-            )
-        })
-        .collect();
-    for (entity, owner, enter, suggestions, value) in fields {
-        let revision =
-            crate::native::sound::audio_for(world, owner).map_or(0, |audio| audio.revision);
-        if allowed(world, owner).is_none() {
-            continue;
-        }
-        if (value.is_empty() || crate::native::sound::library::valid_path(&value))
-            && world
-                .get::<InfluenceArea>(owner)
-                .and_then(|area| area.sound.as_ref())
-                .is_some_and(|sound| (if enter { &sound.enter } else { &sound.leave }) != &value)
-            && let Some(sound) = &mut world.get_mut::<InfluenceArea>(owner).unwrap().sound
-        {
-            if enter {
-                sound.enter = value.clone();
-            } else {
-                sound.leave = value.clone();
-            }
-            nucleus::performance::add("sound-input-path-writes", 1);
-        }
-        let mut input = world.get_mut::<Input>(entity).unwrap();
-        input.last = value.clone();
-        input.revision = revision;
-        crate::native::recorder_castle::ui::clear(world, suggestions);
-        let paths: Vec<_> = crate::native::sound::audio_for(world, owner)
-            .map(|audio| {
-                crate::native::sound::library::suggestions(&audio.paths, &value)
-                    .into_iter()
-                    .map(str::to_owned)
-                    .collect()
-            })
-            .unwrap_or_default();
-        if paths.is_empty() {
-            label(
-                world,
-                suggestions,
-                "Record a take in Recorder Castle, or refresh the recordings list.",
-                12.0,
-            );
-        }
-        for path in paths {
-            button(
-                world,
-                suggestions,
-                owner,
-                &path,
-                Change::Choose(enter, path.clone()),
-            );
-        }
-    }
+    world
+        .run_system_cached(maintenance::capture)
+        .expect("capture current Area sound controls");
 }
 
 pub(crate) fn assign(world: &mut World, owner: Entity, path: &str) {

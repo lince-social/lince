@@ -704,7 +704,7 @@ pub async fn list_active(pool: &SqlitePool) -> Result<Vec<AssertionRow>, StoreEr
 
 pub async fn incident_to(
     pool: &SqlitePool,
-    record_uids: &[String],
+    record_uids: &[impl AsRef<str>],
 ) -> Result<Vec<AssertionRow>, StoreError> {
     let mut assertions = std::collections::BTreeMap::new();
     for chunk in record_uids.chunks(400) {
@@ -714,9 +714,9 @@ pub async fn incident_to(
         let sql = format!(
             "SELECT * FROM record_assertion_link WHERE retracted_at IS NULL AND (subject_uid IN ({holes}) OR target_uid IN ({holes})) ORDER BY uid"
         );
-        let mut query = sqlx::query(&sql);
+        let mut query = sqlx::query(sqlx::AssertSqlSafe(sql.as_str()));
         for uid in chunk.iter().chain(chunk.iter()) {
-            query = query.bind(uid);
+            query = query.bind(uid.as_ref());
         }
         for row in query.fetch_all(pool).await? {
             let assertion = map(row)?;
@@ -936,7 +936,7 @@ pub async fn binary_of_predicate(
     let sql = format!(
         "{BINARY_SELECT} AND (a.predicate_uid = ? OR a.predicate_uid IN (SELECT c.concept_uid FROM vocabulary_feature f JOIN vocabulary_role_concept c ON c.role_uid=f.role_uid WHERE f.feature=?)) ORDER BY a.created_at, a.uid"
     );
-    sqlx::query(&sql)
+    sqlx::query(sqlx::AssertSqlSafe(sql.as_str()))
         .bind(predicate_uid)
         .bind(predicate_uid.strip_prefix("feature:"))
         .fetch_all(pool)
@@ -1002,7 +1002,7 @@ async fn binary_selection(
 
 pub async fn all_binary(pool: &SqlitePool) -> Result<Vec<BinaryAssertionRow>, StoreError> {
     let sql = format!("{BINARY_SELECT} ORDER BY a.created_at, a.uid");
-    sqlx::query(&sql)
+    sqlx::query(sqlx::AssertSqlSafe(sql.as_str()))
         .fetch_all(pool)
         .await?
         .into_iter()
@@ -1366,17 +1366,19 @@ enum RelatedSide {
     Object,
 }
 
-// All narrow projections keep the same linked-record relation as the full-row
-// readers. Only the selected side must be active: joining both endpoints here
-// would change subject membership after its object is deleted.
-fn related_record_query<'a>(
-    select: &'static str,
+enum RelatedEndpoint<'a> {
+    Record(&'a str),
+    Selection(&'a str),
+}
+
+fn related_record_query(
+    select: &str,
     side: RelatedSide,
-    predicate_uid: &'a str,
-    endpoint_uid: &'a str,
-    selected_uid: Option<&'a str>,
-) -> sqlx::QueryBuilder<'a, Sqlite> {
-    let (selected, endpoint) = match side {
+    predicate_uid: &str,
+    endpoint: RelatedEndpoint<'_>,
+    selected_uid: Option<&str>,
+) -> sqlx::QueryBuilder<Sqlite> {
+    let (selected, endpoint_column) = match side {
         RelatedSide::Subject => ("a.subject_uid", "a.target_uid"),
         RelatedSide::Object => ("a.target_uid", "a.subject_uid"),
     };
@@ -1385,9 +1387,18 @@ fn related_record_query<'a>(
         .push(" FROM record_assertion_link a JOIN record r ON r.uid = ")
         .push(selected)
         .push(" WHERE ")
-        .push(endpoint)
-        .push(" = ")
-        .push_bind(endpoint_uid);
+        .push(endpoint_column);
+    match endpoint {
+        RelatedEndpoint::Record(uid) => {
+            query.push(" = ").push_bind(uid);
+        }
+        RelatedEndpoint::Selection(ids) => {
+            query
+                .push(" IN (SELECT value FROM json_each(")
+                .push_bind(ids)
+                .push("))");
+        }
+    }
     if let Some(selected_uid) = selected_uid {
         query.push(" AND r.uid = ").push_bind(selected_uid);
     }
@@ -1400,9 +1411,6 @@ fn related_record_query<'a>(
     query
 }
 
-/// Membership in the same active-object relation as `objects_from_subject`.
-/// With no target, reports whether any active object matches the predicate.
-/// Feature aliases and retractions keep their ordinary assertion semantics.
 pub async fn object_exists(
     pool: &SqlitePool,
     subject_uid: &str,
@@ -1414,14 +1422,13 @@ pub async fn object_exists(
         "SELECT EXISTS(SELECT 1",
         RelatedSide::Object,
         predicate_uid,
-        subject_uid,
+        RelatedEndpoint::Record(subject_uid),
         target_uid,
     );
     query.push(")");
     query.build_query_scalar::<bool>().fetch_one(pool).await
 }
 
-/// Membership in `subjects_pointing_to`, including its active-subject filter.
 pub async fn subject_exists(
     pool: &SqlitePool,
     predicate_uid: &str,
@@ -1433,15 +1440,13 @@ pub async fn subject_exists(
         "SELECT EXISTS(SELECT 1",
         RelatedSide::Subject,
         predicate_uid,
-        object_uid,
+        RelatedEndpoint::Record(object_uid),
         Some(subject_uid),
     );
     query.push(")");
     query.build_query_scalar::<bool>().fetch_one(pool).await
 }
 
-/// Active object IDs in the full-row reader's distinct assertion order.
-/// Unlike `object_uids_from_subject`, missing/deleted Records are excluded.
 pub async fn active_object_uids(
     pool: &SqlitePool,
     subject_uid: &str,
@@ -1452,15 +1457,13 @@ pub async fn active_object_uids(
         "SELECT DISTINCT r.uid",
         RelatedSide::Object,
         predicate_uid,
-        subject_uid,
+        RelatedEndpoint::Record(subject_uid),
         None,
     );
     query.push(" ORDER BY a.created_at, a.uid");
     query.build_query_scalar::<String>().fetch_all(pool).await
 }
 
-/// A bounded prefix of distinct active object `(uid, kind)` pairs in assertion
-/// order. A limit of two is sufficient to distinguish absent, unique and ambiguous.
 pub async fn active_object_kinds(
     pool: &SqlitePool,
     subject_uid: &str,
@@ -1472,7 +1475,7 @@ pub async fn active_object_kinds(
         "SELECT DISTINCT r.uid, r.kind",
         RelatedSide::Object,
         predicate_uid,
-        subject_uid,
+        RelatedEndpoint::Record(subject_uid),
         None,
     );
     query
@@ -1484,8 +1487,6 @@ pub async fn active_object_kinds(
         .await
 }
 
-/// Distinct titles of active subjects, for name selection without Record bodies
-/// or assertion-order sorting. Callers use these as a set.
 pub async fn subject_heads(
     pool: &SqlitePool,
     predicate_uid: &str,
@@ -1496,7 +1497,7 @@ pub async fn subject_heads(
         "SELECT DISTINCT r.head",
         RelatedSide::Subject,
         predicate_uid,
-        object_uid,
+        RelatedEndpoint::Record(object_uid),
         None,
     );
     query.build_query_scalar::<String>().fetch_all(pool).await
@@ -1532,27 +1533,56 @@ pub async fn objects_from_subjects<Body: crate::records::RecordBody>(
     } else {
         crate::records::METADATA_COLUMNS
     };
-    let sql = format!(
+    let columns = format!(
         "SELECT DISTINCT a.subject_uid AS source_uid, {columns},
                 (SELECT predicate_uid FROM record_assertion identity
                   WHERE identity.subject_uid = r.uid AND identity.role = 'identity'
-                    AND identity.retracted_at IS NULL) AS identity_predicate_uid
-           FROM record_assertion_link a JOIN record r ON r.uid = a.target_uid
-          WHERE a.subject_uid IN (SELECT value FROM json_each(?)) AND (a.predicate_uid = ? OR a.predicate_uid IN (SELECT c.concept_uid FROM vocabulary_feature f JOIN vocabulary_role_concept c ON c.role_uid=f.role_uid WHERE f.feature=?))
-            AND a.retracted_at IS NULL AND r.deleted_at IS NULL
-          ORDER BY a.created_at, a.uid",
+                    AND identity.retracted_at IS NULL) AS identity_predicate_uid",
     );
-    let rows = sqlx::query(&sql)
-        .bind(ids)
-        .bind(predicate_uid)
-        .bind(predicate_uid.strip_prefix("feature:"))
-        .fetch_all(pool)
-        .await?;
+    let mut query = related_record_query(
+        &columns,
+        RelatedSide::Object,
+        predicate_uid,
+        RelatedEndpoint::Selection(&ids),
+        None,
+    );
+    query.push(" ORDER BY a.created_at, a.uid");
+    let rows = query.build().fetch_all(pool).await?;
     for row in rows {
         objects
             .entry(row.get("source_uid"))
             .or_default()
             .push(crate::records::map_row(row)?);
+    }
+    Ok(objects)
+}
+
+pub async fn active_object_uids_from_subjects(
+    pool: &SqlitePool,
+    subject_uids: &[&str],
+    predicate_uid: &str,
+) -> Result<std::collections::HashMap<String, Vec<String>>, StoreError> {
+    let mut objects = std::collections::HashMap::<String, Vec<String>>::new();
+    if subject_uids.is_empty() {
+        return Ok(objects);
+    }
+    let _read = nucleus::performance::Span::new("assertion-related-identifiers-await");
+    let ids = serde_json::to_string(subject_uids)
+        .map_err(|error| StoreError::Protocol(error.to_string()))?;
+    let mut query = related_record_query(
+        "SELECT DISTINCT a.subject_uid, r.uid",
+        RelatedSide::Object,
+        predicate_uid,
+        RelatedEndpoint::Selection(&ids),
+        None,
+    );
+    query.push(" ORDER BY a.created_at, a.uid");
+    for (subject, object) in query
+        .build_query_as::<(String, String)>()
+        .fetch_all(pool)
+        .await?
+    {
+        objects.entry(subject).or_default().push(object);
     }
     Ok(objects)
 }
@@ -1645,7 +1675,7 @@ pub async fn for_subjects(
           WHERE a.retracted_at IS NULL AND a.subject_uid IN ({holes})
           ORDER BY a.subject_uid, c.canonical_name, a.object_uid, a.uid"
     );
-    let mut query = sqlx::query(&sql);
+    let mut query = sqlx::query(sqlx::AssertSqlSafe(sql.as_str()));
     for uid in subject_uids {
         query = query.bind(uid);
     }
@@ -1724,7 +1754,7 @@ pub async fn record_descendants(
         Vec::new()
     };
     while let Some(current) = queue.pop_front() {
-        let mut query = sqlx::query(&sql).bind(&current);
+        let mut query = sqlx::query(sqlx::AssertSqlSafe(sql.as_str())).bind(&current);
         for uid in family {
             query = query.bind(uid);
         }

@@ -2,26 +2,19 @@ use crate::EngineError;
 use nucleus::{
     karma::{ReferenceKind, TypedUid},
     projection::{Context, MAX_SPANS, Scheduled},
+    schedule::{Endpoints, TimeRange},
     simulation::{Cause, Quantity, RuleOccurrence},
 };
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, hash_map::Entry};
 use store::sqlx::{Row, SqlitePool};
 
 fn entry(
     record: &store::records::RecordRow<Option<String>>,
-    work: &serde_json::Value,
+    time: Option<TimeRange>,
     cause: Cause,
-    occurrence: Option<i64>,
     preview: bool,
 ) -> Result<Option<Scheduled>, EngineError> {
-    let Some(time) = nucleus::schedule::range(
-        work["start"].as_str(),
-        work["due"].as_str(),
-        work["estimate_min"].as_f64(),
-        occurrence,
-    )
-    .map_err(EngineError::Consequence)?
-    else {
+    let Some(time) = time else {
         return Ok(None);
     };
     let id = match &cause {
@@ -80,11 +73,17 @@ pub(super) fn manual_entries(
         let Some(work) = work.get(&record.uid) else {
             continue;
         };
+        let time = nucleus::schedule::range(
+            work["start"].as_str(),
+            work["due"].as_str(),
+            work["estimate_min"].as_f64(),
+            None,
+        )
+        .map_err(EngineError::Consequence)?;
         if let Some(entry) = entry(
             record,
-            work,
+            time,
             origins.get(&record.uid).cloned().unwrap_or(Cause::Seed {}),
-            None,
             !existing.contains(&record.uid),
         )? && entry
             .time
@@ -129,6 +128,8 @@ pub(super) async fn occurrences(
         }
     }
     let work = store::records::extensions_for_records(pool, "work", &uids).await?;
+    let _publish = nucleus::performance::Span::new("engine-schedule-occurrence-publication");
+    let mut endpoints = HashMap::new();
     let mut position = position;
     for row in rows {
         position = row.get("position");
@@ -136,7 +137,7 @@ pub(super) async fn occurrences(
             break;
         }
         let record_uid: String = row.get("record_uid");
-        let Some(record) = records.get(&record_uid) else {
+        let Some((key, record)) = records.get_key_value(&record_uid) else {
             continue;
         };
         let intended: String = row.get("intended_at");
@@ -155,14 +156,27 @@ pub(super) async fn occurrences(
                 .map_err(super::boundary)?,
             intended_at_ms: Some(at),
         };
+        let work = work.get(&record_uid).unwrap_or(&serde_json::Value::Null);
+        let endpoints = match endpoints.entry(key.as_str()) {
+            Entry::Occupied(entry) => {
+                nucleus::performance::add("engine-schedule-endpoint-reuses", 1);
+                entry.into_mut()
+            }
+            Entry::Vacant(entry) => entry.insert(
+                Endpoints::parse(work["start"].as_str(), work["due"].as_str())
+                    .map_err(EngineError::Consequence)?,
+            ),
+        };
+        let time = endpoints
+            .range(work["estimate_min"].as_f64(), Some(at))
+            .map_err(EngineError::Consequence)?;
         if let Some(entry) = entry(
             record,
-            work.get(&record_uid).unwrap_or(&serde_json::Value::Null),
+            time,
             Cause::Rule {
                 occurrence,
                 consequence: 0,
             },
-            Some(at),
             !existing.contains(&record_uid),
         )? && entry
             .time

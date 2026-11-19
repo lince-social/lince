@@ -942,7 +942,6 @@ fn capture(world: &mut World) {
                 .map(Vec::as_slice)
                 .unwrap_or_default()
         } else {
-            // Ordinary single-field typing needs no grouping table.
             single = world
                 .query::<(Entity, &Input)>()
                 .iter(world)
@@ -1041,8 +1040,6 @@ fn capture(world: &mut World) {
         drop(view);
         if key == Key::Person {
             render(world, owner);
-            // Rebuilt controls have new entities; later captured fields keep their
-            // original order and must update the replacement controls.
             observers_current = false;
         }
     }

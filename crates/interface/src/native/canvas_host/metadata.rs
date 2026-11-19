@@ -6,8 +6,6 @@ use crate::native::{
     topology::{self, Attachment, Spatial, appearance, groups::GroupPose, rooms, terrain},
 };
 
-// Canvas inspection needs presentation metadata, not the full recovery Placement
-// with its saved component trees, editor state and native host ownership.
 pub(super) fn capture(world: &World, entity: Entity) -> api::Metadata {
     let spatial = topology::spatial(world, entity);
     api::Metadata {
@@ -53,8 +51,6 @@ pub(super) fn capture(world: &World, entity: Entity) -> api::Metadata {
     }
 }
 
-// Compare with the current entity, including freshly spawned/reconciled content.
-// Comparing only before/after snapshots would miss native defaults or side effects.
 pub(super) fn apply(world: &mut World, entity: Entity, metadata: &api::Metadata) {
     replace(
         world,
@@ -170,8 +166,6 @@ pub(super) fn set<C: Component + PartialEq>(world: &mut World, entity: Entity, v
     }
 }
 
-// Retain the old remove/insert lifecycle for changed optional components, but
-// leave identical values alone. Heap-backed metadata is cloned only on change.
 fn replace<C: Component, V: PartialEq + ?Sized>(
     world: &mut World,
     entity: Entity,

@@ -9,9 +9,6 @@ pub(super) struct Entry {
     caption: Caption,
 }
 
-// Only fields that affect the visible header participate in its invalidation.
-// The current UTC offset preserves the existing local-time presentation when
-// the system timezone changes between history publications.
 struct Caption {
     started_ms: u64,
     offset: Option<i32>,
@@ -75,8 +72,6 @@ fn caption(run: &Run, time: Option<chrono::DateTime<chrono::Local>>) -> String {
 pub(super) fn reconcile(world: &mut World, owner: Entity) {
     let _measurement =
         crate::host::performance::Span::new(crate::host::performance::Stage::NativeCommandHistory);
-    // Transfer the owned view model for this synchronous reconciliation instead
-    // of cloning scripts, directories and error strings for every history update.
     let (history, runs, mut entries) = {
         let mut castle = world.get_mut::<CommandCastle>(owner).unwrap();
         (

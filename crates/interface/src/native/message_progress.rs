@@ -280,8 +280,6 @@ struct AgentProgress {
     steps_value: Option<serde_json::Value>,
 }
 
-/// The parent is a dedicated progress section. Only presentation inputs are
-/// retained: unrelated progress metadata does not invalidate these labels.
 pub(crate) fn progress(world: &mut World, parent: Entity, value: &serde_json::Value) {
     let _presentation = nucleus::performance::Span::new("message-agent-progress-presentation");
     if value.is_null() {

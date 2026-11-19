@@ -1,6 +1,8 @@
 use super::*;
+use crate::host::performance::{self, Count, Stage};
 use crate::native::actions::{Action, ActionButton};
 use bevy::ecs::change_detection::Tick;
+use std::sync::Arc;
 
 #[derive(Component)]
 pub(super) struct RecordActions;
@@ -24,31 +26,46 @@ pub(super) struct Sections {
     groups: [Entity; 4],
     fiote: bool,
     presentation: crate::native::record_presentation::RecordPresentation,
-    observed: Contents,
+    observed: Arc<Contents>,
     source: Option<(Tick, Option<Tick>)>,
     snapshot: Option<std::sync::Weak<Vec<Value>>>,
 }
 
-#[derive(Clone, Default, PartialEq, Eq)]
+#[derive(Default, PartialEq, Eq)]
 struct Contents {
     filled: std::collections::HashSet<String>,
 }
 
 impl Contents {
-    fn new(data: &Value) -> Self {
-        let mut filled: std::collections::HashSet<_> = data
-            .as_object()
+    fn properties(data: &Value) -> impl Iterator<Item = &str> {
+        data.as_object()
             .into_iter()
             .flat_map(|data| data.keys())
-            .filter(|property| !empty(property, data))
-            .cloned()
-            .collect();
-        for property in ["start_date", "due_date", "work_timer"] {
-            if !empty(property, data) {
-                filled.insert(property.into());
-            }
-        }
+            .map(String::as_str)
+            .filter(|property| !matches!(*property, "start_date" | "due_date" | "work_timer"))
+            .chain(["start_date", "due_date", "work_timer"])
+            .filter(move |property| !empty(property, data))
+    }
+
+    fn new(data: &Value) -> Self {
+        let _contents = performance::Span::new(Stage::RecordSectionContents);
+        let filled: std::collections::HashSet<_> =
+            Self::properties(data).map(str::to_owned).collect();
+        performance::add(Count::RecordSectionPropertyNamesCopied, filled.len() as u64);
         Self { filled }
+    }
+
+    fn matches(&self, data: &Value) -> bool {
+        let _contents = performance::Span::new(Stage::RecordSectionContents);
+        performance::count(Count::RecordSectionContentChecks);
+        let mut count = 0;
+        for property in Self::properties(data) {
+            if !self.filled.contains(property) {
+                return false;
+            }
+            count += 1;
+        }
+        count == self.filled.len()
     }
 
     fn empty(&self, property: &str) -> bool {
@@ -198,7 +215,7 @@ pub(super) fn create(world: &mut World, row: Entity) -> Sections {
         groups,
         fiote,
         presentation,
-        observed: Contents::default(),
+        observed: Arc::new(Contents::default()),
         source: None,
         snapshot: None,
     };
@@ -321,7 +338,7 @@ impl Action for Toggle {
         presentation.expanded = !presentation.expanded;
         world.entity_mut(row).insert(presentation);
         crate::native::record_presentation::save(world, row);
-        arrange_contents(world, row, &sections, &sections.observed);
+        arrange_contents(world, row, &sections, sections.observed.clone());
     }
 }
 
@@ -338,7 +355,7 @@ impl Action for Compact {
         presentation.expanded = false;
         crate::native::record_presentation::save(world, row);
         if let Some(sections) = world.get::<Sections>(row).cloned() {
-            arrange_contents(world, row, &sections, &sections.observed);
+            arrange_contents(world, row, &sections, sections.observed.clone());
         }
     }
 }
@@ -358,7 +375,16 @@ fn update_sections(
         Option<Ref<'static, rows::Row>>,
     )>,
     toolbars: &mut QueryState<(Entity, &'static Sections)>,
+    mut activity: Local<Activity>,
+    mut toolbar_cards: Local<
+        Vec<(
+            Entity,
+            Entity,
+            crate::native::record_presentation::RecordPresentation,
+        )>,
+    >,
 ) {
+    let _sections = performance::Span::new(Stage::RecordSectionsUpdate);
     let runtime = world.get_resource::<Runtime>();
     let mut records: HashMap<Entity, HashMap<&str, &Value>> = HashMap::new();
     let cards: Vec<_> = sections
@@ -405,13 +431,20 @@ fn update_sections(
             } else {
                 record.as_ref().map(|row| row.data.as_ref())
             }?;
-            let contents = Contents::new(data);
-            let changed = contents != sections.observed || presentation != sections.presentation;
+            let contents_changed = !sections.observed.matches(data);
+            let changed = contents_changed || presentation != sections.presentation;
             Some((
                 row,
                 source,
                 snapshot.map(std::sync::Arc::downgrade),
-                changed.then(|| (sections.clone(), contents)),
+                changed.then(|| {
+                    let contents = if contents_changed {
+                        Arc::new(Contents::new(data))
+                    } else {
+                        sections.observed.clone()
+                    };
+                    (sections.clone(), contents)
+                }),
             ))
         })
         .collect();
@@ -421,60 +454,71 @@ fn update_sections(
         sections.source = source;
         sections.snapshot = snapshot;
         if let Some((sections, contents)) = changed {
-            arrange_contents(world, row, &sections, &contents);
+            arrange_contents(world, row, &sections, contents);
         }
     }
-    let activity = Activity::capture(world);
-    let cards: Vec<_> = toolbars
-        .iter(world)
-        .map(|(row, sections)| (row, sections.toolbar, sections.presentation))
-        .collect();
-    for (row, toolbar, presentation) in cards {
+    toolbar_cards.extend(
+        toolbars
+            .iter(world)
+            .map(|(row, sections)| (row, sections.toolbar, sections.presentation)),
+    );
+    performance::add(Count::RecordToolbarsPrepared, toolbar_cards.len() as u64);
+    if toolbar_cards.is_empty() {
+        toolbar_cards.shrink_to_fit();
+    }
+    for (row, toolbar, presentation) in toolbar_cards.drain(..) {
         if super::presentation::raw(world, row).is_none() {
-            toolbar_visibility(world, row, toolbar, presentation, &activity);
+            toolbar_visibility(world, row, toolbar, presentation, &mut activity);
         }
     }
+    activity.finish();
 }
 
+#[derive(Default)]
 struct Activity {
     hovered: std::collections::HashSet<Entity>,
     focused: std::collections::HashSet<Entity>,
+    captured: bool,
 }
 
 impl Activity {
-    fn capture(world: &World) -> Self {
-        fn ancestors(
-            world: &World,
-            entities: impl IntoIterator<Item = Entity>,
-        ) -> std::collections::HashSet<Entity> {
-            let mut visited = std::collections::HashSet::new();
-            for entity in entities {
-                let mut current = Some(entity);
-                while let Some(entity) = current {
-                    if !visited.insert(entity) {
-                        break;
-                    }
-                    current = world.get::<ChildOf>(entity).map(ChildOf::parent);
-                }
-            }
-            visited
+    fn capture(&mut self, world: &World) {
+        if self.captured {
+            return;
         }
-        Self {
-            hovered: ancestors(
-                world,
-                world
-                    .get_resource::<bevy::picking::hover::HoverMap>()
-                    .into_iter()
-                    .flat_map(|hover| hover.values())
-                    .flat_map(|hits| hits.keys().copied()),
-            ),
-            focused: ancestors(
-                world,
-                world
-                    .get_resource::<bevy::input_focus::InputFocus>()
-                    .and_then(|focus| focus.get()),
-            ),
+        let _capture = performance::Span::new(Stage::RecordToolbarActivity);
+        crate::native::pointer_hit::extend_ancestors(
+            world,
+            &mut self.hovered,
+            world
+                .get_resource::<bevy::picking::hover::HoverMap>()
+                .into_iter()
+                .flat_map(|hover| hover.values())
+                .flat_map(|hits| hits.keys().copied()),
+        );
+        crate::native::pointer_hit::extend_ancestors(
+            world,
+            &mut self.focused,
+            world
+                .get_resource::<bevy::input_focus::InputFocus>()
+                .and_then(|focus| focus.get()),
+        );
+        performance::count(Count::RecordToolbarActivityPreparations);
+        performance::add(
+            Count::RecordToolbarAncestorsPrepared,
+            (self.hovered.len() + self.focused.len()) as u64,
+        );
+        self.captured = true;
+    }
+
+    fn finish(&mut self) {
+        self.hovered.clear();
+        self.focused.clear();
+        if !self.captured {
+            self.hovered.shrink_to_fit();
+            self.focused.shrink_to_fit();
         }
+        self.captured = false;
     }
 }
 
@@ -483,23 +527,28 @@ fn toolbar_visibility(
     row: Entity,
     toolbar: Entity,
     presentation: crate::native::record_presentation::RecordPresentation,
-    activity: &Activity,
+    activity: &mut Activity,
 ) {
     if super::availability::hidden(world, row) {
         return;
     }
-    let relations = world
-        .get::<RecordBinding>(row)
-        .and_then(|binding| world.get::<InfluenceArea>(binding.area))
-        .and_then(|area| area.protein.as_ref())
-        .is_some_and(|config| config.relations);
-    let active = !relations && activity.hovered.contains(&row) || activity.focused.contains(&row);
-    let display = if presentation.hide_filled && !presentation.expanded && !active {
+    let minimal = presentation.hide_filled && !presentation.expanded;
+    let active = if minimal {
+        activity.capture(world);
+        let relations = world
+            .get::<RecordBinding>(row)
+            .and_then(|binding| world.get::<InfluenceArea>(binding.area))
+            .and_then(|area| area.protein.as_ref())
+            .is_some_and(|config| config.relations);
+        !relations && activity.hovered.contains(&row) || activity.focused.contains(&row)
+    } else {
+        true
+    };
+    let display = if minimal && !active {
         Display::None
     } else {
         Display::Flex
     };
-    let minimal = presentation.hide_filled && !presentation.expanded;
     let position_type = if minimal {
         PositionType::Absolute
     } else {
@@ -535,10 +584,36 @@ fn toolbar_visibility(
 }
 
 pub(super) fn arrange(world: &mut World, row: Entity, sections: &Sections, data: &Value) {
-    arrange_contents(world, row, sections, &Contents::new(data));
+    let contents = if sections.observed.matches(data) {
+        sections.observed.clone()
+    } else {
+        Arc::new(Contents::new(data))
+    };
+    arrange_contents(world, row, sections, contents);
 }
 
-fn arrange_contents(world: &mut World, row: Entity, sections: &Sections, contents: &Contents) {
+fn set_display(world: &mut World, entity: Entity, display: Display) {
+    if world
+        .get_mut::<Node>(entity)
+        .unwrap()
+        .map_unchanged(|node| &mut node.display)
+        .set_if_neq(display)
+    {
+        performance::add(Count::RecordSectionNodeWrites, 1);
+    }
+}
+
+fn set_label(world: &mut World, entity: Entity, label: &str) {
+    let mut text = world.get_mut::<Text>(entity).unwrap();
+    if text.0 != label {
+        text.0.clear();
+        text.0.push_str(label);
+        performance::add(Count::RecordSectionLabelWrites, 1);
+    }
+}
+
+fn arrange_contents(world: &mut World, row: Entity, sections: &Sections, contents: Arc<Contents>) {
+    let _arrange = performance::Span::new(Stage::RecordSectionArrange);
     if super::availability::hidden(world, row) {
         return;
     }
@@ -550,8 +625,15 @@ fn arrange_contents(world: &mut World, row: Entity, sections: &Sections, content
         .get::<crate::native::record_presentation::RecordPresentation>(row)
         .copied()
         .unwrap_or_default();
-    world.get_mut::<Sections>(row).unwrap().presentation = sections.presentation;
-    world.get_mut::<Sections>(row).unwrap().observed = contents.clone();
+    {
+        let mut current = world.get_mut::<Sections>(row).unwrap();
+        if current.presentation != sections.presentation {
+            current.presentation = sections.presentation;
+        }
+        if !Arc::ptr_eq(&current.observed, &contents) {
+            current.observed = contents.clone();
+        }
+    }
     let mut descendants = vec![row];
     let mut properties = Vec::new();
     while let Some(entity) = descendants.pop() {
@@ -584,34 +666,41 @@ fn arrange_contents(world: &mut World, row: Entity, sections: &Sections, content
                 .unwrap_or(order.len())
         });
     }
-    let mut ordering: HashMap<_, _> = properties
-        .iter()
-        .enumerate()
-        .map(|(index, (entity, _))| (*entity, index + 1))
-        .collect();
-    for (entity, key) in [
-        (sections.dates, "start_date"),
-        (sections.threads, "threads"),
-    ] {
-        ordering.insert(
-            entity,
-            properties
-                .iter()
-                .position(|(_, property)| property == key)
-                .map_or(usize::MAX, |index| index + 1),
-        );
-    }
+    let ordering = sections.presentation.expanded.then(|| {
+        let mut ordering: HashMap<_, _> = properties
+            .iter()
+            .enumerate()
+            .map(|(index, (entity, _))| (*entity, index + 1))
+            .collect();
+        for (entity, key) in [
+            (sections.dates, "start_date"),
+            (sections.threads, "threads"),
+        ] {
+            ordering.insert(
+                entity,
+                properties
+                    .iter()
+                    .position(|(_, property)| property == key)
+                    .map_or(usize::MAX, |index| index + 1),
+            );
+        }
+        ordering
+    });
     let mut filled = false;
     let mut unfilled = false;
     for (entity, property) in properties {
-        world.get_mut::<Node>(entity).unwrap().display = if property != "head"
-            && sections.presentation.hide_filled
-            && !sections.presentation.expanded
-        {
-            Display::None
-        } else {
-            Display::Flex
-        };
+        set_display(
+            world,
+            entity,
+            if property != "head"
+                && sections.presentation.hide_filled
+                && !sections.presentation.expanded
+            {
+                Display::None
+            } else {
+                Display::Flex
+            },
+        );
         let parent = sections.property_parent(&property, contents.empty(&property));
         if world.get::<ChildOf>(entity).map(ChildOf::parent) != Some(parent) {
             world.entity_mut(entity).insert(ChildOf(parent));
@@ -621,16 +710,26 @@ fn arrange_contents(world: &mut World, row: Entity, sections: &Sections, content
             "head" | "body" | "assertions" | "threads"
         ) {
             let mut node = world.get_mut::<Node>(entity).unwrap();
-            node.width = Val::Auto;
-            node.flex_basis = px(match property.as_str() {
+            let basis = px(match property.as_str() {
                 "start_date" | "due_date" => 240.0,
                 "work_logs" | "work_timer" => 280.0,
                 _ => 140.0,
             });
-            node.flex_grow = 1.0;
-            node.flex_shrink = 1.0;
-            node.min_width = px(0);
-            node.max_width = percent(100);
+            if node.width != Val::Auto
+                || node.flex_basis != basis
+                || node.flex_grow != 1.0
+                || node.flex_shrink != 1.0
+                || node.min_width != px(0)
+                || node.max_width != percent(100)
+            {
+                node.width = Val::Auto;
+                node.flex_basis = basis;
+                node.flex_grow = 1.0;
+                node.flex_shrink = 1.0;
+                node.min_width = px(0);
+                node.max_width = percent(100);
+                performance::add(Count::RecordSectionNodeWrites, 1);
+            }
         }
         if property == "threads" {
             unfilled |= contents.empty("threads");
@@ -665,31 +764,44 @@ fn arrange_contents(world: &mut World, row: Entity, sections: &Sections, content
     if world.get::<ChildOf>(sections.dates).map(ChildOf::parent) != Some(parent) {
         world.entity_mut(sections.dates).insert(ChildOf(parent));
     }
-    if sections.presentation.expanded {
+    if let Some(ordering) = ordering {
         for parent in sections.groups.into_iter().chain([sections.dates]) {
-            let original: Vec<_> = world
-                .get::<Children>(parent)
-                .map(|children| children.iter().collect())
-                .unwrap_or_default();
-            let mut ordered = original.clone();
-            ordered.sort_by_key(|entity| ordering.get(entity).copied().unwrap_or(0));
-            if ordered != original {
-                world.entity_mut(parent).replace_children(&ordered);
+            let Some(children) = world.get::<Children>(parent) else {
+                continue;
+            };
+            if children
+                .iter()
+                .map(|entity| ordering.get(&entity).copied().unwrap_or(0))
+                .is_sorted()
+            {
+                continue;
             }
+            let mut ordered: Vec<_> = children.iter().collect();
+            ordered.sort_by_key(|entity| ordering.get(entity).copied().unwrap_or(0));
+            world.entity_mut(parent).replace_children(&ordered);
+            performance::add(Count::RecordSectionChildOrdersChanged, 1);
         }
     }
     for entity in [sections.identity, sections.assertions, sections.body] {
-        world.get_mut::<Node>(entity).unwrap().display = if sections.presentation.hide_filled {
-            Display::None
-        } else {
-            Display::Flex
-        };
+        set_display(
+            world,
+            entity,
+            if sections.presentation.hide_filled {
+                Display::None
+            } else {
+                Display::Flex
+            },
+        );
     }
-    world.get_mut::<Node>(sections.empty).unwrap().display = if sections.presentation.expanded {
-        Display::Flex
-    } else {
-        Display::None
-    };
+    set_display(
+        world,
+        sections.empty,
+        if sections.presentation.expanded {
+            Display::Flex
+        } else {
+            Display::None
+        },
+    );
     let minimal = sections.presentation.hide_filled && !sections.presentation.expanded;
     let managed = [
         sections.title,
@@ -721,45 +833,66 @@ fn arrange_contents(world: &mut World, row: Entity, sections: &Sections, content
     for entity in controls {
         world.entity_mut(entity).insert(ChildOf(sections.actions));
     }
-    world.get_mut::<Node>(sections.actions).unwrap().display = if minimal {
-        Display::None
-    } else {
-        Display::Flex
-    };
-    world.get_mut::<Node>(sections.title).unwrap().border =
-        UiRect::bottom(px(if minimal { 0 } else { 1 }));
-    world.get_mut::<Text>(sections.compact_label).unwrap().0 = if sections.presentation.hide_filled
+    set_display(
+        world,
+        sections.actions,
+        if minimal {
+            Display::None
+        } else {
+            Display::Flex
+        },
+    );
+    if world
+        .get_mut::<Node>(sections.title)
+        .unwrap()
+        .map_unchanged(|node| &mut node.border)
+        .set_if_neq(UiRect::bottom(px(if minimal { 0 } else { 1 })))
     {
-        "Show filled properties"
-    } else {
-        "Title only"
+        performance::add(Count::RecordSectionNodeWrites, 1);
     }
-    .into();
-    world.get_mut::<Text>(sections.arrow).unwrap().0 = if sections.presentation.expanded {
-        "⌃"
-    } else {
-        "⌄"
-    }
-    .into();
-    world.get_mut::<Node>(sections.filled).unwrap().display =
+    set_label(
+        world,
+        sections.compact_label,
+        if sections.presentation.hide_filled {
+            "Show filled properties"
+        } else {
+            "Title only"
+        },
+    );
+    set_label(
+        world,
+        sections.arrow,
+        if sections.presentation.expanded {
+            "⌃"
+        } else {
+            "⌄"
+        },
+    );
+    set_display(
+        world,
+        sections.filled,
         if filled && !sections.presentation.hide_filled {
             Display::Flex
         } else {
             Display::None
-        };
-    world.get_mut::<Node>(sections.toggle).unwrap().display =
+        },
+    );
+    set_display(
+        world,
+        sections.toggle,
         if unfilled || sections.presentation.hide_filled {
             Display::Flex
         } else {
             Display::None
-        };
-    let activity = Activity::capture(world);
+        },
+    );
+    let mut activity = Activity::default();
     toolbar_visibility(
         world,
         row,
         sections.toolbar,
         sections.presentation,
-        &activity,
+        &mut activity,
     );
     rows::materialize_visible(world, row);
     super::presentation::refresh_fields(world, row);
@@ -767,7 +900,7 @@ fn arrange_contents(world: &mut World, row: Entity, sections: &Sections, content
 
 pub(super) fn restore(world: &mut World, row: Entity) {
     if let Some(sections) = world.get::<Sections>(row).cloned() {
-        arrange_contents(world, row, &sections, &sections.observed);
+        arrange_contents(world, row, &sections, sections.observed.clone());
     }
 }
 

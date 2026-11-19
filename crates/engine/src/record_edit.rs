@@ -50,6 +50,21 @@ fn materialize(
     checkpoint: &str,
     mut updates: Vec<Vec<u8>>,
 ) -> Result<(Vec<u8>, Vec<Vec<u8>>), EngineError> {
+    let (snapshot, pending_checkpoint) = reconstruct(checkpoint, &updates)?;
+    let pending = if let Some(checkpoint) = pending_checkpoint {
+        updates.insert(0, checkpoint);
+        updates
+    } else {
+        Vec::new()
+    };
+    Ok((snapshot, pending))
+}
+
+fn reconstruct(
+    checkpoint: &str,
+    updates: &[Vec<u8>],
+) -> Result<(Vec<u8>, Option<Vec<u8>>), EngineError> {
+    let _reconstruction = crate::performance::Span::new("record-recovery-reconstruction");
     catch_unwind(AssertUnwindSafe(|| {
         let checkpoint = B64
             .decode(checkpoint)
@@ -62,23 +77,53 @@ fn materialize(
         if !updates.is_empty() {
             document.detach();
             let status = document
-                .import_batch(&updates)
+                .import_batch(updates)
                 .map_err(|_| invalid("Recovery history cannot be reconstructed"))?;
-            document.attach();
+            document
+                .try_attach()
+                .map_err(|_| invalid("Recovery history cannot be reattached"))?;
             has_pending |= status.pending.is_some_and(|pending| !pending.is_empty());
         }
         let snapshot = document
             .export(ExportMode::Snapshot)
             .map_err(|_| invalid("Recovery document cannot be exported"))?;
-        let pending = if has_pending {
-            updates.insert(0, checkpoint);
-            updates
-        } else {
-            Vec::new()
-        };
-        Ok((snapshot, pending))
+        Ok((snapshot, has_pending.then_some(checkpoint)))
     }))
     .map_err(|_| invalid("Recovery history was refused"))?
+}
+
+struct Compaction {
+    checkpoint: Option<String>,
+    original: Option<String>,
+    updates: Vec<Vec<u8>>,
+}
+
+fn compact(
+    history: drafts::History,
+    supplied_checkpoint: bool,
+    mut added: Vec<Vec<u8>>,
+) -> Result<Compaction, EngineError> {
+    let _compaction = crate::performance::Span::new("record-recovery-compaction");
+    let drafts::History {
+        checkpoint,
+        mut updates,
+    } = history;
+    let previous = updates.len();
+    crate::performance::add("record-recovery-compaction-inputs", added.len() as u64);
+    updates.append(&mut added);
+    let (snapshot, pending) = reconstruct(&checkpoint, &updates)?;
+    let encoded = if pending.is_some() {
+        None
+    } else {
+        let encoded = B64.encode(snapshot);
+        (encoded.len() <= drafts::MAX_CHECKPOINT_BYTES).then_some(encoded)
+    };
+    added.extend(updates.drain(previous..));
+    Ok(Compaction {
+        checkpoint: encoded,
+        original: supplied_checkpoint.then_some(checkpoint),
+        updates: added,
+    })
 }
 
 impl Engine {
@@ -107,12 +152,16 @@ impl Engine {
             .acquire_owned()
             .await
             .map_err(|_| invalid("Recovery work is unavailable"))?;
-        let stored = drafts::replay(&self.store.pool, source, uid, &current.stamp).await?;
+        let drafts::Replay {
+            checkpoint,
+            updates,
+            requests,
+            ..
+        } = drafts::replay(&self.store.pool, source, uid, &current.stamp).await?;
         let uid = uid.to_owned();
         let recovered = tokio::task::spawn_blocking(move || {
             let _permit = permit;
-            let pending = stored
-                .requests
+            let pending = requests
                 .into_iter()
                 .map(|pending| {
                     let request: Request = serde_json::from_str(&pending.payload)?;
@@ -122,7 +171,7 @@ impl Engine {
                     Ok(Arc::new(request))
                 })
                 .collect::<Result<Vec<_>, EngineError>>()?;
-            let (snapshot, pending_updates) = materialize(&stored.checkpoint, stored.updates)?;
+            let (snapshot, pending_updates) = materialize(&checkpoint, updates)?;
             Ok::<_, EngineError>(Recovered {
                 snapshot,
                 pending_updates,
@@ -146,13 +195,17 @@ impl Engine {
         if write.pending.len() > drafts::MAX_REQUESTS || write.updates.len() > 4096 {
             return Err(invalid("Recovery journal batch is too large"));
         }
-        let known: HashSet<_> = write
-            .expected
-            .as_ref()
-            .into_iter()
-            .flat_map(|metadata| &metadata.pending)
-            .map(String::as_str)
-            .collect();
+        let known: HashSet<_> = if write.pending.is_empty() {
+            HashSet::new()
+        } else {
+            write
+                .expected
+                .as_ref()
+                .into_iter()
+                .flat_map(|metadata| &metadata.pending)
+                .map(String::as_str)
+                .collect()
+        };
         let mut requests = Vec::new();
         for request in &write.pending {
             if request.record_uid != uid {
@@ -165,6 +218,7 @@ impl Engine {
                 });
             }
         }
+        drop(known);
         let rows = write
             .expected
             .as_ref()
@@ -179,16 +233,14 @@ impl Engine {
                 .filter(|total| *total <= drafts::MAX_BYTES)
                 .ok_or_else(|| invalid("Recovery updates exceed their storage limit"))
         })?;
-        let compact = !write.updates.is_empty()
+        let needs_compaction = !write.updates.is_empty()
             && (write.atoms >= 65_536
                 || rows / 128 != rows.saturating_add(write.updates.len()) / 128
                 || bytes / 65_536 != bytes.saturating_add(added_bytes) / 65_536);
-        let change = drafts::Write {
+        let mut change = drafts::Write {
             expected: write.expected.map(|metadata| metadata.stamp),
             generation: write.generation,
-            checkpoint: write
-                .checkpoint
-                .map(|checkpoint| checkpoint.as_ref().clone()),
+            checkpoint: write.checkpoint.map(Arc::unwrap_or_clone),
             pending: write
                 .pending
                 .iter()
@@ -197,7 +249,7 @@ impl Engine {
             requests,
             updates: write.updates,
         };
-        let compacted = if compact {
+        let compacted = if needs_compaction {
             let permit = self
                 .record_edit_work
                 .slots
@@ -205,33 +257,33 @@ impl Engine {
                 .acquire_owned()
                 .await
                 .map_err(|_| invalid("Recovery work is unavailable"))?;
-            let state = if let Some(checkpoint) = &change.checkpoint {
-                Some((checkpoint.clone(), Vec::new()))
+            let supplied_checkpoint = change.checkpoint.is_some();
+            let state = if let Some(checkpoint) = change.checkpoint.take() {
+                Some(drafts::History {
+                    checkpoint,
+                    updates: Vec::new(),
+                })
             } else if let Some(expected) = &change.expected {
-                let current = drafts::metadata(&self.store.pool, source, uid).await?;
-                if current.as_ref().map(|metadata| &metadata.stamp) != Some(expected) {
+                let Some(history) =
+                    drafts::history_if_current(&self.store.pool, source, uid, expected).await?
+                else {
                     return Ok(drafts::save(&self.store.pool, source, uid, &change, None).await?);
-                }
-                let stored = drafts::replay(&self.store.pool, source, uid, expected).await?;
-                Some((stored.checkpoint, stored.updates))
+                };
+                Some(history)
             } else {
                 None
             };
-            if let Some((checkpoint, mut updates)) = state {
-                updates.extend(change.updates.iter().cloned());
-                tokio::task::spawn_blocking(move || {
+            if let Some(history) = state {
+                let updates = std::mem::take(&mut change.updates);
+                let compacted = tokio::task::spawn_blocking(move || {
                     let _permit = permit;
-                    let (snapshot, pending) = materialize(&checkpoint, updates)?;
-                    if !pending.is_empty() {
-                        return Ok(None);
-                    }
-                    let encoded = B64.encode(snapshot);
-                    Ok::<_, EngineError>(
-                        (encoded.len() <= drafts::MAX_CHECKPOINT_BYTES).then_some(encoded),
-                    )
+                    compact(history, supplied_checkpoint, updates)
                 })
                 .await
-                .map_err(|_| invalid("Recovery checkpoint work did not finish"))??
+                .map_err(|_| invalid("Recovery checkpoint work did not finish"))??;
+                change.checkpoint = compacted.original;
+                change.updates = compacted.updates;
+                compacted.checkpoint
             } else {
                 None
             }

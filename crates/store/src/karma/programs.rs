@@ -659,7 +659,7 @@ async fn insert_revision(
     Ok(())
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, reason = "The insert binds distinct persisted request fields")]
 async fn insert_request(
     tx: &mut Transaction<'_, Sqlite>,
     request_id: &str,

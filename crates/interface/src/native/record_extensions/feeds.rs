@@ -1,8 +1,6 @@
 use super::*;
 use std::collections::BTreeSet;
 
-/// Prepare one current membership group per source/target/catalog identity.
-/// Settings are still read on every update; only their immutable key is reused.
 fn prepare(world: &mut World, owners: &[Entity], runtime: &mut Runtime, now: Instant) -> bool {
     let _preparation = nucleus::performance::Span::new("extension-feed-preparation");
     let mut groups: HashMap<Arc<FeedKey>, Vec<Entity>> = HashMap::new();
@@ -15,7 +13,6 @@ fn prepare(world: &mut World, owners: &[Entity], runtime: &mut Runtime, now: Ins
             .cloned()
             .unwrap_or_else(|| key(settings));
         groups.entry(key.clone()).or_default().push(owner);
-        // Keep the existing admission order and cap, before retiring old feeds.
         if runtime.feeds.len() < 256 || runtime.feeds.contains_key(&key) {
             runtime.feeds.entry(key.clone()).or_insert_with(|| Feed {
                 schemas: vec![],

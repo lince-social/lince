@@ -28,7 +28,7 @@ pub(super) fn fixture() -> (App, Entity, Entity) {
 #[test]
 fn pointer_pan_latency_uses_each_gesture_instead_of_the_previous_button() {
     use bevy::picking::{
-        events::Drag,
+        events::PointerDrag,
         pointer::{Location, PointerId},
     };
     use std::time::{Duration, Instant};
@@ -43,23 +43,20 @@ fn pointer_pan_latency_uses_each_gesture_instead_of_the_previous_button() {
     for delta in [Vec2::new(12.0, 5.0), Vec2::new(-6.0, 4.0)] {
         let before = Instant::now();
         let camera = app.world().get::<MapSand>(owner).unwrap().camera;
-        app.world_mut().trigger(Pointer::new(
-            PointerId::Mouse,
-            Location {
+        app.world_mut().trigger(PointerDrag {
+            entity: viewport,
+            pointer: Pointer::new(PointerId::Mouse, Location {
                 target: bevy::camera::NormalizedRenderTarget::Window(
                     bevy::window::WindowRef::Entity(viewport)
                         .normalize(None)
                         .unwrap(),
                 ),
                 position: Vec2::ZERO,
-            },
-            Drag {
-                button: PointerButton::Primary,
+            }),
+            button: PointerButton::Primary,
                 distance: delta,
                 delta,
-            },
-            viewport,
-        ));
+        });
         app.world_mut().flush();
         let sand = app.world().get::<MapSand>(owner).unwrap();
         let input = sand.pending_input.unwrap();

@@ -191,7 +191,6 @@ fn render_pages(world: &mut World, presentation: &mut Presentation) {
             state.expanded,
         );
         let stale = state.origin != active_rules(world);
-        // These checks remain fresh even when their text is unchanged.
         let problem = if stale {
             None
         } else {

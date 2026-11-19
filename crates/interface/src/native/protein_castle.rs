@@ -105,17 +105,11 @@ pub struct ProteinResults {
 }
 
 impl ProteinResults {
-    fn replace_rows(
-        &mut self,
-        rows: &[Value],
-        retain: impl FnOnce() -> std::sync::Arc<Vec<Value>>,
-    ) -> bool {
+    fn replace_rows(&mut self, rows: &std::sync::Arc<Vec<Value>>) -> bool {
         let _preparation = nucleus::performance::Span::new("protein-result-preparation");
         if nucleus::json::same_values_encoding(self.rows.as_slice(), rows) {
             return false;
         }
-        // Collect borrowed keys first: each displayed column needs one owned
-        // name, not a name copy for every row containing that column.
         self.columns = rows
             .iter()
             .filter_map(Value::as_object)
@@ -125,7 +119,7 @@ impl ProteinResults {
             .map(str::to_owned)
             .collect::<Vec<_>>()
             .into();
-        self.rows = retain();
+        self.rows = rows.clone();
         nucleus::performance::add("protein-result-row-sets-prepared", 1);
         nucleus::performance::add(
             "protein-result-column-names-prepared",
@@ -384,7 +378,7 @@ pub(crate) fn status(world: &mut World, owner: Entity, message: impl AsRef<str>)
 pub(crate) fn publish_results(
     world: &mut World,
     owner: Entity,
-    rows: &[Value],
+    rows: &std::sync::Arc<Vec<Value>>,
     query: Option<&protein::Protein>,
     current: bool,
     message: &str,
@@ -392,7 +386,7 @@ pub(crate) fn publish_results(
     let mut changed = false;
     if let Some(mut component) = world.get_mut::<ProteinResults>(owner) {
         let results = component.bypass_change_detection();
-        changed |= results.replace_rows(rows, || std::sync::Arc::new(rows.to_vec()));
+        changed |= results.replace_rows(rows);
         if results.query.as_ref() != query {
             results.query = query.cloned();
             changed = true;
@@ -558,7 +552,7 @@ fn receive_message(world: &mut World, message: impl std::borrow::Borrow<ServerMe
                     .query
                     .as_ref()
                     .is_some_and(|query| Some(query) == draft.as_deref());
-                let changed = result.replace_rows(rows, || rows.clone())
+                let changed = result.replace_rows(rows)
                     || result.current != current
                     || result.error.is_some();
                 result.current = current;

@@ -2,7 +2,9 @@ use nucleus::schedule::{MAX_DURATION_MS, TimeRange, Tz};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+mod geometry;
 mod layout;
+pub use geometry::Geometry;
 pub use layout::{
     BandLevel, Label, LabelMetrics, Occurrence, clock_occurrences, labels, labels_with_metrics,
     lane_offset, occurrences, wrap_label,
@@ -66,15 +68,25 @@ pub fn summaries(entries: &[Entry], now: i64, until: i64) -> Vec<(usize, i64)> {
             && (time.until_ms.is_some_and(|end| end > now)
                 || (time.from_ms == now && time.until_ms.is_none()))
         {
-            current.push((index, time.from_ms, time.until_ms.unwrap_or(now) - now));
+            current.push((
+                index,
+                time.from_ms,
+                time.until_ms.unwrap_or(now) - now,
+                entry.allocation_order(),
+            ));
         } else if time.from_ms >= now && time.from_ms < until {
-            future.push((index, time.from_ms, time.from_ms - now));
+            future.push((
+                index,
+                time.from_ms,
+                time.from_ms - now,
+                entry.allocation_order(),
+            ));
         }
     }
-    let sort = |rows: &mut Vec<(usize, i64, i64)>| {
+    let sort = |rows: &mut Vec<(usize, i64, i64, Option<(i64, u64)>)>| {
         rows.sort_by(|a, b| {
             a.1.cmp(&b.1)
-                .then_with(|| entries[a.0].allocation_cmp(&entries[b.0]))
+                .then_with(|| allocation_order_cmp(a.3, b.3))
                 .then_with(|| entries[a.0].id.cmp(&entries[b.0].id))
         })
     };
@@ -83,7 +95,7 @@ pub fn summaries(entries: &[Entry], now: i64, until: i64) -> Vec<(usize, i64)> {
     current
         .into_iter()
         .chain(future)
-        .map(|(index, _, remaining)| (index, remaining))
+        .map(|(index, _, remaining, _)| (index, remaining))
         .collect()
 }
 
@@ -292,39 +304,22 @@ impl Settings {
             / self.aperture_ms as f64
     }
 
+    pub fn geometry(&self, now_ms: i64, size: [f32; 2], unwind: f32) -> Geometry {
+        Geometry::new(self, now_ms, size, unwind)
+    }
+
     pub fn position(&self, at_ms: i64, now_ms: i64, size: [f32; 2], unwind: f32) -> [f32; 3] {
-        let radius = f64::from(size[0].min(size[1]).max(1.0)) * 0.40;
-        let elapsed = at_ms.saturating_sub(now_ms).max(0) as f64;
-        let turns = elapsed / self.aperture_ms as f64;
-        let angle = self.phase(now_ms) + std::f64::consts::TAU * turns;
-        let pitch = (radius * 0.45)
-            .min(100_000.0 / (self.horizon_ms as f64 / self.aperture_ms as f64).max(1.0));
-        let coiled = [radius * angle.sin(), -pitch * turns, -radius * angle.cos()];
-        let straight = [
-            f64::from(size[0]) * (elapsed / self.horizon_ms as f64 - 0.5) * 0.9,
-            0.0,
-            0.0,
-        ];
-        let unwind = f64::from(unwind.clamp(0.0, 1.0));
-        std::array::from_fn(|index| {
-            (coiled[index] * (1.0 - unwind) + straight[index] * unwind) as f32
-        })
+        self.geometry(now_ms, size, unwind).position(at_ms)
     }
 
     pub fn transverse(&self, at_ms: i64, now_ms: i64, unwind: f32) -> [f32; 3] {
-        let angle = self.phase(now_ms)
-            + std::f64::consts::TAU * at_ms.saturating_sub(now_ms).max(0) as f64
-                / self.aperture_ms as f64;
-        let value = [
-            (angle.sin() as f32) * (1.0 - unwind),
-            0.0,
-            (-angle.cos() as f32) * (1.0 - unwind) + unwind,
-        ];
-        let length = value[0].hypot(value[2]);
-        if length < 0.001 {
-            return [0.0, 0.0, 1.0];
-        }
-        [value[0] / length, 0.0, value[2] / length]
+        geometry::transverse(
+            at_ms,
+            now_ms,
+            self.aperture_ms as f64,
+            self.phase(now_ms),
+            unwind,
+        )
     }
 
     pub fn label(&self, at_ms: i64) -> String {
@@ -391,18 +386,23 @@ pub struct Entry {
     pub estimate_min: Option<f64>,
 }
 
+fn allocation_order_cmp(a: Option<(i64, u64)>, b: Option<(i64, u64)>) -> std::cmp::Ordering {
+    match (a, b) {
+        (Some(a), Some(b)) => a.cmp(&b),
+        _ => std::cmp::Ordering::Equal,
+    }
+}
+
 impl Entry {
+    fn allocation_order(&self) -> Option<(i64, u64)> {
+        Some((
+            self.origin["allocation_order"][0].as_i64()?,
+            self.origin["allocation_order"][1].as_u64()?,
+        ))
+    }
+
     pub fn allocation_cmp(&self, other: &Self) -> std::cmp::Ordering {
-        let order = |entry: &Self| {
-            Some((
-                entry.origin["allocation_order"][0].as_i64()?,
-                entry.origin["allocation_order"][1].as_u64()?,
-            ))
-        };
-        match (order(self), order(other)) {
-            (Some(a), Some(b)) => a.cmp(&b),
-            _ => std::cmp::Ordering::Equal,
-        }
+        allocation_order_cmp(self.allocation_order(), other.allocation_order())
     }
 
     pub fn same_schedule(&self, other: &Self) -> bool {
@@ -410,9 +410,29 @@ impl Entry {
             return true;
         }
         if self.follows_cursor() && other.follows_cursor() {
-            let mut other = other.clone();
-            other.time = self.time.clone();
-            return self == &other;
+            let Self {
+                id,
+                record_uid,
+                head,
+                quantity,
+                category,
+                time: _,
+                origin,
+                preview,
+                start_date,
+                due_date,
+                estimate_min,
+            } = self;
+            return id == &other.id
+                && record_uid == &other.record_uid
+                && head == &other.head
+                && quantity == &other.quantity
+                && category == &other.category
+                && origin == &other.origin
+                && preview == &other.preview
+                && start_date == &other.start_date
+                && due_date == &other.due_date
+                && estimate_min == &other.estimate_min;
         }
         false
     }
@@ -469,30 +489,39 @@ impl Entry {
 
     pub fn cue_key(&self, source: &str) -> Option<String> {
         let time = self.time.as_ref()?;
-        let linked = self.origin.get("occurrence").and_then(|value| {
-            serde_json::from_value::<nucleus::projection::OccurrenceLink>(value.clone()).ok()
-        });
-        let cause = self.origin.get("cause").and_then(|value| {
-            serde_json::from_value::<nucleus::simulation::Cause>(value.clone()).ok()
-        });
-        let identity = if let Some(link) = linked {
-            serde_json::json!([
-                link.record.as_str(),
-                link.occurrence.rule_uid,
-                link.occurrence.revision,
-                link.occurrence.event_id
-            ])
-        } else if let Some(nucleus::simulation::Cause::Rule { occurrence, .. }) = cause {
-            serde_json::json!([
-                self.record_uid,
-                occurrence.rule_uid,
-                occurrence.revision,
-                occurrence.event_id
-            ])
-        } else {
-            serde_json::json!([self.record_uid, time.from_ms])
-        };
-        Some(serde_json::json!([source, identity]).to_string())
+        if let Some(link) = self
+            .origin
+            .get("occurrence")
+            .and_then(|value| nucleus::projection::OccurrenceLink::deserialize(value).ok())
+        {
+            return serde_json::to_string(&(
+                source,
+                (
+                    link.record.as_str(),
+                    &link.occurrence.rule_uid,
+                    link.occurrence.revision,
+                    &link.occurrence.event_id,
+                ),
+            ))
+            .ok();
+        }
+        if let Some(nucleus::simulation::Cause::Rule { occurrence, .. }) = self
+            .origin
+            .get("cause")
+            .and_then(|value| nucleus::simulation::Cause::deserialize(value).ok())
+        {
+            return serde_json::to_string(&(
+                source,
+                (
+                    &self.record_uid,
+                    &occurrence.rule_uid,
+                    occurrence.revision,
+                    &occurrence.event_id,
+                ),
+            ))
+            .ok();
+        }
+        serde_json::to_string(&(source, (&self.record_uid, time.from_ms))).ok()
     }
 
     pub fn time_label(&self, settings: &Settings, now: i64) -> String {

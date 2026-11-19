@@ -388,15 +388,10 @@ pub(super) fn render(world: &mut World, owner: Entity) {
             );
         }
     }
-    let entries = if result["kind"] == "serving_list" {
-        result["entries"].as_array().cloned().unwrap_or_default()
-    } else if matches!(
-        result["kind"].as_str(),
-        Some("serving_permission" | "serving_inspection")
-    ) {
-        vec![result.clone()]
-    } else {
-        Vec::new()
+    let entries: &[serde_json::Value] = match result["kind"].as_str() {
+        Some("serving_list") => result["entries"].as_array().map_or(&[], Vec::as_slice),
+        Some("serving_permission" | "serving_inspection") => std::slice::from_ref(&result),
+        _ => &[],
     };
     for entry in entries {
         let Some(record) = entry["record"].as_str() else {

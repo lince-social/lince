@@ -444,8 +444,6 @@ fn fit(views: Query<&View>, viewports: Query<&ComputedNode>, mut images: Query<&
     }
 }
 
-// Share image/video containment without marking Node changed on an idle frame.
-// Taking Mut<Node> preserves change detection until an owned field really changes.
 pub(crate) fn fit_image(mut node: Mut<'_, Node>, viewport: &ComputedNode, ratio: f32) {
     let size = viewport.size() * viewport.inverse_scale_factor();
     if size.min_element() <= 0.0 {

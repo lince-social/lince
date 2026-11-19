@@ -475,8 +475,7 @@ fn containment_keeps_lone_records_outside_until_immunity_is_removed() {
             .get_mut::<InfluenceArea>(source)
             .unwrap()
             .immunity = crate::native::area_effects::Immunity::None;
-        let mut labels = app.world_mut().query_filtered();
-        maintain(app.world_mut(), owner, &board, &mut labels);
+        maintain(app.world_mut(), owner);
         crate::native::area_effects::update(app.world_mut());
         assert!(
             app.world()

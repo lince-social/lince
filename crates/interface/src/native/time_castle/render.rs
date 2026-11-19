@@ -13,31 +13,7 @@ pub(super) fn size(world: &World, viewport: Entity) -> Vec2 {
         .unwrap_or(Vec2::new(320.0, 300.0))
 }
 
-pub(super) fn samples(
-    settings: &Settings,
-    time: &nucleus::schedule::TimeRange,
-    now: i64,
-    size: Vec2,
-    unwind: f32,
-    budget: usize,
-) -> Vec<Vec3> {
-    let from = time.from_ms.max(now);
-    let end = time.until_ms.unwrap_or(from);
-    let count = if end == from {
-        1
-    } else {
-        (((end - from) as f64 / settings.aperture_ms as f64 * 512.0).ceil() as usize)
-            .clamp(2, budget.max(2))
-    };
-    (0..count)
-        .map(|index| {
-            let at = from
-                + ((end - from) as f64 * index as f64 / (count - 1).max(1) as f64).round() as i64;
-            Vec3::from_array(settings.position(at, now, size.to_array(), unwind))
-        })
-        .collect()
-}
-
+#[cfg(test)]
 pub(super) fn occurrence_points(
     settings: &Settings,
     occurrence: &model::Occurrence,
@@ -46,7 +22,21 @@ pub(super) fn occurrence_points(
     size: Vec2,
     unwind: f32,
 ) -> Vec<Vec3> {
-    let mut points = samples(settings, &occurrence.time, now, size, unwind, 512);
+    let curve = settings.geometry(now, size.to_array(), unwind);
+    occurrence_points_in(&curve, settings, occurrence, width, size)
+}
+
+fn occurrence_points_in(
+    curve: &model::Geometry,
+    settings: &Settings,
+    occurrence: &model::Occurrence,
+    width: f32,
+    size: Vec2,
+) -> Vec<Vec3> {
+    let mut points: Vec<_> = curve
+        .samples(&occurrence.time, 512)
+        .map(Vec3::from_array)
+        .collect();
     let radius = size.min_element() * 0.4;
     let samples = points.len().saturating_sub(1).max(1) as f64;
     for (index, point) in points.iter_mut().enumerate() {
@@ -56,7 +46,7 @@ pub(super) fn occurrence_points(
                 * index as f64
                 / samples) as i64;
         let offset = occurrence.offset_at(at, settings.aperture_ms, radius, width);
-        *point += Vec3::from_array(settings.transverse(at, now, unwind)) * offset;
+        *point += Vec3::from_array(curve.transverse(at)) * offset;
     }
     points
 }
@@ -70,6 +60,7 @@ fn svg(
     palette: &palette::Palette,
     geometry: bool,
 ) -> String {
+    let curve = settings.geometry(now, size.to_array(), view.unwind);
     let face = palette::css(palette.face);
     let ink = palette::css(palette.ink);
     let muted = palette::css(palette.muted);
@@ -109,17 +100,16 @@ fn svg(
             0.96 * (1.0 - view.unwind),
         ));
     }
-    let base = samples(
-        settings,
-        &nucleus::schedule::TimeRange {
-            from_ms: now,
-            until_ms: Some(now + duration),
-        },
-        now,
-        size,
-        view.unwind,
-        2048,
-    );
+    let base: Vec<_> = curve
+        .samples(
+            &nucleus::schedule::TimeRange {
+                from_ms: now,
+                until_ms: Some(now + duration),
+            },
+            2048,
+        )
+        .map(Vec3::from_array)
+        .collect();
     svg.push_str(&format!(
         "<path d='{}' fill='none' stroke='{muted}' stroke-width='0.5' stroke-linecap='round'/>",
         path(&base)
@@ -153,8 +143,8 @@ fn svg(
     };
     for tick in ticks {
         let at = tick.at_ms;
-        let point = Vec3::from_array(settings.position(at, now, size.to_array(), view.unwind));
-        let cross = Vec3::from_array(settings.transverse(at, now, view.unwind));
+        let point = Vec3::from_array(curve.position(at));
+        let cross = Vec3::from_array(curve.transverse(at));
         let major = tick.major;
         let scale = if view.unwind >= 0.5 {
             1.0
@@ -197,8 +187,7 @@ fn svg(
     };
     for occurrence in occurrences {
         let entry = &view.entries[occurrence.index];
-        let points =
-            occurrence_points(settings, &occurrence, palette.width, now, size, view.unwind);
+        let points = occurrence_points_in(&curve, settings, &occurrence, palette.width, size);
         let color =
             palette::css(palette.event(occurrence.index, view.selected.contains(&entry.id)));
         if occurrence.time.until_ms.is_some() {
@@ -207,9 +196,7 @@ fn svg(
                 path(&points), palette.width
             ));
         } else if let Some(point) = points.first() {
-            let cross =
-                Vec3::from_array(settings.transverse(occurrence.time.from_ms, now, view.unwind))
-                    * 3.0;
+            let cross = Vec3::from_array(curve.transverse(occurrence.time.from_ms)) * 3.0;
             svg.push_str(&format!(
                 "<path d='M {} {} L {} {}' stroke='{color}' stroke-width='1.5'/><circle cx='{}' cy='{}' r='2.4' fill='{color}'/>",
                 point.x - cross.x,
@@ -221,8 +208,8 @@ fn svg(
             ));
         }
     }
-    let now_point = Vec3::from_array(settings.position(now, now, size.to_array(), view.unwind));
-    let direction = Vec3::from_array(settings.transverse(now, now, view.unwind));
+    let now_point = Vec3::from_array(curve.position(now));
+    let direction = Vec3::from_array(curve.transverse(now));
     let inner = now_point
         - direction
             * if view.unwind < 0.001 {
@@ -355,9 +342,11 @@ pub(super) fn nearest_at(world: &World, owner: Entity, point: Vec2) -> Option<St
     let Some(view) = world.get::<View>(owner) else {
         return None;
     };
+    let _prepare = nucleus::performance::Span::new("time-hit-pick-preparation");
     let settings = &world.get::<TimeSettings>(owner).unwrap().0;
     let now = chrono::Utc::now().timestamp_millis();
     let size = size(world, view.viewport);
+    let curve = settings.geometry(now, size.to_array(), view.unwind);
     if let Some(motion) = world.get::<motion::Motion>(owner) {
         let width = view.palette.as_ref().map_or(4.0, |palette| palette.width);
         let selected = motion
@@ -365,7 +354,8 @@ pub(super) fn nearest_at(world: &World, owner: Entity, point: Vec2) -> Option<St
             .values()
             .filter(|band| !band.retiring)
             .filter_map(|band| {
-                let points = motion::points(band, settings, now, size, view.unwind, width);
+                nucleus::performance::add("time-hit-candidates-prepared", 1);
+                let points = motion::points_in(band, &curve, settings, now, size, width);
                 let distance = if points.len() == 1 {
                     point.distance(points[0].xz())
                 } else {
@@ -374,10 +364,10 @@ pub(super) fn nearest_at(world: &World, owner: Entity, point: Vec2) -> Option<St
                         .map(|pair| segment_distance(point, pair[0].xz(), pair[1].xz()))
                         .fold(f32::INFINITY, f32::min)
                 };
-                (distance <= 12.0).then_some((distance, band.entry.id.clone()))
+                (distance <= 12.0).then_some((distance, &band.entry.id))
             })
             .min_by(|a, b| a.0.total_cmp(&b.0))
-            .map(|(_, id)| id);
+            .map(|(_, id)| id.clone());
         return selected;
     }
     let duration = (settings.aperture_ms as f64
@@ -386,7 +376,8 @@ pub(super) fn nearest_at(world: &World, owner: Entity, point: Vec2) -> Option<St
     let occurrences = model::clock_occurrences(settings, &view.entries, now, now + duration);
     let width = view.palette.as_ref().map_or(4.0, |palette| palette.width);
     let distance = |occurrence: &model::Occurrence| -> f32 {
-        let points = occurrence_points(settings, occurrence, width, now, size, view.unwind);
+        nucleus::performance::add("time-hit-candidates-prepared", 1);
+        let points = occurrence_points_in(&curve, settings, occurrence, width, size);
         if points.len() == 1 {
             point.distance(points[0].xz())
         } else {
@@ -396,10 +387,11 @@ pub(super) fn nearest_at(world: &World, owner: Entity, point: Vec2) -> Option<St
                 .fold(f32::INFINITY, f32::min)
         }
     };
-    if let Some(occurrence) = occurrences
+    if let Some((occurrence, distance)) = occurrences
         .iter()
-        .min_by(|a, b| distance(a).total_cmp(&distance(b)))
-        && distance(occurrence) <= 12.0
+        .map(|occurrence| (occurrence, distance(occurrence)))
+        .min_by(|a, b| a.1.total_cmp(&b.1))
+        && distance <= 12.0
     {
         let id = view.entries[occurrence.index].id.clone();
         return Some(id);

@@ -39,7 +39,9 @@ pub fn attach(world: &mut World, entity: Entity) {
             ChildOf(entity),
         ));
     }
-    if let Some(mut node) = world.get_mut::<Node>(entity) {
+    if let Some(mut node) = world.get_mut::<Node>(entity)
+        && node.overflow != Overflow::scroll_y()
+    {
         node.overflow = Overflow::scroll_y();
     }
 }
@@ -56,9 +58,8 @@ struct ScrollThumb(Entity);
 pub(crate) fn decorate(world: &mut World, viewport: Entity) {
     attach(world, viewport);
     if world
-        .query::<&Scrollbar>()
-        .iter(world)
-        .any(|bar| bar.viewport == viewport)
+        .run_system_cached_with(has_bar, viewport)
+        .expect("inspect current scrollbar attachment")
     {
         return;
     }
@@ -82,6 +83,10 @@ pub(crate) fn decorate(world: &mut World, viewport: Entity) {
         };
         node.padding.right = px(padding + BAR_WIDTH + 4.0);
     }
+}
+
+fn has_bar(In(viewport): In<Entity>, bars: Query<&Scrollbar>) -> bool {
+    bars.iter().any(|bar| bar.viewport == viewport)
 }
 
 pub(crate) fn decoration(world: &World, entity: Entity) -> bool {
@@ -163,8 +168,8 @@ fn bar(world: &mut World, parent: Entity, viewport: Entity) -> Entity {
     world
         .entity_mut(thumb)
         .observe(scrollbar_drag)
-        .observe(|mut event: On<Pointer<DragStart>>| event.propagate(false))
-        .observe(|mut event: On<Pointer<DragEnd>>| event.propagate(false))
+        .observe(|mut event: On<PointerDragStart>| event.propagate(false))
+        .observe(|mut event: On<PointerDragEnd>| event.propagate(false))
         .observe(scrollbar_key);
     track
 }
@@ -196,13 +201,29 @@ fn track_length(node: &ComputedNode, overlay: bool) -> f32 {
 }
 
 pub(crate) fn update_bars(world: &mut World) {
+    let _presentation = nucleus::performance::Span::new("scrollbar-presentation");
+    world
+        .run_system_cached(present_bars)
+        .expect("present current scrollbar geometry");
+}
+
+fn present_bars(
+    world: &mut World,
+    bars: &mut QueryState<(Entity, &'static Scrollbar)>,
+    mut pending: Local<Vec<(Entity, Entity, Entity)>>,
+) {
+    pending.clear();
+    pending.extend(
+        bars.iter(world)
+            .map(|(track, bar)| (track, bar.viewport, bar.thumb)),
+    );
+    if pending.is_empty() {
+        *pending = Vec::new();
+        return;
+    }
+    nucleus::performance::add("scrollbar-targets-prepared", pending.len() as u64);
     let mut changed = false;
-    let bars = world
-        .query::<(Entity, &Scrollbar)>()
-        .iter(world)
-        .map(|(track, bar)| (track, bar.viewport, bar.thumb))
-        .collect::<Vec<_>>();
-    for (track, viewport, thumb) in bars {
+    for (track, viewport, thumb) in pending.drain(..) {
         if world.get_entity(viewport).is_err() {
             world.despawn(track);
             continue;
@@ -239,10 +260,7 @@ pub(crate) fn update_bars(world: &mut World) {
             .map_or(0.0, |scroll| scroll.0.y)
             .clamp(0.0, maximum);
         if let Some(mut scroll) = world.get_mut::<ScrollPosition>(viewport) {
-            if scroll.0.y != offset {
-                scroll.0.y = offset;
-                changed = true;
-            }
+            changed |= publish_offset(&mut scroll, offset);
         }
         let mut node = world.get_mut::<Node>(thumb).unwrap();
         let top = px(if maximum > 0.0 {
@@ -288,6 +306,18 @@ pub(crate) fn update_bars(world: &mut World) {
     if changed && let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
         wake.ring();
     }
+    if bars.iter(world).next().is_none() {
+        *pending = Vec::new();
+    }
+}
+
+fn publish_offset(scroll: &mut Mut<'_, ScrollPosition>, offset: f32) -> bool {
+    if scroll.0.y == offset {
+        return false;
+    }
+    scroll.0.y = offset;
+    nucleus::performance::add("scrollbar-offset-publications", 1);
+    true
 }
 
 fn move_thumb(world: &mut World, track: Entity, delta: f32) {
@@ -305,7 +335,8 @@ fn move_thumb(world: &mut World, track: Entity, delta: f32) {
         return;
     }
     if let Some(mut scroll) = world.get_mut::<ScrollPosition>(viewport) {
-        scroll.0.y = (scroll.0.y + delta * maximum / (length - thumb)).clamp(0.0, maximum);
+        let offset = (scroll.0.y + delta * maximum / (length - thumb)).clamp(0.0, maximum);
+        publish_offset(&mut scroll, offset);
     }
     if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
         wake.ring();
@@ -313,7 +344,7 @@ fn move_thumb(world: &mut World, track: Entity, delta: f32) {
 }
 
 fn scrollbar_drag(
-    mut event: On<Pointer<Drag>>,
+    mut event: On<PointerDrag>,
     thumbs: Query<&ScrollThumb>,
     transforms: Query<&UiGlobalTransform>,
     mut commands: Commands,
@@ -333,7 +364,7 @@ fn scrollbar_drag(
 }
 
 fn scrollbar_click(
-    mut event: On<Pointer<Click>>,
+    mut event: On<PointerClick>,
     bars: Query<&Scrollbar>,
     thumbs: Query<&ScrollThumb>,
     mut commands: Commands,
@@ -348,7 +379,7 @@ fn scrollbar_click(
         return;
     }
     let track = event.entity;
-    let position = event.pointer_location.position;
+    let position = event.pointer.position;
     commands.queue(move |world: &mut World| {
         let Some(bar) = world.get::<Scrollbar>(track) else {
             return;
@@ -367,7 +398,7 @@ fn scrollbar_click(
         };
         let y = transform.inverse().transform_point2(position).y + height * 0.5;
         if let Some(mut scroll) = world.get_mut::<ScrollPosition>(viewport) {
-            scroll.0.y = (y / height * maximum).clamp(0.0, maximum);
+            publish_offset(&mut scroll, (y / height * maximum).clamp(0.0, maximum));
         }
     });
 }
@@ -405,7 +436,7 @@ fn scrollbar_key(
         };
         let (height, maximum) = geometry(node);
         if let Some(mut scroll) = world.get_mut::<ScrollPosition>(viewport) {
-            scroll.0.y = match key {
+            let offset = match key {
                 KeyCode::Home => 0.0,
                 KeyCode::End => maximum,
                 KeyCode::ArrowUp => scroll.0.y - 32.0,
@@ -414,6 +445,7 @@ fn scrollbar_key(
                 _ => scroll.0.y + height,
             }
             .clamp(0.0, maximum);
+            publish_offset(&mut scroll, offset);
         }
     });
 }
@@ -637,23 +669,20 @@ mod tests {
         attach(world, viewport);
         let content = world.spawn((Node::default(), ChildOf(viewport))).id();
         for (delta, expected) in [(-90.0, 90.0), (-2000.0, 960.0), (2000.0, 0.0)] {
-            world.trigger(Pointer::new(
-                bevy::picking::pointer::PointerId::Mouse,
-                bevy::picking::pointer::Location {
+            world.trigger(PointerScroll {
+                entity: content,
+                pointer: Pointer::new(bevy::picking::pointer::PointerId::Mouse, bevy::picking::pointer::Location {
                     target: bevy::camera::NormalizedRenderTarget::Image(
                         Handle::<Image>::default().into(),
                     ),
                     position: Vec2::ZERO,
-                },
-                bevy::picking::events::Scroll {
-                    unit: bevy::input::mouse::MouseScrollUnit::Pixel,
+                }),
+                unit: bevy::input::mouse::MouseScrollUnit::Pixel,
                     x: 0.0,
                     y: delta,
                     phase: bevy::input::touch::TouchPhase::Moved,
                     hit: bevy::picking::backend::HitData::new(viewport, 0.0, None, None),
-                },
-                content,
-            ));
+            });
             assert_eq!(world.get::<ScrollPosition>(viewport).unwrap().0.y, expected);
         }
     }

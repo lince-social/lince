@@ -36,29 +36,33 @@ pub(super) fn sendable(state: &State) -> bool {
 }
 
 pub(super) fn synchronize(world: &mut World) {
-    let sender = world
+    let Some(bridge) = world
         .get_non_send::<CellBridge>()
         .filter(|bridge| !bridge.outgoing.is_closed() && !bridge.incoming.is_closed())
-        .map(|bridge| bridge.outgoing.clone());
-    if let Some(sender) = sender {
-        observe(world, sender);
+    else {
+        return;
+    };
+    if world
+        .resource::<Runtime>()
+        .local_sender
+        .as_ref()
+        .is_some_and(|old| old.same_channel(&bridge.outgoing))
+    {
+        return;
     }
+    let sender = bridge.outgoing.clone();
+    observe(world, sender);
 }
 
 fn observe(world: &mut World, sender: Sender) {
-    let previous = world
-        .resource_mut::<Runtime>()
-        .local_sender
-        .replace(sender.clone());
-    let changed = previous
-        .as_ref()
-        .is_some_and(|old| !old.same_channel(&sender));
+    let previous = world.resource::<Runtime>().local_sender.as_ref();
     if previous
-        .as_ref()
         .is_some_and(|old| old.same_channel(&sender))
     {
         return;
     }
+    let changed = previous.is_some();
+    world.resource_mut::<Runtime>().local_sender = Some(sender);
     let owners: Vec<_> = world
         .resource::<Runtime>()
         .areas

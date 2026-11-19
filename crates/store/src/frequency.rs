@@ -91,18 +91,20 @@ pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<Frequency>, Stor
     )
     .await?
     .ok_or(sqlx::Error::RowNotFound)?;
-    let compiled = match &handle.active_activation_hash {
-        Some(hash) => frequencies::get_activation(pool, hash)
-            .await?
-            .ok_or(sqlx::Error::RowNotFound)?
-            .epoch
-            .compiled()
-            .clone(),
-        None => revision.default_compiled,
+    let activation = match &handle.active_activation_hash {
+        Some(hash) => Some(
+            frequencies::get_activation(pool, hash)
+                .await?
+                .ok_or(sqlx::Error::RowNotFound)?,
+        ),
+        None => None,
     };
-    let (cadence, anchor_at) = match compiled.schedule {
+    let compiled = activation.as_ref().map_or(&revision.default_compiled, |activation| {
+        activation.epoch.compiled()
+    });
+    let (cadence, anchor_at) = match &compiled.schedule {
         CompiledSchedule::Calendar { schedule } => (
-            schedule.cadence,
+            schedule.cadence.clone(),
             schedule.anchor.as_naive().and_utc().to_rfc3339(),
         ),
         CompiledSchedule::Elapsed { schedule } => (
@@ -160,7 +162,7 @@ pub async fn delete(pool: &SqlitePool, uid: &str) -> Result<(), StoreError> {
     for rule in crate::recurrence::all(pool).await? {
         if let Some(condition) = rule.condition {
             let parsed = condition.parsed().map_err(|e| protocol(e.to_string()))?;
-            if parsed.reads().iter().any(|token| {
+            if parsed.reads_ref().iter().any(|token| {
                 token.func == "freq" && (token.slug == frequency.slug || token.slug == uid)
             }) {
                 return Err(protocol("a rule still reads that frequency"));

@@ -26,12 +26,12 @@ fn client(seed: &AcceptedDoc, offset: u64) -> LoroDoc {
 
 fn delta(doc: &LoroDoc, base: &VersionVector) -> Vec<u8> {
     doc.commit();
-    serde_json::to_vec(&doc.export_json_updates_without_peer_compression(base, &doc.oplog_vv()))
+    serde_json::to_vec(&doc.export_json_updates_without_peer_compression(base, &doc.oplog_vv()).unwrap())
         .unwrap()
 }
 
 fn history(doc: &LoroDoc) -> JsonSchema {
-    doc.export_json_updates_without_peer_compression(&VersionVector::default(), &doc.oplog_vv())
+    doc.export_json_updates_without_peer_compression(&VersionVector::default(), &doc.oplog_vv()).unwrap()
 }
 
 fn seed_error(head: &str, body: &str, limits: &Limits) -> GuardError {

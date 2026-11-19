@@ -231,7 +231,7 @@ pub struct ElapsedSchedule {
 }
 
 impl ElapsedSchedule {
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments, reason = "Schedule construction takes the explicit recurrence parameters")]
     pub fn new(
         anchor: TimestampMs,
         interval_ms: u64,

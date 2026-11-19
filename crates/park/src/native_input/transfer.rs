@@ -206,7 +206,7 @@ pub(crate) fn capture(
             || !local.cmplt(node.size()).all()
             || world
                 .get::<bevy::ui::CalculatedClip>(entity)
-                .is_some_and(|clip| !clip.clip.contains(point))
+                .is_some_and(|clip| !clip.contains_point(point))
         {
             return None;
         }

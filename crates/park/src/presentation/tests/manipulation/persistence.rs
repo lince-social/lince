@@ -690,7 +690,7 @@ fn visible_configuration_refresh_recovers_the_local_cell_and_keeps_native_drafts
             .app
             .init_resource::<UiEvents>()
             .add_observer(
-                |event: On<Pointer<Press>>,
+                |event: On<PointerPress>,
                  labels: Query<&bevy::a11y::AccessibilityNode>,
                  mut events: ResMut<UiEvents>| {
                     if event.entity == event.original_event_target() {

@@ -138,218 +138,60 @@ pub(crate) fn asset_layers(world: &World, root: Entity, workspace: u64) -> Rende
     layers
 }
 
-pub fn geometry(
-    world: &mut World,
-    root: Entity,
-    output: &crate::host::OutputViewport,
-) -> Vec<crate::host::ItemGeometry> {
-    use crate::host::{ContentMapping, ItemGeometry, ItemId, Rectangle};
-    let canvas = crate::native::output_views::canvas(world, root, output.workspace);
-    let mut members = world.query::<(
-        Entity,
-        &CanvasItem,
-        &ChildOf,
-        &WorkspaceMember,
-        &crate::native::layout::LayoutBox,
-        &Surface,
-    )>();
-    let Some(children) = world.get::<Children>(root) else {
-        return Vec::new();
-    };
-    let layers = holes::layers_for(world, root, output.workspace);
-    let focused = world
-        .get_resource::<OutputViews>()
-        .is_none_or(|views| views.focused == output.id);
-    let spatial = focused && super::view::spatial(world, root);
-    let extent = bevy::math::DVec2::from_array(output.bounds.size());
-    let origin = bevy::math::DVec2::from_array(output.bounds.origin());
-    let viewport = [
-        origin,
-        origin + bevy::math::DVec2::new(extent.x, 0.0),
-        origin + extent,
-        origin + bevy::math::DVec2::new(0.0, extent.y),
-    ];
-    let screen =
-        |point: bevy::math::DVec2| (point - canvas.center) * canvas.zoom + extent * 0.5 + origin;
-    let mut result = Vec::new();
-    for (entity, item, parent, member, layout, surface) in members.iter_many(world, children.iter())
-    {
-        if parent.parent() != root
-            || !surface.visible
-            || !super::presentation::displayed(world, entity)
-            || member.0 != output.workspace
-                && !layers
-                    .is_some_and(|layers| layers.0.iter().any(|layer| layer.workspace == member.0))
-        {
-            continue;
-        }
-        let item = world
-            .get::<crate::native::canvas::ItemPreview>(entity)
-            .map_or(*item, |preview| preview.0);
-        let workspace = member.0;
-        let id = layout.id;
-        let scale = world
-            .get::<crate::native::area_effects::AreaScale>(entity)
-            .map_or(1.0, |scale| f64::from(scale.0));
-        let size = item.size.as_dvec2() * scale;
-        let Some(mut rectangle) = Rectangle::new(
-            screen(item.position - size * 0.5).to_array(),
-            (size * canvas.zoom).to_array(),
-        ) else {
-            continue;
-        };
-        let (id, surface) = if let Some(application) =
-            world.get::<crate::native::layout::desktop::ApplicationWindow>(entity)
-        {
-            (
-                ItemId::Application(application.surface),
-                Rectangle::new([0.0; 2], application.content_size.map(f64::from)),
-            )
-        } else {
-            (
-                ItemId::Native(id),
-                Rectangle::new([0.0; 2], item.size.as_dvec2().to_array()),
-            )
-        };
-        let Some(surface) = surface else {
-            continue;
-        };
-        let placement = crate::native::canvas::presented_spatial(world, entity);
-        let projected = spatial || focused && placement.rotation() != bevy::math::DQuat::IDENTITY;
-        let corners = if projected {
-            let Some(mut corners) = super::presentation::projected_corners(world, entity) else {
-                continue;
-            };
-            for point in &mut corners {
-                for axis in 0..2 {
-                    point[axis] += output.raster.origin[axis];
-                }
-            }
-            let low = std::array::from_fn(|axis| {
-                corners
-                    .iter()
-                    .map(|point| point[axis])
-                    .fold(f64::INFINITY, f64::min)
-            });
-            let high: [f64; 2] = std::array::from_fn(|axis| {
-                corners
-                    .iter()
-                    .map(|point| point[axis])
-                    .fold(f64::NEG_INFINITY, f64::max)
-            });
-            let Some(bounds) =
-                Rectangle::new(low, std::array::from_fn(|axis| high[axis] - low[axis]))
-            else {
-                continue;
-            };
-            rectangle = bounds;
-            Some(corners)
-        } else {
-            None
-        };
-        let mapping = ContentMapping {
-            canvas: rectangle,
-            surface,
-            corners,
-        };
-        let (polygons, center, basis) =
-            holes::surface_pieces_in(world, root, output.workspace, entity, &item);
-        if projected && basis.determinant().abs() < 1e-10 {
-            continue;
-        }
-        let inverse = if projected {
-            basis.inverse()
-        } else {
-            bevy::math::DMat2::IDENTITY
-        };
-        let screen = |point: bevy::math::DVec2| {
-            if projected {
-                let uv = inverse * (point - center) / item.size.as_dvec2()
-                    + bevy::math::DVec2::splat(0.5);
-                mapping
-                    .canvas_point(std::array::from_fn(|axis| {
-                        surface.origin()[axis] + uv[axis] * surface.size()[axis]
-                    }))
-                    .map(bevy::math::DVec2::from_array)
-            } else {
-                Some(screen(point))
-            }
-        };
-        let clip: Vec<_> = polygons
-            .into_iter()
-            .map(|polygon| {
-                let polygon: Vec<_> = polygon.into_iter().filter_map(screen).collect();
-                let winding: f64 = polygon
-                    .iter()
-                    .zip(polygon.iter().cycle().skip(1))
-                    .take(polygon.len())
-                    .map(|(a, b)| a.x * b.y - b.x * a.y)
-                    .sum();
-                let mut polygon = polygon;
-                if winding < 0.0 {
-                    polygon.reverse();
-                }
-                holes::intersect(&polygon, &viewport)
-            })
-            .filter(|polygon| polygon.len() >= 3)
-            .map(|polygon| polygon.into_iter().map(|point| point.to_array()).collect())
-            .collect();
-        if clip.is_empty() {
-            continue;
-        }
-        let depth = layers
-            .and_then(|layers| layers.0.iter().find(|layer| layer.workspace == workspace))
-            .map_or(0, |layer| layer.depth);
-        result.push((
-            depth,
-            placement.elevation,
-            super::stacking::key(world, entity),
-            ItemGeometry {
-                id,
-                output: output.id,
-                mapping,
-                floating: world
-                    .get::<crate::native::layout::desktop::Managed>(entity)
-                    .is_none_or(|managed| managed.floating),
-                clip: Some(clip),
-            },
-        ));
-    }
-    result.sort_by(
-        |(a_depth, a_height, a_order, a), (b_depth, b_height, b_order, b)| {
-            b_depth
-                .cmp(a_depth)
-                .then_with(|| a_height.total_cmp(b_height))
-                .then_with(|| a.floating.cmp(&b.floating))
-                .then_with(|| a_order.cmp(b_order))
-                .then_with(|| a.id.cmp(&b.id))
-        },
-    );
-    result.into_iter().map(|(_, _, _, item)| item).collect()
-}
+mod geometry;
+pub(crate) use geometry::matching_geometry;
+pub use geometry::{geometry, item_geometry};
+
+mod preparation;
+mod publication;
 
 pub(super) fn synchronize(world: &mut World) {
-    let views = world.get_resource::<OutputViews>().cloned();
-    let targets = world
-        .get_resource::<Targets>()
-        .map(|targets| targets.0.clone())
-        .unwrap_or_default();
-    let roots: Vec<_> = world
-        .query_filtered::<Entity, With<Workspaces>>()
-        .iter(world)
-        .collect();
-    let mut render_views = Vec::new();
-    if let Some(views) = &views {
+    let _synchronization = nucleus::performance::Span::new("native-output-synchronization");
+    world.init_resource::<preparation::Preparation>();
+    world.resource_scope(|world, mut state: Mut<preparation::Preparation>| {
+        synchronize_prepared(world, &mut state);
+        state.clear_batch();
+    });
+}
+
+fn synchronize_prepared(world: &mut World, state: &mut preparation::Preparation) {
+    let preparation::Preparation {
+        queries,
+        views: render_views,
+        passive,
+        backgrounds,
+        cameras,
+        instances: old,
+        living,
+        fills,
+        live_fills,
+        depths,
+        areas,
+        members,
+        positions,
+        uvs,
+    } = state;
+    let view_preparation = nucleus::performance::Span::new("native-output-view-preparation");
+    if world.get_resource::<OutputViews>().is_some_and(|views| {
+        views
+            .outputs
+            .iter()
+            .any(|output| output.id != views.focused)
+    }) {
+        let roots = preparation::query(world, &mut queries.roots);
+        let views = world.resource::<OutputViews>();
+        let root = roots.iter(world).find(|root| views.applies_to(*root));
+        let targets = world.get_resource::<Targets>();
         for (index, output) in views
             .outputs
             .iter()
             .enumerate()
             .filter(|(_, output)| output.id != views.focused)
         {
-            let Some(root) = roots.iter().copied().find(|root| views.applies_to(*root)) else {
+            let Some(root) = root else {
                 continue;
             };
-            let Some(image) = targets.get(&output.id).cloned() else {
+            let Some(image) = targets.and_then(|targets| targets.0.get(&output.id)) else {
                 continue;
             };
             let Some(layer) = crate::native::render_layers::OUTPUTS.get(index) else {
@@ -366,7 +208,7 @@ pub(super) fn synchronize(world: &mut World) {
                 offset: Vec2::from_array(output.raster.origin.map(|value| value as f32)),
                 canvas,
                 center: canvas.center,
-                image,
+                image: image.clone(),
                 layer,
             });
         }
@@ -394,46 +236,46 @@ pub(super) fn synchronize(world: &mut World) {
             });
         }
     }
-    let passive: HashSet<_> = render_views.iter().map(|view| view.id).collect();
-    let backgrounds: HashMap<_, _> = world
-        .query::<(Entity, &Background)>()
-        .iter(world)
-        .map(|(entity, background)| {
-            (
-                background.output,
-                (entity, background.grid, background.material.clone()),
-            )
-        })
-        .collect();
-    for (output, (camera, grid, _)) in &backgrounds {
+    passive.extend(render_views.iter().map(|view| view.id));
+    backgrounds.extend(
+        preparation::query(world, &mut queries.backgrounds)
+            .iter(world)
+            .map(|(entity, background)| {
+                (
+                    background.output,
+                    (entity, background.grid, background.material.id()),
+                )
+            }),
+    );
+    for (output, (camera, grid, _)) in backgrounds.iter() {
         if !passive.contains(output) {
             world.despawn(*grid);
             world.despawn(*camera);
         }
     }
-    let cameras: Vec<_> = world
-        .query::<(Entity, &OutputCamera)>()
-        .iter(world)
-        .map(|(entity, camera)| (entity, camera.0))
-        .collect();
-    for (entity, output) in &cameras {
+    cameras.extend(
+        preparation::query(world, &mut queries.cameras)
+            .iter(world)
+            .map(|(entity, camera)| (entity, camera.0)),
+    );
+    for (entity, output) in cameras.iter() {
         if !passive.contains(output) {
             world.despawn(*entity);
         }
     }
-    let old: HashMap<_, _> = world
-        .query::<(Entity, &Instance)>()
-        .iter(world)
-        .map(|(entity, instance)| ((instance.output, instance.owner), entity))
-        .collect();
-    let mut living = HashSet::new();
-    let fills: HashMap<_, _> = world
-        .query::<(Entity, &Fill)>()
-        .iter(world)
-        .map(|(entity, fill)| (*fill, entity))
-        .collect();
-    let mut live_fills = HashSet::new();
-    for output in &render_views {
+    old.extend(
+        preparation::query(world, &mut queries.instances)
+            .iter(world)
+            .map(|(entity, instance)| ((instance.output, instance.owner), entity)),
+    );
+    fills.extend(
+        preparation::query(world, &mut queries.fills)
+            .iter(world)
+            .map(|(entity, fill)| (*fill, entity)),
+    );
+    nucleus::performance::add("native-output-views-prepared", render_views.len() as u64);
+    drop(view_preparation);
+    for output in render_views.iter() {
         let target = &output.image;
         let layer = RenderLayers::none().with(output.layer);
         let root = output.root;
@@ -451,8 +293,7 @@ pub(super) fn synchronize(world: &mut World) {
             ClearColorConfig::Custom(crate::native::canvas_background::color(colors.background));
         if let Some(pattern) = crate::native::canvas_background::output_pattern(
             world,
-            root,
-            output.workspace,
+            colors.grid,
             crate::native::canvas::CanvasView {
                 center: output.center + inset.as_dvec2(),
                 ..canvas
@@ -462,24 +303,17 @@ pub(super) fn synchronize(world: &mut World) {
             if let Some((camera, _, handle)) = backgrounds.get(&output.id) {
                 if world
                     .resource::<Assets<crate::native::canvas_background::PatternMaterial>>()
-                    .get(handle)
+                    .get(*handle)
                     != Some(&pattern)
                 {
                     *world
                         .resource_mut::<Assets<crate::native::canvas_background::PatternMaterial>>()
-                        .get_mut(handle)
+                        .get_mut(*handle)
                         .unwrap() = pattern;
                 }
-                world
-                    .entity_mut(*camera)
-                    .insert(bevy::camera::RenderTarget::Image(
-                        bevy::camera::ImageRenderTarget {
-                            handle: target.clone(),
-                            scale_factor: output.scale,
-                        },
-                    ));
-                world.get_mut::<Camera>(*camera).unwrap().clear_color = background_color;
-                crate::native::app::configure_output_color(world, *camera, &target);
+                publication::image(world, *camera, target, output.scale);
+                publication::clear_color(world, *camera, background_color);
+                crate::native::app::configure_output_color(world, *camera, target);
             } else {
                 let material = world
                     .resource_mut::<Assets<crate::native::canvas_background::PatternMaterial>>()
@@ -515,27 +349,16 @@ pub(super) fn synchronize(world: &mut World) {
                     grid,
                     material,
                 });
-                crate::native::app::configure_output_color(world, camera, &target);
+                crate::native::app::configure_output_color(world, camera, target);
             }
         }
         let clear_color = ClearColorConfig::None;
-        let projection = Projection::Orthographic(OrthographicProjection {
-            scale: 1.0 / canvas.zoom as f32,
-            near: -1_000_000.0,
-            far: 1_000_000.0,
-            ..OrthographicProjection::default_3d()
-        });
         let camera = if let Some((camera, _)) = cameras.iter().find(|(_, id)| *id == output.id) {
-            world.entity_mut(*camera).insert((
-                projection,
-                transform,
-                layer.clone(),
-                bevy::camera::RenderTarget::Image(bevy::camera::ImageRenderTarget {
-                    handle: target.clone(),
-                    scale_factor: output.scale,
-                }),
-            ));
-            world.get_mut::<Camera>(*camera).unwrap().clear_color = clear_color;
+            publication::projection(world, *camera, 1.0 / canvas.zoom as f32);
+            publication::transform(world, *camera, transform);
+            publication::layers(world, *camera, &layer);
+            publication::image(world, *camera, target, output.scale);
+            publication::clear_color(world, *camera, clear_color);
             *camera
         } else {
             world
@@ -543,7 +366,12 @@ pub(super) fn synchronize(world: &mut World) {
                     Camera3d::default(),
                     OutputCamera(output.id),
                     WorldView,
-                    projection,
+                    Projection::Orthographic(OrthographicProjection {
+                        scale: 1.0 / canvas.zoom as f32,
+                        near: -1_000_000.0,
+                        far: 1_000_000.0,
+                        ..OrthographicProjection::default_3d()
+                    }),
                     layer.clone(),
                     bevy::camera::RenderTarget::Image(bevy::camera::ImageRenderTarget {
                         handle: target.clone(),
@@ -570,20 +398,38 @@ pub(super) fn synchronize(world: &mut World) {
                 ))
                 .id()
         };
-        crate::native::app::configure_output_color(world, camera, &target);
+        crate::native::app::configure_output_color(world, camera, target);
         super::stacking::camera(world, camera);
-        let layers = holes::layers_for(world, root, output.workspace)
-            .cloned()
-            .unwrap_or_default();
-        for hole_layer in layers.0.iter().filter(|layer| layer.depth > 0) {
+        let fill_preparation = nucleus::performance::Span::new("native-output-fill-preparation");
+        depths.clear();
+        let layer_count = if let Some(layers) = holes::layers_for(world, root, output.workspace) {
+            for hole_layer in &layers.0 {
+                depths
+                    .entry(hole_layer.workspace)
+                    .or_insert(hole_layer.depth);
+            }
+            layers.0.len()
+        } else {
+            0
+        };
+        drop(fill_preparation);
+        for index in 0..layer_count {
+            let fill_preparation =
+                nucleus::performance::Span::new("native-output-fill-preparation");
+            let hole_layer = &holes::layers_for(world, root, output.workspace).unwrap().0[index];
+            if hole_layer.depth == 0 {
+                continue;
+            }
+            let workspace = hole_layer.workspace;
+            let depth = hole_layer.depth;
             let polygons = holes::remove(hole_layer.openings.clone(), &hole_layer.cuts);
             let color =
-                crate::native::canvas_background::for_workspace(world, root, hole_layer.workspace)
-                    .background;
+                crate::native::canvas_background::for_workspace(world, root, workspace).background;
+            drop(fill_preparation);
             let key = Fill {
                 output: output.id,
                 owner: root,
-                workspace: hole_layer.workspace,
+                workspace,
             };
             live_fills.insert(key);
             fill(
@@ -592,37 +438,39 @@ pub(super) fn synchronize(world: &mut World) {
                 fills.get(&key).copied(),
                 &polygons,
                 canvas.center,
-                -(hole_layer.depth as f32) * 0.2 - 0.15,
+                -(depth as f32) * 0.2 - 0.15,
                 crate::native::canvas_background::color(color),
                 &layer,
+                positions,
             );
         }
-        let areas: Vec<_> = world
-            .query::<(
-                Entity,
-                &crate::native::area::InfluenceArea,
-                &ChildOf,
-                &WorkspaceMember,
-            )>()
-            .iter(world)
-            .filter(|(_, _, parent, member)| {
-                parent.parent() == root && holes::live_in(world, root, output.workspace, member.0)
-            })
-            .map(|(entity, area, _, member)| (entity, area.clone(), member.0))
-            .collect();
-        for (entity, area, workspace) in areas {
+        areas.extend(
+            preparation::query(world, &mut queries.areas)
+                .iter(world)
+                .filter(|(_, _, parent, member)| {
+                    parent.parent() == root
+                        && (member.0 == output.workspace || depths.contains_key(&member.0))
+                })
+                .map(|(entity, _, _, member)| (entity, member.0)),
+        );
+        for (entity, workspace) in areas.drain(..) {
+            let fill_preparation =
+                nucleus::performance::Span::new("native-output-fill-preparation");
+            let area = world
+                .get::<crate::native::area::InfluenceArea>(entity)
+                .unwrap();
             let placement = crate::native::canvas::presented_spatial(world, entity);
-            let polygons: Vec<_> = holes::triangles(&area, placement)
+            let polygons: Vec<_> = holes::triangles(area, placement)
                 .into_iter()
                 .flat_map(|polygon| {
                     holes::pieces_in(world, root, output.workspace, workspace, polygon)
                 })
                 .collect();
-            let depth = layers
-                .0
-                .iter()
-                .find(|layer| layer.workspace == workspace)
-                .map_or(0, |layer| layer.depth);
+            let depth = depths.get(&workspace).copied().unwrap_or(0);
+            let color =
+                crate::native::canvas_background::color(area.color).with_alpha(area.opacity);
+            nucleus::performance::add("native-output-areas-prepared", 1);
+            drop(fill_preparation);
             let key = Fill {
                 output: output.id,
                 owner: entity,
@@ -636,42 +484,45 @@ pub(super) fn synchronize(world: &mut World) {
                 &polygons,
                 canvas.center,
                 placement.elevation as f32 - depth as f32 * 0.2 - 0.1,
-                crate::native::canvas_background::color(area.color).with_alpha(area.opacity),
+                color,
                 &layer,
+                positions,
             );
         }
-        let members: Vec<_> = world
-            .query::<(Entity, &CanvasItem, &ChildOf, &WorkspaceMember, &Surface)>()
-            .iter(world)
-            .filter(|(_, _, parent, member, surface)| {
-                parent.parent() == root
-                    && surface.visible
-                    && holes::live_in(world, root, output.workspace, member.0)
-            })
-            .map(|(entity, item, _, member, surface)| {
-                (
-                    entity,
-                    world
-                        .get::<crate::native::canvas::ItemPreview>(entity)
-                        .map_or(*item, |preview| preview.0),
-                    member.0,
-                    surface.material.clone(),
-                )
-            })
-            .collect();
-        for (entity, item, workspace, material) in members {
-            if !super::presentation::displayed(world, entity) {
-                continue;
-            }
+        {
+            let query = preparation::query(world, &mut queries.members);
+            let mut ordering = super::stacking::Keys::new(world);
+            members.extend(
+                query
+                    .iter(world)
+                    .filter(|(_, _, parent, member, surface)| {
+                        parent.parent() == root
+                            && surface.visible
+                            && (member.0 == output.workspace || depths.contains_key(&member.0))
+                    })
+                    .filter(|(entity, ..)| super::presentation::displayed(world, *entity))
+                    .map(|(entity, item, _, member, _)| {
+                        (
+                            entity,
+                            world
+                                .get::<crate::native::canvas::ItemPreview>(entity)
+                                .map_or(*item, |preview| preview.0),
+                            member.0,
+                            ordering.key(entity),
+                        )
+                    }),
+            );
+        }
+        for (entity, item, workspace, order) in members.drain(..) {
+            let surface_preparation =
+                nucleus::performance::Span::new("native-output-surface-preparation");
             let (pieces, center, basis) =
                 holes::surface_pieces_in(world, root, output.workspace, entity, &item);
             if basis.determinant().abs() < 1e-10 {
                 continue;
             }
             let inverse = basis.inverse();
-            let depth = holes::layers_for(world, root, output.workspace)
-                .and_then(|layers| layers.0.iter().find(|layer| layer.workspace == workspace))
-                .map_or(0, |layer| layer.depth);
+            let depth = depths.get(&workspace).copied().unwrap_or(0);
             let elevation = crate::native::canvas::presented_spatial(world, entity).elevation
                 as f32
                 - depth as f32 * 0.2
@@ -680,8 +531,8 @@ pub(super) fn synchronize(world: &mut World) {
                 bevy::math::DVec3::Y,
                 bevy::math::DVec3::new(0.0, f64::from(elevation), 0.0),
             );
-            let mut positions = Vec::new();
-            let mut uvs = Vec::new();
+            positions.clear();
+            uvs.clear();
             for piece in pieces {
                 for triangle in 1..piece.len().saturating_sub(1) {
                     for point in [piece[0], piece[triangle + 1], piece[triangle]] {
@@ -696,6 +547,8 @@ pub(super) fn synchronize(world: &mut World) {
                     }
                 }
             }
+            nucleus::performance::add("native-output-surfaces-prepared", 1);
+            drop(surface_preparation);
             let key = (output.id, entity);
             living.insert(key);
             let mesh = || {
@@ -711,30 +564,30 @@ pub(super) fn synchronize(world: &mut World) {
                 .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, uvs.clone())
             };
             if let Some(instance) = old.get(&key).copied() {
-                super::stacking::synchronize(world, entity, instance, plane);
+                super::stacking::synchronize(world, instance, order, plane);
                 let previous = world.get::<Instance>(instance).unwrap();
-                if previous.positions != positions || previous.uvs != uvs {
+                if previous.positions != *positions || previous.uvs != *uvs {
                     let handle = world.get::<Mesh3d>(instance).unwrap().0.clone();
                     world
                         .resource_mut::<Assets<Mesh>>()
                         .insert(handle.id(), mesh())
                         .unwrap();
                     let mut previous = world.get_mut::<Instance>(instance).unwrap();
-                    previous.positions = positions;
-                    previous.uvs = uvs;
+                    std::mem::swap(&mut previous.positions, positions);
+                    std::mem::swap(&mut previous.uvs, uvs);
+                    nucleus::performance::add("native-output-mesh-updates", 1);
                 }
-                world
-                    .entity_mut(instance)
-                    .insert((MeshMaterial3d(material), layer.clone(), super::presentation::VisualOwner(entity), super::compositor::SurfaceFace));
+                publication::surface(world, instance, entity, &layer);
             } else {
                 let mesh = world.resource_mut::<Assets<Mesh>>().add(mesh());
+                let material = world.get::<Surface>(entity).unwrap().material.clone();
                 let instance = world
                     .spawn((
                         Instance {
                             output: output.id,
                             owner: entity,
-                            positions,
-                            uvs,
+                            positions: std::mem::take(positions),
+                            uvs: std::mem::take(uvs),
                         },
                         Mesh3d(mesh),
                         MeshMaterial3d(material),
@@ -745,16 +598,16 @@ pub(super) fn synchronize(world: &mut World) {
                         Transform::default(),
                     ))
                     .id();
-                super::stacking::synchronize(world, entity, instance, plane);
+                super::stacking::synchronize(world, instance, order, plane);
             }
         }
     }
-    for (key, entity) in old {
+    for (key, entity) in old.drain() {
         if !living.contains(&key) {
             world.despawn(entity);
         }
     }
-    for (key, entity) in fills {
+    for (key, entity) in fills.drain() {
         if !live_fills.contains(&key) {
             world.despawn(entity);
         }
@@ -770,8 +623,10 @@ fn fill(
     elevation: f32,
     color: Color,
     layer: &RenderLayers,
+    points: &mut Vec<[f32; 3]>,
 ) {
-    let mut points = Vec::new();
+    let _publication = nucleus::performance::Span::new("native-output-fill-publication");
+    points.clear();
     for polygon in polygons {
         for index in 1..polygon.len().saturating_sub(1) {
             for point in [polygon[0], polygon[index + 1], polygon[index]] {
@@ -792,28 +647,37 @@ fn fill(
         .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, points.clone())
     };
     if let Some(entity) = previous {
-        if world.get::<FillGeometry>(entity).unwrap().0 != points {
+        if world.get::<FillGeometry>(entity).unwrap().0 != *points {
             let handle = world.get::<Mesh3d>(entity).unwrap().0.clone();
             world
                 .resource_mut::<Assets<Mesh>>()
                 .insert(handle.id(), mesh())
                 .unwrap();
-            world.get_mut::<FillGeometry>(entity).unwrap().0 = points;
+            std::mem::swap(
+                &mut world.get_mut::<FillGeometry>(entity).unwrap().0,
+                points,
+            );
+            nucleus::performance::add("native-output-mesh-updates", 1);
         }
         let material = world
             .get::<MeshMaterial3d<StandardMaterial>>(entity)
             .unwrap()
             .0
-            .clone();
-        if let Some(mut material) = world
-            .resource_mut::<Assets<StandardMaterial>>()
-            .get_mut(&material)
-        {
-            if material.base_color != color {
-                material.base_color = color;
-            }
+            .id();
+        let changed = world
+            .resource::<Assets<StandardMaterial>>()
+            .get(material)
+            .is_some_and(|material| material.base_color != color);
+        if changed {
+            world
+                .resource_mut::<Assets<StandardMaterial>>()
+                .get_mut(material)
+                .unwrap()
+                .base_color = color;
+            nucleus::performance::add("native-output-fill-material-writes", 1);
         }
-        world.entity_mut(entity).insert((layer.clone(), super::presentation::VisualOwner(key.owner)));
+        publication::layers(world, entity, layer);
+        publication::owner(world, entity, key.owner);
     } else {
         let mesh = world.resource_mut::<Assets<Mesh>>().add(mesh());
         let material = world
@@ -826,7 +690,7 @@ fn fill(
             });
         world.spawn((
             key,
-            FillGeometry(points),
+            FillGeometry(std::mem::take(points)),
             Mesh3d(mesh),
             MeshMaterial3d(material),
             super::presentation::VisualOwner(key.owner),

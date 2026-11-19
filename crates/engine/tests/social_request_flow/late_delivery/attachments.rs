@@ -50,7 +50,7 @@ async fn delivery_errors(engine: &Engine) -> Vec<(String, Vec<Option<String>>)> 
         "social_private_destination",
         "social_pickup_work",
     ] {
-        let errors = store::sqlx::query_scalar(&format!("SELECT error FROM {table} LIMIT 8"))
+        let errors = store::sqlx::query_scalar(store::sqlx::AssertSqlSafe(format!("SELECT error FROM {table} LIMIT 8")))
             .fetch_all(&engine.store.pool)
             .await
             .unwrap();

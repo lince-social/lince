@@ -56,8 +56,6 @@ impl Queue {
     }
 
     fn send(&self, request: Request) -> SaveResult {
-        // A reserved slot covers capture as well as the queued request. Never
-        // drop a returned Request while holding this lock: its Slot releases it.
         let sent = {
             let state = self
                 .state
@@ -82,8 +80,6 @@ impl Queue {
             .sender
             .take();
         self.available.notify_all();
-        // Outstanding capture slots do not retain a sender or keep shutdown
-        // waiting for a document that has not been submitted.
         drop(sender);
     }
 }
@@ -101,7 +97,6 @@ impl Drop for Slot {
     }
 }
 
-// Wake synchronous reservers even if the worker exits unexpectedly.
 struct WorkerQueue(Arc<Queue>);
 impl Drop for WorkerQueue {
     fn drop(&mut self) {
@@ -358,25 +353,33 @@ impl Storage {
     fn prune(&self) -> io::Result<()> {
         let directory = self.path.with_extension("snapshots");
         let files = snapshots(&directory)?;
-        let mut buckets = std::collections::BTreeMap::new();
-        for path in &files {
-            if super::read_snapshot(path).is_ok_and(|document| document.is_some()) {
-                buckets.insert(
-                    sequence(path) / (self.settings.history_seconds * 1_000_000),
-                    path,
-                );
+        let retained = {
+            let _selection = nucleus::performance::Span::new("workspace-history-selection");
+            let mut retained = std::collections::HashSet::new();
+            let mut retained_bucket = None;
+            for path in files.iter().rev() {
+                let bucket = sequence(path) / (self.settings.history_seconds * 1_000_000);
+                if retained_bucket == Some(bucket) {
+                    continue;
+                }
+                nucleus::performance::add("workspace-history-retention-reads", 1);
+                if super::read_snapshot(path).is_ok_and(|document| document.is_some()) {
+                    retained.insert(path);
+                    retained_bucket = Some(bucket);
+                    if retained.len() == self.settings.history_count + 1 {
+                        break;
+                    }
+                }
             }
-        }
-        let retained: std::collections::HashSet<_> = buckets
-            .into_values()
-            .rev()
-            .take(self.settings.history_count + 1)
-            .collect();
+            retained
+        };
         let mut removed = false;
         for path in &files {
-            if !retained.contains(path)
-                && super::read_snapshot(path).is_ok_and(|document| document.is_some())
-            {
+            if retained.contains(path) {
+                continue;
+            }
+            nucleus::performance::add("workspace-history-retirement-reads", 1);
+            if super::read_snapshot(path).is_ok_and(|document| document.is_some()) {
                 std::fs::remove_file(path)?;
                 removed = true;
             }

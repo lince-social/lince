@@ -22,18 +22,31 @@ pub(crate) struct CaptureSource {
 }
 
 impl Metadata {
-    fn caption(&self) -> String {
-        format!(
-            "Application metadata · read only\nTitle: {}\nApp ID: {}\nWindow: {}",
-            self.title.chars().take(1024).collect::<String>(),
-            self.app_id.chars().take(1024).collect::<String>(),
+    fn caption_parts(&self) -> [&str; 6] {
+        [
+            "Application metadata · read only\nTitle: ",
+            lince_interface::text::prefix(&self.title, 1024),
+            "\nApp ID: ",
+            lince_interface::text::prefix(&self.app_id, 1024),
+            "\nWindow: ",
             if self.live {
                 self.state.as_str()
             } else {
                 "closed or unavailable"
             },
-        )
+        ]
     }
+
+    fn caption(&self) -> String {
+        caption_text(self.caption_parts())
+    }
+}
+
+fn caption_text(parts: [&str; 6]) -> String {
+    crate::host::performance::count(
+        crate::host::performance::Count::WindowMetadataCaptionsPrepared,
+    );
+    parts.concat()
 }
 
 #[derive(Component)]
@@ -100,6 +113,8 @@ pub(crate) fn populate(world: &mut World, row: Entity, binding: &RecordBinding) 
 }
 
 pub(crate) fn refresh(metadata: Query<Ref<Metadata>>, mut headers: Query<(&Header, &mut Text)>) {
+    let _headers =
+        crate::host::performance::Span::new(crate::host::performance::Stage::WindowMetadataHeaders);
     for (header, mut text) in &mut headers {
         let Ok(metadata) = metadata.get(header.0) else {
             continue;
@@ -107,9 +122,12 @@ pub(crate) fn refresh(metadata: Query<Ref<Metadata>>, mut headers: Query<(&Heade
         if !metadata.is_changed() {
             continue;
         }
-        let caption = metadata.caption();
-        if text.0 != caption {
-            text.0 = caption;
+        let parts = metadata.caption_parts();
+        if parts.iter().try_fold(text.0.as_str(), |remaining, part| {
+            remaining.strip_prefix(*part)
+        }) != Some("")
+        {
+            text.0 = caption_text(parts);
         }
     }
 }

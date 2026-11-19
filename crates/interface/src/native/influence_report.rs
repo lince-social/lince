@@ -7,6 +7,7 @@ use std::collections::HashSet;
 
 pub(crate) mod tests;
 pub(crate) mod ui;
+mod tracking;
 
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum Outcome {
@@ -72,44 +73,9 @@ pub(crate) fn store(world: &mut World, sand: Entity, report: Report) {
 }
 
 pub(crate) fn track(world: &mut World) {
-    let roots: Vec<_> = world
-        .query::<(Entity, &Workspaces)>()
-        .iter(world)
-        .map(|(e, _)| e)
-        .collect();
-    let mut tracked = HashSet::new();
-    for root in roots {
-        let chosen = crate::native::canvas_selection::selected(world, root)
-            .into_iter()
-            .find(|sand| world.get::<InfluenceArea>(*sand).is_none())
-            .or_else(|| {
-                world
-                    .get::<crate::native::inspection::Inspection>(root)
-                    .and_then(|i| i.selected)
-            });
-        if let Some(sand) = chosen.filter(|sand| {
-            world.get::<InfluenceArea>(*sand).is_none()
-                && crate::native::canvas_selection::eligible(world, root, *sand)
-        }) {
-            world.entity_mut(root).insert(Inspected(sand));
-        }
-        if let Some(sand) = world.get::<Inspected>(root).map(|s| s.0) {
-            if crate::native::canvas_selection::eligible(world, root, sand) {
-                tracked.insert(sand);
-            } else {
-                world.entity_mut(root).remove::<Inspected>();
-            }
-        }
-    }
-    let stale: Vec<_> = world
-        .query_filtered::<Entity, With<Report>>()
-        .iter(world)
-        .filter(|sand| !tracked.contains(sand))
-        .collect();
-    for sand in stale {
-        world.entity_mut(sand).remove::<Report>();
-    }
-    world.insert_resource(Tracked(tracked));
+    world
+        .run_system_cached(tracking::refresh)
+        .expect("refresh current influence inspection");
 }
 
 pub(crate) fn activity(

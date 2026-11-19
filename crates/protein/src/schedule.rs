@@ -1,11 +1,13 @@
 use crate::{Predicate, Protein, ProteinError, Source};
 use nucleus::projection::{Incomplete, Scheduled, Status, Window};
-use nucleus::schedule::{TimeValue, timezone_date};
+use nucleus::schedule::{Endpoints, TimeValue};
 use serde_json::{Value, json};
+use std::cell::OnceCell;
 use std::collections::{HashMap, HashSet};
 
 mod admitted;
 mod allocation;
+mod occurrences;
 
 pub fn query(window: Window, filter: Vec<Predicate>) -> Protein {
     let mut query = crate::calendar::query(window, filter);
@@ -19,59 +21,66 @@ pub(super) async fn execute(
     visible: Option<&HashSet<String>>,
     actor: Option<&str>,
 ) -> Result<Vec<Value>, ProteinError> {
-    let context = crate::calendar::context(query, actor)?;
+    let (context, dates) = crate::calendar::context_with_dates(query, actor)?;
     if query.aggregate.is_some() || query.include.projection.is_some() {
         return Err(invalid(
             "Schedule uses one cached projection window and does not aggregate work",
         ));
     }
-    let mut manual = query.clone();
-    manual.source = Source::Record;
-    manual.order.clear();
-    manual.fields = Some(
-        [
-            "uid",
-            "kind",
-            "organ",
-            "head",
-            "slug",
-            "quantity",
-            "start_date",
-            "due_date",
-            "estimate_min",
-        ]
-        .map(str::to_string)
-        .to_vec(),
-    );
-    manual.limit = Some(nucleus::projection::MAX_SPANS + 1);
-    manual
-        .filter
-        .retain(|filter| !crate::calendar::is_window(filter));
+    let mut manual = Protein {
+        source: Source::Record,
+        filter: query
+            .filter
+            .iter()
+            .filter(|filter| !crate::calendar::is_window(filter))
+            .cloned()
+            .collect(),
+        fields: Some(
+            [
+                "uid",
+                "kind",
+                "organ",
+                "head",
+                "slug",
+                "quantity",
+                "start_date",
+                "due_date",
+                "estimate_min",
+            ]
+            .into_iter()
+            .map(str::to_string)
+            .collect(),
+        ),
+        include: query.include.clone(),
+        aggregate: None,
+        order: Vec::new(),
+        limit: Some(nucleus::projection::MAX_SPANS + 1),
+    };
     let live = crate::execute_records(store, &manual, visible, actor).await?;
-    let records: HashMap<_, _> = live
-        .iter()
-        .filter_map(|row| Some((row["uid"].as_str()?.to_owned(), row.clone())))
-        .collect();
+    let records = record_index(&live);
     let links = store::records::all_extensions(&store.pool, "work").await?;
+    let work = occurrences::Work::new(&links);
+    let materialized = occurrences::Materialized::new(&work, visible);
     let manual_budget = live.len() > nucleus::projection::MAX_SPANS;
     let now = nucleus::execution::now().timestamp_millis();
-    let from_date = context
-        .window
-        .date(context.window.from_ms)
+    let from_date = dates
+        .at(context.window.from_ms)
         .ok_or_else(|| invalid("Invalid schedule window"))?;
-    let until_date = context
-        .window
-        .date(context.window.until_ms - 1)
+    let until_date = dates
+        .at(context.window.until_ms - 1)
         .ok_or_else(|| invalid("Invalid schedule window"))?;
-    let today = context
-        .window
-        .date(now)
+    let today = dates
+        .at(now)
         .ok_or_else(|| invalid("Invalid current time"))?;
     let mut output = Vec::new();
-    for mut row in live {
-        let start = row["start_date"].as_str();
-        let due = row["due_date"].as_str();
-        let time = nucleus::schedule::range(start, due, row["estimate_min"].as_f64(), None)
+    let publish_manual = nucleus::performance::Span::new("protein-schedule-manual-publication");
+    for row in &live {
+        let endpoints = Endpoints::parse(row["start_date"].as_str(), row["due_date"].as_str())
+            .map_err(invalid)?;
+        let start = endpoints.start();
+        let due = endpoints.due();
+        let time = endpoints
+            .range(row["estimate_min"].as_f64(), None)
             .map_err(invalid)?;
         let quantity = row["quantity"]
             .as_str()
@@ -87,9 +96,8 @@ pub(super) async fn execute(
             && time
                 .as_ref()
                 .is_some_and(|time| time.until_ms.unwrap_or(time.from_ms) < now);
-        let due_time = due.and_then(|value| TimeValue::parse(value).ok());
         let overdue = active
-            && due_time.as_ref().is_some_and(|due| match due {
+            && due.is_some_and(|due| match due {
                 TimeValue::Instant(time) => time.timestamp_millis() < now,
                 TimeValue::Date(date) => date.to_string() < today,
             });
@@ -101,12 +109,8 @@ pub(super) async fn execute(
             }
             "timed"
         } else {
-            let start = start
-                .or(due)
-                .and_then(|value| timezone_date(value, &context.window.timezone));
-            let end = due
-                .or(row["start_date"].as_str())
-                .and_then(|value| timezone_date(value, &context.window.timezone));
+            let start = start.or(due).map(|value| dates.value(value));
+            let end = due.or(endpoints.start()).map(|value| dates.value(value));
             if !start.zip(end).is_some_and(|(start, end)| {
                 start.to_string() <= until_date && end.to_string() >= from_date
             }) {
@@ -114,22 +118,19 @@ pub(super) async fn execute(
             }
             "all-day"
         };
-        let uid = row["uid"].as_str().unwrap_or_default().to_owned();
+        let uid = row["uid"].as_str().unwrap_or_default();
+        let mut row = Value::clone(row);
+        nucleus::performance::add("protein-schedule-manual-row-copies", 1);
         row["record_uid"] = json!(uid);
         row["uid"] = json!(format!("manual:{uid}"));
-        row["record_kind"] = row["kind"].clone();
+        let kind = row["kind"].take();
+        row["record_kind"] = kind;
         row["kind"] = json!("schedule-entry");
         row["category"] = json!(category);
         row["time"] = json!(time);
-        let occurrence = links
-            .get(&uid)
-            .and_then(|work| work.get("projection_occurrence"))
-            .and_then(|value| {
-                serde_json::from_value::<nucleus::projection::OccurrenceLink>(value.clone()).ok()
-            });
         row["origin"] = if undated_need {
             json!({"kind":"need"})
-        } else if let Some(occurrence) = occurrence {
+        } else if let Some(occurrence) = work.occurrence(uid) {
             json!({"kind":"manual", "occurrence":occurrence})
         } else {
             json!({"kind":"manual"})
@@ -137,13 +138,17 @@ pub(super) async fn execute(
         row["preview"] = json!(false);
         output.push(row);
     }
+    drop(publish_manual);
     let (confirmed, admission_budget) =
-        admitted::entries(store, &context, &records, &links, visible).await?;
+        admitted::entries(store, &context, &records, &work, &materialized).await?;
+    drop(records);
+    drop(live);
     output.extend(confirmed);
     let confirmed_ids: HashSet<_> = output
         .iter()
-        .filter_map(|row| row["uid"].as_str().map(str::to_owned))
+        .filter_map(|row| row["uid"].as_str())
         .collect();
+    let mut projected = Vec::new();
     let unavailable = if actor.is_some() {
         Some(Incomplete::UnavailableRuntime {})
     } else if context.window.until_ms <= now {
@@ -154,19 +159,20 @@ pub(super) async fn execute(
         None
     };
     let cached = if unavailable.is_none() {
-        store::projection::read(store, &context, now).await?
+        store::projection::read_schedule(store, &context, now).await?
     } else {
         None
     };
-    let mut status = cached
-        .as_ref()
-        .map(|cached| cached.status.clone())
-        .unwrap_or_else(|| {
+    let (mut status, cached_schedule) = match cached {
+        Some((status, schedule)) => (status, Some(schedule)),
+        None => (
             unavailable.map_or(Status::Updating {}, |reason| Status::Incomplete {
                 base_ms: now,
                 reason,
-            })
-        });
+            }),
+            None,
+        ),
+    };
     if manual_budget || admission_budget {
         status = Status::Incomplete {
             base_ms: now,
@@ -174,9 +180,9 @@ pub(super) async fn execute(
         };
     }
     let refreshing = matches!(status, Status::Updating {});
-    let has_cache = cached.is_some();
-    let schedule = if let Some(cached) = cached {
-        cached.schedule
+    let has_cache = cached_schedule.is_some();
+    let schedule = if let Some(schedule) = cached_schedule {
+        schedule
     } else if refreshing {
         store::projection::previous_schedule(store, &context, now).await?
     } else {
@@ -191,33 +197,17 @@ pub(super) async fn execute(
             .all(|filter| crate::calendar::split(filter, &mut filters, &mut quantities))
         {
             manual.filter = filters;
-            let candidates = crate::execute_records(store, &manual, visible, actor).await?;
-            if candidates.len() > nucleus::projection::MAX_SPANS {
+            let candidate_rows = crate::execute_records(store, &manual, visible, actor).await?;
+            if candidate_rows.len() > nucleus::projection::MAX_SPANS {
                 status = Status::Incomplete {
                     base_ms: now,
                     reason: Incomplete::Budget {},
                 };
             }
-            let candidates: HashMap<_, _> = candidates
-                .into_iter()
-                .filter_map(|row| Some((row["uid"].as_str()?.to_owned(), row)))
-                .collect();
-            let actual: HashSet<_> = links
-                .iter()
-                .filter(|(uid, _)| visible.is_none_or(|visible| visible.contains(*uid)))
-                .filter_map(|(_, work)| work.get("projection_occurrence").cloned())
-                .filter_map(|value| {
-                    serde_json::from_value::<nucleus::projection::OccurrenceLink>(value).ok()
-                })
-                .map(|link| {
-                    (
-                        link.record.as_str().to_owned(),
-                        link.occurrence.rule_uid,
-                        link.occurrence.revision,
-                        link.occurrence.event_id,
-                    )
-                })
-                .collect();
+            let candidates = record_index(&candidate_rows);
+            let mut preview = None;
+            let _publish =
+                nucleus::performance::Span::new("protein-schedule-projected-publication");
             for entry in schedule {
                 if !entry
                     .time
@@ -230,7 +220,7 @@ pub(super) async fn execute(
                 {
                     continue;
                 }
-                if confirmed_ids.contains(&entry.id) {
+                if confirmed_ids.contains(entry.id.as_str()) {
                     continue;
                 }
                 if matches!(entry.cause, nucleus::simulation::Cause::Seed {})
@@ -245,22 +235,16 @@ pub(super) async fn execute(
                     continue;
                 }
                 if let nucleus::simulation::Cause::Rule { occurrence, .. } = &entry.cause
-                    && actual.contains(&(
-                        entry.record.as_str().to_owned(),
-                        occurrence.rule_uid.clone(),
-                        occurrence.revision,
-                        occurrence.event_id.clone(),
-                    ))
+                    && materialized.contains(entry.record.as_str(), occurrence)
                 {
                     continue;
                 }
                 let row = if let Some(record) = candidates.get(entry.record.as_str()) {
-                    record.clone()
+                    Value::clone(record)
                 } else if entry.preview
-                    && manual
-                        .filter
-                        .iter()
-                        .all(|filter| preview_matches(filter, &entry))
+                    && preview
+                        .get_or_insert_with(|| Preview::new(&manual.filter))
+                        .matches(&entry)
                 {
                     json!({"head":entry.head,"slug":entry.slug,"record_kind":entry.record_kind})
                 } else {
@@ -276,7 +260,7 @@ pub(super) async fn execute(
                 row["time"] = json!(entry.time);
                 row["preview"] = json!(entry.preview);
                 row["origin"] = json!({"kind":"projection", "cause":entry.cause});
-                output.push(row);
+                projected.push(row);
             }
         } else {
             status = Status::Incomplete {
@@ -285,6 +269,8 @@ pub(super) async fn execute(
             };
         }
     }
+    drop(confirmed_ids);
+    output.extend(projected);
     let base_ms = match &status {
         Status::Ready { base_ms, .. } | Status::Incomplete { base_ms, .. } => *base_ms,
         Status::Updating {} => now,
@@ -323,14 +309,63 @@ pub(super) async fn execute(
     Ok(output)
 }
 
-fn preview_matches(filter: &Predicate, entry: &Scheduled) -> bool {
-    match filter {
-        Predicate::UidEq(uid) | Predicate::RecordEq(uid) => uid == entry.record.as_str(),
-        Predicate::KindEq(kind) => kind == &entry.record_kind,
-        Predicate::SlugEq(slug) => entry.slug.as_ref() == Some(slug),
-        Predicate::TextContains(text) => entry.head.to_lowercase().contains(&text.to_lowercase()),
-        Predicate::All(children) => children.iter().all(|filter| preview_matches(filter, entry)),
-        _ => false,
+fn record_index(rows: &[Value]) -> HashMap<&str, &Value> {
+    let _prepare = nucleus::performance::Span::new("protein-schedule-record-index");
+    nucleus::performance::add("protein-schedule-record-index-rows", rows.len() as u64);
+    rows.iter()
+        .filter_map(|row| Some((row["uid"].as_str()?, row)))
+        .collect()
+}
+
+struct Preview<'a> {
+    filters: &'a [Predicate],
+    needles: HashMap<&'a str, String>,
+}
+
+impl<'a> Preview<'a> {
+    fn new(filters: &'a [Predicate]) -> Self {
+        Self {
+            filters,
+            needles: HashMap::new(),
+        }
+    }
+
+    fn matches(&mut self, entry: &Scheduled) -> bool {
+        let head = OnceCell::new();
+        let needles = &mut self.needles;
+        self.filters
+            .iter()
+            .all(|filter| Self::matches_filter(filter, entry, &head, needles))
+    }
+
+    fn matches_filter(
+        filter: &'a Predicate,
+        entry: &Scheduled,
+        head: &OnceCell<String>,
+        needles: &mut HashMap<&'a str, String>,
+    ) -> bool {
+        match filter {
+            Predicate::UidEq(uid) | Predicate::RecordEq(uid) => uid == entry.record.as_str(),
+            Predicate::KindEq(kind) => kind == &entry.record_kind,
+            Predicate::SlugEq(slug) => entry.slug.as_ref() == Some(slug),
+            Predicate::TextContains(text) => {
+                let needle = needles.entry(text.as_str()).or_insert_with(|| {
+                    let _prepare =
+                        nucleus::performance::Span::new("protein-schedule-preview-prepare");
+                    nucleus::performance::add("protein-schedule-preview-needles", 1);
+                    text.to_lowercase()
+                });
+                head.get_or_init(|| {
+                    nucleus::performance::add("protein-schedule-preview-heads", 1);
+                    entry.head.to_lowercase()
+                })
+                .contains(needle.as_str())
+            }
+            Predicate::All(children) => children
+                .iter()
+                .all(|filter| Self::matches_filter(filter, entry, head, needles)),
+            _ => false,
+        }
     }
 }
 

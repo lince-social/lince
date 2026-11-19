@@ -429,7 +429,7 @@ async fn human_and_agent_edits_merge_in_both_orders_and_notify_the_live_session(
             .unwrap();
         human.commit();
         let delta =
-            human.export_json_updates_without_peer_compression(&original, &human.oplog_vv());
+            human.export_json_updates_without_peer_compression(&original, &human.oplog_vv()).unwrap();
         let human_edit = ClientMessage::Act {
             id: "human-edit".into(),
             action: Action::ChangeRecord {

@@ -1,4 +1,4 @@
-use super::{array, facet, status, text};
+use super::{array, display_ref, facet, status_ref, text};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -84,12 +84,12 @@ impl Workspace {
             .filter(|row| {
                 self.history
                     || (!person.is_empty()
-                        && (text(row, "creator") == person
+                        && (display_ref(&row["creator"]) == person
                             || array(row, "parties")
                                 .iter()
-                                .any(|party| text(party, "actor") == person))
+                                .any(|party| display_ref(&party["actor"]) == person))
                         && (facet(row, "active")
-                            || matches!(status(row).as_str(), "active" | "partially_settled"))
+                            || matches!(status_ref(row).as_ref(), "active" | "partially_settled"))
                         && row["journey"]["capacity_released"] != true
                         && row["journey"]["expired"] != true)
             })

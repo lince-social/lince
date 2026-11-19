@@ -402,7 +402,7 @@ async fn search_scoped(
     statements.push(format!("SELECT d.body,d.source,d.hash FROM social_document d WHERE {filters} AND {visibility} AND {matching} ORDER BY d.id LIMIT 50"));
     let mut rows = Vec::new();
     for sql in &statements {
-        rows = sqlx::query(sql)
+        rows = sqlx::query(sqlx::AssertSqlSafe(sql.as_str()))
             .bind(&text)
             .bind(now)
             .bind(&direction)

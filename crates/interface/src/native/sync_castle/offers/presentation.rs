@@ -30,8 +30,6 @@ enum Row<'a> {
 }
 
 fn items(snapshot: &Value) -> Vec<((Key, usize), Row<'_>)> {
-    // Pending controls also consume their move/invitation detail. Include that
-    // detail in equality so changed revisions never retain stale actions.
     let mut moves = HashMap::new();
     let mut transfers = HashMap::new();
     for value in snapshot["moves"].as_array().into_iter().flatten() {
@@ -115,8 +113,6 @@ fn items(snapshot: &Value) -> Vec<((Key, usize), Row<'_>)> {
             Row::Replica(value),
         ));
     }
-    // Preserve repeated history/offers rather than treating a repeated display
-    // identity as authorization to discard another row.
     let mut occurrences = HashMap::new();
     rows.into_iter()
         .map(|(key, row)| {

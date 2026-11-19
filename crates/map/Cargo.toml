@@ -9,8 +9,8 @@ async-trait.workspace = true
 bytes = "1"
 flate2 = "1"
 futures.workspace = true
-galileo = { git = "https://github.com/galileo-map/galileo", rev = "42550766d38faca071805f57e7317c5addf1efc3", default-features = false, features = ["wgpu", "geojson", "rustybuzz", "image"] }
-galileo-mvt = { git = "https://github.com/galileo-map/galileo", rev = "42550766d38faca071805f57e7317c5addf1efc3" }
+galileo = { git = "https://github.com/galileo-map/galileo", rev = "6bd45868da9ba97a4a117b491714a01f1a842da6", default-features = false, features = ["wgpu", "geojson", "rustybuzz", "image"] }
+galileo-mvt = { git = "https://github.com/galileo-map/galileo", rev = "6bd45868da9ba97a4a117b491714a01f1a842da6" }
 geojson = "0.24"
 geozero = { version = "0.13", default-features = false, features = ["with-mvt"] }
 pmtiles = { version = "=0.24.1", default-features = false, features = ["mmap-async-tokio"] }
@@ -19,10 +19,10 @@ serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true
 tokio = { workspace = true, features = ["fs", "net"] }
-wgpu = { version = "=29.0.4", default-features = false, features = ["counters"] }
+wgpu = { version = "=30.0.2", default-features = false, features = ["counters"] }
 
 [target.'cfg(target_os = "android")'.dependencies]
-galileo = { git = "https://github.com/galileo-map/galileo", rev = "42550766d38faca071805f57e7317c5addf1efc3", default-features = false, features = ["fontconfig-dlopen"] }
+galileo = { git = "https://github.com/galileo-map/galileo", rev = "6bd45868da9ba97a4a117b491714a01f1a842da6", default-features = false, features = ["fontconfig-dlopen"] }
 
 [dev-dependencies]
 pmtiles = { version = "=0.24.1", default-features = false, features = ["write"] }

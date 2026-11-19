@@ -23,8 +23,6 @@ pub struct Context {
     pub origin: Option<nucleus::component::composition::Origin>,
 }
 
-// Keep only the acknowledgement contract while the owned request is in flight.
-// In particular, a mutation's component tree is not needed to check its receipt.
 enum ExpectedResponse {
     Registry,
     Element { placement: String },
@@ -542,8 +540,6 @@ impl Engine {
                                         parts: Vec::with_capacity(1),
                                     },
                                 };
-                                // Transfer the owned tree into its wrapper. The
-                                // request is not published until validation below.
                                 let content = std::mem::replace(component, wrapper);
                                 if let Component::Composition { composition } = component {
                                     composition.parts.push(nucleus::canvas::Part {

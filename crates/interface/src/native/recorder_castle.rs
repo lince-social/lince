@@ -142,15 +142,17 @@ pub(crate) fn store_entry(world: &mut World, root: Entity, parent: Entity) {
 pub(crate) fn status(world: &mut World, owner: Entity, message: &str) {
     if let Some(view) = world.get::<View>(owner) {
         let entity = view.status;
-        if let Some(mut text) = world.get_mut::<Text>(entity) {
-            text.0 = message.into();
+        if world.get::<Text>(entity).is_some_and(|text| text.0 != message) {
+            message.clone_into(&mut world.get_mut::<Text>(entity).unwrap().0);
         }
     }
 }
 
 pub(crate) fn recording(world: &mut World, owner: Entity, recording: bool) {
     if let Some(mut view) = world.get_mut::<View>(owner) {
-        view.recording = recording;
+        if view.recording != recording {
+            view.recording = recording;
+        }
         ui::transport(world, owner);
     }
 }

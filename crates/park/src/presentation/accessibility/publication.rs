@@ -30,8 +30,6 @@ fn difference(previous: Option<&TreeUpdate>, current: &TreeUpdate) -> TreeUpdate
         .cloned()
         .collect();
     performance::add(Count::AccessiblePublicationNodes, nodes.len() as u64);
-    // Parent child lists carry removals/reparenting. Removed nodes must not be
-    // emitted, and focus is required even when no node properties changed.
     TreeUpdate {
         nodes,
         tree: (previous.tree != current.tree)

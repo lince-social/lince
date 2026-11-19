@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use bevy::{
     input_focus::{FocusCause, InputFocus},
     prelude::*,
@@ -15,6 +16,7 @@ use crate::native::{
 };
 
 mod completion;
+mod preparation;
 mod syntax;
 
 #[cfg(test)]
@@ -28,14 +30,14 @@ pub(crate) struct Field {
     suggestions: Entity,
     notice: Entity,
     draft: bool,
-    values: Vec<Value>,
+    values: Arc<Vec<Value>>,
     chips: Vec<Entity>,
     queue: VecDeque<Assertion>,
     pending: bool,
     removing: Option<String>,
     records: Arc<Vec<Value>>,
     concepts: Arc<Vec<Value>>,
-    signature: String,
+    completion: completion::State,
     options: Vec<completion::Option>,
     selected: usize,
     dismissed: Option<String>,
@@ -161,14 +163,18 @@ pub(crate) fn spawn(
         suggestions,
         notice,
         draft,
-        values: data["assertions"].as_array().cloned().unwrap_or_default(),
+        values: data["assertions"]
+            .as_array()
+            .cloned()
+            .unwrap_or_default()
+            .into(),
         chips: Vec::new(),
         queue: VecDeque::new(),
         pending: false,
         removing: None,
         records: Arc::default(),
         concepts: Arc::default(),
-        signature: String::new(),
+        completion: completion::State::default(),
         options: Vec::new(),
         selected: 0,
         dismissed: None,
@@ -191,71 +197,107 @@ fn value(world: &World, input: Entity) -> String {
         .to_string()
 }
 
-pub(crate) fn draft(world: &World, parent: Entity) -> Result<Vec<Assertion>, String> {
+pub(crate) struct DraftInput<'a> {
+    pub(crate) values: &'a Arc<Vec<Value>>,
+    pub(crate) text: &'a EditableText,
+}
+
+impl DraftInput<'_> {
+    pub(crate) fn collect(&self) -> Result<Vec<Assertion>, String> {
+        let value = self.text.value();
+        let pending = syntax::parse(&value.to_cow())?;
+        let mut values = Vec::with_capacity(self.values.len() + pending.len());
+        values.extend(self.values.iter().map(syntax::from_value));
+        values.extend(pending);
+        Ok(values)
+    }
+}
+
+pub(crate) fn draft_input(world: &World, parent: Entity) -> Result<DraftInput<'_>, &'static str> {
     let field = world
         .get::<Field>(parent)
         .ok_or("Assertions are unavailable")?;
     let text = world.get::<EditableText>(field.input).unwrap();
     if text.is_composing() || text.pending_paste.is_some() || !text.pending_edits.is_empty() {
-        return Err("Finish editing assertions before creating the Record".into());
+        return Err("Finish editing assertions before creating the Record");
     }
-    let mut values: Vec<_> = field.values.iter().map(syntax::from_value).collect();
-    values.extend(syntax::parse(&value(world, field.input))?);
-    Ok(values)
+    Ok(DraftInput {
+        values: &field.values,
+        text,
+    })
+}
+
+pub(crate) fn draft(world: &World, parent: Entity) -> Result<Vec<Assertion>, String> {
+    draft_input(world, parent).map_err(str::to_owned)?.collect()
 }
 
 fn notice(world: &mut World, entity: Entity, message: &str) {
     let label = world.get::<Field>(entity).unwrap().notice;
-    world.get_mut::<Text>(label).unwrap().0 = message.into();
-    world.get_mut::<Node>(label).unwrap().display = if message.is_empty() {
+    let mut text = world.get_mut::<Text>(label).unwrap();
+    if text.0 != message {
+        text.0.clear();
+        text.0.push_str(message);
+    }
+    let display = if message.is_empty() {
         Display::None
     } else {
         Display::Flex
     };
+    world
+        .get_mut::<Node>(label)
+        .unwrap()
+        .map_unchanged(|node| &mut node.display)
+        .set_if_neq(display);
 }
 
 fn draw(world: &mut World, entity: Entity) {
+    let _draw =
+        crate::host::performance::Span::new(crate::host::performance::Stage::AssertionChipDraw);
     let field = world.get::<Field>(entity).unwrap();
     let flow = field.flow;
     let input = field.input;
     let values = field.values.clone();
-    let mut previous = std::mem::take(&mut world.get_mut::<Field>(entity).unwrap().chips);
+    crate::host::performance::add(
+        crate::host::performance::Count::AssertionRedrawValuesShared,
+        values.len() as u64,
+    );
+    let mut previous = VecDeque::from(std::mem::take(
+        &mut world.get_mut::<Field>(entity).unwrap().chips,
+    ));
     let mut chips = Vec::new();
-    for entry in values {
+    for entry in values.iter() {
         let Some(uid) = entry["uid"].as_str() else {
             continue;
         };
-        let mut assertion = syntax::from_value(&entry);
-        if let Some(name) = entry["predicate"].as_str() {
-            assertion.predicate = name.into();
-        }
+        let predicate = entry["predicate"]
+            .as_str()
+            .or_else(|| entry["predicate_uid"].as_str())
+            .unwrap_or_default();
+        let object = entry["uri"].as_str().or_else(|| entry["object"].as_str());
+        let unit = entry["unit"].as_str();
         let field = world.get::<Field>(entity).unwrap();
-        if let Some(object) = &mut assertion.object {
-            if let Some(slug) = field
+        let object = object.map(|object| {
+            field
                 .records
                 .iter()
                 .find(|row| row["uid"].as_str() == Some(object))
                 .and_then(|row| row["slug"].as_str())
-            {
-                *object = slug.into();
-            }
-        }
-        if let Some(unit) = &mut assertion.unit {
-            if let Some(name) = field
+                .unwrap_or(object)
+        });
+        let unit = unit.map(|unit| {
+            field
                 .concepts
                 .iter()
                 .find(|row| row["uid"].as_str() == Some(unit))
                 .and_then(|row| row["name"].as_str())
-            {
-                *unit = name.into();
-            }
-        }
-        let label = syntax::format(&assertion);
+                .unwrap_or(unit)
+        });
+        let label = syntax::format_parts(predicate, object, entry["quantity"].as_str(), unit);
         if let Some(index) = previous
             .iter()
             .position(|chip| world.get::<Chip>(*chip).is_some_and(|chip| chip.uid == uid))
         {
-            let chip = previous.remove(index);
+            let chip = previous.remove(index).unwrap();
             let text = world.get::<Chip>(chip).unwrap().text;
             if world.get::<Text>(text).is_some_and(|text| text.0 != label) {
                 world.get_mut::<Text>(text).unwrap().0 = label;
@@ -322,11 +364,11 @@ fn draw(world: &mut World, entity: Entity) {
     for chip in previous {
         world.despawn(chip);
     }
-    let children: Vec<_> = chips.iter().copied().chain([input]).collect();
     if world
         .get::<Children>(flow)
-        .is_none_or(|current| !current.iter().eq(children.iter().copied()))
+        .is_none_or(|current| !current.iter().eq(chips.iter().copied().chain([input])))
     {
+        let children: Vec<_> = chips.iter().copied().chain([input]).collect();
         world.entity_mut(flow).replace_children(&children);
     }
     world.get_mut::<Field>(entity).unwrap().chips = chips;
@@ -341,7 +383,7 @@ pub(crate) fn refresh(world: &mut World, entity: Entity, data: &Value) -> bool {
         .map(Vec::as_slice)
         .unwrap_or_default();
     if field.values.as_slice() != values {
-        world.get_mut::<Field>(entity).unwrap().values = values.to_vec();
+        world.get_mut::<Field>(entity).unwrap().values = values.to_vec().into();
         draw(world, entity);
     }
     true
@@ -362,10 +404,7 @@ impl Action for Remove {
             return;
         }
         if field.draft {
-            world
-                .get_mut::<Field>(entity)
-                .unwrap()
-                .values
+            Arc::make_mut(&mut world.get_mut::<Field>(entity).unwrap().values)
                 .retain(|value| value["uid"] != self.0);
             draw(world, entity);
             return;
@@ -419,8 +458,9 @@ fn submit(world: &mut World, entity: Entity) {
         .set_text("");
     if world.get::<Field>(entity).unwrap().draft {
         let mut field = world.get_mut::<Field>(entity).unwrap();
+        let values = Arc::make_mut(&mut field.values);
         for assertion in assertions {
-            field.values.push(
+            values.push(
                 json!({"uid":nucleus::new_uid("a"), "predicate":assertion.predicate,
                 "object":assertion.object, "quantity":assertion.quantity, "unit":assertion.unit}),
             );
@@ -498,24 +538,36 @@ pub(crate) fn receive(world: &mut World, message: &ServerMessage) {
         ServerMessage::Error { id, message, .. } => (id, None, Some(message)),
         _ => return,
     };
-    let fields: Vec<_> = world
-        .get_resource::<Subscriptions>()
+    let _receive = crate::host::performance::Span::new(
+        crate::host::performance::Stage::AssertionEditorReceive,
+    );
+    let concept_key = id.strip_suffix("-concepts");
+    let subscriptions = world.get_resource::<Subscriptions>();
+    crate::host::performance::add(
+        crate::host::performance::Count::AssertionReplySubscriptions,
+        subscriptions.map_or(0, |subscriptions| subscriptions.0.len() as u64),
+    );
+    let fields: Vec<_> = subscriptions
         .into_iter()
         .flat_map(|subscriptions| subscriptions.0.iter())
-        .filter(|(_, (key, _))| id == key || *id == format!("{key}-concepts"))
+        .filter(|(_, (key, _))| id == key || concept_key == Some(key.as_str()))
         .map(|(entity, _)| *entity)
         .collect();
+    crate::host::performance::add(
+        crate::host::performance::Count::AssertionReplyRecipients,
+        fields.len() as u64,
+    );
     for entity in fields {
         if let Some(mut field) = world.get_mut::<Field>(entity) {
             if let Some(rows) = rows {
-                let current = if id.ends_with("-concepts") {
+                let current = if concept_key.is_some() {
                     &mut field.concepts
                 } else {
                     &mut field.records
                 };
                 if current != rows {
                     *current = rows.clone();
-                    field.signature.clear();
+                    field.completion.invalidate();
                     draw(world, entity);
                 }
             }
@@ -526,33 +578,15 @@ pub(crate) fn receive(world: &mut World, message: &ServerMessage) {
     }
 }
 
-fn update(
-    world: &mut World,
-    mut cursor: Local<bevy::ecs::message::MessageCursor<crate::native::cell_bridge::CellMessage>>,
-) {
-    let messages: Vec<_> = world
-        .get_resource::<Messages<crate::native::cell_bridge::CellMessage>>()
-        .map(|messages| {
-            cursor
-                .read(messages)
-                .map(|message| message.0.clone())
-                .collect()
-        })
-        .unwrap_or_default();
-    for message in messages.iter().map(|message| message.as_ref()) {
+fn update(world: &mut World, mut preparation: Local<preparation::Preparation>) {
+    let _update =
+        crate::host::performance::Span::new(crate::host::performance::Stage::AssertionEditorUpdate);
+    preparation.messages(world);
+    for message in preparation.messages.drain(..) {
         receive(world, &message);
     }
-    let stale: Vec<_> = world
-        .resource::<Subscriptions>()
-        .0
-        .keys()
-        .filter(|entity| {
-            world.get::<Field>(**entity).is_none()
-                || world.resource::<Subscriptions>().0[entity].1.is_closed()
-        })
-        .copied()
-        .collect();
-    for entity in stale {
+    preparation.stale(world);
+    for entity in preparation.stale.drain(..) {
         let (id, sender) = world
             .resource_mut::<Subscriptions>()
             .0
@@ -575,27 +609,28 @@ fn update(
             break;
         }
     }
-    let fields: Vec<_> = world
-        .query_filtered::<Entity, With<Field>>()
-        .iter(world)
-        .collect();
-    for entity in fields {
+    preparation.fields(world);
+    for entity in preparation.fields.drain(..) {
         let field = world.get::<Field>(entity).unwrap();
         let input = field.input;
         let flow = field.flow;
         if !world.resource::<Subscriptions>().0.contains_key(&entity) {
             if let Some(sender) = crate::native::protein_area::editor_sender(world, &field.binding)
             {
-                let id = format!("assertion-editor-{}", entity.to_bits());
-                let records = serde_json::from_value(
-                    json!({"source":"record", "fields":["uid","head","slug"], "limit":null}),
-                )
-                .unwrap();
-                let concepts = serde_json::from_value(
-                    json!({"source":"concept", "fields":["uid","name"], "limit":null}),
-                )
-                .unwrap();
                 if let Ok(permits) = sender.try_reserve_many(2) {
+                    crate::host::performance::add(
+                        crate::host::performance::Count::AssertionSubscriptionPayloads,
+                        2,
+                    );
+                    let id = format!("assertion-editor-{}", entity.to_bits());
+                    let records = serde_json::from_value(
+                        json!({"source":"record", "fields":["uid","head","slug"], "limit":null}),
+                    )
+                    .unwrap();
+                    let concepts = serde_json::from_value(
+                        json!({"source":"concept", "fields":["uid","name"], "limit":null}),
+                    )
+                    .unwrap();
                     for (permit, (id, protein)) in
                         permits.zip([(id.clone(), records), (format!("{id}-concepts"), concepts)])
                     {
@@ -610,54 +645,19 @@ fn update(
         }
         completion::update(world, entity);
         let field = world.get::<Field>(entity).unwrap();
-        let dirty = field.pending || !value(world, input).trim().is_empty();
+        let dirty = field.pending
+            || world
+                .get::<EditableText>(input)
+                .unwrap()
+                .value()
+                .chars()
+                .any(|ch| !ch.is_whitespace());
         world
             .get_mut::<crate::native::sand::Unsaved>(flow)
             .unwrap()
             .set_if_neq(crate::native::sand::Unsaved(dirty));
     }
-    let hovered: Vec<_> = world
-        .get_resource::<bevy::picking::hover::HoverMap>()
-        .into_iter()
-        .flat_map(|hover| hover.values().flat_map(|hits| hits.keys().copied()))
-        .collect();
-    let focus = world.resource::<InputFocus>().get();
-    let chips: Vec<_> = world
-        .query::<(Entity, &Chip)>()
-        .iter(world)
-        .map(|(entity, chip)| (entity, chip.close))
-        .collect();
-    for (entity, close) in chips {
-        let active = focus == Some(close)
-            || hovered.iter().any(|hit| {
-                let mut cursor = Some(*hit);
-                while let Some(current) = cursor {
-                    if current == entity {
-                        return true;
-                    }
-                    cursor = world.get::<ChildOf>(current).map(ChildOf::parent);
-                }
-                false
-            });
-        let color = if active {
-            crate::native::token_style::resolve(world, entity, Token::Accent)
-                .0
-                .color()
-        } else {
-            Color::NONE
-        };
-        if world.get::<BorderColor>(entity) != Some(&BorderColor::all(color)) {
-            world.entity_mut(entity).insert(BorderColor::all(color));
-        }
-        world
-            .get_mut::<Visibility>(close)
-            .unwrap()
-            .set_if_neq(if active {
-                Visibility::Inherited
-            } else {
-                Visibility::Hidden
-            });
-    }
+    preparation.chips(world);
 }
 
 fn fit(

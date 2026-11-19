@@ -1,7 +1,7 @@
 use super::*;
 use nucleus::demeter::{NutrientBound, Unit};
 
-#[allow(dead_code)]
+#[allow(dead_code, reason = "Each test target uses a different subset of the included authority fixtures")]
 mod authority {
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),

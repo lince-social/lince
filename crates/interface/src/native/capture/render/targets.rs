@@ -45,8 +45,6 @@ impl Audit<'_> {
         if let Some(public) = self.public.get(&entity) {
             return *public;
         }
-        // This audit holds an immutable world throughout classification. Shared
-        // writers and retained contributors need one complete policy walk here.
         let public = !super::super::excluded_with(self.world, entity, self.additional);
         if !public {
             self.private.extend(
@@ -214,4 +212,3 @@ impl Targets {
 pub fn reusable_targets(world: &mut World, additional: &BTreeSet<Entity>) -> BTreeSet<AssetId<Image>> {
     Targets::collect(world, additional).map_or_else(|_| BTreeSet::new(), |targets| targets.reusable)
 }
-

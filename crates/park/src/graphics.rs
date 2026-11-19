@@ -512,6 +512,7 @@ impl GpuContext {
                         | wgpu::TextureUsages::COPY_DST,
                     view_formats: &[],
                 },
+                wgpu::TextureUses::COPY_DST,
             )
         };
         #[cfg(feature = "native-presentation")]

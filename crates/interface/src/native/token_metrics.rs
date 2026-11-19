@@ -40,14 +40,14 @@ impl Metric {
 }
 
 #[derive(Component, Clone, Copy, Default, PartialEq)]
-struct Metrics {
+pub(super) struct Metrics {
     spacing: [Metric; 2],
     padding: [Metric; 4],
     font: Metric,
 }
 
 #[derive(Component, Clone, Copy, Default, PartialEq)]
-struct IconMetrics([Metric; 2]);
+pub(super) struct IconMetrics([Metric; 2]);
 
 pub(crate) fn install(app: &mut App) {
     app.register_required_components::<Node, Metrics>()

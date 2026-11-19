@@ -110,9 +110,9 @@ impl Plugin for SplatPlugin {
             .resource_mut::<Assets<Shader>>()
             .insert(
                 helpers.id(),
-                Shader::from_wgsl(
-                    include_str!("splats/helpers.wgsl"),
-                    "lince/gaussian_helpers.wgsl",
+                Shader::from_wesl(
+                    include_str!("splats/helpers.wesl"),
+                    "embedded://bevy_gaussian_splatting/render/helpers.wesl",
                 ),
             )
             .expect("Gaussian helper shader must be replaceable");

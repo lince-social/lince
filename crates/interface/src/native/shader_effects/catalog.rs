@@ -64,20 +64,49 @@ impl Draft {
             .or_else(|| self.base.selected(Some(&self.selected)))
     }
 
+    pub fn needs_capture(&self, effect: &Effect) -> bool {
+        self.active().is_some()
+            && self
+                .drafts
+                .get(&self.selected)
+                .is_none_or(|previous| !previous.same_authored(effect))
+    }
+
     pub fn capture(&mut self, effect: &Effect) {
-        if self.active().is_some() {
+        if self.needs_capture(effect) {
             self.drafts.insert(self.selected.clone(), effect.clone());
+            nucleus::performance::add("shader-catalog-draft-copies", 1);
         }
     }
 
-    pub fn capture_working(&mut self, effect: &Effect, working: Option<&Effect>) {
-        if let Some(working) = working
-            && (working == effect
+    pub fn needs_working_capture(&self, effect: &Effect, working: Option<&Effect>) -> bool {
+        working.is_some_and(|working| {
+            (working == effect
                 || self.base.selected(Some(&self.selected)) == Some(working)
                 || self.working.get(&self.selected) == Some(working))
-        {
-            self.working.insert(self.selected.clone(), working.clone());
+                && self
+                    .working
+                    .get(&self.selected)
+                    .is_none_or(|previous| !previous.same_authored(working))
+        })
+    }
+
+    pub fn capture_working(&mut self, effect: &Effect, working: Option<&Effect>) {
+        if self.needs_working_capture(effect, working) {
+            self.working
+                .insert(self.selected.clone(), working.unwrap().clone());
+            nucleus::performance::add("shader-catalog-working-copies", 1);
         }
+    }
+
+    pub fn input_changed(&self, key: &InputKey, text: &EditableText) -> bool {
+        let current = match key {
+            InputKey::EffectLabel => self.labels.get(&self.selected),
+            InputKey::NewEffectId => Some(&self.new_id),
+            InputKey::NewEffectLabel => Some(&self.new_label),
+            _ => return false,
+        };
+        current.is_none_or(|value| text.value() != value.as_str())
     }
 
     pub fn working_target(&self) -> Effect {
@@ -458,21 +487,16 @@ pub(super) fn edit(world: &mut World, owner: Entity, key: &InputKey, value: Stri
     }
 }
 
-pub(super) fn reference_status(world: &World, surface: &Surface) -> String {
+pub(super) fn reference_status(world: &World, surface: &Surface) -> &'static str {
     let Some(uid) = &surface.record else {
-        return String::new();
+        return "";
     };
     if surface.quantity_only {
-        return String::new();
+        return "";
     }
-    let binding = RecordBinding {
-        area: Entity::PLACEHOLDER,
-        uid: uid.clone(),
-        source: surface.source.clone(),
-    };
     let extension = world
         .get_resource::<Feeds>()
-        .and_then(|feeds| feeds.0.get(&feed_key(&binding)))
+        .and_then(|feeds| feeds.get(&surface.source, uid))
         .and_then(|feed| feed.row.as_ref())
         .and_then(|row| row.extension.as_ref());
     if extension
@@ -480,9 +504,9 @@ pub(super) fn reference_status(world: &World, surface: &Surface) -> String {
         .and_then(|extension| extension.selected(surface.effect_id.as_deref()))
         .is_none()
     {
-        "Referenced effect is unavailable".into()
+        "Referenced effect is unavailable"
     } else {
-        String::new()
+        ""
     }
 }
 

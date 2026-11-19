@@ -61,26 +61,28 @@ pub struct Label {
 }
 
 pub fn occurrences(entries: &[Entry], now: i64, until: i64, timezone: &str) -> Vec<Occurrence> {
+    let _prepare = nucleus::performance::Span::new("time-occurrence-preparation");
     let mut ordered: Vec<_> = entries
         .iter()
         .enumerate()
         .filter_map(|(index, entry)| {
             (entry.category_at(now, timezone) == Category::Timed).then(|| {
-                let mut time = entry.effective_time(now)?;
+                let original = entry.effective_time(now)?;
+                let mut time = original.clone();
                 if time.until_ms == Some(time.from_ms) {
                     time.until_ms = None;
                 }
-                time.clipped(now, until).map(|time| (index, time))
+                time.clipped(now, until)
+                    .map(|time| (index, time, original, entry.allocation_order()))
             })?
         })
         .collect();
-    ordered.sort_by(|(a, _), (b, _)| {
-        let a_time = entries[*a].effective_time(now).unwrap();
-        let b_time = entries[*b].effective_time(now).unwrap();
+    nucleus::performance::add("time-occurrence-rows-prepared", ordered.len() as u64);
+    ordered.sort_by(|(a, _, a_time, a_order), (b, _, b_time, b_order)| {
         a_time
             .from_ms
             .cmp(&b_time.from_ms)
-            .then_with(|| entries[*a].allocation_cmp(&entries[*b]))
+            .then_with(|| allocation_order_cmp(*a_order, *b_order))
             .then_with(|| {
                 (b_time.until_ms.unwrap_or(b_time.from_ms) - b_time.from_ms)
                     .cmp(&(a_time.until_ms.unwrap_or(a_time.from_ms) - a_time.from_ms))
@@ -89,7 +91,7 @@ pub fn occurrences(entries: &[Entry], now: i64, until: i64, timezone: &str) -> V
     });
     let mut result: Vec<_> = ordered
         .into_iter()
-        .map(|(index, time)| Occurrence {
+        .map(|(index, time, _, _)| Occurrence {
             index,
             time,
             lane: 0,
@@ -293,6 +295,10 @@ pub fn labels_with_metrics(
         now,
         now.saturating_add(settings.aperture_ms),
     );
+    if occurrences.is_empty() {
+        return Vec::new();
+    }
+    let curve = settings.geometry(now, size, 0.0);
     let radius = size[0].min(size[1]) * 0.4;
     let maximum_width = 200.0 * (font / 14.0).clamp(0.85, 1.4);
     let mut output = Vec::<Label>::new();
@@ -325,8 +331,8 @@ pub fn labels_with_metrics(
             + 16.0;
         let height = (lines.len().max(1) as f32 + time.len().max(1) as f32) * font * 1.35 + 17.0;
         let at = occurrence.anchor_ms();
-        let cross = settings.transverse(at, now, 0.0);
-        let mut anchor = settings.position(at, now, size, 0.0);
+        let cross = curve.transverse(at);
+        let mut anchor = curve.position(at);
         let offset = occurrence.offset_at(at, settings.aperture_ms, radius, metrics.band_width);
         anchor[0] += cross[0] * offset;
         anchor[2] += cross[2] * offset;

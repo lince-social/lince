@@ -108,7 +108,7 @@ pub(super) fn click_with_keys(
         world.get::<bevy::a11y::AccessibilityNode>(entity).and_then(|node| node.label())
     );
     if let Some(clip) = world.get::<bevy::ui::CalculatedClip>(entity) {
-        assert!(clip.clip.contains(position), "control center is clipped");
+        assert!(clip.contains_point(position), "control center is clipped");
     }
     pixel_pointer(canvas, position.to_array());
     settle(canvas);
@@ -331,7 +331,7 @@ fn shortcut_capture_uses_real_pointer_keyboard_and_rendered_modal_at_wide_and_na
                 .app
                 .world()
                 .get::<bevy::ui::CalculatedClip>(forward)
-                .is_none_or(|clip| clip.clip.contains(focused)),
+                .is_none_or(|clip| clip.contains_point(focused)),
             "focused binding is clipped after resizing"
         );
         let cancel = named_button(&mut canvas, "Cancel draft");

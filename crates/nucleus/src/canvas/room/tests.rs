@@ -558,7 +558,9 @@ fn room_group_assignment_is_atomic_and_undo_preserves_the_complete_group() {
     first.group = Some("room-board".into());
     second.group = first.group.clone();
     let ids = [first.id.clone(), second.id.clone()];
-    state.snapshot.placements.extend([first, second]);
+    std::sync::Arc::make_mut(&mut state.snapshot)
+        .placements
+        .extend([first, second]);
     state.validate().unwrap();
     let before = state.snapshot.clone();
     let member = Member {

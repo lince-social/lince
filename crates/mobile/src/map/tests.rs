@@ -47,29 +47,23 @@ fn actual_two_pointer_gesture_and_accessible_commands_share_one_view_and_old_act
         .entity_mut(viewport)
         .insert(UiGlobalTransform::default());
     for (id, x) in [(1, -50.0), (2, 50.0)] {
-        world.trigger(Pointer::new(
-            PointerId::Touch(id),
-            position(window, x),
-            Press {
-                button: PointerButton::Primary,
+        world.trigger(PointerPress {
+            entity: viewport,
+            pointer: Pointer::new(PointerId::Touch(id), position(window, x)),
+            button: PointerButton::Primary,
                 hit: HitData::new(window, 0.0, None, None),
                 count: 1,
-            },
-            viewport,
-        ));
+        });
         world.flush();
     }
     let before = world.resource::<State>().camera;
-    world.trigger(Pointer::new(
-        PointerId::Touch(2),
-        position(window, 100.0),
-        Drag {
-            button: PointerButton::Primary,
+    world.trigger(PointerDrag {
+        entity: viewport,
+        pointer: Pointer::new(PointerId::Touch(2), position(window, 100.0)),
+        button: PointerButton::Primary,
             distance: Vec2::new(50.0, 0.0),
             delta: Vec2::new(50.0, 0.0),
-        },
-        viewport,
-    ));
+    });
     world.flush();
     let after = world.resource::<State>().camera;
     assert!(after.zoom - before.zoom > 0.5 && after.zoom - before.zoom < 0.7);

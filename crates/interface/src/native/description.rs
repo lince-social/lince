@@ -3,6 +3,7 @@ mod diagram;
 mod live;
 mod markup;
 mod pictures;
+mod raster;
 pub(crate) mod shader;
 pub(crate) mod tests;
 mod transclusion;

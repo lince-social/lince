@@ -22,8 +22,6 @@ pub(super) fn place_with(
             .items()
             .iter()
             .any(|item| model.maximized(item.id) && !model.minimized(item.id));
-    // Visibility depends on ownership/hidden state, not on the free geometry
-    // written below. Observe each mapped item once, before any placement.
     let mut hidden = BTreeSet::new();
     let mut remaining = Vec::new();
     for (&id, &entity) in entities {
@@ -65,10 +63,6 @@ pub(super) fn place_with(
     if remaining.is_empty() {
         return;
     }
-    // Index only the identities this placement pass will ask for. No rows are
-    // removed after this point. Keep each ID's first occurrence (the previous
-    // find() behavior) and index newly appended rows at once. In particular,
-    // do not topologically reorder already-solved descendants.
     let mut positions = BTreeMap::new();
     for pending in &remaining {
         positions.entry(pending.id).or_insert(None);

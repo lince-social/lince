@@ -1046,7 +1046,7 @@ async fn credential_row(
 ) -> Result<Option<AuthUser>, StoreError> {
     let sql = format!("{CREDENTIAL_SELECT} WHERE {column} = ?");
     let Some((uid, username, name, password_hash, role_id, role)) =
-        sqlx::query_as::<_, (String, String, String, String, Option<i64>, Option<String>)>(&sql)
+        sqlx::query_as::<_, (String, String, String, String, Option<i64>, Option<String>)>(sqlx::AssertSqlSafe(sql.as_str()))
             .bind(value)
             .fetch_optional(pool)
             .await?

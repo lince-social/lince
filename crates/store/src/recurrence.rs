@@ -7,6 +7,9 @@ use crate::StoreError;
 use crate::exact::read_decimal;
 use crate::facts::instant;
 
+mod condition;
+pub use condition::{RuleCondition, RuleConditionInput};
+
 fn protocol(message: &str) -> StoreError {
     sqlx::Error::Protocol(message.to_string())
 }
@@ -32,20 +35,6 @@ pub struct Recurrence {
     pub actor_uid: Option<String>,
     pub created_at: String,
     pub updated_at: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RuleCondition {
-    pub source: String,
-    pub bindings: Vec<crate::karma_bindings::ReferenceBinding>,
-    pub gate: Gate,
-    pub carry: Carry,
-}
-
-impl RuleCondition {
-    pub fn parsed(&self) -> Result<nucleus::karma::Condition, nucleus::karma::ConditionError> {
-        crate::karma_bindings::apply(&self.source, &self.bindings)
-    }
 }
 
 impl Recurrence {
@@ -105,26 +94,26 @@ fn read_condition(row: &sqlx::sqlite::SqliteRow) -> Result<Option<RuleCondition>
         return Ok(None);
     };
     let gate = row
-        .get::<Option<String>, _>("gate")
+        .get::<Option<&str>, _>("gate")
         .ok_or_else(|| protocol("rule has a condition but no gate"))?;
     let carry = row
-        .get::<Option<String>, _>("carry")
+        .get::<Option<&str>, _>("carry")
         .ok_or_else(|| protocol("rule has a condition but no carry"))?;
-    Ok(Some(RuleCondition {
+    Ok(Some(RuleCondition::new(
         source,
-        bindings: serde_json::from_str(row.get::<&str, _>("bindings_json"))
+        serde_json::from_str(row.get::<&str, _>("bindings_json"))
             .map_err(|error| protocol(&error.to_string()))?,
-        gate: Gate::parse(&gate).map_err(|_| protocol("rule has an unreadable gate"))?,
-        carry: Carry::parse(&carry).map_err(|_| protocol("rule has an unreadable carry"))?,
-    }))
+        Gate::parse(gate).map_err(|_| protocol("rule has an unreadable gate"))?,
+        Carry::parse(carry).map_err(|_| protocol("rule has an unreadable carry"))?,
+    )))
 }
 
 fn condition_columns(
     condition: Option<&RuleCondition>,
-) -> (Option<String>, Option<String>, Option<String>) {
+) -> (Option<&str>, Option<String>, Option<String>) {
     match condition {
         Some(c) => (
-            Some(c.source.clone()),
+            Some(c.source.as_str()),
             Some(c.gate.as_text()),
             Some(c.carry.as_text()),
         ),
@@ -133,11 +122,11 @@ fn condition_columns(
 }
 
 fn map_recurrence(row: &sqlx::sqlite::SqliteRow) -> Result<Recurrence, StoreError> {
-    let cadence_json: String = row.get("cadence_json");
-    let cadence: Cadence = serde_json::from_str(&cadence_json)
+    let _decode = nucleus::performance::Span::new("karma-rule-row-decode");
+    nucleus::performance::add("karma-rule-row-decodes", 1);
+    let cadence: Cadence = serde_json::from_str(row.get::<&str, _>("cadence_json"))
         .map_err(|_| protocol("recurrence has an unreadable cadence"))?;
-    let consequences_json: String = row.get("consequences_json");
-    let consequences: Consequences = serde_json::from_str(&consequences_json)
+    let consequences: Consequences = serde_json::from_str(row.get::<&str, _>("consequences_json"))
         .map_err(|_| protocol("recurrence has unreadable consequences"))?;
     Ok(Recurrence {
         uid: row.get("uid"),
@@ -261,7 +250,7 @@ pub async fn create_identified(
     .bind(&uid)
     .bind(input.record_uid)
     .bind(&consequences_json)
-    .bind(&condition_src)
+    .bind(condition_src)
     .bind(&gate)
     .bind(&carry)
     .bind(input.note)
@@ -280,7 +269,7 @@ pub async fn create_identified(
             revision: 1,
             kind: "created",
             consequences_json: &consequences_json,
-            condition_src: condition_src.as_deref(),
+            condition_src,
             gate: gate.as_deref(),
             carry: carry.as_deref(),
             note: input.note,
@@ -297,7 +286,7 @@ pub async fn create_identified(
     crate::karma_bindings::save(
         &mut tx,
         &uid,
-        condition_src.as_deref(),
+        condition_src,
         input
             .condition
             .as_ref()
@@ -372,7 +361,7 @@ pub async fn revise(
     .bind(&anchor_at)
     .bind(revision)
     .bind(&at)
-    .bind(&condition_src)
+    .bind(condition_src)
     .bind(&gate)
     .bind(&carry)
     .bind(input.actor_uid)
@@ -387,7 +376,7 @@ pub async fn revise(
             revision,
             kind: "revised",
             consequences_json: &consequences_json,
-            condition_src: condition_src.as_deref(),
+            condition_src,
             gate: gate.as_deref(),
             carry: carry.as_deref(),
             note: input.note,
@@ -404,7 +393,7 @@ pub async fn revise(
     crate::karma_bindings::save(
         &mut tx,
         input.recurrence_uid,
-        condition_src.as_deref(),
+        condition_src,
         current
             .condition
             .as_ref()
@@ -476,7 +465,7 @@ pub async fn set_state(
             revision,
             kind: if paused { "paused" } else { "resumed" },
             consequences_json: &consequences_json,
-            condition_src: condition_src.as_deref(),
+            condition_src,
             gate: gate.as_deref(),
             carry: carry.as_deref(),
             note: current.note.as_deref(),
@@ -547,7 +536,7 @@ pub async fn occurrences(
         let parsed = condition
             .parsed()
             .map_err(|error| protocol(&error.to_string()))?;
-        if let Some(token) = parsed.reads().iter().find(|token| token.func == "freq")
+        if let Some(token) = parsed.reads_ref().iter().find(|token| token.func == "freq")
             && let Some(frequency) = crate::frequency::resolve(pool, &token.slug).await?
         {
             anchor = frequency.anchor()?;
@@ -699,13 +688,15 @@ async fn insert_revision(
     tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
     row: RevisionRow<'_>,
 ) -> Result<(), StoreError> {
+    let _insert = nucleus::performance::Span::new("karma-rule-revision-insert-await");
     sqlx::query(
         "INSERT INTO recurrence_revision
            (uid, recurrence_uid, revision, kind, consequences_json,
             condition_src, gate, carry,
             note, cadence_json, anchor_at, state,
-            request_id, actor_uid, at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            request_id, actor_uid, at, bindings_json)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                 (SELECT bindings_json FROM recurrence WHERE uid = ?))",
     )
     .bind(nucleus::new_uid("recr"))
     .bind(row.recurrence_uid)
@@ -722,11 +713,10 @@ async fn insert_revision(
     .bind(row.request_id)
     .bind(row.actor_uid)
     .bind(row.at)
+    .bind(row.recurrence_uid)
     .execute(&mut **tx)
     .await?;
-    sqlx::query("UPDATE recurrence_revision SET bindings_json = (SELECT bindings_json FROM recurrence WHERE uid = ?) WHERE recurrence_uid = ? AND revision = ?")
-        .bind(row.recurrence_uid).bind(row.recurrence_uid).bind(row.revision)
-        .execute(&mut **tx).await?;
+    nucleus::performance::add("karma-rule-revision-inserts", 1);
     Ok(())
 }
 

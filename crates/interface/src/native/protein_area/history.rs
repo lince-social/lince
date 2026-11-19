@@ -1,4 +1,6 @@
 use super::*;
+use crate::host::performance::{self, Count, Stage};
+use bevy::text::EditableText;
 use engine::record_change::Mutation;
 
 #[derive(Component, Default)]
@@ -13,9 +15,13 @@ pub(super) struct Scope(pub Entity);
 struct Pending {
     owner: Entity,
     inverse: Option<Mutation>,
-    submitted: Mutation,
     added: bool,
-    replay: Option<bool>,
+    replay: Option<Replay>,
+}
+
+struct Replay {
+    redo: bool,
+    submitted: Mutation,
 }
 
 #[derive(Resource, Default)]
@@ -30,9 +36,16 @@ pub(super) fn capture(
     editor: Entity,
     action: &engine::actions::Action,
 ) {
+    let _capture = performance::Span::new(Stage::RecordHistoryCapture);
     let engine::actions::Action::ChangeRecord { request } = action else {
         return;
     };
+    if !matches!(
+        request.mutation,
+        Mutation::Assertion { .. } | Mutation::RetractAssertion { .. } | Mutation::WorkLog { .. }
+    ) {
+        return;
+    }
     let mut owner = editor;
     while world.get::<rows::PropertyContainer>(owner).is_none() {
         let Some(parent) = world.get::<ChildOf>(owner) else {
@@ -40,14 +53,10 @@ pub(super) fn capture(
         };
         owner = parent.parent();
     }
-    let row = world.resource::<Runtime>().areas[&binding.area]
-        .data
-        .iter()
-        .find(|row| row["uid"].as_str() == Some(&binding.uid))
-        .unwrap();
     let inverse = match &request.mutation {
         Mutation::Assertion { .. } => None,
         Mutation::RetractAssertion { assertion } => {
+            let row = current_record(world, binding);
             let value = row["assertions"]
                 .as_array()
                 .and_then(|values| values.iter().find(|value| value["uid"] == *assertion));
@@ -79,6 +88,7 @@ pub(super) fn capture(
             }
         }
         Mutation::WorkLog { log_id, .. } => {
+            let row = current_record(world, binding);
             let value = row["work_logs"]
                 .as_array()
                 .and_then(|values| values.iter().find(|value| value["id"] == *log_id))
@@ -91,17 +101,32 @@ pub(super) fn capture(
         _ => return,
     };
     world.init_resource::<Changes>();
-    let replay = world.resource::<Changes>().replay;
+    let replay = world.resource::<Changes>().replay.map(|redo| {
+        performance::count(Count::RecordHistoryReplayCopies);
+        Replay {
+            redo,
+            submitted: request.mutation.clone(),
+        }
+    });
     world.resource_mut::<Changes>().pending.insert(
         request.id.clone(),
         Pending {
             owner,
             inverse,
-            submitted: request.mutation.clone(),
             added: matches!(request.mutation, Mutation::Assertion { .. }),
             replay,
         },
     );
+    performance::count(Count::RecordHistoryCaptures);
+}
+
+fn current_record<'a>(world: &'a World, binding: &RecordBinding) -> &'a Value {
+    performance::count(Count::RecordHistorySourceReads);
+    world.resource::<Runtime>().areas[&binding.area]
+        .data
+        .iter()
+        .find(|row| row["uid"].as_str() == Some(&binding.uid))
+        .unwrap()
 }
 
 pub(super) fn finished(
@@ -121,13 +146,13 @@ pub(super) fn finished(
         return;
     }
     if !success {
-        if let Some(redo) = pending.replay
+        if let Some(replay) = pending.replay
             && let Some(mut history) = world.get_mut::<History>(pending.owner)
         {
-            if redo {
-                history.future.push(pending.submitted);
+            if replay.redo {
+                history.future.push(replay.submitted);
             } else {
-                history.past.push(pending.submitted);
+                history.past.push(replay.submitted);
             }
         }
         return;
@@ -145,7 +170,7 @@ pub(super) fn finished(
         world.entity_mut(pending.owner).insert(History::default());
     }
     let mut history = world.get_mut::<History>(pending.owner).unwrap();
-    if pending.replay == Some(false) {
+    if pending.replay.as_ref().is_some_and(|replay| !replay.redo) {
         history.future.push(inverse);
     } else {
         history.past.push(inverse);
@@ -198,21 +223,21 @@ pub(super) fn undo(world: &mut World, owner: Entity, redo: bool) {
 }
 
 #[derive(Component)]
-struct TextHistory {
+pub(super) struct TextHistory {
     current: String,
-    past: Vec<String>,
+    past: VecDeque<String>,
     future: Vec<String>,
 }
 
 pub(super) fn attach_text(world: &mut World, entity: Entity) {
     let current = world
-        .get::<bevy::text::EditableText>(entity)
+        .get::<EditableText>(entity)
         .unwrap()
         .value()
         .to_string();
     world.entity_mut(entity).insert(TextHistory {
         current,
-        past: Vec::new(),
+        past: VecDeque::new(),
         future: Vec::new(),
     });
 }
@@ -225,22 +250,29 @@ pub(super) fn synced_text(world: &mut World, entity: Entity, value: &str) {
     }
 }
 
-pub(super) fn update(world: &mut World) {
-    for (text, mut history) in world
-        .query::<(&bevy::text::EditableText, &mut TextHistory)>()
-        .iter_mut(world)
-    {
+pub(super) fn update(
+    world: &mut World,
+    changed: &mut QueryState<
+        (&EditableText, &mut TextHistory),
+        Or<(Changed<EditableText>, Changed<TextHistory>)>,
+    >,
+    editors: &mut QueryState<(&mut EditableText, &mut TextHistory)>,
+) {
+    let _update = performance::Span::new(Stage::RecordTextHistory);
+    for (text, mut history) in changed.iter_mut(world) {
+        performance::count(Count::RecordTextHistoryCandidates);
         if text.is_composing() || text.pending_paste.is_some() {
             continue;
         }
         let value = text.value();
         if value != history.current.as_str() {
             let previous = std::mem::replace(&mut history.current, value.to_string());
-            history.past.push(previous);
+            history.past.push_back(previous);
             if history.past.len() > 256 {
-                history.past.remove(0);
+                history.past.pop_front();
             }
             history.future.clear();
+            performance::count(Count::RecordTextHistoryCaptures);
         }
     }
     let Some(keys) = world.get_resource::<ButtonInput<KeyCode>>() else {
@@ -265,28 +297,25 @@ pub(super) fn update(world: &mut World) {
     if crate::native::record_binding::active(world, owner) {
         return;
     }
-    if let Some(text) = world.get::<bevy::text::EditableText>(owner) {
+    if let Some(text) = world.get::<EditableText>(owner) {
         if text.is_composing() || text.pending_paste.is_some() {
             return;
         }
-        if let Some(mut history) = world.get_mut::<TextHistory>(owner) {
+        if let Ok((mut text, mut history)) = editors.get_mut(world, owner) {
             let value = if redo {
                 history.future.pop()
             } else {
-                history.past.pop()
+                history.past.pop_back()
             };
             if let Some(value) = value {
-                let previous = std::mem::replace(&mut history.current, value.clone());
+                let previous = std::mem::replace(&mut history.current, value);
                 if redo {
-                    history.past.push(previous);
+                    history.past.push_back(previous);
                 } else {
                     history.future.push(previous);
                 }
-                world
-                    .get_mut::<bevy::text::EditableText>(owner)
-                    .unwrap()
-                    .editor
-                    .set_text(&value);
+                text.editor.set_text(&history.current);
+                performance::count(Count::RecordTextHistoryRestores);
                 return;
             }
         } else {
@@ -322,11 +351,13 @@ mod tests {
             Pending {
                 owner,
                 inverse: None,
-                submitted: Mutation::RetractAssertion {
-                    assertion: "assignment".into(),
-                },
                 added: false,
-                replay: Some(false),
+                replay: Some(Replay {
+                    redo: false,
+                    submitted: Mutation::RetractAssertion {
+                        assertion: "assignment".into(),
+                    },
+                }),
             },
         );
         finished(&mut world, "request", None, false, false);

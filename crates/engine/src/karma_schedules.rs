@@ -425,17 +425,17 @@ impl Engine {
                 uid: nucleus::new_uid("rec"),
                 record_uid: target.clone(),
                 consequences: consequences.clone(),
-                condition: Some(RuleCondition {
-                    source: source.clone(),
-                    bindings: vec![ConditionBinding {
+                condition: Some(RuleCondition::new(
+                    source.clone(),
+                    vec![ConditionBinding {
                         reading: "freq".into(),
                         authored: slug.clone(),
                         target: TypedUid::new(ReferenceKind::Frequency, &frequency_uid)
                             .map_err(invalid)?,
                     }],
-                    gate: Gate::NonZero,
-                    carry: Carry::Value,
-                }),
+                    Gate::NonZero,
+                    Carry::Value,
+                )),
                 note: None,
                 cadence: Cadence::once(),
                 anchor_at: DateTime::from_timestamp_millis(ms)
@@ -589,8 +589,7 @@ impl Engine {
             .boundaries
             .iter()
             .find(|boundary| boundary.uid == boundary_uid && boundary.current)
-            .ok_or_else(|| invalid("Current boundary not found"))?
-            .clone();
+            .ok_or_else(|| invalid("Current boundary not found"))?;
         let rule_state = store::sqlx::query("SELECT revision, state FROM recurrence WHERE uid = ?")
             .bind(&boundary.rule)
             .fetch_one(&mut *tx)

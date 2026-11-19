@@ -9,7 +9,6 @@ use bevy::{
         render_resource::AsBindGroup,
         renderer::{
             RenderAdapter, RenderAdapterInfo, RenderDevice, RenderInstance, RenderQueue,
-            WgpuWrapper,
         },
         settings::RenderCreation,
         texture::GpuImage,
@@ -130,10 +129,10 @@ fn render(
     let mut app = App::new();
     let resources = RenderCreation::manual(
         RenderDevice::from(renderer.device.clone()),
-        RenderQueue(Arc::new(WgpuWrapper::new(renderer.queue.clone()))),
-        RenderAdapterInfo(WgpuWrapper::new(renderer.adapter.get_info())),
-        RenderAdapter(Arc::new(WgpuWrapper::new(renderer.adapter.clone()))),
-        RenderInstance(Arc::new(WgpuWrapper::new(renderer._instance.clone()))),
+        RenderQueue::new(renderer.queue.clone()),
+        RenderAdapterInfo::new(renderer.adapter.get_info()),
+        RenderAdapter::new(renderer.adapter.clone()),
+        RenderInstance::new(renderer._instance.clone()),
     );
     let plugins = DefaultPlugins
         .build()
@@ -160,7 +159,7 @@ fn render(
         .resource_mut::<Assets<Shader>>()
         .insert(
             CLIENT_SHADER.id(),
-            Shader::from_wgsl(include_str!("client.wgsl"), "park/client.wgsl"),
+            Shader::from_wesl(include_str!("client.wesl"), "park/client.wesl"),
         )
         .map_err(|error| ProbeFailure::at("client_material", error))?;
     app.finish();

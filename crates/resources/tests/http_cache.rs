@@ -17,9 +17,12 @@ struct Server {
 }
 impl Server {
     fn new(reply: impl Fn(usize, &str) -> String + Send + 'static) -> Self {
-        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-        listener.set_nonblocking(true).unwrap();
-        let uri = format!("http://{}/document", listener.local_addr().unwrap());
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind the HTTP test server");
+        listener
+            .set_nonblocking(true)
+            .expect("the HTTP test server must poll without blocking");
+        let address = listener.local_addr().expect("read the HTTP test server address");
+        let uri = format!("http://{address}/document");
         let count = Arc::new(AtomicUsize::new(0));
         let stop = Arc::new(AtomicBool::new(false));
         let requests = count.clone();

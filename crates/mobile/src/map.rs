@@ -3,7 +3,7 @@ use crate::{
     navigation::Page,
 };
 use bevy::{
-    picking::events::{Click, Drag, Press, Release},
+    picking::events::{PointerClick, PointerDrag, PointerPress, PointerRelease},
     prelude::*,
 };
 use engine::location::clock::Instant;
@@ -1866,10 +1866,10 @@ fn point(world: &World, viewport: Entity, window: Vec2) -> Option<[f64; 2]> {
     )
 }
 
-fn press(mut event: On<Pointer<Press>>, mut commands: Commands) {
+fn press(mut event: On<PointerPress>, mut commands: Commands) {
     let entity = event.entity;
-    let id = event.pointer_id;
-    let position = event.pointer_location.position;
+    let id = event.pointer.id;
+    let position = event.pointer.position;
     commands.queue(move |world: &mut World| {
         let Some(point) = point(world, entity, position) else {
             return;
@@ -1892,10 +1892,10 @@ fn press(mut event: On<Pointer<Press>>, mut commands: Commands) {
     event.propagate(false);
 }
 
-fn drag(mut event: On<Pointer<Drag>>, mut commands: Commands) {
+fn drag(mut event: On<PointerDrag>, mut commands: Commands) {
     let entity = event.entity;
-    let id = event.pointer_id;
-    let position = event.pointer_location.position;
+    let id = event.pointer.id;
+    let position = event.pointer.position;
     commands.queue(move |world: &mut World| {
         let Some(point) = point(world, entity, position) else {
             return;
@@ -1948,14 +1948,14 @@ fn drag(mut event: On<Pointer<Drag>>, mut commands: Commands) {
     event.propagate(false);
 }
 
-fn release(mut event: On<Pointer<Release>>, mut state: ResMut<State>) {
-    state.touches.remove(&event.pointer_id);
+fn release(mut event: On<PointerRelease>, mut state: ResMut<State>) {
+    state.touches.remove(&event.pointer.id);
     state.anchor = None;
     event.propagate(false);
 }
-fn click(mut event: On<Pointer<Click>>, mut commands: Commands) {
+fn click(mut event: On<PointerClick>, mut commands: Commands) {
     let entity = event.entity;
-    let position = event.pointer_location.position;
+    let position = event.pointer.position;
     commands.queue(move |world: &mut World| {
         let Some(point) = point(world, entity, position) else {
             return;

@@ -26,7 +26,7 @@ fn source_result(
         created: Some(saved.snapshot.record.clone()),
         data: Some(json!({
             "receipt":{"record":saved.snapshot.record,"source_receipt":receipt,"state":"private_source_snapshot","document":{"kind":"source_snapshot","value":saved}},
-            "receipt_export":serde_json::to_string(&vec![&saved.snapshot.measurement])?,
+            "receipt_export":serde_json::to_string(&[&saved.snapshot.measurement])?,
         })),
         ..Default::default()
     })
@@ -168,19 +168,32 @@ impl Engine {
                 let scope = saved.document.scope().unwrap();
                 let mut needs =
                     store::transfer_evidence::need_options(&self.store.pool, &person, None).await?;
-                let mut options = Vec::new();
-                for option in needs["options"].as_array_mut().into_iter().flatten() {
-                    let terms: nucleus::transfer::outcome::NeedTerms =
-                        serde_json::from_value(option["terms"].clone())?;
-                    let mut allowed = self.may_read_record(actor, &terms.selection.need).await?;
-                    if let Some(object) = &terms.measure.object {
-                        allowed &= self.may_read_record(actor, object).await?;
-                    }
-                    if allowed {
-                        options.push(option.clone());
+                {
+                    let _span = nucleus::performance::Span::new("receipt-source-option-filter");
+                    if let Some(options) = needs["options"].as_array_mut() {
+                        let mut retained = 0;
+                        for next in 0..options.len() {
+                            nucleus::performance::add("receipt-source-options-considered", 1);
+                            let terms: nucleus::transfer::outcome::NeedTerms =
+                                serde::Deserialize::deserialize(&options[next]["terms"])?;
+                            let mut allowed =
+                                self.may_read_record(actor, &terms.selection.need).await?;
+                            if let Some(object) = &terms.measure.object {
+                                allowed &= self.may_read_record(actor, object).await?;
+                            }
+                            if allowed {
+                                nucleus::performance::add("receipt-source-options-retained", 1);
+                                if retained != next {
+                                    options.swap(retained, next);
+                                }
+                                retained += 1;
+                            }
+                        }
+                        options.truncate(retained);
+                    } else {
+                        needs["options"] = Value::Array(Vec::new());
                     }
                 }
-                needs["options"] = json!(options);
                 let listing =
                     store::receipt_sources::list(&self.store.pool, &person, &scope.source).await?;
                 let mut sources = Vec::new();

@@ -323,7 +323,7 @@ impl DecimalValue {
                 "decimal scale {fraction_digits} exceeds maximum {MAX_DECIMAL_SCALE}"
             )));
         }
-        #[allow(clippy::cast_possible_truncation)]
+        #[allow(clippy::cast_possible_truncation, reason = "MAX_DECIMAL_SCALE bounds fraction_digits before this cast")]
         let scale = fraction_digits as u8;
         let value = if value.bytes().all(|b| matches!(b, b'-' | b'0' | b'.')) {
             value.trim_start_matches('-')

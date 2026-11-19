@@ -215,14 +215,14 @@ async fn message_rule(engine: &Engine) -> (String, String, String, String, i64) 
                 delta: Some(nucleus::DecimalValue::parse_inferred("1").unwrap()),
             }])
             .unwrap(),
-            condition: Some(store::recurrence::RuleCondition {
-                source: condition.clone(),
-                bindings: store::karma_bindings::resolve(&engine.store.pool, &condition, &[])
+            condition: Some(store::recurrence::RuleCondition::new(
+                condition.clone(),
+                store::karma_bindings::resolve(&engine.store.pool, &condition, &[])
                     .await
                     .unwrap(),
-                gate: Gate::parse(">0").unwrap(),
-                carry: Carry::parse("one").unwrap(),
-            }),
+                Gate::parse(">0").unwrap(),
+                Carry::parse("one").unwrap(),
+            )),
             note: None,
             cadence: Cadence::every_days(1),
             anchor_at: now - chrono::TimeDelta::minutes(1),

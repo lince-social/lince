@@ -136,10 +136,9 @@ impl AcceptedDoc {
         bounded(bytes.len(), limits.snapshot_bytes, "snapshot bytes")?;
         let doc = import_snapshot(bytes)?;
         validate_document(&doc, limits, None)?;
-        let history = doc.export_json_updates_without_peer_compression(
-            &VersionVector::default(),
-            &doc.oplog_vv(),
-        );
+        let history = doc
+            .export_json_updates_without_peer_compression(&VersionVector::default(), &doc.oplog_vv())
+            .map_err(|_| GuardError::ExportRefused)?;
         let reconstructed = import_complete(LoroDoc::new(), history)?;
         Self::from_document(reconstructed, limits)
     }
@@ -157,10 +156,6 @@ impl AcceptedDoc {
         let _building = crate::performance::Span::new("record-guard-candidate-build");
         validate_limits(limits)?;
         let history_text_json_bytes = validate_document(&doc, limits, history_text_json_bytes)?;
-        // The normalized delta has already proved which roots can change. Keep
-        // the other root's immutable text instead of materializing a potentially
-        // large description again for every title keystroke. This shares text
-        // only; candidate isolation and every document/history limit still apply.
         let materialize = |property, field: &str| {
             if let Some((previous, touched)) = previous
                 && !touched.contains(&property)
@@ -178,7 +173,6 @@ impl AcceptedDoc {
                 "record-canonical-text-bytes-materialized",
                 text.len() as u64,
             );
-            // Keep Loro's String allocation when publishing a changed root too.
             Arc::new(text)
         };
         let head = materialize(Property::Head, "head");
@@ -241,8 +235,9 @@ impl AcceptedDoc {
             }
         }
         doc.commit();
-        let schema =
-            doc.export_json_updates_without_peer_compression(&self.version, &doc.oplog_vv());
+        let schema = doc
+            .export_json_updates_without_peer_compression(&self.version, &doc.oplog_vv())
+            .map_err(|_| GuardError::ExportRefused)?;
         self.prepare_delta_with_candidate(
             &encode_bounded(&schema, limits.delta_bytes, "delta bytes")?,
             &both_properties(),
@@ -265,8 +260,9 @@ impl AcceptedDoc {
             Ok(())
         })?;
         validate_document(&doc, limits, None)?;
-        let schema =
-            doc.export_json_updates_without_peer_compression(&self.version, &doc.oplog_vv());
+        let schema = doc
+            .export_json_updates_without_peer_compression(&self.version, &doc.oplog_vv())
+            .map_err(|_| GuardError::ExportRefused)?;
         let mut admission = limits.clone();
         admission.delta_bytes = limits.history_bytes;
         admission.delta_changes = limits.history_changes;
@@ -360,8 +356,9 @@ impl AcceptedDoc {
         }
         let version = candidate.oplog_vv();
         verify_known_operations(&candidate, &schema, &version)?;
-        let normalized =
-            candidate.export_json_updates_without_peer_compression(&base_version, &version);
+        let normalized = candidate
+            .export_json_updates_without_peer_compression(&base_version, &version)
+            .map_err(|_| GuardError::ExportRefused)?;
         let normalized_inspection = inspect_schema(
             &normalized,
             selected_grant_properties,
@@ -562,7 +559,8 @@ fn validate_document(
     )?;
     let _history = crate::performance::Span::new("record-guard-history-validation");
     let history = doc
-        .export_json_updates_without_peer_compression(&VersionVector::default(), &doc.oplog_vv());
+        .export_json_updates_without_peer_compression(&VersionVector::default(), &doc.oplog_vv())
+        .map_err(|_| GuardError::ExportRefused)?;
     inspect_schema(
         &history,
         &both_properties(),
@@ -1271,7 +1269,7 @@ mod tests {
         let history = accepted.doc.export_json_updates_without_peer_compression(
             &VersionVector::default(),
             &accepted.version(),
-        );
+        ).unwrap();
         let encoded_bytes = serde_json::to_vec(&history).unwrap().len();
         let text_bytes: usize = history
             .changes
@@ -1388,7 +1386,7 @@ mod tests {
             .export_json_updates_without_peer_compression(
                 &VersionVector::default(),
                 &candidate.candidate.version(),
-            );
+            ).unwrap();
         let actual = serde_json::to_vec(&history).unwrap().len();
         for maximum in [actual - 1, actual] {
             let limits = Limits {
@@ -1508,7 +1506,7 @@ mod tests {
 
     fn delta(doc: &LoroDoc, base: &VersionVector) -> Vec<u8> {
         doc.commit();
-        serde_json::to_vec(&doc.export_json_updates_without_peer_compression(base, &doc.oplog_vv()))
+        serde_json::to_vec(&doc.export_json_updates_without_peer_compression(base, &doc.oplog_vv()).unwrap())
             .unwrap()
     }
 
@@ -2646,7 +2644,7 @@ mod tests {
         let history = base.doc.export_json_updates_without_peer_compression(
             &VersionVector::default(),
             &base.version(),
-        );
+        ).unwrap();
         let history_bytes = serde_json::to_vec(&history).unwrap().len();
         assert!(raw.len() < history_bytes);
         assert_eq!(

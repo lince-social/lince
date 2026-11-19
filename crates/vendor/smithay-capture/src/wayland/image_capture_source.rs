@@ -168,7 +168,7 @@ where
 }
 
 
-#[allow(missing_debug_implementations)]
+#[allow(missing_debug_implementations, reason = "Keep the capture protocol data opaque in debug output")]
 pub struct OutputCaptureSourceGlobalData {
     filter: Box<dyn Fn(&Client) -> bool + Send + Sync>,
 }
@@ -278,7 +278,7 @@ where
 }
 
 
-#[allow(missing_debug_implementations)]
+#[allow(missing_debug_implementations, reason = "Keep the capture protocol data opaque in debug output")]
 pub struct ToplevelCaptureSourceGlobalData {
     filter: Box<dyn Fn(&Client) -> bool + Send + Sync>,
 }

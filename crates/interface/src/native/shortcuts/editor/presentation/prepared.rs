@@ -57,7 +57,6 @@ impl Prepared {
             let mut rows = BTreeMap::new();
             for shortcut in Shortcut::ALL {
                 let raw_changed = draft.text(shortcut) != origin.text(shortcut);
-                // Preserve the existing count/review rule, which compares keyboard chords.
                 if raw_changed || draft.chord(shortcut) != origin.chord(shortcut) {
                     changed += 1;
                     review.insert(shortcut);

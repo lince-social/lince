@@ -4,6 +4,7 @@ use tract_onnx::prelude::*;
 
 pub type Point = [f32; 2];
 type Model = std::sync::Arc<TypedRunnableModel>;
+const FACE_INPUT_SIZE: usize = 640;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct HandObservation {
@@ -96,14 +97,21 @@ impl HandTracker {
         if image.width() == 0 || image.height() == 0 {
             return Err("Empty camera frame".into());
         }
-        let resized = image::imageops::resize(image, 320, 320, image::imageops::FilterType::Triangle);
-        let mut pixels = vec![0.0f32; 3 * 320 * 320];
+        let size = FACE_INPUT_SIZE;
+        let plane_len = size * size;
+        let resized = image::imageops::resize(
+            image,
+            size as u32,
+            size as u32,
+            image::imageops::FilterType::Triangle,
+        );
+        let mut pixels = vec![0.0f32; 3 * plane_len];
         for (index, pixel) in resized.pixels().enumerate() {
             pixels[index] = f32::from(pixel[2]);
-            pixels[320 * 320 + index] = f32::from(pixel[1]);
-            pixels[2 * 320 * 320 + index] = f32::from(pixel[0]);
+            pixels[plane_len + index] = f32::from(pixel[1]);
+            pixels[2 * plane_len + index] = f32::from(pixel[0]);
         }
-        let input = Tensor::from_shape(&[1, 3, 320, 320], &pixels).map_err(|error| error.to_string())?;
+        let input = Tensor::from_shape(&[1, 3, size, size], &pixels).map_err(|error| error.to_string())?;
         let output = self.face.run(tvec!(input.into())).map_err(|error| error.to_string())?;
         let values: Vec<Vec<f32>> = output.iter().map(|value| {
             value.try_as_plain_ram().and_then(|value| value.as_slice::<f32>().map(|slice| slice.to_vec())).map_err(|error| error.to_string())
@@ -200,7 +208,7 @@ fn decode_head(values: &[Vec<f32>]) -> Result<Option<Point>, String> {
     if values.len() != 12 { return Err("Unexpected face model outputs".into()); }
     let mut best: Option<(f32, Point)> = None;
     for (level, stride) in [8usize, 16, 32].into_iter().enumerate() {
-        let grid = 320 / stride;
+        let grid = FACE_INPUT_SIZE / stride;
         let count = grid * grid;
         if values[level].len() != count || values[level + 3].len() != count || values[level + 6].len() != count * 4 {
             return Err("Unexpected face model output shapes".into());
@@ -212,7 +220,10 @@ fn decode_head(values: &[Vec<f32>]) -> Result<Option<Point>, String> {
             let score = (cls.clamp(0.0, 1.0) * object.clamp(0.0, 1.0)).sqrt();
             if score < 0.85 || best.as_ref().is_some_and(|(old, _)| *old >= score) { continue; }
             let bbox = &values[level + 6][index * 4..index * 4 + 4];
-            let point = [((index % grid) as f32 + bbox[0]) * stride as f32 / 320.0, ((index / grid) as f32 + bbox[1]) * stride as f32 / 320.0];
+            let point = [
+                ((index % grid) as f32 + bbox[0]) / grid as f32,
+                ((index / grid) as f32 + bbox[1]) / grid as f32,
+            ];
             if point.iter().all(|v| v.is_finite() && (0.0..=1.0).contains(v)) {
                 best = Some((score, point));
             }

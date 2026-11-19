@@ -4,9 +4,15 @@ use serde_json::Value;
 use super::*;
 
 #[derive(Component)]
-struct History {
+pub(super) struct History {
     output: Entity,
     pending: Option<String>,
+}
+
+impl replies::Pending for History {
+    fn pending_id(&self) -> Option<&str> {
+        self.pending.as_deref()
+    }
 }
 
 #[derive(Clone)]
@@ -45,24 +51,22 @@ impl crate::native::actions::Action for Inspect {
         match result {
             Ok(()) => {
                 world.get_mut::<History>(owner).unwrap().pending = Some(id);
-                world.get_mut::<Text>(output).unwrap().0 = "Reading Rule history…".into();
+                let mut text = world.get_mut::<Text>(output).unwrap();
+                if text.0 != "Reading Rule history…" {
+                    "Reading Rule history…".clone_into(&mut text.0);
+                }
             }
-            Err(error) => world.get_mut::<Text>(output).unwrap().0 = error,
+            Err(error) => {
+                let mut text = world.get_mut::<Text>(output).unwrap();
+                if text.0 != error {
+                    text.0 = error;
+                }
+            }
         }
     }
 }
 
-pub(super) fn receive(world: &mut World, message: &ServerMessage) -> bool {
-    let id = match message {
-        ServerMessage::ActionOk { id, .. } | ServerMessage::Error { id, .. } => id,
-        _ => return false,
-    };
-    let owner = world
-        .query::<(Entity, &History)>()
-        .iter(world)
-        .find(|(_, history)| history.pending.as_ref() == Some(id))
-        .map(|(owner, _)| owner);
-    let Some(owner) = owner else { return false };
+pub(super) fn receive(world: &mut World, owner: Entity, message: &ServerMessage) {
     let mut history = world.get_mut::<History>(owner).unwrap();
     history.pending = None;
     let output = history.output;
@@ -73,17 +77,22 @@ pub(super) fn receive(world: &mut World, message: &ServerMessage) -> bool {
         ServerMessage::Error { message, .. } => message.clone(),
         _ => "No Rule history returned".into(),
     };
-    world.get_mut::<Text>(output).unwrap().0 = text;
-    true
+    let mut current = world.get_mut::<Text>(output).unwrap();
+    if current.0 != text {
+        current.0 = text;
+    }
 }
 
 fn quantity(value: &Value) -> String {
-    serde_json::from_value::<nucleus::DecimalValue>(value.clone())
+    nucleus::DecimalValue::deserialize(value)
         .map_or_else(|_| "unavailable".into(), |value| value.to_string())
 }
 
 fn describe(data: &Value) -> String {
-    let applications = data["applications"].as_array().cloned().unwrap_or_default();
+    let _describe = nucleus::performance::Span::new("karma-history-description");
+    let applications = data["applications"]
+        .as_array()
+        .map_or(&[][..], Vec::as_slice);
     if applications.is_empty() {
         return "This Rule has no recorded applications".into();
     }

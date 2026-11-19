@@ -204,6 +204,63 @@ pub async fn list_promises(pool: &SqlitePool) -> Result<Vec<PromiseRow>, StoreEr
         .collect())
 }
 
+pub struct PromiseProjection {
+    pub record_uid: Option<String>,
+    pub delta: f64,
+    pub window_end: Option<String>,
+    pub state: PromiseState,
+}
+
+fn admitted_promise_state(state: &str, row: &sqlx::sqlite::SqliteRow) -> Option<PromiseState> {
+    let state = PromiseState::parse(state)?;
+    OpenPromiseReusePolicy::parse(row.get("open_reuse_policy"))?;
+    Some(state)
+}
+
+pub async fn promise_projections(pool: &SqlitePool) -> Result<Vec<PromiseProjection>, StoreError> {
+    let _read = nucleus::performance::Span::new("promise-projection-read-await");
+    let rows = sqlx::query(
+        "SELECT record_uid, delta, window_end, state, open_reuse_policy
+         FROM promise ORDER BY created_at",
+    )
+    .fetch_all(pool)
+    .await?;
+    nucleus::performance::add("promise-projection-rows", rows.len() as u64);
+    Ok(rows
+        .into_iter()
+        .filter_map(|row| {
+            let state = row.get("state");
+            let record_uid = row.get("record_uid");
+            let delta = row.get("delta");
+            let window_end = row.get("window_end");
+            let state = admitted_promise_state(state, &row)?;
+            Some(PromiseProjection {
+                record_uid,
+                delta,
+                window_end,
+                state,
+            })
+        })
+        .collect())
+}
+
+pub async fn promise_party(
+    pool: &SqlitePool,
+    uid: &str,
+) -> Result<Option<Option<String>>, StoreError> {
+    Ok(
+        sqlx::query("SELECT party_uid, state, open_reuse_policy FROM promise WHERE uid = ?")
+            .bind(uid)
+            .fetch_optional(pool)
+            .await?
+            .and_then(|row| {
+                let state = row.get("state");
+                let party = row.get("party_uid");
+                admitted_promise_state(state, &row).map(|_| party)
+            }),
+    )
+}
+
 pub async fn set_promise_state(
     pool: &SqlitePool,
     uid: &str,
@@ -269,25 +326,45 @@ pub async fn due_effects_for_lane(
     pool: &SqlitePool,
     commands: Option<bool>,
 ) -> Result<Vec<EffectRow>, StoreError> {
-    Ok(
-        sqlx::query("SELECT effect.* FROM effect_queue effect WHERE status = 'queued' AND (? IS NULL OR (kind IN ('command', 'signal', 'saved-command')) = ?) AND (? IS NULL OR NOT EXISTS (SELECT 1 FROM effect_queue earlier WHERE earlier.rowid < effect.rowid AND earlier.status IN ('queued', 'running') AND json_extract(earlier.payload, '$.rule') = json_extract(effect.payload, '$.rule') AND json_extract(earlier.payload, '$.revision') = json_extract(effect.payload, '$.revision') AND json_extract(earlier.payload, '$.occurrence.event_id') = json_extract(effect.payload, '$.occurrence.event_id'))) ORDER BY effect.rowid LIMIT 64")
-            .bind(commands)
-            .bind(commands)
-            .bind(commands)
-            .fetch_all(pool)
-            .await?
-            .into_iter()
-            .filter_map(|r| {
-                let payload: String = r.get("payload");
-                Some(EffectRow {
-                    uid: r.get("uid"),
-                    kind: r.get("kind"),
-                    payload: serde_json::from_str(&payload).ok()?,
-                    origin_uid: r.get("origin_uid"),
-                })
-            })
-            .collect(),
-    )
+    Ok(due_effect_rows(pool, commands)
+        .await?
+        .iter()
+        .filter_map(effect_row)
+        .collect())
+}
+
+pub async fn first_due_effect(pool: &SqlitePool) -> Result<Option<EffectRow>, StoreError> {
+    Ok(due_effect_rows(pool, None)
+        .await?
+        .iter()
+        .find_map(effect_row))
+}
+
+async fn due_effect_rows(
+    pool: &SqlitePool,
+    commands: Option<bool>,
+) -> Result<Vec<sqlx::sqlite::SqliteRow>, StoreError> {
+    let _read = nucleus::performance::Span::new("effect-queue-read-await");
+    let rows = sqlx::query("SELECT effect.uid, effect.kind, effect.payload, effect.origin_uid FROM effect_queue effect WHERE status = 'queued' AND (? IS NULL OR (kind IN ('command', 'signal', 'saved-command')) = ?) AND (? IS NULL OR NOT EXISTS (SELECT 1 FROM effect_queue earlier WHERE earlier.rowid < effect.rowid AND earlier.status IN ('queued', 'running') AND json_extract(earlier.payload, '$.rule') = json_extract(effect.payload, '$.rule') AND json_extract(earlier.payload, '$.revision') = json_extract(effect.payload, '$.revision') AND json_extract(earlier.payload, '$.occurrence.event_id') = json_extract(effect.payload, '$.occurrence.event_id'))) ORDER BY effect.rowid LIMIT 64")
+        .bind(commands)
+        .bind(commands)
+        .bind(commands)
+        .fetch_all(pool)
+        .await?;
+    nucleus::performance::add("effect-queue-rows-read", rows.len() as u64);
+    Ok(rows)
+}
+
+fn effect_row(row: &sqlx::sqlite::SqliteRow) -> Option<EffectRow> {
+    let _decode = nucleus::performance::Span::new("effect-queue-payload-decode");
+    nucleus::performance::add("effect-queue-payload-decodes", 1);
+    let payload: &str = row.get("payload");
+    Some(EffectRow {
+        uid: row.get("uid"),
+        kind: row.get("kind"),
+        payload: serde_json::from_str(payload).ok()?,
+        origin_uid: row.get("origin_uid"),
+    })
 }
 
 pub async fn claim_effect(pool: &SqlitePool, uid: &str) -> Result<bool, StoreError> {
@@ -511,18 +588,57 @@ pub async fn list_decisions(pool: &SqlitePool) -> Result<Vec<DecisionRow>, Store
     .await?
     .into_iter()
     .filter_map(|r| {
-        let options: String = r.get("options");
+        let options = decision_options(&r)?;
         Some(DecisionRow {
             record_uid: r.get("record_uid"),
             subject_uid: r.get("subject_uid"),
             kind: r.get("kind"),
             question: r.get("head"),
-            options: serde_json::from_str(&options).ok()?,
-            open: r.get::<String, _>("quantity_mantissa") != "0",
+            options,
+            open: r.get::<&str, _>("quantity_mantissa") != "0",
             answer: r.get("answer"),
         })
     })
     .collect())
+}
+
+fn decision_options(row: &sqlx::sqlite::SqliteRow) -> Option<serde_json::Value> {
+    let raw: &str = row.get("options");
+    serde_json::from_str(raw).ok()
+}
+
+pub struct OpenDecision {
+    pub record_uid: String,
+    pub subject_uid: String,
+    pub kind: String,
+    pub question: String,
+    pub options: serde_json::Value,
+}
+
+pub async fn open_decision_rows(pool: &SqlitePool) -> Result<Vec<OpenDecision>, StoreError> {
+    let _read = nucleus::performance::Span::new("store-open-decision-presentation-await");
+    let rows = sqlx::query(
+        "SELECT d.record_uid, d.subject_uid, d.kind, d.options, r.head
+         FROM decision d JOIN record r ON r.uid = d.record_uid
+         WHERE r.quantity_mantissa <> '0' ORDER BY r.created_at",
+    )
+    .fetch_all(pool)
+    .await?;
+    let output: Vec<_> = rows
+        .into_iter()
+        .filter_map(|row| {
+            let options = decision_options(&row)?;
+            Some(OpenDecision {
+                record_uid: row.get("record_uid"),
+                subject_uid: row.get("subject_uid"),
+                kind: row.get("kind"),
+                question: row.get("head"),
+                options,
+            })
+        })
+        .collect();
+    nucleus::performance::add("open-decision-presentation-rows", output.len() as u64);
+    Ok(output)
 }
 
 pub async fn answer_decision(

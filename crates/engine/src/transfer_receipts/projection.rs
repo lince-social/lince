@@ -231,6 +231,7 @@ impl Engine {
         actor: Option<&str>,
         now: DateTime<Utc>,
     ) -> Result<PreparedEvent, EngineError> {
+        let _span = nucleus::performance::Span::new("receipt-event-projection-preparation");
         if reviewed_at > now.timestamp() || now.timestamp().saturating_sub(reviewed_at) > 300 {
             return Err(invalid(
                 "Review the current event projection before signing",
@@ -247,12 +248,12 @@ impl Engine {
         }
         self.verify_transfer_receipt_document(&saved.document, now)
             .await?;
-        let mut bundle = match &saved.document {
-            Document::Review(review) => review.as_bundle(),
-            Document::Publication(bundle) | Document::ProofFragment(bundle) => bundle.clone(),
+        let fragment_base = matches!(saved.document, Document::ProofFragment(_));
+        let mut bundle = match saved.document {
+            Document::Review(review) => review.into_bundle(),
+            Document::Publication(bundle) | Document::ProofFragment(bundle) => bundle,
             _ => return Err(invalid("Choose an approved receipt scope")),
         };
-        let fragment_base = matches!(saved.document, Document::ProofFragment(_));
         if fragment_base {
             bundle
                 .validate_fragment(now.timestamp())
@@ -263,10 +264,10 @@ impl Engine {
                 .map_err(proof_shape_error)?;
         }
         if !fragment_base
-            && let Some(existing) = store::transfer_receipts::find(
+            && let Some(existing) = store::transfer_receipts::find_publication(
                 &self.store.pool,
                 person,
-                &Document::Publication(bundle.clone()),
+                &bundle.publication.scope,
             )
             .await?
         {
@@ -291,14 +292,25 @@ impl Engine {
         )
         .await?;
         let mut fragment = fragment_base || context.has_fragments() || context.partial;
-        let mut header = bundle.clone();
-        header.publication.events.clear();
-        header.authorities.retain(|authority| {
-            header.publication.approvals.iter().any(|approval| {
-                header.publication.scope.organ(approval.role) == authority.organ
-                    && approval.key_id == authority.key_id
-            })
-        });
+        let mut header = Bundle {
+            publication: nucleus::transfer::receipt::Publication {
+                scope: bundle.publication.scope.clone(),
+                approvals: bundle.publication.approvals.clone(),
+                person_approvals: bundle.publication.person_approvals.clone(),
+                events: Vec::new(),
+            },
+            authorities: bundle
+                .authorities
+                .iter()
+                .filter(|authority| {
+                    bundle.publication.approvals.iter().any(|approval| {
+                        bundle.publication.scope.organ(approval.role) == authority.organ
+                            && approval.key_id == authority.key_id
+                    })
+                })
+                .cloned()
+                .collect(),
+        };
         context.extend_bundle(&mut bundle)?;
         if bundle.publication.scope.expires_at <= now.timestamp() {
             return Err(invalid("The approved publication term has expired"));
@@ -313,9 +325,11 @@ impl Engine {
         } else {
             let mut source = store::transfer_receipts::local_source(&self.store.pool, &uid).await?;
             if source.is_none() {
-                source =
-                    store::transfer_receipts::source_for_scope(&self.store.pool, &saved.document)
-                        .await?;
+                source = store::transfer_receipts::source_for_reviewed_scope(
+                    &self.store.pool,
+                    &bundle.publication.scope,
+                )
+                .await?;
             }
             let mut source = source.ok_or_else(|| invalid("Local source evidence is unavailable; import the receiver's minimal proof rather than a foreign Transfer"))?;
             let occurrence = store::transfers::occurrence(&self.store.pool, &source.occurrence)
@@ -577,30 +591,23 @@ impl Engine {
         direct
             .validate_fragment(now.timestamp())
             .map_err(proof_shape_error)?;
-        let mut candidate = bundle.clone();
-        candidate.publication.events.push(SignedEvent {
-            event: event.clone(),
-            key_id: signer.key_id.clone(),
-            signature: "A".repeat(88),
-        });
-        if candidate.validate(now.timestamp()).is_err() {
-            fragment = true;
-        }
+        let preview = direct.publication.events.pop().unwrap();
+        drop(direct);
+        let preview = if !fragment {
+            bundle.publication.events.push(preview);
+            nucleus::performance::add("receipt-full-candidates-validated", 1);
+            fragment = bundle.validate(now.timestamp()).is_err();
+            bundle.publication.events.pop().unwrap()
+        } else {
+            preview
+        };
         if fragment {
-            let mut minimal = header.clone();
-            minimal.publication.events.push(SignedEvent {
-                event: event.clone(),
-                key_id: signer.key_id.clone(),
-                signature: "A".repeat(88),
-            });
-            minimal
+            header.publication.events.push(preview);
+            header
                 .validate_fragment(now.timestamp())
                 .map_err(proof_shape_error)?;
+            header.publication.events.pop();
             bundle = header;
-        } else {
-            candidate
-                .validate(now.timestamp())
-                .map_err(proof_shape_error)?;
         }
         Ok(PreparedEvent {
             bundle,

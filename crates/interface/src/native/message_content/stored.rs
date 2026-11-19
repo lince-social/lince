@@ -22,9 +22,6 @@ impl Snapshot {
 #[derive(Component)]
 struct Source(Arc<Snapshot>);
 
-/// An action refers to the current observed content, not a separately prepared
-/// whole-message replacement per control. Backend execution still validates
-/// the actual mutation and current authority.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) struct ContentRef {
     owner: Entity,
@@ -117,8 +114,6 @@ pub(super) fn refresh(world: &mut World, parent: Entity, binding: &RecordBinding
     let (parts, invalid) = if snapshot.content.is_null() {
         (Vec::new(), false)
     } else {
-        // Validate the whole representation before exposing any part, including
-        // parts beyond the visible limit, as the previous Vec decoder did.
         match Vec::<StoredPart>::deserialize(&snapshot.content["parts"]) {
             Ok(parts) => (parts, false),
             Err(_) => (Vec::new(), true),
@@ -179,8 +174,6 @@ fn render(
             &snapshot.content["parts"][content.part],
         )
     {
-        // Retained rows release their previous full-message snapshot as soon as
-        // another part changes. They do not pin one old message per row.
         rendered.snapshot = snapshot.clone();
         return;
     }

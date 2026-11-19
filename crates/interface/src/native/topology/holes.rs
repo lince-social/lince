@@ -700,111 +700,12 @@ struct Background {
     points: Vec<[f32; 3]>,
 }
 
+mod backgrounds;
+
 pub(crate) fn backgrounds(world: &mut World) {
-    let layers: Vec<_> = world
-        .query::<(Entity, &Layers)>()
-        .iter(world)
-        .flat_map(|(root, layers)| {
-            layers
-                .0
-                .iter()
-                .filter(|layer| layer.depth > 0)
-                .map(move |layer| (root, layer.clone()))
-        })
-        .collect();
-    let old: Vec<_> = world
-        .query::<(Entity, &Background)>()
-        .iter(world)
-        .map(|(entity, background)| (entity, background.root, background.workspace))
-        .collect();
-    for (entity, root, workspace) in &old {
-        if !layers
-            .iter()
-            .any(|(owner, layer)| owner == root && layer.workspace == *workspace)
-        {
-            world.despawn(*entity);
-        }
-    }
-    for (root, layer) in layers {
-        let color = crate::native::canvas_background::color(
-            crate::native::canvas_background::for_workspace(world, root, layer.workspace)
-                .background,
-        );
-        let origin = super::presentation::origin(world, root);
-        let pieces = remove(layer.openings, &layer.cuts);
-        let mut points = Vec::new();
-        for piece in pieces {
-            for index in 1..piece.len().saturating_sub(1) {
-                for point in [piece[0], piece[index + 1], piece[index]] {
-                    points.push([
-                        (point.x - origin.x) as f32,
-                        -(layer.depth as f32) * 0.2 - 0.15,
-                        (point.y - origin.z) as f32,
-                    ]);
-                }
-            }
-        }
-        let entity = old
-            .iter()
-            .find(|(_, owner, workspace)| *owner == root && *workspace == layer.workspace)
-            .map(|(entity, _, _)| *entity);
-        let mesh = || {
-            Mesh::new(
-                PrimitiveTopology::TriangleList,
-                RenderAssetUsages::default(),
-            )
-            .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, vec![[0.0, 1.0, 0.0]; points.len()])
-            .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, points.clone())
-        };
-        if let Some(entity) = entity {
-            if world.get::<Background>(entity).unwrap().points != points {
-                let handle = world.get::<Mesh3d>(entity).unwrap().0.clone();
-                world
-                    .resource_mut::<Assets<Mesh>>()
-                    .insert(handle.id(), mesh())
-                    .unwrap();
-                world.get_mut::<Background>(entity).unwrap().points = points;
-            }
-            let material = world
-                .get::<MeshMaterial3d<StandardMaterial>>(entity)
-                .unwrap()
-                .0
-                .clone();
-            if world
-                .resource::<Assets<StandardMaterial>>()
-                .get(&material)
-                .unwrap()
-                .base_color
-                != color
-            {
-                world
-                    .resource_mut::<Assets<StandardMaterial>>()
-                    .get_mut(&material)
-                    .unwrap()
-                    .base_color = color;
-            }
-        } else {
-            let mesh = world.resource_mut::<Assets<Mesh>>().add(mesh());
-            let material = world
-                .resource_mut::<Assets<StandardMaterial>>()
-                .add(StandardMaterial {
-                    base_color: color,
-                    unlit: true,
-                    ..default()
-                });
-            world.spawn((
-                Background {
-                    root,
-                    workspace: layer.workspace,
-                    points,
-                },
-                Mesh3d(mesh),
-                MeshMaterial3d(material),
-                Transform::default(),
-                Pickable::IGNORE,
-            ));
-        }
-    }
+    world
+        .run_system_cached(backgrounds::update)
+        .expect("update hole backgrounds");
 }
 
 #[cfg(test)]

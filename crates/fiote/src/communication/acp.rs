@@ -22,7 +22,9 @@ mod options;
 mod questions;
 mod state;
 pub mod terminal;
-pub use agent_client_protocol::schema::v1::{AuthMethod, AuthMethodTerminal};
+pub use agent_client_protocol::schema::v1::{
+    AuthMethod, AuthMethodTerminal, AvailableCommandInput, SessionConfigOption,
+};
 pub use check::ConnectionCheck;
 pub use launch::resolve;
 pub use options::SessionOptions;

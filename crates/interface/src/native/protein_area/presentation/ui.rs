@@ -1,4 +1,5 @@
 use super::*;
+use crate::host::performance::{self, Count, Stage};
 use bevy::text::EditableText;
 
 #[derive(Component)]
@@ -24,69 +25,129 @@ enum Command {
 }
 
 fn collect_fills(world: &mut World, root: Entity) -> bool {
-    let values: Vec<_> = world
-        .query::<(&Fill, &EditableText)>()
+    if world.get::<Session>(root).is_none() {
+        return false;
+    }
+    let inputs: Vec<_> = world
+        .query_filtered::<(Entity, &Fill), With<EditableText>>()
         .iter(world)
-        .filter(|(fill, _)| fill.root == root)
-        .map(|(fill, text)| (fill.field.clone(), text.value().to_string()))
+        .filter(|(_, fill)| fill.root == root)
+        .map(|(entity, _)| entity)
         .collect();
     let mut changed = false;
-    if let Some(mut session) = world.get_mut::<Session>(root) {
-        for (field, value) in values {
-            if session
-                .target
-                .fills
-                .get(&field)
-                .map(String::as_str)
-                .unwrap_or("")
-                == value
-            {
-                continue;
-            }
-            changed = true;
-            if value.is_empty() {
-                session.target.fills.remove(&field);
-            } else {
-                session.target.fills.insert(field, value);
-            }
-        }
+    for entity in inputs {
+        changed |= collect_fill(world, root, entity);
     }
     changed
 }
 
+fn collect_fill(world: &mut World, root: Entity, entity: Entity) -> bool {
+    let Some(session) = world.get::<Session>(root) else {
+        return false;
+    };
+    let Some(fill) = world.get::<Fill>(entity).filter(|fill| fill.root == root) else {
+        return false;
+    };
+    let Some(text) = world.get::<EditableText>(entity) else {
+        return false;
+    };
+    let current = session
+        .target
+        .fills
+        .get(&fill.field)
+        .map_or("", String::as_str);
+    if text.value() == current {
+        return false;
+    }
+    let field = fill.field.clone();
+    let value = text.value().to_string();
+    let mut session = world.get_mut::<Session>(root).unwrap();
+    if value.is_empty() {
+        session.target.fills.remove(&field);
+    } else {
+        session.target.fills.insert(field, value);
+    }
+    performance::count(Count::RecordPresentationFillChanges);
+    true
+}
+
+#[derive(Default)]
+struct InputScratch {
+    roots: Vec<Entity>,
+    fills: Vec<(Entity, Entity)>,
+    labels: Vec<(Entity, String)>,
+}
+
 pub(super) fn inputs(world: &mut World) {
-    let roots: Vec<_> = world
-        .query_filtered::<Entity, With<Session>>()
-        .iter(world)
-        .collect();
-    for root in roots {
-        if !collect_fills(world, root) {
+    world
+        .run_system_cached(update_inputs)
+        .expect("update presentation inputs");
+}
+
+fn update_inputs(
+    world: &mut World,
+    sessions: &mut QueryState<Entity, With<Session>>,
+    fill_query: &mut QueryState<(Entity, &Fill), With<EditableText>>,
+    previews: &mut QueryState<(Entity, &PreviewValue, &Text)>,
+    mut scratch: Local<InputScratch>,
+) {
+    let _timing = performance::Span::new(Stage::RecordPresentationInputs);
+    let InputScratch {
+        roots,
+        fills,
+        labels,
+    } = &mut *scratch;
+    roots.extend(sessions.iter(world));
+    if roots.is_empty() {
+        roots.shrink_to_fit();
+        fills.shrink_to_fit();
+        labels.shrink_to_fit();
+        return;
+    }
+    fills.extend(
+        fill_query
+            .iter(world)
+            .map(|(entity, fill)| (entity, fill.root)),
+    );
+    for root in roots.drain(..) {
+        let mut changed = false;
+        for &(entity, owner) in fills.iter() {
+            if owner == root {
+                changed |= collect_fill(world, root, entity);
+            }
+        }
+        if !changed {
             continue;
         }
-        let Some(session) = world.get::<Session>(root).cloned() else {
+        let Some(session) = world.get::<Session>(root) else {
             continue;
         };
-        let view = result(&session);
-        let labels: Vec<_> = world
-            .query::<(Entity, &PreviewValue)>()
+        let view = result(session);
+        for (entity, label, text) in previews
             .iter(world)
-            .filter(|(_, value)| value.root == root)
-            .map(|(entity, value)| (entity, value.uid.clone(), value.field.clone()))
-            .collect();
-        for (entity, uid, field) in labels {
+            .filter(|(_, label, _)| label.root == root)
+        {
             let data = session
                 .observed
                 .rows
                 .iter()
-                .find(|(record, _)| *record == uid)
+                .find(|(record, _)| *record == label.uid)
                 .map(|(_, data)| data)
                 .unwrap_or(&Value::Null);
-            let value = preview(&session, &view, &uid, &field, data);
+            let value = preview(session, &view, &label.uid, &label.field, data);
+            performance::count(Count::RecordPresentationPreviewsPrepared);
+            if text.0 != value {
+                labels.push((entity, value));
+            }
+        }
+        for (entity, value) in labels.drain(..) {
             if let Some(mut text) = world.get_mut::<Text>(entity) {
                 text.0 = value;
+                performance::count(Count::RecordPresentationPreviewsUpdated);
             }
         }
     }
+    fills.clear();
 }
 
 fn preview(session: &Session, view: &Presentation, uid: &str, field: &str, data: &Value) -> String {
@@ -95,17 +156,24 @@ fn preview(session: &Session, view: &Presentation, uid: &str, field: &str, data:
         .drafts
         .iter()
         .find(|draft| draft.uid == uid && draft.field == field && draft.dirty);
-    let value = draft.map(|draft| draft.text.clone()).unwrap_or_else(|| {
-        if data[field].is_null() {
-            view.fills
-                .get(field)
-                .cloned()
-                .unwrap_or_else(|| "No value in this Protein".into())
-        } else {
-            super::super::rows::display(&data[field])
-        }
-    });
-    format!("{field}: {}", value.chars().take(256).collect::<String>())
+    let value = draft
+        .map(|draft| Cow::Borrowed(draft.text.as_str()))
+        .unwrap_or_else(|| {
+            if data[field].is_null() {
+                Cow::Borrowed(
+                    view.fills
+                        .get(field)
+                        .map_or("No value in this Protein", String::as_str),
+                )
+            } else {
+                lince_interface::records::display_ref(&data[field])
+            }
+        });
+    let mut preview = String::with_capacity(field.len() + 2 + value.len().min(256 * 4));
+    preview.push_str(field);
+    preview.push_str(": ");
+    preview.extend(value.chars().take(256));
+    preview
 }
 
 impl Action for Command {
@@ -129,8 +197,8 @@ impl Action for Command {
                     crate::native::edit_mode::render_panel(world, root);
                     return;
                 };
-                if now != session.observed {
-                    session.observed = now;
+                if now != *session.observed {
+                    session.observed = Arc::new(now);
                     session.message = "Fields or local edits changed. Review this updated preview and apply again.".into();
                 } else if session.observed.drafts.iter().any(|draft| draft.busy) {
                     session.message = "Finish text composition or the pending paste before changing presentation.".into();
@@ -150,7 +218,7 @@ impl Action for Command {
         }
         if !matches!(self, Self::Apply) {
             if let Some(now) = probe(world, session.owner) {
-                session.observed = now;
+                session.observed = Arc::new(now);
             }
             session.message.clear();
         }
@@ -250,7 +318,7 @@ pub(super) fn panel(world: &mut World, root: Entity, panel: Entity) -> bool {
         {
             let mut cursor = Some(selected);
             while let Some(entity) = cursor {
-                if probe(world, entity).is_some() {
+                if available(world, entity) {
                     crate::native::sand_panel::button(
                         world,
                         panel,

@@ -2,8 +2,6 @@ use engine::Engine;
 use nucleus::Fact;
 use tokio::sync::{broadcast, watch};
 
-// These events invalidate current-state views. Durable Fact delivery and rule
-// execution belong to the Engine, not this subscription refresh stream.
 pub enum SyncEvent {
     Fact(Fact),
     Facts(Vec<Fact>),
@@ -13,9 +11,6 @@ pub enum SyncEvent {
     Presence,
 }
 
-// Subscription refreshes read current state, not a historical snapshot for each
-// notification. Bound the already-ready invalidations represented by one read
-// wave; never wait for more work to form a batch.
 const MAX_FACT_BATCH: usize = 64;
 
 pub struct SyncEvents {

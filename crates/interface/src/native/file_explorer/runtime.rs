@@ -64,8 +64,6 @@ fn request(world: &mut World, owner: Entity) {
         view.pending_sorts.remove(&path);
     }
     let view = world.get::<View>(owner).unwrap();
-    // Search already owns the visible row model. Directory prefetch has no
-    // consumer until navigation returns to the tree/grid directory view.
     if view.search_results {
         return;
     }

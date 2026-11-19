@@ -12,6 +12,9 @@ use crate::{
 
 use super::outcome::Role;
 
+mod merge;
+mod view;
+
 pub const MAX_BYTES: usize = 524_288;
 pub const MAX_EVENTS: usize = 256;
 pub const MAX_MEASURES: usize = 32;
@@ -668,114 +671,7 @@ impl Publication {
     }
 
     fn validate_mode(&self, now: i64, complete: bool, dependencies: bool) -> Result<(), String> {
-        self.scope.validate()?;
-        if self.scope.issued_at > now.saturating_add(300)
-            || self.approvals.len() > 3
-            || (!complete && !self.events.is_empty())
-            || self.events.len() > MAX_EVENTS
-            || crate::json::encoded_len(self).map_err(|error| error.to_string())? > MAX_BYTES
-        {
-            return Err("Invalid public receipt approval, time or resource budget".into());
-        }
-        let mut roles = BTreeSet::new();
-        let mut latest_approval = self.scope.issued_at;
-        let mut persons = BTreeSet::new();
-        if self.person_approvals.len() > self.scope.public_persons.len() {
-            return Err("Person consent includes an unrequested identity".into());
-        }
-        if complete && self.person_approvals.len() != self.scope.public_persons.len() {
-            return Err(
-                "Public Person identities require their own explicit consent signatures".into(),
-            );
-        }
-        for approval in &self.person_approvals {
-            approval.validate(&self.scope, now)?;
-            if !persons.insert(approval.role) {
-                return Err("Person consent must not repeat a role".into());
-            }
-            latest_approval = latest_approval.max(approval.issued_at);
-        }
-        for approval in &self.approvals {
-            signature_shape(&approval.key_id, &approval.signature)?;
-            if !roles.insert(approval.role)
-                || approval.issued_at < self.scope.issued_at
-                || approval.issued_at >= self.scope.expires_at
-                || approval.issued_at > now.saturating_add(300)
-            {
-                return Err(
-                    "Receipt requires distinct origin, giver and receiver approvals".into(),
-                );
-            }
-            latest_approval = latest_approval.max(approval.issued_at);
-        }
-        roles.extend(self.scope.upfront_roles());
-        if complete && roles.len() != 3 {
-            return Err("Receipt requires origin attestation and each party's exact-scope or signed upfront publication consent".into());
-        }
-        let mut events = BTreeMap::new();
-        for signed in &self.events {
-            signature_shape(&signed.key_id, &signed.signature)?;
-            signed.event.validate(&self.scope, now)?;
-            if signed.event.issued_at < latest_approval {
-                return Err("Public events must follow approval of their scope".into());
-            }
-            if events.insert(signed.event.id()?, &signed.event).is_some() {
-                return Err("A receipt bundle must not repeat an event".into());
-            }
-        }
-        let mut roots = BTreeSet::new();
-        for (id, event) in &events {
-            let slot = event.slot(&self.scope)?;
-            if let Some(parent) = &event.supersedes {
-                if parent == id {
-                    return Err("Receipt correction changes its source, role or measurement".into());
-                }
-                if let Some(previous) = events.get(parent) {
-                    if previous.slot(&self.scope)? != slot || previous.issued_at > event.issued_at {
-                        return Err(
-                            "Receipt correction changes its source, role or measurement".into()
-                        );
-                    }
-                } else if dependencies {
-                    return Err("Receipt correction is missing its original".into());
-                }
-            } else if !roots.insert(slot) && dependencies {
-                return Err("Repeated outcome roots cannot multiply contribution history".into());
-            }
-            if let Content::Statement {
-                measurement,
-                need: Some(need),
-                ..
-            } = &event.content
-            {
-                if let Some(binding) = events.get(need) {
-                    if !matches!(&binding.content, Content::Need { measurement: bound, .. } if bound == measurement)
-                        || binding.issued_at > event.issued_at
-                    {
-                        return Err(
-                            "Receipt confirmation does not match its receiver-authored Need".into(),
-                        );
-                    }
-                } else if dependencies {
-                    return Err("Receipt statement is missing its Need proof".into());
-                }
-            }
-            let mut cursor = *event;
-            let mut visited = BTreeSet::new();
-            while let Some(parent) = &cursor.supersedes {
-                if !visited.insert(parent) {
-                    return Err("Receipt correction history contains a loop".into());
-                }
-                if let Some(previous) = events.get(parent) {
-                    cursor = previous;
-                } else if dependencies {
-                    return Err("Receipt correction history is incomplete".into());
-                } else {
-                    break;
-                }
-            }
-        }
-        Ok(())
+        view::Publication::from(self).validate_mode(now, complete, dependencies)
     }
 }
 
@@ -1048,37 +944,7 @@ impl Bundle {
     }
 
     fn validate_mode(&self, now: i64, complete: bool, dependencies: bool) -> Result<(), String> {
-        self.publication
-            .validate_mode(now, complete, dependencies)?;
-        if self.authorities.len() + self.publication.scope.original_authorities.len()
-            > MAX_AUTHORITIES
-            || crate::json::encoded_len(self).map_err(|error| error.to_string())? > MAX_BUNDLE_BYTES
-        {
-            return Err("Public receipt authority or byte budget exceeded".into());
-        }
-        let mut bindings = BTreeMap::new();
-        let scope = &self.publication.scope;
-        for authority in &self.authorities {
-            authority.validate(now)?;
-            if authority.participation.is_some() {
-                return Err(
-                    "Participation approval cannot authorize receipt publication signatures".into(),
-                );
-            }
-            if ![&scope.source.origin, &scope.giver, &scope.receiver].contains(&&authority.organ) {
-                return Err("Receipt includes an unrelated signing authority".into());
-            }
-            if bindings
-                .insert(
-                    (&authority.organ, &authority.key_id),
-                    &authority.signing_key,
-                )
-                .is_some_and(|key| key != &authority.signing_key)
-            {
-                return Err("Receipt signing key identifier has conflicting bindings".into());
-            }
-        }
-        Ok(())
+        view::Bundle::from(self).validate_mode(now, complete, dependencies)
     }
 }
 
@@ -1094,19 +960,24 @@ pub struct Review {
 
 impl Review {
     pub fn as_bundle(&self) -> Bundle {
+        self.clone().into_bundle()
+    }
+
+    pub fn into_bundle(self) -> Bundle {
         Bundle {
             publication: Publication {
-                person_approvals: self.person_approvals.clone(),
-                scope: self.scope.clone(),
-                approvals: self.approvals.clone(),
+                person_approvals: self.person_approvals,
+                scope: self.scope,
+                approvals: self.approvals,
                 events: Vec::new(),
             },
-            authorities: self.authorities.clone(),
+            authorities: self.authorities,
         }
     }
 
     pub fn validate(&self, now: i64) -> Result<(), String> {
-        self.as_bundle().validate_approvals(now, false)
+        let _span = crate::performance::Span::new("receipt-review-validation");
+        view::Bundle::from(self).validate_mode(now, false, true)
     }
 
     pub fn is_complete(&self) -> bool {
@@ -1155,98 +1026,7 @@ impl Document {
     }
 
     pub fn merge(&self, incoming: &Self, now: i64) -> Result<Self, String> {
-        if self == incoming {
-            self.validate(now)?;
-            return Ok(self.clone());
-        }
-        fn merge_review(current: &Review, incoming: &Review) -> Result<Review, String> {
-            if current.scope != incoming.scope {
-                return Err("Changed receipt terms require a new scope and new approvals".into());
-            }
-            let mut merged = current.clone();
-            for approval in &incoming.person_approvals {
-                if let Some(previous) = merged
-                    .person_approvals
-                    .iter()
-                    .find(|item| item.role == approval.role)
-                {
-                    if previous != approval {
-                        return Err(
-                            "Conflicting personal consent requires a separate review".into()
-                        );
-                    }
-                } else {
-                    merged.person_approvals.push(approval.clone());
-                }
-            }
-            merged
-                .person_approvals
-                .sort_by_key(|approval| approval.role);
-            for approval in &incoming.approvals {
-                if let Some(previous) = merged
-                    .approvals
-                    .iter()
-                    .find(|item| item.role == approval.role)
-                {
-                    if previous != approval {
-                        return Err("Conflicting approvals must be reviewed separately".into());
-                    }
-                } else {
-                    merged.approvals.push(approval.clone());
-                }
-            }
-            merged.approvals.sort_by_key(|approval| approval.role);
-            for authority in &incoming.authorities {
-                if !merged.authorities.contains(authority) {
-                    merged.authorities.push(authority.clone());
-                }
-            }
-            Ok(merged)
-        }
-        let merged = match (self, incoming) {
-            (Self::Authority(current), Self::Authority(incoming)) if current == incoming => {
-                self.clone()
-            }
-            (Self::Review(current), Self::Review(incoming)) => {
-                Self::Review(merge_review(current, incoming)?)
-            }
-            (Self::Publication(current), Self::Publication(incoming)) => {
-                let review = merge_review(
-                    &Review {
-                        person_approvals: current.publication.person_approvals.clone(),
-                        scope: current.publication.scope.clone(),
-                        approvals: current.publication.approvals.clone(),
-                        authorities: current.authorities.clone(),
-                    },
-                    &Review {
-                        person_approvals: incoming.publication.person_approvals.clone(),
-                        scope: incoming.publication.scope.clone(),
-                        approvals: incoming.publication.approvals.clone(),
-                        authorities: incoming.authorities.clone(),
-                    },
-                )?;
-                let mut bundle = review.as_bundle();
-                bundle.publication.events = current.publication.events.clone();
-                for signed in &incoming.publication.events {
-                    if let Some(previous) = bundle
-                        .publication
-                        .events
-                        .iter()
-                        .find(|item| item.event == signed.event)
-                    {
-                        if previous != signed {
-                            return Err("An event has conflicting signature envelopes".into());
-                        }
-                    } else {
-                        bundle.publication.events.push(signed.clone());
-                    }
-                }
-                Self::Publication(bundle)
-            }
-            _ => return Err("Receipt document identity or kind changed".into()),
-        };
-        merged.validate(now)?;
-        Ok(merged)
+        merge::documents(self, incoming, now)
     }
 
     pub fn kind(&self) -> &'static str {

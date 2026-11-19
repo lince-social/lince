@@ -38,8 +38,40 @@ struct Field {
     valid: bool,
 }
 
+fn field_values(
+    changes: &engine::area_transition::RecordChanges,
+) -> [(Property, &'static str, String); 5] {
+    [
+        (
+            Property::Quantity,
+            "Quantity",
+            changes.quantity.clone().unwrap_or_default(),
+        ),
+        (
+            Property::Assert,
+            "Add Assertions",
+            changes.assert.join(", "),
+        ),
+        (
+            Property::Retract,
+            "Remove Assertions",
+            changes.retract.join(", "),
+        ),
+        (Property::Assign, "Assign people", changes.assign.join(", ")),
+        (
+            Property::Unassign,
+            "Unassign people",
+            changes.unassign.join(", "),
+        ),
+    ]
+}
+
 pub(crate) fn render(world: &mut World, root: Entity, panel: Entity, entity: Entity) {
-    let area = world.get::<InfluenceArea>(entity).unwrap().clone();
+    let changes = &world.get::<InfluenceArea>(entity).unwrap().changes;
+    let groups = [
+        (true, field_values(&changes.enter), "On entry"),
+        (false, field_values(&changes.leave), "On exit"),
+    ];
     let heading = label(world, panel, "Record changes", 18.0);
     world.entity_mut(heading).insert(crate::native::icons::Tooltip("Changes apply to matching Records when their Sands cross the local outline, with or without physics. Copies of one Record count together. Configured changes work automatically while the Area and property changes are enabled.".into()));
     let status = label(world, panel, "Waiting", 14.0);
@@ -47,34 +79,9 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity, entity: Ent
         area_mutation::StatusLabel(entity),
         crate::native::icons::Tooltip::default(),
     ));
-    for (enter, changes, title) in [
-        (true, &area.changes.enter, "On entry"),
-        (false, &area.changes.leave, "On exit"),
-    ] {
+    for (enter, fields, title) in groups {
         label(world, panel, title, 18.0);
-        for (property, title, value) in [
-            (
-                Property::Quantity,
-                "Quantity",
-                changes.quantity.clone().unwrap_or_default(),
-            ),
-            (
-                Property::Assert,
-                "Add Assertions",
-                changes.assert.join(", "),
-            ),
-            (
-                Property::Retract,
-                "Remove Assertions",
-                changes.retract.join(", "),
-            ),
-            (Property::Assign, "Assign people", changes.assign.join(", ")),
-            (
-                Property::Unassign,
-                "Unassign people",
-                changes.unassign.join(", "),
-            ),
-        ] {
+        for (property, title, value) in fields {
             label(world, panel, title, 14.0);
             let input = world
                 .spawn((
@@ -95,12 +102,6 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity, entity: Ent
                     Property::Assert => "Add Assertion names separated by commas. Remove them on the opposite crossing for a temporary Assertion.",
                     Property::Retract => "Remove Assertion names separated by commas. Add them on the opposite crossing to restore them.",
                 }.into()),
-                EditableText {
-                    allow_newlines: false,
-                    visible_lines: Some(1.0),
-                    max_characters: Some(2048),
-                    ..crate::native::sand::editable(&value)
-                },
                 Node {
                     width: percent(100),
                     min_height: px(32),
@@ -108,6 +109,12 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity, entity: Ent
                     ..default()
                 },
             ));
+            {
+                let mut text = world.get_mut::<EditableText>(input).unwrap();
+                text.allow_newlines = false;
+                text.visible_lines = Some(1.0);
+                text.max_characters = Some(2048);
+            }
             world
                 .get_mut::<AccessibilityNode>(input)
                 .unwrap()
@@ -155,31 +162,48 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity, entity: Ent
     }
 }
 
-pub(crate) fn autosave(world: &mut World) {
-    let edits: Vec<_> = world
-        .query::<(Entity, &Field, &EditableText)>()
-        .iter(world)
-        .filter(|(_, field, text)| {
-            !text.is_composing()
-                && !crate::native::record_view::pending_text(text)
-                && world
-                    .get::<crate::native::edit_mode::EditMode>(field.root)
-                    .is_some_and(|mode| mode.enabled && mode.areas)
-                && text.value() != field.observed.as_str()
-        })
-        .map(|(entity, field, text)| {
-            (
-                entity,
-                field.root,
-                field.area,
-                field.enter,
-                field.property,
-                field.status,
-                text.value().to_string(),
-            )
-        })
-        .collect();
-    for (entity, root, target, enter, property, status, value) in edits {
+pub(crate) struct Preparation {
+    fields: bevy::ecs::query::QueryState<(Entity, &'static Field, &'static EditableText)>,
+    edits: Vec<(Entity, Entity, Entity, bool, Property, Entity, String)>,
+}
+
+impl FromWorld for Preparation {
+    fn from_world(world: &mut World) -> Self {
+        Self {
+            fields: world.query(),
+            edits: Vec::new(),
+        }
+    }
+}
+
+pub(crate) fn autosave(world: &mut World, mut preparation: Local<Preparation>) {
+    let _capture = nucleus::performance::Span::new("area-change-editor-maintenance");
+    let Preparation { fields, edits } = &mut *preparation;
+    edits.clear();
+    edits.extend(
+        fields
+            .iter(world)
+            .filter(|(_, field, text)| {
+                !text.is_composing()
+                    && !crate::native::record_view::pending_text(text)
+                    && world
+                        .get::<crate::native::edit_mode::EditMode>(field.root)
+                        .is_some_and(|mode| mode.enabled && mode.areas)
+                    && text.value() != field.observed.as_str()
+            })
+            .map(|(entity, field, text)| {
+                (
+                    entity,
+                    field.root,
+                    field.area,
+                    field.enter,
+                    field.property,
+                    field.status,
+                    text.value().to_string(),
+                )
+            }),
+    );
+    for (entity, root, target, enter, property, status, value) in edits.drain(..) {
         if !crate::native::area_panel::owns(world, root, target) {
             continue;
         }
@@ -188,11 +212,11 @@ pub(crate) fn autosave(world: &mut World) {
             target,
             "Property changes inactive after an edit. Configured changes resume automatically.",
         );
-        let mut area = world.get::<InfluenceArea>(target).unwrap().clone();
-        let changes = if enter {
-            &mut area.changes.enter
+        let area = world.get::<InfluenceArea>(target).unwrap();
+        let mut changes = if enter {
+            area.changes.enter.clone()
         } else {
-            &mut area.changes.leave
+            area.changes.leave.clone()
         };
         match property {
             Property::Quantity => {
@@ -203,15 +227,23 @@ pub(crate) fn autosave(world: &mut World) {
             Property::Assign => changes.assign = names(&value),
             Property::Unassign => changes.unassign = names(&value),
         }
-        let valid = area.validate();
-        if valid {
-            *world.get_mut::<InfluenceArea>(target).unwrap() = area;
+        let edit = crate::native::area::editing::Edit::Crossing { enter, changes };
+        let valid = edit.valid(area);
+        if valid && edit.differs(area) {
+            edit.apply(&mut world.get_mut::<InfluenceArea>(target).unwrap());
         }
         world.get_mut::<Field>(entity).unwrap().observed = value;
         world.get_mut::<Field>(entity).unwrap().valid = valid;
-        if let Some(mut text) = world.get_mut::<Text>(status) {
-            text.0 = if valid { "" } else { "Invalid value" }.into();
+        let message = if valid { "" } else { "Invalid value" };
+        if world
+            .get::<Text>(status)
+            .is_some_and(|text| text.0 != message)
+        {
+            message.clone_into(&mut world.get_mut::<Text>(status).unwrap().0);
         }
+    }
+    if fields.iter(world).next().is_none() {
+        *edits = Vec::new();
     }
 }
 
@@ -229,8 +261,13 @@ fn names(value: &str) -> Vec<String> {
 
 pub(crate) fn invalid_fields(world: &mut World, area: Entity) -> bool {
     world
-        .query::<&Field>()
-        .iter(world)
+        .run_system_cached_with(has_invalid_fields, area)
+        .expect("inspect Area change fields")
+}
+
+fn has_invalid_fields(In(area): In<Entity>, fields: Query<&Field>) -> bool {
+    fields
+        .iter()
         .any(|field| field.area == area && !field.valid)
 }
 

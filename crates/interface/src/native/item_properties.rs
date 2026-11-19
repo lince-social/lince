@@ -7,6 +7,7 @@ use crate::native::{
 use bevy::{prelude::*, text::EditableText};
 
 mod attachments;
+mod presentation;
 pub use attachments::{Attachment, attach, detach};
 
 #[derive(Component)]
@@ -111,7 +112,7 @@ pub fn open(world: &mut World, root: Entity, target: Entity) -> Option<Entity> {
     crate::native::edit_mode::label(world, owner, "Item properties", 20.0);
     input_settings::button(world, owner, owner, "Close properties", Change::Close);
     panel(world, root, owner, target);
-    if let Some(metadata) = metadata(world, target) {
+    if let Some(metadata) = metadata_change(world, target, None) {
         world.entity_mut(owner).insert(metadata);
         crate::native::full_record::window::populate(
             world,
@@ -235,72 +236,50 @@ impl Action for Change {
     }
 }
 
-fn metadata(world: &World, target: Entity) -> Option<crate::native::full_record::window::Metadata> {
+fn metadata_change(
+    world: &World,
+    target: Entity,
+    current: Option<&crate::native::full_record::window::Metadata>,
+) -> Option<crate::native::full_record::window::Metadata> {
     world.get::<crate::native::layout::desktop::ApplicationWindow>(target)?;
+    let placement = world.get::<crate::native::layout::LayoutBox>(target)?.id;
     let properties = world
         .get::<crate::native::area::RecordProperties>(target)
         .map(|properties| &properties.0);
+    let title = properties
+        .and_then(|properties| {
+            properties
+                .get("window_title")
+                .or_else(|| properties.get("head"))
+        })
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or_default();
+    let app_id = properties
+        .and_then(|properties| properties["app_id"].as_str())
+        .unwrap_or_default();
+    if current.is_some_and(|current| {
+        current.placement == placement
+            && current.uid.is_empty()
+            && current.title == title
+            && current.app_id == app_id
+            && current.live
+            && current.state == "available"
+    }) {
+        return None;
+    }
+    crate::host::performance::count(crate::host::performance::Count::ItemPropertyMetadataPrepared);
     Some(crate::native::full_record::window::Metadata {
-        placement: world.get::<crate::native::layout::LayoutBox>(target)?.id,
+        placement,
         uid: String::new(),
-        title: properties
-            .and_then(|properties| {
-                properties
-                    .get("window_title")
-                    .or_else(|| properties.get("head"))
-            })
-            .and_then(serde_json::Value::as_str)
-            .unwrap_or_default()
-            .to_owned(),
-        app_id: properties
-            .and_then(|properties| properties["app_id"].as_str())
-            .unwrap_or_default()
-            .to_owned(),
+        title: title.to_owned(),
+        app_id: app_id.to_owned(),
         live: true,
         state: "available".into(),
     })
 }
 
-fn refresh(world: &mut World) {
-    let inspectors: Vec<_> = world
-        .query::<(Entity, &Inspector)>()
-        .iter(world)
-        .map(|(entity, inspector)| (entity, inspector.root, inspector.target))
-        .collect();
-    for (owner, root, target) in inspectors {
-        if world.get_entity(target).is_err() || world.get::<Workspaces>(root).is_none() {
-            world.despawn(owner);
-            continue;
-        }
-        if let Some(metadata) = metadata(world, target)
-            && world.get::<crate::native::full_record::window::Metadata>(owner) != Some(&metadata)
-        {
-            world.entity_mut(owner).insert(metadata);
-        }
-    }
-    let pages: Vec<_> = world
-        .query_filtered::<Entity, With<Page>>()
-        .iter(world)
-        .collect();
-    for owner in pages {
-        let page = world.get::<Page>(owner).unwrap();
-        let attachment = world.get::<Attachment>(page.target);
-        let summary = attachment.map_or_else(
-            || "Record properties: none".to_owned(),
-            |attachment| format!("Record properties: {}", attachment.uid),
-        );
-        let message = if page.message.is_empty() {
-            attachments::status(world, page.target).to_owned()
-        } else {
-            page.message.clone()
-        };
-        let fields = (page.summary, page.status, page.detach, page.open);
-        let missing = attachment.is_none() || !eligible(world, page.root, page.target);
-        input_settings::text(world, fields.0, summary);
-        input_settings::text(world, fields.1, message);
-        input_settings::disable(world, fields.2, missing);
-        input_settings::disable(world, fields.3, missing);
-    }
+fn refresh(world: &mut World, mut prepared: Local<presentation::Refresh>) {
+    prepared.refresh(world);
 }
 
 #[cfg(test)]

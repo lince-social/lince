@@ -20,68 +20,58 @@ pub struct GroundMaterial {
 
 impl Material for GroundMaterial {
     fn fragment_shader() -> ShaderRef {
-        "embedded://lince_interface/native/topology/terrain/ground.wgsl".into()
+        "embedded://lince_interface/native/topology/terrain/ground.wesl".into()
     }
 }
 
 pub fn install(app: &mut App) {
     if app.world().contains_resource::<AssetServer>() {
-        embedded_asset!(app, "ground.wgsl");
+        embedded_asset!(app, "ground.wesl");
         app.add_plugins(MaterialPlugin::<GroundMaterial>::default());
     } else {
         app.init_resource::<Assets<GroundMaterial>>();
     }
 }
 
-fn material(world: &World, root: Entity, workspace: u64, minimum: DVec2) -> GroundMaterial {
-    let colors = crate::native::canvas_background::for_workspace(world, root, workspace);
-    let setting = |token, fallback| {
-        world
-            .get_resource::<crate::native::tokens::ThemeSettings>()
-            .map_or(fallback, |settings| {
-                settings
-                    .resolve(token, None, &Default::default())
-                    .0
-                    .number()
-            })
-    };
-    let rgb = |color: [u8; 3]| {
-        let linear = Color::srgb_u8(color[0], color[1], color[2]).to_linear();
-        Vec4::new(linear.red, linear.green, linear.blue, linear.alpha)
-    };
-    let spacing = setting(crate::native::tokens::Token::GridSpacing, 32.0).max(1.0);
-    GroundMaterial {
-        background: rgb(colors.background),
-        ink: rgb(colors.grid),
-        pattern: Vec4::new(
-            spacing,
-            setting(crate::native::tokens::Token::GridThickness, 1.0),
-            setting(crate::native::tokens::Token::CanvasPattern, 100.0) / 100.0,
-            50.0,
-        ),
-        phase: Vec4::new(
-            minimum.x.rem_euclid(f64::from(spacing)) as f32,
-            minimum.y.rem_euclid(f64::from(spacing)) as f32,
-            0.0,
-            0.0,
-        ),
-    }
+mod materials;
+pub(super) use materials::Materials;
+
+pub(super) struct GroundView {
+    pub depth: usize,
+    pub clipped: bool,
+    pub origin: DVec3,
+    pub workspace: u64,
 }
 
-pub(super) fn refresh_material(world: &mut World, entity: Entity, key: Key) {
-    let definition = material(world, key.0, key.1, key.minimum());
-    if let Some(handle) = world
+pub(super) fn refresh_material(
+    world: &mut World,
+    materials: &mut Materials,
+    entity: Entity,
+    key: Key,
+) {
+    let Some(id) = world
         .get::<MeshMaterial3d<GroundMaterial>>(entity)
-        .map(|h| h.0.clone())
-        && let Some(mut assets) = world.get_resource_mut::<Assets<GroundMaterial>>()
-        && assets.get(&handle) != Some(&definition)
-        && let Some(mut material) = assets.get_mut(&handle)
-    {
-        *material = definition;
+        .map(|h| h.0.id())
+    else {
+        return;
+    };
+    let Some(current) = world
+        .get_resource::<Assets<GroundMaterial>>()
+        .and_then(|assets| assets.get(id))
+    else {
+        return;
+    };
+    let definition = materials.definition(world, key);
+    if *current != definition {
+        *world
+            .resource_mut::<Assets<GroundMaterial>>()
+            .get_mut(id)
+            .unwrap() = definition;
+        nucleus::performance::add("terrain-ground-material-writes", 1);
     }
 }
 
-fn visual(world: &mut World, key: Key, tile: &Tile) -> Option<Entity> {
+fn visual(world: &mut World, materials: &mut Materials, key: Key, tile: &Tile) -> Option<Entity> {
     if tile.clipping.as_ref().is_some_and(Vec::is_empty) {
         return None;
     }
@@ -91,23 +81,24 @@ fn visual(world: &mut World, key: Key, tile: &Tile) -> Option<Entity> {
     let origin = super::super::presentation::origin(world, key.0);
     visual_in(
         world,
+        materials,
         key,
         &tile.heights,
-        tile.depth,
-        tile.clipping.is_some(),
-        origin,
-        view,
+        GroundView {
+            depth: tile.depth,
+            clipped: tile.clipping.is_some(),
+            origin,
+            workspace: view,
+        },
     )
 }
 
 pub(super) fn visual_in(
     world: &mut World,
+    materials: &mut Materials,
     key: Key,
     heights: &[f64],
-    depth: usize,
-    clipped: bool,
-    origin: DVec3,
-    view: u64,
+    view: GroundView,
 ) -> Option<Entity> {
     if !world.contains_resource::<Assets<Mesh>>()
         || !world.contains_resource::<Assets<GroundMaterial>>()
@@ -115,15 +106,18 @@ pub(super) fn visual_in(
         return None;
     }
     let positions: Vec<_> = vertices(key, heights)
-        .iter()
         .map(|p| {
-            (*p - DVec3::new(key.minimum().x, 0.0, key.minimum().y))
+            (p - DVec3::new(key.minimum().x, 0.0, key.minimum().y))
                 .as_vec3()
                 .to_array()
         })
         .collect();
     let mut normals = Vec::with_capacity(positions.len());
-    let mut uvs = Vec::with_capacity(positions.len());
+    let mut uvs = if view.clipped {
+        Vec::new()
+    } else {
+        Vec::with_capacity(positions.len())
+    };
     let stride = GRID + 1;
     for z in 0..=GRID {
         for x in 0..=GRID {
@@ -140,26 +134,33 @@ pub(super) fn visual_in(
                     .normalize()
                     .to_array(),
             );
-            uvs.push([
-                x as f32 * TILE_SIZE as f32 / GRID as f32,
-                z as f32 * TILE_SIZE as f32 / GRID as f32,
-            ]);
+            if !view.clipped {
+                uvs.push([
+                    x as f32 * TILE_SIZE as f32 / GRID as f32,
+                    z as f32 * TILE_SIZE as f32 / GRID as f32,
+                ]);
+            }
         }
     }
     let mut positions = positions;
-    let mut indices: Vec<u32> = triangles().into_iter().flatten().collect();
-    if clipped {
+    let mut indices: Vec<u32> = if view.clipped {
+        Vec::new()
+    } else {
+        let mut indices = Vec::with_capacity(GRID * GRID * 6);
+        indices.extend(triangles().flatten());
+        indices
+    };
+    if view.clipped {
         let old = positions;
         let old_normals = normals;
         positions = Vec::new();
         normals = Vec::new();
-        uvs = Vec::new();
-        indices.clear();
         for triangle in triangles() {
             let points = triangle.map(|i| Vec3::from_array(old[i as usize]));
             let flat = points.map(|p| DVec2::new(f64::from(p.x), f64::from(p.z)) + key.minimum());
             let denominator = (flat[1] - flat[0]).perp_dot(flat[2] - flat[0]);
-            for polygon in super::super::holes::pieces_in(world, key.0, view, key.1, flat.to_vec())
+            for polygon in
+                super::super::holes::pieces_in(world, key.0, view.workspace, key.1, flat.to_vec())
             {
                 for index in 1..polygon.len().saturating_sub(1) {
                     for point in [polygon[0], polygon[index], polygon[index + 1]] {
@@ -186,6 +187,7 @@ pub(super) fn visual_in(
             return None;
         }
     }
+    nucleus::performance::add("terrain-ground-visual-builds", 1);
     let mesh = Mesh::new(
         PrimitiveTopology::TriangleList,
         RenderAssetUsages::default(),
@@ -195,7 +197,7 @@ pub(super) fn visual_in(
     .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, uvs)
     .with_inserted_indices(bevy::mesh::Indices::U32(indices));
     let mesh = world.resource_mut::<Assets<Mesh>>().add(mesh);
-    let definition = material(world, key.0, key.1, key.minimum());
+    let definition = materials.definition(world, key);
     let handle = world
         .resource_mut::<Assets<GroundMaterial>>()
         .add(definition);
@@ -205,7 +207,8 @@ pub(super) fn visual_in(
                 Mesh3d(mesh),
                 MeshMaterial3d(handle),
                 Transform::from_translation(
-                    (DVec3::new(key.minimum().x, -(depth as f64) * 0.2, key.minimum().y) - origin)
+                    (DVec3::new(key.minimum().x, -(view.depth as f64) * 0.2, key.minimum().y)
+                        - view.origin)
                         .as_vec3(),
                 ),
                 Visibility::Visible,
@@ -234,113 +237,32 @@ pub fn destroy(world: &mut World, entity: Entity) {
 }
 
 pub fn draw(world: &mut World) {
+    let _presentation = nucleus::performance::Span::new("terrain-ground-presentation");
     if !world.contains_resource::<Terrain>() {
         return;
     }
-    let roots: Vec<_> = world
+    let mut roots = Vec::new();
+    for (entity, workspaces, view) in world
         .query::<(
             Entity,
             &crate::native::workspace::Workspaces,
             &crate::native::canvas::CanvasView,
         )>()
         .iter(world)
-        .flat_map(|(e, w, v)| {
-            w.entries
+    {
+        roots.extend(
+            workspaces
+                .entries
                 .iter()
-                .filter(|entry| super::super::holes::live(world, e, entry.id))
-                .map(move |entry| (e, entry.id, *v))
-                .collect::<Vec<_>>()
-        })
-        .collect();
+                .filter(|entry| super::super::holes::live(world, entity, entry.id))
+                .map(|entry| (entity, entry.id, *view)),
+        );
+    }
+    let mut materials = Materials::default();
     let mut terrain = world.remove_resource::<Terrain>().unwrap();
     let collisions = std::mem::take(&mut terrain.tiles);
     terrain.tiles = std::mem::take(&mut terrain.render_tiles);
-    let views = world
-        .get_resource::<super::super::previews::Previews>()
-        .map(|views| views.0.clone())
-        .unwrap_or_default();
-    let previews: HashMap<_, _> = world
-        .query::<(
-            Entity,
-            &Effect,
-            Option<&Preview>,
-            &ChildOf,
-            &crate::native::workspace::WorkspaceMember,
-        )>()
-        .iter(world)
-        .filter(|(_, _, preview, parent, member)| {
-            preview.is_some()
-                || views.iter().any(|view| {
-                    view.root == parent.parent()
-                        && super::super::holes::live_in(world, view.root, view.workspace, member.0)
-                })
-        })
-        .map(|(e, effect, preview, _, _)| {
-            (e, preview.map_or_else(|| effect.0.clone(), |p| p.0.clone()))
-        })
-        .collect();
-    let physical_fields = if previews.is_empty() {
-        None
-    } else {
-        let original = std::mem::take(&mut terrain.fields);
-        terrain.fields = original.clone();
-        for (entity, definition) in previews {
-            if !definition.enabled
-                || definition.amplitude == 0.0
-                || world
-                    .get::<Fault>(entity)
-                    .is_some_and(|f| f.1.same_surface(&definition))
-            {
-                continue;
-            }
-            let Some(root) = world.get::<ChildOf>(entity).map(ChildOf::parent) else {
-                continue;
-            };
-            let Some(workspace) = world
-                .get::<crate::native::workspace::WorkspaceMember>(entity)
-                .map(|m| m.0)
-            else {
-                continue;
-            };
-            let Some(center) = world
-                .get::<crate::native::canvas::CanvasItem>(entity)
-                .map(|item| item.position)
-            else {
-                continue;
-            };
-            let Ok(formula) = definition.compile() else {
-                continue;
-            };
-            if world
-                .get::<Fault>(entity)
-                .zip(world.get::<Effect>(entity))
-                .is_some_and(|(fault, effect)| !fault.1.same_surface(&effect.0))
-            {
-                world.entity_mut(entity).remove::<Fault>();
-            }
-            let id = world
-                .get::<crate::native::canvas_host::Identity>(entity)
-                .map_or_else(|| entity.to_bits().to_string(), |id| id.0.clone());
-            let heading = super::super::spatial(world, entity)
-                .rotation()
-                .to_euler(EulerRot::YXZ)
-                .0;
-            let fields = terrain.fields.entry((root, workspace)).or_default();
-            fields.retain(|field| field.input.entity != entity);
-            fields.push(Field {
-                input: Input {
-                    id,
-                    entity,
-                    definition,
-                    center,
-                    heading,
-                },
-                formula,
-            });
-            fields.sort_by(|a, b| a.input.id.cmp(&b.input.id));
-        }
-        Some(original)
-    };
+    let physical_fields = super::preview::prepare(world, &mut terrain);
     let mut flat_layers = Vec::new();
     for (root, workspace, _) in &roots {
         if terrain.fields.keys().any(|(r, _)| r == root)
@@ -383,14 +305,15 @@ pub fn draw(world: &mut World) {
                 tile(&mut terrain, world, key, false);
                 if let Some(tile) = terrain.tiles.get_mut(&key) {
                     let minimum = key.minimum();
-                    let quad = vec![
+                    let quad = [
                         minimum,
                         minimum + DVec2::new(TILE_SIZE, 0.0),
                         minimum + DVec2::splat(TILE_SIZE),
                         minimum + DVec2::new(0.0, TILE_SIZE),
                     ];
-                    let pieces = super::super::holes::pieces(world, root, workspace, quad.clone());
-                    let clipping = (pieces != vec![quad]).then_some(pieces);
+                    let pieces = super::super::holes::pieces(world, root, workspace, quad.to_vec());
+                    let clipping = (pieces.len() != 1 || pieces[0].as_slice() != quad.as_slice())
+                        .then_some(pieces);
                     let depth = super::super::holes::depth(world, root, workspace);
                     if tile.clipping != clipping || tile.depth != depth {
                         if let Some(visual) = tile.visual.take() {
@@ -400,7 +323,7 @@ pub fn draw(world: &mut World) {
                         tile.depth = depth;
                     }
                     if tile.visual.is_none() {
-                        tile.visual = visual(world, key, tile);
+                        tile.visual = visual(world, &mut materials, key, tile);
                     }
                     if let Some(entity) = tile.visual {
                         visible.insert(entity);
@@ -418,18 +341,20 @@ pub fn draw(world: &mut World) {
                             .get_mut::<Visibility>(entity)
                             .unwrap()
                             .set_if_neq(Visibility::Visible);
-                        refresh_material(world, entity, key);
+                        refresh_material(world, &mut materials, entity, key);
                     }
                 }
             }
         }
     }
-    super::overview::draw(world, &mut terrain);
+    super::overview::draw(world, &mut terrain, &mut materials);
     for tile in terrain.tiles.values() {
         if let Some(entity) = tile.visual
             && !visible.contains(&entity)
+            && world.get::<Visibility>(entity) != Some(&Visibility::Hidden)
         {
             world.entity_mut(entity).insert(Visibility::Hidden);
+            nucleus::performance::add("terrain-ground-component-writes", 1);
         }
     }
     let stale: Vec<_> = terrain
@@ -473,8 +398,12 @@ pub fn draw(world: &mut World) {
     for key in flat_layers {
         terrain.fields.remove(&key);
     }
-    if let Some(fields) = physical_fields {
-        terrain.fields = fields;
+    for (key, fields) in physical_fields {
+        if let Some(fields) = fields {
+            terrain.fields.insert(key, fields);
+        } else {
+            terrain.fields.remove(&key);
+        }
     }
     world.insert_resource(terrain);
 }

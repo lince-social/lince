@@ -251,8 +251,6 @@ fn entity(world: &World, root: Entity, workspace: u64, id: PlacementId) -> Optio
     let model = workspace_model(world, root, workspace)?;
     let mut examined = 0;
     let mut considered = 0;
-    // Identity is cheap and authoritative Managed identity takes precedence.
-    // Keep child order, but only inspect eligibility for actual ID matches.
     let target = world
         .get::<Children>(root)
         .into_iter()
@@ -749,8 +747,6 @@ pub(crate) fn resolve(world: &mut World) {
     });
     for ((root, workspace), state) in &mut states.0 {
         let (root, workspace) = (*root, *workspace);
-        // World sources remain immutable through target selection. Reuse the
-        // same ID's result within this phase, never across camera/state writes.
         let previous_id = state.last;
         let previous_target = previous_id.and_then(|id| entity(world, root, workspace, id));
         if previous_id.is_some() && previous_target.is_none() {

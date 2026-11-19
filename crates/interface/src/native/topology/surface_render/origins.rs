@@ -1,3 +1,4 @@
+use bevy::render::view::ResolvedCompositingSpace;
 use super::*;
 use bevy::{
     asset::VisitAssetDependencies,
@@ -97,8 +98,6 @@ impl CompletedCaptures {
             clears,
             origins,
         });
-        // Callers acknowledge an encoded image write, not merely a texture's
-        // ability to be rendered into. This is not GPU-completion evidence.
         state.write_serial = state.write_serial.wrapping_add(1);
         let serial = state.write_serial;
         state.writes.insert(image, serial);
@@ -120,8 +119,6 @@ impl CompletedCaptures {
     }
 
     fn include_retained(&self, writers: &mut BTreeMap<AssetId<Image>, bool>) {
-        // Retained provenance without a current camera is not writer ownership.
-        // Visit the keys in place rather than cloning every Arc and map entry.
         let Ok(state) = self.0.lock() else {
             return;
         };
@@ -134,7 +131,6 @@ impl CompletedCaptures {
         let mut state = self.0.lock().unwrap();
         state.links = 0;
         state.images.clear();
-        // Imported provenance does not establish an observed content write.
         state.writes.clear();
         for (image, mut origins) in images {
             if state.links.saturating_add(origins.links()) > MAX_LINKS {
@@ -152,8 +148,6 @@ pub(super) struct Inputs(CaptureOrigins);
 #[derive(Resource)]
 pub(super) struct MaterialInputs {
     materials: BTreeMap<Entity, BTreeSet<AssetId<Image>>>,
-    // True means an active or untracked writer: keep conservative invalidation.
-    // False requires every current camera writing that image to be inactive.
     writers: BTreeMap<AssetId<Image>, bool>,
     scopes: crate::native::capture::Snapshot,
 }
@@ -305,10 +299,14 @@ pub(super) struct UiOrigins(BTreeMap<Entity, CaptureOrigins>);
 
 pub(super) fn prepare_ui(nodes: Res<ExtractedUiNodes>, materials: Res<MaterialInputs>, mut saved: ResMut<UiOrigins>) {
     saved.0.clear();
-    for node in &nodes.uinodes {
-        let origins = saved.0.entry(node.extracted_camera_entity).or_insert_with(CaptureOrigins::empty);
-        origins.contributors.insert(node.main_entity.id());
-        if materials.writers.contains_key(&node.image) { origins.images.insert(node.image); }
+    for (owner, (camera, group)) in &nodes.uinodes {
+        let origins = saved.0.entry(*camera).or_insert_with(CaptureOrigins::empty);
+        origins.contributors.insert(owner.id());
+        for node in group.values() {
+            if materials.writers.contains_key(&node.image) {
+                origins.images.insert(node.image);
+            }
+        }
         origins.bound();
     }
 }
@@ -328,7 +326,7 @@ pub(super) fn surface(
 }
 
 pub(super) fn record_view(
-    view: ViewQuery<(Entity, &ExtractedCamera, &ViewTarget, Option<&RenderVisibleEntities>, Option<&Inputs>, &ViewUpscalingPipeline, Option<&UiCameraView>)>,
+    view: ViewQuery<(Entity, &ExtractedCamera, &ViewTarget, Option<&RenderVisibleEntities>, Option<&Inputs>, &ViewUpscalingPipeline, Option<&UiCameraView>, Option<&ResolvedCompositingSpace>)>,
     ui: Res<UiOrigins>,
     phases: Res<ViewSortedRenderPhases<TransparentUi>>,
     views: Query<&ExtractedView>,
@@ -338,12 +336,12 @@ pub(super) fn record_view(
     blit: Res<BlitPipeline>,
     completed: Res<CompletedCaptures>,
 ) {
-    let (entity, camera, target, visible, inputs, _, ui_view) = view.into_inner();
+    let (entity, camera, target, visible, inputs, _, ui_view, composition) = view.into_inner();
     let Some(NormalizedRenderTarget::Image(image)) = &camera.target else { return; };
     let CameraOutputMode::Write { blend_state, clear_color } = camera.output_mode else { return; };
     let blend_state = blend_state.or_else(|| (camera.sorted_camera_index_for_target > 0).then_some(BlendState::ALPHA_BLENDING));
     let Some(target_format) = target.out_texture_view_format() else { return; };
-    let pipeline = pipelines.specialize(&mut cache, &blit, BlitPipelineKey { target_format, blend_state, samples: 1, source_space: target.compositing_space });
+    let pipeline = pipelines.specialize(&mut cache, &blit, BlitPipelineKey { target_format, blend_state, samples: 1, source_space: ResolvedCompositingSpace::space(composition) });
     if cache.get_render_pipeline(pipeline).is_none() || !target.needs_present() { return; }
     let mut origins = inputs.map_or_else(CaptureOrigins::default, |inputs| inputs.0.clone());
     if let Some(visible) = visible {

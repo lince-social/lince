@@ -518,7 +518,7 @@ fn evaluate_node(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, reason = "Pass the rule, readings, and evaluation state explicitly")]
 fn evaluate_threshold(
     node_id: &LocalId,
     inputs: &BTreeMap<LocalId, LiteralValue>,
@@ -575,7 +575,7 @@ fn evaluate_threshold(
     ))
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, reason = "Pass the rule, readings, and evaluation state explicitly")]
 fn evaluate_debounce(
     node_id: &LocalId,
     inputs: &BTreeMap<LocalId, LiteralValue>,
@@ -684,7 +684,7 @@ fn evaluate_debounce(
     ))
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, reason = "Pass the rule, readings, and evaluation state explicitly")]
 fn evaluate_cooldown(
     node_id: &LocalId,
     inputs: &BTreeMap<LocalId, LiteralValue>,
@@ -752,7 +752,7 @@ fn evaluate_cooldown(
     ))
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, reason = "Pass the rule, readings, and evaluation state explicitly")]
 fn evaluate_rate_limit(
     node_id: &LocalId,
     inputs: &BTreeMap<LocalId, LiteralValue>,

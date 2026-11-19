@@ -101,8 +101,7 @@ fn wait(
                         .map(|node| (node.size(), node.content_box())),
                     world.get::<bevy::prelude::UiGlobalTransform>(entity),
                     world
-                        .get::<bevy::ui::CalculatedClip>(entity)
-                        .map(|clip| clip.clip),
+                        .get::<bevy::ui::CalculatedClip>(entity),
                     world.get::<bevy::ui::widget::TextScroll>(entity),
                     world
                         .get::<EditableText>(entity)

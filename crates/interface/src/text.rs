@@ -1,5 +1,58 @@
 use std::borrow::Cow;
 
+pub fn prefix(text: &str, char_limit: usize) -> &str {
+    let end = if text.len() > char_limit {
+        text.char_indices()
+            .nth(char_limit)
+            .map_or(text.len(), |(byte, _)| byte)
+    } else {
+        text.len()
+    };
+    &text[..end]
+}
+
+fn map_positions(positions: [usize; 2], mut read: impl FnMut(usize) -> usize) -> [usize; 2] {
+    let [anchor, focus] = positions;
+    let first = read(anchor.min(focus));
+    if anchor == focus {
+        return [first, first];
+    }
+    let second = read(anchor.max(focus));
+    if anchor < focus {
+        [first, second]
+    } else {
+        [second, first]
+    }
+}
+
+pub fn scalar_positions(mut chars: impl Iterator<Item = char>, bytes: [usize; 2]) -> [usize; 2] {
+    let (mut byte, mut scalar) = (0, 0);
+    map_positions(bytes, |target| {
+        while byte < target {
+            let Some(character) = chars.next() else {
+                break;
+            };
+            byte += character.len_utf8();
+            scalar += 1;
+        }
+        scalar
+    })
+}
+
+pub fn byte_positions(mut chars: impl Iterator<Item = char>, scalars: [usize; 2]) -> [usize; 2] {
+    let (mut byte, mut scalar) = (0, 0);
+    map_positions(scalars, |target| {
+        while scalar < target {
+            let Some(character) = chars.next() else {
+                break;
+            };
+            byte += character.len_utf8();
+            scalar += 1;
+        }
+        byte
+    })
+}
+
 pub fn reading_page(text: &str, page: usize, char_limit: usize) -> (&str, bool) {
     let char_limit = char_limit.clamp(1, 16000);
     let mut offset = 0;

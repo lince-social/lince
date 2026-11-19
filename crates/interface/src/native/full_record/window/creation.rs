@@ -100,11 +100,11 @@ impl Creation {
         }
     }
 
-    pub(crate) fn message(&self) -> String {
+    pub(crate) fn message(&self) -> &str {
         match &self.state {
-            CreationState::Pending => "Creating window Record…".into(),
+            CreationState::Pending => "Creating window Record…",
             CreationState::Failed(message) | CreationState::Unavailable(message) => {
-                message.chars().take(1024).collect()
+                lince_interface::text::prefix(message, 1024)
             }
         }
     }

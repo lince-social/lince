@@ -7,11 +7,11 @@ use bevy::{math::DVec2, prelude::*};
 use cell::{ClientMessage, ServerMessage};
 use model::{Draft, Frequency};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use crate::native::{
     actions::Action,
-    cell_bridge::{CellMessage, ReceiveCell},
+    cell_bridge::{CellMessage, ReceiveCell, replies},
     workspace::WorkspaceMember,
 };
 pub(crate) use persistence::{SavedFrequencyCastle, snapshot};
@@ -24,7 +24,7 @@ pub struct FrequencyCastle {
 
 #[derive(Default)]
 struct Rows {
-    values: Vec<Frequency>,
+    values: Arc<Vec<Frequency>>,
     by_uid: HashMap<String, usize>,
 }
 
@@ -33,11 +33,13 @@ impl From<Vec<Frequency>> for Rows {
         let _prepare = nucleus::performance::Span::new("frequency-row-preparation");
         let mut by_uid = HashMap::with_capacity(values.len());
         for (index, row) in values.iter().enumerate() {
-            // Match the former first-row lookup if a source repeats an ID.
             by_uid.entry(row.uid.clone()).or_insert(index);
         }
         nucleus::performance::add("frequency-rows-prepared", values.len() as u64);
-        Self { values, by_uid }
+        Self {
+            values: Arc::new(values),
+            by_uid,
+        }
     }
 }
 
@@ -57,6 +59,7 @@ impl Rows {
 
 #[derive(Component)]
 struct View {
+    subscription: String,
     controls: Entity,
     form: Entity,
     list: Entity,
@@ -72,6 +75,12 @@ struct Pending {
     id: String,
     draft: Option<Draft>,
     message: &'static str,
+}
+
+impl replies::Pending for View {
+    fn pending_id(&self) -> Option<&str> {
+        self.pending.as_ref().map(|pending| pending.id.as_str())
+    }
 }
 
 #[derive(Resource, Default)]
@@ -158,6 +167,7 @@ pub fn spawn(
     let status = crate::native::edit_mode::label(world, owner, "", 12.0);
     world.get_mut::<Node>(status).unwrap().display = Display::None;
     world.entity_mut(owner).insert(View {
+        subscription: format!("frequency-castle-{}", owner.to_bits()),
         controls,
         form,
         list,
@@ -265,7 +275,12 @@ fn save(world: &mut World, owner: Entity) {
     submit(world, owner, action, Some(draft), "");
 }
 
-fn maintain(world: &mut World) {
+fn maintain(
+    world: &mut World,
+    candidates: &mut QueryState<Entity, With<FrequencyCastle>>,
+    mut owners: Local<Vec<Entity>>,
+) {
+    let _maintain = nucleus::performance::Span::new("frequency-maintenance");
     let stale: Vec<_> = world
         .resource::<Requests>()
         .0
@@ -274,7 +289,7 @@ fn maintain(world: &mut World) {
         .map(|(id, _)| id.clone())
         .collect();
     for id in stale {
-        let sender = world.resource::<Requests>().1.get(&id).cloned();
+        let sender = world.resource::<Requests>().1.get(&id);
         if sender.is_none_or(|sender| {
             sender.is_closed()
                 || sender
@@ -285,18 +300,21 @@ fn maintain(world: &mut World) {
             world.resource_mut::<Requests>().1.remove(&id);
         }
     }
-    let owners: Vec<_> = world
-        .query_filtered::<Entity, With<FrequencyCastle>>()
-        .iter(world)
-        .collect();
-    for owner in owners {
+    owners.extend(candidates.iter(world));
+    let count = owners.len();
+    nucleus::performance::add("frequency-maintenance-owners", count as u64);
+    for owner in owners.drain(..) {
         if crate::native::laboratory::suspended(world, owner) {
             continue;
         }
-        let id = format!("frequency-castle-{}", owner.to_bits());
-        if world.resource::<Requests>().0.contains_key(&id) {
+        let id = world.get::<View>(owner).map_or_else(
+            || std::borrow::Cow::Owned(format!("frequency-castle-{}", owner.to_bits())),
+            |view| std::borrow::Cow::Borrowed(view.subscription.as_str()),
+        );
+        if world.resource::<Requests>().0.contains_key(id.as_ref()) {
             continue;
         }
+        let id = id.into_owned();
         let protein = serde_json::from_value(serde_json::json!({"source":"frequency"})).unwrap();
         match send(
             world,
@@ -318,6 +336,9 @@ fn maintain(world: &mut World) {
             Err(error) => status(world, owner, error),
         }
     }
+    if count == 0 {
+        *owners = Vec::new();
+    }
 }
 
 pub(crate) use ui::Command as FrequencyAction;
@@ -331,17 +352,62 @@ pub(crate) fn next_occurrence(world: &World, owner: Entity, slug: &str) -> Optio
         .next_at_ms
 }
 
-fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor<CellMessage>>) {
-    let messages: Vec<_> = cursor
-        .read(world.resource::<Messages<CellMessage>>())
-        .map(|message| message.0.clone())
-        .collect();
-    for message in messages.iter().map(|message| message.as_ref()) {
-        match message {
-            ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows } => {
-                let Some(owner) = world.resource::<Requests>().0.get(id).copied() else {
-                    continue;
-                };
+fn receive(
+    world: &mut World,
+    mut cursor: Local<bevy::ecs::message::MessageCursor<CellMessage>>,
+    mut incoming: Local<replies::Wave>,
+    mut pending: Local<replies::Owners<View>>,
+    mut owners: Local<Vec<Entity>>,
+) {
+    let _receive = nucleus::performance::Span::new("frequency-reply-processing");
+    incoming.capture(
+        &mut cursor,
+        world.resource::<Messages<CellMessage>>(),
+        |message| replies::ordinary(message).is_some(),
+    );
+    if incoming.len() == 0 {
+        *owners = Vec::new();
+    }
+    for sequence in incoming.drain() {
+        let message = replies::message(world.resource::<Messages<CellMessage>>(), sequence);
+        let subscription = {
+            let _select = nucleus::performance::Span::new("frequency-reply-selection");
+            match message.as_ref() {
+                ServerMessage::Snapshot { id, .. } | ServerMessage::Update { id, .. } => {
+                    let Some(owner) = world.resource::<Requests>().0.get(id).copied() else {
+                        continue;
+                    };
+                    Some(owner)
+                }
+                ServerMessage::ActionOk { id, .. } => {
+                    pending.collect(world, id, None, false, &mut owners);
+                    if owners.is_empty() {
+                        continue;
+                    }
+                    None
+                }
+                ServerMessage::Error { id, .. } => {
+                    let subscription = world.resource::<Requests>().0.get(id).copied();
+                    pending.collect(
+                        world,
+                        id,
+                        subscription,
+                        id == crate::native::cell_bridge::CONNECTION,
+                        &mut owners,
+                    );
+                    if owners.is_empty() {
+                        continue;
+                    }
+                    None
+                }
+                _ => continue,
+            }
+        };
+        let message = message.clone();
+        nucleus::performance::add("frequency-replies-retained", 1);
+        match message.as_ref() {
+            ServerMessage::Snapshot { rows, .. } | ServerMessage::Update { rows, .. } => {
+                let owner = subscription.unwrap();
                 let rows = match rows
                     .iter()
                     .map(Frequency::deserialize)
@@ -356,7 +422,7 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                 let Some(mut view) = world.get_mut::<View>(owner) else {
                     continue;
                 };
-                if view.ready && view.rows.values == rows {
+                if view.ready && view.rows.values.as_ref() == &rows {
                     continue;
                 }
                 let first = !view.ready;
@@ -377,18 +443,8 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                     status(world, owner, "");
                 }
             }
-            ServerMessage::ActionOk { id, created, .. } => {
-                let owners: Vec<_> = world
-                    .query::<(Entity, &View)>()
-                    .iter(world)
-                    .filter(|(_, view)| {
-                        view.pending
-                            .as_ref()
-                            .is_some_and(|pending| pending.id == *id)
-                    })
-                    .map(|(owner, _)| owner)
-                    .collect();
-                for owner in owners {
+            ServerMessage::ActionOk { created, .. } => {
+                for owner in owners.drain(..) {
                     ui::capture(world, owner);
                     let pending = world
                         .get_mut::<View>(owner)
@@ -418,20 +474,8 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                     status(world, owner, pending.message);
                 }
             }
-            ServerMessage::Error { id, message, .. } => {
-                let owners: Vec<_> = world
-                    .query::<(Entity, &View)>()
-                    .iter(world)
-                    .filter(|(owner, view)| {
-                        view.pending
-                            .as_ref()
-                            .is_some_and(|pending| pending.id == *id)
-                            || world.resource::<Requests>().0.get(id) == Some(owner)
-                            || id == crate::native::cell_bridge::CONNECTION
-                    })
-                    .map(|(owner, _)| owner)
-                    .collect();
-                for owner in owners {
+            ServerMessage::Error { message, .. } => {
+                for owner in owners.drain(..) {
                     world.get_mut::<View>(owner).unwrap().pending = None;
                     status(world, owner, message);
                 }

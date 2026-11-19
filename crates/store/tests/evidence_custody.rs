@@ -155,7 +155,7 @@ async fn retain(
 }
 
 async fn count(store: &Store, table: &str) -> i64 {
-    store::sqlx::query_scalar(&format!("SELECT COUNT(*) FROM {table}"))
+    store::sqlx::query_scalar(store::sqlx::AssertSqlSafe(format!("SELECT COUNT(*) FROM {table}")))
         .fetch_one(&store.pool)
         .await
         .unwrap()

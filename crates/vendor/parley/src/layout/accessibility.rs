@@ -53,7 +53,7 @@ fn add_span(update: &mut TreeUpdate, parent_node: &mut Node, id: NodeId, node: N
     parent_node.push_child(id);
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 pub struct LayoutAccessibility {
     // We define a span as a sequence of clusters, in logical order, that all
     // have an identical style. For each span we create an AccessKit node
@@ -148,7 +148,7 @@ impl LayoutAccessibility {
         (id, node)
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments, reason = "Preserve the upstream accessibility builder signature")]
     pub fn build_nodes<B: Brush>(
         &mut self,
         text: &str,

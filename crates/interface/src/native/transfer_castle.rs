@@ -5,6 +5,7 @@ mod karma;
 mod model;
 mod outcomes;
 mod persistence;
+mod presentation;
 mod receipt_browsing;
 mod receipt_delivery;
 mod receipt_files;

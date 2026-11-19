@@ -514,17 +514,17 @@ fn real_file_hover_survives_pending_presentation_and_uses_the_dispatcher_for_act
             .world_mut()
             .entity_mut(choice)
             .observe(
-                move |_: On<bevy::picking::events::Pointer<bevy::picking::events::Press>>| {
+                move |_: On<PointerPress>| {
                     press.lock().unwrap().push("press");
                 },
             )
             .observe(
-                move |_: On<bevy::picking::events::Pointer<bevy::picking::events::Release>>| {
+                move |_: On<PointerRelease>| {
                     release.lock().unwrap().push("release");
                 },
             )
             .observe(
-                move |_: On<bevy::picking::events::Pointer<bevy::picking::events::Click>>| {
+                move |_: On<PointerClick>| {
                     click.lock().unwrap().push("click");
                 },
             )

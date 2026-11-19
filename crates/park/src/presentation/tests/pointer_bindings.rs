@@ -48,7 +48,7 @@ fn mouse_binding_capture_shares_conflict_resolution_save_and_plain_click_isolati
         )
         .unwrap();
         canvas.app.init_resource::<Presses>().add_observer(
-            |event: On<Pointer<Press>>, mut presses: ResMut<Presses>| {
+            |event: On<PointerPress>, mut presses: ResMut<Presses>| {
                 if event.entity == event.original_event_target()
                     && event.button == bevy::picking::pointer::PointerButton::Secondary
                 {

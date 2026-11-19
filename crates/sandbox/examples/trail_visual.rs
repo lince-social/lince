@@ -111,21 +111,18 @@ fn scroll(app: &mut App, caption: &str, down: bool) {
     }
     let computed = app.world().get::<ComputedNode>(viewport).unwrap();
     assert!(computed.content_size.y > computed.size().y + 1.0);
-    app.world_mut().trigger(Pointer::new(
-        bevy::picking::pointer::PointerId::Mouse,
-        bevy::picking::pointer::Location {
+    app.world_mut().trigger(PointerScroll {
+        entity: target,
+        pointer: Pointer::new(bevy::picking::pointer::PointerId::Mouse, bevy::picking::pointer::Location {
             target: bevy::camera::NormalizedRenderTarget::Image(Handle::<Image>::default().into()),
             position: Vec2::ZERO,
-        },
-        bevy::picking::events::Scroll {
-            unit: bevy::input::mouse::MouseScrollUnit::Pixel,
+        }),
+        unit: bevy::input::mouse::MouseScrollUnit::Pixel,
             x: 0.0,
             y: if down { -100_000.0 } else { 100_000.0 },
             phase: bevy::input::touch::TouchPhase::Moved,
             hit: bevy::picking::backend::HitData::new(viewport, 0.0, None, None),
-        },
-        target,
-    ));
+    });
     app.world_mut().flush();
     for _ in 0..8 {
         step(app);

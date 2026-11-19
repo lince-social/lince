@@ -52,7 +52,9 @@ pub(super) fn scroll(world: &mut World, parent: Entity, offset: Vec2) -> bool {
             let size = world
                 .get::<ComputedNode>(child)
                 .map_or(Vec2::ZERO, |node| node.size() * node.inverse_scale_factor());
-            let position = state.original.resolve(1.0, size, viewport) - offset;
+            let em_size = world.get::<bevy::text::EmSize>(child).copied().unwrap_or_default();
+            let rem_size = world.get_resource::<bevy::text::RemSize>().copied().unwrap_or_default();
+            let position = state.original.resolve(1.0, size, viewport, em_size, rem_size) - offset;
             Val2::px(position.x, position.y)
         };
         if current != next {

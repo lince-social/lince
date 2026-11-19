@@ -73,13 +73,8 @@ fn fixture() -> (App, Entity, Entity, Entity, Entity, Entity) {
     (app, root, item, editor, button, neighbour)
 }
 
-fn pointer<E: std::fmt::Debug + Clone + bevy::reflect::Reflect>(
-    world: &mut World,
-    entity: Entity,
-    point: Vec2,
-    event: E,
-) {
-    world.trigger(Pointer::new(
+fn pointer(point: Vec2) -> Pointer {
+    Pointer::new(
         PointerId::Mouse,
         Location {
             target: bevy::camera::NormalizedRenderTarget::None {
@@ -88,19 +83,21 @@ fn pointer<E: std::fmt::Debug + Clone + bevy::reflect::Reflect>(
             },
             position: point,
         },
-        event,
-        entity,
-    ));
+    )
+}
+
+fn trigger<'a>(world: &mut World, event: impl Event<Trigger<'a>: Default>) {
+    world.trigger(event);
     world.flush();
 }
 
 fn start(world: &mut World, root: Entity, button: Entity) {
     world.entity_mut(button).insert(bevy::ui::Pressed);
-    pointer(
+    trigger(
         world,
-        button,
-        Vec2::new(210.0, 200.0),
-        DragStart {
+        PointerDragStart {
+            entity: button,
+            pointer: pointer(Vec2::new(210.0, 200.0)),
             button: PointerButton::Primary,
             hit: HitData::new(root, 0.0, None, None),
         },
@@ -160,22 +157,22 @@ fn pointer_drag_moves_the_captured_item_once_without_activating_the_workspace_or
         .unwrap()
         .ghost;
     let end = Vec2::new(350.0, 420.0);
-    pointer(
+    trigger(
         app.world_mut(),
-        button,
-        end,
-        Drag {
+        PointerDrag {
+            entity: button,
+            pointer: pointer(end),
             button: PointerButton::Primary,
             distance: Vec2::new(140.0, 220.0),
             delta: Vec2::new(140.0, 220.0),
         },
     );
     assert_eq!(app.world().get::<WorkspaceMember>(item).unwrap().0, 1);
-    pointer(
+    trigger(
         app.world_mut(),
-        button,
-        end,
-        DragEnd {
+        PointerDragEnd {
+            entity: button,
+            pointer: pointer(end),
             button: PointerButton::Primary,
             distance: Vec2::new(140.0, 220.0),
         },
@@ -208,11 +205,11 @@ fn pointer_drag_moves_the_captured_item_once_without_activating_the_workspace_or
         app.world().resource::<InputFocus>().get(),
         Some(state.cards[1].items[&id].0)
     );
-    pointer(
+    trigger(
         app.world_mut(),
-        button,
-        end,
-        DragEnd {
+        PointerDragEnd {
+            entity: button,
+            pointer: pointer(end),
             button: PointerButton::Primary,
             distance: Vec2::new(140.0, 220.0),
         },
@@ -245,21 +242,21 @@ fn row_destination_uses_rendered_edges_and_preserves_the_other_item_and_authored
         .to_vec();
     start(app.world_mut(), root, button);
     let end = Vec2::new(500.0, 245.0);
-    pointer(
+    trigger(
         app.world_mut(),
-        button,
-        end,
-        Drag {
+        PointerDrag {
+            entity: button,
+            pointer: pointer(end),
             button: PointerButton::Primary,
             distance: Vec2::new(290.0, 45.0),
             delta: Vec2::new(290.0, 45.0),
         },
     );
-    pointer(
+    trigger(
         app.world_mut(),
-        button,
-        end,
-        DragEnd {
+        PointerDragEnd {
+            entity: button,
+            pointer: pointer(end),
             button: PointerButton::Primary,
             distance: Vec2::new(290.0, 45.0),
         },
@@ -286,11 +283,11 @@ fn cancellation_and_lost_context_retire_the_preview_without_a_late_transfer() {
             .unwrap()
             .ghost;
         match loss {
-            0 => pointer(
+            0 => trigger(
                 app.world_mut(),
-                button,
-                Vec2::new(200.0, 200.0),
-                Cancel {
+                PointerCancel {
+                    entity: button,
+                    pointer: pointer(Vec2::new(200.0, 200.0)),
                     hit: HitData::new(root, 0.0, None, None),
                 },
             ),
@@ -475,9 +472,12 @@ fn clipped_preview_bounds_use_logical_pixels_and_never_target_invisible_content(
     let mut world = World::new();
     let target = world.spawn(Node::default()).id();
     geometry(&mut world, target, Rect::new(20.0, 30.0, 220.0, 130.0), 1.5);
-    world.entity_mut(target).insert(bevy::ui::CalculatedClip {
-        clip: Rect::new(60.0, 60.0, 180.0, 180.0),
-    });
+    let mut clip = bevy::ui::CalculatedClip::default();
+    clip.push_rect(
+        Rect::new(60.0, 60.0, 180.0, 180.0),
+        bevy::math::Affine2::IDENTITY,
+    );
+    world.entity_mut(target).insert(clip);
     assert_eq!(
         rectangle(&world, target),
         Some(Rect::new(40.0, 40.0, 120.0, 120.0))

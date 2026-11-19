@@ -194,9 +194,6 @@ async fn seed_logs(tx: &mut Transaction<'_, Sqlite>, uid: &str) -> Result<(), En
     Ok(())
 }
 
-// Incoming logs have already passed WorkMetadata validation. Match literal start
-// strings (not normalized instants), consuming duplicate starts in the original
-// property order. Unmatched old properties retain that order for retraction.
 fn work_log_changes(
     existing: Vec<(String, String)>,
     logs: &[Value],
@@ -274,10 +271,6 @@ pub(crate) async fn apply_register(
 
 enum WorkProjection<'a> {
     Immediate,
-    // The complete incoming metadata has been validated before preparing its
-    // registers. Every submitted value is an unchanged subtree or a tombstone,
-    // so its size/log validation is already covered. The merged final projection
-    // still needs its own validation, including any higher-ranked retained data.
     FinalMetadata(&'a mut Value),
     FinalLogs,
 }
@@ -403,8 +396,6 @@ async fn apply_register_on(
                         .await?;
                 }
             }
-            // Arbitration above needs the newly stored register. Do not write
-            // that identical register again through the common path below.
             return Ok(true);
         }
         "work.start" | "work.due" | "work.estimate_min" | "work.projection_occurrence" => {
@@ -422,8 +413,6 @@ async fn apply_register_on(
                 crate::private_work::WorkMetadata::validate_log(&register.value)
                     .map_err(invalid_display)?;
             }
-            // Metadata replacements and Timer requests seed before preparing
-            // their registers, then project the accepted final state once.
             if immediate_work {
                 seed_logs(tx, uid).await?;
             }
@@ -856,9 +845,6 @@ impl Engine {
         }
         if let Some(mut work) = staged_work {
             if logs_changed {
-                // No intermediate projection leaves this transaction. Preserve
-                // every register/op in order, including higher-ranked retained
-                // values, and load the final log list once.
                 work["logs"] = Value::Array(work_logs_on(&mut tx, uid).await?);
             }
             if changed {
@@ -867,9 +853,6 @@ impl Engine {
                 crate::private_work::WorkMetadata::validate(&work).map_err(invalid_display)?;
             }
         } else if final_logs && logs_changed {
-            // One Timer request may stop several active logs. Each register and
-            // sync operation remains ordered; no intermediate projection escapes
-            // this transaction. Stale/no-op registers still do not read or write it.
             project_logs(&mut tx, uid).await?;
         }
         let now = nucleus::execution::now();

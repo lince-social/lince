@@ -236,7 +236,7 @@ fn influence_stamp<'a>(
     stamp.sources.extend(
         queries
             .influences
-            .iter_many(world, direct_children(world, root))
+            .iter_many(world, direct_children(world, root)).matched()
             .filter(|(_, parent, member, area, filter, record, binding)| {
                 parent.parent() == root
                     && member.0 == workspace
@@ -348,7 +348,7 @@ pub fn focus_item(world: &mut World, entity: Entity) {
 }
 
 pub(super) fn clicked(
-    event: On<Pointer<Press>>,
+    event: On<PointerPress>,
     managed: Query<&Managed>,
     parents: Query<&ChildOf>,
     mut commands: Commands,
@@ -398,8 +398,6 @@ pub(crate) fn root(world: &World, mut entity: Entity) -> Option<Entity> {
     None
 }
 
-/// ChildOf/Children is Bevy's maintained relationship index. Resolve each phase
-/// against the current root instead of scanning unrelated workspace entities.
 fn direct_children(world: &World, root: Entity) -> impl Iterator<Item = Entity> + '_ {
     let children = world.get::<Children>(root);
     engine::performance::add(
@@ -518,7 +516,7 @@ fn resolve_queried(world: &mut World, queries: &mut ResolveQueries) {
             queries.entity_buffer.extend(
                 queries
                     .managed
-                    .iter_many(world, direct_children(world, root))
+                    .iter_many(world, direct_children(world, root)).matched()
                     .filter(|(_, parent, _)| parent.parent() == root)
                     .map(|(entity, _, _)| entity),
             );
@@ -530,7 +528,7 @@ fn resolve_queried(world: &mut World, queries: &mut ResolveQueries) {
             queries.entity_buffer.extend(
                 queries
                     .suppressed
-                    .iter_many(world, direct_children(world, root))
+                    .iter_many(world, direct_children(world, root)).matched()
                     .filter(|(_, parent)| parent.parent() == root)
                     .map(|(entity, _)| entity),
             );
@@ -559,7 +557,7 @@ fn resolve_queried(world: &mut World, queries: &mut ResolveQueries) {
         queries.row_buffer.extend(
             queries
                 .items
-                .iter_many(world, direct_children(world, root))
+                .iter_many(world, direct_children(world, root)).matched()
                 .filter(|(entity, _, parent, member)| {
                     parent.parent() == root && member.0 == active && candidate(world, *entity)
                 })
@@ -573,8 +571,6 @@ fn resolve_queried(world: &mut World, queries: &mut ResolveQueries) {
                     )
                 }),
         );
-        // Entity indices are unique within the live query, so this is a total
-        // ordering. Cache application identity before sorting, not per compare.
         queries.row_buffer.sort_unstable_by(
             |(a, first, first_window), (b, second, second_window)| {
                 first
@@ -831,7 +827,7 @@ fn resolve_queried(world: &mut World, queries: &mut ResolveQueries) {
                 queries.entity_buffer.extend(
                     queries
                         .members
-                        .iter_many(world, direct_children(world, root))
+                        .iter_many(world, direct_children(world, root)).matched()
                         .filter(|(entity, parent, member)| {
                             parent.parent() == root
                                 && member.0 == active

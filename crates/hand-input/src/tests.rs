@@ -5,11 +5,12 @@ fn face_outputs_require_valid_shapes_and_select_highest_confidence() {
     let mut outputs = Vec::new();
     for channels in [1, 1, 4, 10] {
         for stride in [8, 16, 32] {
-            outputs.push(vec![0.0; (320 / stride) * (320 / stride) * channels]);
+            outputs.push(vec![0.0; (FACE_INPUT_SIZE / stride).pow(2) * channels]);
         }
     }
-    outputs[0][41] = 0.95;
-    outputs[3][41] = 0.95;
+    let index = 2 * (FACE_INPUT_SIZE / 8 + 1);
+    outputs[0][index] = 0.95;
+    outputs[3][index] = 0.95;
     assert_eq!(decode_head(&outputs).unwrap(), Some([0.025, 0.025]));
     outputs[3].clear();
     assert!(decode_head(&outputs).is_err());

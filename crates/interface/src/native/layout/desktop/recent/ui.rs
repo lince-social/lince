@@ -87,7 +87,7 @@ pub(super) fn open(
             crate::native::edit_mode::FocusScroll,
             ChildOf(panel),
         ))
-        .observe(|mut event: On<Pointer<Scroll>>| event.propagate(false))
+        .observe(|mut event: On<PointerScroll>| event.propagate(false))
         .id();
     let mut rows = BTreeMap::new();
     for entry in &entries {

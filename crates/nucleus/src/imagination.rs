@@ -1,6 +1,7 @@
 use crate::NucleusError;
 use crate::karma::{Cadence, Carry, Condition, ConditionError, DecimalValue, ExactResolver, Gate};
 use chrono::{DateTime, Utc};
+use std::cell::OnceCell;
 use std::collections::HashMap;
 
 const VALUE_DEPTH_CAP: usize = 4;
@@ -71,29 +72,52 @@ impl Timeline {
     }
 }
 
-struct VirtualResolver<'a> {
-    snapshot: &'a Snapshot,
+struct Prepared<'snapshot> {
+    snapshot: &'snapshot Snapshot,
+    rules: OnceCell<HashMap<&'snapshot str, &'snapshot ProjRule>>,
+}
+
+impl Prepared<'_> {
+    fn rule_on(&self, record_uid: &str) -> Option<&ProjRule> {
+        self.rules
+            .get_or_init(|| {
+                let _index = crate::performance::Span::new("imagination-rule-index");
+                let mut rules = HashMap::new();
+                for rule in &self.snapshot.rules {
+                    rules.entry(rule.record_uid.as_str()).or_insert(rule);
+                }
+                crate::performance::add(
+                    "imagination-rule-index-rows",
+                    self.snapshot.rules.len() as u64,
+                );
+                rules
+            })
+            .get(record_uid)
+            .copied()
+    }
+}
+
+struct VirtualResolver<'a, 'snapshot> {
+    prepared: &'a Prepared<'snapshot>,
     quantities: &'a HashMap<String, f64>,
     since: DateTime<Utc>,
     at: DateTime<Utc>,
     depth: usize,
 }
 
-impl VirtualResolver<'_> {
-    fn uid_of(&self, token: &str) -> Option<String> {
+impl VirtualResolver<'_, '_> {
+    fn uid_of(&self, token: &str) -> Option<&str> {
         let token = token.trim_start_matches('@');
-        self.snapshot.slugs.get(token).cloned().or_else(|| {
-            self.quantities
-                .contains_key(token)
-                .then(|| token.to_string())
-        })
-    }
-
-    fn rule_on(&self, record_uid: &str) -> Option<&ProjRule> {
-        self.snapshot
-            .rules
-            .iter()
-            .find(|rule| rule.record_uid == record_uid)
+        self.prepared
+            .snapshot
+            .slugs
+            .get(token)
+            .map(String::as_str)
+            .or_else(|| {
+                self.quantities
+                    .get_key_value(token)
+                    .map(|(uid, _)| uid.as_str())
+            })
     }
 }
 
@@ -102,7 +126,7 @@ fn exact(value: f64) -> Result<DecimalValue, ConditionError> {
         .map_err(|_| ConditionError::UnknownReference("a level too large to read".into()))
 }
 
-impl ExactResolver for VirtualResolver<'_> {
+impl ExactResolver for VirtualResolver<'_, '_> {
     fn lookup(
         &mut self,
         func: &str,
@@ -114,13 +138,13 @@ impl ExactResolver for VirtualResolver<'_> {
                 let uid = self
                     .uid_of(slug)
                     .ok_or_else(|| ConditionError::UnknownReference(slug.to_string()))?;
-                exact(self.quantities.get(&uid).copied().unwrap_or(0.0))
+                exact(self.quantities.get(uid).copied().unwrap_or(0.0))
             }
             "freq" => {
                 let uid = self
                     .uid_of(slug)
                     .ok_or_else(|| ConditionError::UnknownReference(slug.to_string()))?;
-                let Some(rhythm) = self.rule_on(&uid) else {
+                let Some(rhythm) = self.prepared.rule_on(uid) else {
                     return exact(0.0);
                 };
                 let tick = chrono::Duration::milliseconds(1);
@@ -147,7 +171,8 @@ impl ExactResolver for VirtualResolver<'_> {
                     .uid_of(slug)
                     .ok_or_else(|| ConditionError::UnknownReference(slug.to_string()))?;
                 let rule = self
-                    .rule_on(&uid)
+                    .prepared
+                    .rule_on(uid)
                     .ok_or_else(|| ConditionError::UnknownReference(slug.to_string()))?;
                 let asked = rule
                     .condition
@@ -167,6 +192,11 @@ impl ExactResolver for VirtualResolver<'_> {
 }
 
 pub fn project(snapshot: &Snapshot, until: DateTime<Utc>) -> Timeline {
+    let _project = crate::performance::Span::new("imagination-project");
+    let prepared = Prepared {
+        snapshot,
+        rules: OnceCell::new(),
+    };
     let mut state = snapshot.quantities.clone();
     let mut points = Vec::new();
 
@@ -196,6 +226,7 @@ pub fn project(snapshot: &Snapshot, until: DateTime<Utc>) -> Timeline {
             previous = at;
         }
     }
+    crate::performance::add("imagination-events", events.len() as u64);
     events.sort_by_key(|(at, event)| {
         (
             *at,
@@ -227,7 +258,7 @@ pub fn project(snapshot: &Snapshot, until: DateTime<Utc>) -> Timeline {
                 let mut number = declared;
                 if let Some(asked) = rule.condition.as_ref() {
                     let mut resolver = VirtualResolver {
-                        snapshot,
+                        prepared: &prepared,
                         quantities: &state,
                         since,
                         at,
@@ -261,6 +292,7 @@ pub fn project(snapshot: &Snapshot, until: DateTime<Utc>) -> Timeline {
         }
     }
 
+    crate::performance::add("imagination-timeline-points", points.len() as u64);
     Timeline {
         points,
         final_state: state,

@@ -8,9 +8,6 @@ pub(super) struct Group {
     pub visible: bool,
 }
 
-/// Fresh presentation inputs shared by selection, residency and portraits.
-/// Visibility and token ancestry are resolved once per avatar, not retained
-/// across updates where either can change independently of the avatar itself.
 pub(super) struct Demand {
     pub groups: BTreeMap<Palette, Group>,
     pub edge: u32,

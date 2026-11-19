@@ -46,7 +46,7 @@ pub use crate::editing::{Cursor, Selection};
 use crate::style::Brush;
 use crate::{LineHeight, OverflowWrap, TextWrapMode};
 
-#[allow(clippy::partial_pub_fields)]
+#[allow(clippy::partial_pub_fields, reason = "Public style settings and private layout state have different roles")]
 /// Style properties.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Style<B: Brush> {

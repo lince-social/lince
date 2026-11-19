@@ -1,7 +1,7 @@
 use super::*;
 
 pub(super) fn focus(
-    mut event: On<Pointer<Press>>,
+    mut event: On<PointerPress>,
     screens: Query<&Screen>,
     mut focus: ResMut<InputFocus>,
 ) {

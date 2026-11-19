@@ -6,6 +6,8 @@ use store::sqlx::Row;
 
 use crate::{Engine, EngineError};
 
+mod effects;
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Reading {
     pub function: String,
@@ -77,7 +79,15 @@ pub(crate) async fn persist(
     rule: &store::recurrence::Recurrence,
     event: &crate::rule_runtime::RuleEvent,
 ) -> Result<(), EngineError> {
-    let Ok(evidence) = CAPTURE.try_with(|capture| capture.borrow().clone()) else {
+    let Ok(evidence) = CAPTURE.try_with(|capture| {
+        let _encoding = nucleus::performance::Span::new("karma-evidence-encoding");
+        nucleus::performance::add("karma-evidence-encodings", 1);
+        let encoded = serde_json::to_string(&*capture.borrow());
+        if let Ok(encoded) = &encoded {
+            nucleus::performance::add("karma-evidence-encoded-bytes", encoded.len() as u64);
+        }
+        encoded
+    }) else {
         return Ok(());
     };
     store::sqlx::query("INSERT OR IGNORE INTO karma_rule_evidence VALUES (?, ?, ?, ?, ?)")
@@ -85,7 +95,7 @@ pub(crate) async fn persist(
         .bind(&rule.uid)
         .bind(rule.revision)
         .bind(event.attempt)
-        .bind(serde_json::to_string(&evidence).map_err(EngineError::Json)?)
+        .bind(evidence.map_err(EngineError::Json)?)
         .execute(connection)
         .await?;
     Ok(())
@@ -144,47 +154,41 @@ impl Engine {
             ));
         }
         self.refuse_unreadable(actor, &[rule_uid.into()]).await?;
-        let rows = store::sqlx::query("SELECT a.*, e.evidence FROM karma_rule_application a LEFT JOIN karma_rule_evidence e USING(event_id, rule_uid, rule_revision, attempt) WHERE a.rule_uid = ? ORDER BY a.at DESC, a.rowid DESC LIMIT ?")
-            .bind(rule_uid).bind(limit).fetch_all(&self.store.pool).await?;
+        let rows = {
+            let _read = nucleus::performance::Span::new("karma-history-application-read");
+            store::sqlx::query("SELECT a.*, e.evidence FROM karma_rule_application a LEFT JOIN karma_rule_evidence e USING(event_id, rule_uid, rule_revision, attempt) WHERE a.rule_uid = ? ORDER BY a.at DESC, a.rowid DESC LIMIT ?")
+                .bind(rule_uid).bind(limit).fetch_all(&self.store.pool).await?
+        };
+        nucleus::performance::add("karma-history-applications-read", rows.len() as u64);
         let mut applications = Vec::new();
         for row in rows {
-            let evidence: Option<String> = row.try_get("evidence")?;
+            let evidence: Option<&str> = row.try_get("evidence")?;
             let evidence = evidence
-                .map(|value| serde_json::from_str::<Evidence>(&value))
+                .map(serde_json::from_str::<Evidence>)
                 .transpose()
                 .map_err(EngineError::Json)?;
             let Some(evidence) = evidence else {
-                applications.push(serde_json::json!({"event": row.try_get::<String, _>("event_id")?, "revision": row.try_get::<i64, _>("rule_revision")?, "evidence": null, "unavailable": "No evaluation evidence was recorded for this application"}));
+                applications.push(serde_json::json!({"event": row.try_get::<&str, _>("event_id")?, "revision": row.try_get::<i64, _>("rule_revision")?, "evidence": null, "unavailable": "No evaluation evidence was recorded for this application"}));
                 continue;
             };
             let inputs = evidence.inputs.as_ref().ok_or_else(|| {
                 EngineError::Forbidden("This historical evaluation has unavailable inputs".into())
             })?;
             self.refuse_unreadable_karma_inputs(actor, inputs).await?;
-            self.refuse_unreadable_karma_inputs(actor, &[evidence.target.clone()])
+            self.refuse_unreadable_karma_inputs(actor, std::slice::from_ref(&evidence.target))
                 .await?;
-            let event: String = row.try_get("event_id")?;
+            let event: &str = row.try_get("event_id")?;
             let revision: i64 = row.try_get("rule_revision")?;
             let attempt: i64 = row.try_get("attempt")?;
-            let mut effects = Vec::new();
-            for position in 0..evidence.consequences.len() {
-                let uid = format!("{event}:{rule_uid}:{revision}:{position}");
-                let outcomes = store::sqlx::query("SELECT o.status, o.result, o.at, o.attempt FROM karma_effect_outcome o JOIN effect_queue q ON q.uid = o.effect_uid WHERE q.request_id = ? ORDER BY o.attempt")
-                    .bind(&uid).fetch_all(&self.store.pool).await?;
-                for outcome in outcomes {
-                    let reason = if evidence.consequences.as_slice()[position].transfer_target().is_some() { Some(outcome.try_get::<String, _>("result")?) } else { None };
-                    effects.push(serde_json::json!({"position": position, "attempt": outcome.try_get::<i64, _>("attempt")?, "status": outcome.try_get::<String, _>("status")?, "at": outcome.try_get::<String, _>("at")?, "reason": reason}));
-                }
-                let queued =
-                    store::sqlx::query("SELECT status, attempts FROM effect_queue WHERE request_id = ? AND status IN ('queued', 'running', 'uncertain')")
-                        .bind(&uid)
-                        .fetch_optional(&self.store.pool)
-                        .await?;
-                if let Some(queued) = queued {
-                    effects.push(serde_json::json!({"position": position, "attempt": queued.try_get::<i64, _>("attempts")?, "status": queued.try_get::<String, _>("status")?}));
-                }
-            }
-            applications.push(serde_json::json!({"event": event, "revision": revision, "attempt": attempt, "status": row.try_get::<String, _>("status")?, "reason": row.try_get::<Option<String>, _>("reason")?, "at": row.try_get::<String, _>("at")?, "intended_at": row.try_get::<String, _>("intended_at")?, "frequency": row.try_get::<Option<String>, _>("frequency_uid")?, "evidence": evidence, "effects": effects}));
+            let effects = effects::read(
+                &self.store.pool,
+                event,
+                rule_uid,
+                revision,
+                &evidence.consequences,
+            )
+            .await?;
+            applications.push(serde_json::json!({"event": event, "revision": revision, "attempt": attempt, "status": row.try_get::<&str, _>("status")?, "reason": row.try_get::<Option<&str>, _>("reason")?, "at": row.try_get::<&str, _>("at")?, "intended_at": row.try_get::<&str, _>("intended_at")?, "frequency": row.try_get::<Option<&str>, _>("frequency_uid")?, "evidence": evidence, "effects": effects}));
         }
         Ok(serde_json::json!({"rule": rule_uid, "applications": applications}))
     }

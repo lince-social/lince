@@ -21,8 +21,6 @@ impl Engine {
         &self,
         component: &mut ComponentState,
     ) -> Result<(), EngineError> {
-        // Stage only resolved references. A failure leaves the whole component
-        // unchanged without cloning its text, settings and action payloads.
         let records = self.resolve_component_records(component).await?;
         for (record, resolved) in component.records_mut().into_iter().zip(records) {
             *record = resolved;
@@ -30,8 +28,6 @@ impl Engine {
         Ok(())
     }
 
-    /// Validate and resolve references without copying the presentation tree.
-    /// Validation-only callers may discard the resolved identifiers.
     pub(crate) async fn resolve_component_records(
         &self,
         component: &ComponentState,

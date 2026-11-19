@@ -145,6 +145,14 @@ pub async fn get(pool: &SqlitePool) -> Result<Option<Configuration>, StoreError>
         }))
 }
 
+pub async fn language(pool: &SqlitePool) -> Result<Option<String>, StoreError> {
+    Ok(
+        sqlx::query_scalar("SELECT language FROM configuration WHERE id = 1")
+            .fetch_optional(pool)
+            .await?,
+    )
+}
+
 pub async fn interface_close_suspends(pool: &SqlitePool) -> Result<bool, StoreError> {
     ensure_default(pool).await?;
     Ok(

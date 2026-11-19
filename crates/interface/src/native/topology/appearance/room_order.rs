@@ -2,7 +2,7 @@ use super::*;
 use bevy::{
     core_pipeline::core_3d::{Transparent3d, TransparentSortingInfo3d},
     render::{
-        ExtractSchedule, Render, RenderSystems,
+        Extract, ExtractSchedule, Render, RenderSystems,
         render_phase::{ViewSortedRenderPhases, sort_phase_system},
         view::ExtractedView,
     },
@@ -11,23 +11,69 @@ use bevy::{
 #[derive(Component, Clone, Debug, PartialEq, Eq, Hash)]
 pub(super) struct RoomLayer(Entity, u64, String);
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub(super) struct Layer<'a>(Entity, u64, &'a str);
+
+impl RoomLayer {
+    pub(super) fn as_ref(&self) -> Layer<'_> {
+        Layer(self.0, self.1, &self.2)
+    }
+}
+
+impl Layer<'_> {
+    pub(super) fn into_owned(self) -> RoomLayer {
+        RoomLayer(self.0, self.1, self.2.to_owned())
+    }
+}
+
 #[derive(Component, Clone)]
 struct Foreground(RoomLayer);
 
 #[derive(Resource, Default)]
 struct Layers {
-    overlays: HashMap<Entity, RoomLayer>,
-    clouds: HashMap<Entity, RoomLayer>,
-    faces: HashMap<Entity, RoomLayer>,
+    overlays: HashMap<Entity, usize>,
+    clouds: HashMap<Entity, usize>,
+    faces: HashMap<Entity, usize>,
     previous: HashMap<Entity, f32>,
+    rooms: usize,
+}
+
+#[derive(Default)]
+struct Nearest {
+    values: Vec<Option<f32>>,
+    touched: Vec<usize>,
+}
+
+impl Nearest {
+    fn prepare(&mut self, rooms: usize) {
+        self.clear();
+        self.values.resize(rooms, None);
+    }
+
+    fn include(&mut self, room: usize, distance: f32) {
+        match &mut self.values[room] {
+            Some(nearest) => *nearest = nearest.max(distance),
+            current @ None => {
+                *current = Some(distance);
+                self.touched.push(room);
+            }
+        }
+    }
+
+    fn clear(&mut self) {
+        for room in self.touched.drain(..) {
+            self.values[room] = None;
+        }
+    }
 }
 
 pub(super) fn foreground(world: &mut World, owner: Entity, face: Entity) {
     if let Some(layer) = layer(world, owner) {
         if world
             .get::<Foreground>(face)
-            .is_none_or(|current| current.0 != layer)
+            .is_none_or(|current| current.0.as_ref() != layer)
         {
+            let layer = layer.into_owned();
             world.entity_mut(face).insert(Foreground(layer));
         }
     } else if world.get::<Foreground>(face).is_some() {
@@ -35,7 +81,7 @@ pub(super) fn foreground(world: &mut World, owner: Entity, face: Entity) {
     }
 }
 
-pub(super) fn layer(world: &World, owner: Entity) -> Option<RoomLayer> {
+pub(super) fn layer(world: &World, owner: Entity) -> Option<Layer<'_>> {
     if !world
         .get::<crate::native::shader_effects::Surface>(owner)?
         .room_ambient
@@ -46,12 +92,12 @@ pub(super) fn layer(world: &World, owner: Entity) -> Option<RoomLayer> {
     if member.role != nucleus::canvas::room::Role::Floor {
         return None;
     }
-    Some(RoomLayer(
+    Some(Layer(
         world.get::<ChildOf>(owner)?.parent(),
         world
             .get::<crate::native::workspace::WorkspaceMember>(owner)?
             .0,
-        member.room.clone(),
+        &member.room,
     ))
 }
 
@@ -80,44 +126,73 @@ fn extract(
     >,
     gaussians: Extract<Query<(), With<bevy_gaussian_splatting::PlanarGaussian3dHandle>>>,
 ) {
-    let previous = layers
-        .overlays
-        .keys()
-        .map(|entity| (*entity, 1.0))
-        .chain(layers.faces.keys().map(|entity| (*entity, 2.0)))
-        .collect();
-    layers.previous = previous;
-    layers.overlays.clear();
-    layers.faces.clear();
-    layers.clouds.clear();
-    layers.overlays.extend(
+    let _extraction = nucleus::performance::Span::new("appearance-room-extraction");
+    let Layers {
+        overlays: overlay_layers,
+        clouds: cloud_layers,
+        faces: face_layers,
+        previous,
+        rooms: room_count,
+    } = &mut *layers;
+    previous.clear();
+    previous.extend(
+        overlay_layers
+            .keys()
+            .map(|entity| (*entity, 1.0))
+            .chain(face_layers.keys().map(|entity| (*entity, 2.0))),
+    );
+    overlay_layers.clear();
+    face_layers.clear();
+    cloud_layers.clear();
+    let mut rooms = HashMap::new();
+    let mut intern = |layer| {
+        let next = rooms.len();
+        *rooms.entry(layer).or_insert(next)
+    };
+    overlay_layers.extend(
         overlays
             .iter()
-            .map(|(entity, layer)| (entity, layer.clone())),
+            .map(|(entity, layer)| (entity, intern(layer.as_ref()))),
     );
-    layers
-        .faces
-        .extend(faces.iter().map(|(entity, face)| (entity, face.0.clone())));
-    layers.clouds.extend(
-        clouds
+    face_layers.extend(
+        faces
+            .iter()
+            .map(|(entity, face)| (entity, intern(face.0.as_ref()))),
+    );
+    if !overlay_layers.is_empty() || !face_layers.is_empty() {
+        for (scene, member, parent, workspace) in clouds
             .iter()
             .filter(|(scene, ..)| gaussians.get(scene.0).is_ok())
-            .map(|(scene, member, parent, workspace)| {
-                (
-                    scene.0,
-                    RoomLayer(parent.parent(), workspace.0, member.0.room.clone()),
-                )
-            }),
-    );
+        {
+            let layer = Layer(parent.parent(), workspace.0, &member.0.room);
+            if let Some(&room) = rooms.get(&layer) {
+                cloud_layers.insert(scene.0, room);
+            } else {
+                cloud_layers.remove(&scene.0);
+            }
+        }
+    }
+    *room_count = rooms.len();
+    nucleus::performance::add("appearance-room-identities", *room_count as u64);
+    nucleus::performance::add("appearance-room-clouds", cloud_layers.len() as u64);
+    if overlay_layers.is_empty() && face_layers.is_empty() && previous.is_empty() {
+        *layers = Layers::default();
+    }
 }
 
 fn order(
     layers: Res<Layers>,
     views: Query<&ExtractedView>,
     mut phases: ResMut<ViewSortedRenderPhases<Transparent3d>>,
+    mut nearest: Local<Nearest>,
 ) {
+    let _ordering = nucleus::performance::Span::new("appearance-room-ordering");
     if layers.overlays.is_empty() && layers.faces.is_empty() && layers.previous.is_empty() {
+        *nearest = Nearest::default();
         return;
+    }
+    if layers.clouds.is_empty() {
+        *nearest = Nearest::default();
     }
     for view in &views {
         let Some(phase) = phases.get_mut(&view.retained_view_entity) else {
@@ -139,27 +214,31 @@ fn order(
                 *depth_bias = base;
             }
         }
-        let mut clouds = HashMap::<&RoomLayer, f32>::new();
+        if layers.clouds.is_empty() {
+            continue;
+        }
+        nearest.prepare(layers.rooms);
         for item in phase.items.values() {
-            if let Some(layer) = layers.clouds.get(&item.entity.1.id()) {
+            if let Some(&room) = layers.clouds.get(&item.entity.1.id()) {
                 let distance = item.sorting_info.sort_distance(&range);
                 if distance.is_finite() {
-                    clouds
-                        .entry(layer)
-                        .and_modify(|nearest| *nearest = nearest.max(distance))
-                        .or_insert(distance);
+                    nearest.include(room, distance);
                 }
             }
         }
+        if nearest.touched.is_empty() {
+            continue;
+        }
+        nucleus::performance::add("appearance-room-cloud-views", 1);
         for item in phase.items.values_mut() {
             let entity = item.entity.1.id();
             let scoped = layers
                 .overlays
                 .get(&entity)
-                .map(|layer| (layer, 1.0))
-                .or_else(|| layers.faces.get(&entity).map(|layer| (layer, 2.0)));
+                .map(|&room| (room, 1.0))
+                .or_else(|| layers.faces.get(&entity).map(|&room| (room, 2.0)));
             let Some((cloud, base)) =
-                scoped.and_then(|(layer, base)| clouds.get(layer).map(|cloud| (cloud, base)))
+                scoped.and_then(|(room, base)| nearest.values[room].map(|cloud| (cloud, base)))
             else {
                 continue;
             };
@@ -169,10 +248,11 @@ fn order(
             } = &mut item.sorting_info
             {
                 let natural = range.distance(mesh_center);
-                *depth_bias = bias(natural, *cloud, base);
+                *depth_bias = bias(natural, cloud, base);
             }
         }
     }
+    nearest.clear();
 }
 
 fn bias(natural: f32, cloud: f32, base: f32) -> f32 {

@@ -21,9 +21,6 @@ impl Prepared {
             pointers: Vec::new(),
             conflicts: OnceLock::new(),
         };
-        // Preserve command order, including conflict/error precedence. This
-        // compiles authored syntax only; focus, ownership and host eligibility
-        // are still evaluated by each input/snapshot consumer.
         for shortcut in Shortcut::ALL {
             let text = settings.text(shortcut);
             let parsed = if text.eq_ignore_ascii_case("unbound") {

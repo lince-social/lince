@@ -439,7 +439,7 @@ fn content(
         last_paint: std::time::Instant::now() - std::time::Duration::from_secs(1),
     });
     world.entity_mut(surface).observe(
-        move |mut event: On<Pointer<Press>>,
+        move |mut event: On<PointerPress>,
               mut views: Query<&mut View>,
               geometry: Query<(&ComputedNode, &UiGlobalTransform)>| {
             event.propagate(false);
@@ -452,14 +452,14 @@ fn content(
                 if let Ok((node, transform)) = geometry.get(event.entity) {
                     view.pointer = node.normalize_point(
                         *transform,
-                        event.pointer_location.position / node.inverse_scale_factor(),
+                        event.pointer.position / node.inverse_scale_factor(),
                     );
                 }
             }
         },
     );
     world.entity_mut(surface).observe(
-        move |mut event: On<Pointer<Move>>,
+        move |mut event: On<PointerMove>,
               mut views: Query<&mut View>,
               geometry: Query<(&ComputedNode, &UiGlobalTransform)>| {
             event.propagate(false);
@@ -468,13 +468,13 @@ fn content(
             {
                 view.pointer = node.normalize_point(
                     *transform,
-                    event.pointer_location.position / node.inverse_scale_factor(),
+                    event.pointer.position / node.inverse_scale_factor(),
                 );
             }
         },
     );
     world.entity_mut(surface).observe(
-        move |mut event: On<Pointer<Out>>, mut views: Query<&mut View>| {
+        move |mut event: On<PointerOut>, mut views: Query<&mut View>| {
             event.propagate(false);
             if let Ok(mut view) = views.get_mut(owner) {
                 view.pointer = None;
@@ -482,7 +482,7 @@ fn content(
         },
     );
     world.entity_mut(surface).observe(
-        move |mut event: On<Pointer<Release>>, mut views: Query<&mut View>| {
+        move |mut event: On<PointerRelease>, mut views: Query<&mut View>| {
             event.propagate(false);
             if let Ok(mut view) = views.get_mut(owner) {
                 view.active = false;
@@ -491,7 +491,7 @@ fn content(
     );
     world
         .entity_mut(surface)
-        .observe(|mut event: On<Pointer<Drag>>| {
+        .observe(|mut event: On<PointerDrag>| {
             event.propagate(false);
         });
 }
@@ -1077,32 +1077,26 @@ mod tests {
             }),
             position: Vec2::new(10.0, 20.0),
         };
-        world.trigger(Pointer::new(
-            crate::native::topology::input::CONTENT_POINTER,
-            location.clone(),
-            Press {
-                button: PointerButton::Primary,
+        world.trigger(PointerPress {
+            entity: surface,
+            pointer: Pointer::new(crate::native::topology::input::CONTENT_POINTER, location.clone()),
+            button: PointerButton::Primary,
                 hit: bevy::picking::backend::HitData::new(root, 0.0, None, None),
                 count: 1,
-            },
-            surface,
-        ));
+        });
         world
             .resource_mut::<ButtonInput<MouseButton>>()
             .press(MouseButton::Left);
         update(&mut world);
-        world.trigger(Pointer::new(
-            crate::native::topology::input::CONTENT_POINTER,
-            bevy::picking::pointer::Location {
+        world.trigger(PointerMove {
+            entity: surface,
+            pointer: Pointer::new(crate::native::topology::input::CONTENT_POINTER, bevy::picking::pointer::Location {
                 position: Vec2::splat(50.0),
                 ..location
-            },
-            Move {
-                hit: bevy::picking::backend::HitData::new(root, 0.0, None, None),
+            }),
+            hit: bevy::picking::backend::HitData::new(root, 0.0, None, None),
                 delta: Vec2::new(40.0, 30.0),
-            },
-            surface,
-        ));
+        });
         update(&mut world);
         assert!(world.get::<ImageNode>(surface).is_some());
         assert_eq!(

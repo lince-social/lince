@@ -1,11 +1,11 @@
-use super::vt::{Frame, Ghostty};
-use std::{
-    collections::VecDeque,
-    sync::{
-        Arc, Mutex,
-        atomic::{AtomicBool, Ordering},
-        mpsc,
-    },
+use super::{
+    pending_input::Input,
+    vt::{Frame, Ghostty},
+};
+use std::sync::{
+    Arc, Mutex,
+    atomic::{AtomicBool, Ordering},
+    mpsc,
 };
 
 pub(super) enum Command {
@@ -25,9 +25,8 @@ pub(super) enum Command {
 #[derive(Default)]
 pub(super) struct Output {
     pub frame: Option<Arc<Frame>>,
-    pub input: VecDeque<Vec<u8>>,
+    pub input: Input,
     pub error: Option<String>,
-    pub input_bytes: usize,
 }
 
 pub(super) struct Worker {
@@ -114,7 +113,7 @@ fn run(
         if stopped.load(Ordering::Acquire) {
             return Ok(());
         }
-        if let Some(frame) = next.take() {
+        let changed = if let Some(frame) = next.take() {
             let changed = published.as_deref() != Some(&frame);
             if changed {
                 let frame = Arc::new(frame);
@@ -128,20 +127,22 @@ fn run(
                     crate::host::performance::Count::TerminalFramesUnchanged,
                 );
             }
-            // Input/replies are ordered semantic data, even if key encoding or a
-            // mode-only escape sequence leaves the visible screen unchanged.
-            if (changed || input_ready)
-                && let Some(wake) = wake
-            {
-                wake.ring();
-            }
-            input_ready = false;
+            changed
+        } else {
+            false
+        };
+        if (changed || input_ready)
+            && let Some(wake) = wake
+        {
+            wake.ring();
         }
+        input_ready = false;
         let Ok(first) = inbox.recv() else {
             return Ok(());
         };
         let began = std::time::Instant::now();
         let mut command = Some(first);
+        let mut render_needed = false;
         while let Some(current) = command {
             if stopped.load(Ordering::Acquire) {
                 return Ok(());
@@ -153,6 +154,7 @@ fn run(
                     for event in events {
                         match event {
                             cell::command::Event::Output { data_base64 } => {
+                                render_needed = true;
                                 let bytes = base64::engine::general_purpose::STANDARD
                                     .decode(data_base64)
                                     .map_err(|error| error.to_string())?;
@@ -161,15 +163,20 @@ fn run(
                                     replies.extend(input);
                                 }
                             }
-                            cell::command::Event::Resize { cols, rows } => vt.resize(cols, rows)?,
+                            cell::command::Event::Resize { cols, rows } => {
+                                render_needed |= vt.resize(cols, rows)?;
+                            }
                             _ => {}
                         }
                     }
                     replies
                 }
-                Command::Feed(bytes) => vt.feed(&bytes)?,
+                Command::Feed(bytes) => {
+                    render_needed = true;
+                    vt.feed(&bytes)?
+                }
                 Command::Resize(cols, rows) => {
-                    vt.resize(cols, rows)?;
+                    render_needed |= vt.resize(cols, rows)?;
                     Vec::new()
                 }
                 Command::Key {
@@ -178,29 +185,27 @@ fn run(
                     text,
                     action,
                 } => {
+                    render_needed = true;
                     vt.scroll(None)?;
                     vt.key(key, mods, &text, action)?
                 }
                 Command::Paste(text) => {
+                    render_needed = true;
                     vt.scroll(None)?;
                     vt.paste(&text)?
                 }
                 Command::Scroll(delta) => {
+                    render_needed = true;
                     vt.scroll(delta)?;
                     Vec::new()
                 }
             };
             if !input.is_empty() {
                 let mut output = output.lock().map_err(|e| e.to_string())?;
-                let Some(bytes) = output
-                    .input_bytes
-                    .checked_add(input.len())
-                    .filter(|bytes| *bytes <= 1024 * 1024)
-                else {
+                if !output.input.fits(input.len()) {
                     return Err("Terminal input queue is full".into());
-                };
+                }
                 output.input.push_back(input);
-                output.input_bytes = bytes;
                 input_ready = true;
             }
             if began.elapsed().as_millis() >= 16 {
@@ -208,6 +213,11 @@ fn run(
             }
             command = inbox.try_recv().ok();
         }
-        next = Some(vt.frame()?);
+        next = if render_needed {
+            Some(vt.frame()?)
+        } else {
+            nucleus::performance::add("terminal-vt-snapshot-free-batches", 1);
+            None
+        };
     }
 }

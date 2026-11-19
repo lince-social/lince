@@ -1,0 +1,7 @@
+Cosine distance adapted from Rustpotter by Miguel Álvarez Díez and contributors.
+https://github.com/GiviMAD/rustpotter
+Revision: 46bbc73223afe5fc7b90f30455046432fc3c9432
+License: Apache-2.0, included in LICENSE-Rustpotter-Apache-2.0.txt.
+
+Fiote uses this distance to compare acoustic embedding frames in its bounded
+wake phrase detector.

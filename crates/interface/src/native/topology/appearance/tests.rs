@@ -402,10 +402,10 @@ fn rounded_material_geometry_is_cached_resized_clipped_and_restored_on_disable()
     world.entity_mut(owner).insert(ComputedNode {
         size: Vec2::splat(100.0),
         border_radius: bevy::ui::ResolvedBorderRadius {
-            top_left: 20.0,
-            top_right: 20.0,
-            bottom_left: 20.0,
-            bottom_right: 20.0,
+            top_left: Vec2::splat(20.0),
+            top_right: Vec2::splat(20.0),
+            bottom_left: Vec2::splat(20.0),
+            bottom_right: Vec2::splat(20.0),
         },
         ..default()
     });

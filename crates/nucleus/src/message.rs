@@ -2,6 +2,9 @@ use base64::{Engine, prelude::BASE64_STANDARD};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
+mod restoration;
+pub use restoration::{Restoration, RestoringPart};
+
 pub const MAX_CONTENT_BYTES: usize = 4 * 1024 * 1024;
 pub const MAX_PARTS: usize = 16;
 pub const CHUNK_BYTES: usize = 256 * 1024;
@@ -75,25 +78,41 @@ pub fn decode(data: &str) -> Result<Vec<u8>, String> {
 }
 
 pub fn validate(parts: &[MessagePart]) -> Result<(), String> {
+    validate_with_attachments(parts, decode_attachment, |_| {})
+}
+
+fn decode_attachment(data: &str) -> Result<(usize, Vec<u8>), String> {
+    let decoded = decode(data)?;
+    Ok((decoded.len(), decoded))
+}
+
+fn validate_with_attachments<T>(
+    parts: &[MessagePart],
+    mut prepare: impl FnMut(&str) -> Result<(usize, T), String>,
+    mut attachment: impl FnMut(T),
+) -> Result<(), String> {
     if parts.len() > MAX_PARTS {
         return Err("Use at most 16 content parts per message.".into());
     }
     let mut bytes = 0;
     for part in parts {
-        match part {
+        let decoded = match part {
             MessagePart::Question { question } => {
                 question.validate()?;
                 bytes += question.text().len();
+                None
             }
             MessagePart::Steps { steps } => {
                 crate::operation::validate_steps(steps)?;
                 bytes += crate::operation::steps_text(steps).len();
+                None
             }
             MessagePart::Text { text } => {
                 if text.len() > 65_536 {
                     return Err("A text part exceeds 64 KiB.".into());
                 }
                 bytes += text.len();
+                None
             }
             MessagePart::Attachment {
                 name,
@@ -118,7 +137,9 @@ pub fn validate(parts: &[MessagePart]) -> Result<(), String> {
                 {
                     return Err("The attachment media type is invalid.".into());
                 }
-                bytes += decode(data)?.len();
+                let (length, decoded) = prepare(data)?;
+                bytes += length;
+                Some(decoded)
             }
             MessagePart::Reference { name, uri } => {
                 if name.is_empty()
@@ -132,49 +153,60 @@ pub fn validate(parts: &[MessagePart]) -> Result<(), String> {
                     return Err("Use a named Record, file, or HTTP resource reference.".into());
                 }
                 bytes += name.len() + uri.len();
+                None
             }
-        }
+        };
         if bytes > MAX_CONTENT_BYTES {
             return Err("Message contents exceed 4 MiB.".into());
+        }
+        if let Some(decoded) = decoded {
+            attachment(decoded);
         }
     }
     Ok(())
 }
 
 pub fn describe(parts: &[MessagePart]) -> Result<Vec<StoredPart>, String> {
-    validate(parts)?;
-    parts
+    let _preparation = crate::performance::Span::new("message-content-description");
+    let mut attachments = Vec::new();
+    validate_with_attachments(parts, decode_attachment, |bytes| {
+        crate::performance::add("message-description-attachments-decoded", 1);
+        crate::performance::add("message-description-bytes-decoded", bytes.len() as u64);
+        attachments.push((bytes.len(), digest(&bytes)));
+    })?;
+    let mut attachments = attachments.into_iter();
+    Ok(parts
         .iter()
-        .map(|part| {
-            Ok(match part {
-                MessagePart::Question { question } => StoredPart::Question {
-                    question: question.clone(),
-                },
-                MessagePart::Steps { steps } => StoredPart::Steps {
-                    steps: steps.clone(),
-                },
-                MessagePart::Text { text } => StoredPart::Text { text: text.clone() },
-                MessagePart::Reference { name, uri } => StoredPart::Reference {
+        .map(|part| match part {
+            MessagePart::Question { question } => StoredPart::Question {
+                question: question.clone(),
+            },
+            MessagePart::Steps { steps } => StoredPart::Steps {
+                steps: steps.clone(),
+            },
+            MessagePart::Text { text } => StoredPart::Text { text: text.clone() },
+            MessagePart::Reference { name, uri } => StoredPart::Reference {
+                name: name.clone(),
+                uri: uri.clone(),
+            },
+            MessagePart::Attachment {
+                name,
+                mime_type,
+                data,
+            } => {
+                let (bytes, sha256) = attachments
+                    .next()
+                    .expect("each validated attachment has a descriptor");
+                StoredPart::Attachment {
                     name: name.clone(),
-                    uri: uri.clone(),
-                },
-                MessagePart::Attachment {
-                    name,
-                    mime_type,
-                    data,
-                } => {
-                    let bytes = decode(data)?;
-                    StoredPart::Attachment {
-                        name: name.clone(),
-                        mime_type: mime_type.clone(),
-                        bytes: bytes.len(),
-                        sha256: digest(&bytes),
-                        chunks: data.len().div_ceil(CHUNK_BYTES).max(1),
-                    }
+                    mime_type: mime_type.clone(),
+                    bytes,
+                    sha256,
+                    chunks: data.len().div_ceil(CHUNK_BYTES).max(1),
                 }
-            })
+            }
         })
-        .collect()
+        .collect())
 }
 
 pub fn chunk_namespace(part: usize, chunk: usize) -> String {

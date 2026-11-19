@@ -151,7 +151,6 @@ impl PointerContext {
     }
 }
 
-/// Capture current input ownership and ancestry in one walk.
 pub fn pointer_context(world: &World, entity: Entity) -> Option<PointerContext> {
     let mut path = PointerContext {
         owner: None,
@@ -166,7 +165,6 @@ pub fn pointer_context(world: &World, entity: Entity) -> Option<PointerContext> 
     if !path.visible {
         return None;
     }
-    // Ownership ends at a workspace. Pointer validity also includes its ancestors.
     for _ in path.lineage.len()..crate::native::layout::MAX_DEPTH {
         let Some(current) = path.next else {
             break;

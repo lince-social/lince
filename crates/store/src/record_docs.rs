@@ -107,12 +107,12 @@ async fn record_state_on(
     .fetch_optional(&mut **tx)
     .await?
     .ok_or_else(|| protocol("Record document target is missing"))?;
-    let uid_type: String = row.try_get("uid_type")?;
+    let uid_type: &str = row.try_get("uid_type")?;
     let uid_bytes: i64 = row.try_get("uid_bytes")?;
-    let safe_uid: Option<String> = row.try_get("safe_uid")?;
+    let safe_uid: Option<&str> = row.try_get("safe_uid")?;
     if uid_type != "text"
         || uid_bytes != i64::try_from(record_uid.len()).expect("uid length fits SQLite")
-        || safe_uid.as_deref() != Some(record_uid)
+        || safe_uid != Some(record_uid)
     {
         return Err(protocol("Record document target identity is corrupt"));
     }
@@ -120,14 +120,14 @@ async fn record_state_on(
     if active != 1 {
         return Err(protocol("Record document target is deleted"));
     }
-    let revision_type: String = row.try_get("revision_type")?;
+    let revision_type: &str = row.try_get("revision_type")?;
     let revision: Option<i64> = row.try_get("revision")?;
     if revision_type != "integer" {
         return Err(protocol("Record document revision has an invalid type"));
     }
     let revision = revision.ok_or_else(|| protocol("Record document revision is unreadable"))?;
     validate_positive(revision, "revision")?;
-    let generation_type: String = row.try_get("generation_type")?;
+    let generation_type: &str = row.try_get("generation_type")?;
     let generation: Option<i64> = row.try_get("document_generation")?;
     if generation_type != "integer" {
         return Err(protocol(
@@ -144,6 +144,7 @@ pub async fn metadata_on(
     tx: &mut Transaction<'_, Sqlite>,
     record_uid: &str,
 ) -> Result<RecordDocMetadata, StoreError> {
+    let _read = nucleus::performance::Span::new("record-doc-metadata-read");
     let (record_revision, retained_generation) = record_state_on(tx, record_uid).await?;
     let rows = sqlx::query(
         "SELECT typeof(record_uid) AS uid_type,
@@ -170,17 +171,15 @@ pub async fn metadata_on(
                 CASE WHEN typeof(base_revision) = 'integer'
                      THEN base_revision END AS base_revision
            FROM record_doc
-          WHERE CASE
-                    WHEN length(CAST(record_uid AS BLOB)) <= ?
-                    THEN CAST(record_uid AS TEXT)
-                END = ?",
+          WHERE record_uid = ? OR record_uid = CAST(? AS BLOB)",
     )
     .bind(i64::try_from(MAX_RECORD_UID_BYTES).expect("uid limit fits SQLite"))
     .bind(i64::try_from(MAX_TIMESTAMP_BYTES).expect("timestamp limit fits SQLite"))
-    .bind(i64::try_from(MAX_RECORD_UID_BYTES).expect("uid limit fits SQLite"))
+    .bind(record_uid)
     .bind(record_uid)
     .fetch_all(&mut **tx)
     .await?;
+    nucleus::performance::add("record-doc-metadata-matches", rows.len() as u64);
     if rows.is_empty() {
         return Ok(RecordDocMetadata {
             record_uid: record_uid.to_owned(),
@@ -196,16 +195,16 @@ pub async fn metadata_on(
         return Err(protocol("Record document identity is ambiguous"));
     }
     let row = &rows[0];
-    let uid_type: String = row.try_get("uid_type")?;
+    let uid_type: &str = row.try_get("uid_type")?;
     let uid_bytes: i64 = row.try_get("uid_bytes")?;
-    let safe_uid: Option<String> = row.try_get("safe_uid")?;
+    let safe_uid: Option<&str> = row.try_get("safe_uid")?;
     if uid_type != "text"
         || uid_bytes != i64::try_from(record_uid.len()).expect("uid length fits SQLite")
-        || safe_uid.as_deref() != Some(record_uid)
+        || safe_uid != Some(record_uid)
     {
         return Err(protocol("Record document identity is corrupt"));
     }
-    let snapshot_type: String = row.try_get("snapshot_type")?;
+    let snapshot_type: &str = row.try_get("snapshot_type")?;
     if snapshot_type != "blob" {
         return Err(protocol("Record document snapshot has an invalid type"));
     }
@@ -215,7 +214,7 @@ pub async fn metadata_on(
     if snapshot_bytes > MAX_SNAPSHOT_BYTES {
         return Err(protocol("Record document snapshot exceeds its byte limit"));
     }
-    let through_type: String = row.try_get("through_type")?;
+    let through_type: &str = row.try_get("through_type")?;
     if through_type != "integer" {
         return Err(protocol(
             "Record document through-sequence has an invalid type",
@@ -225,7 +224,7 @@ pub async fn metadata_on(
     let through_seq =
         through_seq.ok_or_else(|| protocol("Record document through-sequence is unreadable"))?;
     validate_through_seq(through_seq)?;
-    let updated_type: String = row.try_get("updated_type")?;
+    let updated_type: &str = row.try_get("updated_type")?;
     let updated_bytes: i64 = row.try_get("updated_bytes")?;
     let updated_at: Option<String> = row.try_get("safe_updated_at")?;
     if updated_type != "text"
@@ -242,14 +241,14 @@ pub async fn metadata_on(
         updated_at.ok_or_else(|| protocol("Record document update time is unreadable"))?;
     DateTime::parse_from_rfc3339(&updated_at)
         .map_err(|_| protocol("Record document update time is invalid"))?;
-    let generation_type: String = row.try_get("generation_type")?;
-    let base_type: String = row.try_get("base_type")?;
-    let generation = match generation_type.as_str() {
+    let generation_type: &str = row.try_get("generation_type")?;
+    let base_type: &str = row.try_get("base_type")?;
+    let generation = match generation_type {
         "null" => None,
         "integer" => row.try_get::<Option<i64>, _>("generation")?,
         _ => return Err(protocol("Record document generation has an invalid type")),
     };
-    let base_revision = match base_type.as_str() {
+    let base_revision = match base_type {
         "null" => None,
         "integer" => row.try_get::<Option<i64>, _>("base_revision")?,
         _ => {
@@ -304,6 +303,7 @@ pub async fn snapshot_on(
     tx: &mut Transaction<'_, Sqlite>,
     record_uid: &str,
 ) -> Result<RecordDocSnapshot, StoreError> {
+    let _read = nucleus::performance::Span::new("record-doc-snapshot-read");
     let metadata = metadata_on(tx, record_uid).await?;
     if metadata.qualification == Qualification::Absent {
         return Ok(RecordDocSnapshot {
@@ -318,13 +318,10 @@ pub async fn snapshot_on(
                     THEN snapshot
                 END
            FROM record_doc
-          WHERE CASE
-                    WHEN length(CAST(record_uid AS BLOB)) <= ?
-                    THEN CAST(record_uid AS TEXT)
-                END = ?",
+          WHERE record_uid = ? OR record_uid = CAST(? AS BLOB)",
     )
     .bind(i64::try_from(MAX_SNAPSHOT_BYTES).expect("snapshot limit fits SQLite"))
-    .bind(i64::try_from(MAX_RECORD_UID_BYTES).expect("uid limit fits SQLite"))
+    .bind(record_uid)
     .bind(record_uid)
     .fetch_one(&mut **tx)
     .await?
@@ -332,6 +329,7 @@ pub async fn snapshot_on(
     if Some(snapshot.len()) != metadata.snapshot_bytes {
         return Err(protocol("Record document snapshot changed during its read"));
     }
+    nucleus::performance::add("record-doc-snapshot-bytes", snapshot.len() as u64);
     Ok(RecordDocSnapshot {
         metadata,
         snapshot: Some(snapshot),
@@ -430,6 +428,18 @@ pub async fn put_qualified_on(
     metadata_on(tx, record_uid).await
 }
 
+async fn retire_on(tx: &mut Transaction<'_, Sqlite>, record_uid: &str) -> Result<(), StoreError> {
+    let _retirement = nucleus::performance::Span::new("record-doc-retirement");
+    let result =
+        sqlx::query("DELETE FROM record_doc WHERE record_uid = ? OR record_uid = CAST(? AS BLOB)")
+            .bind(record_uid)
+            .bind(record_uid)
+            .execute(&mut **tx)
+            .await?;
+    nucleus::performance::add("record-doc-retired-rows", result.rows_affected());
+    Ok(())
+}
+
 pub async fn reset_on(
     tx: &mut Transaction<'_, Sqlite>,
     record_uid: &str,
@@ -437,10 +447,7 @@ pub async fn reset_on(
 ) -> Result<i64, StoreError> {
     validate_positive(expected_generation, "expected generation")?;
     let next = advance_generation_on(tx, record_uid, Some(expected_generation)).await?;
-    sqlx::query("DELETE FROM record_doc WHERE CAST(record_uid AS TEXT) = ?")
-        .bind(record_uid)
-        .execute(&mut **tx)
-        .await?;
+    retire_on(tx, record_uid).await?;
     Ok(next)
 }
 
@@ -464,10 +471,7 @@ pub async fn put_on(
     validate_snapshot(snapshot)?;
     validate_through_seq(through_seq)?;
     advance_generation_on(tx, record_uid, None).await?;
-    sqlx::query("DELETE FROM record_doc WHERE CAST(record_uid AS TEXT) = ?")
-        .bind(record_uid)
-        .execute(&mut **tx)
-        .await?;
+    retire_on(tx, record_uid).await?;
     sqlx::query(
         "INSERT INTO record_doc
              (record_uid, snapshot, through_seq, updated_at, generation, base_revision)
@@ -485,10 +489,7 @@ pub async fn put_on(
 pub async fn delete(pool: &SqlitePool, record_uid: &str) -> Result<(), StoreError> {
     let mut tx = crate::write_tx(pool).await?;
     advance_generation_on(&mut tx, record_uid, None).await?;
-    sqlx::query("DELETE FROM record_doc WHERE CAST(record_uid AS TEXT) = ?")
-        .bind(record_uid)
-        .execute(&mut *tx)
-        .await?;
+    retire_on(&mut tx, record_uid).await?;
     tx.commit().await?;
     Ok(())
 }
@@ -514,9 +515,6 @@ pub async fn doc_tail(
     .collect())
 }
 
-/// Decide checkpoint admission without counting an arbitrarily long CRDT tail.
-/// Read the checkpoint and tail together on the writer's current transaction so
-/// an operation just appended by the caller participates in the same decision.
 pub async fn compaction_due_on(
     tx: &mut Transaction<'_, Sqlite>,
     record_uid: &str,

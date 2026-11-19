@@ -41,7 +41,7 @@ pub(super) fn update(
     world: &mut World,
     entity: Entity,
     root: Entity,
-    arrow: &ArrowSand,
+    destination: Entity,
     from: DVec3,
     to: DVec3,
 ) {
@@ -147,12 +147,16 @@ pub(super) fn update(
         world.entity_mut(entity).insert(spatial);
     }
     let direction = (to - from).normalize();
-    let target = crate::native::topology::spatial(world, arrow.to);
+    let target = crate::native::topology::spatial(world, destination);
     let local = target.rotation().inverse() * direction;
-    let size = world.get::<CanvasItem>(arrow.to).unwrap().size.as_dvec2()
+    let size = world
+        .get::<CanvasItem>(destination)
+        .unwrap()
+        .size
+        .as_dvec2()
         * f64::from(
             world
-                .get::<crate::native::area_effects::AreaScale>(arrow.to)
+                .get::<crate::native::area_effects::AreaScale>(destination)
                 .map_or(1.0, |scale| scale.0),
         )
         * 0.5;
@@ -181,16 +185,13 @@ pub(super) fn update(
             .set_if_neq(MeshMaterial3d(material.clone()));
     }
     let parts = world.get::<Parts>(entity).unwrap();
-    let (shaft, tips, label) = (parts.shaft, parts.tips, parts.label);
+    let (shaft, tips, text) = (parts.shaft, parts.tips, parts.label);
     for line in [shaft, tips[0], tips[1]] {
         if world.get::<Node>(line).unwrap().display != Display::None {
             world.get_mut::<Node>(line).unwrap().display = Display::None;
         }
     }
-    world
-        .get_mut::<Text>(label)
-        .unwrap()
-        .set_if_neq(Text::new(&arrow.label));
+    super::label(world, entity, text);
 }
 
 #[cfg(test)]

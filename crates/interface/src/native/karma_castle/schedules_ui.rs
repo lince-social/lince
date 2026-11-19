@@ -1,16 +1,31 @@
-use bevy::{prelude::*, text::EditableText};
+use bevy::{
+    ecs::{entity_disabling::Disabled, query::Allow},
+    prelude::*,
+    text::EditableText,
+};
 use model::schedules::{DateKind, Draft};
 use nucleus::karma::rule_field::RuleFieldKind;
 
 use super::*;
 
+mod choices;
+mod form;
+mod outcomes;
+mod presentation;
+
 #[derive(Component)]
-struct ScheduleView {
+pub(super) struct ScheduleView {
     panel: Entity,
-    rows: Vec<Value>,
+    rows: Arc<Vec<Arc<Value>>>,
     dirty: bool,
     pending: Option<(String, Operation)>,
-    dates: [Vec<Value>; 2],
+    dates: [Arc<Vec<Value>>; 2],
+}
+
+impl replies::Pending for ScheduleView {
+    fn pending_id(&self) -> Option<&str> {
+        self.pending.as_ref().map(|pending| pending.0.as_str())
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -50,7 +65,7 @@ pub(super) fn spawn(world: &mut World, owner: Entity, parent: Entity) {
     world.get_mut::<Node>(panel).unwrap().display = Display::None;
     world.entity_mut(owner).insert(ScheduleView {
         panel,
-        rows: Vec::new(),
+        rows: Arc::default(),
         dirty: true,
         pending: None,
         dates: Default::default(),
@@ -75,26 +90,48 @@ pub(super) fn dirty(world: &mut World, owner: Entity) {
 }
 
 fn capture(world: &mut World, owner: Entity) {
-    let values: Vec<_> = world
-        .query::<(&Input, &EditableText)>()
-        .iter(world)
-        .filter(|(input, _)| input.owner == owner)
-        .map(|(input, text)| (input.index, text.value().to_string()))
-        .collect();
-    let Some(mut castle) = world.get_mut::<KarmaCastle>(owner) else {
+    world
+        .run_system_cached_with(capture_fields, owner)
+        .expect("capture Karma schedule fields");
+}
+
+fn capture_fields(
+    In(owner): In<Entity>,
+    inputs: Query<(&Input, &EditableText)>,
+    mut castles: Query<&mut KarmaCastle, Allow<Disabled>>,
+) {
+    let _capture = nucleus::performance::Span::new("karma-schedule-field-capture");
+    let Ok(mut castle) = castles.get_mut(owner) else {
         return;
     };
-    let Some(draft) = castle.schedule.as_mut() else {
-        return;
-    };
-    for (index, value) in values {
-        match index {
-            0 => draft.name = value,
-            1 | 4 => draft.dates[(index - 1) / 3].value = value,
-            2 | 5 => draft.dates[(index - 2) / 3].timezone = value,
-            3 | 6 => draft.consequences[(index - 3) / 3] = value,
-            _ => {}
+    for (input, text) in &inputs {
+        if input.owner != owner {
+            continue;
         }
+        let Some(draft) = &castle.schedule else {
+            return;
+        };
+        let index = input.index;
+        let current = match index {
+            0 => &draft.name,
+            1 | 4 => &draft.dates[(index - 1) / 3].value,
+            2 | 5 => &draft.dates[(index - 2) / 3].timezone,
+            3 | 6 => &draft.consequences[(index - 3) / 3],
+            _ => continue,
+        };
+        if text.value() == current.as_str() {
+            continue;
+        }
+        let draft = castle.schedule.as_mut().unwrap();
+        let target = match index {
+            0 => &mut draft.name,
+            1 | 4 => &mut draft.dates[(index - 1) / 3].value,
+            2 | 5 => &mut draft.dates[(index - 2) / 3].timezone,
+            3 | 6 => &mut draft.consequences[(index - 3) / 3],
+            _ => unreachable!(),
+        };
+        crate::controls::copy_value(text, target);
+        nucleus::performance::add("karma-schedule-fields-published", 1);
     }
 }
 
@@ -161,22 +198,20 @@ impl crate::native::actions::Action for Command {
                 }
             }
             Self::Save => {
-                let Some(draft) = world.get::<KarmaCastle>(owner).unwrap().schedule.clone() else {
+                let Some(draft) = world.get::<KarmaCastle>(owner).unwrap().schedule.as_ref() else {
                     return;
                 };
-                match draft.inputs() {
-                    Ok(boundaries) => submit(
-                        world,
-                        owner,
-                        engine::actions::Action::SaveKarmaSchedule {
-                            schedule: draft.uid,
-                            expected_revision: draft.revision,
-                            name: draft.name,
-                            boundaries,
-                            request_id: nucleus::new_uid("schedule-save"),
-                        },
-                        Operation::Write,
-                    ),
+                let action = draft.inputs().map(|boundaries| {
+                    engine::actions::Action::SaveKarmaSchedule {
+                        schedule: draft.uid.clone(),
+                        expected_revision: draft.revision,
+                        name: draft.name.clone(),
+                        boundaries,
+                        request_id: nucleus::new_uid("schedule-save"),
+                    }
+                });
+                match action {
+                    Ok(action) => submit(world, owner, action, Operation::Write),
                     Err(error) => status(world, owner, error),
                 }
                 return;
@@ -307,18 +342,21 @@ impl crate::native::actions::Action for Command {
                     .as_mut()
                     .unwrap()
                     .dates[*index] = model::schedules::DateDraft::from_input(date);
-                world.get_mut::<ScheduleView>(owner).unwrap().dates[*index].clear();
+                let mut view = world.get_mut::<ScheduleView>(owner).unwrap();
+                if !view.dates[*index].is_empty() {
+                    view.dates[*index] = Arc::default();
+                }
             }
         }
         render(world, owner);
     }
 }
 
-fn button(world: &mut World, parent: Entity, owner: Entity, label: &str, command: Command) {
-    crate::native::castle_feed::button(world, parent, owner, label, command);
+fn button(world: &mut World, parent: Entity, owner: Entity, label: &str, command: Command) -> Entity {
+    crate::native::castle_feed::button(world, parent, owner, label, command)
 }
 
-fn input(world: &mut World, parent: Entity, owner: Entity, index: usize, label: &str, value: &str) {
+fn input(world: &mut World, parent: Entity, owner: Entity, index: usize, label: &str, value: &str) -> Entity {
     crate::native::edit_mode::label(world, parent, label, 13.0);
     let entity = world
         .spawn(crate::native::sand::text_editor(
@@ -349,254 +387,38 @@ fn input(world: &mut World, parent: Entity, owner: Entity, index: usize, label: 
     world
         .entity_mut(entity)
         .insert(bevy::a11y::AccessibilityNode(accessible));
+    entity
 }
 
 fn render(world: &mut World, owner: Entity) {
-    let panel = world.get::<ScheduleView>(owner).unwrap().panel;
-    if let Some(children) = world.get::<Children>(panel) {
-        let children: Vec<_> = children.iter().collect();
-        for child in children {
-            world.entity_mut(child).despawn();
-        }
-    }
-    let line = ui::row(world, panel);
-    crate::native::edit_mode::label(world, line, "Scheduled changes", 18.0);
-    button(world, line, owner, "One change", Command::New(false));
-    button(world, line, owner, "Start and end", Command::New(true));
-    button(world, line, owner, "Refresh outcomes", Command::Refresh);
-    if let Some(draft) = world.get::<KarmaCastle>(owner).unwrap().schedule.clone() {
-        let form = ui::stack(world, panel);
-        input(world, form, owner, 0, "Schedule name", &draft.name);
-        for index in 0..if draft.range { 2 } else { 1 } {
-            crate::native::edit_mode::label(
-                world,
-                form,
-                if index == 0 {
-                    "Change / start"
-                } else {
-                    "End (the example sets the current quantity to zero)"
-                },
-                15.0,
-            );
-            let line = ui::row(world, form);
-            for (label, kind) in [
-                ("After a duration", DateKind::After),
-                ("Date with offset", DateKind::Instant),
-                ("Local date", DateKind::Local),
-            ] {
-                button(world, line, owner, label, Command::Mode(index, kind));
-            }
-            let date = &draft.dates[index];
-            input(
-                world,
-                form,
-                owner,
-                1 + index * 3,
-                match date.kind {
-                    DateKind::After => "Duration from saving (for example 3d)",
-                    DateKind::Instant => "Date and time with UTC offset",
-                    DateKind::Local => "Local date and time",
-                },
-                &date.value,
-            );
-            if date.kind == DateKind::Local {
-                input(
-                    world,
-                    form,
-                    owner,
-                    2 + index * 3,
-                    "Timezone",
-                    &date.timezone,
-                );
-                let line = ui::row(world, form);
-                button(
-                    world,
-                    line,
-                    owner,
-                    if date.gap == nucleus::karma::GapPolicy::Pause {
-                        "Missing time: refuse"
-                    } else {
-                        "Missing time: shift forward"
-                    },
-                    Command::Gap(index),
-                );
-                button(
-                    world,
-                    line,
-                    owner,
-                    if date.fold == nucleus::karma::FoldPolicy::First {
-                        "Repeated time: first"
-                    } else {
-                        "Repeated time: second"
-                    },
-                    Command::Fold(index),
-                );
-                button(
-                    world,
-                    line,
-                    owner,
-                    "Resolve local date",
-                    Command::Resolve(index),
-                );
-                let choices = world.get::<ScheduleView>(owner).unwrap().dates[index].clone();
-                for choice in choices {
-                    let Ok(input) = serde_json::from_value(choice["date"].clone()) else {
-                        continue;
-                    };
-                    let label = choice["at_ms"]
-                        .as_i64()
-                        .and_then(chrono::DateTime::from_timestamp_millis)
-                        .map_or_else(|| "Unknown date".into(), |date| date.to_rfc3339());
-                    button(
-                        world,
-                        form,
-                        owner,
-                        &format!(
-                            "Use {label} · timezone rules {}",
-                            choice["rules"].as_str().unwrap_or_default()
-                        ),
-                        Command::SelectDate(index, input),
-                    );
-                }
-            }
-            input(
-                world,
-                form,
-                owner,
-                3 + index * 3,
-                "Consequence (for example @room = -1)",
-                &draft.consequences[index],
-            );
-            let view = world.get::<View>(owner).unwrap();
-            let choices = model::transfers::elements(
-                RuleFieldKind::Consequence,
-                &view.transfers,
-                view.acting_person.as_deref(),
-            );
-            let rows = view.transfers.clone();
-            for source in choices {
-                button(
-                    world,
-                    form,
-                    owner,
-                    &model::transfers::label(&source, &rows),
-                    Command::Consequence(index, source),
-                );
-            }
-        }
-        let line = ui::row(world, form);
-        button(world, line, owner, "Save schedule", Command::Save);
-        button(world, line, owner, "Close editor", Command::Close);
-        crate::native::edit_mode::label(
-            world,
-            form,
-            "Dates and outcomes stay saved when the forecast cache is rebuilt. Cancelling future work leaves the current quantity as it is.",
-            13.0,
-        );
-    }
-    let rows = world.get::<ScheduleView>(owner).unwrap().rows.clone();
-    for value in rows {
-        let Some(uid) = value["uid"].as_str() else {
-            continue;
-        };
-        let revision = value["revision"].as_i64().unwrap_or(0);
-        let group = ui::stack(world, panel);
-        let line = ui::row(world, group);
-        crate::native::edit_mode::label(
-            world,
-            line,
-            &format!(
-                "{} · revision {revision}{}",
-                value["name"].as_str().unwrap_or("Schedule"),
-                if value["cancelled"] == true {
-                    " · cancelled"
-                } else {
-                    ""
-                }
-            ),
-            15.0,
-        );
-        if value["cancelled"] != true {
-            button(
-                world,
-                line,
-                owner,
-                "Edit dates and changes",
-                Command::Edit(uid.into()),
-            );
-            button(
-                world,
-                line,
-                owner,
-                "Cancel future changes",
-                Command::Cancel(uid.into(), revision),
-            );
-        }
-        if let Some(boundaries) = value["boundaries"].as_array() {
-            for boundary in boundaries.iter().rev().take(50).rev() {
-                let input = &boundary["input"];
-                let at = boundary["intended_at_ms"]
-                    .as_i64()
-                    .and_then(chrono::DateTime::from_timestamp_millis)
-                    .map_or_else(|| "Unknown date".into(), |date| date.to_rfc3339());
-                let line = ui::row(world, group);
-                crate::native::edit_mode::label(
-                    world,
-                    line,
-                    &format!(
-                        "{} · {at} · {}{}",
-                        input["purpose"].as_str().unwrap_or("change"),
-                        boundary["status"].as_str().unwrap_or("unknown"),
-                        boundary["reason"]
-                            .as_str()
-                            .map_or(String::new(), |reason| format!(" · {reason}"))
-                    ),
-                    13.0,
-                );
-                if let Some(rule) = boundary["rule"].as_str() {
-                    button(world, line, owner, "Open Rule", Command::Rule(rule.into()));
-                }
-                if boundary["current"] == true
-                    && matches!(boundary["status"].as_str(), Some("failed" | "blocked"))
-                {
-                    if let Some(boundary_uid) = boundary["uid"].as_str() {
-                        button(
-                            world,
-                            line,
-                            owner,
-                            "Retry original occurrence",
-                            Command::Retry(uid.into(), revision, boundary_uid.into()),
-                        );
-                    }
-                }
-            }
-            if boundaries.len() > 50 {
-                crate::native::edit_mode::label(
-                    world,
-                    group,
-                    "Showing the latest 50 boundary outcomes.",
-                    13.0,
-                );
-            }
-        }
-    }
+    presentation::render(world, owner);
 }
 
 pub(super) fn maintain(world: &mut World) {
-    let editors: Vec<_> = world
-        .query_filtered::<Entity, With<ScheduleView>>()
-        .iter(world)
-        .collect();
-    for owner in editors {
+    world
+        .run_system_cached(maintain_schedules)
+        .expect("maintain Karma schedules");
+}
+
+fn maintain_schedules(
+    world: &mut World,
+    editors: &mut QueryState<Entity, With<ScheduleView>>,
+    candidates: &mut QueryState<(Entity, &'static ScheduleView)>,
+    mut owners: Local<Vec<Entity>>,
+) {
+    let _maintain = nucleus::performance::Span::new("karma-schedule-maintenance");
+    owners.extend(editors.iter(world));
+    let count = owners.len();
+    for owner in owners.drain(..) {
         capture(world, owner);
     }
-    let owners: Vec<_> = world
-        .query::<(Entity, &ScheduleView)>()
-        .iter(world)
-        .filter(|(_, view)| view.dirty && view.pending.is_none())
-        .map(|(owner, _)| owner)
-        .collect();
-    for owner in owners {
+    owners.extend(
+        candidates
+            .iter(world)
+            .filter(|(_, view)| view.dirty && view.pending.is_none())
+            .map(|(owner, _)| owner),
+    );
+    for owner in owners.drain(..) {
         if crate::native::practice_cells::sender(world, owner).is_none()
             || crate::native::laboratory::blocked(world, owner)
         {
@@ -612,23 +434,12 @@ pub(super) fn maintain(world: &mut World) {
             world.get_mut::<ScheduleView>(owner).unwrap().dirty = false;
         }
     }
+    if count == 0 {
+        *owners = Vec::new();
+    }
 }
 
-pub(super) fn receive(world: &mut World, message: &ServerMessage) -> bool {
-    let id = match message {
-        ServerMessage::ActionOk { id, .. } | ServerMessage::Error { id, .. } => id,
-        _ => return false,
-    };
-    let owner = world
-        .query::<(Entity, &ScheduleView)>()
-        .iter(world)
-        .find(|(_, view)| {
-            view.pending
-                .as_ref()
-                .is_some_and(|(pending, _)| pending == id)
-        })
-        .map(|(owner, _)| owner);
-    let Some(owner) = owner else { return false };
+pub(super) fn receive(world: &mut World, owner: Entity, message: &ServerMessage) {
     let (_, operation) = world
         .get_mut::<ScheduleView>(owner)
         .unwrap()
@@ -642,21 +453,23 @@ pub(super) fn receive(world: &mut World, message: &ServerMessage) -> bool {
                 let rows = data
                     .as_ref()
                     .and_then(Value::as_array)
-                    .cloned()
-                    .unwrap_or_default();
-                if world.get::<ScheduleView>(owner).unwrap().rows == rows {
-                    return true;
+                    .map_or(&[][..], Vec::as_slice);
+                if !incoming::publish_rows(
+                    &mut world.get_mut::<ScheduleView>(owner).unwrap().rows, rows,
+                ) {
+                    return;
                 }
-                world.get_mut::<ScheduleView>(owner).unwrap().rows = rows;
+                nucleus::performance::add("karma-schedule-rows-published", rows.len() as u64);
             } else if let Operation::Resolve(index) = operation {
                 capture(world, owner);
                 let choices = data
                     .as_ref()
                     .and_then(Value::as_array)
-                    .cloned()
-                    .unwrap_or_default();
+                    .map_or(&[][..], Vec::as_slice);
                 if choices.len() == 1 {
-                    if let Ok(input) = serde_json::from_value(choices[0]["date"].clone()) {
+                    if let Ok(input) = nucleus::karma::scheduled_change::DateInput::deserialize(
+                        &choices[0]["date"],
+                    ) {
                         if !world
                             .get::<KarmaCastle>(owner)
                             .unwrap()
@@ -665,7 +478,7 @@ pub(super) fn receive(world: &mut World, message: &ServerMessage) -> bool {
                             .is_some_and(|draft| same_local(&draft.dates[index], &input))
                         {
                             status(world, owner, "The date changed; resolve it again");
-                            return true;
+                            return;
                         }
                         Command::SelectDate(index, input).apply(world, owner);
                     }
@@ -674,9 +487,11 @@ pub(super) fn receive(world: &mut World, message: &ServerMessage) -> bool {
                         owner,
                         "Local date resolved with the installed timezone rules",
                     );
-                    return true;
+                    return;
                 }
-                world.get_mut::<ScheduleView>(owner).unwrap().dates[index] = choices;
+                if world.get::<ScheduleView>(owner).unwrap().dates[index].as_slice() != choices {
+                    world.get_mut::<ScheduleView>(owner).unwrap().dates[index] = Arc::new(choices.to_vec());
+                }
                 status(world, owner, "Choose the resolved date and timezone rules");
             } else {
                 world.get_mut::<KarmaCastle>(owner).unwrap().schedule = None;
@@ -688,7 +503,6 @@ pub(super) fn receive(world: &mut World, message: &ServerMessage) -> bool {
         ServerMessage::Error { message, .. } => status(world, owner, message.clone()),
         _ => {}
     }
-    true
 }
 
 fn same_local(
@@ -754,7 +568,7 @@ mod tests {
         {
             let mut view = app.world_mut().get_mut::<View>(owner).unwrap();
             view.transfers =
-                vec![serde_json::json!({"uid":transfer,"head":"Trade","karma_state":state})];
+                vec![serde_json::json!({"uid":transfer,"head":"Trade","karma_state":state})].into();
             view.acting_person = Some(person.into());
         }
         Command::New(true).apply(app.world_mut(), owner);

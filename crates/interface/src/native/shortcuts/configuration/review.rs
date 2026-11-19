@@ -131,7 +131,7 @@ pub(crate) fn open(world: &mut World, owner: Entity, name: &str, read: Read, app
     world.entity_mut(list).insert((
         Node { width: percent(100), min_width: px(0), min_height: px(0), flex_grow: 1.0, flex_shrink: 1.0, flex_direction: FlexDirection::Column, row_gap: px(10), overflow: Overflow::scroll_y(), ..Default::default() },
         ScrollPosition::default(), crate::native::edit_mode::FocusScroll,
-    )).observe(|mut event: On<Pointer<Scroll>>| event.propagate(false));
+    )).observe(|mut event: On<PointerScroll>| event.propagate(false));
     let status = feedback(world, panel);
     let confirm = button(world, panel, overlay, "Continue with reviewed draft", Change::Confirm).0;
     world.entity_mut(confirm).insert(Name::new("configuration.review.confirm"));

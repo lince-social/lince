@@ -4,7 +4,7 @@ use crate::native::{
     edit_mode::{EditMode, label},
     sand_text::SandText,
 };
-use bevy::{a11y::AccessibilityNode, picking::events::Scroll, prelude::*, text::EditableText};
+use bevy::{a11y::AccessibilityNode, picking::events::PointerScroll, prelude::*, text::EditableText};
 
 #[derive(Component)]
 pub struct LayoutPanel {
@@ -336,7 +336,7 @@ fn render(world: &mut World, root: Entity, target: Entity, choose_parent: bool) 
             ChildOf(root),
         ))
         .observe(
-            |mut event: On<Pointer<Scroll>>,
+            |mut event: On<PointerScroll>,
              mut panels: Query<&mut ScrollPosition, With<LayoutPanel>>| {
                 if let Ok(mut position) = panels.get_mut(event.entity) {
                     position.0.y = (position.0.y

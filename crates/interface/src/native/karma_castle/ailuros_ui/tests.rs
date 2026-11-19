@@ -1,6 +1,6 @@
 use super::*;
 
-#[allow(dead_code)]
+#[allow(dead_code, reason = "Each test target uses a different subset of the included Karma fixtures")]
 mod karma {
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),
@@ -123,7 +123,7 @@ async fn native_enrollment_access_edits_and_disable_wait_for_confirmed_responses
     assert_eq!(token.len(), 64);
     let row = state.rows[0].clone();
     assert_eq!(row.credential_epoch, 2);
-    Control::SetEnabled(row.uid, row.revision, false).apply(app.world_mut(), owner);
+    Control::SetEnabled(row.uid.clone(), row.revision, false).apply(app.world_mut(), owner);
     crate::native::sand_panel::tests::settle(&mut app, |world| {
         world.get::<Devices>(owner).unwrap().pending.is_none()
     })

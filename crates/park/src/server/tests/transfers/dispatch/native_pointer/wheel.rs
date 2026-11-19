@@ -31,7 +31,7 @@ fn watch(fixture: &mut Fixture) -> (Entity, [f64; 2]) {
         if !world.contains_resource::<Wheels>() {
             world.init_resource::<Wheels>();
             world.init_resource::<WheelDistance>();
-            world.add_observer(|event: On<bevy::picking::events::Pointer<bevy::picking::events::Scroll>>,
+            world.add_observer(|event: On<PointerScroll>,
                 parents: Query<&ChildOf>, observed: Query<(), With<Observed>>,
                 mut wheels: ResMut<Wheels>, mut distance: ResMut<WheelDistance>| {
                 if event.entity != event.original_event_target() { return; }

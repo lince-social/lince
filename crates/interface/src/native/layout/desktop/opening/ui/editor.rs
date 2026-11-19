@@ -92,7 +92,7 @@ pub(super) fn open(world: &mut World, root: Entity, uid: Option<String>, is_wind
     world.entity_mut(content).insert((
         Node { width: percent(100), min_width: px(0), min_height: px(0), flex_grow: 1.0, flex_shrink: 1.0, flex_direction: FlexDirection::Column, row_gap: px(8), overflow: Overflow::scroll_y(), ..Default::default() },
         ScrollPosition::default(), crate::native::edit_mode::FocusScroll,
-    )).observe(|mut event: On<Pointer<Scroll>>| event.propagate(false));
+    )).observe(|mut event: On<PointerScroll>| event.propagate(false));
     let (kind, form, name) = contents(world, content, overlay, root, payload.as_ref(), window, creating, &title, app_id.as_deref());
     let status = feedback(world, panel);
     let save = button(world, panel, overlay, "Save opening preferences", EditChange::Save).0;

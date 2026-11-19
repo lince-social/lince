@@ -12,6 +12,15 @@ pub(super) struct LoginView {
     sender: crate::native::cell_bridge::Sender,
 }
 
+#[derive(Resource)]
+struct Recipients(bevy::ecs::query::QueryState<(Entity, &'static LoginView)>);
+
+impl FromWorld for Recipients {
+    fn from_world(world: &mut World) -> Self {
+        Self(world.query())
+    }
+}
+
 impl Drop for LoginView {
     fn drop(&mut self) {
         let _ = self.sender.try_send(ClientMessage::FioteTerminal {
@@ -95,31 +104,17 @@ pub(super) fn poll(world: &mut World, owner: Entity) {
     {
         return;
     }
-    let geometry = world
-        .get::<ComputedNode>(terminal.screen)
-        .filter(|node| node.size().x > 0.0)
-        .map(|node| {
-            let size = node.size() * node.inverse_scale_factor();
-            (
-                (size.x / CELL_WIDTH).floor().clamp(10.0, 240.0) as u16,
-                (size.y / CELL_HEIGHT).floor().clamp(4.0, 100.0) as u16,
-            )
-        })
-        .unwrap_or(terminal.geometry);
-    let input: Vec<_> = terminal
-        .input
-        .iter()
-        .flatten()
-        .take(4096)
-        .copied()
-        .collect();
-    let count = input.len();
+    let geometry = geometry(world, terminal.screen).unwrap_or(terminal.geometry);
+    let (count, input) = {
+        let prefix = terminal.input.prefix(4096);
+        (prefix.len(), BASE64.encode(prefix.as_ref()))
+    };
     let id = nucleus::new_uid("login-frame");
     let request = cell::FioteTerminalRequest {
         record: view.record.clone(),
         login: view.login.clone(),
         offset: view.offset,
-        input: cell::FioteSecret(BASE64.encode(input)),
+        input: cell::FioteSecret(input),
         cols: geometry.0,
         rows: geometry.1,
         close: false,
@@ -142,16 +137,7 @@ pub(super) fn poll(world: &mut World, owner: Entity) {
     );
     let mut terminal = world.get_mut::<TerminalSand>(owner).unwrap();
     terminal.geometry = geometry;
-    let mut remaining = count;
-    while remaining > 0 {
-        let front = terminal.input.front_mut().unwrap();
-        let take = remaining.min(front.len());
-        front.drain(..take);
-        remaining -= take;
-        if front.is_empty() {
-            terminal.input.pop_front();
-        }
-    }
+    terminal.input.consume(count);
     world.get_mut::<LoginView>(owner).unwrap().pending = Some(id);
 }
 
@@ -160,12 +146,16 @@ pub(super) fn receive(world: &mut World, message: &ServerMessage) -> bool {
         ServerMessage::FioteTerminal { id, .. } | ServerMessage::Error { id, .. } => id,
         _ => return false,
     };
-    let owner = world
-        .query::<(Entity, &LoginView)>()
-        .iter(world)
-        .find(|(_, view)| view.pending.as_deref() == Some(id))
-        .map(|(owner, _)| owner);
+    world.init_resource::<Recipients>();
+    let owner = world.resource_scope(|world, mut recipients: Mut<Recipients>| {
+        recipients
+            .0
+            .iter(world)
+            .find(|(_, view)| view.pending.as_deref() == Some(id))
+            .map(|(owner, _)| owner)
+    });
     let Some(owner) = owner else { return false };
+    nucleus::performance::add("terminal-reply-recipients", 1);
     let status = world.get::<TerminalSand>(owner).unwrap().status;
     let mut view = world.get_mut::<LoginView>(owner).unwrap();
     view.pending = None;

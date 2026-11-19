@@ -118,8 +118,6 @@ fn send(world: &mut World, request: ClientMessage) {
             state.revision += 1;
         }
     }
-    // Actions may send after this frame's poll system. Arm their response/retry
-    // deadline here too, so waiting for the Cell never relies on another input.
     if state.presented
         && let Some(wake) = wake
     {

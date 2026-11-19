@@ -2,6 +2,9 @@ use super::*;
 use crate::native::actions::{Action, ActionButton};
 use bevy::text::EditableText;
 
+mod details;
+pub(super) mod rows;
+
 #[derive(Component)]
 pub(super) struct CursorChoice(pub CursorMode);
 
@@ -196,16 +199,20 @@ fn set_caption(world: &mut World, button: Entity, caption: &str) {
             .find(|child| world.get::<Text>(*child).is_some())
     });
     if let Some(text) = text {
-        world
-            .get_mut::<Text>(text)
-            .unwrap()
-            .set_if_neq(Text::new(caption));
+        let mut text = world.get_mut::<Text>(text).unwrap();
+        if text.0 != caption {
+            caption.clone_into(&mut text.0);
+        }
     }
-    world
+    let mut tooltip = world
         .get_mut::<crate::native::icons::Tooltip>(button)
-        .unwrap()
-        .0 = caption.into();
-    if let Some(mut node) = world.get_mut::<bevy::a11y::AccessibilityNode>(button) {
+        .unwrap();
+    if tooltip.0 != caption {
+        caption.clone_into(&mut tooltip.0);
+    }
+    if let Some(mut node) = world.get_mut::<bevy::a11y::AccessibilityNode>(button)
+        && node.label() != Some(caption)
+    {
         node.set_label(caption);
     }
 }
@@ -224,7 +231,7 @@ fn card_options(world: &mut World, owner: Entity) {
 }
 
 fn hover(
-    event: On<Pointer<Move>>,
+    event: On<PointerMove>,
     nodes: Query<(&ViewportOwner, &ComputedNode, &UiGlobalTransform)>,
     mut commands: Commands,
 ) {
@@ -235,7 +242,7 @@ fn hover(
         return;
     };
     let point = inverse
-        .transform_point2(event.pointer_location.position / node.inverse_scale_factor())
+        .transform_point2(event.pointer.position / node.inverse_scale_factor())
         * node.inverse_scale_factor();
     let owner = owner.0;
     commands.queue(move |world: &mut World| {
@@ -279,24 +286,36 @@ pub(super) fn upcoming(
     visible: bool,
     palette: &palette::Palette,
 ) {
-    timing::refresh(world, owner, now);
     let view = world.get::<View>(owner).unwrap();
     let panel = view.upcoming;
     let size = render::size(world, view.viewport);
     let mut layout = face::Face::clock(world, owner, now, size, palette.font);
     let settings = &world.get::<TimeSettings>(owner).unwrap().0;
     let cap = layout.upcoming.map_or(0.0, |rect| rect.width());
-    let stamp = (
-        view.revision,
-        now.div_euclid(1000),
-        settings.aperture_ms,
-        settings.timezone.clone(),
-        cap.to_bits(),
-    );
     let changed = visible
         && layout.upcoming.is_some()
         && !chrome::controls_open(world, owner)
-        && view.upcoming_stamp.as_ref() != Some(&stamp);
+        && view.upcoming_stamp.as_ref().is_none_or(|stamp| {
+            stamp.0 != view.revision
+                || stamp.1 != now.div_euclid(1000)
+                || stamp.2 != settings.aperture_ms
+                || stamp.3 != settings.timezone
+                || stamp.4 != cap.to_bits()
+        });
+    let stamp = changed.then(|| {
+        (
+            view.revision,
+            now.div_euclid(1000),
+            settings.aperture_ms,
+            settings.timezone.clone(),
+            cap.to_bits(),
+        )
+    });
+    if changed {
+        timing::refresh(world, owner, now);
+    }
+    let view = world.get::<View>(owner).unwrap();
+    let settings = &world.get::<TimeSettings>(owner).unwrap().0;
     let next_rows: Option<Vec<_>> = if changed {
         Some(
             model::clock_summaries(
@@ -375,7 +394,7 @@ pub(super) fn upcoming(
     let Some(rows) = next_rows else {
         return;
     };
-    world.get_mut::<View>(owner).unwrap().upcoming_stamp = Some(stamp);
+    world.get_mut::<View>(owner).unwrap().upcoming_stamp = stamp;
     let view = world.get::<View>(owner).unwrap();
     let ready = world.get::<UpcomingReady>(panel).is_some();
     if ready && view.upcoming_rows == rows {
@@ -501,7 +520,7 @@ impl Action for TogglePast {
 }
 
 fn click(
-    mut event: On<Pointer<Click>>,
+    mut event: On<PointerClick>,
     nodes: Query<(&ViewportOwner, &ComputedNode, &UiGlobalTransform)>,
     mut commands: Commands,
 ) {
@@ -515,7 +534,7 @@ fn click(
         return;
     };
     let point = inverse
-        .transform_point2(event.pointer_location.position / node.inverse_scale_factor())
+        .transform_point2(event.pointer.position / node.inverse_scale_factor())
         * node.inverse_scale_factor();
     let owner = owner.0;
     commands.queue(move |world: &mut World| render::select_at(world, owner, point));
@@ -701,139 +720,7 @@ impl Action for Page {
 }
 
 pub(super) fn details(world: &mut World, owner: Entity, now: i64) {
-    let view = world.get::<View>(owner).unwrap();
-    if view.detail_revision == view.revision {
-        return;
-    }
-    let (parent, selected, page) = (view.details, view.selected.clone(), view.page);
-    let selected_ids: std::collections::HashSet<_> = selected.iter().collect();
-    let settings = world.get::<TimeSettings>(owner).unwrap().0.clone();
-    let mut entries: Vec<_> = view
-        .entries
-        .iter()
-        .filter(|entry| {
-            if !selected.is_empty() {
-                selected_ids.contains(&entry.id)
-            } else {
-                entry.category_at(now, &settings.timezone) != model::Category::Timed
-                    || entry
-                        .effective_time(now)
-                        .is_some_and(|time| time.overlaps(now, now + settings.horizon_ms))
-            }
-        })
-        .cloned()
-        .collect();
-    if selected.is_empty() {
-        let rank = |entry: &Entry| match entry.category_at(now, &settings.timezone) {
-            model::Category::Overdue => 0,
-            model::Category::AllDay => 1,
-            model::Category::Timed => 2,
-        };
-        entries.sort_by(|a, b| {
-            rank(a)
-                .cmp(&rank(b))
-                .then_with(|| {
-                    a.time
-                        .as_ref()
-                        .map(|time| time.from_ms)
-                        .cmp(&b.time.as_ref().map(|time| time.from_ms))
-                })
-                .then_with(|| a.id.cmp(&b.id))
-        });
-    }
-    let pages = entries.len().div_ceil(20).max(1);
-    let page = page.min(pages - 1);
-    world.entity_mut(parent).despawn_children();
-    let controls = crate::native::sand_panel::row(world, parent);
-    chrome::button(
-        world,
-        controls,
-        owner,
-        "All scheduled work",
-        Select(Vec::new()),
-    );
-    if pages > 1 {
-        chrome::button(world, controls, owner, "Previous", Page(-1));
-        chrome::button(world, controls, owner, "Next", Page(1));
-    }
-    crate::native::edit_mode::label(
-        world,
-        parent,
-        &format!(
-            "{} occurrence(s) · page {} / {pages}",
-            entries.len(),
-            page + 1
-        ),
-        12.0,
-    );
-    let mut previous_category = None;
-    for entry in entries.iter().skip(page * 20).take(20) {
-        let current_category = entry.category_at(now, &settings.timezone);
-        if previous_category != Some(current_category) {
-            crate::native::edit_mode::label(
-                world,
-                parent,
-                match current_category {
-                    model::Category::Timed => "Future schedule",
-                    model::Category::AllDay => "All-day work",
-                    model::Category::Overdue => "Overdue work",
-                },
-                15.0,
-            );
-            previous_category = Some(current_category);
-        }
-        let category = match entry.category_at(now, &settings.timezone) {
-            model::Category::Timed => "Scheduled",
-            model::Category::AllDay => "All day",
-            model::Category::Overdue => "Overdue",
-        };
-        let time = time_label(entry, &settings, now);
-        let event = chrome::button(
-            world,
-            parent,
-            owner,
-            &format!(
-                "{category} · {}\n{time}{}",
-                headline(&entry.head),
-                if entry.preview {
-                    " · projection preview (read only)"
-                } else {
-                    ""
-                }
-            ),
-            Select(vec![entry.id.clone()]),
-        );
-        world.get_mut::<Node>(event).unwrap().width = percent(100);
-        if !entry.preview
-            && world
-                .get::<View>(owner)
-                .is_some_and(|view| matches!(view.source, Source::Local))
-        {
-            chrome::button(
-                world,
-                parent,
-                owner,
-                "Try another date",
-                TryDate(entry.record_uid.clone()),
-            );
-        }
-        if !selected.is_empty() {
-            let origin = origin_label(entry, &settings);
-            crate::native::edit_mode::label(world, parent, &origin, 11.0);
-        }
-    }
-    if entries.is_empty() {
-        crate::native::edit_mode::label(world, parent, "No scheduled work in this window", 12.0);
-    }
-    let peek_entries = if selected.is_empty() {
-        &[][..]
-    } else {
-        &entries[..]
-    };
-    chrome::peek(world, owner, peek_entries, &settings);
-    let mut view = world.get_mut::<View>(owner).unwrap();
-    view.page = page;
-    view.detail_revision = view.revision;
+    details::update(world, owner, now);
 }
 
 #[cfg(test)]

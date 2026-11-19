@@ -80,7 +80,10 @@ pub struct CanvasControl {
 }
 
 #[derive(Component)]
-struct ZoomLabel(Entity);
+struct ZoomLabel {
+    view: Entity,
+    rendered_zoom: Option<u64>,
+}
 
 #[derive(Component)]
 pub(crate) struct CanvasToolbar(Entity);
@@ -254,14 +257,17 @@ pub(crate) fn create_controls(
                 ChildOf(control),
             ));
             if action == CanvasAction::ResetZoom {
-                label.insert(ZoomLabel(view));
+                label.insert(ZoomLabel {
+                    view,
+                    rendered_zoom: None,
+                });
             }
         }
     }
 }
 
 fn scroll_toolbar(
-    mut event: On<Pointer<bevy::picking::events::Scroll>>,
+    mut event: On<PointerScroll>,
     mut bars: Query<(&ComputedNode, &mut ScrollPosition), With<ToolbarScroll>>,
 ) {
     if let Ok((node, mut scroll)) = bars.get_mut(event.entity) {
@@ -272,7 +278,10 @@ fn scroll_toolbar(
         };
         let max = (node.content_size.x - node.size.x + node.scrollbar_size.x).max(0.0)
             * node.inverse_scale_factor();
-        scroll.0.x = (scroll.0.x - (event.x + event.y) * step).clamp(0.0, max);
+        let next = (scroll.0.x - (event.x + event.y) * step).clamp(0.0, max);
+        if scroll.0.x != next {
+            scroll.0.x = next;
+        }
         event.propagate(false);
     }
 }
@@ -334,10 +343,18 @@ fn label_controls(
 
 fn zoom_labels(
     views: Query<&CanvasView, Changed<CanvasView>>,
-    mut labels: Query<(&ZoomLabel, &mut Text)>,
+    mut labels: Query<(&mut ZoomLabel, &mut Text)>,
 ) {
-    for (label, mut text) in &mut labels {
-        if let Ok(view) = views.get(label.0) {
+    for (mut label, mut text) in &mut labels {
+        if text.is_changed() && label.rendered_zoom.is_some() {
+            label.rendered_zoom = None;
+        }
+        if let Ok(view) = views.get(label.view) {
+            let zoom = Some(view.zoom.to_bits());
+            if label.rendered_zoom == zoom {
+                continue;
+            }
+            nucleus::performance::add("native-toolbar-zoom-formats", 1);
             let percentage = view.zoom * 100.0;
             let value = if percentage < 1.0 {
                 format!("{percentage:.2}%")
@@ -348,6 +365,9 @@ fn zoom_labels(
             };
             if text.0 != value {
                 text.0 = value;
+            }
+            if label.rendered_zoom != zoom {
+                label.rendered_zoom = zoom;
             }
         }
     }
@@ -376,11 +396,12 @@ fn activate(
             if !view.center.is_finite() {
                 return;
             }
+            let spaces = spaces.get(event.entity).ok();
             let mut sizes: Vec<_> = items
                 .iter()
                 .filter(|(entity, parent, item)| {
                     parent.parent() == event.entity
-                        && spaces.get(event.entity).ok().is_none_or(|spaces| {
+                        && spaces.is_none_or(|spaces| {
                             members
                                 .get(*entity)
                                 .map_or(spaces.entries[0].id, |member| member.0)
@@ -450,6 +471,7 @@ fn circular_positions(items: &[(Entity, Vec2)]) -> Vec<DVec2> {
 
 pub(crate) mod tests {
     use super::*;
+    #[cfg(test)]
     use bevy::ecs::system::RunSystemOnce;
     use bevy::ui_widgets::Activate;
     use bevy::{input_focus::FocusCause, text::EditableText};

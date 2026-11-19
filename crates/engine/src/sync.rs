@@ -426,7 +426,7 @@ impl Engine {
         let displaced = match op.field.as_str() {
             "head" | "body" | "slug" | "kind" => {
                 let sql = format!("SELECT {} AS v FROM record WHERE uid = ?", op.field);
-                store::sqlx::query(&sql)
+                store::sqlx::query(store::sqlx::AssertSqlSafe(sql))
                     .bind(&op.uid)
                     .fetch_optional(pool)
                     .await?

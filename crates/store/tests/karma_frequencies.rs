@@ -603,7 +603,7 @@ fn now(offset_seconds: i64) -> DateTime<Utc> {
 
 async fn count(store: &Store, table: &str) -> i64 {
     let query = format!("SELECT COUNT(*) FROM {table}");
-    sqlx::query_scalar(&query)
+    sqlx::query_scalar(sqlx::AssertSqlSafe(query))
         .fetch_one(&store.pool)
         .await
         .unwrap()

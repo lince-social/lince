@@ -1,33 +1,42 @@
+use crate::host::performance::{self, Count, Stage};
 use crate::native::{
     sand::Unsaved,
     token_style::{BorderToken, Tokens},
     tokens::Token,
 };
+use bevy::ecs::system::InRef;
 use bevy::{prelude::*, text::EditableText};
 use std::time::{Duration, Instant};
+
+mod presentation;
 
 const SAVE_WARNING_AFTER: Duration = Duration::from_secs(10);
 
 #[derive(Resource, Default)]
 struct SaveWake(Option<Instant>);
 
-#[derive(Component, Default)]
+#[derive(Component, Clone, Copy, Default, PartialEq)]
 pub(crate) struct SaveFeedback {
     since: Option<Instant>,
     failed: bool,
     border: Option<UiRect>,
+    styled_border: Option<UiRect>,
     pub(crate) color_owned: bool,
 }
 
 impl SaveFeedback {
-    pub(crate) fn style_border(&mut self, border: UiRect) {
-        if self.border != Some(border) {
-            self.border = Some(border);
+    pub(crate) fn style_border(feedback: &mut Mut<Self>, border: UiRect) {
+        if feedback.styled_border != Some(border) {
+            feedback.bypass_change_detection().styled_border = Some(border);
+            performance::count(Count::SaveFeedbackBordersStaged);
         }
     }
 
-    pub(crate) fn set_failed(&mut self, failed: bool) {
-        self.failed = failed;
+    pub(crate) fn set_failed(feedback: &mut Mut<Self>, failed: bool) {
+        if feedback.failed != failed {
+            feedback.failed = failed;
+            performance::count(Count::SaveFeedbackStateWrites);
+        }
     }
 
     fn update(&mut self, dirty: bool, failed: bool, now: Instant) -> (Option<Token>, bool) {
@@ -66,7 +75,7 @@ pub(crate) fn set_failed(world: &mut World, entity: Entity, failed: bool) {
             descendants.extend(children.iter());
         }
         if let Some(mut feedback) = world.get_mut::<SaveFeedback>(entity) {
-            feedback.set_failed(failed);
+            SaveFeedback::set_failed(&mut feedback, failed);
         }
     }
 }
@@ -76,114 +85,22 @@ pub(crate) fn borders(world: &mut World) {
 }
 
 fn borders_at(world: &mut World, now: Instant) {
-    let fields: Vec<_> = world
-        .query::<(
-            Entity,
-            &Unsaved,
-            Option<&BorderToken>,
-            Option<&crate::native::record_binding::TextBinding>,
-            Option<&crate::native::record_view::RecordEditor>,
-            Option<&EditableText>,
-        )>()
-        .iter(world)
-        .map(|(entity, unsaved, border, binding, record, text)| {
-            let dirty = match (binding, record, text) {
-                (Some(binding), _, Some(text)) => binding.editor_unsaved(text),
-                (_, Some(record), Some(text)) => {
-                    record.pending.is_some() || text.value() != record.confirmed.as_str()
-                }
-                _ => unsaved.0,
-            };
-            (
-                entity,
-                dirty,
-                binding.is_some_and(|binding| {
-                    crate::native::record_binding::failed(world, &binding.record)
-                }),
-                border.map_or(Token::Accent, |border| border.0),
-            )
-        })
-        .collect();
-    let mut deadline = None;
-    let mut colors = Vec::with_capacity(fields.len());
-    for (entity, dirty, failed, base_token) in fields {
-        let mut feedback = world.get_mut::<SaveFeedback>(entity).unwrap();
-        let (alert, _) = feedback.update(dirty, failed, now);
-        feedback.color_owned = true;
-        if dirty && alert.is_none() {
-            let at = feedback.since.unwrap() + SAVE_WARNING_AFTER;
-            deadline = Some(deadline.map_or(at, |previous: Instant| previous.min(at)));
-        }
-        let token = alert.unwrap_or(base_token);
-        colors.push((entity, token));
-        if alert.is_some() {
-            let border = world.get::<Node>(entity).map(|node| node.border);
-            let mut feedback = world.get_mut::<SaveFeedback>(entity).unwrap();
-            if feedback.border.is_none() {
-                feedback.border = border;
-            }
-            let base_border = feedback.border;
-            let borderless = world
-                .get::<crate::native::sand::Borderless>(entity)
-                .is_some();
-            if let Some(mut node) = world.get_mut::<Node>(entity) {
-                let mut border = base_border.unwrap_or(node.border);
-                if borderless {
-                    border = UiRect::bottom(px(1));
-                } else {
-                    for side in [
-                        &mut border.left,
-                        &mut border.right,
-                        &mut border.top,
-                        &mut border.bottom,
-                    ] {
-                        if matches!(*side, Val::Auto | Val::Px(0.0) | Val::Percent(0.0)) {
-                            *side = px(1);
-                        }
-                    }
-                }
-                node.map_unchanged(|node| &mut node.border)
-                    .set_if_neq(border);
-            }
-        } else {
-            let border = world.get_mut::<SaveFeedback>(entity).unwrap().border.take();
-            if let Some(border) = border
-                && let Some(mut node) = world.get_mut::<Node>(entity)
-            {
-                node.map_unchanged(|node| &mut node.border)
-                    .set_if_neq(border);
-            }
-        }
-    }
-    world
-        .run_system_cached_with(style_borders, colors)
-        .expect("style save feedback");
-    world.init_resource::<SaveWake>();
-    let scheduled = world.resource::<SaveWake>().0.filter(|at| *at > now);
-    world.resource_mut::<SaveWake>().0 = scheduled;
-    if let Some(deadline) = deadline
-        && scheduled.is_none_or(|scheduled| deadline < scheduled)
-        && let Some(wake) = world
-            .get_resource::<crate::native::wake::WakeSignal>()
-            .cloned()
-    {
-        world.resource_mut::<SaveWake>().0 = Some(deadline);
-        wake.after(deadline.saturating_duration_since(now));
-    }
+    presentation::borders(world, now);
 }
 
 fn style_borders(
-    In(fields): In<Vec<(Entity, Token)>>,
+    InRef(fields): InRef<[(Entity, Token)]>,
     mut tokens: Tokens,
     mut colors: Query<&mut BorderColor>,
     mut commands: Commands,
 ) {
+    let _style = performance::Span::new(Stage::SaveFeedbackStyle);
     tokens.refresh();
-    for &(entity, token) in &fields {
+    for &(entity, token) in fields {
         tokens.prepare(entity, [token]);
     }
     tokens.finish_preparing();
-    for (entity, token) in fields {
+    for &(entity, token) in fields {
         let color = BorderColor::all(tokens.resolve(entity, token).0.color());
         if let Ok(mut current) = colors.get_mut(entity) {
             current.set_if_neq(color);
@@ -213,12 +130,12 @@ mod tests {
             feedback.update(true, false, now + SAVE_WARNING_AFTER),
             (Some(Token::Warning), false)
         );
-        feedback.set_failed(true);
+        feedback.failed = true;
         assert_eq!(
             feedback.update(true, false, now + SAVE_WARNING_AFTER),
             (Some(Token::Error), false)
         );
-        feedback.set_failed(false);
+        feedback.failed = false;
         assert_eq!(
             feedback.update(true, false, now + SAVE_WARNING_AFTER),
             (Some(Token::Warning), false)

@@ -41,6 +41,12 @@ pub struct Replay {
 }
 
 #[derive(Debug)]
+pub struct History {
+    pub checkpoint: String,
+    pub updates: Vec<Vec<u8>>,
+}
+
+#[derive(Debug)]
 pub struct Write {
     pub expected: Option<Stamp>,
     pub generation: String,
@@ -91,11 +97,63 @@ fn bounded_sum(values: impl IntoIterator<Item = usize>) -> Result<usize, StoreEr
     })
 }
 
+fn decode_metadata(
+    row: sqlx::sqlite::SqliteRow,
+    known_pending: Option<(&str, &[String])>,
+) -> Result<Metadata, StoreError> {
+    let generation: String = row.try_get("generation")?;
+    identity(&generation, 128)?;
+    let encoded: &str = row.try_get("pending")?;
+    bounded_sum([encoded.len()])?;
+    let ids = match known_pending {
+        Some((expected, ids)) if encoded == expected => {
+            nucleus::performance::add("record-recovery-pending-reused", 1);
+            ids.to_vec()
+        }
+        _ => {
+            let ids: Vec<String> = serde_json::from_str(encoded)
+                .map_err(|error| sqlx::Error::Protocol(error.to_string()))?;
+            pending(&ids)?;
+            ids
+        }
+    };
+    let size = |name| {
+        usize::try_from(row.try_get::<i64, _>(name)?)
+            .map_err(|_| invalid("Invalid recovery journal size"))
+    };
+    let metadata = Metadata {
+        stamp: Stamp {
+            generation,
+            sequence: row.try_get("sequence")?,
+        },
+        pending: ids,
+        update_count: size("update_count")?,
+        update_bytes: size("update_bytes")?,
+        request_bytes: size("request_bytes")?,
+        checkpoint_bytes: size("checkpoint_bytes")?,
+        write_hash: row.try_get("write_hash")?,
+    };
+    if metadata.stamp.sequence < 0
+        || metadata.checkpoint_bytes > MAX_CHECKPOINT_BYTES
+        || metadata.update_count > 4096
+    {
+        return Err(invalid("Invalid recovery journal metadata"));
+    }
+    bounded_sum([
+        metadata.checkpoint_bytes,
+        metadata.request_bytes,
+        metadata.update_bytes,
+        encoded.len(),
+    ])?;
+    Ok(metadata)
+}
+
 async fn metadata_on(
     tx: &mut Transaction<'_, Sqlite>,
     source: &str,
     record: &str,
 ) -> Result<Option<Metadata>, StoreError> {
+    let _read = nucleus::performance::Span::new("record-recovery-metadata-read-await");
     let row = sqlx::query(
         "SELECT d.generation, d.sequence, d.pending, d.update_count, d.update_bytes, d.request_bytes,
                 octet_length(c.payload) AS checkpoint_bytes, d.write_hash
@@ -106,45 +164,7 @@ async fn metadata_on(
     .bind(record)
     .fetch_optional(&mut **tx)
     .await?;
-    row.map(|row| {
-        let generation: String = row.try_get("generation")?;
-        identity(&generation, 128)?;
-        let encoded: &str = row.try_get("pending")?;
-        bounded_sum([encoded.len()])?;
-        let ids: Vec<String> = serde_json::from_str(encoded)
-            .map_err(|error| sqlx::Error::Protocol(error.to_string()))?;
-        pending(&ids)?;
-        let size = |name| {
-            usize::try_from(row.try_get::<i64, _>(name)?)
-                .map_err(|_| invalid("Invalid recovery journal size"))
-        };
-        let metadata = Metadata {
-            stamp: Stamp {
-                generation,
-                sequence: row.try_get("sequence")?,
-            },
-            pending: ids,
-            update_count: size("update_count")?,
-            update_bytes: size("update_bytes")?,
-            request_bytes: size("request_bytes")?,
-            checkpoint_bytes: size("checkpoint_bytes")?,
-            write_hash: row.try_get("write_hash")?,
-        };
-        if metadata.stamp.sequence < 0
-            || metadata.checkpoint_bytes > MAX_CHECKPOINT_BYTES
-            || metadata.update_count > 4096
-        {
-            return Err(invalid("Invalid recovery journal metadata"));
-        }
-        bounded_sum([
-            metadata.checkpoint_bytes,
-            metadata.request_bytes,
-            metadata.update_bytes,
-            encoded.len(),
-        ])?;
-        Ok(metadata)
-    })
-    .transpose()
+    row.map(|row| decode_metadata(row, None)).transpose()
 }
 
 pub async fn metadata(
@@ -171,26 +191,10 @@ pub async fn replay(
         .await?
         .filter(|metadata| &metadata.stamp == expected)
         .ok_or_else(|| invalid("Recovery journal changed while loading"))?;
-    let checkpoint: String = sqlx::query_scalar(
-        "SELECT payload FROM record_edit_checkpoint WHERE source = ? AND record_uid = ?",
-    )
-    .bind(source)
-    .bind(record)
-    .fetch_one(&mut *tx)
-    .await?;
-    let updates: Vec<Vec<u8>> = sqlx::query_scalar(
-        "SELECT payload FROM record_edit_update WHERE source = ? AND record_uid = ?
-          ORDER BY sequence, position",
-    )
-    .bind(source)
-    .bind(record)
-    .fetch_all(&mut *tx)
-    .await?;
-    if updates.len() != metadata.update_count
-        || bounded_sum(updates.iter().map(Vec::len))? != metadata.update_bytes
-    {
-        return Err(invalid("Recovery journal update metadata disagrees"));
-    }
+    let History {
+        checkpoint,
+        updates,
+    } = history_on(&mut tx, source, record, &metadata).await?;
     let mut requests: HashMap<String, String> = sqlx::query_as(
         "SELECT request_uid, payload FROM record_edit_request WHERE source = ? AND record_uid = ?",
     )
@@ -200,11 +204,11 @@ pub async fn replay(
     .await?
     .into_iter()
     .collect();
-    if requests.len() != metadata.pending.len()
-        || bounded_sum(requests.values().map(String::len))? != metadata.request_bytes
-    {
-        return Err(invalid("Recovery journal request metadata disagrees"));
-    }
+    request_sizes(
+        &metadata,
+        requests.len(),
+        requests.values().map(String::len),
+    )?;
     let ordered = metadata
         .pending
         .iter()
@@ -224,6 +228,92 @@ pub async fn replay(
         updates,
         requests: ordered,
     })
+}
+
+async fn history_on(
+    tx: &mut Transaction<'_, Sqlite>,
+    source: &str,
+    record: &str,
+    metadata: &Metadata,
+) -> Result<History, StoreError> {
+    let checkpoint: String = sqlx::query_scalar(
+        "SELECT payload FROM record_edit_checkpoint WHERE source = ? AND record_uid = ?",
+    )
+    .bind(source)
+    .bind(record)
+    .fetch_one(&mut **tx)
+    .await?;
+    let updates: Vec<Vec<u8>> = sqlx::query_scalar(
+        "SELECT payload FROM record_edit_update WHERE source = ? AND record_uid = ?
+          ORDER BY sequence, position",
+    )
+    .bind(source)
+    .bind(record)
+    .fetch_all(&mut **tx)
+    .await?;
+    if updates.len() != metadata.update_count
+        || bounded_sum(updates.iter().map(Vec::len))? != metadata.update_bytes
+    {
+        return Err(invalid("Recovery journal update metadata disagrees"));
+    }
+    Ok(History {
+        checkpoint,
+        updates,
+    })
+}
+
+fn request_sizes(
+    metadata: &Metadata,
+    count: usize,
+    sizes: impl IntoIterator<Item = usize>,
+) -> Result<(), StoreError> {
+    if count != metadata.pending.len() || bounded_sum(sizes)? != metadata.request_bytes {
+        return Err(invalid("Recovery journal request metadata disagrees"));
+    }
+    Ok(())
+}
+
+pub async fn history_if_current(
+    pool: &SqlitePool,
+    source: &str,
+    record: &str,
+    expected: &Stamp,
+) -> Result<Option<History>, StoreError> {
+    let _history = nucleus::performance::Span::new("record-recovery-compaction-read-await");
+    scope(source, record)?;
+    let mut tx = pool.begin().await?;
+    let Some(metadata) = metadata_on(&mut tx, source, record)
+        .await?
+        .filter(|metadata| &metadata.stamp == expected)
+    else {
+        tx.commit().await?;
+        return Ok(None);
+    };
+    let history = history_on(&mut tx, source, record, &metadata).await?;
+    let requests: HashMap<String, i64> = sqlx::query_as(
+        "SELECT request_uid, octet_length(payload) FROM record_edit_request
+          WHERE source = ? AND record_uid = ?",
+    )
+    .bind(source)
+    .bind(record)
+    .fetch_all(&mut *tx)
+    .await?
+    .into_iter()
+    .collect();
+    request_sizes(
+        &metadata,
+        requests.len(),
+        requests
+            .values()
+            .map(|size| usize::try_from(*size).unwrap_or(usize::MAX)),
+    )?;
+    for id in &metadata.pending {
+        if !requests.contains_key(id) {
+            return Err(invalid("Recovery request is missing"));
+        }
+    }
+    tx.commit().await?;
+    Ok(Some(history))
 }
 
 fn fingerprint(source: &str, record: &str, write: &Write) -> String {
@@ -270,6 +360,7 @@ pub async fn save(
     write: &Write,
     compacted: Option<&str>,
 ) -> Result<Metadata, StoreError> {
+    let preparation = nucleus::performance::Span::new("record-recovery-save-prepare");
     scope(source, record)?;
     identity(&write.generation, 128)?;
     let ids = pending(&write.pending)?;
@@ -282,6 +373,7 @@ pub async fn save(
             return Err(invalid("Recovery payload is not pending"));
         }
     }
+    drop(ids);
     let pending = serde_json::to_string(&write.pending)
         .map_err(|error| sqlx::Error::Protocol(error.to_string()))?;
     bounded_sum(
@@ -302,13 +394,15 @@ pub async fn save(
         }
     }
     let hash = fingerprint(source, record, write);
+    drop(preparation);
+    let _transaction = nucleus::performance::Span::new("record-recovery-save-transaction-await");
     let mut tx = pool.begin_with("BEGIN IMMEDIATE").await?;
     let current = metadata_on(&mut tx, source, record).await?;
-    if let Some(current) = &current {
-        if current.stamp.generation == write.generation && current.write_hash == hash {
-            tx.rollback().await?;
-            return Ok(current.clone());
-        }
+    if current.as_ref().is_some_and(|current| {
+        current.stamp.generation == write.generation && current.write_hash == hash
+    }) {
+        tx.rollback().await?;
+        return Ok(current.unwrap());
     }
     let rotating = write
         .expected
@@ -344,22 +438,8 @@ pub async fn save(
             .execute(&mut *tx)
             .await?;
     }
-    if current.is_some() {
-        sqlx::query(
-            "UPDATE record_edit_draft SET generation = ?, sequence = ?,
-                    pending = ?, write_hash = ?, updated_at = ?
-              WHERE source = ? AND record_uid = ?",
-        )
-        .bind(&write.generation)
-        .bind(sequence)
-        .bind(&pending)
-        .bind(&hash)
-        .bind(nucleus::execution::now().to_rfc3339())
-        .bind(source)
-        .bind(record)
-        .execute(&mut *tx)
-        .await?;
-    } else {
+    let updated_at = nucleus::execution::now().to_rfc3339();
+    if current.is_none() {
         sqlx::query(
             "INSERT INTO record_edit_draft
                  (source, record_uid, generation, sequence, pending, write_hash, updated_at)
@@ -371,7 +451,7 @@ pub async fn save(
         .bind(sequence)
         .bind(&pending)
         .bind(&hash)
-        .bind(nucleus::execution::now().to_rfc3339())
+        .bind(&updated_at)
         .execute(&mut *tx)
         .await?;
     }
@@ -399,16 +479,18 @@ pub async fn save(
         .await?
         .rows_affected();
         if inserted == 0 {
-            let existing: String = sqlx::query_scalar(
-                "SELECT payload FROM record_edit_request
+            nucleus::performance::add("record-recovery-payload-compares", 1);
+            let same: bool = sqlx::query_scalar(
+                "SELECT payload = ? COLLATE BINARY FROM record_edit_request
                   WHERE source = ? AND record_uid = ? AND request_uid = ?",
             )
+            .bind(&request.payload)
             .bind(source)
             .bind(record)
             .bind(&request.uid)
             .fetch_one(&mut *tx)
             .await?;
-            if existing != request.payload {
+            if !same {
                 return Err(invalid("Recovery request identity was reused"));
             }
         }
@@ -463,20 +545,33 @@ pub async fn save(
             .await?;
         }
     }
-    sqlx::query(
-        "UPDATE record_edit_draft SET update_count = ?, update_bytes = ?, request_bytes = ?
-          WHERE source = ? AND record_uid = ?",
+    nucleus::performance::add("record-recovery-metadata-updates", 1);
+    let row = sqlx::query(
+        "UPDATE record_edit_draft
+            SET generation = ?, sequence = ?, pending = ?, write_hash = ?, updated_at = ?,
+                update_count = ?, update_bytes = ?, request_bytes = ?
+          WHERE source = ? AND record_uid = ?
+          RETURNING generation, sequence, pending, update_count, update_bytes, request_bytes,
+                    write_hash,
+                    (SELECT octet_length(payload) FROM record_edit_checkpoint
+                      WHERE source = ? AND record_uid = ?) AS checkpoint_bytes",
     )
+    .bind(&write.generation)
+    .bind(sequence)
+    .bind(&pending)
+    .bind(&hash)
+    .bind(&updated_at)
     .bind(update_count as i64)
     .bind(update_bytes as i64)
     .bind(request_bytes)
     .bind(source)
     .bind(record)
-    .execute(&mut *tx)
-    .await?;
-    let result = metadata_on(&mut tx, source, record)
-        .await?
-        .ok_or_else(|| invalid("Recovery journal disappeared"))?;
+    .bind(source)
+    .bind(record)
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or_else(|| invalid("Recovery journal disappeared"))?;
+    let result = decode_metadata(row, Some((pending.as_str(), write.pending.as_slice())))?;
     tx.commit().await?;
     Ok(result)
 }

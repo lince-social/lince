@@ -107,7 +107,7 @@ async fn every_social_verb_refuses_incompatible_alpn_and_malformed_version_witho
         "replica_grant",
     ] {
         assert_eq!(
-            store::sqlx::query_scalar::<_, i64>(&format!("SELECT COUNT(*) FROM {table}"))
+            store::sqlx::query_scalar::<_, i64>(store::sqlx::AssertSqlSafe(format!("SELECT COUNT(*) FROM {table}")))
                 .fetch_one(&host.store.pool)
                 .await
                 .unwrap(),

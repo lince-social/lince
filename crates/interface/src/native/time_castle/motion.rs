@@ -41,6 +41,7 @@ impl Band {
         previous + (next - previous) * self.blend.position[0] + self.fall.position[0]
     }
 
+    #[cfg(test)]
     pub fn anchor(
         &self,
         settings: &Settings,
@@ -49,11 +50,22 @@ impl Band {
         width: f32,
         unwind: f32,
     ) -> [f32; 3] {
+        let curve = settings.geometry(now, size.to_array(), unwind);
+        self.anchor_in(&curve, settings, now, size, width)
+    }
+
+    pub fn anchor_in(
+        &self,
+        curve: &model::Geometry,
+        settings: &Settings,
+        now: i64,
+        size: Vec2,
+        width: f32,
+    ) -> [f32; 3] {
         let time = self.visible_time(now);
         let at = time.from_ms + (time.until_ms.unwrap_or(time.from_ms) - time.from_ms) / 2;
-        let mut point = Vec3::from_array(settings.position(at, now, size.to_array(), unwind));
-        point += Vec3::from_array(settings.transverse(at, now, unwind))
-            * self.offset(at, settings, size, width);
+        let mut point = Vec3::from_array(curve.position(at));
+        point += Vec3::from_array(curve.transverse(at)) * self.offset(at, settings, size, width);
         point.to_array()
     }
 
@@ -85,6 +97,17 @@ pub(super) struct Motion {
     last: Instant,
 }
 
+#[derive(Resource)]
+struct MotionQuery(
+    bevy::ecs::query::QueryState<(&'static View, &'static TimeSettings, &'static mut Motion)>,
+);
+
+impl FromWorld for MotionQuery {
+    fn from_world(world: &mut World) -> Self {
+        Self(world.query())
+    }
+}
+
 pub(super) fn update(
     world: &mut World,
     owner: Entity,
@@ -101,39 +124,44 @@ pub(super) fn update(
             last: Instant::now(),
         });
     }
-    let settings = &world.get::<TimeSettings>(owner).unwrap().0;
+    world.init_resource::<MotionQuery>();
+    world.resource_scope(|world, mut query: Mut<MotionQuery>| {
+        let (view, settings, mut motion) = query.0.get_mut(world, owner).unwrap();
+        advance(view, &settings.0, &mut motion, now, duration, changed)
+    })
+}
+
+fn advance(
+    view: &View,
+    settings: &Settings,
+    motion: &mut Motion,
+    now: i64,
+    duration: i64,
+    changed: bool,
+) -> bool {
+    let _span = nucleus::performance::Span::new("time-motion-update");
     let tick = now / 1000;
-    let changed = changed || world.get::<Motion>(owner).unwrap().tick != tick;
-    let occurrences = changed.then(|| {
-        model::clock_occurrences(
-            settings,
-            &world.get::<View>(owner).unwrap().entries,
-            now,
-            now + duration,
-        )
-    });
-    let entries = occurrences
-        .as_ref()
-        .map(|_| world.get::<View>(owner).unwrap().entries.clone());
+    let changed = changed || motion.tick != tick;
+    let entries = &view.entries;
+    let occurrences =
+        changed.then(|| model::clock_occurrences(settings, entries, now, now + duration));
     let physics = settings.card_physics;
-    let mut motion = world.get_mut::<Motion>(owner).unwrap();
     motion.seconds = motion.last.elapsed().as_secs_f32();
     motion.last = Instant::now();
     motion.tick = tick;
     if let Some(occurrences) = occurrences {
-        let entries = entries.unwrap();
         let ids: std::collections::HashSet<_> = occurrences
             .iter()
-            .map(|occurrence| entries[occurrence.index].id.clone())
+            .map(|occurrence| entries[occurrence.index].id.as_str())
             .collect();
         for band in motion.bands.values_mut() {
-            if !ids.contains(&band.entry.id) && !band.retiring {
+            if !ids.contains(band.entry.id.as_str()) && !band.retiring {
                 band.retiring = true;
                 band.retired_at = Some(Instant::now());
             }
         }
         for occurrence in occurrences {
-            let entry = entries[occurrence.index].clone();
+            let entry = &entries[occurrence.index];
             if let Some(band) = motion.bands.get_mut(&entry.id) {
                 let same_profile = band.occurrence.profile.len() == occurrence.profile.len()
                     && band
@@ -159,14 +187,22 @@ pub(super) fn update(
                     band.blend.position[0] = 0.0;
                 }
                 band.occurrence = occurrence;
-                band.entry = entry;
+                if band.entry != *entry {
+                    band.entry.clone_from(entry);
+                    crate::host::performance::count(
+                        crate::host::performance::Count::TimeMotionEntriesCopied,
+                    );
+                }
                 band.retiring = false;
                 band.retired_at = None;
             } else {
+                crate::host::performance::count(
+                    crate::host::performance::Count::TimeMotionEntriesCopied,
+                );
                 motion.bands.insert(
                     entry.id.clone(),
                     Band {
-                        entry,
+                        entry: entry.clone(),
                         previous: occurrence.clone(),
                         occurrence,
                         blend: Spring::new([1.0]),
@@ -207,6 +243,7 @@ pub(super) fn update(
     active
 }
 
+#[cfg(test)]
 pub(super) fn points(
     band: &Band,
     settings: &Settings,
@@ -215,15 +252,26 @@ pub(super) fn points(
     unwind: f32,
     width: f32,
 ) -> Vec<Vec3> {
+    let curve = settings.geometry(now, size.to_array(), unwind);
+    points_in(band, &curve, settings, now, size, width)
+}
+
+pub(super) fn points_in(
+    band: &Band,
+    curve: &model::Geometry,
+    settings: &Settings,
+    now: i64,
+    size: Vec2,
+    width: f32,
+) -> Vec<Vec3> {
     let time = band.visible_time(now);
-    let mut points = render::samples(settings, &time, now, size, unwind, 512);
+    let mut points: Vec<_> = curve.samples(&time, 512).map(Vec3::from_array).collect();
     let count = points.len().saturating_sub(1).max(1) as f64;
     for (index, point) in points.iter_mut().enumerate() {
         let at = time.from_ms
             + ((time.until_ms.unwrap_or(time.from_ms) - time.from_ms) as f64 * index as f64 / count)
                 .round() as i64;
-        *point += Vec3::from_array(settings.transverse(at, now, unwind))
-            * band.offset(at, settings, size, width);
+        *point += Vec3::from_array(curve.transverse(at)) * band.offset(at, settings, size, width);
     }
     points
 }

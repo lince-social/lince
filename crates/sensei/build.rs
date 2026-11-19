@@ -1,9 +1,9 @@
 #[path = "src/rules/mod.rs"]
-#[allow(dead_code)]
+#[allow(dead_code, reason = "The build script uses the checker subset of the shared rules module")]
 mod rules;
 
 #[path = "src/lesson.rs"]
-#[allow(dead_code)]
+#[allow(dead_code, reason = "The build script uses teach from the shared lesson module")]
 mod lesson;
 
 fn main() {

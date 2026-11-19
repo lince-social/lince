@@ -16,6 +16,12 @@ use crate::native::protein_area::{RecordBinding, Source};
 
 mod journal;
 mod splice_checks;
+mod cursors;
+mod identity;
+mod incoming;
+mod dispatch;
+mod preparation;
+use identity::{Documents, key_parts, key_ref};
 
 pub(crate) fn laboratory_cases(cases: &mut Vec<crate::native::laboratory::Case>) {
     splice_checks::laboratory_cases(cases);
@@ -1073,7 +1079,7 @@ mod tests {
                         document
                             .incoming
                             .iter()
-                            .any(|message| matches!(message, ServerMessage::CollabChange { .. }))
+                            .any(|message| matches!(message, incoming::Message::Change(_)))
                     })
             })
             .await;
@@ -1558,14 +1564,50 @@ struct Presence {
 #[derive(Component, Clone)]
 #[require(crate::native::sand::Unsaved(false))]
 pub struct TextBinding {
-    pub record: RecordBinding,
-    pub property: String,
-    pub status: Option<Entity>,
+    field: Arc<TextField>,
     observed: Arc<str>,
     confirmed: Arc<str>,
 }
 
+#[derive(Clone)]
+pub struct TextField {
+    pub record: RecordBinding,
+    pub property: String,
+    pub status: Option<Entity>,
+}
+
+impl std::ops::Deref for TextBinding {
+    type Target = TextField;
+
+    fn deref(&self) -> &Self::Target {
+        &self.field
+    }
+}
+
+impl std::ops::DerefMut for TextBinding {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        Arc::make_mut(&mut self.field)
+    }
+}
+
 impl TextBinding {
+    fn new(
+        record: RecordBinding,
+        property: &str,
+        status: Option<Entity>,
+        observed: Arc<str>,
+    ) -> Self {
+        Self {
+            field: Arc::new(TextField {
+                record,
+                property: property.into(),
+                status,
+            }),
+            confirmed: observed.clone(),
+            observed,
+        }
+    }
+
     pub(crate) fn unsaved(&self, value: &str) -> bool {
         value != self.confirmed.as_ref()
     }
@@ -1596,7 +1638,7 @@ pub fn observe_edit(world: &World, entity: Entity) -> Option<EditObservation> {
     let document = world
         .get_resource::<Bindings>()?
         .documents
-        .get(&key(&binding.record))?;
+        .get(&key_ref(&binding.record))?;
     let value = text.value().to_string();
     Some(EditObservation {
         revision: document.revision,
@@ -1627,7 +1669,7 @@ pub(crate) fn active(world: &World, entity: Entity) -> bool {
     world.get::<TextBinding>(entity).is_some_and(|binding| {
         world
             .get_resource::<Bindings>()
-            .is_some_and(|bindings| bindings.documents.contains_key(&key(&binding.record)))
+            .is_some_and(|bindings| bindings.documents.contains_key(&key_ref(&binding.record)))
     })
 }
 
@@ -1658,25 +1700,30 @@ fn visible(world: &World, entity: Entity) -> bool {
         && bounds.min.y <= target.physical_size().y as f32
 }
 
-pub(crate) fn status(world: &World, record: &RecordBinding) -> Option<String> {
+pub(crate) fn status<'a>(world: &'a World, record: &RecordBinding) -> Option<&'a str> {
     world
         .get_resource::<Bindings>()?
         .documents
-        .get(&key(record))
-        .map(|document| document.status.clone())
+        .get(&key_ref(record))
+        .map(|document| document.status.as_str())
 }
 
 pub(crate) fn failed(world: &World, record: &RecordBinding) -> bool {
+    failed_message(world, &record.source, &record.uid).is_some()
+}
+
+pub(crate) fn failed_message<'a>(world: &'a World, source: &Source, uid: &str) -> Option<&'a str> {
     world
         .get_resource::<Bindings>()
-        .and_then(|bindings| bindings.documents.get(&key(record)))
-        .is_some_and(|document| document.failed)
+        .and_then(|bindings| bindings.documents.get(&key_parts(source, uid)))
+        .filter(|document| document.failed)
+        .map(|document| document.status.as_str())
 }
 
 pub(crate) fn pending(world: &World, record: &RecordBinding) -> bool {
     world
         .get_resource::<Bindings>()
-        .and_then(|bindings| bindings.documents.get(&key(record)))
+        .and_then(|bindings| bindings.documents.get(&key_ref(record)))
         .is_some_and(|document| document.saving || !document.pending.is_empty())
 }
 
@@ -1703,8 +1750,8 @@ struct Document {
     saving: bool,
     status: String,
     failed: bool,
-    incoming: VecDeque<ServerMessage>,
-    cursors: Vec<cell::CollabCursor>,
+    incoming: VecDeque<incoming::Message>,
+    cursors: cursors::Cursors,
     presence: Option<Presence>,
     touched: Instant,
 }
@@ -1738,7 +1785,7 @@ impl Document {
             status: "Opening Record…".into(),
             failed: false,
             incoming: VecDeque::new(),
-            cursors: Vec::new(),
+            cursors: default(),
             presence: None,
             touched: Instant::now(),
         }
@@ -1784,77 +1831,6 @@ impl Document {
         self.sender = sender;
     }
 
-    fn dispatch(
-        &mut self,
-        needs_text: bool,
-        draft: Option<&engine::record_edit::Write>,
-    ) -> Vec<tokio::sync::oneshot::Sender<bool>> {
-        let mut gates = Vec::new();
-        if (!self.joined && needs_text) || self.failed || self.sequence.cancelled() {
-            return gates;
-        }
-        let Some(sender) = &self.sender else {
-            return gates;
-        };
-        let previous_inflight = self.inflight;
-        if sender.ordered() {
-            for request in self.pending.iter().skip(self.inflight) {
-                let durable = self
-                    .journal
-                    .metadata
-                    .as_ref()
-                    .is_some_and(|metadata| metadata.pending.contains(&request.id));
-                let (gate, ready) = if durable {
-                    (None, None)
-                } else if draft
-                    .is_some_and(|draft| draft.pending.iter().any(|item| item.id == request.id))
-                {
-                    let (gate, ready) = tokio::sync::oneshot::channel();
-                    (Some(gate), Some(ready))
-                } else {
-                    break;
-                };
-                if !sender.try_send_edit(request, &self.sequence, ready) {
-                    break;
-                }
-                self.inflight += 1;
-                if let Some(gate) = gate {
-                    gates.push(gate);
-                }
-            }
-        } else if self.inflight == 0
-            || self
-                .dispatched
-                .is_some_and(|at| at.elapsed().as_secs() >= 5)
-        {
-            if let Some(request) = self.pending.front()
-                && self
-                    .journal
-                    .metadata
-                    .as_ref()
-                    .is_some_and(|metadata| metadata.pending.contains(&request.id))
-                && sender
-                    .try_send(ClientMessage::Act {
-                        id: request.id.clone(),
-                        action: engine::actions::Action::ChangeRecord {
-                            request: request.as_ref().clone(),
-                        },
-                    })
-                    .is_ok()
-            {
-                self.inflight = 1;
-                self.dispatched = Some(Instant::now());
-            }
-        }
-        if self.inflight > previous_inflight && gates.is_empty() {
-            self.status = match self.source {
-                Source::Local => "Saved locally · syncing…".into(),
-                Source::Organ(_) => "Waiting for origin…".into(),
-            };
-        }
-        gates
-    }
-
     fn queue(&mut self, uid: &str, before: &VersionVector) -> Result<(), String> {
         if before == &self.doc.oplog_vv() {
             return Ok(());
@@ -1887,7 +1863,7 @@ enum StorageEvent {
 
 #[derive(Resource)]
 struct Bindings {
-    documents: HashMap<Key, Document>,
+    documents: Documents<Document>,
     sender: tokio::sync::mpsc::UnboundedSender<StorageEvent>,
     incoming: tokio::sync::mpsc::UnboundedReceiver<StorageEvent>,
     wake: crate::host::WakeDeadline,
@@ -1899,7 +1875,7 @@ impl Default for Bindings {
     fn default() -> Self {
         let (sender, incoming) = tokio::sync::mpsc::unbounded_channel();
         Self {
-            documents: HashMap::new(),
+            documents: Documents::default(),
             sender,
             incoming,
             wake: Default::default(),
@@ -1948,7 +1924,7 @@ pub fn can_edit(world: &World, entity: Entity) -> bool {
     };
     world
         .get_resource::<Bindings>()
-        .and_then(|bindings| bindings.documents.get(&key(&binding.record)))
+        .and_then(|bindings| bindings.documents.get(&key_ref(&binding.record)))
         .is_some_and(|document| {
             document.joined && document.writable.contains(&binding.property) && !document.failed
         })
@@ -1959,34 +1935,47 @@ fn gate(
     access: crate::native::laboratory::OwnerAccess,
     mut fields: Query<(Entity, &TextBinding, &mut EditableText)>,
 ) {
+    let _gate = performance::Span::new(Stage::RecordBindingGate);
     for (entity, binding, mut text) in &mut fields {
         let writable = !access.blocked(entity)
             && bindings
                 .documents
-                .get(&key(&binding.record))
+                .get(&key_ref(&binding.record))
                 .is_some_and(|document| {
                     document.joined
                         && document.writable.contains(&binding.property)
                         && !document.failed
                 });
         if !writable {
-            text.pending_paste = None;
-            text.pending_edits.retain(|edit| {
-                !matches!(
-                    edit,
-                    bevy::text::TextEdit::Cut
-                        | bevy::text::TextEdit::Paste
-                        | bevy::text::TextEdit::Insert(_)
-                        | bevy::text::TextEdit::Backspace
-                        | bevy::text::TextEdit::BackspaceWord
-                        | bevy::text::TextEdit::Delete
-                        | bevy::text::TextEdit::DeleteWord
-                        | bevy::text::TextEdit::ImeSetCompose { .. }
-                        | bevy::text::TextEdit::ImeCommit { .. }
-                )
-            });
+            if text.pending_paste.is_some() {
+                text.pending_paste = None;
+                performance::count(Count::RecordBindingDeniedPastes);
+            }
+            if text.pending_edits.iter().any(changes_text) {
+                let before = text.pending_edits.len();
+                text.pending_edits.retain(|edit| !changes_text(edit));
+                performance::add(
+                    Count::RecordBindingDeniedEdits,
+                    (before - text.pending_edits.len()) as u64,
+                );
+            }
         }
     }
+}
+
+fn changes_text(edit: &bevy::text::TextEdit) -> bool {
+    matches!(
+        edit,
+        bevy::text::TextEdit::Cut
+            | bevy::text::TextEdit::Paste
+            | bevy::text::TextEdit::Insert(_)
+            | bevy::text::TextEdit::Backspace
+            | bevy::text::TextEdit::BackspaceWord
+            | bevy::text::TextEdit::Delete
+            | bevy::text::TextEdit::DeleteWord
+            | bevy::text::TextEdit::ImeSetCompose { .. }
+            | bevy::text::TextEdit::ImeCommit { .. }
+    )
 }
 
 fn key(record: &RecordBinding) -> Key {
@@ -2021,13 +2010,7 @@ pub fn attach(
         .unwrap_or_default()
         .into();
     world.entity_mut(entity).insert((
-        TextBinding {
-            record,
-            property: property.into(),
-            status,
-            confirmed: observed.clone(),
-            observed,
-        },
+        TextBinding::new(record, property, status, observed),
         crate::native::sand_store::SandCredits(crate::native::credits::ATTRIBUTIONS),
     ));
 }
@@ -2037,83 +2020,29 @@ pub fn receive(
     source: Source,
     message: impl std::borrow::Borrow<ServerMessage>,
 ) {
-    let message = message.borrow();
-    let Some(mut bindings) = world.get_resource_mut::<Bindings>() else {
-        return;
-    };
-    if let ServerMessage::SessionAuthenticated { person, .. } = &message {
-        bindings.principals.insert(source.clone(), person.clone());
-        for ((origin, _), document) in &mut bindings.documents {
-            if origin == &source && document.principal.as_deref() != Some(person) {
-                fail(
-                    document,
-                    "The login changed. Pending edits belong to the previous login",
-                );
-                document.sender = None;
-                document.joined = false;
-            }
-        }
-        return;
-    }
-    for ((origin, uid), document) in &mut bindings.documents {
-        if origin != &source {
-            continue;
-        }
-        if matches!(&message, ServerMessage::Error { id, .. } if id == "connection") {
-            document.sender = None;
-            document.joined = false;
-            document.joining = None;
-            document.reset_dispatch();
-            document.status = "Saved locally · waiting for connection…".into();
-            continue;
-        }
-        let applies = match &message {
-            ServerMessage::CollabState { id, record_uid, .. } => {
-                record_uid == uid
-                    && document
-                        .recovery_join
-                        .as_ref()
-                        .is_none_or(|expected| expected == id)
-            }
-            ServerMessage::CollabChange { record_uid, .. }
-            | ServerMessage::CollabCursors { record_uid, .. } => record_uid == uid,
-            ServerMessage::ActionOk { id, .. } | ServerMessage::Error { id, .. } => {
-                document
-                    .pending
-                    .iter()
-                    .take(document.inflight)
-                    .any(|pending| &pending.id == id)
-                    || document.recovery_join.as_ref().map_or_else(
-                        || id == &format!("binding-join-{uid}"),
-                        |expected| id == expected,
-                    )
-                    || id == crate::native::cell_bridge::CONNECTION
-            }
-            _ => false,
-        };
-        if applies {
-            if let ServerMessage::ActionOk { id, .. } = message {
-                nucleus::performance::Operation::new(id).mark("record-edit-ack-routed");
-            }
-            document.incoming.push_back(message.clone());
-        }
-    }
+    incoming::receive(world, source, message.borrow());
 }
 
 fn local_messages(
     world: &mut World,
     mut cursor: Local<bevy::ecs::message::MessageCursor<crate::native::cell_bridge::CellMessage>>,
+    mut selected: Local<Vec<Arc<ServerMessage>>>,
 ) {
+    let selection = performance::Span::new(Stage::RecordBindingIncomingSelect);
     let Some(messages) = world.get_resource::<Messages<crate::native::cell_bridge::CellMessage>>()
     else {
         return;
     };
-    let messages: Vec<_> = cursor
-        .read(messages)
-        .map(|message| message.0.clone())
-        .collect();
-    for message in messages.iter().map(|message| message.as_ref()) {
-        receive(world, Source::Local, message);
+    selected.extend(
+        cursor
+            .read(messages)
+            .filter(|message| incoming::relevant(message.0.as_ref()))
+            .map(|message| message.0.clone()),
+    );
+    performance::add(Count::RecordBindingMessagesSelected, selected.len() as u64);
+    drop(selection);
+    for message in selected.drain(..) {
+        receive(world, Source::Local, message.as_ref());
     }
 }
 
@@ -2182,11 +2111,12 @@ pub(crate) fn submit(
     let mut bindings = world
         .get_resource_mut::<Bindings>()
         .ok_or("Record bindings are unavailable")?;
-    let key = key(record);
-    if !bindings.documents.contains_key(&key) {
+    let reference = key_ref(record);
+    if !bindings.documents.contains_key(&reference) {
         if bindings.documents.len() >= 64 {
             return Err("Wait for pending editors to finish".into());
         }
+        let key = key(record);
         let principal = bindings.principals.get(&key.0).cloned();
         let storage = storage_source(&key, principal.as_deref());
         bindings
@@ -2194,7 +2124,6 @@ pub(crate) fn submit(
             .insert(key.clone(), Document::new(record.source.clone(), principal));
         let instance = bindings.documents[&key].journal.instance.clone();
         let sender = bindings.sender.clone();
-        let key = key.clone();
         tokio::spawn(async move {
             let result = engine
                 .load_record_edit_draft(&storage, &key.1)
@@ -2206,8 +2135,8 @@ pub(crate) fn submit(
             }
         });
     }
-    let principal = bindings.principals.get(&key.0).cloned();
-    let document = bindings.documents.get_mut(&key).unwrap();
+    let principal = bindings.principals.get(&record.source).cloned();
+    let document = bindings.documents.get_mut(&reference).unwrap();
     if document.failed {
         let correcting = document.principal == principal
             && document.pending.front().is_some_and(|previous| {
@@ -2275,31 +2204,28 @@ fn splice(doc: &LoroDoc, property: &str, before: &str, after: &str) -> Result<()
     Ok(())
 }
 
+type SelectionAnchors = HashMap<Entity, (Option<Cursor>, Option<Cursor>)>;
+
 fn selection(
     document: &Document,
     binding: &TextBinding,
     text: &EditableText,
 ) -> (Option<Cursor>, Option<Cursor>) {
-    let convert = |index: usize| {
-        let mut remaining = index;
-        text.value()
-            .into_iter()
-            .map(|part| {
-                let count = part
-                    .char_indices()
-                    .take_while(|(byte, _)| *byte < remaining)
-                    .count();
-                remaining = remaining.saturating_sub(part.len());
-                count
-            })
-            .sum()
-    };
+    let _capture = performance::Span::new(Stage::RecordSelectionCapture);
     let selected = text.editor.raw_selection();
+    let value = text.value();
+    let [anchor, focus] = lince_interface::text::scalar_positions(
+        value.chars(),
+        [selected.anchor().index(), selected.focus().index()],
+    );
     let field = document.doc.get_text(binding.property.as_str());
-    (
-        field.get_cursor(convert(selected.anchor().index()), Default::default()),
-        field.get_cursor(convert(selected.focus().index()), Default::default()),
-    )
+    let first = field.get_cursor(anchor, Default::default());
+    let second = if anchor == focus {
+        first.clone()
+    } else {
+        field.get_cursor(focus, Default::default())
+    };
+    (first, second)
 }
 
 fn set_text(world: &mut World, entity: Entity, value: &str, positions: Option<(usize, usize)>) {
@@ -2316,15 +2242,12 @@ fn set_text(world: &mut World, entity: Entity, value: &str, positions: Option<(u
             let mut text = world.get_mut::<EditableText>(entity).unwrap();
             text.editor.set_text(value);
             if let Some((anchor, focus)) = positions {
-                let byte = |position: usize| {
-                    value
-                        .char_indices()
-                        .nth(position)
-                        .map_or(value.len(), |(index, _)| index)
-                };
+                let _restore = performance::Span::new(Stage::RecordSelectionRestore);
+                let [anchor, focus] =
+                    lince_interface::text::byte_positions(value.chars(), [anchor, focus]);
                 text.editor
                     .driver(&mut fonts.context, &mut layout.0)
-                    .select_byte_range(byte(anchor), byte(focus));
+                    .select_byte_range(anchor, focus);
             }
         });
     });
@@ -2356,11 +2279,13 @@ fn publish_presence(
     let (Some(anchor), Some(focus)) = selection(document, binding, text) else {
         return Some(now + PRESENCE_INTERVAL);
     };
-    let value = (
-        binding.property.clone(),
-        B64.encode(anchor.encode()),
-        B64.encode(focus.encode()),
-    );
+    let anchor = B64.encode(anchor.encode());
+    let focus = if indices[0] == indices[1] {
+        anchor.clone()
+    } else {
+        B64.encode(focus.encode())
+    };
+    let value = (binding.property.clone(), anchor, focus);
     let publish = document.presence.as_ref().is_none_or(|previous| {
         previous.value != value || now >= previous.sent_at + PRESENCE_KEEPALIVE
     });
@@ -2399,9 +2324,16 @@ fn update(world: &mut World) {
         .expect("update Record bindings");
 }
 
-fn update_bindings(world: &mut World, views: &mut QueryState<(Entity, &'static TextBinding)>) {
+fn update_bindings(
+    world: &mut World,
+    views: &mut QueryState<(Entity, &'static TextBinding)>,
+    mut prepared: Local<preparation::Views>,
+    mut anchors: Local<SelectionAnchors>,
+) {
     let _timing = performance::Span::new(Stage::RecordBindingUpdate);
     let Some(mut bindings) = world.remove_resource::<Bindings>() else {
+        prepared.clear();
+        *anchors = SelectionAnchors::new();
         return;
     };
     if bindings
@@ -2419,13 +2351,9 @@ fn update_bindings(world: &mut World, views: &mut QueryState<(Entity, &'static T
     let focus = world
         .get_resource::<bevy::input_focus::InputFocus>()
         .and_then(|focus| focus.get());
-    let mut views: Vec<_> = views
-        .iter(world)
-        .filter(|(entity, _)| !crate::native::laboratory::blocked(world, *entity))
-        .map(|(entity, binding)| (entity, binding.clone(), key(&binding.record)))
-        .collect();
-    views.sort_by_key(|(entity, _, _)| focus != Some(*entity));
-    for (entity, binding, key) in &views {
+    prepared.collect(world, views, focus);
+    for (entity, binding) in prepared.ordered() {
+        let reference = key_ref(&binding.record);
         let Some(engine) = crate::native::practice_cells::engine(world, &binding.record.source)
         else {
             continue;
@@ -2433,7 +2361,7 @@ fn update_bindings(world: &mut World, views: &mut QueryState<(Entity, &'static T
         if focus != Some(*entity) && !visible(world, *entity) {
             continue;
         }
-        if !bindings.documents.contains_key(key) {
+        if !bindings.documents.contains_key(&reference) {
             if bindings.documents.len() >= 64 {
                 if focus != Some(*entity) || bindings.cleanup.is_some() {
                     continue;
@@ -2456,17 +2384,17 @@ fn update_bindings(world: &mut World, views: &mut QueryState<(Entity, &'static T
                     }
                 }
             }
+            let key = key(&binding.record);
             let principal = bindings.principals.get(&key.0).cloned();
             let storage = storage_source(&key, principal.as_deref());
             bindings.documents.insert(
                 key.clone(),
                 Document::new(binding.record.source.clone(), principal),
             );
-            let instance = bindings.documents[key].journal.instance.clone();
+            let instance = bindings.documents[&key].journal.instance.clone();
             let engine = engine.clone();
             let sender = bindings.sender.clone();
             let wake = wake.clone();
-            let key = key.clone();
             tokio::spawn(async move {
                 let result = engine
                     .load_record_edit_draft(&storage, &key.1)
@@ -2478,7 +2406,7 @@ fn update_bindings(world: &mut World, views: &mut QueryState<(Entity, &'static T
                 }
             });
         }
-        let document = bindings.documents.get_mut(key).unwrap();
+        let document = bindings.documents.get_mut(&reference).unwrap();
         document.touched = Instant::now();
         if document
             .sender
@@ -2515,13 +2443,15 @@ fn update_bindings(world: &mut World, views: &mut QueryState<(Entity, &'static T
                     match result {
                         Ok(metadata) => {
                             if performance::enabled() {
+                                let previous = document
+                                    .journal
+                                    .metadata
+                                    .as_ref()
+                                    .map_or(&[][..], |previous| previous.pending.as_slice());
+                                let mut known =
+                                    dispatch::Ids::new(previous.iter().map(String::as_str));
                                 for id in &metadata.pending {
-                                    if document
-                                        .journal
-                                        .metadata
-                                        .as_ref()
-                                        .is_none_or(|previous| !previous.pending.contains(id))
-                                    {
+                                    if !known.contains(id) {
                                         nucleus::performance::Operation::new(id)
                                             .mark("record-edit-draft-observed");
                                     }
@@ -2550,13 +2480,7 @@ fn update_bindings(world: &mut World, views: &mut QueryState<(Entity, &'static T
             (modifier && keys.just_pressed(KeyCode::KeyZ), redo)
         })
         .unwrap_or_default();
-    let mut members_by_document: HashMap<Key, Vec<(Entity, TextBinding)>> = HashMap::new();
-    for (entity, binding, key) in views {
-        members_by_document
-            .entry(key)
-            .or_default()
-            .push((entity, binding));
-    }
+    prepared.group();
     for (key, document) in &mut bindings.documents {
         let Some(engine) = crate::native::practice_cells::engine(world, &document.source) else {
             continue;
@@ -2578,7 +2502,7 @@ fn update_bindings(world: &mut World, views: &mut QueryState<(Entity, &'static T
             document.joining = None;
             document.reset_dispatch();
         }
-        let members = members_by_document.get(key).map_or(&[][..], Vec::as_slice);
+        let members = prepared.members(key);
         let needs_text = !members.is_empty()
             || document.pending.iter().any(|request| {
                 matches!(
@@ -2591,13 +2515,13 @@ fn update_bindings(world: &mut World, views: &mut QueryState<(Entity, &'static T
                 text.is_composing() || crate::native::record_view::pending_text(text)
             })
         });
-        let mut anchors = HashMap::new();
+        anchors.clear();
         if document.joined && !composing {
             let preserve_selection = document.text_version != document.doc.state_frontiers()
                 || document.incoming.iter().any(|message| {
                     matches!(
                         message,
-                        ServerMessage::CollabState { .. } | ServerMessage::CollabChange { .. }
+                        incoming::Message::State { .. } | incoming::Message::Change(_)
                     )
                 })
                 || (undo.0 && members.iter().any(|(entity, _)| focus == Some(*entity)))
@@ -2661,30 +2585,28 @@ fn update_bindings(world: &mut World, views: &mut QueryState<(Entity, &'static T
         if document.loaded && !composing {
             while let Some(message) = document.incoming.pop_front() {
                 match message {
-                    ServerMessage::CollabState {
-                        snapshot_base64,
-                        writable,
-                        ..
-                    } => match import_collaboration(document, snapshot_base64, true) {
-                        Ok(()) => {
-                            document.joined = true;
-                            document.joining = None;
-                            document.writable = writable;
-                            document.status = if document.pending.is_empty() {
-                                "Saved".into()
-                            } else {
-                                "Waiting to sync…".into()
-                            };
+                    incoming::Message::State { snapshot, writable } => {
+                        match import_collaboration(document, snapshot, true) {
+                            Ok(()) => {
+                                document.joined = true;
+                                document.joining = None;
+                                document.writable = writable;
+                                document.status = if document.pending.is_empty() {
+                                    "Saved".into()
+                                } else {
+                                    "Waiting to sync…".into()
+                                };
+                            }
+                            Err(error) => fail(document, error),
                         }
-                        Err(error) => fail(document, error),
-                    },
-                    ServerMessage::CollabChange { update_base64, .. } => {
-                        if let Err(error) = import_collaboration(document, update_base64, false) {
+                    }
+                    incoming::Message::Change(update) => {
+                        if let Err(error) = import_collaboration(document, update, false) {
                             fail(document, error);
                         }
                     }
-                    ServerMessage::CollabCursors { cursors, .. } => document.cursors = cursors,
-                    ServerMessage::ActionOk { id, .. } => {
+                    incoming::Message::Cursors(cursors) => document.cursors.replace(cursors),
+                    incoming::Message::Acknowledged(id) => {
                         if document
                             .pending
                             .front()
@@ -2702,16 +2624,16 @@ fn update_bindings(world: &mut World, views: &mut QueryState<(Entity, &'static T
                             };
                         }
                     }
-                    ServerMessage::Error { id, message, .. }
-                        if id == crate::native::cell_bridge::CONNECTION =>
-                    {
+                    incoming::Message::Error {
+                        connection: true,
+                        message,
+                    } => {
                         document.joined = false;
                         document.joining = None;
                         document.reset_dispatch();
                         document.status = format!("Disconnected: {message}. Your draft is kept.");
                     }
-                    ServerMessage::Error { message, .. } => fail(document, message),
-                    _ => {}
+                    incoming::Message::Error { message, .. } => fail(document, message),
                 }
             }
         }
@@ -2757,15 +2679,15 @@ fn update_bindings(world: &mut World, views: &mut QueryState<(Entity, &'static T
             match draft {
                 Ok((draft, cursor)) => {
                     let operations = if performance::enabled() {
+                        let previous = draft
+                            .expected
+                            .as_ref()
+                            .map_or(&[][..], |previous| previous.pending.as_slice());
+                        let mut known = dispatch::Ids::new(previous.iter().map(String::as_str));
                         draft
                             .pending
                             .iter()
-                            .filter(|request| {
-                                draft
-                                    .expected
-                                    .as_ref()
-                                    .is_none_or(|previous| !previous.pending.contains(&request.id))
-                            })
+                            .filter(|request| !known.contains(&request.id))
                             .map(|request| nucleus::performance::Operation::new(&request.id))
                             .collect::<Vec<_>>()
                     } else {
@@ -2836,20 +2758,15 @@ fn update_bindings(world: &mut World, views: &mut QueryState<(Entity, &'static T
                 {
                     performance::count(Count::RecordBindingViewChanged);
                     let positions = anchors.get(entity).and_then(|(anchor, focus)| {
-                        Some((
-                            document
-                                .doc
-                                .get_cursor_pos(anchor.as_ref()?)
-                                .ok()?
-                                .current
-                                .pos,
-                            document
-                                .doc
-                                .get_cursor_pos(focus.as_ref()?)
-                                .ok()?
-                                .current
-                                .pos,
-                        ))
+                        let anchor = anchor.as_ref()?;
+                        let focus = focus.as_ref()?;
+                        let first = document.doc.get_cursor_pos(anchor).ok()?.current.pos;
+                        let second = if anchor == focus {
+                            first
+                        } else {
+                            document.doc.get_cursor_pos(focus).ok()?.current.pos
+                        };
+                        Some((first, second))
                     });
                     set_text(world, *entity, &value, positions);
                 }
@@ -2924,154 +2841,15 @@ fn update_bindings(world: &mut World, views: &mut QueryState<(Entity, &'static T
     } else {
         bindings.wake.cancel();
     }
+    if prepared.has_groups() {
+        anchors.clear();
+    } else {
+        *anchors = SelectionAnchors::new();
+    }
+    prepared.release();
     world.insert_resource(bindings);
 }
 
-#[derive(Component)]
-struct RemoteCursor(String);
-
-fn paint_cursors(
-    world: &mut World,
-    old: &mut QueryState<(Entity, &'static RemoteCursor)>,
-    editors: &mut QueryState<(Entity, &'static TextBinding, &'static EditableText)>,
-) {
-    let mut old: HashMap<_, _> = old
-        .iter(world)
-        .map(|(entity, cursor)| (cursor.0.clone(), entity))
-        .collect();
-    let Some(bindings) = world.remove_resource::<Bindings>() else {
-        return;
-    };
-    let mut cursors = Vec::new();
-    for (entity, binding, text) in editors.iter(world) {
-        if crate::native::laboratory::blocked(world, entity) {
-            continue;
-        }
-        let Some(document) = bindings.documents.get(&key(&binding.record)) else {
-            continue;
-        };
-        for cursor in &document.cursors {
-            if cursor.property != binding.property {
-                continue;
-            }
-            let position = B64
-                .decode(&cursor.focus)
-                .ok()
-                .and_then(|bytes| Cursor::decode(&bytes).ok())
-                .and_then(|cursor| document.doc.get_cursor_pos(&cursor).ok())
-                .map(|position| position.current.pos);
-            if let Some(position) = position {
-                let byte = text
-                    .value()
-                    .chars()
-                    .take(position)
-                    .map(char::len_utf8)
-                    .sum();
-                cursors.push((
-                    entity,
-                    byte,
-                    cursor
-                        .person
-                        .clone()
-                        .or_else(|| cursor.organ.clone())
-                        .unwrap_or_else(|| "Local editor".into()),
-                    cursor.session.clone(),
-                ));
-            }
-        }
-    }
-    for (entity, byte, name, session) in cursors {
-        let text = world.get::<EditableText>(entity).unwrap();
-        let geometry = if let Some(layout) = text.editor.try_layout() {
-            let affinity = if byte == text.value().into_iter().map(str::len).sum::<usize>() {
-                parley::Affinity::Upstream
-            } else {
-                parley::Affinity::Downstream
-            };
-            text.editor.cursor_geometry(2.0).map(|_| {
-                parley::Cursor::from_byte_index(layout, byte, affinity).geometry(layout, 2.0)
-            })
-        } else {
-            let Some(mut fonts) = world.remove_resource::<FontCx>() else {
-                break;
-            };
-            let Some(mut layout) = world.remove_resource::<LayoutCx>() else {
-                world.insert_resource(fonts);
-                break;
-            };
-            let mut editor = world.get::<EditableText>(entity).unwrap().editor.clone();
-            editor
-                .driver(&mut fonts.context, &mut layout.0)
-                .move_to_byte(byte);
-            let geometry = editor.cursor_geometry(2.0);
-            world.insert_resource(fonts);
-            world.insert_resource(layout);
-            geometry
-        };
-        if let Some(rect) = geometry {
-            let key = format!("{}:{session}", entity.to_bits());
-            let computed = world
-                .get::<ComputedNode>(entity)
-                .copied()
-                .unwrap_or_default();
-            let scroll = world
-                .get::<bevy::ui::widget::TextScroll>(entity)
-                .map_or(Vec2::ZERO, |scroll| scroll.0);
-            let origin = Vec2::new(rect.x0 as f32, rect.y0 as f32) - scroll;
-            let bottom = (rect.y1 as f32 - scroll.y).min(computed.content_box().height());
-            if computed.size != Vec2::ZERO
-                && (origin.x < 0.0
-                    || origin.x > computed.content_box().width()
-                    || bottom <= 0.0
-                    || origin.y >= computed.content_box().height())
-            {
-                continue;
-            }
-            let scale = computed.inverse_scale_factor;
-            let node = Node {
-                position_type: PositionType::Absolute,
-                left: px((computed.padding.min_inset.x + origin.x) * scale),
-                top: px((computed.padding.min_inset.y + origin.y.max(0.0)) * scale),
-                width: px(2),
-                height: px((bottom - origin.y.max(0.0)).max(0.0) * scale),
-                ..default()
-            };
-            if let Some(cursor) = old.remove(&key) {
-                if world.get::<Node>(cursor) != Some(&node) {
-                    world.entity_mut(cursor).insert(node);
-                }
-            } else {
-                let caret = world
-                    .spawn((
-                        RemoteCursor(key),
-                        node,
-                        Pickable::IGNORE,
-                        crate::native::token_style::background(
-                            crate::native::tokens::Token::Accent,
-                        ),
-                        ChildOf(entity),
-                    ))
-                    .id();
-                if world.contains_resource::<crate::native::theme::Typography>() {
-                    let label = crate::native::edit_mode::label(world, caret, &name, 10.0);
-                    world.entity_mut(label).insert((
-                        BindingStatus,
-                        Pickable::IGNORE,
-                        Node {
-                            position_type: PositionType::Absolute,
-                            bottom: percent(100),
-                            left: px(0),
-                            width: px(180),
-                            ..default()
-                        },
-                        TextLayout::linebreak(bevy::text::LineBreak::NoWrap),
-                    ));
-                }
-            }
-        }
-    }
-    for entity in old.into_values() {
-        world.despawn(entity);
-    }
-    world.insert_resource(bindings);
+fn paint_cursors(world: &mut World, mut presentation: Local<cursors::Presentation>) {
+    presentation.paint(world);
 }

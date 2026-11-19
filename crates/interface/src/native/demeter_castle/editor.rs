@@ -118,8 +118,6 @@ pub(super) fn capture(world: &mut World, owner: Entity) -> Result<(), String> {
         })
         .collect();
     nucleus::performance::add("demeter-field-values-prepared", values.len() as u64);
-    // Retain captured text and invalidation before parsing, exactly as for a
-    // failed save. Only the validated candidate may replace the configuration.
     let mut state = {
         let mut query = world.query::<(&mut DemeterCastle, &View)>();
         let (mut state, view) = query.get_mut(world, owner).unwrap();

@@ -57,6 +57,7 @@ async fn login_on(
     connection: &mut SqliteConnection,
     organ_uid: &str,
 ) -> Result<Option<String>, StoreError> {
+    let _read = nucleus::performance::Span::new("private-contact-login-read");
     let row = sqlx::query_as::<_, (i64, i64, Option<String>, Option<String>)>(
         "WITH bounded AS (
              SELECT COUNT(*) AS matches,
@@ -64,12 +65,13 @@ async fn login_on(
                          AND typeof(person_uid) = 'text' AND length(CAST(person_uid AS BLOB)) = 28
                          AND typeof(created_at) = 'text' AND length(CAST(created_at AS BLOB)) BETWEEN 1 AND ?
                          THEN 0 ELSE 1 END), 0) AS invalid
-               FROM organ_login WHERE CAST(organ_uid AS TEXT) = ?
+               FROM organ_login WHERE organ_uid = ? OR organ_uid = CAST(? AS BLOB)
          )
          SELECT b.matches, b.invalid, l.person_uid, l.created_at FROM bounded b
            LEFT JOIN organ_login l ON b.matches = 1 AND b.invalid = 0 AND l.organ_uid = ? LIMIT 1",
     )
     .bind(MAX_LOGIN_TIMESTAMP_BYTES as i64)
+    .bind(organ_uid)
     .bind(organ_uid)
     .bind(organ_uid)
     .fetch_one(&mut *connection)
@@ -106,6 +108,7 @@ async fn binding_on(
     connection: &mut SqliteConnection,
     organ_uid: &str,
 ) -> Result<ContactBinding, StoreError> {
+    let _read = nucleus::performance::Span::new("private-contact-binding-read");
     record_uid(organ_uid)?;
     let row = sqlx::query_as::<_, (i64, i64, Option<String>)>(
         "WITH bounded AS (
@@ -113,11 +116,12 @@ async fn binding_on(
                     COALESCE(SUM(CASE WHEN typeof(record_uid) = 'text'
                          AND typeof(node_id) = 'text' AND length(CAST(node_id AS BLOB)) = 64
                          THEN 0 ELSE 1 END), 0) AS invalid
-               FROM organ_contact WHERE CAST(record_uid AS TEXT) = ?
+               FROM organ_contact WHERE record_uid = ? OR record_uid = CAST(? AS BLOB)
          )
          SELECT b.matches, b.invalid, c.node_id FROM bounded b
            LEFT JOIN organ_contact c ON b.matches = 1 AND b.invalid = 0 AND c.record_uid = ? LIMIT 1",
     )
+    .bind(organ_uid)
     .bind(organ_uid)
     .bind(organ_uid)
     .fetch_one(&mut *connection)
@@ -168,11 +172,13 @@ async fn create_inner(
             "private contact requires a live company-origin Organ description",
         ));
     }
-    let exists: i64 =
-        sqlx::query_scalar("SELECT COUNT(*) FROM organ_contact WHERE CAST(record_uid AS TEXT) = ?")
-            .bind(contact_organ_uid)
-            .fetch_one(&mut *connection)
-            .await?;
+    let exists: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM organ_contact WHERE record_uid = ? OR record_uid = CAST(? AS BLOB)",
+    )
+    .bind(contact_organ_uid)
+    .bind(contact_organ_uid)
+    .fetch_one(&mut *connection)
+    .await?;
     if exists != 0 || login_on(connection, contact_organ_uid).await?.is_some() {
         return Err(refusal(
             "private contact creation requires an absent contact and login",

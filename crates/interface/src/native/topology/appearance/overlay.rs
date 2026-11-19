@@ -1,4 +1,5 @@
 use super::*;
+use bevy::ui_render::SuppressUiImage;
 
 pub(super) struct Overlay {
     entity: Entity,
@@ -7,22 +8,12 @@ pub(super) struct Overlay {
     last: Option<(Arc<model::Material>, u32, Handle<Image>)>,
 }
 
-pub(crate) fn extract_images(
-    mut nodes: ResMut<ExtractedUiNodes>,
-    outputs: Extract<Query<Entity, With<LitEffectOutput>>>,
-) {
-    let outputs: HashSet<_> = outputs.iter().collect();
-    nodes.uinodes.retain(|node| {
-        !(outputs.contains(&node.main_entity.id()) && node.image != bevy::asset::AssetId::default())
-    });
-}
-
 fn unmark(world: &mut World, owner: Entity, output: Entity) {
     if world
         .get::<LitEffectOutput>(output)
         .is_some_and(|marker| marker.0 == owner)
     {
-        world.entity_mut(output).remove::<LitEffectOutput>();
+        world.entity_mut(output).remove::<(LitEffectOutput, SuppressUiImage)>();
     }
 }
 
@@ -45,6 +36,7 @@ pub(super) fn update(
     settings: &Arc<model::Material>,
     opacity: f32,
 ) {
+    let _presentation = nucleus::performance::Span::new("appearance-overlay-presentation");
     let Some((output, image)) = crate::native::shader_effects::surface_image(world, owner) else {
         release(world, owner, &mut painted.overlay);
         return;
@@ -80,7 +72,12 @@ pub(super) fn update(
     }
     let overlay = painted.overlay.as_mut().unwrap();
     if let Some(layer) = super::room_order::layer(world, owner) {
-        if world.get::<super::room_order::RoomLayer>(overlay.entity) != Some(&layer) {
+        if world
+            .get::<super::room_order::RoomLayer>(overlay.entity)
+            .map(super::room_order::RoomLayer::as_ref)
+            != Some(layer)
+        {
+            let layer = layer.into_owned();
             world.entity_mut(overlay.entity).insert(layer);
         }
     } else if world
@@ -99,7 +96,7 @@ pub(super) fn update(
         .get::<LitEffectOutput>(output)
         .is_none_or(|marker| marker.0 != owner)
     {
-        world.entity_mut(output).insert(LitEffectOutput(owner));
+        world.entity_mut(output).insert((LitEffectOutput(owner), SuppressUiImage));
     }
     if overlay
         .last
@@ -108,6 +105,7 @@ pub(super) fn update(
             !Arc::ptr_eq(previous, settings) || *alpha != opacity.to_bits() || texture != &image
         })
     {
+        nucleus::performance::add("appearance-overlay-material-writes", 1);
         *world
             .resource_mut::<Assets<StandardMaterial>>()
             .get_mut(&overlay.material)
@@ -135,9 +133,11 @@ pub(super) fn update(
         }
         overlay.last = Some((settings.clone(), opacity.to_bits(), image));
     }
-    let mesh = world.get::<Mesh3d>(painted.plate).unwrap().clone();
-    if world.get::<Mesh3d>(overlay.entity).unwrap().0 != mesh.0 {
-        world.entity_mut(overlay.entity).insert(mesh);
+    let mesh = &world.get::<Mesh3d>(painted.plate).unwrap().0;
+    if world.get::<Mesh3d>(overlay.entity).unwrap().0 != *mesh {
+        let mesh = mesh.clone();
+        world.entity_mut(overlay.entity).insert(Mesh3d(mesh));
+        nucleus::performance::add("appearance-overlay-mesh-writes", 1);
     }
     let mut transform = *world.get::<Transform>(painted.plate).unwrap();
     transform.translation.y += 0.002;

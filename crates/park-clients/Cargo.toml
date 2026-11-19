@@ -8,7 +8,7 @@ publish = false
 [target.'cfg(target_os = "linux")'.dependencies]
 wayland-client = "=0.31.15"
 wayland-protocols = { version = "=0.32.13", features = ["client", "staging"] }
-rustix = { version = "=1.1.4", features = ["event", "time", "fs"] }
+rustix = { version = "=1.1.6", features = ["event", "time", "fs"] }
 tempfile = "=3.27.0"
 serde_json.workspace = true
 

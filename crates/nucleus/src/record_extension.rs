@@ -154,8 +154,6 @@ impl Schema {
         self.validated()?.update_from(before)
     }
 
-    /// Validation owns the choice-identity pass. Retain its borrowed indexes
-    /// only when a caller also needs to check a schema transition.
     pub fn validated(&self) -> Result<ValidatedSchema<'_>, String> {
         let mut fields = BTreeMap::new();
         self.validate_with(|field, choices| {
@@ -166,8 +164,6 @@ impl Schema {
     }
 }
 
-/// Constructed only through Schema::validated. The borrow prevents changes to
-/// the schema while its validation and identity indexes are being reused.
 pub struct ValidatedSchema<'a> {
     fields: BTreeMap<&'a str, (&'a Field, BTreeSet<&'a str>)>,
 }
@@ -197,7 +193,6 @@ impl ValidatedSchema<'_> {
 }
 
 impl Field {
-    /// Validate selection shape and return unique IDs in lexical order.
     pub fn selection<'a>(&self, value: &'a Value) -> Result<Vec<&'a str>, String> {
         if value.is_null() {
             return Ok(Vec::new());
@@ -221,9 +216,6 @@ impl Field {
         }
     }
 
-    /// Resolve in selection order, retaining missing entries for the caller's
-    /// error/preview policy. One selection needs no index; multiple selections
-    /// share an index instead of repeatedly searching all choices.
     pub fn selected_choices<'schema, 'value>(
         &'schema self,
         value: &'value Value,
@@ -232,7 +224,6 @@ impl Field {
         let by_id = if selected.len() > 1 {
             let mut by_id = BTreeMap::new();
             for choice in &self.choices {
-                // Match the first occurrence even in an unvalidated schema.
                 by_id.entry(choice.id.as_str()).or_insert(choice);
             }
             crate::performance::add("extension-choice-indexes-prepared", 1);
@@ -286,8 +277,6 @@ impl Field {
     }
 }
 
-/// Borrows only the current schema/value snapshot; no retained lookup can
-/// outlive a schema edit or change how a missing selection is handled.
 pub struct SelectedChoices<'schema, 'value> {
     field: &'schema Field,
     selected: std::vec::IntoIter<&'value str>,

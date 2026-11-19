@@ -50,8 +50,6 @@ pub(super) fn refresh(world: &mut World) {
             close(world, overlay, session);
             continue;
         }
-        // Keep the most recent source separately from the accepted baseline. A
-        // stable stale draft need not be reserialized, but it must stay stale.
         let previous = state.observed.get(&overlay);
         let source = previous.map_or(&session.snapshot, |previous| &previous.value);
         let error = match observe(world, session, source) {

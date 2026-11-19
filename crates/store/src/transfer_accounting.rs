@@ -239,7 +239,6 @@ pub(crate) async fn effective_on(
     effective_with_policy_on(connection, binding, policy).await
 }
 
-/// Resolve a policy already read for this binding in the current transaction.
 pub(crate) async fn effective_with_policy_on(
     connection: &mut sqlx::SqliteConnection,
     binding: &Binding<'_>,

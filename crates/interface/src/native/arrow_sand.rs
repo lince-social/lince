@@ -18,6 +18,12 @@ struct Parts {
     shaft: Entity,
     tips: [Entity; 2],
     label: Entity,
+    attachment: Option<Box<Attachment>>,
+}
+
+struct Attachment {
+    corners: [[[u64; 3]; 4]; 2],
+    points: Option<(DVec3, DVec3)>,
 }
 
 pub struct ArrowSandPlugin;
@@ -78,6 +84,7 @@ pub fn spawn(world: &mut World, from: Entity, to: Entity, label: String) -> Opti
         shaft,
         tips,
         label: text,
+        attachment: None,
     });
     Some(entity)
 }
@@ -96,11 +103,12 @@ fn segment(world: &mut World, parent: Entity) -> Entity {
 fn line(world: &mut World, entity: Entity, from: Vec2, to: Vec2) {
     let delta = to - from;
     let center = (from + to) * 0.5;
+    let length = delta.length();
     let node = Node {
         position_type: PositionType::Absolute,
-        left: px(center.x - delta.length() * 0.5),
+        left: px(center.x - length * 0.5),
         top: px(center.y - 1.0),
-        width: px(delta.length()),
+        width: px(length),
         height: px(2),
         ..default()
     };
@@ -160,12 +168,54 @@ fn closest_segments(a: DVec3, b: DVec3, c: DVec3, d: DVec3) -> (DVec3, DVec3) {
     (a + u * s, c + v * t)
 }
 
+#[cfg(test)]
 pub(crate) fn endpoints(world: &World, from: Entity, to: Entity) -> Option<(DVec3, DVec3)> {
     if from == to {
         return None;
     }
     let first = corners(world, from)?;
     let second = corners(world, to)?;
+    nearest(first, second)
+}
+
+fn attached_endpoints(
+    world: &mut World,
+    entity: Entity,
+    from: Entity,
+    to: Entity,
+) -> Option<(DVec3, DVec3)> {
+    let _preparation = nucleus::performance::Span::new("arrow-attachment-preparation");
+    if from == to {
+        return None;
+    }
+    let current = [corners(world, from)?, corners(world, to)?];
+    let key = current.map(|quad| quad.map(|point| point.to_array().map(f64::to_bits)));
+    if let Some(previous) = world
+        .get::<Parts>(entity)
+        .and_then(|parts| parts.attachment.as_deref())
+        && previous.corners == key
+    {
+        nucleus::performance::add("arrow-attachments-reused", 1);
+        return previous.points;
+    }
+    let points = nearest(current[0], current[1]);
+    if let Some(mut parts) = world.get_mut::<Parts>(entity) {
+        let attachment = Attachment {
+            corners: key,
+            points,
+        };
+        if let Some(current) = parts.attachment.as_deref_mut() {
+            *current = attachment;
+        } else {
+            parts.attachment = Some(Box::new(attachment));
+        }
+    }
+    nucleus::performance::add("arrow-attachments-solved", 1);
+    points
+}
+
+fn nearest(first: [DVec3; 4], second: [DVec3; 4]) -> Option<(DVec3, DVec3)> {
+    let _solve = nucleus::performance::Span::new("arrow-attachment-solve");
     let contains = |corners: &[DVec3; 4], point: DVec3| {
         let u = corners[1] - corners[0];
         let v = corners[3] - corners[0];
@@ -288,17 +338,45 @@ mod tests {
 }
 
 pub(crate) fn update(world: &mut World) {
-    let arrows: Vec<_> = world
-        .query_filtered::<(Entity, &ArrowSand), bevy::ecs::query::Allow<bevy::ecs::entity_disabling::Disabled>>()
-        .iter(world)
-        .map(|(entity, arrow)| (entity, arrow.clone()))
-        .collect();
-    for (entity, arrow) in arrows {
+    let _update = nucleus::performance::Span::new("arrow-presentation");
+    world
+        .run_system_cached(present)
+        .expect("present current arrows");
+}
+
+fn label(world: &mut World, arrow: Entity, label: Entity) {
+    let value = &world.get::<ArrowSand>(arrow).unwrap().label;
+    if world.get::<Text>(label).unwrap().0 != *value {
+        let value = value.clone();
+        world.get_mut::<Text>(label).unwrap().0 = value;
+        nucleus::performance::add("arrow-label-publications", 1);
+    }
+}
+
+fn present(
+    world: &mut World,
+    arrows: &mut QueryState<
+        (Entity, &'static ArrowSand),
+        bevy::ecs::query::Allow<bevy::ecs::entity_disabling::Disabled>,
+    >,
+    mut targets: Local<Vec<(Entity, Entity, Entity)>>,
+) {
+    targets.clear();
+    targets.extend(
+        arrows
+            .iter(world)
+            .map(|(entity, arrow)| (entity, arrow.from, arrow.to)),
+    );
+    nucleus::performance::add("arrow-targets-prepared", targets.len() as u64);
+    if targets.is_empty() {
+        targets.shrink_to_fit();
+    }
+    for (entity, start, end) in targets.drain(..) {
         let Some(parent) = world.get::<ChildOf>(entity).map(ChildOf::parent) else {
             continue;
         };
         let workspace = world.get::<WorkspaceMember>(entity).copied();
-        if [arrow.from, arrow.to].iter().any(|end| {
+        if [start, end].iter().any(|end| {
             world.get::<ChildOf>(*end).map(ChildOf::parent) != Some(parent)
                 || world.get::<WorkspaceMember>(*end).copied() != workspace
         }) {
@@ -309,9 +387,14 @@ pub(crate) fn update(world: &mut World) {
             .get::<crate::native::relation_castle::RelationLink>(entity)
             .is_some();
         let ends = if relation {
-            relation::endpoints(world, arrow.from, arrow.to)
+            if let Some(mut parts) = world.get_mut::<Parts>(entity)
+                && parts.attachment.is_some()
+            {
+                parts.attachment = None;
+            }
+            relation::endpoints(world, start, end)
         } else {
-            endpoints(world, arrow.from, arrow.to)
+            attached_endpoints(world, entity, start, end)
         };
         let Some((from, to)) = ends else {
             if relation && let Some(mut visibility) = world.get_mut::<Visibility>(entity) {
@@ -322,7 +405,7 @@ pub(crate) fn update(world: &mut World) {
             }
             continue;
         };
-        if [arrow.from, arrow.to].iter().any(|end| {
+        if [start, end].iter().any(|end| {
             world
                 .get::<crate::native::protein_area::placement::Pending>(*end)
                 .is_some()
@@ -336,7 +419,7 @@ pub(crate) fn update(world: &mut World) {
             world.get_mut::<Node>(entity).unwrap().display = Display::Flex;
         }
         if relation && crate::native::topology::presentation::ready(world) {
-            relation::update(world, entity, parent, &arrow, from, to);
+            relation::update(world, entity, parent, end, from, to);
             continue;
         }
         let delta = to - from;
@@ -364,7 +447,7 @@ pub(crate) fn update(world: &mut World) {
         let Some(parts) = world.get::<Parts>(entity) else {
             continue;
         };
-        let (shaft, tips, label) = (parts.shaft, parts.tips, parts.label);
+        let (shaft, tips, text) = (parts.shaft, parts.tips, parts.label);
         line(world, shaft, Vec2::new(0.0, 16.0), Vec2::new(length, 16.0));
         for (tip, sign) in tips.into_iter().zip([-1.0, 1.0]) {
             line(
@@ -374,9 +457,6 @@ pub(crate) fn update(world: &mut World) {
                 Vec2::new(length - 12.0_f32.min(length * 0.4), 16.0 + 7.0 * sign),
             );
         }
-        world
-            .get_mut::<Text>(label)
-            .unwrap()
-            .set_if_neq(Text::new(&arrow.label));
+        label(world, entity, text);
     }
 }

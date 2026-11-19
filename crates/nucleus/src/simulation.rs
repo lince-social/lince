@@ -60,7 +60,7 @@ pub struct Quantity {
     pub unit: Option<TypedUid>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct RuleOccurrence {
     pub rule_uid: String,

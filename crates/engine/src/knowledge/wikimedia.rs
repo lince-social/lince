@@ -584,37 +584,33 @@ pub(super) fn html_text(html: &str) -> Result<String, EngineError> {
             .map_err(|error| invalid(&format!("Invalid article text: {error}")))?
         {
             Event::Start(tag) => {
-                if matches!(tag.name().as_ref(), b"script" | b"style") {
+                if matches!(tag.name().as_ref(), "script" | "style") {
                     hidden += 1;
                 }
                 if hidden == 0
                     && matches!(
                         tag.name().as_ref(),
-                        b"p" | b"div" | b"h1" | b"h2" | b"h3" | b"li" | b"tr" | b"br"
+                        "p" | "div" | "h1" | "h2" | "h3" | "li" | "tr" | "br"
                     )
                 {
                     result.push('\n');
                 }
             }
             Event::End(tag) => {
-                if matches!(tag.name().as_ref(), b"script" | b"style") {
+                if matches!(tag.name().as_ref(), "script" | "style") {
                     hidden = hidden.saturating_sub(1);
                 }
                 if hidden == 0
                     && matches!(
                         tag.name().as_ref(),
-                        b"p" | b"div" | b"h1" | b"h2" | b"h3" | b"li" | b"tr"
+                        "p" | "div" | "h1" | "h2" | "h3" | "li" | "tr"
                     )
                 {
                     result.push('\n');
                 }
             }
-            Event::Empty(tag) if hidden == 0 && tag.name().as_ref() == b"br" => result.push('\n'),
-            Event::Text(text) if hidden == 0 => result.push_str(
-                &text
-                    .xml10_content()
-                    .map_err(|error| invalid(&error.to_string()))?,
-            ),
+            Event::Empty(tag) if hidden == 0 && tag.name().as_ref() == "br" => result.push('\n'),
+            Event::Text(text) if hidden == 0 => result.push_str(&text.xml10_content()),
             Event::GeneralRef(reference) if hidden == 0 => {
                 if let Some(character) = reference
                     .resolve_char_ref()
@@ -622,10 +618,7 @@ pub(super) fn html_text(html: &str) -> Result<String, EngineError> {
                 {
                     result.push(character);
                 } else {
-                    let name = reference
-                        .decode()
-                        .map_err(|error| invalid(&error.to_string()))?;
-                    result.push_str(match name.as_ref() {
+                    result.push_str(match &*reference {
                         "amp" => "&",
                         "lt" => "<",
                         "gt" => ">",

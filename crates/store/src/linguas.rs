@@ -214,7 +214,7 @@ async fn memberships(
     let sql = format!(
         "SELECT {source}, {target} FROM lingua_concept WHERE {source} IN (SELECT value FROM json_each(?)) ORDER BY adopted_at, {target}"
     );
-    for row in sqlx::query(&sql).bind(ids).fetch_all(pool).await? {
+    for row in sqlx::query(sqlx::AssertSqlSafe(sql.as_str())).bind(ids).fetch_all(pool).await? {
         memberships
             .entry(row.get(source))
             .or_default()

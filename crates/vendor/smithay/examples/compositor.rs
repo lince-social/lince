@@ -22,6 +22,8 @@ impl CompositorHandler for App {
         &client.get_data::<ClientState>().unwrap().compositor_state
     }
 
+    // This example intentionally reports each committed surface on stderr.
+    #[allow(clippy::dbg_macro)]
     fn commit(&mut self, surface: &WlSurface) {
         dbg!("Commit", surface);
     }

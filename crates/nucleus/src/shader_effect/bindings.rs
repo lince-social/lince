@@ -1,7 +1,6 @@
 use super::{Operator, gpu_quantity};
 use crate::DecimalValue;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -29,29 +28,29 @@ pub enum NumericField {
     },
 }
 
+fn bounded_source(organ: Option<&str>, record: Option<&str>, field: &NumericField) -> bool {
+    organ.is_none_or(|uid| uid.len() <= 512)
+        && record.is_none_or(|uid| uid.len() <= 512)
+        && match field {
+            NumericField::Quantity => true,
+            NumericField::Extension { namespace, path } => {
+                namespace.len() <= 512
+                    && path.len() <= 1024
+                    && path.iter().all(|part| part.len() <= 4096)
+                    && path.iter().map(String::len).sum::<usize>() <= 4096
+            }
+        }
+}
+
 pub fn bounded(bindings: &[NumericBinding]) -> bool {
     bindings.len() <= 8
         && bindings.iter().all(|binding| {
             binding.label.len() <= 512
-                && binding
-                    .source
-                    .organ
-                    .as_ref()
-                    .is_none_or(|uid| uid.len() <= 512)
-                && binding
-                    .source
-                    .record
-                    .as_ref()
-                    .is_none_or(|uid| uid.len() <= 512)
-                && match &binding.source.field {
-                    NumericField::Quantity => true,
-                    NumericField::Extension { namespace, path } => {
-                        namespace.len() <= 512
-                            && path.len() <= 1024
-                            && path.iter().all(|part| part.len() <= 4096)
-                            && path.iter().map(String::len).sum::<usize>() <= 4096
-                    }
-                }
+                && bounded_source(
+                    binding.source.organ.as_deref(),
+                    binding.source.record.as_deref(),
+                    &binding.source.field,
+                )
         })
 }
 
@@ -65,51 +64,66 @@ impl Default for NumericSource {
     }
 }
 
+fn validate_source(
+    organ: Option<&str>,
+    record: Option<&str>,
+    field: &NumericField,
+) -> Result<(), String> {
+    if organ.is_some_and(|uid| !crate::valid_uid(uid, "r"))
+        || record.is_some_and(|uid| !crate::valid_uid(uid, "r"))
+    {
+        return Err("Choose stable Organ and Record UIDs for numeric inputs.".into());
+    }
+    if let NumericField::Extension { namespace, path } = field {
+        if namespace.is_empty()
+            || namespace.len() > 128
+            || namespace.chars().any(char::is_control)
+            || namespace.starts_with("lince.social.")
+            || path.is_empty()
+            || path.len() > 8
+            || path.iter().any(|part| {
+                part.is_empty() || part.len() > 128 || part.chars().any(char::is_control)
+            })
+            || path.iter().map(String::len).sum::<usize>() > 512
+        {
+            return Err("Choose a readable extension namespace and a bounded field path.".into());
+        }
+    }
+    Ok(())
+}
+
+pub fn validate_record_field(record: &str, field: &NumericField) -> Result<(), String> {
+    if !bounded_source(None, Some(record), field) {
+        return Err("Use at most eight bounded numeric inputs.".into());
+    }
+    validate_source(None, Some(record), field)
+}
+
 pub fn validate(bindings: &[NumericBinding]) -> Result<(), String> {
     if !bounded(bindings) {
         return Err("Use at most eight bounded numeric inputs.".into());
     }
-    let mut slots = BTreeSet::new();
+    let mut slots = 0_u8;
     for binding in bindings {
-        if binding.slot >= 8 || !slots.insert(binding.slot) {
+        if binding.slot >= 8 {
             return Err("Numeric input slots must be unique numbers from 0 to 7.".into());
         }
+        let bit = 1_u8 << binding.slot;
+        if slots & bit != 0 {
+            return Err("Numeric input slots must be unique numbers from 0 to 7.".into());
+        }
+        slots |= bit;
         if binding.label.trim().is_empty()
             || binding.label.len() > 64
             || binding.label.chars().any(char::is_control)
         {
             return Err("Numeric input labels use 1–64 bytes of readable text.".into());
         }
-        if binding
-            .source
-            .organ
-            .as_ref()
-            .is_some_and(|uid| !crate::valid_uid(uid, "r"))
-            || binding
-                .source
-                .record
-                .as_ref()
-                .is_some_and(|uid| !crate::valid_uid(uid, "r"))
-        {
-            return Err("Choose stable Organ and Record UIDs for numeric inputs.".into());
-        }
-        if let NumericField::Extension { namespace, path } = &binding.source.field {
-            if namespace.is_empty()
-                || namespace.len() > 128
-                || namespace.chars().any(char::is_control)
-                || namespace.starts_with("lince.social.")
-                || path.is_empty()
-                || path.len() > 8
-                || path.iter().any(|part| {
-                    part.is_empty() || part.len() > 128 || part.chars().any(char::is_control)
-                })
-                || path.iter().map(String::len).sum::<usize>() > 512
-            {
-                return Err(
-                    "Choose a readable extension namespace and a bounded field path.".into(),
-                );
-            }
-        }
+        validate_source(
+            binding.source.organ.as_deref(),
+            binding.source.record.as_deref(),
+            &binding.source.field,
+        )?;
     }
     Ok(())
 }

@@ -9,7 +9,7 @@ use crate::native::actions::Action;
 use lince_interface::presentation::{Layout, Presentation, compare};
 use lince_interface::settings::Values;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::{borrow::Cow, collections::BTreeMap, sync::Arc};
 
 #[derive(Component, Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub(crate) struct State {
@@ -53,17 +53,17 @@ struct Session {
     target: Presentation,
     include_missing: bool,
     keep_extra: bool,
-    observed: Probe,
+    observed: Arc<Probe>,
     message: String,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(PartialEq)]
 struct Probe {
     fields: Vec<String>,
     rows: Vec<(String, Value)>,
     drafts: Vec<Draft>,
     saved: Option<Presentation>,
-    query: Value,
+    query: crate::native::protein_castle::ProteinDraft,
 }
 
 #[derive(Clone, PartialEq)]
@@ -112,8 +112,12 @@ pub(super) fn raw(world: &World, row: Entity) -> Option<&Presentation> {
 }
 
 fn base(world: &World, owner: Entity) -> Option<Config> {
+    base_ref(world, owner).map(Cow::into_owned)
+}
+
+fn base_ref(world: &World, owner: Entity) -> Option<Cow<'_, Config>> {
     if let Some(editor) = world.get::<QueryEditor>(owner) {
-        return base(world, editor.0);
+        return base_ref(world, editor.0);
     }
     if let Some(castle) = world.get::<ProteinCastle>(owner) {
         let query = castle.draft.compile_shared().ok()?;
@@ -135,7 +139,7 @@ fn base(world: &World, owner: Entity) -> Option<Config> {
             })
             .map(|field| Binding::new(&field))
             .collect();
-        return Some(Config {
+        return Some(Cow::Owned(Config {
             draft: castle.draft.clone(),
             bindings: if bindings.is_empty() {
                 vec![Binding::new("head")]
@@ -143,12 +147,16 @@ fn base(world: &World, owner: Entity) -> Option<Config> {
                 bindings
             },
             ..default()
-        });
+        }));
     }
     let area = world
         .get::<RecordBinding>(owner)
         .map_or(owner, |binding| binding.area);
-    world.get::<InfluenceArea>(area)?.protein.clone()
+    world
+        .get::<InfluenceArea>(area)?
+        .protein
+        .as_ref()
+        .map(Cow::Borrowed)
 }
 
 fn rows(world: &World, owner: Entity) -> Vec<Entity> {
@@ -190,7 +198,7 @@ fn supported(world: &World, owner: Entity) -> bool {
         })
 }
 
-fn probe(world: &World, owner: Entity) -> Option<Probe> {
+fn basis(world: &World, owner: Entity) -> Option<Cow<'_, Config>> {
     if let Some(root) = root(world, owner)
         && let Some(member) = world.get::<crate::native::workspace::WorkspaceMember>(owner)
         && world
@@ -199,7 +207,7 @@ fn probe(world: &World, owner: Entity) -> Option<Probe> {
     {
         return None;
     }
-    let config = base(world, owner)?;
+    let config = base_ref(world, owner)?;
     if config.fiote
         || config.command.is_some()
         || config.relations
@@ -207,6 +215,41 @@ fn probe(world: &World, owner: Entity) -> Option<Probe> {
     {
         return None;
     }
+    Some(config)
+}
+
+fn row_value<'a>(runtime: Option<&'a Runtime>, binding: &RecordBinding) -> &'a Value {
+    runtime
+        .and_then(|runtime| runtime.areas.get(&binding.area))
+        .and_then(|state| {
+            state
+                .data
+                .iter()
+                .find(|value| value["uid"].as_str() == Some(&binding.uid))
+        })
+        .unwrap_or(&Value::Null)
+}
+
+fn available(world: &World, owner: Entity) -> bool {
+    let _timing = crate::host::performance::Span::new(
+        crate::host::performance::Stage::RecordPresentationAvailability,
+    );
+    let Some(config) = basis(world, owner) else {
+        return false;
+    };
+    let runtime = world.get_resource::<Runtime>();
+    rows(world, owner).into_iter().all(|row| {
+        world.get::<RecordBinding>(row).is_some_and(|binding| {
+            !config.record_cards || row_value(runtime, binding)["kind"] != "command"
+        })
+    })
+}
+
+fn probe(world: &World, owner: Entity) -> Option<Probe> {
+    let _timing = crate::host::performance::Span::new(
+        crate::host::performance::Stage::RecordPresentationProbe,
+    );
+    let config = basis(world, owner)?;
     let saved = if world.get::<RecordBinding>(owner).is_some() {
         current(world, owner)
     } else {
@@ -245,37 +288,32 @@ fn probe(world: &World, owner: Entity) -> Option<Probe> {
     entities.sort();
     for row in entities {
         let binding = world.get::<RecordBinding>(row)?;
-        if world.get::<RecordBinding>(owner).is_none()
-            && let Some(view) = current(world, row)
-        {
-            for field in view.fields {
-                if !original.contains(&field) {
-                    original.push(field);
-                }
-            }
-        }
-        let value = runtime
-            .and_then(|runtime| runtime.areas.get(&binding.area))
-            .and_then(|state| {
-                state
-                    .data
-                    .iter()
-                    .find(|value| value["uid"].as_str() == Some(&binding.uid))
-            })
-            .cloned()
-            .unwrap_or(Value::Null);
+        let value = row_value(runtime, binding);
         if config.record_cards && value["kind"] == "command" {
             return None;
         }
-        data.push((binding.uid.clone(), value));
+        if world.get::<RecordBinding>(owner).is_none()
+            && let Some(view) = raw(world, row)
+        {
+            for field in &view.fields {
+                if !original.contains(field) {
+                    original.push(field.clone());
+                }
+            }
+        }
+        data.push((binding.uid.clone(), value.clone()));
         drafts.extend(super::rows::drafts(world, row));
     }
+    crate::host::performance::add(
+        crate::host::performance::Count::RecordPresentationRowsCaptured,
+        data.len() as u64,
+    );
     Some(Probe {
         fields: original,
         rows: data,
         drafts,
         saved,
-        query: serde_json::to_value(&config.draft).ok()?,
+        query: config.draft.clone(),
     })
 }
 
@@ -319,7 +357,7 @@ impl Action for Open {
             target,
             include_missing: false,
             keep_extra: false,
-            observed,
+            observed: Arc::new(observed),
             message: String::new(),
         });
         crate::native::edit_mode::show_customization(world, root);
@@ -370,7 +408,9 @@ fn result(session: &Session) -> Presentation {
     }
     if let Some(old) = &session.observed.saved {
         for (field, value) in &old.fills {
-            view.fills.entry(field.clone()).or_insert(value.clone());
+            if !view.fills.contains_key(field) {
+                view.fills.insert(field.clone(), value.clone());
+            }
         }
     }
     view.fills.retain(|field, _| view.fields.contains(field));
@@ -527,7 +567,7 @@ impl Action for Undo {
                 .get::<State>(self.0)
                 .and_then(|state| state.view.clone()),
             Previous::Area(_, _) | Previous::Created(_) => {
-                base(world, self.0).and_then(|config| config.presentation)
+                base_ref(world, self.0).and_then(|config| config.presentation.clone())
             }
         };
         if now.as_ref() != Some(&applied) {

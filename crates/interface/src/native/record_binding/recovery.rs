@@ -7,9 +7,8 @@ pub(crate) fn retry(world: &mut World, record: &RecordBinding) {
     let Some(mut bindings) = world.get_resource_mut::<Bindings>() else {
         return;
     };
-    let key = key(record);
-    let principal = bindings.principals.get(&key.0).cloned();
-    let Some(document) = bindings.documents.get_mut(&key) else {
+    let principal = bindings.principals.get(&record.source).cloned();
+    let Some(document) = bindings.documents.get_mut(&key_ref(record)) else {
         return;
     };
     if document.principal != principal {

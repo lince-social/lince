@@ -91,9 +91,9 @@ impl Engine {
         .fetch_one(&self.store.pool)
         .await?;
         let unsupported = pending
-            && store::misc::due_effects(&self.store.pool)
+            && store::misc::first_due_effect(&self.store.pool)
                 .await?
-                .first()
+                .as_ref()
                 .is_none_or(|effect| {
                     !database_effect(effect) && !self.controlled_command_effect(effect)
                 });
@@ -131,8 +131,7 @@ impl Engine {
             }
             let execution = match effect.payload.get("occurrence") {
                 Some(occurrence) => {
-                    let occurrence =
-                        serde_json::from_value(occurrence.clone()).map_err(EngineError::Json)?;
+                    let occurrence = decode(occurrence).map_err(EngineError::Json)?;
                     crate::rule_runtime::EFFECT_OCCURRENCE
                         .scope(
                             occurrence,
@@ -230,10 +229,7 @@ impl Engine {
                     "Rule was paused, revised or deleted before the effect ran".into(),
                 ));
             };
-            if store::records::get(&self.store.pool, &current.record_uid)
-                .await?
-                .is_none()
-            {
+            if !store::records::exists(&self.store.pool, &current.record_uid).await? {
                 return Ok((
                     false,
                     "Rule target was deleted before the effect ran".into(),
@@ -285,8 +281,8 @@ impl Engine {
                 ))
             }
             "action" => {
-                let action = serde_json::from_value::<crate::actions::Action>(
-                    payload.get("action").cloned().ok_or_else(|| {
+                let action =
+                    decode::<crate::actions::Action>(payload.get("action").ok_or_else(|| {
                         EngineError::Consequence("Action effect has no action".into())
                     })?,
                 )
@@ -314,12 +310,10 @@ impl Engine {
                     rule.actor_uid.as_deref(),
                 )
                 .await?;
-                let consequence: nucleus::karma::Consequence =
-                    serde_json::from_value(payload["consequence"].clone())
-                        .map_err(|error| EngineError::Consequence(error.to_string()))?;
-                let carried: Option<nucleus::DecimalValue> =
-                    serde_json::from_value(payload["carried"].clone())
-                        .map_err(|error| EngineError::Consequence(error.to_string()))?;
+                let consequence: nucleus::karma::Consequence = decode(&payload["consequence"])
+                    .map_err(|error| EngineError::Consequence(error.to_string()))?;
+                let carried: Option<nucleus::DecimalValue> = decode(&payload["carried"])
+                    .map_err(|error| EngineError::Consequence(error.to_string()))?;
                 if matches!(consequence, nucleus::karma::Consequence::ActivateFiote) {
                     let value = carried.ok_or_else(|| {
                         EngineError::Consequence(
@@ -333,8 +327,8 @@ impl Engine {
                     return Ok((true, "Fiote activation requested".into()));
                 }
                 if consequence.transfer_target().is_some() {
-                    let evaluated = serde_json::from_value(payload["transfer_evaluation"].clone())
-                        .map_err(EngineError::Json)?;
+                    let evaluated =
+                        decode(&payload["transfer_evaluation"]).map_err(EngineError::Json)?;
                     let request = payload["request_id"].as_str().ok_or_else(|| {
                         EngineError::Consequence("Transfer effect has no request identity".into())
                     })?;
@@ -428,27 +422,39 @@ impl Engine {
     }
 }
 
-fn database_effect(effect: &store::misc::EffectRow) -> bool {
+fn decode<'a, T: serde::Deserialize<'a>>(
+    payload: &'a serde_json::Value,
+) -> Result<T, serde_json::Error> {
+    let _decode = nucleus::performance::Span::new("effect-value-decode");
+    nucleus::performance::add("effect-value-decodes", 1);
+    T::deserialize(payload)
+}
+
+fn database_action(action: crate::actions::Action) -> bool {
     use crate::actions::Action;
+    matches!(
+        action,
+        Action::CaptureEntry { .. }
+            | Action::SetQuantityExact { .. }
+            | Action::SetIdentity { .. }
+            | Action::AssertRecord { .. }
+            | Action::RetractAssertion { .. }
+            | Action::RetractRecord { .. }
+    )
+}
+
+fn database_effect(effect: &store::misc::EffectRow) -> bool {
     use nucleus::karma::Consequence;
+    let _classification = nucleus::performance::Span::new("effect-payload-classification");
     match effect.kind.as_str() {
         "notify" => true,
-        "action" => matches!(
-            serde_json::from_value::<Action>(effect.payload["action"].clone()),
-            Ok(Action::CaptureEntry { .. }
-                | Action::SetQuantityExact { .. }
-                | Action::SetIdentity { .. }
-                | Action::AssertRecord { .. }
-                | Action::RetractAssertion { .. }
-                | Action::RetractRecord { .. })
-        ),
-        "consequence" if serde_json::from_value::<Consequence>(effect.payload["consequence"].clone()).is_ok_and(|consequence|match consequence{
-            Consequence::RunAction{action}=>serde_json::from_str::<Action>(&action).is_ok_and(|action|matches!(action,Action::CaptureEntry{..}|Action::SetQuantityExact{..}|Action::SetIdentity{..}|Action::AssertRecord{..}|Action::RetractRecord{..}|Action::RetractAssertion{..})),
-            _=>false,
-        })=>true,
-        "consequence" => matches!(
-            serde_json::from_value::<Consequence>(effect.payload["consequence"].clone()),
-            Ok(Consequence::SetConcept { .. }
+        "action" => decode(&effect.payload["action"]).is_ok_and(database_action),
+        "consequence" => match decode::<Consequence>(&effect.payload["consequence"]) {
+            Ok(Consequence::RunAction { action }) => {
+                serde_json::from_str(&action).is_ok_and(database_action)
+            }
+            Ok(
+                Consequence::SetConcept { .. }
                 | Consequence::AdvanceAudience { .. }
                 | Consequence::ReopenTransferNeed { .. }
                 | Consequence::RepeatTransfer { .. }
@@ -457,8 +463,10 @@ fn database_effect(effect: &store::misc::EffectRow) -> bool {
                 | Consequence::SetQuantityWhere { .. }
                 | Consequence::SetTransferAgreement { .. }
                 | Consequence::PublishTransfer { .. }
-                | Consequence::ActivateTransferFulfillment { .. })
-        ),
+                | Consequence::ActivateTransferFulfillment { .. },
+            ) => true,
+            _ => false,
+        },
         _ => false,
     }
 }

@@ -2,6 +2,8 @@ use super::*;
 use nucleus::shader_effect::bindings::{NumericBinding, NumericSource, NumericValues};
 use std::collections::{BTreeMap, BTreeSet};
 
+mod preparation;
+
 #[derive(Component, Clone)]
 pub(super) struct Context {
     pub record: Option<String>,
@@ -46,24 +48,25 @@ fn source_key(source: &Source) -> String {
     serde_json::to_string(source).unwrap()
 }
 
-fn target(context: &Context, source: &NumericSource) -> Option<(Source, String)> {
-    let record = source.record.as_ref().or(context.record.as_ref())?.clone();
-    let source = source.organ.as_ref().map_or_else(
-        || context.source.clone(),
-        |organ| Source::Organ(organ.clone()),
-    );
-    if !nucleus::valid_uid(&record, "r")
-        || matches!(&source, Source::Organ(uid) if !nucleus::valid_uid(uid, "r"))
-    {
-        return None;
-    }
-    Some((source, record))
-}
-
 pub(super) fn receive(world: &mut World, source: &Source, message: &ServerMessage) {
+    if !matches!(
+        message,
+        ServerMessage::Snapshot { .. }
+            | ServerMessage::Update { .. }
+            | ServerMessage::Error { .. }
+            | ServerMessage::LiveHello {
+                login_required: true
+            }
+            | ServerMessage::SessionAuthenticated { .. }
+    ) {
+        return;
+    }
     let Some(mut feeds) = world.get_resource_mut::<NumericFeeds>() else {
         return;
     };
+    if feeds.batches.is_empty() {
+        return;
+    }
     let Some(batch) = feeds.batches.get_mut(&source_key(source)) else {
         return;
     };
@@ -132,87 +135,54 @@ pub(super) fn receive(world: &mut World, source: &Source, message: &ServerMessag
 }
 
 pub(super) fn update(world: &mut World) {
+    let _update = nucleus::performance::Span::new("shader-numeric-update");
     world.init_resource::<NumericFeeds>();
-    let mut demands: Vec<_> = world
-        .query::<(Entity, &shader::EffectPreview, &Context)>()
-        .iter(world)
-        .filter_map(|(entity, preview, context)| {
-            if preview.disabled
-                || disabled(world)
-                || crate::native::laboratory::blocked(world, entity)
-            {
-                return None;
-            }
-            let effect = shader::working(world, entity)?;
-            (!effect.bindings.is_empty() && model::bindings::validate(&effect.bindings).is_ok())
-                .then(|| {
-                    (
-                        entity,
-                        preview.priority,
-                        context.clone(),
-                        effect.bindings.clone(),
-                    )
-                })
-        })
-        .collect();
-    demands.sort_by_key(|(entity, priority, ..)| (!*priority, entity.to_bits()));
-    let active: BTreeSet<_> = demands.iter().map(|(entity, ..)| *entity).collect();
-    for (entity, mut preview, _) in world
-        .query::<(Entity, &mut shader::EffectPreview, &Context)>()
-        .iter_mut(world)
-    {
-        if !active.contains(&entity) {
+    world
+        .run_system_cached(update_inputs)
+        .expect("update current shader numeric inputs");
+}
+
+fn update_inputs(
+    world: &mut World,
+    previews: &mut QueryState<(Entity, &'static shader::EffectPreview, &'static Context)>,
+    mut prepared: Local<preparation::Preparation>,
+) {
+    prepared.refresh(world, previews);
+    for entity in prepared.inactive.drain(..) {
+        let mut preview = world.get_mut::<shader::EffectPreview>(entity).unwrap();
+        let changed =
+            preview.numeric != NumericValues::default() || !preview.numeric_bindings.is_empty();
+        if preview.numeric != NumericValues::default() {
             preview.numeric = default();
+        }
+        if !preview.numeric_bindings.is_empty() {
             preview.numeric_bindings.clear();
         }
-    }
-    let mut desired: BTreeMap<String, (Source, BTreeMap<String, protein::shader_inputs::Request>)> =
-        BTreeMap::new();
-    let mut targets = BTreeSet::new();
-    let mut limited = BTreeSet::new();
-    for (entity, _, context, bindings) in &demands {
-        for binding in bindings {
-            let Some((source, record)) = target(context, &binding.source) else {
-                continue;
-            };
-            let group = source_key(&source);
-            if !desired.contains_key(&group) && desired.len() >= 16 {
-                limited.insert((*entity, binding.slot));
-                continue;
-            }
-            let request_key = serde_json::to_string(&(&record, &binding.source.field)).unwrap();
-            let target_key = (group.clone(), record.clone());
-            if !targets.contains(&target_key) && targets.len() >= 256 {
-                limited.insert((*entity, binding.slot));
-                continue;
-            }
-            let batch = desired
-                .entry(group)
-                .or_insert_with(|| (source, BTreeMap::new()));
-            if batch.1.len() >= 128 && !batch.1.contains_key(&request_key) {
-                limited.insert((*entity, binding.slot));
-                continue;
-            }
-            targets.insert(target_key);
-            batch.1.insert(
-                request_key,
-                protein::shader_inputs::Request {
-                    record,
-                    field: binding.source.field.clone(),
-                },
-            );
+        if changed {
+            nucleus::performance::add("shader-numeric-preview-updates", 1);
         }
     }
+    let feeds = world.resource::<NumericFeeds>();
+    if prepared.demands.is_empty()
+        && feeds.batches.is_empty()
+        && feeds.retired.is_empty()
+        && feeds.limited.is_empty()
+    {
+        return;
+    }
+    let (desired, limited) = prepared.admit();
+    let feed_maintenance = nucleus::performance::Span::new("shader-numeric-feed-maintenance");
     let mut feeds = world.remove_resource::<NumericFeeds>().unwrap();
-    feeds.limited = limited;
+    if feeds.limited != limited {
+        feeds.limited = limited;
+    }
     let obsolete: Vec<_> = feeds
         .batches
         .iter()
         .filter(|(key, batch)| {
-            desired.get(*key).is_none_or(|(_, requests)| {
-                serde_json::to_string(requests).unwrap()
-                    != serde_json::to_string(&batch.requests).unwrap()
-            })
+            desired
+                .get(key.as_str())
+                .is_none_or(|desired| !desired.matches(&batch.requests))
         })
         .map(|(key, _)| key.clone())
         .collect();
@@ -226,35 +196,46 @@ pub(super) fn update(world: &mut World) {
         }
     }
     feeds.retired.retain(|(source, id)| {
-        let message = ClientMessage::Unsubscribe { id: id.clone() };
         let Some(sender) = crate::native::protein_area::auxiliary_sender(world, source) else {
+            let message = ClientMessage::Unsubscribe { id: id.clone() };
             crate::native::protein_area::auxiliary_subscribed(world, source, &message);
             return false;
         };
-        if matches!(
-            sender.try_send(message.clone()),
-            Err(tokio::sync::mpsc::error::TrySendError::Full(_))
-        ) {
-            return true;
+        match sender.try_reserve() {
+            Ok(permit) => {
+                let message = ClientMessage::Unsubscribe { id: id.clone() };
+                crate::native::protein_area::send_auxiliary(world, source, permit, message);
+                false
+            }
+            Err(tokio::sync::mpsc::error::TrySendError::Full(_)) => true,
+            Err(tokio::sync::mpsc::error::TrySendError::Closed(_)) => {
+                let message = ClientMessage::Unsubscribe { id: id.clone() };
+                crate::native::protein_area::auxiliary_subscribed(world, source, &message);
+                false
+            }
         }
-        crate::native::protein_area::auxiliary_subscribed(world, source, &message);
-        false
     });
-    for (key, (source, requests)) in desired {
-        if !feeds.batches.contains_key(&key)
-            && (feeds.retired.len() >= 32 || feeds.batches.len() >= 16)
+    for (key, desired) in desired {
+        if feeds.batches.contains_key(key) || feeds.retired.len() >= 32 || feeds.batches.len() >= 16
         {
             continue;
         }
-        feeds.batches.entry(key).or_insert_with(|| Batch {
-            source,
-            requests,
-            id: nucleus::new_uid("numeric-feed"),
-            sent: false,
-            ever_sent: false,
-            rows: HashMap::new(),
-            retry: Instant::now(),
-        });
+        feeds.batches.insert(
+            key.to_owned(),
+            Batch {
+                source: desired.source.clone(),
+                requests: desired
+                    .requests
+                    .into_iter()
+                    .map(|(key, request)| (key.to_owned(), request.clone()))
+                    .collect(),
+                id: nucleus::new_uid("numeric-feed"),
+                sent: false,
+                ever_sent: false,
+                rows: HashMap::new(),
+                retry: Instant::now(),
+            },
+        );
     }
     let retiring = !feeds.retired.is_empty();
     for batch in feeds.batches.values_mut() {
@@ -271,57 +252,75 @@ pub(super) fn update(world: &mut World) {
             && crate::native::laboratory::normal(world)
             && let Some(sender) = sender
         {
-            let records: BTreeSet<_> = batch
-                .requests
-                .values()
-                .map(|request| request.record.clone())
-                .collect();
-            let message = ClientMessage::Subscribe {
-                id: batch.id.clone(),
-                protein: protein::Protein {
-                    source: protein::Source::Record,
-                    filter: vec![protein::Predicate::Any(
-                        records
-                            .iter()
-                            .cloned()
-                            .map(protein::Predicate::UidEq)
-                            .collect(),
-                    )],
-                    fields: Some(["uid", "numeric_values"].map(str::to_owned).into()),
-                    include: protein::Include {
-                        numeric_fields: batch.requests.values().cloned().collect(),
-                        ..default()
+            if let Ok(permit) = sender.try_reserve() {
+                let records: BTreeSet<_> = batch
+                    .requests
+                    .values()
+                    .map(|request| request.record.as_str())
+                    .collect();
+                let message = ClientMessage::Subscribe {
+                    id: batch.id.clone(),
+                    protein: protein::Protein {
+                        source: protein::Source::Record,
+                        filter: vec![protein::Predicate::Any(
+                            records
+                                .iter()
+                                .map(|uid| protein::Predicate::UidEq((*uid).to_owned()))
+                                .collect(),
+                        )],
+                        fields: Some(["uid", "numeric_values"].map(str::to_owned).into()),
+                        include: protein::Include {
+                            numeric_fields: batch.requests.values().cloned().collect(),
+                            ..default()
+                        },
+                        aggregate: None,
+                        order: vec![],
+                        limit: Some(records.len()),
                     },
-                    aggregate: None,
-                    order: vec![],
-                    limit: Some(records.len()),
-                },
-            };
-            batch.sent = sender.try_send(message.clone()).is_ok();
-            if batch.sent {
+                };
+                crate::native::protein_area::send_auxiliary(world, &batch.source, permit, message);
+                batch.sent = true;
                 batch.ever_sent = true;
-                crate::native::protein_area::auxiliary_subscribed(world, &batch.source, &message);
+                nucleus::performance::add("shader-numeric-subscriptions-prepared", 1);
             }
             batch.retry = Instant::now() + Duration::from_secs(3);
         }
     }
-    for (entity, _, context, bindings) in demands {
-        let admitted: Vec<_> = bindings
-            .iter()
-            .filter(|binding| !feeds.limited.contains(&(entity, binding.slot)))
-            .cloned()
-            .collect();
-        let values = NumericValues::resolve(&admitted, |source| {
-            let (organ, record) = target(&context, source)?;
-            let batch = feeds.batches.get(&source_key(&organ))?;
-            batch.rows.get(&record)?["numeric_values"][protein::shader_inputs::key(&source.field)]
-                .as_str()
-                .map(str::to_owned)
-        })
-        .unwrap_or_default();
-        let mut preview = world.get_mut::<shader::EffectPreview>(entity).unwrap();
-        preview.numeric = values;
-        preview.numeric_bindings = bindings;
+    drop(feed_maintenance);
+    {
+        let _publication = nucleus::performance::Span::new("shader-numeric-value-publication");
+        for (entity, _) in &prepared.demands {
+            let input = &prepared.inputs[entity];
+            let preview = world.get::<shader::EffectPreview>(*entity).unwrap();
+            let values = input.values(&feeds, *entity);
+            let unchanged = values
+                .iter()
+                .enumerate()
+                .all(|(slot, value)| preview.numeric.get(slot as u8) == *value);
+            let values = if unchanged {
+                None
+            } else {
+                nucleus::performance::add("shader-numeric-value-resolutions", 1);
+                Some(input.resolve(&feeds, *entity))
+            };
+            let bindings_changed = preview.numeric_bindings != input.bindings;
+            if values
+                .as_ref()
+                .is_some_and(|values| &preview.numeric != values)
+                || bindings_changed
+            {
+                let mut preview = world.get_mut::<shader::EffectPreview>(*entity).unwrap();
+                if let Some(values) = values
+                    && preview.numeric != values
+                {
+                    preview.numeric = values;
+                }
+                if bindings_changed {
+                    preview.numeric_bindings.clone_from(&input.bindings);
+                }
+                nucleus::performance::add("shader-numeric-preview-updates", 1);
+            }
+        }
     }
     let active = !feeds.batches.is_empty() || !feeds.retired.is_empty();
     world.insert_resource(feeds);
@@ -330,35 +329,42 @@ pub(super) fn update(world: &mut World) {
     }
 }
 
-pub(super) fn status(world: &World, entity: Entity) -> String {
-    let Some(effect) = shader::working(world, entity) else {
-        return String::new();
-    };
-    let Some(preview) = world.get::<shader::EffectPreview>(entity) else {
-        return String::new();
-    };
-    effect
-        .bindings
-        .iter()
-        .map(|binding: &NumericBinding| {
-            let value = (effect.bindings == preview.numeric_bindings)
-                .then(|| preview.numeric.get(binding.slot))
-                .flatten();
-            let limited = world
-                .get_resource::<NumericFeeds>()
-                .is_some_and(|feeds| feeds.limited.contains(&(entity, binding.slot)));
-            format!(
-                "{}: {}",
-                binding.label,
-                value.unwrap_or(if limited {
-                    "reading limit reached"
-                } else {
-                    "unavailable"
-                })
-            )
+pub(super) fn status_fields(world: &World, entity: Entity) -> impl Iterator<Item = (&str, &str)> {
+    let preview = world.get::<shader::EffectPreview>(entity);
+    let effect = preview.and_then(shader::EffectPreview::working);
+    let current = effect
+        .zip(preview)
+        .is_some_and(|(effect, preview)| effect.bindings == preview.numeric_bindings);
+    let feeds = world.get_resource::<NumericFeeds>();
+    effect.into_iter().flat_map(move |effect| {
+        effect.bindings.iter().map(move |binding| {
+            let value = current
+                .then(|| preview.unwrap().numeric.get(binding.slot))
+                .flatten()
+                .unwrap_or_else(|| {
+                    if feeds.is_some_and(|feeds| feeds.limited.contains(&(entity, binding.slot))) {
+                        "reading limit reached"
+                    } else {
+                        "unavailable"
+                    }
+                });
+            (binding.label.as_str(), value)
         })
-        .collect::<Vec<_>>()
-        .join(" · ")
+    })
+}
+
+pub(super) fn status(world: &World, entity: Entity) -> String {
+    nucleus::performance::add("shader-numeric-status-formats", 1);
+    let mut status = String::new();
+    for (label, value) in status_fields(world, entity) {
+        if !status.is_empty() {
+            status.push_str(" · ");
+        }
+        status.push_str(label);
+        status.push_str(": ");
+        status.push_str(value);
+    }
+    status
 }
 
 pub(super) fn controls(world: &mut World, owner: Entity, panel: Entity, effect: &Effect) {
@@ -460,6 +466,83 @@ pub(super) fn controls(world: &mut World, owner: Entity, panel: Entity, effect: 
             "Remove numeric input",
             Command::RemoveBinding(slot),
         );
+    }
+}
+
+fn decoded_path_part(value: &str) -> impl Iterator<Item = char> + '_ {
+    let mut chars = value.chars().peekable();
+    std::iter::from_fn(move || {
+        let current = chars.next()?;
+        Some(if current == '~' {
+            match chars.peek() {
+                Some('0') => {
+                    chars.next();
+                    '~'
+                }
+                Some('1') => {
+                    chars.next();
+                    '/'
+                }
+                _ => current,
+            }
+        } else {
+            current
+        })
+    })
+}
+
+pub(super) fn input_changed(editor: &Editor, key: &InputKey, input: &EditableText) -> bool {
+    let slot = match key {
+        InputKey::BindingLabel(slot)
+        | InputKey::BindingRecord(slot)
+        | InputKey::BindingOrgan(slot)
+        | InputKey::BindingNamespace(slot)
+        | InputKey::BindingPath(slot) => *slot,
+        _ => return false,
+    };
+    let Some(binding) = editor
+        .effect
+        .bindings
+        .iter()
+        .find(|binding| binding.slot == slot)
+    else {
+        return false;
+    };
+    match key {
+        InputKey::BindingLabel(_) => input.value() != binding.label.as_str(),
+        InputKey::BindingNamespace(_) => matches!(&binding.source.field,
+            model::bindings::NumericField::Extension { namespace, .. } if input.value() != namespace.as_str()),
+        InputKey::BindingRecord(_) | InputKey::BindingOrgan(_) => {
+            let text = input.value().to_cow();
+            let text = text.trim();
+            let current = if matches!(key, InputKey::BindingRecord(_)) {
+                &binding.source.record
+            } else {
+                &binding.source.organ
+            };
+            current.as_deref() != (!text.is_empty()).then_some(text)
+        }
+        InputKey::BindingPath(_) => {
+            let model::bindings::NumericField::Extension { path, .. } = &binding.source.field
+            else {
+                return false;
+            };
+            let text = input.value().to_cow();
+            let Some(pointer) = text.strip_prefix('/') else {
+                return !path.is_empty();
+            };
+            let mut parts = pointer.split('/');
+            for current in path {
+                if !parts
+                    .next()
+                    .is_some_and(|part| decoded_path_part(part).eq(current.chars()))
+                {
+                    return true;
+                }
+            }
+            parts.next().is_some()
+        }
+        _ => false,
     }
 }
 

@@ -1,9 +1,10 @@
 use super::ShaderInputs;
 use bevy::prelude::*;
+use std::sync::Arc;
 
 #[derive(Clone)]
 struct Frame {
-    program: String,
+    program: Arc<str>,
     inputs: ShaderInputs,
     ready: bool,
 }
@@ -30,8 +31,13 @@ impl Snapshot {
         self.frozen.is_some()
     }
 
+    #[cfg(test)]
     pub(super) fn program(&self) -> Option<&str> {
-        self.frozen.as_ref().map(|frame| frame.program.as_str())
+        self.frozen.as_ref().map(|frame| frame.program.as_ref())
+    }
+
+    pub(super) fn program_handle(&self) -> Option<Arc<str>> {
+        self.frozen.as_ref().map(|frame| frame.program.clone())
     }
 
     pub(super) fn inputs(&self, size: Vec2) -> Option<ShaderInputs> {
@@ -43,7 +49,7 @@ impl Snapshot {
         Some(inputs)
     }
 
-    pub(super) fn painted(&mut self, program: impl Into<String>, inputs: ShaderInputs) {
+    pub(super) fn painted(&mut self, program: impl Into<Arc<str>>, inputs: ShaderInputs) {
         self.last = Some(Frame {
             program: program.into(),
             inputs,

@@ -228,7 +228,7 @@ fn checked_stat(value: i64, label: &str) -> Result<usize, StoreError> {
 
 async fn table_stats(
     connection: &mut SqliteConnection,
-    query: &str,
+    query: &'static str,
     row_limit: usize,
     row_bytes: usize,
     label: &str,
@@ -253,7 +253,7 @@ async fn table_stats(
 
 async fn require_storage_types(
     connection: &mut SqliteConnection,
-    query: &str,
+    query: &'static str,
     label: &str,
 ) -> Result<(), StoreError> {
     let invalid: i64 = sqlx::query_scalar(query)

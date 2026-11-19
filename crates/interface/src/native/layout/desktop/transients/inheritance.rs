@@ -29,8 +29,6 @@ struct RootOwners {
 
 #[derive(Default)]
 struct Candidates {
-    // A maintained Children list has distinct entities. Three matches suffice
-    // to distinguish zero/one/many after excluding any one requesting entity.
     first: [Option<Entity>; 3],
     needs_model: bool,
     retained: bool,
@@ -101,8 +99,6 @@ impl Inheritance {
                 }
             }
         }
-        // Only unresolved requests need to inspect stored/trash workspace
-        // models. Unique or ambiguous live owners never consume that scan.
         for &(entity, id, root) in &self.restored {
             let request = self
                 .owners
@@ -156,9 +152,6 @@ impl Inheritance {
     }
 
     fn apply_restored(&self, world: &mut World) {
-        // This phase only replaces transient markers and reports diagnostics;
-        // neither operation changes the indexed Children/LayoutBox/model data.
-        // Keep the original restored-query order for all resulting mutations.
         for &(entity, id, root) in &self.restored {
             let owners = &self.owners[&root];
             let request = &owners.requests[&id];
@@ -183,8 +176,6 @@ impl Inheritance {
     }
 
     fn inherit_current(&mut self, world: &mut World) {
-        // Collect after restoration: newly restored parents belong in this
-        // pass, and each parent's workspace remains a fresh ordered read.
         self.transients.clear();
         self.transients.extend(
             self.transient_query

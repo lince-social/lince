@@ -3,6 +3,19 @@ use crate::actions::{ActionOutcome, VerifiedActionAuthorship};
 use nucleus::transfer::receipt::{Approval, ApprovalRole, Command, Document, Review};
 use serde_json::json;
 
+pub(super) fn state(document: &Document) -> &'static str {
+    match document {
+        Document::Authority(authority) if authority.participation.is_some() => {
+            "participation_approval"
+        }
+        Document::Authority(_) => "verified_authority",
+        Document::Review(review) if review.is_complete() => "approved_scope",
+        Document::Review(_) => "private_review",
+        Document::Publication(_) => "verified_receipt",
+        Document::ProofFragment(_) => "authenticated_fragment",
+    }
+}
+
 pub(super) fn result(
     saved: &store::transfer_receipts::Saved,
 ) -> Result<ActionOutcome, EngineError> {
@@ -10,14 +23,7 @@ pub(super) fn result(
         created: Some(saved.record.clone()),
         data: Some(json!({"receipt": {
             "record":saved.record,"version":saved.version,"document":saved.document,
-            "state":match &saved.document {
-                Document::Authority(authority) if authority.participation.is_some() => "participation_approval",
-                Document::Authority(_) => "verified_authority",
-                Document::Review(review) if review.is_complete() => "approved_scope",
-                Document::Review(_) => "private_review",
-                Document::Publication(_) => "verified_receipt",
-                Document::ProofFragment(_) => "authenticated_fragment",
-            },
+            "state":state(&saved.document),
         }})),
         ..Default::default()
     })
@@ -310,9 +316,9 @@ impl Engine {
                 local_source =
                     store::transfer_receipts::local_source(&self.store.pool, &uid).await?;
                 if local_source.is_none() {
-                    local_source = store::transfer_receipts::source_for_scope(
+                    local_source = store::transfer_receipts::source_for_reviewed_scope(
                         &self.store.pool,
-                        &Document::Publication(bundle.clone()),
+                        &bundle.publication.scope,
                     )
                     .await?;
                 }

@@ -192,8 +192,6 @@ fn replace<T: PartialEq>(current: &mut T, next: T) -> bool {
     true
 }
 
-// Touch only authored properties. An unchanged style does not require cloning
-// the Node's grid/track data or publishing an unrelated layout change.
 fn update(node: &mut Node, style: &Style, removed: bool) -> bool {
     let mut changed = false;
     for (key, value) in &style.dimensions {

@@ -14,14 +14,14 @@ tokio.workspace = true
 url = "=2.5.8"
 sha2.workspace = true
 cap-std = "=4.0.3"
-notify = "=8.2.0"
-ignore = "=0.4.25"
+notify = "=8.2.2"
+ignore = "=0.4.34"
 similar = "=2.7.0"
-icu_segmenter = { version = "=2.3.0", default-features = false, features = ["compiled_data"] }
+icu_segmenter = { version = "=2.4.0", default-features = false, features = ["compiled_data"] }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
-rustix = { version = "=1.1.4", features = ["fs", "process"] }
+rustix = { version = "=1.1.6", features = ["fs", "process"] }
 
 [build-dependencies]
 sensei.workspace = true

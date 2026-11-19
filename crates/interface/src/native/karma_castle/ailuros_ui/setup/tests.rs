@@ -16,7 +16,7 @@ fn fixture() -> (App, Entity) {
     let panel = panel::column(app.world_mut(), root);
     app.world_mut().entity_mut(owner).insert(Devices {
         panel,
-        rows: Vec::new(),
+        rows: Arc::default(),
         audience: "00".repeat(32),
         pending: None,
         pending_save: false,
@@ -61,11 +61,8 @@ fn enroll(world: &mut World, owner: Entity) -> Endpoint {
         created_at: 1800000000,
     };
     set(world, owner, PORT, "/dev/selected-device");
-    world
-        .get_mut::<Devices>(owner)
-        .unwrap()
-        .rows
-        .push(row.clone());
+    Arc::make_mut(&mut world.get_mut::<Devices>(owner).unwrap().rows)
+        .push(Arc::new(row.clone()));
     let mut form = world.get_mut::<Form>(owner).unwrap();
     form.selected = Some(row.uid.clone());
     form.identity = Some(Identity {
@@ -338,13 +335,13 @@ fn provisioning_completion_cannot_enable_access_changed_while_usb_was_busy() {
         provisioning_reply(world, owner, &row);
         {
             let mut state = world.get_mut::<Devices>(owner).unwrap();
-            let changed = &mut state.rows[0];
+            let changed = Arc::make_mut(&mut Arc::make_mut(&mut state.rows)[0]);
             changed.revision += 1;
             match change {
                 0 => changed.enabled = false,
                 1 => changed.public_key = format!("02{}", "11".repeat(32)),
                 2 => changed.signal_uid = "r_00000000000000000000000003".into(),
-                _ => state.rows.clear(),
+                _ => Arc::make_mut(&mut state.rows).clear(),
             }
         }
         maintain(world);
@@ -365,7 +362,8 @@ fn asynchronous_provisioning_completion_preserves_a_newer_password_draft() {
     let row = enroll(world, owner);
     provisioning_reply(world, owner, &row);
     set(world, owner, PASSWORD, "newer-password");
-    world.get_mut::<Devices>(owner).unwrap().rows[0].revision += 1;
+    Arc::make_mut(&mut Arc::make_mut(&mut world.get_mut::<Devices>(owner).unwrap().rows)[0])
+        .revision += 1;
     maintain(world);
     assert_eq!(
         world.get::<Form>(owner).unwrap().values[PASSWORD],
@@ -489,7 +487,7 @@ async fn confirmed_enrollment_provisioning_and_enable_open_the_same_signal_in_vi
     {
         let world = app.world_mut();
         enroll(world, owner);
-        world.get_mut::<Devices>(owner).unwrap().rows.clear();
+        Arc::make_mut(&mut world.get_mut::<Devices>(owner).unwrap().rows).clear();
         world.get_mut::<Form>(owner).unwrap().selected = None;
         apply(world, owner, &Control::Enroll).unwrap();
     }
@@ -527,7 +525,7 @@ async fn confirmed_enrollment_provisioning_and_enable_open_the_same_signal_in_vi
         .iter(app.world())
         .map(|settings| settings.source.clone())
         .collect();
-    assert_eq!(sources, vec![row.signal_uid]);
+    assert_eq!(sources.as_slice(), std::slice::from_ref(&row.signal_uid));
     assert!(
         app.world_mut()
             .query::<&EditableText>()

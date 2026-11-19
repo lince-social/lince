@@ -2,7 +2,10 @@ pub mod expression;
 pub mod extension;
 pub mod grammar;
 pub mod instinct;
+mod projection;
+pub use projection::{project, validate_projection};
 
+use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 use std::fmt::Write as _;
 use std::fs;
@@ -515,280 +518,17 @@ fn minted(source: &str, kind: &'static str, prefix: &str, name: &str, ordinal: u
     }
 }
 
-pub fn project(document: &Document) -> Result<ProjectedDocument, Diagnostic> {
-    use ast::{FrequencyField, RecordField, RuleField};
-    let mut output = ProjectedDocument {
-        imports: Vec::new(),
-        records: Vec::new(),
-        frequencies: Vec::new(),
-        rules: Vec::new(),
-        extensions: Vec::new(),
-    };
-    for declaration in &document.declarations {
-        match declaration {
-            Declaration::Import(value) => output.imports.push(ProjectedImport {
-                target: if value.target.is_uri() {
-                    value.target.value().to_owned()
-                } else {
-                    format!("@{}", value.target.value())
-                },
-                locations: value
-                    .locations
-                    .as_ref()
-                    .map(|locations| {
-                        locations
-                            .values
-                            .iter()
-                            .map(|value| value.value.0.clone())
-                            .collect()
-                    })
-                    .unwrap_or_default(),
-            }),
-            Declaration::Statement(_) => {
-                return Err(diagnostic(
-                    "Script statements require `lince lingua FILE`; import and sync do not execute scripts",
-                ));
-            }
-            Declaration::Extension(value) => output.extensions.push(extension::project(value)?),
-            Declaration::Record(record) => {
-                let mut assertions = Vec::new();
-                let mut identity_count = 0usize;
-                for item in &record.header.rest {
-                    match &item.field {
-                        RecordField::Identity(value) => {
-                            identity_count += 1;
-                            assertions.push(ProjectedAssertion {
-                                predicate: value.predicate.0.clone(),
-                                identity: true,
-                                object_uri: None,
-                                object_slug: None,
-                                object_uid: None,
-                                quantity: None,
-                                unit: None,
-                            });
-                        }
-                        RecordField::Assertion(value) => {
-                            let (object_slug, quantity, unit) = match &value.tail {
-                                Some(ast::AssertionTail::Link(link)) => (
-                                    (!link.target.is_uri()).then(|| link.target.value().to_owned()),
-                                    link.amount.as_ref().map(|v| v.quantity.value.0.clone()),
-                                    link.amount
-                                        .as_ref()
-                                        .and_then(|v| v.quantity.unit.as_ref())
-                                        .map(|u| u.name.0.clone()),
-                                ),
-                                Some(ast::AssertionTail::Amount(amount)) => (
-                                    None,
-                                    Some(amount.quantity.value.0.clone()),
-                                    amount.quantity.unit.as_ref().map(|u| u.name.0.clone()),
-                                ),
-                                None => (None, None, None),
-                            };
-                            assertions.push(ProjectedAssertion {
-                                predicate: value.predicate.0.clone(),
-                                identity: false,
-                                object_uri: match &value.tail {
-                                    Some(ast::AssertionTail::Link(link))
-                                        if link.target.is_uri() =>
-                                    {
-                                        Some(link.target.value().to_owned())
-                                    }
-                                    _ => None,
-                                },
-                                object_slug,
-                                object_uid: None,
-                                quantity,
-                                unit,
-                            });
-                        }
-                    }
-                }
-                let title = record.title.value();
-                let label = record.header.subject.slug().unwrap_or(&title);
-                if identity_count > 1 {
-                    return Err(diagnostic(format!(
-                        "`{label}` declares more than one identity assertion"
-                    )));
-                }
-                let quantity = record.header.subject.quantity();
-                output.records.push(ProjectedRecord {
-                    uid: typed_uid(
-                        required(record.opening.uid().map(str::to_string), label, "uid")?,
-                        "r",
-                        label,
-                    )?,
-                    slug: record
-                        .header
-                        .subject
-                        .slug()
-                        .map(|slug| checked_slug(slug.to_string(), label))
-                        .transpose()?,
-                    head: title,
-                    body: record
-                        .description
-                        .as_ref()
-                        .map_or_else(String::new, |v| decode_description_boundaries(&v.0)),
-                    quantity: Some((
-                        quantity.value.0.clone(),
-                        quantity.unit.as_ref().map(|unit| unit.name.0.clone()),
-                    )),
-                    assertions,
-                });
-            }
-            Declaration::Frequency(frequency) => {
-                let mut head = None;
-                let mut quantity = 1;
-                let mut every = None;
-                let mut timezone = None;
-                let mut next_at = None;
-                let mut definition = None;
-                for field in &frequency.fields {
-                    match field {
-                        FrequencyField::Title(value) => head = Some(value.value.0.clone()),
-                        FrequencyField::Quantity(value) => {
-                            quantity = value.value.0.parse().map_err(|_| {
-                                diagnostic(format!(
-                                    "{} has a non-integer quantity",
-                                    frequency.opening.0
-                                ))
-                            })?
-                        }
-                        FrequencyField::Every(value) => {
-                            every = Some((
-                                value.count.0.parse().map_err(|_| {
-                                    diagnostic(format!(
-                                        "{} has a non-integer interval",
-                                        frequency.opening.0
-                                    ))
-                                })?,
-                                value.unit.0.clone(),
-                            ))
-                        }
-                        FrequencyField::Timezone(value) => timezone = Some(value.value.0.clone()),
-                        FrequencyField::NextAt(value) => next_at = Some(value.value.0.clone()),
-                        FrequencyField::Definition(value) => {
-                            definition = Some(value.value.0.clone())
-                        }
-                    }
-                }
-                let slug = checked_slug(frequency.opening.0.clone(), &frequency.opening.0)?;
-                output.frequencies.push(ProjectedFrequency {
-                    uid: typed_uid(
-                        required(
-                            frequency.uid.as_ref().map(ast::Uid::value),
-                            &frequency.opening.0,
-                            "uid",
-                        )?,
-                        "freq",
-                        &frequency.opening.0,
-                    )?,
-                    head: head.unwrap_or_else(|| slug.clone()),
-                    slug,
-                    quantity,
-                    every: if definition.is_some() {
-                        every.unwrap_or_default()
-                    } else {
-                        required(every, &frequency.opening.0, "every")?
-                    },
-                    timezone: if definition.is_some() {
-                        timezone.unwrap_or_default()
-                    } else {
-                        required(timezone, &frequency.opening.0, "timezone")?
-                    },
-                    next_at: if definition.is_some() {
-                        next_at.unwrap_or_default()
-                    } else {
-                        required(next_at, &frequency.opening.0, "next_at")?
-                    },
-                    definition,
-                });
-            }
-            Declaration::Karma(karma) => {
-                for rule in &karma.rules.rules {
-                    let mut quantity = 1;
-                    let mut frequency_slug = None;
-                    let mut frequency_uid = None;
-                    let mut record_slug = None;
-                    let mut record_uid = None;
-                    let mut condition = None;
-                    let mut gate = None;
-                    let mut carry = None;
-                    let mut consequences = None;
-                    let mut note = None;
-                    let mut cadence = None;
-                    let mut anchor_at = None;
-                    for field in &rule.fields {
-                        match field {
-                            RuleField::Quantity(value) => {
-                                quantity = value.value.0.parse().map_err(|_| {
-                                    diagnostic(format!(
-                                        "{} has a non-integer quantity",
-                                        rule.name.0
-                                    ))
-                                })?
-                            }
-                            RuleField::Frequency(value) => {
-                                frequency_slug = Some(value.value.value().to_owned());
-                                frequency_uid = None
-                            }
-                            RuleField::Record(value) => {
-                                record_slug = Some(value.value.value().to_owned());
-                                record_uid = None
-                            }
-                            RuleField::Condition(value) => condition = Some(value.value.0.clone()),
-                            RuleField::Gate(value) => gate = Some(value.value.0.clone()),
-                            RuleField::Carry(value) => carry = Some(value.value.0.clone()),
-                            RuleField::Consequences(value) => {
-                                consequences = Some(value.value.0.clone())
-                            }
-                            RuleField::Note(value) => note = Some(value.value.0.clone()),
-                            RuleField::Cadence(value) => cadence = Some(value.value.0.clone()),
-                            RuleField::AnchorAt(value) => anchor_at = Some(value.value.0.clone()),
-                        }
-                    }
-                    output.rules.push(ProjectedRule {
-                        uid: typed_uid(
-                            required(rule.uid.as_ref().map(ast::Uid::value), &rule.name.0, "uid")?,
-                            "rule",
-                            &rule.name.0,
-                        )?,
-                        slug: checked_slug(rule.name.0.clone(), &rule.name.0)?,
-                        quantity,
-                        frequency_slug: frequency_slug.unwrap_or_default(),
-                        frequency_uid,
-                        record_slug: required(record_slug, &rule.name.0, "record")?,
-                        record_uid,
-                        condition,
-                        gate,
-                        carry,
-                        consequences_json: required(consequences, &rule.name.0, "consequences")?,
-                        note,
-                        cadence,
-                        anchor_at,
-                    });
-                }
-            }
-        }
-    }
-    Ok(output)
-}
-
 fn required<T>(value: Option<T>, declaration: &str, field: &str) -> Result<T, Diagnostic> {
     value.ok_or_else(|| diagnostic(format!("`{declaration}` needs `{field}`")))
 }
 
-fn typed_uid(value: String, prefix: &str, declaration: &str) -> Result<String, Diagnostic> {
-    const ALPHABET: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+fn typed_uid<'a>(value: &'a str, prefix: &str, declaration: &str) -> Result<&'a str, Diagnostic> {
     let prefix = match prefix {
         "freq" if value.starts_with("r_") => "r",
         "rule" if value.starts_with("rec_") => "rec",
         prefix => prefix,
     };
-    let valid = value
-        .strip_prefix(prefix)
-        .and_then(|rest| rest.strip_prefix('_'))
-        .is_some_and(|body| body.len() == 26 && body.bytes().all(|byte| ALPHABET.contains(&byte)));
-    if valid {
+    if uid_shape(value, prefix) {
         Ok(value)
     } else {
         Err(diagnostic(format!(
@@ -797,7 +537,15 @@ fn typed_uid(value: String, prefix: &str, declaration: &str) -> Result<String, D
     }
 }
 
-fn checked_slug(value: String, declaration: &str) -> Result<String, Diagnostic> {
+fn uid_shape(value: &str, prefix: &str) -> bool {
+    const ALPHABET: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+    value
+        .strip_prefix(prefix)
+        .and_then(|rest| rest.strip_prefix('_'))
+        .is_some_and(|body| body.len() == 26 && body.bytes().all(|byte| ALPHABET.contains(&byte)))
+}
+
+fn checked_slug<'a>(value: &'a str, declaration: &str) -> Result<&'a str, Diagnostic> {
     let valid = !value.is_empty()
         && value.split('.').all(|segment| {
             !segment.is_empty()
@@ -908,7 +656,7 @@ pub fn set_frequency_runtime(
     Err(diagnostic(format!("no Frequency has uid `{uid}`")))
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, reason = "The runtime transition takes the persisted rule identity, state, and audit context separately")]
 pub fn set_rule_runtime(
     source: &str,
     uid: &str,
@@ -964,7 +712,6 @@ pub fn set_record_runtime(
     quantity: &str,
     assertions: &[ProjectedAssertion],
 ) -> Result<String, Diagnostic> {
-    use ast::RecordField;
     let mut document = parse(source)?;
     for declaration in &mut document.declarations {
         let Declaration::Record(record) = declaration else {
@@ -973,60 +720,72 @@ pub fn set_record_runtime(
         if record.opening.uid() != Some(uid) {
             continue;
         }
-        record.title.set(head);
-        record.description =
-            (!body.is_empty()).then(|| ast::Description(encode_description_boundaries(body)));
-        record.header.subject.quantity_mut().value.0 = quantity.to_string();
-        let mut comments = HashMap::<String, VecDeque<ast::Comment>>::new();
-        for item in &record.header.rest {
-            if let Some(comment) = &item.comment {
-                comments
-                    .entry(record_field_key(&item.field))
-                    .or_default()
-                    .push_back(comment.clone());
-            }
-        }
-        record.header.rest.clear();
-        for assertion in assertions {
-            let field = if assertion.identity {
-                RecordField::identity(assertion.predicate.clone())
-            } else if let Some(uri) = &assertion.object_uri {
-                let mut field = RecordField::link(
-                    assertion.predicate.clone(),
-                    String::new(),
-                    assertion.quantity.clone(),
-                    assertion.unit.clone(),
-                );
-                if let RecordField::Assertion(value) = &mut field
-                    && let Some(ast::AssertionTail::Link(link)) = &mut value.tail
-                {
-                    link.target = ast::Reference::uri(uri.clone());
-                }
-                field
-            } else if let Some(slug) = &assertion.object_slug {
-                RecordField::link(
-                    assertion.predicate.clone(),
-                    slug.clone(),
-                    assertion.quantity.clone(),
-                    assertion.unit.clone(),
-                )
-            } else if let Some(quantity) = &assertion.quantity {
-                RecordField::amount(
-                    assertion.predicate.clone(),
-                    quantity.clone(),
-                    assertion.unit.clone(),
-                )
-            } else {
-                RecordField::assertion(assertion.predicate.clone())
-            };
-            let key = record_field_key(&field);
-            let mut item = ast::RecordHeaderRest::new(field);
-            item.comment = comments.get_mut(&key).and_then(VecDeque::pop_front);
-            record.header.rest.push(item);
-        }
+        update_record_runtime(record, head, body, quantity, assertions);
         return Ok(format(&document));
     }
     Err(diagnostic(format!("no Record has uid `{uid}`")))
+}
+
+pub fn update_record_runtime(
+    record: &mut ast::Record,
+    head: &str,
+    body: &str,
+    quantity: &str,
+    assertions: &[ProjectedAssertion],
+) {
+    use ast::RecordField;
+    record.title.set(head);
+    record.description =
+        (!body.is_empty()).then(|| ast::Description(encode_description_boundaries(body)));
+    record.header.subject.quantity_mut().value.0 = quantity.to_string();
+    let mut comments = HashMap::<String, VecDeque<ast::Comment>>::new();
+    for item in record.header.rest.drain(..) {
+        if let Some(comment) = item.comment {
+            comments
+                .entry(record_field_key(&item.field))
+                .or_default()
+                .push_back(comment);
+        }
+    }
+    for assertion in assertions {
+        let field = if assertion.identity {
+            RecordField::identity(assertion.predicate.clone())
+        } else if let Some(uri) = &assertion.object_uri {
+            let mut field = RecordField::link(
+                assertion.predicate.clone(),
+                String::new(),
+                assertion.quantity.clone(),
+                assertion.unit.clone(),
+            );
+            if let RecordField::Assertion(value) = &mut field
+                && let Some(ast::AssertionTail::Link(link)) = &mut value.tail
+            {
+                link.target = ast::Reference::uri(uri.clone());
+            }
+            field
+        } else if let Some(slug) = &assertion.object_slug {
+            RecordField::link(
+                assertion.predicate.clone(),
+                slug.clone(),
+                assertion.quantity.clone(),
+                assertion.unit.clone(),
+            )
+        } else if let Some(quantity) = &assertion.quantity {
+            RecordField::amount(
+                assertion.predicate.clone(),
+                quantity.clone(),
+                assertion.unit.clone(),
+            )
+        } else {
+            RecordField::assertion(assertion.predicate.clone())
+        };
+        let mut item = ast::RecordHeaderRest::new(field);
+        if !comments.is_empty() {
+            let key = record_field_key(&item.field);
+            item.comment = comments.get_mut(&key).and_then(VecDeque::pop_front);
+        }
+        record.header.rest.push(item);
+    }
 }
 
 fn record_field_key(field: &ast::RecordField) -> String {
@@ -1188,7 +947,7 @@ fn validate_document<'a>(
                 }
                 if let Some(slug) = record.header.subject.slug() {
                     insert_unique(slugs, slug, path, "slug", errors);
-                    if let Err(error) = checked_slug(slug.to_string(), label) {
+                    if let Err(error) = checked_slug(slug, label) {
                         errors.push(Diagnostic {
                             path: Some(path.to_path_buf()),
                             message: error.message,
@@ -1203,7 +962,7 @@ fn validate_document<'a>(
                 }
                 if let Some(uid) = record.opening.uid() {
                     insert_unique(uids, uid, path, "uid", errors);
-                    if let Err(error) = typed_uid(uid.to_string(), "r", label) {
+                    if let Err(error) = typed_uid(uid, "r", label) {
                         errors.push(Diagnostic {
                             path: Some(path.to_path_buf()),
                             message: error.message,
@@ -1222,8 +981,7 @@ fn validate_document<'a>(
             }
             Declaration::Frequency(frequency) => {
                 insert_unique(slugs, &frequency.opening.0, path, "slug", errors);
-                if let Err(error) = checked_slug(frequency.opening.0.clone(), &frequency.opening.0)
-                {
+                if let Err(error) = checked_slug(&frequency.opening.0, &frequency.opening.0) {
                     errors.push(Diagnostic {
                         path: Some(path.to_path_buf()),
                         message: error.message,
@@ -1263,7 +1021,7 @@ fn validate_document<'a>(
             Declaration::Karma(karma) => {
                 for rule in &karma.rules.rules {
                     insert_unique(slugs, &rule.name.0, path, "slug", errors);
-                    if let Err(error) = checked_slug(rule.name.0.clone(), &rule.name.0) {
+                    if let Err(error) = checked_slug(&rule.name.0, &rule.name.0) {
                         errors.push(Diagnostic {
                             path: Some(path.to_path_buf()),
                             message: error.message,
@@ -1322,7 +1080,7 @@ fn validate_typed_uid(
     prefix: &str,
     errors: &mut Vec<Diagnostic>,
 ) {
-    if let Err(error) = typed_uid(uid.value(), prefix, declaration) {
+    if let Err(error) = typed_uid(&uid.0, prefix, declaration) {
         errors.push(Diagnostic {
             path: Some(path.to_path_buf()),
             message: error.message,
@@ -1403,36 +1161,54 @@ fn record_boundary_line(line: &str) -> Option<(usize, &str)> {
         return None;
     }
     let uid = &value[leading_quotes..value.len() - trailing_quotes];
-    typed_uid(uid.to_string(), "r", "description boundary").ok()?;
-    Some((leading_quotes, uid))
+    uid_shape(uid, "r").then_some((leading_quotes, uid))
 }
 
-fn rewrite_description_boundaries(value: &str, delta: i8) -> String {
-    value
-        .split('\n')
-        .map(|line| {
-            let Some((quotes, uid)) = record_boundary_line(line) else {
-                return line.to_string();
+#[derive(Clone, Copy)]
+enum DescriptionBoundaries {
+    Encode,
+    Decode,
+    Canonical,
+}
+
+fn rewrite_description_boundaries(value: &str, mode: DescriptionBoundaries) -> Cow<'_, str> {
+    let mut output = None::<String>;
+    let mut copied = 0;
+    let mut start = 0;
+    for segment in value.split_inclusive('\n') {
+        let line = segment.strip_suffix('\n').unwrap_or(segment);
+        if let Some((quotes, uid)) = record_boundary_line(line) {
+            let next = match mode {
+                DescriptionBoundaries::Encode => quotes + 1,
+                DescriptionBoundaries::Decode => quotes.saturating_sub(1),
+                DescriptionBoundaries::Canonical => quotes.max(1),
             };
-            let quotes = if delta > 0 {
-                quotes + 1
-            } else if quotes > 0 {
-                quotes - 1
-            } else {
-                return line.to_string();
-            };
-            format!("}} {}{uid}{}", "\"".repeat(quotes), "\"".repeat(quotes))
-        })
-        .collect::<Vec<_>>()
-        .join("\n")
+            if next != quotes {
+                let output = output.get_or_insert_with(|| String::with_capacity(value.len()));
+                output.push_str(&value[copied..start]);
+                output.push_str("} ");
+                output.extend(std::iter::repeat_n('"', next));
+                output.push_str(uid);
+                output.extend(std::iter::repeat_n('"', next));
+                copied = start + line.len();
+            }
+        }
+        start += segment.len();
+    }
+    if let Some(mut output) = output {
+        output.push_str(&value[copied..]);
+        Cow::Owned(output)
+    } else {
+        Cow::Borrowed(value)
+    }
 }
 
 fn encode_description_boundaries(value: &str) -> String {
-    rewrite_description_boundaries(value, 1)
+    rewrite_description_boundaries(value, DescriptionBoundaries::Encode).into_owned()
 }
 
 fn decode_description_boundaries(value: &str) -> String {
-    rewrite_description_boundaries(value, -1)
+    rewrite_description_boundaries(value, DescriptionBoundaries::Decode).into_owned()
 }
 
 fn record_field(field: &ast::RecordField) -> String {
@@ -1516,8 +1292,8 @@ fn format_record(output: &mut String, record: &ast::Record) {
         output.push('\n');
     }
     if let Some(description) = &record.description {
-        let logical = decode_description_boundaries(&description.0);
-        let encoded = encode_description_boundaries(&logical);
+        let encoded =
+            rewrite_description_boundaries(&description.0, DescriptionBoundaries::Canonical);
         output.push_str(encoded.trim_end_matches('\n'));
         if !description.0.is_empty() {
             output.push('\n');

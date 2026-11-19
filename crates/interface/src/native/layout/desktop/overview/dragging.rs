@@ -37,10 +37,10 @@ pub(super) fn install(
     id: [u8; 16],
 ) {
     world.entity_mut(button).observe(
-        move |mut event: On<Pointer<DragStart>>, mut commands: Commands| {
+        move |mut event: On<PointerDragStart>, mut commands: Commands| {
             if event.button == PointerButton::Primary {
-                let pointer = event.pointer_id;
-                let point = event.pointer_location.position;
+                let pointer = event.pointer.id;
+                let point = event.pointer.position;
                 commands.queue(move |world: &mut World| {
                     begin(world, button, root, workspace, id, pointer, point)
                 });
@@ -50,28 +50,28 @@ pub(super) fn install(
     );
     world
         .entity_mut(button)
-        .observe(|mut event: On<Pointer<Drag>>, mut commands: Commands| {
+        .observe(|mut event: On<PointerDrag>, mut commands: Commands| {
             if event.button == PointerButton::Primary {
-                let pointer = event.pointer_id;
-                let point = event.pointer_location.position;
+                let pointer = event.pointer.id;
+                let point = event.pointer.position;
                 commands.queue(move |world: &mut World| motion(world, pointer, point));
                 event.propagate(false);
             }
         });
     world
         .entity_mut(button)
-        .observe(|mut event: On<Pointer<DragEnd>>, mut commands: Commands| {
+        .observe(|mut event: On<PointerDragEnd>, mut commands: Commands| {
             if event.button == PointerButton::Primary {
-                let pointer = event.pointer_id;
-                let point = event.pointer_location.position;
+                let pointer = event.pointer.id;
+                let point = event.pointer.position;
                 commands.queue(move |world: &mut World| finish(world, pointer, point));
                 event.propagate(false);
             }
         });
     world
         .entity_mut(button)
-        .observe(|mut event: On<Pointer<Cancel>>, mut commands: Commands| {
-            let pointer = event.pointer_id;
+        .observe(|mut event: On<PointerCancel>, mut commands: Commands| {
+            let pointer = event.pointer.id;
             commands.queue(move |world: &mut World| cancel_pointer(world, pointer));
             event.propagate(false);
         });
@@ -87,10 +87,9 @@ pub(super) fn rectangle(world: &World, entity: Entity) -> Option<Rect> {
     let mut bounds = crate::native::inspection::bounds(world, entity)?;
     if let Some(clip) = world.get::<bevy::ui::CalculatedClip>(entity) {
         let scale = world.get::<ComputedNode>(entity)?.inverse_scale_factor();
-        bounds = bounds.intersect(Rect::from_corners(
-            clip.clip.min * scale,
-            clip.clip.max * scale,
-        ));
+        let physical = Rect::from_corners(bounds.min / scale, bounds.max / scale);
+        let clipped = crate::native::canvas_clip::clipped_rect(physical, clip);
+        bounds = Rect::from_corners(clipped.min * scale, clipped.max * scale);
     }
     (bounds.size().min_element() > 0.0).then_some(bounds)
 }

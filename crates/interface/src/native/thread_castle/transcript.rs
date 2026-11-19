@@ -14,7 +14,7 @@ pub(super) struct Transcript {
 }
 
 #[derive(Resource, Default)]
-struct Subscriptions(HashMap<String, crate::native::cell_bridge::Sender>);
+pub(super) struct Subscriptions(HashMap<String, crate::native::cell_bridge::Sender>);
 
 pub(super) fn populate(world: &mut World, owner: Entity, binding: &RecordBinding, data: &Value) {
     let Some(thread) = data["tool_call"]["thread"].as_str() else {
@@ -139,6 +139,24 @@ impl Action for DeleteTranscript {
 }
 
 pub(crate) fn receive_message(world: &mut World, event: &ServerMessage) {
+    if !matches!(
+        event,
+        ServerMessage::Snapshot { .. } | ServerMessage::Update { .. } | ServerMessage::Error { .. }
+    ) {
+        return;
+    }
+    let _presentation = nucleus::performance::Span::new("message-transcript-presentation");
+    world
+        .run_system_cached_with(apply_message, event)
+        .expect("apply current transcript reply");
+}
+
+fn apply_message(
+    bevy::ecs::system::InRef(event): bevy::ecs::system::InRef<ServerMessage>,
+    world: &mut World,
+    transcripts: &mut QueryState<(Entity, &'static Transcript)>,
+    mut targets: Local<Vec<Entity>>,
+) {
     let (id, rows, error) = match event {
         ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows } => {
             (id, rows.as_slice(), None)
@@ -146,14 +164,18 @@ pub(crate) fn receive_message(world: &mut World, event: &ServerMessage) {
         ServerMessage::Error { id, message, .. } => (id, &[][..], Some(message)),
         _ => return,
     };
-    let _presentation = nucleus::performance::Span::new("message-transcript-presentation");
-    let targets: Vec<_> = world
-        .query::<(Entity, &Transcript)>()
-        .iter(world)
-        .filter(|(_, item)| item.subscription.as_deref() == Some(id.as_str()))
-        .map(|(owner, _)| owner)
-        .collect();
-    for owner in targets {
+    targets.clear();
+    targets.extend(
+        transcripts
+            .iter(world)
+            .filter(|(_, item)| item.subscription.as_deref() == Some(id.as_str()))
+            .map(|(owner, _)| owner),
+    );
+    nucleus::performance::add("transcript-reply-targets", targets.len() as u64);
+    if targets.is_empty() {
+        targets.shrink_to_fit();
+    }
+    for owner in targets.drain(..) {
         let Some(current) = world.get::<Transcript>(owner) else {
             continue;
         };
@@ -200,8 +222,6 @@ pub(crate) fn receive_message(world: &mut World, event: &ServerMessage) {
     }
 }
 
-/// Return only the newly appended chunks when the current text is an exact
-/// prefix. Returned slices borrow the reply, never the live Text component.
 fn append_suffix<'a, I>(
     mut current: &str,
     mut chunks: I,
@@ -236,8 +256,6 @@ fn publish<'a>(world: &mut World, entity: Entity, chunks: impl Iterator<Item = &
         text.0.extend(suffix);
         text.0.len() - previous
     } else {
-        // Replacements and truncation release the old allocation, rather than
-        // pinning a once-large transcript behind a short error/empty caption.
         let value: String = chunks.collect();
         let bytes = value.len();
         world.get_mut::<Text>(entity).unwrap().0 = value;
@@ -247,27 +265,28 @@ fn publish<'a>(world: &mut World, entity: Entity, chunks: impl Iterator<Item = &
     nucleus::performance::add("message-transcript-text-bytes-prepared", bytes as u64);
 }
 
-pub(super) fn receive(world: &mut World) {
-    if world
-        .get_resource::<Subscriptions>()
-        .is_some_and(|subscriptions| !subscriptions.0.is_empty())
-    {
-        world.resource_scope(|world, mut subscriptions: Mut<Subscriptions>| {
-            let mut transcripts = world.query::<&Transcript>();
-            let active: HashSet<_> = transcripts
-                .iter(world)
-                .filter_map(|item| item.subscription.as_deref())
-                .collect();
-            subscriptions.0.retain(|id, sender| {
-                if active.contains(id.as_str()) {
-                    true
-                } else {
-                    sender
-                        .try_send(ClientMessage::Unsubscribe { id: id.clone() })
-                        .is_err()
-                        && !sender.is_closed()
-                }
-            });
+pub(super) fn receive(
+    subscriptions: Option<ResMut<Subscriptions>>,
+    transcripts: Query<&Transcript>,
+) {
+    let Some(mut subscriptions) = subscriptions else {
+        return;
+    };
+    if !subscriptions.0.is_empty() {
+        let _maintenance = nucleus::performance::Span::new("transcript-subscription-maintenance");
+        let active: HashSet<_> = transcripts
+            .iter()
+            .filter_map(|item| item.subscription.as_deref())
+            .collect();
+        subscriptions.0.retain(|id, sender| {
+            if active.contains(id.as_str()) {
+                true
+            } else {
+                sender
+                    .try_send(ClientMessage::Unsubscribe { id: id.clone() })
+                    .is_err()
+                    && !sender.is_closed()
+            }
         });
     }
 }

@@ -1,6 +1,6 @@
 use crate::StoreError;
 use chrono::{DateTime, Utc};
-use nucleus::transfer::receipt::{Command, Document, ScopeRequest};
+use nucleus::transfer::receipt::{Command, Document, Scope, ScopeRequest};
 use nucleus::{Cause, Fact, NewFact, RecordKind};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -91,8 +91,28 @@ pub async fn find(
     person: &str,
     document: &Document,
 ) -> Result<Option<Saved>, StoreError> {
+    let identity = document.identity().map_err(invalid)?;
+    find_identity(pool, person, document.kind(), &identity).await
+}
+
+pub async fn find_publication(
+    pool: &SqlitePool,
+    person: &str,
+    scope: &Scope,
+) -> Result<Option<Saved>, StoreError> {
+    let identity = scope.id().map_err(invalid)?;
+    find_identity(pool, person, "publication", &identity).await
+}
+
+async fn find_identity(
+    pool: &SqlitePool,
+    person: &str,
+    kind: &str,
+    identity: &nucleus::karma::CanonicalHash,
+) -> Result<Option<Saved>, StoreError> {
+    let _span = nucleus::performance::Span::new("receipt-identity-read");
     let uid: Option<String> = sqlx::query_scalar("SELECT record_uid FROM transfer_receipt_record WHERE owner_person_uid=? AND kind=? AND identity_hash=?")
-        .bind(person).bind(document.kind()).bind(document.identity().map_err(invalid)?.as_str()).fetch_optional(pool).await?;
+        .bind(person).bind(kind).bind(identity.as_str()).fetch_optional(pool).await?;
     match uid {
         Some(uid) => get(pool, &uid).await.map(Some),
         None => Ok(None),
@@ -143,8 +163,20 @@ pub async fn source_for_scope(
     pool: &SqlitePool,
     document: &Document,
 ) -> Result<Option<ScopeRequest>, StoreError> {
+    let scope = document
+        .scope()
+        .ok_or_else(|| invalid("Receipt scope is unavailable"))?;
+    source_for_reviewed_scope(pool, scope).await
+}
+
+pub async fn source_for_reviewed_scope(
+    pool: &SqlitePool,
+    scope: &Scope,
+) -> Result<Option<ScopeRequest>, StoreError> {
+    let identity = scope.id().map_err(invalid)?;
+    let _span = nucleus::performance::Span::new("receipt-identity-read");
     let value: Option<String> = sqlx::query_scalar("SELECT s.scope_request_json FROM transfer_receipt_local_source s JOIN transfer_receipt_record r ON r.record_uid=s.record_uid WHERE r.kind='review' AND r.identity_hash=? ORDER BY r.rowid LIMIT 1")
-        .bind(document.scope().ok_or_else(||invalid("Receipt scope is unavailable"))?.id().map_err(invalid)?.as_str()).fetch_optional(pool).await?;
+        .bind(identity.as_str()).fetch_optional(pool).await?;
     value
         .map(|value| serde_json::from_str(&value).map_err(invalid))
         .transpose()

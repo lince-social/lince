@@ -190,7 +190,7 @@ async fn protein_selection_renumbers_in_visible_order_and_persists() {
         .as_mut()
         .unwrap()
         .draft
-        .query = json!({"source":"record","where":[{"quantity_lt":"0"}],"order":[{"asc":"head"}],"limit":null});
+        .query = json!({"source":"record","where":[{"quantity_lt":"0"}],"order":[{"asc":"head"}],"limit":null}).into();
     until(&mut app, |world| {
         world.get::<View>(owner).unwrap().rows.len() == 4
     })

@@ -4,8 +4,6 @@ use crate::{
     native::layout::desktop::input_settings::prepared::Prepared,
 };
 
-// Selected field values replace program/arguments/directory. Only the other
-// commands and selected metadata belong in the non-field preparation key.
 struct Source {
     selected: ExternalAction,
     others: Settings,
@@ -192,8 +190,6 @@ impl Draft {
             || Source::capture(page),
             || Capture::read(world, page),
         );
-        // Draft capture precedes full validation, including validation errors.
-        // Explicit actions still receive the unvalidated configured settings.
         if let Ok(capture) = result {
             capture.apply(page);
         }

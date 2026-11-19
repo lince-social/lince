@@ -51,10 +51,6 @@ pub mod icons;
 pub mod castle;
 
 #[cfg(feature = "native-presentation")]
-#[path = "castles/sand/kamalie/mod.rs"]
-pub mod kamalie;
-
-#[cfg(feature = "native-presentation")]
 pub mod schedule_editor;
 #[cfg(feature = "native-presentation")]
 pub mod time_castle;
@@ -124,6 +120,7 @@ mod canvas_colors;
 
 #[cfg(feature = "native-presentation")]
 mod canvas_clip;
+pub use canvas_clip::clipped_rect;
 
 #[cfg(feature = "native-presentation")]
 mod canvas_pan;

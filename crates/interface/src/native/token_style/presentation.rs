@@ -173,7 +173,7 @@ pub(super) fn apply(
                     node.border_radius = radius;
                 }
                 if let Some(feedback) = style.save.as_mut().filter(|_| save) {
-                    feedback.style_border(border);
+                    crate::native::save_feedback::SaveFeedback::style_border(feedback, border);
                 } else if node.border != border {
                     node.border = border;
                 }

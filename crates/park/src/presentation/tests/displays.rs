@@ -31,7 +31,7 @@ pub(super) fn reveal(canvas: &mut Presentation, entity: Entity) {
             .transform_point2(Vec2::ZERO);
         if world
             .get::<bevy::ui::CalculatedClip>(entity)
-            .is_none_or(|clip| clip.clip.contains(point))
+            .is_none_or(|clip| clip.contains_point(point))
         {
             return;
         }
@@ -45,7 +45,7 @@ pub(super) fn reveal(canvas: &mut Presentation, entity: Entity) {
                 && let (Some(node), Some(transform)) = (world.get::<ComputedNode>(current), world.get::<UiGlobalTransform>(current))
             {
                 let mut visible = Rect::from_center_size(transform.transform_point2(Vec2::ZERO), node.size());
-                if let Some(clip) = world.get::<bevy::ui::CalculatedClip>(current) { visible = visible.intersect(clip.clip); }
+                if let Some(clip) = world.get::<bevy::ui::CalculatedClip>(current) { visible = lince_interface::native::clipped_rect(visible, clip); }
                 visible = visible.intersect(Rect::from_corners(Vec2::ZERO, Vec2::from_array(canvas.render_size.map(|value| value as f32))));
                 let overflow = world.get::<Node>(current).unwrap().overflow;
                 let axes = [overflow.x == OverflowAxis::Scroll && (point.x < visible.min.x || point.x > visible.max.x),

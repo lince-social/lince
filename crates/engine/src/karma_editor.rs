@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 use nucleus::karma::rule_field::{RuleConsequence, RuleFieldInput, RuleFieldKind};
-use nucleus::karma::{Cadence, Carry, Condition, Consequences, Gate};
+use nucleus::karma::{Cadence, Carry, Gate};
 use store::karma_fields::{Field, Selection};
 use store::recurrence::{Recurrence, RuleCondition};
 
@@ -24,14 +24,9 @@ impl Engine {
         now: DateTime<Utc>,
     ) -> Result<serde_json::Value, EngineError> {
         check_source(source)?;
-        self.karma_condition_records(Condition::parse(source).map_err(invalid)?, actor)
+        let condition = RuleCondition::new(source.into(), Vec::new(), Gate::Always, Carry::Value);
+        self.karma_condition_records(condition.parsed().map_err(invalid)?, actor)
             .await?;
-        let condition = RuleCondition {
-            source: source.into(),
-            bindings: Vec::new(),
-            gate: Gate::Always,
-            carry: Carry::Value,
-        };
         let value = crate::karma_transfers::scope(
             actor,
             Box::pin(self.evaluate_rule_condition(&condition, now, now)),
@@ -124,14 +119,15 @@ impl Engine {
                             RuleFieldKind::Condition => {
                                 let bindings = rule
                                     .condition
-                                    .clone()
+                                    .as_ref()
                                     .map(|condition| {
                                         condition
                                             .bindings
-                                            .into_iter()
+                                            .iter()
                                             .filter(|binding| {
                                                 !binding.reading.starts_with("consequence.")
                                             })
+                                            .cloned()
                                             .collect::<Vec<_>>()
                                     })
                                     .ok_or_else(|| invalid("Shared condition is missing"))?;
@@ -193,7 +189,7 @@ impl Engine {
         };
         let sources: Vec<_> = selections
             .iter()
-            .map(|selection| selection.field.source.clone())
+            .map(|selection| selection.field.source.as_str())
             .collect();
         let mut rule = self
             .prepare_editor_rule(
@@ -261,12 +257,12 @@ impl Engine {
                 .into_iter()
                 .map(|kind| {
                     if kind == field.kind {
-                        Ok(field.source.clone())
+                        Ok(field.source.as_str())
                     } else {
                         fields
                             .iter()
                             .find(|value| value.kind == kind)
-                            .map(|value| value.source.clone())
+                            .map(|value| value.source.as_str())
                             .ok_or_else(|| invalid("Rule field missing"))
                     }
                 })
@@ -308,15 +304,15 @@ impl Engine {
     async fn prepare_editor_rule(
         &self,
         previous: Option<Recurrence>,
-        sources: &[String],
+        sources: &[&str],
         shared_bindings: Option<Vec<nucleus::karma::ConditionBinding>>,
         shared_target: Option<(String, Vec<nucleus::karma::ConditionBinding>)>,
         actor: Option<&str>,
         now: DateTime<Utc>,
     ) -> Result<Recurrence, EngineError> {
-        nucleus::karma::rule_field::check_condition_source(&sources[0]).map_err(invalid)?;
+        nucleus::karma::rule_field::check_condition_source(sources[0]).map_err(invalid)?;
         let source = self
-            .canonical_condition_for(Some(sources[0].clone()),actor)
+            .canonical_condition_for(Some(sources[0].to_owned()), actor)
             .await?
             .ok_or_else(|| invalid("A condition is required"))?;
         let bindings = store::karma_bindings::resolve(
@@ -330,16 +326,16 @@ impl Engine {
             }),
         )
         .await?;
-        let mut condition = RuleCondition {
+        let mut condition = RuleCondition::new(
             source,
             bindings,
-            gate: Gate::parse(&sources[1]).map_err(invalid)?,
-            carry: previous
+            Gate::parse(sources[1]).map_err(invalid)?,
+            previous
                 .as_ref()
                 .and_then(|rule| rule.condition.as_ref())
                 .map_or(Carry::Value, |condition| condition.carry.clone()),
-        };
-        let consequence = RuleConsequence::parse(&sources[2]).map_err(invalid)?;
+        );
+        let consequence = RuleConsequence::parse(sources[2]).map_err(invalid)?;
         let previous_target = if let Some(previous) = &previous {
             store::karma_fields::for_rule(&self.store.pool, &previous.uid)
                 .await?
@@ -379,27 +375,27 @@ impl Engine {
             }
         };
         Box::pin(self.validate_automatic_rule(&consequences, Some(&condition), actor)).await?;
-        let mut rule = previous.unwrap_or_else(|| Recurrence {
+        if let Some(mut rule) = previous {
+            rule.record_uid = target;
+            rule.condition = Some(condition);
+            rule.consequences = consequences;
+            return Ok(rule);
+        }
+        let at = now.to_rfc3339();
+        Ok(Recurrence {
             uid: nucleus::new_uid("rec"),
-            record_uid: target.clone(),
-            consequences: Consequences::new(vec![nucleus::karma::Consequence::SetQuantity {
-                value: None,
-            }])
-            .unwrap(),
-            condition: None,
+            record_uid: target,
+            consequences,
+            condition: Some(condition),
             note: None,
             cadence: Cadence::once(),
-            anchor_at: now.to_rfc3339(),
+            anchor_at: at.clone(),
             state: "active".into(),
             revision: 0,
             actor_uid: actor.map(str::to_owned),
-            created_at: now.to_rfc3339(),
-            updated_at: now.to_rfc3339(),
-        });
-        rule.record_uid = target;
-        rule.condition = Some(condition);
-        rule.consequences = consequences;
-        Ok(rule)
+            created_at: at.clone(),
+            updated_at: at,
+        })
     }
 }
 

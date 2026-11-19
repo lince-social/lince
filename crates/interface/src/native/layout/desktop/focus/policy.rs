@@ -120,7 +120,7 @@ pub fn hover(world: &mut World, root: Entity, workspace: u64, target: Entity) ->
     true
 }
 
-pub(in crate::native::layout) fn moved(event: On<Pointer<bevy::picking::events::Move>>, mut commands: Commands) {
+pub(in crate::native::layout) fn moved(event: On<PointerMove>, mut commands: Commands) {
     if event.entity != event.original_event_target() || event.delta == Vec2::ZERO { return; }
     let target = event.entity;
     commands.queue(move |world: &mut World| {

@@ -403,7 +403,6 @@ pub async fn create_with_uid_on(
     inserted_on(tx, uid).await
 }
 
-/// Check an active Record without loading fields that the caller will discard.
 pub async fn exists(pool: &SqlitePool, uid: &str) -> Result<bool, StoreError> {
     Ok(sqlx::query_scalar(
         "SELECT EXISTS(SELECT 1 FROM record WHERE uid = ? AND deleted_at IS NULL)",
@@ -428,11 +427,53 @@ pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<RecordRow>, Stor
     .transpose()
 }
 
-/// Text from the current active Record, without unrelated columns or the
-/// identity-assertion lookup. These projections do not grant access.
 pub struct RecordText {
     pub head: String,
     pub body: String,
+}
+
+#[derive(Default)]
+pub struct GroupingFields {
+    pub unit: bool,
+    pub identity: bool,
+}
+
+pub struct RecordGrouping {
+    pub uid: String,
+    pub unit: Option<String>,
+    pub identity: Option<String>,
+}
+
+pub async fn grouping(
+    pool: &SqlitePool,
+    fields: GroupingFields,
+) -> Result<Vec<RecordGrouping>, StoreError> {
+    let _read = nucleus::performance::Span::new("record-grouping-read-await");
+    if !fields.unit && !fields.identity {
+        nucleus::performance::add("record-grouping-read-skipped", 1);
+        return Ok(Vec::new());
+    }
+    let unit = if fields.unit { "r.unit_uid" } else { "NULL" };
+    let identity = if fields.identity {
+        "(SELECT predicate_uid FROM record_assertion a WHERE a.subject_uid = r.uid AND a.role = 'identity' AND a.retracted_at IS NULL)"
+    } else {
+        "NULL"
+    };
+    let query = format!(
+        "SELECT r.uid, {unit}, {identity} FROM record r WHERE r.deleted_at IS NULL ORDER BY r.created_at, r.uid"
+    );
+    let rows = sqlx::query_as::<_, (String, Option<String>, Option<String>)>(sqlx::AssertSqlSafe(query))
+        .fetch_all(pool)
+        .await?;
+    nucleus::performance::add("record-grouping-rows", rows.len() as u64);
+    Ok(rows
+        .into_iter()
+        .map(|(uid, unit, identity)| RecordGrouping {
+            uid,
+            unit,
+            identity,
+        })
+        .collect())
 }
 
 pub async fn text(pool: &SqlitePool, uid: &str) -> Result<Option<RecordText>, StoreError> {
@@ -461,8 +502,39 @@ pub async fn body(pool: &SqlitePool, uid: &str) -> Result<Option<String>, StoreE
         .await
 }
 
-/// Current routing metadata, not an access grant. Readers must still apply
-/// their existing contact, visibility, field and operation policies.
+pub async fn live_identifiers(
+    pool: &SqlitePool,
+) -> Result<Vec<(String, Option<String>)>, StoreError> {
+    let _read = nucleus::performance::Span::new("record-live-identifiers-read-await");
+    let rows = sqlx::query_as::<_, (String, Option<String>)>(
+        "SELECT uid, slug FROM record WHERE deleted_at IS NULL ORDER BY created_at, uid",
+    )
+    .fetch_all(pool)
+    .await?;
+    nucleus::performance::add("record-live-identifiers-read", rows.len() as u64);
+    Ok(rows)
+}
+
+pub async fn live_slugs_for(
+    pool: &SqlitePool,
+    uids: &[&str],
+) -> Result<std::collections::HashMap<String, String>, StoreError> {
+    let _read = nucleus::performance::Span::new("record-live-slugs-read-await");
+    if uids.is_empty() {
+        return Ok(std::collections::HashMap::new());
+    }
+    let ids = serde_json::to_string(uids).map_err(|error| protocol(error.to_string()))?;
+    Ok(sqlx::query_as::<_, (String, String)>(
+        "SELECT uid, slug FROM record WHERE deleted_at IS NULL AND slug IS NOT NULL
+         AND uid IN (SELECT value FROM json_each(?))",
+    )
+    .bind(ids)
+    .fetch_all(pool)
+    .await?
+    .into_iter()
+    .collect())
+}
+
 pub struct RecordRouting {
     pub kind: String,
     pub organ_uid: Option<String>,
@@ -477,7 +549,6 @@ pub async fn routing(pool: &SqlitePool, uid: &str) -> Result<Option<RecordRoutin
     Ok(row.map(|(kind, organ_uid)| RecordRouting { kind, organ_uid }))
 }
 
-/// A missing/deleted Record and an unowned Record both have no active owner.
 pub async fn organ_uid(pool: &SqlitePool, uid: &str) -> Result<Option<String>, StoreError> {
     Ok(
         sqlx::query_scalar("SELECT organ_uid FROM record WHERE uid = ? AND deleted_at IS NULL")
@@ -488,7 +559,6 @@ pub async fn organ_uid(pool: &SqlitePool, uid: &str) -> Result<Option<String>, S
     )
 }
 
-/// Resolve the same active slug/UID relation as `resolve`, projecting only its ID.
 pub async fn resolve_uid(pool: &SqlitePool, token: &str) -> Result<Option<String>, StoreError> {
     Ok(sqlx::query_scalar(
         "SELECT r.uid FROM record r
@@ -498,6 +568,28 @@ pub async fn resolve_uid(pool: &SqlitePool, token: &str) -> Result<Option<String
     .bind(token)
     .fetch_optional(pool)
     .await?)
+}
+
+pub struct ResolvedRecord {
+    pub uid: String,
+    pub kind: String,
+}
+
+pub async fn resolve_kind(
+    pool: &SqlitePool,
+    token: &str,
+) -> Result<Option<ResolvedRecord>, StoreError> {
+    let _read = nucleus::performance::Span::new("record-reference-kind-read-await");
+    nucleus::performance::add("record-reference-kind-reads", 1);
+    let row = sqlx::query_as::<_, (String, String)>(
+        "SELECT r.uid, r.kind FROM record r
+         WHERE (r.slug = ? OR r.uid = ?) AND r.deleted_at IS NULL LIMIT 1",
+    )
+    .bind(token)
+    .bind(token)
+    .fetch_optional(pool)
+    .await?;
+    Ok(row.map(|(uid, kind)| ResolvedRecord { uid, kind }))
 }
 
 pub async fn resolve(pool: &SqlitePool, token: &str) -> Result<Option<RecordRow>, StoreError> {
@@ -709,6 +801,34 @@ pub async fn all_levels(pool: &SqlitePool) -> Result<Vec<(String, DecimalValue)>
     .into_iter()
     .map(|r| Ok((r.get("uid"), read_decimal(&r, "quantity")?)))
     .collect()
+}
+
+pub struct NamedLevel {
+    pub uid: String,
+    pub slug: Option<String>,
+    pub kind: String,
+    pub quantity: DecimalValue,
+}
+
+pub async fn named_levels(pool: &SqlitePool) -> Result<Vec<NamedLevel>, StoreError> {
+    let _read = nucleus::performance::Span::new("record-named-levels-read-await");
+    let rows = sqlx::query(
+        "SELECT uid, slug, kind, quantity_mantissa, quantity_scale
+         FROM record WHERE deleted_at IS NULL ORDER BY created_at, uid",
+    )
+    .fetch_all(pool)
+    .await?;
+    nucleus::performance::add("record-named-level-rows", rows.len() as u64);
+    rows.into_iter()
+        .map(|row| {
+            Ok(NamedLevel {
+                uid: row.get("uid"),
+                slug: row.get("slug"),
+                kind: row.get("kind"),
+                quantity: read_decimal(&row, "quantity")?,
+            })
+        })
+        .collect()
 }
 
 pub async fn set_extension_raw(
@@ -1398,7 +1518,6 @@ pub fn extension_numeric_at(raw: &str, path: &[String]) -> Result<DecimalValue, 
     ExtensionNumbers::new(raw).get(path)
 }
 
-/// Reads exact numbers while sharing object decoding between requested paths.
 pub struct ExtensionNumbers<'a> {
     raw: &'a str,
     fields: Option<std::collections::BTreeMap<String, ExtensionNumbers<'a>>>,
@@ -1683,7 +1802,7 @@ async fn validate_reference_on(
         )));
     }
     let sql = format!("SELECT 1 FROM {table} WHERE uid = ?");
-    let exists = sqlx::query_scalar::<_, i64>(&sql)
+    let exists = sqlx::query_scalar::<_, i64>(sqlx::AssertSqlSafe(sql.as_str()))
         .bind(uid)
         .fetch_optional(&mut **tx)
         .await?

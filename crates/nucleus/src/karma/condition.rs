@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::fmt;
+use std::{fmt, sync::Arc};
 
 use crate::expr::{BinOp, Expr, UnOp};
 use crate::karma::{DecimalValue, MAX_DECIMAL_SCALE};
@@ -261,14 +261,35 @@ impl Carry {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct Condition {
-    source: String,
+#[derive(Clone)]
+pub struct Condition(Arc<Parsed>);
+
+struct Parsed {
+    source: Arc<str>,
     expr: Expr,
+    readings: Vec<crate::expr::TokenKey>,
+}
+
+impl fmt::Debug for Condition {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Condition")
+            .field("source", &self.0.source)
+            .field("expr", &self.0.expr)
+            .finish()
+    }
+}
+
+impl PartialEq for Condition {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+            || (self.0.source == other.0.source && self.0.expr == other.0.expr)
+    }
 }
 
 impl Condition {
     pub fn parse(source: &str) -> Result<Condition, ConditionError> {
+        let _parse = crate::performance::Span::new("karma-condition-parse");
+        crate::performance::add("karma-condition-parse-attempts", 1);
         let expr = Expr::parse(source).map_err(|error| ConditionError::Parse(error.to_string()))?;
         fn validate(expr: &Expr) -> Result<(), ConditionError> {
             match expr {
@@ -324,6 +345,7 @@ impl Condition {
         }
         validate(&expr)?;
         let readings = expr.tokens();
+        crate::performance::add("karma-condition-readings-prepared", readings.len() as u64);
         if readings.is_empty() {
             return Err(ConditionError::Parse(
                 "this reads nothing, so nothing could ever make it true".into(),
@@ -334,24 +356,31 @@ impl Condition {
                 "a condition may name at most one frequency".into(),
             ));
         }
-        Ok(Condition {
-            source: source.to_string(),
+        Ok(Condition(Arc::new(Parsed {
+            source: source.into(),
             expr,
-        })
+            readings,
+        })))
     }
 
     pub fn source(&self) -> &str {
-        &self.source
+        &self.0.source
     }
 
     pub fn reads(&self) -> Vec<crate::expr::TokenKey> {
-        self.expr.tokens()
+        self.0.readings.clone()
+    }
+
+    pub fn reads_ref(&self) -> &[crate::expr::TokenKey] {
+        &self.0.readings
     }
 
     pub fn map_references(
         &self,
         mut resolve: impl FnMut(&str, &str) -> Result<String, ConditionError>,
     ) -> Result<Self, ConditionError> {
+        let _bind = crate::performance::Span::new("karma-condition-bind");
+        crate::performance::add("karma-condition-bind-attempts", 1);
         fn visit(
             expr: &mut Expr,
             reading: &str,
@@ -394,16 +423,22 @@ impl Condition {
             }
             Ok(())
         }
-        let mut bound = self.clone();
-        visit(&mut bound.expr, "quantity", &mut resolve)?;
-        Ok(bound)
+        let mut expr = self.0.expr.clone();
+        visit(&mut expr, "quantity", &mut resolve)?;
+        let readings = expr.tokens();
+        crate::performance::add("karma-condition-readings-prepared", readings.len() as u64);
+        Ok(Self(Arc::new(Parsed {
+            source: self.0.source.clone(),
+            expr,
+            readings,
+        })))
     }
 
     pub fn evaluate(
         &self,
         resolver: &mut dyn ExactResolver,
     ) -> Result<DecimalValue, ConditionError> {
-        evaluate(&self.expr, resolver)
+        evaluate(&self.0.expr, resolver)
     }
 }
 

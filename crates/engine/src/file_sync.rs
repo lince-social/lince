@@ -557,7 +557,7 @@ impl Engine {
         Ok(report)
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments, reason = "File sync passes source identity, edit state, and write policy separately")]
     async fn apply_file_edits(
         &self,
         uid: &str,
@@ -918,6 +918,7 @@ impl Engine {
         matched: &[store::records::RecordRow],
         format: FileFormat,
     ) -> Result<HashMap<PathBuf, DesiredFile>, EngineError> {
+        let _prepare = nucleus::performance::Span::new("file-sync-export-prepare-await");
         let paths = desired_paths(dir, matched, format.extension());
         if format == FileFormat::Markdown {
             return Ok(paths
@@ -937,11 +938,7 @@ impl Engine {
 
         let uids: Vec<String> = matched.iter().map(|r| r.uid.clone()).collect();
         let assertions = store::assertions::for_subjects(&self.store.pool, &uids).await?;
-        let concept_names: HashMap<String, String> = store::concepts::list_all(&self.store.pool)
-            .await?
-            .into_iter()
-            .map(|c| (c.uid.clone(), c.uid))
-            .collect();
+        let concept_uids = store::concepts::identities(&self.store.pool).await?;
         let mut object_uids: Vec<String> = assertions
             .iter()
             .filter_map(|a| a.object_uid.clone())
@@ -963,10 +960,18 @@ impl Engine {
                 .or_default()
                 .push(row);
         }
+        let by_uid = {
+            let _index = nucleus::performance::Span::new("file-sync-export-index");
+            let mut index = HashMap::new();
+            for record in matched {
+                index.entry(record.uid.as_str()).or_insert(record);
+            }
+            index
+        };
 
         let mut out = HashMap::new();
         for (path, (uid, body)) in paths {
-            let Some(record) = matched.iter().find(|r| r.uid == uid) else {
+            let Some(record) = by_uid.get(uid.as_str()).copied() else {
                 continue;
             };
             let lines = by_subject
@@ -975,10 +980,11 @@ impl Engine {
                 .unwrap_or(&[])
                 .iter()
                 .map(|row| crate::lingua_file::Line {
-                    predicate: concept_names
-                        .get(&row.predicate_uid)
-                        .cloned()
-                        .unwrap_or_else(|| row.predicate.clone()),
+                    predicate: if concept_uids.contains(&row.predicate_uid) {
+                        row.predicate_uid.clone()
+                    } else {
+                        row.predicate.clone()
+                    },
                     identity: record.identity_predicate_uid.as_deref()
                         == Some(row.predicate_uid.as_str()),
                     object: row
@@ -992,7 +998,8 @@ impl Engine {
                     unit: row
                         .unit_uid
                         .as_ref()
-                        .and_then(|unit| concept_names.get(unit).cloned()),
+                        .filter(|unit| concept_uids.contains(unit.as_str()))
+                        .cloned(),
                 })
                 .collect();
             let quantity = {
@@ -1005,7 +1012,8 @@ impl Engine {
                         record
                             .unit_uid
                             .as_ref()
-                            .and_then(|unit| concept_names.get(unit).cloned()),
+                            .filter(|unit| concept_uids.contains(unit.as_str()))
+                            .cloned(),
                     ))
                 }
             };
@@ -1032,6 +1040,7 @@ impl Engine {
         projection: &crate::lingua_file::Projection,
         pending: &HashSet<String>,
     ) -> Result<Result<(), String>, EngineError> {
+        let _validation = nucleus::performance::Span::new("file-sync-link-validation-await");
         for line in &projection.assertions {
             if store::concepts::resolve(&self.store.pool, &line.predicate)
                 .await?
@@ -1053,9 +1062,7 @@ impl Engine {
             }
             if let Some(link) = &line.object {
                 if !pending.contains(&link.uid)
-                    && store::records::get(&self.store.pool, &link.uid)
-                        .await?
-                        .is_none()
+                    && !store::records::exists(&self.store.pool, &link.uid).await?
                 {
                     return Ok(Err(format!(
                         "[[{}|{}]] points at no Record here — a link is its uid, never its title, \
@@ -1073,12 +1080,13 @@ impl Engine {
         body: &str,
         pending: &HashSet<String>,
     ) -> Result<Result<(), String>, EngineError> {
+        let _validation = nucleus::performance::Span::new("file-sync-link-validation-await");
         for mention in crate::body_links::mentions(body) {
             let Some(uid) = mention.uid else {
                 continue;
             };
             if !pending.contains(&uid)
-                && store::records::get(&self.store.pool, &uid).await?.is_none()
+                && !store::records::exists(&self.store.pool, &uid).await?
             {
                 return Ok(Err(format!(
                     "[[{}|{uid}]] in the body points at no Record here — a link is its uid, \

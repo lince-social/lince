@@ -270,21 +270,18 @@ async fn main() {
             .query_filtered::<Entity, With<Window>>()
             .single(app.world())
             .unwrap();
-        app.world_mut().trigger(bevy::picking::events::Pointer::new(
-            bevy::picking::pointer::PointerId::Mouse,
-            bevy::picking::pointer::Location {
+        app.world_mut().trigger(PointerDrag {
+            entity: viewport,
+            pointer: Pointer::new(bevy::picking::pointer::PointerId::Mouse, bevy::picking::pointer::Location {
                 target: RenderTarget::Window(bevy::window::WindowRef::Entity(window))
                     .normalize(None)
                     .unwrap(),
                 position: Vec2::ZERO,
-            },
-            bevy::picking::events::Drag {
-                button: bevy::picking::pointer::PointerButton::Primary,
+            }),
+            button: bevy::picking::pointer::PointerButton::Primary,
                 distance: Vec2::new(128.0, 0.0),
                 delta: Vec2::new(128.0, 0.0),
-            },
-            viewport,
-        ));
+        });
         app.world_mut().flush();
         step(&mut app);
         let mut input_completion = Vec::new();
@@ -362,23 +359,20 @@ async fn main() {
         settle(&mut app, 1);
         capture(&mut app, directory.join("map-providers-large.png"));
         let panel = app.world().get::<ChildOf>(query).unwrap().parent();
-        app.world_mut().trigger(bevy::picking::events::Pointer::new(
-            bevy::picking::pointer::PointerId::Mouse,
-            bevy::picking::pointer::Location {
+        app.world_mut().trigger(PointerScroll {
+            entity: query,
+            pointer: Pointer::new(bevy::picking::pointer::PointerId::Mouse, bevy::picking::pointer::Location {
                 target: RenderTarget::Window(bevy::window::WindowRef::Entity(window))
                     .normalize(None)
                     .unwrap(),
                 position: Vec2::ZERO,
-            },
-            bevy::picking::events::Scroll {
-                unit: bevy::input::mouse::MouseScrollUnit::Pixel,
+            }),
+            unit: bevy::input::mouse::MouseScrollUnit::Pixel,
                 x: 0.0,
                 y: -10000.0,
                 phase: bevy::input::touch::TouchPhase::Moved,
                 hit: bevy::picking::backend::HitData::new(panel, 0.0, None, None),
-            },
-            query,
-        ));
+        });
         app.world_mut().flush();
         step(&mut app);
         assert!(app.world().get::<ScrollPosition>(panel).unwrap().0.y > 0.0);

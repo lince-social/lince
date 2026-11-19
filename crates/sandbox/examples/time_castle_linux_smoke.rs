@@ -238,7 +238,7 @@ fn exercise(world: &mut World) {
     }
     if world.resource::<Trial>().frame == 10 {
         if let Some(adapter) = world.get_resource::<bevy::render::renderer::RenderAdapterInfo>() {
-            println!("ADAPTER {:?}", adapter.0);
+            println!("ADAPTER {:?}", &**adapter);
         }
         let root = world
             .query_filtered::<Entity, With<BoxRoot>>()

@@ -12,6 +12,7 @@ use lince_sandbox::{
 };
 
 #[derive(Resource, Clone, Default, bevy::render::extract_resource::ExtractResource)]
+#[extract_app(bevy::render::RenderApp)]
 struct RenderCheck {
     hidden: bool,
 }
@@ -207,8 +208,7 @@ fn main() {
     let _guard = runtime.enter();
     let mut app = interface_app();
     app.add_plugins(bevy::render::extract_resource::ExtractResourcePlugin::<
-        RenderCheck,
-    >::default())
+        RenderCheck>::default())
         .init_resource::<RenderCheck>();
     app.get_sub_app_mut(bevy::render::RenderApp)
         .unwrap()

@@ -1,10 +1,12 @@
 use super::*;
+use crate::host::performance::{self, Count, Stage as PerfStage};
 use crate::native::{
     actions::{Action, ActionButton},
     edit_mode::label,
     tokens::Token,
 };
 use bevy::text::EditableText;
+use std::{collections::HashSet, sync::Arc};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Stage {
@@ -20,7 +22,7 @@ enum Stage {
 #[derive(Component)]
 pub(super) struct Form {
     area: Entity,
-    organ: String,
+    organ: Arc<str>,
     canvas: bool,
     title: Entity,
     status: Entity,
@@ -185,6 +187,7 @@ pub(super) fn form(world: &mut World, parent: Entity, area: Entity, organ: &str,
         retry,
         stage: None,
     });
+    performance::count(Count::RecordLoginFormsCreated);
     refresh(world, entity);
 }
 
@@ -208,6 +211,10 @@ fn stage(state: &State) -> Stage {
     }
 }
 
+fn is_organ(source: &Source, organ: &str) -> bool {
+    matches!(source, Source::Organ(current) if current == organ)
+}
+
 fn refresh(world: &mut World, entity: Entity) {
     let Some(form) = world.get::<Form>(entity) else {
         return;
@@ -225,14 +232,9 @@ fn refresh(world: &mut World, entity: Entity) {
         .get_resource::<Runtime>()
         .and_then(|runtime| runtime.areas.get(&area));
     let current = state.map_or(Stage::Stopped, stage);
-    let message = state
-        .map_or("Start this Protein to connect.", |state| {
-            state.status.as_str()
-        })
-        .to_owned();
-    if previous != Some(current) && !matches!(current, Stage::Locked | Stage::SigningIn) {
-        clear_passwords(world, area);
-    }
+    let message = state.map_or("Start this Protein to connect.", |state| {
+        state.status.as_str()
+    });
     let heading = match current {
         Stage::Connecting => "Connecting to Organ",
         Stage::Locked => "Protein locked · log in",
@@ -242,14 +244,27 @@ fn refresh(world: &mut World, entity: Entity) {
         Stage::Disconnected => "Protein locked · disconnected",
         Stage::Stopped => "Protein stopped",
     };
-    world
-        .get_mut::<Text>(title)
-        .unwrap()
-        .set_if_neq(Text::new(heading));
-    world
-        .get_mut::<Text>(status)
-        .unwrap()
-        .set_if_neq(Text::new(message));
+    let message_changed = if title == status {
+        heading != message
+    } else {
+        world
+            .get::<Text>(status)
+            .is_none_or(|text| text.0 != message)
+    };
+    let message = message_changed.then(|| message.to_owned());
+    if previous != Some(current) && !matches!(current, Stage::Locked | Stage::SigningIn) {
+        clear_passwords(world, area);
+    }
+    let mut text = world.get_mut::<Text>(title).unwrap();
+    if text.0 != heading {
+        text.0.clear();
+        text.0.push_str(heading);
+        performance::count(Count::RecordLoginLabelsUpdated);
+    }
+    if let Some(message) = message {
+        world.get_mut::<Text>(status).unwrap().0 = message;
+        performance::count(Count::RecordLoginLabelsUpdated);
+    }
     display(world, fields, current == Stage::Locked);
     display(
         world,
@@ -277,48 +292,87 @@ fn display(world: &mut World, entity: Entity, visible: bool) {
 }
 
 pub(super) fn sync(world: &mut World) {
-    let existing: Vec<_> = world
-        .query::<(Entity, &Form)>()
-        .iter(world)
-        .map(|(entity, form)| (entity, form.area, form.organ.clone(), form.canvas))
-        .collect();
-    for (entity, area, organ, canvas) in existing {
+    world
+        .run_system_cached(synchronize)
+        .expect("synchronize Protein login forms");
+}
+
+struct Preparation {
+    forms: QueryState<(Entity, &'static Form)>,
+    existing: Vec<(Entity, Entity, Arc<str>, bool)>,
+    missing: Vec<(Entity, String)>,
+    present: HashSet<Entity>,
+}
+
+impl FromWorld for Preparation {
+    fn from_world(world: &mut World) -> Self {
+        Self {
+            forms: world.query(),
+            existing: Vec::new(),
+            missing: Vec::new(),
+            present: HashSet::new(),
+        }
+    }
+}
+
+fn synchronize(world: &mut World, mut preparation: Local<Preparation>) {
+    let _sync = performance::Span::new(PerfStage::RecordLoginSync);
+    let Preparation {
+        forms,
+        existing,
+        missing,
+        present,
+    } = &mut *preparation;
+    existing.extend(
+        forms
+            .iter(world)
+            .map(|(entity, form)| (entity, form.area, form.organ.clone(), form.canvas)),
+    );
+    performance::add(Count::RecordLoginFormsPrepared, existing.len() as u64);
+    for (entity, area, organ, canvas) in existing.drain(..) {
         let config = configuration_ref(world, area);
-        if config.as_ref().is_none_or(|config| {
-            config.source != Source::Organ(organ) || (canvas && !config.enabled)
-        }) {
+        if config
+            .as_ref()
+            .is_none_or(|config| !is_organ(&config.source, &organ) || (canvas && !config.enabled))
+        {
             world.despawn(entity);
         } else {
             refresh(world, entity);
         }
     }
-    let owners: Vec<_> = world
-        .resource::<Runtime>()
-        .areas
-        .keys()
-        .copied()
-        .filter(|owner| world.get::<InfluenceArea>(*owner).is_some())
-        .filter_map(|owner| {
-            let config = configuration_ref(world, owner)?;
-            if !config.enabled {
-                return None;
-            }
-            let Source::Organ(organ) = &config.source else {
-                return None;
-            };
-            Some((owner, organ.clone()))
-        })
-        .collect();
-    let present: std::collections::HashSet<_> = world
-        .query::<&Form>()
-        .iter(world)
-        .filter(|form| form.canvas)
-        .map(|form| form.area)
-        .collect();
-    for (owner, organ) in owners {
-        if !present.contains(&owner) {
-            form(world, owner, owner, &organ, true);
-        }
+    present.extend(
+        forms
+            .iter(world)
+            .filter(|(_, form)| form.canvas)
+            .map(|(_, form)| form.area),
+    );
+    missing.extend(
+        world
+            .resource::<Runtime>()
+            .areas
+            .keys()
+            .copied()
+            .filter(|owner| world.get::<InfluenceArea>(*owner).is_some())
+            .filter(|owner| !present.contains(owner))
+            .filter_map(|owner| {
+                let config = configuration_ref(world, owner)?;
+                if !config.enabled {
+                    return None;
+                }
+                let Source::Organ(organ) = &config.source else {
+                    return None;
+                };
+                Some((owner, organ.clone()))
+            }),
+    );
+    for (owner, organ) in missing.drain(..) {
+        form(world, owner, owner, &organ, true);
+    }
+    present.clear();
+    if forms.iter(world).next().is_none() {
+        existing.shrink_to_fit();
+        missing.shrink_to_fit();
+        present.shrink_to_fit();
     }
 }
 
@@ -347,7 +401,7 @@ fn submit(world: &mut World, entity: Entity) -> Result<(), String> {
     if state
         .applied
         .as_ref()
-        .is_none_or(|config| !config.enabled || config.source != Source::Organ(form.organ.clone()))
+        .is_none_or(|config| !config.enabled || !is_organ(&config.source, &form.organ))
     {
         return Err("The selected Organ changed. Open its login form again.".into());
     }
@@ -372,13 +426,13 @@ impl Action for Command {
         let Some(root) = world.get::<ChildOf>(target).map(ChildOf::parent) else {
             return;
         };
-        let Some(mut config) = configuration(world, area) else {
+        let Some(config) = configuration_ref(world, area) else {
             return;
         };
         if !crate::native::area_panel::owns(world, root, target)
             || crate::native::laboratory::blocked(world, target)
             || crate::native::laboratory::suspended(world, target)
-            || config.source != Source::Organ(organ.clone())
+            || !is_organ(&config.source, &organ)
             || (matches!(self, Self::Login) && !config.enabled)
         {
             return;
@@ -393,6 +447,7 @@ impl Action for Command {
         }
         match self {
             Self::Reconnect => {
+                let mut config = config.clone();
                 config.enabled = true;
                 set_configuration(world, area, Some(config.clone()));
                 start(world, area, config);
@@ -438,10 +493,8 @@ pub(super) fn clear_passwords(world: &mut World, area: Entity) {
 
 pub(super) fn protect_passwords(forms: Query<&Form>, mut fields: Query<&mut EditableText>) {
     for form in &forms {
-        if let Ok(mut field) = fields.get_mut(form.password) {
-            field.pending_edits.retain(|edit| {
-                !matches!(edit, bevy::text::TextEdit::Copy | bevy::text::TextEdit::Cut)
-            });
+        if let Ok(field) = fields.get_mut(form.password) {
+            crate::controls::protect_password(field);
         }
     }
 }

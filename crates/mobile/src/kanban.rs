@@ -107,7 +107,7 @@ fn ancestor<T: Component>(
 }
 
 fn start(
-    mut event: On<Pointer<DragStart>>,
+    mut event: On<PointerDragStart>,
     handles: Query<&Handle>,
     parents: Query<&ChildOf>,
     state: Res<crate::app::Mobile>,
@@ -121,12 +121,12 @@ fn start(
     }
 }
 
-fn end(_: On<Pointer<DragEnd>>, mut dragging: ResMut<Dragging>) {
+fn end(_: On<PointerDragEnd>, mut dragging: ResMut<Dragging>) {
     dragging.0 = false;
 }
 
 fn drop_card(
-    mut event: On<Pointer<DragDrop>>,
+    mut event: On<PointerDragDrop>,
     handles: Query<&Handle>,
     destinations: Query<&Destination>,
     parents: Query<&ChildOf>,

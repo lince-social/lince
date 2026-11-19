@@ -702,7 +702,6 @@ fn update(world: &mut World) {
             let Ok(handle) = tokio::runtime::Handle::try_current() else {
                 continue;
             };
-            // The owned source/resource snapshot is needed only by a new session.
             let settings = world.get::<Settings>(sand).cloned().unwrap_or_default();
             let reply: Reply = Default::default();
             let output = reply.clone();

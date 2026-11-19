@@ -1,13 +1,25 @@
 use bevy::{
     prelude::*,
     text::{EditableText, EditableTextSystems, TextEdit},
+    ui_widgets::TextInput,
 };
 
 pub struct TextEditingPlugin;
 
 impl Plugin for TextEditingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(PostUpdate, normalize.before(EditableTextSystems));
+        app.add_observer(attach_widget)
+            .add_systems(PostUpdate, normalize.before(EditableTextSystems));
+    }
+}
+
+fn attach_widget(
+    event: On<Add<EditableText>>,
+    without_widget: Query<(), Without<TextInput>>,
+    mut commands: Commands,
+) {
+    if without_widget.contains(event.entity) {
+        commands.entity(event.entity).try_insert(TextInput);
     }
 }
 
@@ -47,7 +59,9 @@ mod tests {
 
     #[test]
     fn ime_replacement_obeys_result_length_filters_and_edit_order() {
-        let mut world = World::new();
+        let mut app = App::new();
+        app.add_plugins(TextEditingPlugin);
+        let world = app.world_mut();
         world.init_resource::<FontCx>();
         let font = Font::from_bytes(
             include_bytes!("../../../../institute/assets/fonts/Lato/Lato-Regular.ttf").to_vec(),
@@ -70,6 +84,8 @@ mod tests {
         });
         input.queue_edit(TextEdit::ImeCommit { value: "0".into() });
         let entity = world.spawn(input).id();
+        world.flush();
+        assert!(world.get::<TextInput>(entity).is_some());
         world.run_system_once(normalize).unwrap();
         world.run_system_once(bevy::text::apply_text_edits).unwrap();
         assert_eq!(world.get::<EditableText>(entity).unwrap().value(), "999");

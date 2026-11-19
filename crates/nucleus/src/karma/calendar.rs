@@ -21,7 +21,7 @@ const MAX_TZDB_VERSION_BYTES: usize = 64;
 pub struct CivilDateTime(NaiveDateTime);
 
 impl CivilDateTime {
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments, reason = "Calendar construction takes the explicit scheduling parameters")]
     pub fn new(
         year: i32,
         month: u32,

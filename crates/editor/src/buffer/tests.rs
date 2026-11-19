@@ -191,7 +191,7 @@ fn deferred_encoding_contains_only_the_requested_save_version() {
             text: "later".into(),
         })
         .unwrap();
-    let point = std::thread::spawn(move || point.encode()).join().unwrap();
+    let point = std::thread::spawn(move || point.encode()).join().unwrap().unwrap();
     let text = point.text.to_string().into();
     buffer.saved_with_text(point, text).unwrap();
     buffer.reconcile("saved\ntwo\ndisk\n").unwrap();
@@ -218,7 +218,7 @@ fn large_file_save_snapshots_preserve_newer_edits() {
             text: "later\n".into(),
         }])
         .unwrap();
-    buffer.saved_with_text(point.encode(), saved_text).unwrap();
+    buffer.saved_with_text(point.encode().unwrap(), saved_text).unwrap();
     assert!(buffer.is_dirty());
     assert!(buffer.observed().starts_with("first\ntext"));
     buffer.undo(false).unwrap();

@@ -3,7 +3,7 @@ use store::sqlx::{Column, Row, Sqlite, Transaction};
 
 async fn aggregate(
     tx: &mut Transaction<'_, Sqlite>,
-    sql: &str,
+    sql: impl store::sqlx::SqlSafeStr,
     now: i64,
 ) -> Result<Value, EngineError> {
     let row = store::sqlx::query(sql)
@@ -117,7 +117,7 @@ pub(super) async fn snapshot(
         COUNT(CASE WHEN json_extract(body,'$.blocked')=0 THEN 1 END) AS unblocks,
         COUNT(CASE WHEN typeof(context)<>'text' OR typeof(peer)<>'text' OR COALESCE(json_type(body,'$.blocked'),'') NOT IN ('true','false') OR COALESCE(json_type(body,'$.window'),'')<>'integer' OR json_extract(body,'$.window')<=0 THEN 1 END) AS unknown_metadata
         FROM ranked,clock WHERE position=1", admission::EFFECTIVE_DECISIONS);
-    let blocks = aggregate(tx, &blocks_sql, now).await?;
+    let blocks = aggregate(tx, store::sqlx::AssertSqlSafe(blocks_sql), now).await?;
     Ok(
         json!({"preparation":preparation,"copies":copies,"destinations":destinations,"pickup":pickup,"receive_failures":failures,"host_admissions":admissions,"key_retention":retention,"blocks":blocks}),
     )

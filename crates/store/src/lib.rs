@@ -124,7 +124,7 @@ pub async fn write_tx(
     };
     let mut tx = {
         let _begin = nucleus::performance::Span::new("store-write-begin-await");
-        sqlx::Transaction::begin(connection, Some("BEGIN IMMEDIATE".into())).await?
+        sqlx::Transaction::begin(connection, Some(sqlx::SqlSafeStr::into_sql_str("BEGIN IMMEDIATE"))).await?
     };
     let _sequence = nucleus::performance::Span::new("store-write-sequence-await");
     sqlx::query("UPDATE commit_sequence SET value = value + 1 WHERE id = 1")
@@ -197,18 +197,18 @@ impl Store {
     }
 
     pub async fn open(url: &str) -> Result<Store, StoreError> {
-        let pool = connect_file(url, sqlx::sqlite::SqliteSynchronous::Full, true, false).await?;
+        let pool = connect_file(url, true, false).await?;
         initialize(pool).await
     }
 
     pub async fn open_durable(url: &str) -> Result<Store, StoreError> {
-        let pool = connect_file(url, sqlx::sqlite::SqliteSynchronous::Full, true, true).await?;
+        let pool = connect_file(url, true, true).await?;
         migrate(&pool).await?;
         Ok(Store::from_pool(pool))
     }
 
     pub async fn open_existing_durable(url: &str) -> Result<Store, StoreError> {
-        let pool = connect_file(url, sqlx::sqlite::SqliteSynchronous::Full, false, true).await?;
+        let pool = connect_file(url, false, true).await?;
         Ok(Store::from_pool(pool))
     }
 
@@ -226,7 +226,6 @@ impl Store {
 
 async fn connect_file(
     url: &str,
-    synchronous: sqlx::sqlite::SqliteSynchronous,
     create_if_missing: bool,
     require_file_backed: bool,
 ) -> Result<SqlitePool, StoreError> {
@@ -234,7 +233,7 @@ async fn connect_file(
         .create_if_missing(create_if_missing)
         .foreign_keys(true)
         .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal)
-        .synchronous(synchronous)
+        .synchronous(sqlx::sqlite::SqliteSynchronous::Full)
         .busy_timeout(std::time::Duration::from_secs(10));
     let pool = SqlitePoolOptions::new()
         .max_connections(4)

@@ -84,7 +84,7 @@ struct Field {
     filter: Option<Arc<Matches>>,
     group: Option<GeneratedGroup>,
     arrangement: Option<Arc<Arrangement>>,
-    order: Option<(Source, Arc<Vec<String>>)>,
+    order: Option<crate::native::protein_area::ordering::Snapshot>,
 }
 
 impl PartialEq for Field {
@@ -295,6 +295,7 @@ fn refresh_fields(
         ),
     >,
     canvas: &mut QueryState<Entity, With<CanvasItem>>,
+    subscriptions: &mut crate::native::protein_area::ordering::Subscriptions,
 ) {
     world.init_resource::<Influences>();
     let mut runtime = world.remove_resource::<Influences>().unwrap();
@@ -355,6 +356,7 @@ fn refresh_fields(
         definitions_rebuilt,
     );
     fields.sort_by(|a, b| a.area.id.cmp(&b.area.id).then(a.entity.cmp(&b.entity)));
+    let mut orders = crate::native::protein_area::ordering::Lookup::new(world, subscriptions);
     for field in &mut fields {
         if field.activity != crate::native::influence_report::Outcome::Active {
             continue;
@@ -362,15 +364,15 @@ fn refresh_fields(
         let Some(sort) = &field.area.sorting else {
             continue;
         };
-        let ordered = crate::native::protein_area::ordered_records(world, field.entity);
+        let ordered = orders.get(field.entity);
         let mut sands: Vec<_> = items
             .iter(world)
             .filter(|(_, _, parent, member, record, binding)| {
                 parent.parent() == field.root
                     && member.0 == field.workspace
                     && field.matches(*record, *binding, true)
-                    && ordered.as_ref().is_none_or(|(source, _)| {
-                        binding.map_or(&Source::Local, |b| &b.source) == source
+                    && ordered.as_ref().is_none_or(|order| {
+                        binding.map_or(&Source::Local, |b| &b.source) == order.source
                     })
             })
             .map(|(entity, item, _, _, record, _)| {
@@ -382,7 +384,9 @@ fn refresh_fields(
             })
             .collect();
         sands.sort_by_key(|(entity, _, _)| *entity);
-        field.order = ordered;
+        field.order = ordered.map(|order| {
+            order.capture(runtime.field(field.entity).and_then(|old| old.order.as_ref()))
+        });
         if let Some(old) = runtime.field(field.entity)
             && (Arc::ptr_eq(&old.area, &field.area) || old.area == field.area)
             && old.filter == field.filter
@@ -410,8 +414,8 @@ fn refresh_fields(
         let ranks: HashMap<_, _> = field
             .order
             .as_ref()
-            .map(|(_, ids)| {
-                ids.iter()
+            .map(|order| {
+                order.1.iter()
                     .enumerate()
                     .map(|(i, uid)| (uid.as_str(), i))
                     .collect()
@@ -448,6 +452,7 @@ fn refresh_fields(
         }
         field.arrangement = Some(Arc::new(arrangement));
     }
+    drop(orders);
     let living: std::collections::HashSet<_> = canvas.iter(world).collect();
     if runtime.fields != fields {
         runtime.indices = fields
@@ -464,14 +469,18 @@ fn refresh_fields(
             })
             .map(|(i, _)| i)
             .collect();
-        runtime.fields = fields;
         runtime.revision = runtime.revision.wrapping_add(1);
     }
+    runtime.fields = fields;
     runtime.cache.retain(|entity, _| living.contains(entity));
-    runtime.tracked = world
-        .get_resource::<crate::native::influence_report::Tracked>()
-        .map(|tracked| tracked.0.clone())
-        .unwrap_or_default();
+    if let Some(tracked) = world.get_resource::<crate::native::influence_report::Tracked>() {
+        if runtime.tracked != tracked.0 {
+            runtime.tracked.clone_from(&tracked.0);
+            nucleus::performance::add("influence-tracked-copies", 1);
+        }
+    } else {
+        runtime.tracked.clear();
+    }
     for (entity, cached) in &mut runtime.cache {
         if !runtime.tracked.contains(entity) {
             cached.trace = None;
@@ -852,6 +861,13 @@ pub(crate) fn update(world: &mut World) {
         .expect("update Area effects");
 }
 
+#[derive(Default)]
+struct SandPreparation {
+    entities: Vec<Entity>,
+    retained: std::collections::HashSet<Entity>,
+    stale: Vec<Entity>,
+}
+
 fn update_sands(
     world: &mut World,
     items: &mut QueryState<
@@ -870,84 +886,80 @@ fn update_sands(
         ),
     >,
     effects: &mut QueryState<Entity, Or<(With<AreaScale>, With<AreaForces>)>>,
+    mut preparation: Local<SandPreparation>,
 ) {
-    let sands: Vec<_> = items
-        .iter(world)
-        .map(|(entity, item, parent, member, record, binding, pinned)| {
-            (
-                entity,
-                *item,
-                parent.parent(),
-                member.0,
-                record.cloned(),
-                binding.cloned(),
-                pinned,
-            )
-        })
-        .collect();
-    let retained: std::collections::HashSet<_> = sands.iter().map(|(entity, ..)| *entity).collect();
-    let stale: Vec<_> = effects
-        .iter(world)
-        .filter(|entity| !retained.contains(entity))
-        .collect();
-    for entity in stale {
+    let _effects = nucleus::performance::Span::new("native-area-sand-effects");
+    let SandPreparation { entities, retained, stale } = &mut *preparation;
+    entities.extend(items.iter(world).map(|(entity, ..)| entity));
+    retained.extend(entities.iter().copied());
+    stale.extend(effects.iter(world).filter(|entity| !retained.contains(entity)));
+    for entity in stale.drain(..) {
         world.entity_mut(entity).remove::<(AreaScale, AreaForces)>();
     }
+    let count = entities.len();
+    let mut published = 0;
+    let mut removed = 0;
     world.resource_scope(|world, mut runtime: Mut<Influences>| {
         runtime.cache.retain(|entity, _| retained.contains(entity));
-        for (entity, item, root, workspace, record, binding, pinned) in sands {
+        for entity in entities.drain(..) {
+            let (_, item, parent, member, record, binding, pinned) =
+                items.get(world, entity).expect("current Area effect item");
+            let root = parent.parent();
+            let workspace = member.0;
             let active = crate::native::topology::holes::live(world, root, workspace) && !pinned;
             let scale = if active {
-                runtime.scale(
-                    root,
-                    workspace,
-                    item.position,
-                    record.as_ref(),
-                    binding.as_ref(),
-                )
+                runtime.scale(root, workspace, item.position, record, binding)
             } else {
                 1.0
             };
-            if scale == 1.0 {
-                world.entity_mut(entity).remove::<AreaScale>();
-            } else if world.get::<AreaScale>(entity) != Some(&AreaScale(scale)) {
-                world.entity_mut(entity).insert(AreaScale(scale));
-            }
+            let empty = AreaForces::default();
             let forces = if active {
-                runtime
-                    .forces(
-                        entity,
-                        root,
-                        workspace,
-                        item.position,
-                        record.as_ref(),
-                        binding.as_ref(),
-                    )
-                    .0
+                &runtime.calculate(entity, root, workspace, item.position, record, binding).forces
             } else {
                 runtime.forget(entity);
-                AreaForces::default()
+                &empty
             };
-            if crate::native::influence_report::tracked(world, entity) {
-                let report = runtime.report(
+            let remove_forces = record.is_none() && forces.0.is_empty();
+            let replacement = (!remove_forces && world.get::<AreaForces>(entity) != Some(forces))
+                .then(|| forces.clone());
+            let report = crate::native::influence_report::tracked(world, entity).then(|| {
+                runtime.report(
                     entity,
                     root,
                     workspace,
                     item.position,
-                    record.as_ref(),
-                    binding.as_ref(),
+                    record,
+                    binding,
                     pinned,
                     scale,
-                );
+                )
+            });
+            if scale == 1.0 {
+                if world.get::<AreaScale>(entity).is_some() {
+                    world.entity_mut(entity).remove::<AreaScale>();
+                }
+            } else if world.get::<AreaScale>(entity) != Some(&AreaScale(scale)) {
+                world.entity_mut(entity).insert(AreaScale(scale));
+            }
+            if let Some(report) = report {
                 crate::native::influence_report::store(world, entity, report);
             }
-            if record.is_none() && forces.0.is_empty() {
-                world.entity_mut(entity).remove::<AreaForces>();
-                continue;
-            }
-            if world.get::<AreaForces>(entity) != Some(&forces) {
+            if remove_forces {
+                if world.get::<AreaForces>(entity).is_some() {
+                    world.entity_mut(entity).remove::<AreaForces>();
+                    removed += 1;
+                }
+            } else if let Some(forces) = replacement {
                 world.entity_mut(entity).insert(forces);
+                published += 1;
             }
         }
     });
+    nucleus::performance::add("native-area-sands-prepared", count as u64);
+    nucleus::performance::add("native-area-forces-published", published);
+    nucleus::performance::add("native-area-forces-removed", removed);
+    retained.clear();
+    if count == 0 {
+        *preparation = SandPreparation::default();
+    }
 }

@@ -42,10 +42,10 @@ fn visible_bounds(canvas: &mut Presentation, entity: Entity) -> Option<Rect> {
     let node = world.get::<ComputedNode>(entity).unwrap();
     let mut bounds = Rect::from_center_size(center, node.size() * node.inverse_scale_factor());
     if let Some(clip) = world.get::<bevy::ui::CalculatedClip>(entity) {
-        bounds = bounds.intersect(Rect::from_corners(
-            clip.clip.min * node.inverse_scale_factor(),
-            clip.clip.max * node.inverse_scale_factor(),
-        ));
+        let scale = node.inverse_scale_factor();
+        let physical = Rect::from_corners(bounds.min / scale, bounds.max / scale);
+        let clipped = lince_interface::native::clipped_rect(physical, clip);
+        bounds = Rect::from_corners(clipped.min * scale, clipped.max * scale);
     }
     (bounds.size().min_element() > 0.0).then_some(bounds)
 }

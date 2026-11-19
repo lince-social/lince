@@ -63,9 +63,9 @@ fn modifier_input_moves_rotated_native_sands_resizes_cancels_and_keeps_normal_co
             )
             .unwrap();
             canvas.app.init_resource::<Clicks>().add_observer(
-                |event: On<Pointer<Press>>, mut clicks: ResMut<Clicks>| {
+                |event: On<PointerPress>, mut clicks: ResMut<Clicks>| {
                     if event.entity == event.original_event_target() {
-                        clicks.0.push((event.pointer_id, event.entity));
+                        clicks.0.push((event.pointer.id, event.entity));
                     }
                 },
             );

@@ -84,7 +84,7 @@ fn wikipedia(raw: &str, language: &str) -> Result<Archive, EngineError> {
             .map_err(|error| invalid(&format!("Invalid Wikipedia XML: {error}")))?
         {
             Event::Start(tag) => {
-                let name = String::from_utf8_lossy(tag.local_name().as_ref()).into_owned();
+                let name = tag.local_name().into_inner().to_owned();
                 if name == "page" {
                     fields.clear();
                     page_start = before;
@@ -98,17 +98,13 @@ fn wikipedia(raw: &str, language: &str) -> Result<Archive, EngineError> {
                 }
             }
             Event::Text(text) => {
-                fields.entry(path.join("/")).or_default().push_str(
-                    &text
-                        .xml10_content()
-                        .map_err(|error| invalid(&error.to_string()))?,
-                );
-            }
-            Event::CData(text) => {
                 fields
                     .entry(path.join("/"))
                     .or_default()
-                    .push_str(&text.decode().map_err(|error| invalid(&error.to_string()))?);
+                    .push_str(&text.xml10_content());
+            }
+            Event::CData(text) => {
+                fields.entry(path.join("/")).or_default().push_str(&text);
             }
             Event::GeneralRef(reference) => {
                 let field = fields.entry(path.join("/")).or_default();
@@ -118,10 +114,7 @@ fn wikipedia(raw: &str, language: &str) -> Result<Archive, EngineError> {
                 {
                     field.push(character)
                 } else {
-                    let entity = reference
-                        .decode()
-                        .map_err(|error| invalid(&error.to_string()))?;
-                    field.push_str(match entity.as_ref() {
+                    field.push_str(match &*reference {
                         "amp" => "&",
                         "lt" => "<",
                         "gt" => ">",
@@ -132,7 +125,7 @@ fn wikipedia(raw: &str, language: &str) -> Result<Archive, EngineError> {
                 }
             }
             Event::End(tag) => {
-                if tag.local_name().as_ref() == b"page" {
+                if tag.local_name().as_ref() == "page" {
                     let get = |suffix: &str| {
                         fields
                             .iter()

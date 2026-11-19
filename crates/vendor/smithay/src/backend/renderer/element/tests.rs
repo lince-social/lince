@@ -121,6 +121,8 @@ render_elements! {
 
 struct ImportMemRenderElement {}
 
+// These fixture implementations check the render_elements! macro's type bounds.
+#[allow(clippy::todo)]
 impl Element for ImportMemRenderElement {
     fn id(&self) -> &Id {
         todo!()
@@ -139,6 +141,7 @@ impl Element for ImportMemRenderElement {
     }
 }
 
+#[allow(clippy::todo)]
 impl<R> RenderElement<R> for ImportMemRenderElement
 where
     R: Renderer + ImportMem,
@@ -155,6 +158,7 @@ where
     }
 }
 
+#[allow(clippy::todo)]
 impl Element for Empty {
     fn id(&self) -> &Id {
         todo!()
@@ -177,6 +181,7 @@ impl Element for Empty {
     }
 }
 
+#[allow(clippy::todo)]
 impl<R> RenderElement<R> for Empty
 where
     R: Renderer,
@@ -199,6 +204,7 @@ struct TestRenderElement2<R> {
     _phantom: PhantomData<R>,
 }
 
+#[allow(clippy::todo)]
 impl<R> Element for TestRenderElement2<R>
 where
     R: Renderer,
@@ -224,6 +230,7 @@ where
     }
 }
 
+#[allow(clippy::todo)]
 impl<R> RenderElement<R> for TestRenderElement2<R>
 where
     R: Renderer,
@@ -245,6 +252,7 @@ struct TestRenderElement<'a, R> {
     _phantom: PhantomData<R>,
 }
 
+#[allow(clippy::todo)]
 impl<R> Element for TestRenderElement<'_, R>
 where
     R: Renderer,
@@ -270,6 +278,7 @@ where
     }
 }
 
+#[allow(clippy::todo)]
 impl<R> RenderElement<R> for TestRenderElement<'_, R>
 where
     R: Renderer,

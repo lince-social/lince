@@ -168,7 +168,7 @@
       "readiness": "disk ready baseline; held/failing writes are separate correctness controls",
       "storage": "private actual file-backed SQLite with current Full/WAL durability",
       "unsupported_limits": "record unsupported sizes explicitly without claiming a pass",
-      "adapter_status": "input/save correlation and integrated edit driver remain P102/P104; existing Record tests provide behavior building blocks, profile JSON tests are not substitutes",
+      "adapter_status": "P102 input/save correlation and real Fiote/Kanban field drivers are implemented; exact frozen paragraph/body-size/view coverage remains P134, and Laboratory exposure remains P104. Existing field and high-entropy fixtures do not establish complete S4 or physical acceptance.",
       "output_ids": [
         1,
         2
@@ -320,7 +320,7 @@
   "missing_setup": [
     "P134: broader finite cross-feature coverage beyond the existing complete mixed fixture; P104 Laboratory productization remains deferred",
     "P124: reconcile the actual populated daily desktop inventory against the frozen synthetic scenes",
-    "P67/P70/P153: complete consumer GPU/source-frame/physical-output correlation; existing native/export GPU and input/edit hooks are implemented",
+    "P67/P70/P153: complete consumer GPU/source-frame/physical-output correlation",
     "matched installed source-batch observation on both physical outputs; private fixture passes do not establish daily acceptance"
   ],
   "normal_families": [

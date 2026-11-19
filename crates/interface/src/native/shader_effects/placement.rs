@@ -38,11 +38,19 @@ pub(super) fn effective(
     binding: &RecordBinding,
     defaults: &FloatingSettings,
 ) -> FloatingSettings {
+    effective_ref(world, binding, defaults).clone()
+}
+
+pub(super) fn effective_ref<'a>(
+    world: &'a World,
+    binding: &RecordBinding,
+    defaults: &'a FloatingSettings,
+) -> &'a FloatingSettings {
     world
         .get::<crate::native::area::InfluenceArea>(binding.area)
         .and_then(|area| area.records.get(&binding.uid))
-        .and_then(|saved| saved.shader_placement.clone())
-        .unwrap_or_else(|| defaults.clone())
+        .and_then(|saved| saved.shader_placement.as_ref())
+        .unwrap_or(defaults)
 }
 
 pub(super) fn change(world: &mut World, owner: Entity, mutate: impl FnOnce(&mut FloatingSettings)) {
@@ -216,10 +224,14 @@ pub(super) fn extra_controls(
 }
 
 pub(super) fn distant(
-    world: &mut World,
+    world: &World,
     owner: Entity,
     record: Entity,
     settings: &FloatingSettings,
+    cameras: &mut QueryState<
+        (&'static Camera, &'static GlobalTransform),
+        With<crate::native::topology::presentation::WorldCamera>,
+    >,
 ) -> bool {
     if settings.distance == DistancePolicy::Live
         || world.get::<super::ProjectionDemand>(record).is_some()
@@ -239,9 +251,14 @@ pub(super) fn distant(
     {
         let point =
             (position - crate::native::topology::presentation::origin(world, root)).as_vec3();
-        if let Some((camera, transform)) = world.query_filtered::<(&Camera, &GlobalTransform), With<crate::native::topology::presentation::WorldCamera>>().iter(world).next() {
+        if let Some((camera, transform)) = cameras.iter(world).next() {
             let offset = transform.up().as_vec3() * settings.size * 0.5;
-            if let (Ok(top), Ok(bottom)) = (camera.world_to_viewport(transform, point + offset), camera.world_to_viewport(transform, point - offset)) { pixels = top.distance(bottom); }
+            if let (Ok(top), Ok(bottom)) = (
+                camera.world_to_viewport(transform, point + offset),
+                camera.world_to_viewport(transform, point - offset),
+            ) {
+                pixels = top.distance(bottom);
+            }
         }
     }
     let was_distant = world

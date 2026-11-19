@@ -2,6 +2,8 @@ use crate::native::{canvas::CanvasItem, workspace::WorkspaceMember};
 use bevy::{math::DVec2, prelude::*};
 use serde::{Deserialize, Serialize};
 
+pub(crate) mod editing;
+
 pub const MAX_AREAS: usize = 256;
 pub const MAX_POINTS: usize = 128;
 pub const MAX_RULES: usize = 16;
@@ -150,63 +152,7 @@ impl InfluenceArea {
     }
 
     pub fn validate(&self) -> bool {
-        let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeAreaValidation);
-        let size = DVec2::from_array(self.size);
-        self.records.len() <= 100_000
-            && self
-                .records
-                .iter()
-                .all(|(uid, state)| !uid.is_empty() && uid.len() <= 128 && state.valid())
-            && self.id.len() == 32
-            && self.id.bytes().all(|byte| byte.is_ascii_hexdigit())
-            && !self.name.trim().is_empty()
-            && self.name.chars().count() <= 80
-            && self.opacity.is_finite()
-            && (0.0..=1.0).contains(&self.opacity)
-            && DVec2::from_array(self.center).is_finite()
-            && size.is_finite()
-            && size.min_element() >= 1.0
-            && size.max_element() <= 100_000.0
-            && self.depth.is_finite()
-            && (1.0..=100_000.0).contains(&self.depth)
-            && match self.target {
-                AttractionTarget::Center => true,
-                AttractionTarget::Point(offset) => {
-                    DVec2::from_array(offset).is_finite()
-                        && (DVec2::from_array(self.center) + DVec2::from_array(offset)).is_finite()
-                }
-            }
-            && (0.0..=1_000_000.0).contains(&self.strength)
-            && self.reach.radius.is_finite()
-            && (0.0..=100_000.0).contains(&self.reach.radius)
-            && self.rules.len() <= MAX_RULES
-            && self.rules.iter().all(PropertyRule::validate)
-            && self
-                .sound
-                .as_ref()
-                .is_none_or(crate::native::sound_area::SoundArea::valid)
-            && self.changes.validate()
-            && self
-                .change_filter
-                .as_ref()
-                .is_none_or(crate::native::protein_area::Config::valid)
-            && self.scale.is_finite()
-            && (0.05..=20.0).contains(&self.scale)
-            && self.sorting.as_ref().is_none_or(|sort| {
-                sort.strength.is_finite() && (0.0..=1_000_000.0).contains(&sort.strength)
-            })
-            && self
-                .protein
-                .as_ref()
-                .is_none_or(crate::native::protein_area::Config::valid)
-            && self
-                .filter
-                .as_ref()
-                .is_none_or(crate::native::protein_area::Config::valid)
-            && match &self.shape {
-                AreaShape::Square | AreaShape::Circle => self.size[0] == self.size[1],
-                AreaShape::Polygon(points) => valid_polygon(points),
-            }
+        editing::valid(self, None)
     }
 
     pub fn contains(&self, point: DVec2) -> bool {

@@ -291,7 +291,11 @@ fn independent_sorting_steers_existing_sands_and_immunity_stops_it() {
     assert_eq!(world.query::<&CanvasItem>().iter(&world).count(), 3);
     assert!(world.get::<AreaForces>(sand).unwrap().total().y < 0.0);
     assert!(world.get::<AreaForces>(other).unwrap().total().y > 0.0);
-    let before = world.resource::<Influences>().fields[0].targets[&sand];
+    let before = world.resource::<Influences>().fields[0]
+        .arrangement
+        .as_ref()
+        .unwrap()
+        .targets[&sand];
     world
         .get_mut::<InfluenceArea>(owner)
         .unwrap()
@@ -302,7 +306,11 @@ fn independent_sorting_steers_existing_sands_and_immunity_stops_it() {
     update(&mut world);
     assert!(world.get::<AreaForces>(sand).unwrap().total().y > 0.0);
     assert_ne!(
-        world.resource::<Influences>().fields[0].targets[&sand],
+        world.resource::<Influences>().fields[0]
+            .arrangement
+            .as_ref()
+            .unwrap()
+            .targets[&sand],
         before
     );
     let mut shield = InfluenceArea::new(AreaShape::Square, DVec2::ZERO, DVec2::splat(100.0));

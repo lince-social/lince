@@ -10,6 +10,8 @@ use crate::{
 pub(crate) struct Outline;
 
 pub mod pointer;
+mod preparation;
+mod previews;
 
 #[derive(Resource, Default)]
 struct State(Option<Session>);
@@ -26,7 +28,7 @@ struct Session {
     saved: Option<focus::ReturnState>,
     delta: [f64; 2],
     slot: Option<DropSlot>,
-    previews: Vec<Entity>,
+    previews: previews::Previews,
     outline: Option<Entity>,
     basis: Workspace,
     proposed: Workspace,
@@ -151,7 +153,7 @@ pub fn begin_with_edges(
         parent: world.get::<TransientParent>(target).copied(),
         delta: [0.0; 2],
         slot: None,
-        previews: Vec::new(),
+        previews: default(),
         outline: None,
         proposed: basis.clone(),
         basis,
@@ -197,6 +199,8 @@ fn valid(world: &World, session: &Session) -> bool {
 }
 
 fn entities(world: &World, session: &Session) -> BTreeMap<PlacementId, Entity> {
+    let _entities = engine::performance::Span::new("desktop-manipulation-entities");
+    engine::performance::add("desktop-manipulation-entity-maps", 1);
     world
         .get::<Children>(session.root)
         .map(|children| {
@@ -211,124 +215,6 @@ fn entities(world: &World, session: &Session) -> BTreeMap<PlacementId, Entity> {
         .unwrap_or_default()
 }
 
-fn proposal(world: &World, session: &Session) -> Option<Proposal> {
-    if !valid(world, session) {
-        return None;
-    }
-    let current = model(world, session.root, session.workspace)?;
-    let (mut next, mut geometry) = session
-        .gesture
-        .propose(current, session.delta, session.slot)
-        .ok()?;
-    let mut spatial = session.spatial;
-    if !session.gesture.tiled() && next != *current {
-        let original = session.gesture.original();
-        let center = |geometry: Geometry| {
-            bevy::math::DVec2::from_array(std::array::from_fn(|axis| {
-                geometry.origin[axis] + geometry.size[axis] * 0.5
-            }))
-        };
-        let base = center(original);
-        let local = center(geometry) - base;
-        let resize = if session.operation == Manipulation::Resize {
-            spatial.rotation()
-                * bevy::math::DVec3::new(local.x * session.scale, 0.0, local.y * session.scale)
-                - bevy::math::DVec3::new(local.x, 0.0, local.y)
-        } else {
-            bevy::math::DVec3::ZERO
-        };
-        let restore = if session.maximized {
-            let offset = |size: [f64; 2]| {
-                spatial.rotation()
-                    * bevy::math::DVec3::new(
-                        (session.uv[0] - 0.5) * size[0] * session.scale,
-                        0.0,
-                        (session.uv[1] - 0.5) * size[1] * session.scale,
-                    )
-            };
-            spatial.position(session.displayed.position)
-                + offset(session.displayed.size.as_dvec2().to_array())
-                - spatial.position(base)
-                - offset(original.size)
-        } else {
-            bevy::math::DVec3::ZERO
-        };
-        let shift = resize + restore;
-        geometry.origin[0] += shift.x;
-        geometry.origin[1] += shift.z;
-        spatial.elevation += shift.y;
-        if !spatial.valid() {
-            return None;
-        }
-        next.set_free_geometry(session.gesture.id(), geometry)
-            .ok()?;
-    }
-    let entities = entities(world, session);
-    let offset = if next != *current {
-        session.parent.and_then(|parent| {
-            let parent_id = world.get::<Managed>(parent.0)?.id;
-            let mut baseline = current.clone();
-            let mut solution = baseline.solve(session.bounds, session.bounds).ok()?;
-            transients::place(
-                world,
-                &entities,
-                &mut baseline,
-                &mut solution,
-                session.bounds,
-            );
-            let parent_bounds = solution
-                .items
-                .iter()
-                .find(|item| item.id == parent_id)?
-                .rectangle;
-            Some(transients::Placement {
-                parent: parent.0,
-                offset: bevy::math::DVec2::from_array(std::array::from_fn(|axis| {
-                    geometry.origin[axis] + geometry.size[axis] * 0.5
-                        - parent_bounds.origin()[axis]
-                        - parent_bounds.size()[axis] * 0.5
-                })),
-            })
-        })
-    } else {
-        None
-    };
-    let mut solution = next.solve(session.bounds, session.bounds).ok()?;
-    transients::place_with(
-        world,
-        &entities,
-        &mut next,
-        &mut solution,
-        session.bounds,
-        offset.map(|offset| (session.target, offset)),
-    );
-    let offset = offset.and_then(|mut placement| {
-        let parent_id = world.get::<Managed>(placement.parent)?.id;
-        let parent = solution
-            .items
-            .iter()
-            .find(|item| item.id == parent_id)?
-            .rectangle;
-        let child = solution
-            .items
-            .iter()
-            .find(|item| item.id == session.gesture.id())?
-            .rectangle;
-        placement.offset = bevy::math::DVec2::from_array(std::array::from_fn(|axis| {
-            child.origin()[axis] + child.size()[axis] * 0.5
-                - parent.origin()[axis]
-                - parent.size()[axis] * 0.5
-        }));
-        Some(placement)
-    });
-    Some(Proposal {
-        model: next,
-        solution,
-        placement: offset,
-        spatial,
-    })
-}
-
 fn canvas(item: &crate::layout::desktop::SolvedItem, solution: &Solution) -> CanvasItem {
     CanvasItem {
         position: bevy::math::DVec2::from_array(std::array::from_fn(|axis| {
@@ -338,35 +224,6 @@ fn canvas(item: &crate::layout::desktop::SolvedItem, solution: &Solution) -> Can
         })),
         size: bevy::math::DVec2::from_array(item.rectangle.size()).as_vec2(),
     }
-}
-
-fn changed(world: &World, session: &Session, proposed: &Workspace, solution: &Solution) -> BTreeSet<PlacementId> {
-    let Some(mut baseline) = model(world, session.root, session.workspace).cloned() else {
-        return BTreeSet::new();
-    };
-    let Ok(mut previous) = baseline.solve(session.bounds, session.bounds) else {
-        return BTreeSet::new();
-    };
-    transients::place(
-        world,
-        &entities(world, session),
-        &mut baseline,
-        &mut previous,
-        session.bounds,
-    );
-    solution
-        .items
-        .iter()
-        .filter(|item| {
-            previous
-                .items
-                .iter()
-                .find(|other| other.id == item.id)
-                .is_none_or(|other| other.rectangle != item.rectangle)
-                || baseline.compact_viewport(item.id, session.bounds, &previous) != proposed.compact_viewport(item.id, session.bounds, solution)
-        })
-        .map(|item| item.id)
-        .collect()
 }
 
 fn clear_outline(world: &mut World, session: &mut Session) {
@@ -381,12 +238,7 @@ fn clear(world: &mut World, session: &mut Session) {
     if let Ok(mut target) = world.get_entity_mut(session.target) {
         target.remove::<SpatialPreview>();
     }
-    for entity in session.previews.drain(..) {
-        if let Ok(mut entity) = world.get_entity_mut(entity) {
-            entity.remove::<ItemPreview>();
-            entity.remove::<CompactViewportPreview>();
-        }
-    }
+    session.previews.clear(world);
     clear_outline(world, session);
 }
 
@@ -420,6 +272,7 @@ pub fn cancel(world: &mut World) {
 }
 
 pub fn propose(world: &mut World, delta: [f64; 2], slot: Option<DropSlot>) -> bool {
+    let _preview = engine::performance::Span::new("desktop-manipulation-preview");
     let Some(mut session) = world
         .get_resource_mut::<State>()
         .and_then(|mut state| state.0.take())
@@ -428,20 +281,34 @@ pub fn propose(world: &mut World, delta: [f64; 2], slot: Option<DropSlot>) -> bo
     };
     session.delta = delta;
     session.slot = slot;
-    let Some(Proposal {
-        model: proposed,
-        solution,
-        spatial,
-        ..
-    }) = proposal(world, &session)
+    let prepared = (|| {
+        let sources = preparation::Sources::new(world, &session)?;
+        let proposal = sources.proposal()?;
+        let changed = if session.operation == Manipulation::Move && session.gesture.tiled() {
+            BTreeSet::new()
+        } else {
+            sources.changed(&proposal.model, &proposal.solution)
+        };
+        let basis = sources.current.clone();
+        Some((proposal, sources.into_entities(), changed, basis))
+    })();
+    let Some((
+        Proposal {
+            model: proposed,
+            solution,
+            spatial,
+            ..
+        },
+        entities,
+        changed,
+        basis,
+    )) = prepared
     else {
         restore(world, &mut session);
         return false;
     };
     session.proposed = proposed;
-    session.basis = model(world, session.root, session.workspace)
-        .unwrap()
-        .clone();
+    session.basis = basis;
     if spatial != session.spatial {
         if world
             .get::<SpatialPreview>(session.target)
@@ -454,8 +321,7 @@ pub fn propose(world: &mut World, delta: [f64; 2], slot: Option<DropSlot>) -> bo
     } else {
         world.entity_mut(session.target).remove::<SpatialPreview>();
     }
-    let entities = entities(world, &session);
-    let mut previews = Vec::new();
+    session.previews.begin();
     if session.operation == Manipulation::Move && session.gesture.tiled() {
         if delta != [0.0; 2]
             && slot.is_some_and(|slot| slot.anchor != session.gesture.id())
@@ -504,7 +370,6 @@ pub fn propose(world: &mut World, delta: [f64; 2], slot: Option<DropSlot>) -> bo
         }
     } else {
         clear_outline(world, &mut session);
-        let changed = changed(world, &session, &session.proposed, &solution);
         for item in &solution.items {
             if !changed.contains(&item.id) {
                 continue;
@@ -513,54 +378,66 @@ pub fn propose(world: &mut World, delta: [f64; 2], slot: Option<DropSlot>) -> bo
                 continue;
             };
             let desired = canvas(item, &solution);
-            let clip = CompactViewportPreview(session.proposed.compact_viewport(item.id, session.bounds, &solution).map(|size| bevy::math::DVec2::from_array(size).as_vec2()));
-            if world.get::<CompactViewportPreview>(entity) != Some(&clip) { world.entity_mut(entity).insert(clip); }
+            let clip = CompactViewportPreview(
+                session
+                    .proposed
+                    .compact_viewport(item.id, session.bounds, &solution)
+                    .map(|size| bevy::math::DVec2::from_array(size).as_vec2()),
+            );
+            if world.get::<CompactViewportPreview>(entity) != Some(&clip) {
+                world.entity_mut(entity).insert(clip);
+            }
             if world.get::<ItemPreview>(entity).is_none_or(|preview| {
                 preview.0.position != desired.position || preview.0.size != desired.size
             }) {
                 world.entity_mut(entity).insert(ItemPreview(desired));
             }
-            previews.push(entity);
+            session.previews.push(entity);
         }
     }
-    for entity in session
-        .previews
-        .drain(..)
-        .filter(|entity| !previews.contains(entity))
-    {
-        if let Ok(mut entity) = world.get_entity_mut(entity) {
-            entity.remove::<ItemPreview>();
-            entity.remove::<CompactViewportPreview>();
-        }
-    }
-    session.previews = previews;
+    session.previews.finish(world);
     world.resource_mut::<State>().0 = Some(session);
     true
 }
 
 pub fn commit(world: &mut World) -> bool {
+    let _commit = engine::performance::Span::new("desktop-manipulation-commit");
     let Some(mut session) = world
         .get_resource_mut::<State>()
         .and_then(|mut state| state.0.take())
     else {
         return false;
     };
-    let Some(Proposal {
-        model: next,
-        solution,
-        placement: offset,
-        spatial,
-    }) = proposal(world, &session)
+    let prepared = (|| {
+        let sources = preparation::Sources::new(world, &session)?;
+        let proposal = sources.proposal()?;
+        let unchanged = sources.current == &proposal.model;
+        let changed = if unchanged {
+            BTreeSet::new()
+        } else {
+            sources.changed(&proposal.model, &proposal.solution)
+        };
+        Some((proposal, sources.into_entities(), changed, unchanged))
+    })();
+    let Some((
+        Proposal {
+            model: next,
+            solution,
+            placement: offset,
+            spatial,
+        },
+        entities,
+        changed,
+        unchanged,
+    )) = prepared
     else {
         restore(world, &mut session);
         return false;
     };
-    if model(world, session.root, session.workspace) == Some(&next) {
+    if unchanged {
         restore(world, &mut session);
         return true;
     }
-    let entities = entities(world, &session);
-    let changed = changed(world, &session, &next, &solution);
     if spatial != session.spatial {
         world.entity_mut(session.target).insert(spatial);
     }

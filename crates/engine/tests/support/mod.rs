@@ -1,4 +1,4 @@
-#![allow(dead_code)]
+#![allow(dead_code, reason = "Integration binaries share these helpers and each selects a subset")]
 
 pub mod karma;
 
@@ -362,7 +362,7 @@ pub async fn settle_from_preview(
         .expect("settlement slice uid")
 }
 
-#[allow(dead_code)]
+#[allow(dead_code, reason = "Not every integration binary uses the shared rule fixture")]
 pub async fn declare_rule(
     engine: &Engine,
     target: &str,

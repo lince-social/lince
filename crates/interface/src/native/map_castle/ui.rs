@@ -1,6 +1,6 @@
 use super::*;
 use bevy::{
-    picking::events::{Click, Drag, DragEnd, DragStart, Scroll},
+    picking::events::{PointerClick, PointerDrag, PointerDragEnd, PointerDragStart, PointerScroll},
     render::render_resource::TextureFormat,
     ui::RelativeCursorPosition,
 };
@@ -1123,7 +1123,7 @@ pub(super) fn scope(world: &World, mut entity: Entity) -> Option<(Entity, u64)> 
     }
 }
 
-fn scroll(mut event: On<Pointer<Scroll>>, mut commands: Commands) {
+fn scroll(mut event: On<PointerScroll>, mut commands: Commands) {
     let viewport = event.entity;
     let amount = if event.unit == bevy::input::mouse::MouseScrollUnit::Line {
         f64::from(event.y)
@@ -1150,7 +1150,7 @@ fn scroll(mut event: On<Pointer<Scroll>>, mut commands: Commands) {
     event.propagate(false);
 }
 
-fn drag_start(mut event: On<Pointer<DragStart>>, mut commands: Commands) {
+fn drag_start(mut event: On<PointerDragStart>, mut commands: Commands) {
     let viewport = event.entity;
     commands.queue(move |world: &mut World| {
         let Some(point) = pointer(world, viewport) else {
@@ -1163,7 +1163,7 @@ fn drag_start(mut event: On<Pointer<DragStart>>, mut commands: Commands) {
     event.propagate(false);
 }
 
-fn drag(mut event: On<Pointer<Drag>>, mut commands: Commands) {
+fn drag(mut event: On<PointerDrag>, mut commands: Commands) {
     let viewport = event.entity;
     let delta = event.delta;
     commands.queue(move |world: &mut World| {
@@ -1186,11 +1186,11 @@ fn drag(mut event: On<Pointer<Drag>>, mut commands: Commands) {
     event.propagate(false);
 }
 
-fn drag_end(mut event: On<Pointer<DragEnd>>) {
+fn drag_end(mut event: On<PointerDragEnd>) {
     event.propagate(false);
 }
 
-fn click(mut event: On<Pointer<Click>>, mut commands: Commands) {
+fn click(mut event: On<PointerClick>, mut commands: Commands) {
     let viewport = event.entity;
     commands.queue(move |world: &mut World| {
         let Some(point) = pointer(world, viewport) else {

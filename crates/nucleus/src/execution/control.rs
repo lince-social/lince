@@ -444,8 +444,6 @@ impl Control {
         let mut state = self.0.lock().expect("execution control");
         let mut selected = Vec::new();
         let mut retained_bytes = 0u64;
-        // Schedules are immutable after admission. Keep the exact byte charge
-        // with its value, rather than serializing every survivor on each drain.
         let mut retained = std::mem::take(&mut state.schedules);
         for entry in retained.extract_if(.., |entry| {
             if entry.schedule.cell == cell {

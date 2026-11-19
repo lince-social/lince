@@ -2,7 +2,6 @@ use super::*;
 use serde::Deserialize;
 use std::ops::ControlFlow;
 
-/// The response metadata remains fresh even when layout data is shared.
 struct Snapshot<'a> {
     revision: i64,
     name: &'a str,
@@ -14,8 +13,6 @@ struct Snapshot<'a> {
     participants: usize,
 }
 
-/// Use the same native representation for installation and change detection.
-/// Canvas dimensions are f32 even when the authored layout stores f64 values.
 pub(super) fn canvas_item(geometry: &Geometry) -> crate::native::canvas::CanvasItem {
     crate::native::canvas::CanvasItem {
         position: DVec2::from_array(geometry.position),
@@ -82,9 +79,6 @@ struct ItemPlan {
     reuse_content: bool,
 }
 
-/// Prepare identity comparisons before any World mutation, without copying
-/// component payloads or the previous replica map. Sorted borrowed references
-/// retain the former any-match behavior if the previous layout repeats an identity.
 struct Reconciliation<'a> {
     ids: HashSet<&'a str>,
     removed: Vec<Entity>,
@@ -123,7 +117,6 @@ impl<'a> Reconciliation<'a> {
                         .take_while(|old| old.id == element.id)
                         .any(|old| {
                             old.component == element.component && {
-                                // Composition children use the outer size for placement.
                                 !matches!(element.component, LayoutComponent::Composition { .. })
                                     || old.geometry.size == element.geometry.size
                             }
@@ -319,8 +312,6 @@ fn apply(world: &mut World, owner: Entity, layout: Arc<Layout>, snapshot: Snapsh
         let view = world.get::<WorkspaceSync>(owner).unwrap();
         let field = view.policy;
         let old = view.policy_snapshot.as_ref();
-        // Editor replacement keeps the original semantic comparison; the
-        // retained baseline also follows representation-only response changes.
         let changed = old != Some(policy);
         let snapshot_changed =
             old.is_none_or(|old| !nucleus::json::same_value_encoding(old, policy));
@@ -332,7 +323,11 @@ fn apply(world: &mut World, owner: Entity, layout: Arc<Layout>, snapshot: Snapsh
                         .get::<EditableText>(field)
                         .filter(|text| !text.is_composing())
                         .map(EditableText::value);
-                    current.as_deref() == expected.as_deref()
+                    match (current, expected.as_deref()) {
+                        (Some(current), Some(expected)) => current == expected,
+                        (None, None) => true,
+                        _ => false,
+                    }
                 });
             world
                 .get_mut::<WorkspaceSync>(owner)

@@ -288,23 +288,20 @@ fn property_scroll_consumes_space_before_scrolling_its_area() {
         ))
         .id();
     for (delta, inner, outer) in [(-90.0, 50.0, 40.0), (200.0, 0.0, 0.0)] {
-        world.trigger(Pointer::new(
-            bevy::picking::pointer::PointerId::Mouse,
-            bevy::picking::pointer::Location {
+        world.trigger(PointerScroll {
+            entity: property,
+            pointer: Pointer::new(bevy::picking::pointer::PointerId::Mouse, bevy::picking::pointer::Location {
                 target: bevy::camera::NormalizedRenderTarget::Image(
                     Handle::<Image>::default().into(),
                 ),
                 position: Vec2::ZERO,
-            },
-            bevy::picking::events::Scroll {
-                unit: bevy::input::mouse::MouseScrollUnit::Pixel,
+            }),
+            unit: bevy::input::mouse::MouseScrollUnit::Pixel,
                 x: 0.0,
                 y: delta,
                 phase: bevy::input::touch::TouchPhase::Moved,
                 hit: bevy::picking::backend::HitData::new(root, 0.0, None, None),
-            },
-            property,
-        ));
+        });
         assert_eq!(world.get::<ScrollPosition>(property).unwrap().0.y, inner);
         assert_eq!(world.get::<LayoutRuntime>(area).unwrap().scroll.y, outer);
     }

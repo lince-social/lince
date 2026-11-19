@@ -577,8 +577,9 @@ pub async fn source_measures(
     }
     let rows = sqlx::query("SELECT a.predicate_uid,a.predicate_revision,a.object_uid,c.canonical_name,lc.lingua_uid AS vocabulary,CASE WHEN a.quantity_mantissa IS NULL THEN r.unit_uid ELSE a.unit_uid END AS unit_uid,CASE WHEN a.quantity_mantissa IS NULL THEN (SELECT MAX(revision) FROM concept_definition_version WHERE concept_uid=r.unit_uid) ELSE a.unit_revision END AS unit_revision,uc.lingua_uid AS unit_vocabulary FROM record_assertion a JOIN record r ON r.uid=a.subject_uid JOIN concept c ON c.uid=a.predicate_uid JOIN lingua_concept lc ON lc.concept_uid=c.uid LEFT JOIN lingua_concept uc ON uc.concept_uid=CASE WHEN a.quantity_mantissa IS NULL THEN r.unit_uid ELSE a.unit_uid END WHERE a.subject_uid=? AND a.retracted_at IS NULL AND r.deleted_at IS NULL AND lc.lingua_uid<>'g_local' AND (uc.lingua_uid IS NULL OR uc.lingua_uid<>'g_local') ORDER BY a.uid,lc.lingua_uid,uc.lingua_uid LIMIT 64")
         .bind(record).fetch_all(pool).await?;
-    let mut options = Vec::new();
     let mut connection = pool.acquire().await?;
+    let _span = nucleus::performance::Span::new("receipt-source-measure-preparation");
+    let mut options = Vec::new();
     for row in rows {
         let object: Option<String> = row.get("object_uid");
         if object
@@ -616,11 +617,17 @@ pub async fn source_measures(
             unit,
             object,
         };
+        let measure = json!(measure);
+        nucleus::performance::add("receipt-source-measures-projected", 1);
         if !options
             .iter()
-            .any(|option: &Value| option["measure"] == json!(measure))
+            .any(|option: &Value| option["measure"] == measure)
         {
-            options.push(json!({"label":row.get::<String,_>("canonical_name"),"measure":measure,"need_binding":null}));
+            options.push(Value::Object(serde_json::Map::from_iter([
+                ("label".into(), Value::String(row.get("canonical_name"))),
+                ("measure".into(), measure),
+                ("need_binding".into(), Value::Null),
+            ])));
         }
     }
     Ok(options)

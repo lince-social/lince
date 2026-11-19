@@ -438,3 +438,8 @@ optional = true
 [profile.release-with-debug]
 debug = 2
 inherits = "release"
+
+[lints.clippy]
+dbg_macro = "deny"
+todo = "deny"
+allow_attributes_without_reason = "deny"

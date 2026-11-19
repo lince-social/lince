@@ -4,7 +4,11 @@ mod catalog;
 mod tests;
 mod ui;
 
-use crate::native::{actions::Action, sand_panel as panel};
+use crate::native::{
+    actions::Action,
+    cell_bridge::{CellMessage, replies},
+    sand_panel as panel,
+};
 use bevy::prelude::*;
 use catalog::Catalog;
 use cell::{ClientMessage, ServerMessage};
@@ -1157,14 +1161,34 @@ pub(crate) fn sample_visible(world: &World, owner: Entity) -> bool {
     })
 }
 
+fn receive_batch(world: &mut World, owner: Entity, batch: &replies::Batch<'_>) {
+    let _route = nucleus::performance::Span::new("ontology-reply-routing");
+    let mut after = 0;
+    loop {
+        let view = world.get::<OntologySand>(owner).unwrap();
+        let ids = view
+            .ids
+            .iter()
+            .map(String::as_str)
+            .chain(view.pending.as_deref());
+        let Some(index) = batch.next(after, ids) else {
+            break;
+        };
+        nucleus::performance::add("ontology-reply-candidates", 1);
+        receive(world, owner, batch.message(index));
+        after = index + 1;
+    }
+}
+
 fn update(
     world: &mut World,
-    mut cursor: Local<bevy::ecs::message::MessageCursor<crate::native::cell_bridge::CellMessage>>,
+    mut cursor: Local<bevy::ecs::message::MessageCursor<CellMessage>>,
+    items: &mut QueryState<Entity, With<OntologySand>>,
+    mut owners: Local<Vec<Entity>>,
+    mut messages: Local<Vec<Arc<ServerMessage>>>,
 ) {
-    let owners: Vec<_> = world
-        .query_filtered::<Entity, With<OntologySand>>()
-        .iter(world)
-        .collect();
+    owners.extend(items.iter(world));
+    let had_owners = !owners.is_empty();
     let stale: Vec<_> = {
         let _identity = nucleus::performance::Span::new("ontology-subscription-identity");
         let active: HashSet<_> = owners
@@ -1196,13 +1220,16 @@ fn update(
             world.resource_mut::<Subscriptions>().0.remove(&id);
         }
     }
-    let messages: Vec<_> = cursor
-        .read(world.resource::<Messages<crate::native::cell_bridge::CellMessage>>())
-        .map(|message| message.0.clone())
-        .collect();
-    for owner in owners {
-        for message in messages.iter().map(|message| message.as_ref()) {
-            receive(world, owner, message);
+    replies::capture(
+        &mut cursor,
+        world.resource::<Messages<CellMessage>>(),
+        &mut messages,
+        had_owners,
+    );
+    let batch = (!messages.is_empty()).then(|| replies::Batch::new(&messages, owners.len() > 1));
+    for owner in owners.drain(..) {
+        if let Some(batch) = &batch {
+            receive_batch(world, owner, batch);
         }
         for (index, source) in SOURCES.iter().enumerate() {
             let view = world.get::<OntologySand>(owner).unwrap();
@@ -1272,5 +1299,10 @@ fn update(
         if world.get::<OntologySand>(owner).unwrap().dirty {
             ui::render(world, owner);
         }
+    }
+    drop(batch);
+    messages.clear();
+    if !had_owners {
+        *owners = Vec::new();
     }
 }

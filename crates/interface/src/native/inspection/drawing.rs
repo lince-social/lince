@@ -179,8 +179,6 @@ pub(super) fn apply(world: &mut World, next: &mut Vec<Mark>) {
                 changed = true;
             }
         }
-        // Keep both buffers for the next preparation pass; no stored mark is
-        // cloned and a moving outline cannot reset unrelated text layouts.
         std::mem::swap(&mut drawing.marks, next);
         next.clear();
         if changed && let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {

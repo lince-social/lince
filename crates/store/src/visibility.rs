@@ -221,6 +221,42 @@ pub async fn hidden_records_from_organ(
     .collect())
 }
 
+pub async fn hidden_records_from_organs(
+    pool: &SqlitePool,
+    organs: &[&str],
+) -> Result<std::collections::HashMap<String, Vec<HiddenRecordRow>>, StoreError> {
+    let mut output = std::collections::HashMap::<String, Vec<HiddenRecordRow>>::new();
+    if organs.is_empty() {
+        return Ok(output);
+    }
+    let selected =
+        serde_json::to_string(organs).map_err(|error| StoreError::Protocol(error.to_string()))?;
+    let rows = sqlx::query(
+        "SELECT v.subject_uid, v.target_uid AS uid,
+                COALESCE(r.head, '') AS head, r.slug AS slug
+         FROM visibility_rule v
+         LEFT JOIN record r ON r.uid = v.target_uid
+         WHERE v.subject_kind = 'organ'
+           AND v.subject_uid IN (SELECT value FROM json_each(?))
+           AND v.grant_level = 'hidden'
+         ORDER BY v.subject_uid, head, uid",
+    )
+    .bind(selected)
+    .fetch_all(pool)
+    .await?;
+    for row in rows {
+        output
+            .entry(row.get("subject_uid"))
+            .or_default()
+            .push(HiddenRecordRow {
+                uid: row.get("uid"),
+                head: row.get("head"),
+                slug: row.get("slug"),
+            });
+    }
+    Ok(output)
+}
+
 pub async fn records_of_op(
     pool: &SqlitePool,
     tbl: &str,

@@ -42,6 +42,11 @@ enum Reservations<'a> {
 
 pub struct Permit<'a>(Reservation<'a>);
 
+pub(crate) struct EditPermit<'a> {
+    permit: mpsc::Permit<'a, Request>,
+    sequence: &'a EditSequence,
+}
+
 enum Reservation<'a> {
     Ordered(mpsc::Permit<'a, Request>),
     Direct(mpsc::Permit<'a, ClientMessage>),
@@ -73,6 +78,27 @@ impl Permit<'_> {
             }),
             Reservation::Direct(permit) => permit.send(message),
         }
+    }
+}
+
+impl EditPermit<'_> {
+    pub(crate) fn send(
+        self,
+        request: &engine::record_change::Request,
+        durable: Option<oneshot::Receiver<bool>>,
+    ) {
+        let message = ClientMessage::Act {
+            id: request.id.clone(),
+            action: engine::actions::Action::ChangeRecord {
+                request: request.clone(),
+            },
+        };
+        admitted(&message);
+        self.permit.send(Request {
+            message,
+            durable,
+            edit: Some((request.id.clone(), self.sequence.clone())),
+        });
     }
 }
 
@@ -165,13 +191,9 @@ impl Sender {
         &self,
         message: ClientMessage,
     ) -> Result<(), mpsc::error::TrySendError<ClientMessage>> {
-        let permit = match &self.0 {
-            Kind::Ordered(sender) => sender.try_reserve().map(Reservation::Ordered),
-            Kind::Direct(sender) => sender.try_reserve().map(Reservation::Direct),
-        };
-        match permit {
+        match self.try_reserve() {
             Ok(permit) => {
-                Permit(permit).send(message);
+                permit.send(message);
                 Ok(())
             }
             Err(mpsc::error::TrySendError::Full(())) => {
@@ -181,6 +203,14 @@ impl Sender {
                 Err(mpsc::error::TrySendError::Closed(message))
             }
         }
+    }
+
+    pub fn try_reserve(&self) -> Result<Permit<'_>, mpsc::error::TrySendError<()>> {
+        match &self.0 {
+            Kind::Ordered(sender) => sender.try_reserve().map(Reservation::Ordered),
+            Kind::Direct(sender) => sender.try_reserve().map(Reservation::Direct),
+        }
+        .map(Permit)
     }
 
     pub async fn send(
@@ -210,28 +240,27 @@ impl Sender {
         sequence: &EditSequence,
         durable: Option<oneshot::Receiver<bool>>,
     ) -> bool {
-        if sequence.cancelled() {
+        let Some(permit) = self.try_reserve_edit(sequence) else {
             return false;
+        };
+        permit.send(request, durable);
+        true
+    }
+
+    pub(crate) fn try_reserve_edit<'a>(
+        &'a self,
+        sequence: &'a EditSequence,
+    ) -> Option<EditPermit<'a>> {
+        if sequence.cancelled() {
+            return None;
         }
         let Kind::Ordered(sender) = &self.0 else {
-            return false;
+            return None;
         };
-        let Ok(permit) = sender.try_reserve() else {
-            return false;
-        };
-        let message = ClientMessage::Act {
-            id: request.id.clone(),
-            action: engine::actions::Action::ChangeRecord {
-                request: request.clone(),
-            },
-        };
-        admitted(&message);
-        permit.send(Request {
-            message,
-            durable,
-            edit: Some((request.id.clone(), sequence.clone())),
-        });
-        true
+        Some(EditPermit {
+            permit: sender.try_reserve().ok()?,
+            sequence,
+        })
     }
 }
 

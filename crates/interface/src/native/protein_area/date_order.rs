@@ -1,5 +1,37 @@
 use super::*;
+use crate::host::performance::{self, Count, Stage};
 use chrono::{Local, NaiveDate};
+use std::sync::{Arc, Weak};
+
+#[derive(Default)]
+pub(super) struct Prepared {
+    day: Option<NaiveDate>,
+    data: Weak<Vec<Value>>,
+    order: Weak<Vec<String>>,
+}
+
+impl Prepared {
+    fn rows_current(&self, day: NaiveDate, data: &Arc<Vec<Value>>) -> bool {
+        self.day == Some(day) && std::ptr::eq(self.data.as_ptr(), Arc::as_ptr(data))
+    }
+
+    fn order_current(&self, order: &Arc<Vec<String>>) -> bool {
+        std::ptr::eq(self.order.as_ptr(), Arc::as_ptr(order))
+    }
+
+    fn clear(&mut self) {
+        if self.day.take().is_some() {
+            self.data = Weak::new();
+            self.order = Weak::new();
+        }
+    }
+
+    fn remember(&mut self, day: NaiveDate, data: &Arc<Vec<Value>>, order: &Arc<Vec<String>>) {
+        self.day = Some(day);
+        self.data = Arc::downgrade(data);
+        self.order = Arc::downgrade(order);
+    }
+}
 
 #[derive(Resource, Default)]
 struct Alarm {
@@ -34,27 +66,58 @@ pub(super) fn sort(state: &mut State) {
         .as_ref()
         .is_some_and(|config| config.closest_end_date)
     {
+        state.ordering.clear();
         return;
     }
+    let _ordering = performance::Span::new(Stage::RecordDateOrder);
     let day = Local::now().date_naive();
-    if state.ordered_day == Some(day) && !state.dirty {
+    let rows_current = state.ordering.rows_current(day, &state.data);
+    if rows_current && state.ordering.order_current(&state.order) {
+        performance::count(Count::RecordDateOrderReuses);
         return;
     }
-    std::sync::Arc::make_mut(&mut state.data).sort_by_cached_key(|row| {
-        let (distance, date, uid) = key(row, day);
-        (distance, date, uid.to_owned())
-    });
-    let order: Vec<_> = state
-        .data
-        .iter()
-        .filter_map(|row| row["uid"].as_str().map(str::to_string))
-        .collect();
-    if state.order.as_ref() != &order {
-        state.order = std::sync::Arc::new(order);
+    state.ordering.clear();
+    if !rows_current && let Some(mut sources) = permutation(&state.data, day) {
+        performance::count(Count::RecordDateDataReorders);
+        let rows = Arc::make_mut(&mut state.data);
+        for start in 0..sources.len() {
+            let mut current = start;
+            let mut next = sources[current];
+            while next != start {
+                rows.swap(current, next);
+                sources[current] = current;
+                current = next;
+                next = sources[current];
+            }
+            sources[current] = current;
+        }
+    }
+    let order = {
+        let ids = state.data.iter().filter_map(|row| row["uid"].as_str());
+        (!ids.clone().eq(state.order.iter().map(String::as_str)))
+            .then(|| ids.map(str::to_owned).collect::<Vec<_>>())
+    };
+    if let Some(order) = order {
+        performance::add(Count::RecordDateOrderIdsCopied, order.len() as u64);
+        state.order = Arc::new(order);
         state.dirty = true;
         state.revision = state.revision.wrapping_add(1);
     }
-    state.ordered_day = Some(day);
+    state.ordering.remember(day, &state.data, &state.order);
+}
+
+fn permutation(rows: &[Value], day: NaiveDate) -> Option<Vec<usize>> {
+    performance::add(Count::RecordDateKeysPrepared, rows.len() as u64);
+    let mut ordered: Vec<_> = rows
+        .iter()
+        .enumerate()
+        .map(|(source, row)| (key(row, day), source))
+        .collect();
+    if ordered.windows(2).all(|pair| pair[0].0 <= pair[1].0) {
+        return None;
+    }
+    ordered.sort_unstable();
+    Some(ordered.into_iter().map(|(_, source)| source).collect())
 }
 
 pub(super) fn wake(world: &mut World) {

@@ -168,7 +168,7 @@ impl Fixture {
         }
     }
     async fn count(&self, table: &str) -> i64 {
-        store::sqlx::query_scalar(&format!("SELECT COUNT(*) FROM {table}"))
+        store::sqlx::query_scalar(store::sqlx::AssertSqlSafe(format!("SELECT COUNT(*) FROM {table}")))
             .fetch_one(&self.receiver.store.pool)
             .await
             .unwrap()

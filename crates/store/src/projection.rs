@@ -9,8 +9,6 @@ pub struct ManualInputs {
     pub work: std::collections::HashMap<String, serde_json::Value>,
 }
 
-/// Read a forecast with no execution sources from one consistent database view.
-/// Any execution, roster, effect or loan state keeps the isolated simulation path.
 pub async fn manual_inputs(pool: &SqlitePool) -> Result<Option<ManualInputs>, StoreError> {
     let mut transaction = pool.begin().await?;
     let revision = sqlx::query_scalar("SELECT revision FROM projection_source WHERE id = 1")
@@ -64,8 +62,6 @@ pub async fn manual_inputs(pool: &SqlitePool) -> Result<Option<ManualInputs>, St
     .await?;
     let work = crate::records::extension_rows(&mut *transaction, "work").await?;
     transaction.rollback().await?;
-    // The owned SQL rows retain the consistent view. Release the connection
-    // before decoding metadata and potentially large extension payloads.
     let records = records
         .into_iter()
         .map(crate::records::map_row)
@@ -82,9 +78,9 @@ pub async fn install(pool: &SqlitePool) -> Result<(), StoreError> {
     let tables: Vec<String> = sqlx::query_scalar("SELECT name FROM pragma_table_list WHERE schema = 'main' AND type = 'table' AND substr(name, 1, 7) <> 'sqlite_' AND substr(name, 1, 5) <> '_sqlx' AND substr(name, 1, 11) <> 'projection_' ORDER BY name").fetch_all(pool).await?;
     let mut tx = crate::write_tx(pool).await?;
     for operation in ["INSERT", "UPDATE", "DELETE"] {
-        sqlx::query(&format!(
+        sqlx::query(sqlx::AssertSqlSafe(format!(
             "DROP TRIGGER IF EXISTS projection_{operation}_commit_sequence"
-        ))
+        )))
         .execute(&mut *tx)
         .await?;
     }
@@ -144,9 +140,9 @@ pub async fn install(pool: &SqlitePool) -> Result<(), StoreError> {
                 table.as_str(),
                 "record_revision" | "record_extension" | "karma_schedule_cursor" | "peer_delivery"
             ) {
-                sqlx::query(&format!(
+                sqlx::query(sqlx::AssertSqlSafe(format!(
                     "DROP TRIGGER IF EXISTS \"projection_{operation}_{table}\""
-                ))
+                )))
                 .execute(&mut *tx)
                 .await?;
             }
@@ -155,7 +151,7 @@ pub async fn install(pool: &SqlitePool) -> Result<(), StoreError> {
             } else {
                 format!(" WHEN {}", conditions.join(" AND "))
             };
-            sqlx::query(&format!("CREATE TRIGGER IF NOT EXISTS \"projection_{operation}_{table}\" AFTER {operation} ON \"{table}\"{condition} BEGIN UPDATE projection_source SET revision = revision + 1 WHERE id = 1; END")).execute(&mut *tx).await?;
+            sqlx::query(sqlx::AssertSqlSafe(format!("CREATE TRIGGER IF NOT EXISTS \"projection_{operation}_{table}\" AFTER {operation} ON \"{table}\"{condition} BEGIN UPDATE projection_source SET revision = revision + 1 WHERE id = 1; END"))).execute(&mut *tx).await?;
         }
     }
     tx.commit().await
@@ -219,6 +215,43 @@ pub async fn read(
     context: &Context,
     now_ms: i64,
 ) -> Result<Option<Cached>, StoreError> {
+    read_content(store, context, now_ms, Content::All).await
+}
+
+pub async fn read_calendar(
+    store: &crate::Store,
+    context: &Context,
+    now_ms: i64,
+) -> Result<Option<(Status, Vec<Span>)>, StoreError> {
+    Ok(read_content(store, context, now_ms, Content::Calendar)
+        .await?
+        .map(|cached| (cached.status, cached.spans)))
+}
+
+pub async fn read_schedule(
+    store: &crate::Store,
+    context: &Context,
+    now_ms: i64,
+) -> Result<Option<(Status, Vec<Scheduled>)>, StoreError> {
+    Ok(read_content(store, context, now_ms, Content::Schedule)
+        .await?
+        .map(|cached| (cached.status, cached.schedule)))
+}
+
+#[derive(Clone, Copy)]
+enum Content {
+    All,
+    Calendar,
+    Schedule,
+}
+
+async fn read_content(
+    store: &crate::Store,
+    context: &Context,
+    now_ms: i64,
+    content: Content,
+) -> Result<Option<Cached>, StoreError> {
+    let _read = nucleus::performance::Span::new("projection-cache-read-await");
     let Some(identity) = store.execution_identity() else {
         return Ok(None);
     };
@@ -230,11 +263,23 @@ pub async fn read(
         tx.rollback().await?;
         return Ok(None);
     };
-    let span_rows = sqlx::query("SELECT payload FROM projection_span WHERE from_ms < ? AND until_ms > ? ORDER BY from_ms, id LIMIT ?")
-        .bind(context.window.until_ms).bind(context.window.from_ms).bind(MAX_SPANS as i64).fetch_all(&mut *tx).await?;
-    let schedule_rows = sqlx::query("SELECT payload FROM projection_schedule WHERE from_ms < ? AND ((until_ms IS NULL AND from_ms >= ?) OR until_ms > ?) ORDER BY from_ms, id LIMIT ?")
-        .bind(context.window.until_ms).bind(context.window.from_ms).bind(context.window.from_ms).bind(MAX_SPANS as i64).fetch_all(&mut *tx).await?;
+    let span_rows = if matches!(content, Content::All | Content::Calendar) {
+        nucleus::performance::add("projection-span-reads", 1);
+        sqlx::query("SELECT payload FROM projection_span WHERE from_ms < ? AND until_ms > ? ORDER BY from_ms, id LIMIT ?")
+            .bind(context.window.until_ms).bind(context.window.from_ms).bind(MAX_SPANS as i64).fetch_all(&mut *tx).await?
+    } else {
+        Vec::new()
+    };
+    let schedule_rows = if matches!(content, Content::All | Content::Schedule) {
+        nucleus::performance::add("projection-schedule-reads", 1);
+        sqlx::query("SELECT payload FROM projection_schedule WHERE from_ms < ? AND ((until_ms IS NULL AND from_ms >= ?) OR until_ms > ?) ORDER BY from_ms, id LIMIT ?")
+            .bind(context.window.until_ms).bind(context.window.from_ms).bind(context.window.from_ms).bind(MAX_SPANS as i64).fetch_all(&mut *tx).await?
+    } else {
+        Vec::new()
+    };
     tx.rollback().await?;
+    nucleus::performance::add("projection-span-rows", span_rows.len() as u64);
+    nucleus::performance::add("projection-schedule-rows", schedule_rows.len() as u64);
     let incomplete: Option<&str> = row.get("incomplete");
     let status = match incomplete {
         Some(incomplete) => Status::Incomplete {

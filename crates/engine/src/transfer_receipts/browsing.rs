@@ -140,7 +140,8 @@ impl Engine {
         } else {
             None
         };
-        let state = commands::result(&saved)?.data.unwrap()["receipt"]["state"].clone();
+        let state = commands::state(&saved.document);
+        nucleus::performance::add("receipt-state-only-projections", 1);
         Ok(ActionOutcome {
             data: Some(
                 json!({"receipt":{"record":uid,"version":version,"historical":true,"state":"verified_proof_view","document":{"kind":"receipt_proof","value":{"record":uid,"version":version,"hash":hash,"document_state":state,"checked_at":now.timestamp(),"header":header,"events":&events[offset..end],"from":offset,"total":events.len(),"next_before":next,"coverage":"Read-only page of an original saved document, verified with current identity and authority information. This page is not a portable receipt and cannot be imported as evidence. No quantities are added."}}}}),

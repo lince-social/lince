@@ -52,6 +52,8 @@ pub struct Target {
 }
 
 #[derive(Resource, Clone, Default, ExtractResource)]
+
+#[extract_app(bevy::render::RenderApp)]
 pub struct Scenes(pub HashMap<Entity, Target>);
 
 #[derive(Resource, Default)]
@@ -66,6 +68,8 @@ pub struct Rendered {
 }
 
 #[derive(Resource, Clone, Default, ExtractResource)]
+
+#[extract_app(bevy::render::RenderApp)]
 pub struct Readback(pub Arc<Mutex<lince_map::diagnostics::DeviceSnapshot>>);
 
 pub struct MapRendererPlugin;
@@ -128,7 +132,7 @@ fn draw(
             (
                 WgpuRenderer::new_with_device_and_texture(
                     device.wgpu_device().clone(),
-                    queue.0.as_ref().clone().into_inner(),
+                    (**queue).clone(),
                     Size::new(target.size[0], target.size[1]),
                 ),
                 0,

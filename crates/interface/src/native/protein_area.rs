@@ -10,10 +10,13 @@ mod history;
 mod local;
 mod login;
 mod model;
+pub(crate) mod ordering;
 pub(crate) mod placement;
+mod preparation;
 pub(crate) mod presentation;
 mod property_actions;
 pub(crate) mod record_layout;
+mod routing;
 mod rows;
 mod sessions;
 pub(crate) mod tests;
@@ -31,8 +34,8 @@ pub use model::{Binding, Config, OverflowMode, Source, SpawnPlacement};
 use serde_json::Value;
 use std::collections::{HashMap, VecDeque};
 pub(crate) use ui::Command as ProteinAction;
-pub(crate) use ui::controls;
 pub(crate) use ui::ConfigureProtein;
+pub(crate) use ui::controls;
 
 pub(crate) fn attach_field_history(world: &mut World, entity: Entity) {
     history::attach_text(world, entity);
@@ -279,7 +282,7 @@ struct State {
     login_pending: bool,
     status: String,
     data: std::sync::Arc<Vec<Value>>,
-    ordered_day: Option<chrono::NaiveDate>,
+    ordering: date_order::Prepared,
     order: std::sync::Arc<Vec<String>>,
     row_entities: HashMap<String, Entity>,
     groups: HashMap<(bool, String), Entity>,
@@ -780,6 +783,18 @@ pub(crate) fn auxiliary_subscribed(world: &mut World, source: &Source, message: 
     }
 }
 
+pub(crate) fn send_auxiliary(
+    world: &mut World,
+    source: &Source,
+    permit: crate::native::cell_bridge::Permit<'_>,
+    message: ClientMessage,
+) {
+    match source {
+        Source::Local => permit.send(message),
+        Source::Organ(organ) => sessions::send(world, organ, permit, message),
+    }
+}
+
 pub(crate) fn auxiliary_unsubscribe(world: &mut World, organ: &str, id: String) {
     sessions::unsubscribe(world, organ, id);
 }
@@ -996,106 +1011,20 @@ fn receive(world: &mut World, owner: Entity, message: impl std::borrow::Borrow<S
     mirror_editor(world, owner);
 }
 
-fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor<CellMessage>>) {
-    let _timing = crate::host::performance::Span::new(crate::host::performance::Stage::NativeRecordProjection);
+fn update(
+    world: &mut World,
+    mut preparation: Local<preparation::Preparation>,
+    mut filters: Local<filter::Preparation>,
+) {
+    let _timing = crate::host::performance::Span::new(
+        crate::host::performance::Stage::NativeRecordProjection,
+    );
     if !crate::native::laboratory::normal(world) {
         return;
     }
-    filter::maintain(world);
-    let editors: Vec<_> = world
-        .query_filtered::<(Entity, &QueryEditor), With<ProteinCastle>>()
-        .iter(world)
-        .map(|(entity, link)| (entity, link.0))
-        .collect();
-    for (editor, owner) in editors {
-        if crate::native::laboratory::blocked(world, owner) {
-            continue;
-        }
-        let draft = &world.get::<ProteinCastle>(editor).unwrap().draft;
-        if let Some(config) = configuration_ref(world, owner)
-            && &config.draft != draft
-        {
-            let mut config = config.clone();
-            config.draft = draft.clone();
-            config.enabled = false;
-            set_configuration(world, owner, Some(config));
-        }
-    }
-    let mut owners: Vec<_> = world
-        .query::<(Entity, &InfluenceArea)>()
-        .iter(world)
-        .filter(|(_, area)| area.protein.is_some())
-        .map(|(entity, _)| entity)
-        .collect();
-    owners.extend(
-        world
-            .query_filtered::<Entity, With<filter::Subscription>>()
-            .iter(world),
-    );
-    let configs: Vec<_> = owners
-        .into_iter()
-        .filter(|owner| !crate::native::laboratory::blocked(world, *owner))
-        .filter_map(|entity| {
-            let config = configuration_ref(world, entity)?;
-            let owner = world
-                .get::<filter::Subscription>(entity)
-                .map_or(entity, |subscription| subscription.0);
-            let enabled = config.enabled
-                && !world
-                    .get::<InfluenceArea>(owner)
-                    .is_some_and(|area| !area.enabled);
-            let state = world.resource::<Runtime>().areas.get(&entity);
-            let configured = state
-                .and_then(|state| state.configured.as_ref().or(state.applied.as_ref()))
-                .filter(|previous| previous.as_ref() == config)
-                .cloned()
-                .unwrap_or_else(|| std::sync::Arc::new(config.clone()));
-            let applied = if configured.enabled == enabled {
-                configured.clone()
-            } else {
-                state
-                    .filter(|state| {
-                        state
-                            .configured
-                            .as_ref()
-                            .is_some_and(|previous| std::sync::Arc::ptr_eq(previous, &configured))
-                    })
-                    .and_then(|state| state.applied.as_ref())
-                    .filter(|applied| applied.enabled == enabled)
-                    .cloned()
-                    .unwrap_or_else(|| {
-                        let mut config = configured.as_ref().clone();
-                        config.enabled = enabled;
-                        std::sync::Arc::new(config)
-                    })
-            };
-            Some((entity, configured, applied))
-        })
-        .collect();
-    let configured: std::collections::HashSet<_> =
-        configs.iter().map(|(owner, _, _)| *owner).collect();
-    let gone: Vec<_> = world
-        .resource::<Runtime>()
-        .areas
-        .keys()
-        .filter(|entity| {
-            world.get::<LaboratoryFeed>(**entity).is_none() && !configured.contains(*entity)
-        })
-        .copied()
-        .collect();
-    for entity in gone {
-        stop(world, entity);
-        let editors: Vec<_> = world
-            .query::<(Entity, &QueryEditor)>()
-            .iter(world)
-            .filter(|(_, editor)| editor.0 == entity)
-            .map(|(editor, _)| editor)
-            .collect();
-        for editor in editors {
-            world.despawn(editor);
-        }
-    }
-    for (owner, configured, config) in configs {
+    filters.maintain(world);
+    preparation.configure(world);
+    for (owner, configured, config) in preparation.configs.drain(..) {
         crate::native::full_record::window::restore(world, owner, &config);
         let previous = world
             .resource::<Runtime>()
@@ -1142,100 +1071,103 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
                 start(world, owner, config);
             }
         }
-        if let Some(state) = world.resource_mut::<Runtime>().areas.get_mut(&owner) {
-            state.configured = Some(configured);
-        }
-    }
-    let local: Vec<_> = cursor
-        .read(world.resource::<Messages<CellMessage>>())
-        .map(|message| message.0.clone())
-        .collect();
-    for message in local.iter().map(|message| message.as_ref()) {
-        observe(world, &Source::Local, message);
-    }
-    sessions::update(world);
-    let owners: Vec<_> = world
-        .resource::<Runtime>()
-        .areas
-        .keys()
-        .copied()
-        .filter(|owner| world.get::<LaboratoryFeed>(*owner).is_none())
-        .collect();
-    for owner in &owners {
-        let owner = *owner;
-        if world.resource::<Runtime>().areas[&owner]
-            .applied
-            .as_ref()
-            .is_some_and(|config| matches!(config.source, Source::Local))
+        if world
+            .resource::<Runtime>()
+            .areas
+            .get(&owner)
+            .is_some_and(|state| {
+                state
+                    .configured
+                    .as_ref()
+                    .is_none_or(|previous| !std::sync::Arc::ptr_eq(previous, &configured))
+            })
         {
-            for message in local.iter().map(|message| message.as_ref()) {
-                receive(world, owner, message);
-            }
+            world
+                .resource_mut::<Runtime>()
+                .areas
+                .get_mut(&owner)
+                .unwrap()
+                .configured = Some(configured);
         }
     }
+    preparation.receive(world);
     local::synchronize(world);
-    for owner in &owners {
-        let owner = *owner;
+    for &owner in &preparation.owners {
         let mut state = world
             .resource_mut::<Runtime>()
             .areas
             .remove(&owner)
             .unwrap();
-        let mut interrupted = Vec::new();
-        while local::sendable(&state) {
-            if let Some(message) = state.pending.pop_front() {
-                let sender = match state.remote.as_deref() {
-                    Some(organ) => sessions::sender(world, organ),
-                    None => world
-                        .get_non_send::<CellBridge>()
-                        .map(|bridge| bridge.outgoing.clone()),
-                };
-                let result = sender.map(|sender| sender.try_send(message.clone()));
-                match result {
-                    Some(Ok(())) => {
-                        if let Some(organ) = &state.remote {
-                            sessions::subscribed(world, organ, &message);
-                        }
-                    }
-                    Some(Err(tokio::sync::mpsc::error::TrySendError::Full(_))) => {
-                        state.pending.push_front(message);
-                        if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>()
-                        {
-                            wake.ring();
-                        }
-                        break;
-                    }
-                    _ => {
-                        state.ready = false;
-                        state.login = false;
-                        state.login_pending = false;
-                        state.status = "Connection closed".into();
-                        if !local::owns(&state) {
-                            state.data = Default::default();
-                            state.order = Default::default();
-                            state.pending.clear();
-                            state.dirty = true;
+        let interrupted = {
+            let _dispatch = crate::host::performance::Span::new(
+                crate::host::performance::Stage::RecordProjectionDispatch,
+            );
+            let mut interrupted = Vec::new();
+            while local::sendable(&state) {
+                if let Some(message) = state.pending.pop_front() {
+                    let sender = match state.remote.as_deref() {
+                        Some(organ) => sessions::sender(world, organ),
+                        None => world
+                            .get_non_send::<CellBridge>()
+                            .map(|bridge| bridge.outgoing.clone()),
+                    };
+                    let result = sender.as_ref().map(|sender| sender.try_reserve());
+                    match result {
+                        Some(Ok(permit)) => {
                             if let Some(organ) = &state.remote {
-                                sessions::disconnected(world, organ);
+                                sessions::send(world, organ, permit, message);
+                            } else {
+                                permit.send(message);
                             }
-                        } else {
-                            interrupted = local::interrupt(&mut state);
+                            crate::host::performance::count(
+                                crate::host::performance::Count::RecordProjectionRequestsMoved,
+                            );
                         }
-                        break;
+                        Some(Err(tokio::sync::mpsc::error::TrySendError::Full(()))) => {
+                            crate::host::performance::count(
+                                crate::host::performance::Count::RecordProjectionRequestDeferrals,
+                            );
+                            state.pending.push_front(message);
+                            if let Some(wake) =
+                                world.get_resource::<crate::native::wake::WakeSignal>()
+                            {
+                                wake.ring();
+                            }
+                            break;
+                        }
+                        _ => {
+                            state.ready = false;
+                            state.login = false;
+                            state.login_pending = false;
+                            state.status = "Connection closed".into();
+                            if !local::owns(&state) {
+                                state.data = Default::default();
+                                state.order = Default::default();
+                                state.pending.clear();
+                                state.dirty = true;
+                                if let Some(organ) = &state.remote {
+                                    sessions::disconnected(world, organ);
+                                }
+                            } else {
+                                interrupted = local::interrupt(&mut state);
+                            }
+                            break;
+                        }
                     }
+                } else {
+                    break;
                 }
-            } else {
-                break;
             }
-        }
+            interrupted
+        };
         date_order::sort(&mut state);
         world.resource_mut::<Runtime>().areas.insert(owner, state);
         local::failed(world, interrupted, "Connection closed");
     }
-    for owner in owners {
+    for &owner in &preparation.owners {
         rows::reconcile(world, owner);
     }
-    filter::publish(world);
+    filters.publish(world);
     date_order::wake(world);
     while let Some(message) = world.resource_mut::<Runtime>().outgoing.pop_front() {
         let Some(bridge) = world.get_non_send::<CellBridge>() else {
@@ -1250,6 +1182,7 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
     }
     login::sync(world);
     ui::statuses(world);
+    preparation.finish();
 }
 
 pub fn execute(
@@ -1513,6 +1446,9 @@ pub(crate) fn stop_editor(world: &mut World, editor: Entity) {
 }
 
 fn mirror_editor(world: &mut World, owner: Entity) {
+    let _presentation = crate::host::performance::Span::new(
+        crate::host::performance::Stage::RecordProjectionEditor,
+    );
     let editors: Vec<_> = world
         .query::<(Entity, &QueryEditor)>()
         .iter(world)
@@ -1531,6 +1467,9 @@ fn mirror_editor(world: &mut World, owner: Entity) {
             .as_ref()
             .and_then(|config| query(world, owner, config).ok());
         for editor in editors {
+            crate::host::performance::count(
+                crate::host::performance::Count::RecordProjectionEditorPublications,
+            );
             crate::native::protein_castle::publish_results(
                 world,
                 editor,
@@ -1614,40 +1553,4 @@ fn query(world: &World, entity: Entity, config: &Config) -> Result<protein::Prot
         }
         Ok(query)
     }
-}
-
-pub(crate) fn ordered_records(
-    world: &mut World,
-    owner: Entity,
-) -> Option<(Source, std::sync::Arc<Vec<String>>)> {
-    world
-        .run_system_cached_with(read_order, owner)
-        .expect("read Protein order")
-}
-
-fn read_order(
-    In(owner): In<Entity>,
-    world: &mut World,
-    subscriptions: &mut QueryState<(Entity, &'static filter::Subscription)>,
-) -> Option<(Source, std::sync::Arc<Vec<String>>)> {
-    let area = world.get::<InfluenceArea>(owner)?;
-    let (config, filter) = if let Some(config) = &area.filter {
-        (config, true)
-    } else {
-        (area.protein.as_ref()?, false)
-    };
-    let entity = if filter {
-        subscriptions
-            .iter(world)
-            .find(|(_, s)| s.0 == owner && !s.1)
-            .map(|(e, _)| e)
-    } else {
-        Some(owner)
-    };
-    let ids = entity
-        .and_then(|e| world.get_resource::<Runtime>()?.areas.get(&e))
-        .filter(|state| config.enabled && state.ready && state.applied.as_deref() == Some(config))
-        .map(|state| state.order.clone())
-        .unwrap_or_default();
-    Some((config.source.clone(), ids))
 }

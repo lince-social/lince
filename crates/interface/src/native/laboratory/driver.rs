@@ -110,7 +110,10 @@ fn fixture() -> (App, Entity, Entity, Entity, Entity) {
     .add_message::<WindowEvent>()
     .add_systems(PreUpdate, input_trace.before(InputSystems))
     .add_message::<bevy::window::Ime>()
-    .add_plugins(bevy::ui_widgets::EditableTextInputPlugin)
+    .add_plugins((
+        bevy::ui_widgets::TextInputPlugin,
+        crate::controls::editing::TextEditingPlugin,
+    ))
     .add_systems(
         PreUpdate,
         dispatch_focused_input::<KeyboardInput>

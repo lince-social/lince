@@ -1,5 +1,5 @@
 use sqlx::{Row, SqlitePool};
-use std::collections::{HashSet, VecDeque};
+use std::collections::HashSet;
 
 use crate::StoreError;
 
@@ -199,23 +199,12 @@ pub async fn descendants_including(
     pool: &SqlitePool,
     root_uid: &str,
 ) -> Result<Vec<String>, StoreError> {
-    let mut seen: HashSet<String> = HashSet::from([root_uid.to_string()]);
-    let mut queue: VecDeque<String> = VecDeque::from([root_uid.to_string()]);
-    let mut out = vec![root_uid.to_string()];
-    while let Some(current) = queue.pop_front() {
-        let children = sqlx::query("SELECT concept_uid FROM concept_parent WHERE parent_uid = ?")
-            .bind(&current)
-            .fetch_all(pool)
-            .await?;
-        for child in children {
-            let uid: String = child.get("concept_uid");
-            if seen.insert(uid.clone()) {
-                out.push(uid.clone());
-                queue.push_back(uid);
-            }
-        }
-    }
-    Ok(out)
+    hierarchy_on(
+        &mut *pool.acquire().await?,
+        root_uid,
+        HierarchyDirection::Descendants,
+    )
+    .await
 }
 
 pub async fn adopt(
@@ -315,6 +304,48 @@ pub async fn canonical_name(
     )
 }
 
+pub async fn canonical_names(pool: &SqlitePool) -> Result<Vec<(String, String)>, StoreError> {
+    let _names = nucleus::performance::Span::new("store-concept-names-await");
+    Ok(
+        sqlx::query_as("SELECT uid, canonical_name FROM concept ORDER BY canonical_name")
+            .fetch_all(pool)
+            .await?,
+    )
+}
+
+pub async fn identities(pool: &SqlitePool) -> Result<HashSet<String>, StoreError> {
+    let _identities = nucleus::performance::Span::new("store-concept-identities-await");
+    Ok(sqlx::query_scalar("SELECT uid FROM concept")
+        .fetch_all(pool)
+        .await?
+        .into_iter()
+        .collect())
+}
+
+pub async fn any_named(
+    pool: &SqlitePool,
+    concepts: &[String],
+    names: &[&str],
+) -> Result<bool, StoreError> {
+    let _names = nucleus::performance::Span::new("store-concept-name-match-await");
+    if concepts.is_empty() || names.is_empty() {
+        return Ok(false);
+    }
+    let concepts = serde_json::to_string(concepts)
+        .map_err(|error| sqlx::Error::Protocol(error.to_string()))?;
+    let names =
+        serde_json::to_string(names).map_err(|error| sqlx::Error::Protocol(error.to_string()))?;
+    Ok(sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM concept
+         WHERE uid IN (SELECT value FROM json_each(?))
+           AND canonical_name COLLATE BINARY IN (SELECT value FROM json_each(?)))",
+    )
+    .bind(concepts)
+    .bind(names)
+    .fetch_one(pool)
+    .await?)
+}
+
 pub async fn ancestors_including(
     pool: &SqlitePool,
     concept_uid: &str,
@@ -326,22 +357,58 @@ async fn ancestors_including_on(
     connection: &mut sqlx::SqliteConnection,
     concept_uid: &str,
 ) -> Result<Vec<String>, StoreError> {
-    let mut seen: HashSet<String> = HashSet::from([concept_uid.to_string()]);
-    let mut queue: VecDeque<String> = VecDeque::from([concept_uid.to_string()]);
-    let mut out = vec![concept_uid.to_string()];
-    while let Some(current) = queue.pop_front() {
-        let parents = sqlx::query("SELECT parent_uid FROM concept_parent WHERE concept_uid = ?")
-            .bind(&current)
-            .fetch_all(&mut *connection)
-            .await?;
-        for parent in parents {
-            let uid: String = parent.get("parent_uid");
-            if seen.insert(uid.clone()) {
-                out.push(uid.clone());
-                queue.push_back(uid);
+    hierarchy_on(connection, concept_uid, HierarchyDirection::Ancestors).await
+}
+
+enum HierarchyDirection {
+    Descendants,
+    Ancestors,
+}
+
+async fn hierarchy_on(
+    connection: &mut sqlx::SqliteConnection,
+    root_uid: &str,
+    direction: HierarchyDirection,
+) -> Result<Vec<String>, StoreError> {
+    let _hierarchy = nucleus::performance::Span::new("store-concept-hierarchy-await");
+    let sql = match direction {
+        HierarchyDirection::Descendants => {
+            "SELECT p.concept_uid
+             FROM json_each(?) AS frontier
+             JOIN concept_parent p ON p.parent_uid = frontier.value
+             ORDER BY frontier.key, p.concept_uid"
+        }
+        HierarchyDirection::Ancestors => {
+            "SELECT p.parent_uid
+             FROM json_each(?) AS frontier
+             JOIN concept_parent p ON p.concept_uid = frontier.value
+             ORDER BY frontier.key, p.parent_uid"
+        }
+    };
+    let mut seen = HashSet::from([root_uid.to_owned()]);
+    let mut out = vec![root_uid.to_owned()];
+    let mut start = 0;
+    while start < out.len() {
+        let end = out.len();
+        while start < end {
+            let batch_end = (start + 512).min(end);
+            let frontier = serde_json::to_string(&out[start..batch_end])
+                .map_err(|error| sqlx::Error::Protocol(error.to_string()))?;
+            let neighbours: Vec<String> = sqlx::query_scalar(sql)
+                .bind(frontier)
+                .fetch_all(&mut *connection)
+                .await?;
+            nucleus::performance::add("store-concept-hierarchy-batches", 1);
+            for uid in neighbours {
+                if !seen.contains(uid.as_str()) {
+                    seen.insert(uid.clone());
+                    out.push(uid);
+                }
             }
+            start = batch_end;
         }
     }
+    nucleus::performance::add("store-concept-hierarchy-nodes", out.len() as u64);
     Ok(out)
 }
 
@@ -427,7 +494,7 @@ pub async fn convert(
     let Some((numerator, denominator)) = conversion_ratio(pool, from_uid, to_uid).await? else {
         return Ok(None);
     };
-    #[allow(clippy::cast_precision_loss)]
+    #[allow(clippy::cast_precision_loss, reason = "This approximate conversion returns f64 and the exact API preserves precision")]
     Ok(Some(quantity * (numerator as f64) / (denominator as f64)))
 }
 

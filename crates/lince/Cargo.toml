@@ -38,10 +38,7 @@ lince-park = { path = "../park", optional = true }
 utils = { workspace = true, features = ["update-net"] }
 store = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread", "process", "time", "macros", "signal"] }
-serde = { workspace = true }
 serde_json = { workspace = true }
-dirs = { workspace = true }
-toml = { workspace = true }
 uuid = { workspace = true, features = ["v4"] }
 
 [build-dependencies]

@@ -331,8 +331,6 @@ fn policy(panel: &Panel) -> Result<Policy, String> {
     prepared_policy(panel).map(|policy| (*policy).clone())
 }
 
-// Only the authored rules are retained. Decisions still use the current
-// context, and saving still checks the current source and saved revision.
 fn prepared_policy(panel: &Panel) -> Result<Arc<Policy>, String> {
     panel
         .prepared_policy
@@ -786,8 +784,6 @@ fn apply(world: &mut World, entity: Entity, intent: Intent) {
             &mut panel.include
         }
     }
-    // Every rule/data mutation below is an explicit control action. View-only
-    // actions may discard this small cache, but idle reads never do.
     panel.prepared_policy.take();
     match intent {
         Intent::ChooseRecord => panel.choosing_record = !panel.choosing_record,
@@ -914,7 +910,6 @@ pub fn receive(world: &mut World, id: &str, result: Result<serde_json::Value, St
     });
 }
 
-/// Borrow a wire reply until an existing panel accepts its request ID.
 pub fn receive_ref(world: &mut World, id: &str, result: Result<&serde_json::Value, &str>) {
     receive_with(world, id, || {
         result

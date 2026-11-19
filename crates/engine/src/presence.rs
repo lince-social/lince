@@ -81,8 +81,6 @@ impl Selected<'_> {
 }
 
 impl State {
-    // Filter and deduplicate borrowed entries before copying their text. Callers
-    // share this ordering and expiry policy for both wire and local delivery.
     fn select<'a>(
         &'a mut self,
         local: &'a str,
@@ -181,8 +179,6 @@ impl Presence {
         let state = self.state.lock().expect("presence");
         let mut records = BTreeSet::new();
         for record in state.viewers.values().flatten() {
-            // Only the first sorted IDs can be requested on the wire. Keep
-            // that bounded prefix instead of sorting all viewer memberships.
             if records.len() < RECORD_LIMIT || records.last().is_some_and(|last| record < *last) {
                 records.insert(record);
                 if records.len() > RECORD_LIMIT {
@@ -300,8 +296,6 @@ impl Presence {
         cursors
     }
 
-    /// One short-lived snapshot for a refresh's subscribed Records. Delivery
-    /// still requires the caller's fresh Record and cursor-owner access checks.
     pub fn cursors_for<'a>(
         &self,
         records: impl IntoIterator<Item = &'a str>,

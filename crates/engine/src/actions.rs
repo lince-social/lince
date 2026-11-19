@@ -1880,18 +1880,20 @@ fn parse_rule_condition(
         }
         return Ok(None);
     };
-    nucleus::karma::Condition::parse(&source)
-        .map_err(|e| EngineError::Consequence(format!("that condition cannot be read: {e}")))?;
-    let gate = nucleus::karma::Gate::parse(gate.as_deref().unwrap_or("!=0"))
-        .map_err(|e| EngineError::Consequence(format!("that gate cannot be read: {e}")))?;
-    let carry = nucleus::karma::Carry::parse(carry.as_deref().unwrap_or("value"))
-        .map_err(|e| EngineError::Consequence(format!("that carry cannot be read: {e}")))?;
-    Ok(Some(store::recurrence::RuleCondition {
+    let mut condition = store::recurrence::RuleCondition::new(
         source,
-        bindings: Vec::new(),
-        gate,
-        carry,
-    }))
+        Vec::new(),
+        nucleus::karma::Gate::Always,
+        nucleus::karma::Carry::Value,
+    );
+    condition
+        .parsed()
+        .map_err(|e| EngineError::Consequence(format!("that condition cannot be read: {e}")))?;
+    condition.gate = nucleus::karma::Gate::parse(gate.as_deref().unwrap_or("!=0"))
+        .map_err(|e| EngineError::Consequence(format!("that gate cannot be read: {e}")))?;
+    condition.carry = nucleus::karma::Carry::parse(carry.as_deref().unwrap_or("value"))
+        .map_err(|e| EngineError::Consequence(format!("that carry cannot be read: {e}")))?;
+    Ok(Some(condition))
 }
 
 fn parse_optional_instant(text: Option<&str>) -> Result<Option<DateTime<Utc>>, EngineError> {
@@ -2919,7 +2921,6 @@ impl Engine {
                 code: "message_thread_missing",
                 message: "the message-in relationship is not defined".into(),
             })?;
-        // Only zero, one, or multiple active targets affect this decision.
         let threads =
             store::assertions::active_object_kinds(&self.store.pool, message_uid, &message_in, 2)
                 .await?;
@@ -5196,13 +5197,9 @@ impl Engine {
                 code: "rule_condition_unknown_reading",
                 message: format!("`{record_uid}` has no rule with a value to read"),
             })?;
-        let condition = rule.condition.clone().expect("filtered on Some");
-        let asked = store::recurrence::RuleCondition {
-            source: condition.source,
-            bindings: condition.bindings,
-            gate: nucleus::karma::Gate::Always,
-            carry: nucleus::karma::Carry::Value,
-        };
+        let mut asked = rule.condition.expect("filtered on Some");
+        asked.gate = nucleus::karma::Gate::Always;
+        asked.carry = nucleus::karma::Carry::Value;
         self.ask_condition(&asked, at, now, depth + 1)
             .await?
             .ok_or_else(|| EngineError::Conflict {
@@ -5280,14 +5277,8 @@ async fn is_order_like(
     kind_uid: &str,
 ) -> Result<bool, EngineError> {
     const ORDER_NAMES: [&str; 3] = ["precedes", "before", "order"];
-    for ancestor in store::concepts::ancestors_including(pool, kind_uid).await? {
-        if let Some(name) = store::concepts::canonical_name(pool, &ancestor).await? {
-            if ORDER_NAMES.contains(&name.as_str()) {
-                return Ok(true);
-            }
-        }
-    }
-    Ok(false)
+    let ancestors = store::concepts::ancestors_including(pool, kind_uid).await?;
+    Ok(store::concepts::any_named(pool, &ancestors, &ORDER_NAMES).await?)
 }
 
 async fn kind_cycles(

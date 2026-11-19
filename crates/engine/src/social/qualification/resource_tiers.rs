@@ -407,7 +407,7 @@ async fn frame_and_traffic_limits_refuse_large_payloads_before_full_document_dec
         "social_message_event",
     ] {
         assert_eq!(
-            store::sqlx::query_scalar::<_, i64>(&format!("SELECT COUNT(*) FROM {table}"))
+            store::sqlx::query_scalar::<_, i64>(store::sqlx::AssertSqlSafe(format!("SELECT COUNT(*) FROM {table}")))
                 .fetch_one(&engine.store.pool)
                 .await
                 .unwrap(),

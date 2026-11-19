@@ -133,7 +133,7 @@ fn unmanaged_hit(world: &World, root: Entity, candidate: Entity, hit: Entity) ->
 }
 
 fn unmanaged_blocked(world: &World, root: Entity, window: Entity, candidate: Entity, position: Vec2) -> bool {
-    crate::native::pointer_hit::nodes(world, window, position).into_iter()
+    crate::native::pointer_hit::nodes(world, window, position)
         .find_map(|hit| unmanaged_hit(world, root, candidate, hit)).unwrap_or(false)
 }
 

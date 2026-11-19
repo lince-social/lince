@@ -1,8 +1,6 @@
 use super::*;
 use std::{borrow::Cow, sync::Arc};
 
-// Derived values belong to this clock, not its persisted settings. Compare the
-// actual inputs so direct edits, restoration and same-tick changes all work.
 #[derive(Component)]
 struct SettingsSnapshot {
     value: Arc<Settings>,
@@ -108,9 +106,6 @@ fn prepare(
     }
     let _prepare = nucleus::performance::Span::new("time-source-preparation");
     let result = definition.compile().map(Arc::new);
-    // Successful Record-query compilation is input-only. A rejected non-Record
-    // draft can reach time-dependent rolling-window validation; keep its live
-    // error path instead of retaining that diagnostic as an invariant.
     let replacement = result.as_ref().ok().map(|selection| SourceSnapshot {
         definition: definition.into_owned(),
         selection: selection.clone(),
@@ -124,11 +119,9 @@ pub(super) fn source(
     owner: Entity,
     settings: &Settings,
 ) -> Result<Arc<Selection>, String> {
-    // These are live boundaries, not part of the retained pure compilation.
     let practice = crate::native::practice_cells::source(world, owner);
     let (result, replacement) = if let Some(source) = &settings.source {
         let (result, replacement) = prepare(world, owner, Definition::Draft(Cow::Borrowed(source)));
-        // Invalid authored sources precede the practice-source check, as before.
         let result = result.and_then(|selection| {
             if practice.is_some_and(|cell| source.cell != Source::Organ(cell)) {
                 Err("Choose a Protein from this practice Cell.".into())

@@ -1,8 +1,6 @@
 use super::LayoutRuntime;
 use bevy::prelude::*;
 
-/// The layout translation of an already resolved/presented item. Callers that
-/// only need this offset must not compute the unused ancestor clipping rectangle.
 pub(crate) fn visual_offset(world: &World, entity: Entity) -> Vec2 {
     world.get::<LayoutRuntime>(entity).map_or(Vec2::ZERO, |runtime| runtime.visual_offset)
 }

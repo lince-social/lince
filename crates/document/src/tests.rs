@@ -393,6 +393,7 @@ impl OnlineSource {
         let resource = Resource {
             uri: format!("http://{}/book", listener.local_addr().unwrap()),
             media_type: media_type.into(),
+            hash: Some(lince_resources::fingerprint(&bytes)),
             ..Default::default()
         };
         listener.set_nonblocking(true).unwrap();

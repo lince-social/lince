@@ -204,7 +204,7 @@ pub(crate) fn embedded(
 struct InlineViewport(Entity);
 
 fn inline_scroll(
-    mut event: On<Pointer<Scroll>>,
+    mut event: On<PointerScroll>,
     viewports: Query<&InlineViewport>,
     mut commands: Commands,
 ) {
@@ -218,15 +218,14 @@ fn inline_scroll(
         1.0
     };
     let delta = -Vec2::new(event.x, event.y) * factor;
-    let pointer = event.pointer_id;
-    let location = event.pointer_location.clone();
-    let input = event.event().clone();
+    let mut input = event.event().clone();
     event.propagate(false);
     commands.queue(move |world: &mut World| {
         if !scroll_inline(world, owner, delta)
             && let Some(parent) = world.get::<ChildOf>(owner).map(ChildOf::parent)
         {
-            world.trigger(Pointer::new(pointer, location, input, parent));
+            input.entity = parent;
+            world.trigger(input);
         }
     });
 }

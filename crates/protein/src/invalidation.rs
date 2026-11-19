@@ -2,8 +2,6 @@ use super::{Include, Predicate, Protein, Source, is_ephemeral};
 use nucleus::Fact;
 use std::{cell::OnceCell, collections::HashSet};
 
-/// One notification wave, with no retained authority or result cache. Most
-/// queries require conservative refresh and never need the Record index.
 pub struct FactChanges<'a> {
     facts: &'a [Fact],
     local: bool,
@@ -64,7 +62,6 @@ fn text_records(facts: &[Fact]) -> TextRecords<'_> {
     let Some(first) = facts.first().and_then(canonical_text_record) else {
         return TextRecords::All;
     };
-    // A single Record, including a burst of edits to it, needs no set allocation.
     let mut records = HashSet::new();
     for fact in &facts[1..] {
         let Some(uid) = canonical_text_record(fact) else {

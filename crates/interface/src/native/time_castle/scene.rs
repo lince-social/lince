@@ -60,21 +60,18 @@ impl Ribbon {
 
     fn strip(
         &mut self,
-        settings: &Settings,
+        curve: &model::Geometry,
         range: &nucleus::schedule::TimeRange,
         now: i64,
-        size: Vec2,
-        unwind: f32,
         width: f32,
         color: [f32; 4],
         budget: usize,
     ) {
-        let points = render::samples(settings, range, now, size, unwind, budget);
+        let points: Vec<_> = curve.samples(range, budget).map(Vec3::from_array).collect();
         let end = range.until_ms.unwrap_or(range.from_ms);
         if points.len() == 1 {
             let point = points[0] + Vec3::Y * 0.05;
-            let cross =
-                Vec3::from_array(settings.transverse(range.from_ms.max(now), now, unwind)) * 10.0;
+            let cross = Vec3::from_array(curve.transverse(range.from_ms.max(now))) * 10.0;
             let tangent = Vec3::new(-cross.z, 0.0, cross.x).normalize_or_zero() * width * 0.5;
             self.quad(
                 [
@@ -86,20 +83,19 @@ impl Ribbon {
                 color,
             );
         } else {
+            let at = |index: usize| {
+                range.from_ms.max(now)
+                    + ((end - range.from_ms.max(now)) as f64 * index as f64
+                        / (points.len() - 1) as f64)
+                        .round() as i64
+            };
+            let mut a_cross = Vec3::from_array(curve.transverse(at(0))) * width * 0.5;
             for (index, pair) in points.windows(2).enumerate() {
-                let at = |index: usize| {
-                    range.from_ms.max(now)
-                        + ((end - range.from_ms.max(now)) as f64 * index as f64
-                            / (points.len() - 1) as f64)
-                            .round() as i64
-                };
-                let a_cross =
-                    Vec3::from_array(settings.transverse(at(index), now, unwind)) * width * 0.5;
-                let b_cross =
-                    Vec3::from_array(settings.transverse(at(index + 1), now, unwind)) * width * 0.5;
+                let b_cross = Vec3::from_array(curve.transverse(at(index + 1))) * width * 0.5;
                 let a = pair[0] + Vec3::Y * 0.05;
                 let b = pair[1] + Vec3::Y * 0.05;
                 self.quad([a - a_cross, a + a_cross, b + b_cross, b - b_cross], color);
+                a_cross = b_cross;
             }
         }
     }
@@ -117,7 +113,7 @@ impl Ribbon {
     }
 }
 
-fn clicked(mut event: On<Pointer<Click>>, picks: Query<&SchedulePick>, mut commands: Commands) {
+fn clicked(mut event: On<PointerClick>, picks: Query<&SchedulePick>, mut commands: Commands) {
     if event.button != PointerButton::Primary {
         return;
     }
@@ -229,8 +225,10 @@ pub(super) fn update(
     };
     let (visual, density) = (surface.visual, surface.density);
     let view = world.get::<View>(owner).unwrap();
-    let (unwind, selected) = (view.unwind, view.selected.clone());
-    let entries = view.entries.clone();
+    let _prepare = nucleus::performance::Span::new("time-scene-preparation");
+    let (unwind, selected) = (view.unwind, &view.selected);
+    let entries = &view.entries;
+    let curve = settings.geometry(now, size.to_array(), unwind);
     let palette = view
         .palette
         .clone()
@@ -242,11 +240,141 @@ pub(super) fn update(
             + (settings.horizon_ms - settings.aperture_ms) as f64 * f64::from(unwind))
             as i64
     };
-    let occurrences = model::clock_occurrences(settings, &entries, now, now + duration);
-    let parent = if let Some(parent) = view
+    let previous_scene = view
         .scene
-        .filter(|entity| world.get_entity(*entity).is_ok())
-    {
+        .filter(|entity| world.get_entity(*entity).is_ok());
+    let mut background = Ribbon::default();
+    if spatial {
+        background.strip(
+            &curve,
+            &nucleus::schedule::TimeRange {
+                from_ms: now,
+                until_ms: Some(now + settings.horizon_ms),
+            },
+            now,
+            10.0,
+            palette::rgba(palette.track),
+            4096,
+        );
+    }
+    let circular = size.min_element()
+        * std::f32::consts::TAU
+        * 0.4
+        * (settings.horizon_ms as f64 / settings.aperture_ms as f64) as f32;
+    let pixels = (circular * (1.0 - unwind) + size.x * unwind) * density;
+    let interval = model::tick_interval(settings.horizon_ms, pixels, 25.0)
+        .max(model::tick_interval(settings.horizon_ms, 256.0, 1.0));
+    let major_interval = model::tick_interval(settings.horizon_ms, pixels, 85.0).max(interval);
+    let mut at = now.div_euclid(interval) * interval + interval;
+    while spatial && at < now + settings.horizon_ms {
+        background.strip(
+            &curve,
+            &nucleus::schedule::TimeRange {
+                from_ms: at,
+                until_ms: None,
+            },
+            now,
+            density.recip().clamp(0.2, 3.0),
+            if at.rem_euclid(major_interval) == 0 {
+                palette::rgba(palette.muted)
+            } else {
+                palette::rgba(palette.track)
+            },
+            1,
+        );
+        at += interval;
+    }
+    if spatial {
+        let point = Vec3::from_array(curve.position(now)) + Vec3::Y * 0.2;
+        let cross = Vec3::from_array(curve.transverse(now));
+        let inner = point - cross * 18.0;
+        let end = point + cross * 15.0;
+        let tangent = Vec3::new(-cross.z, 0.0, cross.x) * density.recip().clamp(0.5, 3.0);
+        background.quad(
+            [
+                inner - tangent,
+                end - tangent,
+                end + tangent,
+                inner + tangent,
+            ],
+            palette::rgba(palette.present),
+        );
+    }
+    let mut ribbons = if background.positions.is_empty() {
+        Vec::new()
+    } else {
+        vec![(background, None)]
+    };
+    let settled;
+    let mut bands: Vec<&motion::Band> = if let Some(motion) = world.get::<motion::Motion>(owner) {
+        motion.bands.values().collect()
+    } else {
+        settled = model::clock_occurrences(settings, entries, now, now + duration)
+            .into_iter()
+            .map(|occurrence| motion::Band::settled(entries[occurrence.index].clone(), occurrence))
+            .collect::<Vec<_>>();
+        settled.iter().collect()
+    };
+    bands.sort_by(|a, b| {
+        a.occurrence
+            .time
+            .from_ms
+            .cmp(&b.occurrence.time.from_ms)
+            .then_with(|| a.entry.id.cmp(&b.entry.id))
+    });
+    for band in bands {
+        let occurrence = &band.occurrence;
+        let entry = &band.entry;
+        let color = palette::rgba(
+            palette
+                .event(occurrence.index, selected.contains(&entry.id))
+                .with_alpha(band.opacity()),
+        );
+        let mut ribbon = Ribbon::default();
+        let mut points = motion::points_in(band, &curve, settings, now, size, palette.width);
+        if !spatial {
+            for point in &mut points {
+                point.y = 0.0;
+            }
+        }
+        let width = palette.width;
+        if points.len() == 1 {
+            let point = points[0] + Vec3::Y * 0.2;
+            let cross = Vec3::from_array(curve.transverse(occurrence.time.from_ms)) * 3.0;
+            let tangent = Vec3::new(-cross.z, 0.0, cross.x).normalize_or_zero()
+                * density.recip().clamp(0.4, 3.0)
+                * 0.5;
+            ribbon.quad(
+                [
+                    point - cross - tangent,
+                    point + cross - tangent,
+                    point + cross + tangent,
+                    point - cross + tangent,
+                ],
+                color,
+            );
+        } else {
+            let end = occurrence.time.until_ms.unwrap();
+            let cross = |index| {
+                Vec3::from_array(curve.transverse(
+                    occurrence.time.from_ms
+                        + ((end - occurrence.time.from_ms) as f64 * index as f64
+                            / (points.len() - 1) as f64) as i64,
+                )) * width
+                    * 0.5
+            };
+            let mut a_cross = cross(0);
+            for (index, pair) in points.windows(2).enumerate() {
+                let b_cross = cross(index + 1);
+                let a = pair[0] + Vec3::Y * 0.2;
+                let b = pair[1] + Vec3::Y * 0.2;
+                ribbon.quad([a - a_cross, a + a_cross, b + b_cross, b - b_cross], color);
+                a_cross = b_cross;
+            }
+        }
+        ribbons.push((ribbon, (!band.retiring).then(|| vec![entry.id.clone()])));
+    }
+    let parent = if let Some(parent) = previous_scene {
         parent
     } else {
         let material = world
@@ -273,151 +401,6 @@ pub(super) fn update(
         world.get_mut::<View>(owner).unwrap().scene = Some(parent);
         parent
     };
-    let mut background = Ribbon::default();
-    if spatial {
-        background.strip(
-            settings,
-            &nucleus::schedule::TimeRange {
-                from_ms: now,
-                until_ms: Some(now + settings.horizon_ms),
-            },
-            now,
-            size,
-            unwind,
-            10.0,
-            palette::rgba(palette.track),
-            4096,
-        );
-    }
-    let circular = size.min_element()
-        * std::f32::consts::TAU
-        * 0.4
-        * (settings.horizon_ms as f64 / settings.aperture_ms as f64) as f32;
-    let pixels = (circular * (1.0 - unwind) + size.x * unwind) * density;
-    let interval = model::tick_interval(settings.horizon_ms, pixels, 25.0)
-        .max(model::tick_interval(settings.horizon_ms, 256.0, 1.0));
-    let major_interval = model::tick_interval(settings.horizon_ms, pixels, 85.0).max(interval);
-    let mut at = now.div_euclid(interval) * interval + interval;
-    while spatial && at < now + settings.horizon_ms {
-        background.strip(
-            settings,
-            &nucleus::schedule::TimeRange {
-                from_ms: at,
-                until_ms: None,
-            },
-            now,
-            size,
-            unwind,
-            density.recip().clamp(0.2, 3.0),
-            if at.rem_euclid(major_interval) == 0 {
-                palette::rgba(palette.muted)
-            } else {
-                palette::rgba(palette.track)
-            },
-            1,
-        );
-        at += interval;
-    }
-    if spatial {
-        let point =
-            Vec3::from_array(settings.position(now, now, size.to_array(), unwind)) + Vec3::Y * 0.2;
-        let cross = Vec3::from_array(settings.transverse(now, now, unwind));
-        let inner = point - cross * 18.0;
-        let end = point + cross * 15.0;
-        let tangent = Vec3::new(-cross.z, 0.0, cross.x) * density.recip().clamp(0.5, 3.0);
-        background.quad(
-            [
-                inner - tangent,
-                end - tangent,
-                end + tangent,
-                inner + tangent,
-            ],
-            palette::rgba(palette.present),
-        );
-    }
-    let mut ribbons = if background.positions.is_empty() {
-        Vec::new()
-    } else {
-        vec![(background, None)]
-    };
-    let mut bands: Vec<_> = world
-        .get::<motion::Motion>(owner)
-        .map(|motion| motion.bands.values().cloned().collect())
-        .unwrap_or_else(|| {
-            occurrences
-                .into_iter()
-                .map(|occurrence| {
-                    motion::Band::settled(entries[occurrence.index].clone(), occurrence)
-                })
-                .collect()
-        });
-    bands.sort_by(|a, b| {
-        a.occurrence
-            .time
-            .from_ms
-            .cmp(&b.occurrence.time.from_ms)
-            .then_with(|| a.entry.id.cmp(&b.entry.id))
-    });
-    for band in bands {
-        let occurrence = &band.occurrence;
-        let entry = &band.entry;
-        let color = palette::rgba(
-            palette
-                .event(occurrence.index, selected.contains(&entry.id))
-                .with_alpha(band.opacity()),
-        );
-        let mut ribbon = Ribbon::default();
-        let mut points = motion::points(&band, settings, now, size, unwind, palette.width);
-        if !spatial {
-            for point in &mut points {
-                point.y = 0.0;
-            }
-        }
-        let width = palette.width;
-        if points.len() == 1 {
-            let point = points[0] + Vec3::Y * 0.2;
-            let cross =
-                Vec3::from_array(settings.transverse(occurrence.time.from_ms, now, unwind)) * 3.0;
-            let tangent = Vec3::new(-cross.z, 0.0, cross.x).normalize_or_zero()
-                * density.recip().clamp(0.4, 3.0)
-                * 0.5;
-            ribbon.quad(
-                [
-                    point - cross - tangent,
-                    point + cross - tangent,
-                    point + cross + tangent,
-                    point - cross + tangent,
-                ],
-                color,
-            );
-        } else {
-            let end = occurrence.time.until_ms.unwrap();
-            for (index, pair) in points.windows(2).enumerate() {
-                let cross = |index| {
-                    Vec3::from_array(settings.transverse(
-                        occurrence.time.from_ms
-                            + ((end - occurrence.time.from_ms) as f64 * index as f64
-                                / (points.len() - 1) as f64) as i64,
-                        now,
-                        unwind,
-                    )) * width
-                        * 0.5
-                };
-                let a = pair[0] + Vec3::Y * 0.2;
-                let b = pair[1] + Vec3::Y * 0.2;
-                ribbon.quad(
-                    [
-                        a - cross(index),
-                        a + cross(index),
-                        b + cross(index + 1),
-                        b - cross(index + 1),
-                    ],
-                    color,
-                );
-            }
-        }
-        ribbons.push((ribbon, (!band.retiring).then(|| vec![entry.id.clone()])));
-    }
     replace(world, parent, owner, ribbons);
 }
 

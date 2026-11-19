@@ -81,7 +81,6 @@ fn stored_kind(kind: SandKind) -> SandStyleKind {
         | SandKind::HandCamera
         | SandKind::Video
         | SandKind::Sync
-        | SandKind::Kamalie
         | SandKind::Terminal
         | SandKind::Organ
         | SandKind::Configuration

@@ -61,8 +61,6 @@ struct Playback {
 }
 
 impl Crossings {
-    // Callers supply distinct current participants. Missing participants are
-    // retired silently, as before; newly present participants start outside.
     fn sample(
         &mut self,
         owner: Entity,
@@ -109,8 +107,6 @@ impl Crossings {
             member.inside = inside;
             member.epoch = epoch;
         }
-        // Every absent entry is removed on this pass, so a two-state epoch
-        // cannot alias stale membership after another pass.
         crossing.members.retain(|_, member| member.epoch == epoch);
         plays
     }
@@ -201,8 +197,6 @@ fn sample_crossings(
         }
         retained
     });
-    // Stop departed sources before returning, but do not visit ordinary canvas
-    // items at all when no sound source needs membership.
     if areas.is_empty() {
         world.insert_resource(runtime);
         return;

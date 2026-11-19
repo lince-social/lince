@@ -154,8 +154,6 @@ impl Scene {
                     member.hidden,
                 ));
             }
-            // The tree pass already established current exclusion and workspace
-            // membership. Pure contour mode does not need action descriptions.
             if inspect_connections {
                 visit_connections(world, entity, |target_entity, name| {
                     let Some(target) = self.members.get(&target_entity).copied() else {

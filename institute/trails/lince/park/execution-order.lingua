@@ -10,19 +10,10 @@ The 83 P Records supply the acceptance criteria. Each checkbox below produces on
 
 Run the smallest relevant case first. A shared run can close several boxes when its report proves each result. Save the first failure with its revision and exact case. Give the fix and the rerun their own boxes when a failure needs more work. A waiting build is a dependency; keep independent checks available. Preserve original acceptance criteria in the linked Records.
 
-## Source audit
+## Source cleanup
 
-- [ ] [P90](record:r_4MEAW1HQ46BK0WKQ8ABX0T6X4K) Identify one unused dependency or redundant feature with the active-path audit.
-
-## Attribution before performance changes
-
-- [ ] [P153](record:r_7N5NNV5N2RBD81C5EYXHM22NPB) **Frame-to-output join.** Follow one sampled image from source frame to the actual presentation sequence on both outputs.
-- [ ] [P70](record:r_77FM19KDX0GXG96YB4AD0W4YP0) **GLES cost.** In one capture, validate available hardware intervals and driver/fence wait records against the consumer and record collection overhead.
-- [ ] [P67](record:r_425JQ5QS3D33JJTE0QFYNP3CCW) **CPU/GPU ownership.** Attribute one matched Firefox/native workload by process, DRM engine and transfer. Record any unknown decode or render path.
-- [ ] [P36](record:r_0ABQ7XDA1CYGHYJ7C6S8H0CSJE) **Excess wakes.** Attribute the largest repeating wake source in a quiet daily-workspace sample.
-- [ ] [P86](record:r_394ME6MH9S27PVQDAF9DDC5V16) **Castle readiness.** Run the existing readiness fixture. Compare warm owner CPU and allocations with the same UI and capture results.
-- [ ] [P86](record:r_394ME6MH9S27PVQDAF9DDC5V16) **First ranked active cost.** Execute the first workload selected by the source audit and record whether the suspected work remains expensive.
-- [ ] [P66](record:r_5MBWC32RYVSQ5XZA4MYYH87ME8) **Rank the observed costs.** Turn the matching quiet, input and media captures into a short ordered list of blocking stages with evidence and next action.
+- [ ] [P90](record:r_4MEAW1HQ46BK0WKQ8ABX0T6X4K) **Remove Sandbox's unused direct hand-input dependency.** Remove its activation and lockfile edge while preserving the Interface dependency.
+  The shipped Linux graph enables the same default dependency through Interface and Sandbox. Only Interface uses it and registers the hand-camera plugin. The cleanup removes a redundant graph edge.
 
 ## Existing changes — one targeted check at a time
 
@@ -93,7 +84,6 @@ Use the matched capture to select the next expensive owner. Each item asks for o
 - [ ] [P100](record:r_281DJ2H4CE3CT2GTYDCDZZNRJ2) Compare the shipping CPU target with one explicitly supported target. Verify that the resulting artifact runs on the declared machine class.
 - [ ] [P99](record:r_1J322KWM9Y9KHGF3Q9B4ZG5QJG) Train one release PGO profile on the representative workload and record the training inputs.
 - [ ] [P99](record:r_1J322KWM9Y9KHGF3Q9B4ZG5QJG) Compare the PGO candidate and uninstrumented baseline on a held-out workload.
-- [ ] [P90](record:r_4MEAW1HQ46BK0WKQ8ABX0T6X4K) Remove that activation and verify the same supported build and focused workload.
 - [ ] [P57](record:r_1W82JGD8E7MYX2XM60YYXGMM53) Compare direct scanout and composition for one eligible fullscreen SDR client on real hardware.
 - [ ] [P57](record:r_1W82JGD8E7MYX2XM60YYXGMM53) Interrupt direct scanout with a normal transition and verify that composition safely resumes.
 
@@ -144,6 +134,20 @@ Use a nested test executable that includes the current settings fixtures and the
 - [ ] [P148](record:r_2M3HN9VZMK9XYX5HXKC38XPB97) **Display settings.** Run the virtual monitor arrange, confirm and revert case through Customization.
 - [ ] [P148](record:r_2M3HN9VZMK9XYX5HXKC38XPB97) **Overview callbacks.** Run the inactive Wayland client overview case and check its presented callbacks.
 - [ ] [P148](record:r_2M3HN9VZMK9XYX5HXKC38XPB97) **Scaled-output composition.** Run the nested final-composition raster case and check native pixels and editor input mapping.
+
+### Attribution before performance changes
+
+- [ ] [P153](record:r_7N5NNV5N2RBD81C5EYXHM22NPB) **Frame-to-output join.** Follow one sampled image from source frame to the actual presentation sequence on both outputs.
+- [ ] [P70](record:r_77FM19KDX0GXG96YB4AD0W4YP0) **GLES cost.** In one capture, validate available hardware intervals and driver/fence wait records against the consumer and record collection overhead.
+- [ ] [P67](record:r_425JQ5QS3D33JJTE0QFYNP3CCW) **CPU/GPU ownership.** Attribute one matched Firefox/native workload by process, DRM engine and transfer. Record any unknown decode or render path.
+- [ ] [P36](record:r_0ABQ7XDA1CYGHYJ7C6S8H0CSJE) **Excess wakes.** Attribute the largest repeating wake source in a quiet daily-workspace sample.
+- [ ] [P86](record:r_394ME6MH9S27PVQDAF9DDC5V16) **Castle readiness.** Run the existing readiness fixture. Compare warm owner CPU and allocations with the same UI and capture results.
+- [ ] [P86](record:r_394ME6MH9S27PVQDAF9DDC5V16) **First ranked active cost.** Execute the first workload selected by the source audit and record whether the suspected work remains expensive.
+- [ ] [P66](record:r_5MBWC32RYVSQ5XZA4MYYH87ME8) **Rank the observed costs.** Turn the matching quiet, input and media captures into a short ordered list of blocking stages with evidence and next action.
+
+### Dependency cleanup verification
+
+- [ ] [P90](record:r_4MEAW1HQ46BK0WKQ8ABX0T6X4K) **Verify the hand-input cleanup.** Check the supported Linux build and run the focused hand-camera workload from the updated binary.
 
 ### Laboratory and prepared cases
 

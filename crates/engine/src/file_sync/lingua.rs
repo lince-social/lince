@@ -104,7 +104,7 @@ impl Engine {
             let organ = store::organs::local(&self.store.pool)
                 .await?
                 .ok_or_else(|| invalid("Lingua import requires a local Organ"))?;
-            self.lingua_sync_pass(directory, &organ.uid, None, &mut State::default())
+            self.lingua_sync_pass(directory, &organ.uid, None, &mut State::default(), None)
                 .await
         })
     }
@@ -579,11 +579,14 @@ impl Engine {
         organ: &str,
         config: Option<&serde_json::Value>,
         state: &mut State,
+        binding: Option<&super::DirectorySync>,
     ) -> Result<FileSyncReport, EngineError> {
         let mut report = FileSyncReport::default();
         let directory = std::fs::canonicalize(dir)?;
         let dir = directory.as_path();
-        let directory_key = directory.to_string_lossy();
+        let directory_key = binding.map(super::DirectorySync::baseline_key)
+            .unwrap_or_else(|| directory.to_string_lossy().into_owned());
+        let origin = binding.map(|item| item.uid.as_str());
         let scope = config.map(|_| (organ, directory_key.as_ref()));
         if scope.is_some() && !state.loaded {
             for (path, raw) in
@@ -594,7 +597,7 @@ impl Engine {
             }
             state.loaded = true;
         }
-        let disk = scan_disk(dir, "lingua")?;
+        let disk = scan_disk(dir, "lingua", binding.is_some())?;
         let mut documents = std::collections::BTreeMap::new();
         let mut paths: Vec<_> = disk.keys().cloned().collect();
         paths.sort();
@@ -739,7 +742,8 @@ impl Engine {
                 }
                 for frequency in &document.automation.frequencies {
                     if let Some(row) = store::records::routing(&self.store.pool, &frequency.uid).await? {
-                        if row.organ_uid.as_deref() != Some(organ) || row.kind != "frequency" {
+                        if row.organ_uid.as_deref() != Some(organ) || row.kind != "frequency"
+                            || row.file_origin.as_deref() != origin {
                             return Err(invalid("The Frequency belongs to another Organ or has another type"));
                         }
                     }
@@ -751,7 +755,9 @@ impl Engine {
                         rule.frequency_uid = Some(identities.get(&rule.frequency_slug).filter(|uid| frequency_uids.contains(*uid)).cloned().ok_or_else(|| invalid("Unknown Rule frequency"))?);
                     }
                     if let Some(target) = store::records::routing(&self.store.pool, record_uid).await? {
-                        if target.organ_uid.as_deref() != Some(organ) { return Err(invalid("The Rule target belongs to another Organ")); }
+                        if target.organ_uid.as_deref() != Some(organ) || target.file_origin.as_deref() != origin {
+                            return Err(invalid("The Rule target belongs to another Organ or file origin"));
+                        }
                     }
                     if let Some(source) = &rule.condition {
                         for read in nucleus::karma::Condition::parse(source).map_err(invalid)?.reads_ref() {
@@ -827,6 +833,9 @@ impl Engine {
                         if row.organ_uid.as_deref() != Some(organ) {
                             return Err(invalid("The Record belongs to another Organ"));
                         }
+                        if row.file_origin.as_deref() != origin {
+                            return Err(invalid("The Record belongs to another file origin"));
+                        }
                         if scope.is_some() && !state.files.contains_key(path)
                             && self.lingua_record(&record.uid).await?.as_ref() != Some(record) {
                             return Err(invalid("This file has no accepted sync baseline and differs from its Record; use an explicit import or resolve the conflict"));
@@ -858,7 +867,7 @@ impl Engine {
                             None,
                         )
                         .await?;
-                        self.apply_lingua_frequencies(&document.automation, &mut report)
+                        self.apply_lingua_frequencies_as(&document.automation, &mut report, None, origin)
                             .await
                     })
                     .await;
@@ -907,6 +916,7 @@ impl Engine {
                                         })?
                                         .0
                                         .clone(),
+                                    file_origin: origin.map(str::to_owned),
                                     ..Default::default()
                                 },
                             },
@@ -1194,7 +1204,7 @@ impl Engine {
             })
             .chain(declared.keys().cloned())
             .collect();
-        let selected = self.selected_records(organ, config).await?;
+        let selected = self.selected_records(organ, config, origin).await?;
         for (path, (uid, _)) in desired_paths(dir, &selected, "lingua") {
             if represented.contains(&uid) || disk.contains_key(&path) {
                 continue;
@@ -1248,7 +1258,7 @@ impl Engine {
         self.file_sync_conflicts
             .lock()
             .expect("file sync conflicts")
-            .insert(organ.into(), report.conflicts.clone());
+            .insert(origin.unwrap_or(organ).into(), report.conflicts.clone());
         Ok(report)
     }
 }

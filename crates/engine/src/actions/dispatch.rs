@@ -370,6 +370,7 @@ impl Engine {
             | Action::MailboxUseInvite { .. }
             | Action::SetFileSyncEnabled { .. }
             | Action::ConfigureFileSync { .. }
+            | Action::DirectorySync { .. }
             | Action::FileSyncStatus { .. }
             | Action::MailboxOutbound
             | Action::MailboxMailNow { .. }

@@ -223,7 +223,8 @@ pub(crate) fn predicates_require_body(predicates: &[Predicate]) -> bool {
         | Predicate::WorkDate { .. }
         | Predicate::Near { .. }
         | Predicate::OrganEq(_)
-        | Predicate::OrganIn(_) => false,
+        | Predicate::OrganIn(_)
+        | Predicate::FileOriginEq(_) => false,
         _ => true,
     })
 }

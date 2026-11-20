@@ -76,6 +76,7 @@ impl Drop for Timing<'_> {
     }
 }
 
+#[cfg(feature = "nested")]
 pub(crate) fn observes_motion(
     cursors: Query<(), With<bevy::ui::RelativeCursorPosition>>,
     bindings: Query<&native::topology::terrain::Bound>,

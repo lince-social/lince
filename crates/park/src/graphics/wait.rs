@@ -1,3 +1,4 @@
+#[cfg(feature = "nested")]
 use smithay::backend::renderer::sync::SyncPoint;
 use std::{
     io::{self, Read, Write},
@@ -8,16 +9,25 @@ use std::{
 
 enum Target {
     Descriptor(OwnedFd),
+    #[cfg(feature = "nested")]
     Fence(SyncPoint, Option<OwnedFd>),
 }
 
 impl Target {
     fn descriptor(&self) -> Option<&OwnedFd> {
-        match self { Self::Descriptor(fd) => Some(fd), Self::Fence(_, fd) => fd.as_ref() }
+        match self {
+            Self::Descriptor(fd) => Some(fd),
+            #[cfg(feature = "nested")]
+            Self::Fence(_, fd) => fd.as_ref(),
+        }
     }
 
     fn reached(&self) -> bool {
-        match self { Self::Descriptor(_) => false, Self::Fence(fence, _) => fence.is_reached() }
+        match self {
+            Self::Descriptor(_) => false,
+            #[cfg(feature = "nested")]
+            Self::Fence(fence, _) => fence.is_reached(),
+        }
     }
 }
 
@@ -131,6 +141,7 @@ impl Reactor {
         self.register(Target::Descriptor(fd))
     }
 
+    #[cfg(feature = "nested")]
     pub(crate) fn fence(&self, fence: SyncPoint) -> io::Result<Watch> {
         let fd = fence.export();
         self.register(Target::Fence(fence, fd))

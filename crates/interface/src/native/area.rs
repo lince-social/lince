@@ -1,6 +1,7 @@
 use crate::native::{canvas::CanvasItem, workspace::WorkspaceMember};
 use bevy::{math::DVec2, prelude::*};
 use serde::{Deserialize, Serialize};
+pub mod creation;
 
 pub(crate) mod editing;
 
@@ -99,6 +100,8 @@ pub struct InfluenceArea {
     #[serde(default)]
     pub changes: crate::native::area_mutation::AreaChanges,
     #[serde(default)]
+    pub creation: creation::Defaults,
+    #[serde(default)]
     pub protein: Option<crate::native::protein_area::Config>,
     #[serde(default)]
     pub filter: Option<crate::native::protein_area::Config>,
@@ -140,6 +143,7 @@ impl InfluenceArea {
             rules: Vec::new(),
             match_all: true,
             changes: Default::default(),
+            creation: Default::default(),
             protein: None,
             filter: None,
             sound: None,

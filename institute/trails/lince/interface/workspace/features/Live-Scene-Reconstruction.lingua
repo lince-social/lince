@@ -1,0 +1,82 @@
+Live camera reconstruction and scene updates (@ws-live-scene-reconstruction: 0, is #chapter, #part-of @workspace-development, #requires @ws-scene-reconstruction, #requires @ws-observed-models) { r_7T6C1586F0TV4PPEB1JAJCKGKW
+Status pending. Owner refinement, 2026-11-20. Turn supported live camera input into an inspectable reconstruction candidate, compare it with the current scene, and use the ordinary add/replace operations to refine a place once or periodically. This package requires actual reconstruction output and native reuse evidence.
+
+[Development graph](../Workspace-Development.lingua) · [World composition contract](../contracts/World-composition-contracts.lingua) · [Camera and vision contract](../contracts/Camera-vision-contracts.lingua)
+
+## Start gate and delivered boundary
+
+Consume the verified worker/output interface from [Scene reconstruction](Scene-Reconstruction.lingua) and the frame-window, task, generation and derived-layer publication exports from [Observed models](Observed-Models.lingua). Use the common candidate envelope owned by WC.R23 and [World composition WCO.T02](World-Composition.lingua#task-wcot02). Recover the actual provider handoffs before implementation and extend their owned interfaces when needed.
+
+Deliver one implemented live reconstruction method that consumes actual admitted image/depth input and produces a supported mesh or inferred geometric model. Native Model once and Update periodically use the same task path, with source age, measured/estimated status, covered versus unseen regions and candidate comparison. The first method and input profile are selected and pinned before implementation. Its supported output can be added to a local scene, adopted as a regional replacement and exported into a fictional composition.
+
+The basic Observed Models 2D/calibrated-proxy workflow remains independently deliverable through its current prerequisites. This downstream package consumes that export. Geographic coverage, a globe and Kamalie gameplay have no dependency on this reconstruction proof. The isolated direct-Bevy Kamalie Castle retains its first-game priority.
+
+## Ownership and possible overlap
+
+Own the live-input/method adapter, reconstruction-window policy and native composed proof. Reuse Scene Reconstruction's verified conversion/worker utilities where applicable and the existing bounded job runtime; new live backend code belongs here. World Composition retains candidate identity, comparison and add/replace adoption. Imports retains registration. Observed Models and Vision Tasks retain task scheduling, source leases and periodic publication. Assets and the existing admission service retain storage and resource ownership. Shared schema, scheduler and source changes have one owner in the current checkout.
+
+The provider branches can progress independently until their exports join here. Local supplied-photo reconstruction does not need the live-feed bridge. Actual decoder/model/calibration extensions are required before an additional advertised modality becomes usable.
+
+## Input and method selection
+
+| Input profile | Required evidence and supported meaning |
+| --- | --- |
+| One fixed RGB camera | Actual RGB frames and known metadata support the existing image-space/calibrated-plane proxy where its assumptions hold. A learned reconstruction method must separately prove its inferred geometry, scale/alignment and temporal limits. Repeated fixed views alone supply no new geometric baseline. |
+| Moving RGB camera | An implemented method must recover or consume camera poses, usable overlap and motion baseline. Declare scale constraints, tracking failures and scene-motion handling. |
+| Multiple RGB cameras | Preserve per-camera intrinsics, extrinsics, frame transforms and synchronization quality. The method declares its overlap, maximum skew and static-scene assumptions. |
+| RGB-D camera or producer | Validate depth units, invalid-depth masks, RGB/depth alignment, intrinsics and source poses or an actual pose-estimation method. Pose and depth quality constrain metric output. |
+
+Recover the existing ESP feed's actual transport and metadata. Its demonstrated RGB input supports the basic calibrated proxy only where calibration and geometry are supplied. Advertise learned RGB reconstruction for that feed after the selected worker passes its actual input, quality and budget proof.
+
+Open3D TSDF integration is a candidate when calibrated depth and camera poses are available. Its documented integration and mesh extraction can be adapted to bounded live buffers. A learned RGB worker such as VGGT is a candidate when its predicted cameras, depth and point maps can be converted through an implemented supported geometry operator. Choose according to available inputs, runtime limits and usable code/model terms, then pin the executable and model revisions. These candidates still require the native proof below. [Open3D TSDF integration](https://www.open3d.org/docs/release/tutorial/t_reconstruction_system/integration.html) · [VGGT implementation](https://github.com/facebookresearch/vggt)
+
+## Ordered work
+
+### Task LRC.T01
+
+- [ ] Publish the actual supported input/output matrix and select the first backend from captured source capabilities. Pin its executable/model revision, required calibration/pose/scale, input window and limits, output conversion, native controls and fixture before implementation. Produce geometry from real pixel/depth buffers through the selected worker. Expose unavailable modality, calibration, registration and resource conditions. Independently check source dimensions, coordinate conventions and at least one geometric reference. The source URI or metadata alone cannot complete the reconstruction proof.
+
+### Task LRC.T02
+
+- [ ] Adapt camera leases to the worker without introducing another source connection or scheduler. Each window pins source/view IDs, frame sequences, capture interval, receive/processing times, synchronization quality, crop/resize mapping, calibration/pose generations and the target/model generation. Bound queued windows, decoded media, GPU/model inputs, worker scratch and output. Apply CV.R04 to the whole execution path, including subprocess temporary files, libraries, debug output and remote processing. Camera-derived input stays in bounded volatile storage and releases on completion, cancellation or expiry. A backend requiring durable raw-frame history needs an implemented compatible volatile path before it supports this profile. Independently supplied photographs and preexisting recordings retain their own source provenance and ordinary asset policy.
+
+### Task LRC.T03
+
+- [ ] Return the common WC.R23 candidate envelope with source/window/calibration/method lineage, declared units and frame, scale/alignment status, coverage and unknown masks, residuals or explicit unavailable error, observed/inferred status and supported product capabilities. Bound accumulated point/voxel/mesh state, texture output, historical candidates and replacement peaks separately from input buffers. Choose finite reconstruction extent and retention/compaction policy. A static fusion method must handle changed scenes through a declared reset or fresh-window reconstruction policy. Dynamic motion, occlusion and missed observations cannot silently erase accepted authored content or create confident unseen geometry. Expired raw input is unavailable for replay even when derived state remains usable.
+
+### Task LRC.T04
+
+- [ ] Deliver native Model once and Update periodically through Observed Models. Show candidate/current comparison, source time, registered placement, supported output and errors. Use the common controls to add the candidate or replace an identified region, with captured base, scope and generation. Once a periodic task is configured for its authorized derived layer, valid updates follow the existing automatic publication policy. Coalesce overdue work, show skipped intervals and preserve the last valid result with age on failure. Reject late results after cancellation, target change, source/calibration changes or conflicting edits. Reuse ordinary undo and source-preserving reconciliation. Preserve keyboard access, readable status and the edit-panel-geometry rule.
+
+### Task LRC.T05
+
+- [ ] Prove LRC.W01–LRC.W03 using the actual selected worker and input profile. Produce an initial reconstruction and at least two subsequent geometric updates from deliberately changed input. Check independent dimensions/control points, capture-window membership, covered/unseen regions and source correspondence. Exercise a calibration change, excessive skew or missing view where applicable, stalled input, conflicting native edit, stop/revoke and stale completion. Verify input/media release and bounded reconstruction growth through repeated updates. Persist permitted derived geometry/material products, metadata and task settings under the existing policies. Check saved packages, worker scratch and logs for unintended camera frames or encoded video.
+
+## Fixture and acceptance
+
+### LRC.F01 — Bounded reconstructed place
+
+Use a small room/table scene with independently known dimensions and reference points, one occluded region, an authored object beside the derived target and a movable test object. Select an actual compatible camera/provider profile before implementation. A deterministic independent producer may provide repeatable image/depth inputs and known poses through the same feed interface. Test fixtures may reuse preexisting permitted recordings with that provenance explicit. The real reconstruction implementation consumes the delivered images/depth in every acceptance run.
+
+Capture an initial arrangement and two deliberately changed arrangements through separate declared windows. Keep pose/calibration changes distinguishable from scene changes. Include a fixed RGB-only input to exercise its actual advertised capability and unavailable-depth handling. Preserve the separately useful base Observed Models result when the reconstruction method cannot use that input.
+
+### LRC.W01 — Reconstruct, compare and refine
+
+Select the source/profile, run Model once, inspect the candidate and compare independent geometry references. Align through the shared registration tools where needed, add it to the scene and replace a selected local region. Confirm authored neighbors, source identity, canonical dimensions and ordinary undo. Appearance products obtain collision/support capability only through the existing verified support-generation path.
+
+### LRC.W02 — Update from changed observations
+
+Configure periodic updates to the admitted derived layer. Produce and adopt at least two changed outputs after the initial candidate, using independently known scene changes. Inspect capture age, source lineage, uncertainty and the selected reset/fusion policy. Race calibration/pose changes, delayed windows and a native edit against worker completion. Confirm generation rejection, last-valid-result status, bounded queues/geometry and stop/revoke release.
+
+### LRC.W03 — Reuse derived content without a live dependency
+
+Extract the selected accepted result through the common fragment/package path and reopen it offline in a fictional local world. Include the permitted derived dependencies and metadata required by its chosen profile. Give the new occurrence its own placement while retaining source lineage. Display capture age and unavailable raw-input replay. Verify that reopening the package does not reconnect the camera, resume its task or reproduce external actions.
+
+### LRC.P01 — Quality and resource evidence
+
+Pin actual source and worker/model revisions, hardware, window/cadence, input dimensions, reference bounds and resource limits. Replay all three workflows through native operations. Measure reconstruction and registration residuals separately, coverage, update age, decoded/GPU/scratch/output peaks, accumulated geometry, replacement overlap, cancellation and last-demand release. Confirm that visual LOD changes preserve admitted reconstruction demand and that completed input leases expire. Inspect source/task files, logs, scratch and exported artifacts against CV.R04. Record unsupported methods and unresolved errors explicitly.
+
+## Completion and handoff
+
+Publish the actual backend/profile, supported outputs, candidate-envelope revision, source/calibration semantics, native proof and measured limits. Include input provenance, permitted retained products and the release evidence. The [world composition contract](../contracts/World-composition-contracts.lingua) consumes this export for its full generated/refined-world proof. Current outcome is unbuilt and unverified.
+} r_7T6C1586F0TV4PPEB1JAJCKGKW

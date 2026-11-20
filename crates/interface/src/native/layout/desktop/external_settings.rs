@@ -142,7 +142,7 @@ pub(crate) fn panel(world: &mut World, root: Entity, parent: Entity) {
     label(
         world,
         body,
-        "Screenshots use Grim and Slurp by default: Print captures the screen; Ctrl+Print selects a region. Editing or saving never runs a program.",
+        "Print captures the screen. Ctrl+Print selects a region. The default commands save the PNG and copy it to the clipboard. Editing or saving these settings never runs a command.",
         14.0,
     );
     let selected = ExternalAction::BrightnessDown;

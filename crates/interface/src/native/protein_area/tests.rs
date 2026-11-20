@@ -2,6 +2,7 @@ use super::*;
 use bevy::math::DVec2;
 use serde_json::json;
 
+#[cfg(test)]
 mod virtualized_edit;
 
 #[test]

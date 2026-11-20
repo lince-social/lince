@@ -1,4 +1,7 @@
 mod lingua;
+mod directory;
+pub use directory::{DirectorySync, Request, Status};
+pub(crate) use directory::require_origin;
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
@@ -36,7 +39,7 @@ impl FileFormat {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 struct KnownFile {
     uid: String,
     body: String,
@@ -48,6 +51,7 @@ struct KnownFile {
 pub struct FileSyncState {
     lingua: lingua::State,
     known: HashMap<PathBuf, KnownFile>,
+    markdown_loaded: bool,
 }
 
 impl FileSyncState {
@@ -65,7 +69,7 @@ pub struct FileSyncReport {
     pub conflicts: Vec<FileConflict>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct FileConflict {
     pub path: String,
     pub reason: String,
@@ -101,6 +105,16 @@ impl Engine {
         organ_uid: &str,
         state: &mut FileSyncState,
     ) -> Result<FileSyncReport, EngineError> {
+        self.file_sync_tick_with(dir, organ_uid, state, None).await
+    }
+
+    async fn file_sync_tick_with(
+        &self,
+        dir: &Path,
+        organ_uid: &str,
+        state: &mut FileSyncState,
+        binding: Option<&DirectorySync>,
+    ) -> Result<FileSyncReport, EngineError> {
         use nucleus::sync::{Activity, Direction, Instance, Outcome, Summary, Update};
         let result = self
             .sync_service
@@ -111,7 +125,7 @@ impl Engine {
                     direction: Direction::Both,
                     update: Update::Reconcile,
                 },
-                self.file_sync_pass(dir, organ_uid, state),
+                self.file_sync_pass(dir, organ_uid, state, binding),
                 |report| {
                     let mut summary = Summary::new(
                         if report.conflicts.is_empty() {
@@ -146,7 +160,7 @@ impl Engine {
                 .lock()
                 .expect("file sync conflicts")
                 .insert(
-                    organ_uid.into(),
+                    binding.map_or(organ_uid, |item| item.uid.as_str()).into(),
                     vec![FileConflict {
                         path: dir.display().to_string(),
                         reason: error.to_string(),
@@ -161,10 +175,13 @@ impl Engine {
         dir: &Path,
         organ_uid: &str,
         state: &mut FileSyncState,
+        binding: Option<&DirectorySync>,
     ) -> Result<FileSyncReport, EngineError> {
         let mut report = FileSyncReport::default();
-        let config =
-            store::records::get_extension(&self.store.pool, organ_uid, "lince.file_sync").await?;
+        let config = match binding {
+            Some(item) => Some(item.export_config()),
+            None => store::records::get_extension(&self.store.pool, organ_uid, "lince.file_sync").await?,
+        };
         if let Some(uid) = config
             .as_ref()
             .and_then(|value| value.get("protein"))
@@ -172,23 +189,50 @@ impl Engine {
         {
             self.file_sync_protein(uid).await?;
         }
+        if let Some(item) = binding {
+            if !dir.exists() && !store::file_sync_baselines::load(
+                &self.store.pool, organ_uid, &item.baseline_key(),
+            ).await?.is_empty() {
+                return Err(EngineError::Consequence("The sync directory is missing".into()));
+            }
+        }
         std::fs::create_dir_all(dir).map_err(EngineError::Io)?;
+        if binding.is_some() && dir.canonicalize()? != dir {
+            return Err(EngineError::Consequence("The sync directory now resolves to a different path".into()));
+        }
         let formats = configured_formats(config.as_ref());
         if formats.contains(&FileFormat::Lingua) {
-            return self.lingua_sync_pass(dir, organ_uid, config.as_ref(), &mut state.lingua).await;
+            return self.lingua_sync_pass(dir, organ_uid, config.as_ref(), &mut state.lingua, binding).await;
         }
+        let origin = binding.map(|item| item.uid.as_str());
+        let baseline_key = binding.map(DirectorySync::baseline_key);
+        if let Some(key) = &baseline_key {
+            if !state.markdown_loaded {
+                for (path, raw) in store::file_sync_baselines::load(&self.store.pool, organ_uid, key).await? {
+                    state.known.insert(path.into(), serde_json::from_str(&raw)?);
+                }
+                state.markdown_loaded = true;
+            }
+        }
+        let before: HashSet<PathBuf> = if binding.is_some() {
+            state.known.keys().cloned().collect()
+        } else {
+            HashSet::new()
+        };
         let mut disk = HashMap::new();
         for format in &formats {
-            disk.extend(scan_disk(dir, format.extension())?);
+            disk.extend(scan_disk(dir, format.extension(), false)?);
         }
         let mut written_before: HashMap<PathBuf, DesiredFile> = HashMap::new();
         {
-            let all = self.selected_records(organ_uid, None).await?;
+            let all = self.selected_records(organ_uid, None, origin).await?;
             for format in &formats {
                 written_before.extend(self.desired_files(dir, &all, *format).await?);
             }
         }
-        self.reattach_written_files(&written_before, &disk, state);
+        if binding.is_none() {
+            self.reattach_written_files(&written_before, &disk, state);
+        }
         let mut conflicted: HashSet<PathBuf> = HashSet::new();
 
         let mut by_uid: HashMap<String, Vec<PathBuf>> = HashMap::new();
@@ -360,7 +404,9 @@ impl Engine {
                     .any(|(path, desired)| desired.uid == uid && disk.contains_key(path))
             };
             if let Some(row) = existing.filter(|row| {
-                row.organ_uid.as_deref() == Some(organ_uid) && !still_on_disk(&row.uid)
+                row.organ_uid.as_deref() == Some(organ_uid)
+                    && row.file_origin.as_deref() == origin
+                    && !still_on_disk(&row.uid)
             }) {
                 if row.head != *stem {
                     self.act(
@@ -419,6 +465,20 @@ impl Engine {
                         continue;
                     }
                 }
+            } else if let Some(origin) = origin {
+                let outcome = self.act(
+                    Action::CreateRecordDraft {
+                        draft: crate::record_creation::Draft {
+                            head: stem.clone(),
+                            body,
+                            file_origin: Some(origin.to_owned()),
+                            ..Default::default()
+                        },
+                    },
+                    None,
+                ).await?;
+                let Some(uid) = outcome.created else { continue };
+                uid
             } else {
                 let outcome = self
                     .act(
@@ -472,9 +532,9 @@ impl Engine {
                 .await?;
         }
 
-        let matched = self.selected_records(organ_uid, config.as_ref()).await?;
+        let matched = self.selected_records(organ_uid, config.as_ref(), origin).await?;
         let owned: HashSet<PathBuf> = {
-            let all = self.selected_records(organ_uid, None).await?;
+            let all = self.selected_records(organ_uid, None, origin).await?;
             let mut paths = HashSet::new();
             for format in &formats {
                 paths.extend(desired_paths(dir, &all, format.extension()).into_keys());
@@ -486,6 +546,14 @@ impl Engine {
             desired.extend(self.desired_files(dir, &matched, *format).await?);
         }
 
+        if binding.is_some() {
+            let by_uid: HashMap<_, _> = state.known.iter()
+                .map(|(path, known)| (known.uid.clone(), path.clone())).collect();
+            desired = desired.into_iter().map(|(path, desired)| {
+                (by_uid.get(&desired.uid).cloned().unwrap_or(path), desired)
+            }).collect();
+        }
+
         for entry in std::fs::read_dir(dir).map_err(EngineError::Io)? {
             let entry = entry.map_err(EngineError::Io)?;
             let path = entry.path();
@@ -493,8 +561,27 @@ impl Engine {
             if conflicted.contains(&path) {
                 continue;
             }
+            if binding.is_some() && !state.known.contains_key(&path) {
+                if desired.contains_key(&path) {
+                    report.conflicts.push(FileConflict {
+                        path: path.display().to_string(),
+                        reason: "That filename is already in use".to_owned(),
+                    });
+                    conflicted.insert(path);
+                }
+                continue;
+            }
             let configured = formats.iter().any(|f| ext == Some(f.extension()));
-            if configured && !desired.contains_key(&path) && owned.contains(&path) {
+            let keep = if let Some(origin) = origin {
+                match state.known.get(&path) {
+                    Some(known) => store::records::routing(&self.store.pool, &known.uid).await?
+                        .is_some_and(|row| row.file_origin.as_deref() == Some(origin)),
+                    None => false,
+                }
+            } else {
+                owned.contains(&path)
+            };
+            if configured && !desired.contains_key(&path) && keep {
                 report.conflicts.push(FileConflict {
                     path: path.display().to_string(),
                     reason: "this Record is not selected by this folder's filter — kept rather \
@@ -520,6 +607,7 @@ impl Engine {
         }
         state.known.retain(|path, _| {
             desired.contains_key(path) || pending_delete.contains(path) || owned.contains(path)
+                || (binding.is_some() && path.is_file())
         });
 
         for (path, desired) in &desired {
@@ -550,10 +638,23 @@ impl Engine {
             );
         }
 
+        if let Some(key) = &baseline_key {
+            let mut tx = store::write_tx(&self.store.pool).await?;
+            for (path, known) in &state.known {
+                store::file_sync_baselines::save_on(
+                    &mut tx, organ_uid, key, &path.to_string_lossy(), &serde_json::to_string(known)?,
+                ).await?;
+            }
+            tx.commit().await?;
+            for path in before.difference(&state.known.keys().cloned().collect()) {
+                store::file_sync_baselines::remove(&self.store.pool, organ_uid, key, &path.to_string_lossy()).await?;
+            }
+        }
+
         self.file_sync_conflicts
             .lock()
             .expect("file sync conflicts")
-            .insert(organ_uid.to_string(), report.conflicts.clone());
+            .insert(origin.unwrap_or(organ_uid).to_string(), report.conflicts.clone());
         Ok(report)
     }
 
@@ -853,12 +954,17 @@ impl Engine {
         &self,
         organ_uid: &str,
         config: Option<&serde_json::Value>,
+        origin: Option<&str>,
     ) -> Result<Vec<store::records::RecordRow>, EngineError> {
+        let origin_filter = protein::Predicate::FileOriginEq(
+            origin.unwrap_or(nucleus::sync::PERSONAL_FILE_ORIGIN).to_owned(),
+        );
         if let Some(uid) = config
             .and_then(|value| value.get("protein"))
             .and_then(serde_json::Value::as_str)
         {
             let mut query = self.file_sync_protein(uid).await?;
+            query.filter.push(origin_filter);
             query
                 .filter
                 .push(protein::Predicate::OrganEq(organ_uid.to_string()));
@@ -867,7 +973,7 @@ impl Engine {
             )));
             return Ok(protein::select_records(&self.store, &query, None).await?);
         }
-        let mut filter = vec![protein::Predicate::OrganEq(organ_uid.to_string())];
+        let mut filter = vec![origin_filter, protein::Predicate::OrganEq(organ_uid.to_string())];
         if let Some(extra) = configured_filter(config) {
             filter.push(extra);
         }
@@ -1165,19 +1271,21 @@ fn configured_formats(config: Option<&serde_json::Value>) -> Vec<FileFormat> {
     out
 }
 
-fn scan_disk(dir: &Path, extension: &str) -> Result<HashMap<PathBuf, String>, EngineError> {
+fn scan_disk(dir: &Path, extension: &str, recursive: bool) -> Result<HashMap<PathBuf, String>, EngineError> {
     let mut out = HashMap::new();
-    for entry in std::fs::read_dir(dir).map_err(EngineError::Io)? {
-        let entry = entry.map_err(EngineError::Io)?;
-        let path = entry.path();
-        if path.extension().and_then(|e| e.to_str()) != Some(extension) {
-            continue;
+    let mut pending = vec![dir.to_path_buf()];
+    while let Some(directory) = pending.pop() {
+        for entry in std::fs::read_dir(directory)? {
+            let entry = entry?;
+            let kind = entry.file_type()?;
+            let path = entry.path();
+            if recursive && kind.is_dir() {
+                pending.push(path);
+            } else if kind.is_file() && path.extension().and_then(|e| e.to_str()) == Some(extension) {
+                let body = std::fs::read_to_string(&path)?;
+                out.insert(path, body);
+            }
         }
-        if !path.is_file() {
-            continue;
-        }
-        let body = std::fs::read_to_string(&path).map_err(EngineError::Io)?;
-        out.insert(path, body);
     }
     Ok(out)
 }
@@ -1399,11 +1507,16 @@ fn fact_may_touch_file_sync(fact: &nucleus::Fact) -> bool {
 pub fn spawn_supervisor(engine: std::sync::Arc<Engine>) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
         let mut running: HashMap<String, (PathBuf, tokio::task::JoinHandle<()>)> = HashMap::new();
+        let mut directories = HashMap::new();
         let mut bus = engine.subscribe();
         let _ = reconcile_all(&engine, &mut running).await;
+        let _ = directory::reconcile(&engine, &mut directories).await;
         loop {
             match bus.recv().await {
                 Ok(fact) => {
+                    if fact_may_touch_file_sync(&fact) {
+                        let _ = directory::reconcile(&engine, &mut directories).await;
+                    }
                     let should_reconcile =
                         fact_may_touch_file_sync(&fact) || running.contains_key(&fact.record_uid);
                     if should_reconcile {
@@ -1412,6 +1525,7 @@ pub fn spawn_supervisor(engine: std::sync::Arc<Engine>) -> tokio::task::JoinHand
                 }
                 Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => {
                     let _ = reconcile_all(&engine, &mut running).await;
+                    let _ = directory::reconcile(&engine, &mut directories).await;
                 }
                 Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
             }

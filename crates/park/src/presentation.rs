@@ -141,6 +141,7 @@ pub struct InputSnapshot {
     pub workspaces: crate::server::WorkspaceSnapshot,
     pub editor: Option<crate::native_input::Editor>,
     pub(crate) native_pointer: crate::native_input::pointer::Snapshot,
+    #[cfg(feature = "nested")]
     pub(crate) pointer_motion: bool,
     pub drop_target: Option<crate::native_input::transfer::Target>,
     pub controls: Vec<lince_interface::host::Rectangle>,
@@ -196,11 +197,17 @@ impl Frame {
     }
 
     pub fn ready(&self) -> Result<bool, ProbeFailure> {
-        if let Some(image) = &self.image && !image.ready()? { return Ok(false); }
-        for output in &self.outputs {
-            if !output.image.ready()? { return Ok(false); }
+        Ok(self.pending_until()?.is_none())
+    }
+
+    pub(crate) fn pending_until(&self) -> Result<Option<std::time::Instant>, ProbeFailure> {
+        let mut earliest: Option<std::time::Instant> = None;
+        for image in self.image.iter().chain(self.outputs.iter().map(|output| &output.image)) {
+            if let Some(deadline) = image.pending_until()? {
+                earliest = Some(earliest.map_or(deadline, |previous| previous.min(deadline)));
+            }
         }
-        Ok(true)
+        Ok(earliest)
     }
 
     pub fn wait_for_probe(&self) -> Result<(), ProbeFailure> {
@@ -768,7 +775,7 @@ impl Presentation {
         self.app.world_mut()
     }
 
-    #[cfg(all(test, feature = "server-tests"))]
+    #[cfg(all(test, feature = "nested", feature = "server-tests"))]
     pub(crate) fn world(&self) -> &World { self.app.world() }
 
     pub(crate) fn prepare_linear_output(&mut self, requested: bool) -> Result<(), ProbeFailure> {
@@ -794,7 +801,7 @@ impl Presentation {
         else { lince_interface::host::color::NativeEncoding::Srgb }
     }
 
-    #[cfg(all(test, feature = "server-tests"))]
+    #[cfg(all(test, feature = "nested", feature = "server-tests"))]
     pub(crate) fn published_geometry(&self) -> Option<&lince_interface::host::GeometrySnapshot> {
         self.last_geometry.as_deref()
     }
@@ -1665,6 +1672,7 @@ impl Presentation {
                 crate::native_input::capture(world, geometry)
             },
             native_pointer,
+            #[cfg(feature = "nested")]
             pointer_motion: world.run_system_cached(crate::native_input::pointer::observes_motion).expect("Native pointer demand queries are valid"),
             controls: nodes
                 .iter()
@@ -1736,12 +1744,8 @@ fn route_pointer_target(
 
 impl Drop for Presentation {
     fn drop(&mut self) {
-        let _ = self.renderer.device.poll(wgpu::PollType::Wait {
-            submission_index: None,
-            timeout: Some(std::time::Duration::from_secs(5)),
-        });
-        for buffer in self.uploads.drain(..) {
-            buffer.release();
+        if !self.uploads.is_empty() {
+            self.release_capture_uploads();
         }
     }
 }

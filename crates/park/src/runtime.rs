@@ -26,6 +26,7 @@ use std::{
         mpsc::{Receiver, SyncSender, TrySendError, sync_channel},
     },
     thread::{JoinHandle, Thread},
+    time::Instant,
 };
 
 static NEXT_FRAME_SEQUENCE: AtomicU64 = AtomicU64::new(1);
@@ -861,9 +862,9 @@ fn run(
             update_reasons |= UPDATE_IMPORT;
         }
         if let Some(completed) = awaiting.as_ref() {
-            if !completed.frame.ready()? {
+            if let Some(deadline) = completed.frame.pending_until()? {
                 lince_interface::host::performance::count(lince_interface::host::performance::Count::GpuPark);
-                std::thread::park();
+                std::thread::park_timeout(deadline.saturating_duration_since(Instant::now()));
                 continue;
             }
             let completed = awaiting.take().unwrap();

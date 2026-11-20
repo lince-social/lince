@@ -237,7 +237,11 @@ impl Pool {
             let mut state = entry.retirement.lock().unwrap().clone();
             let unleased = entry.lease.upgrade().is_none();
             if unleased && state.is_none() {
-                let completion = gpu.completion.track(gpu.queue.submit([]))?;
+                gpu.checked_submission(|| {
+                    gpu.queue.submit([]);
+                    Ok(())
+                })?;
+                let completion = gpu.completion.track(&gpu.queue)?;
                 state = Some(Retirement {
                     completion,
                     reusable: false,

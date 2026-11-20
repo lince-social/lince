@@ -1,6 +1,7 @@
 use super::Window as ClientWindow;
 use super::*;
 use bevy::prelude::*;
+#[cfg(feature = "nested")]
 use smithay::reexports::wayland_server::Resource;
 use lince_interface::{
     host::{DesktopAction, Direction, ItemId, WorkspaceLayout},

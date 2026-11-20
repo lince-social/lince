@@ -402,9 +402,25 @@ impl Engine {
                 }
                 serde_json::to_value(self.plugin_catalog().await?)?
             }
-            Command::Stop { binding } => {
-                store::sqlx::query("UPDATE plugin_binding SET enabled=0,status='Stopped',revision=revision+1 WHERE uid=?").bind(&binding).execute(&self.store.pool).await?;
-                self.plugin_host()?.stop_all();
+            Command::Stop { ref binding } | Command::Start { ref binding } => {
+                let _guard = self.plugin_work.lock().await;
+                let enabled = matches!(command, Command::Start { .. });
+                let updated = store::sqlx::query(
+                    "UPDATE plugin_binding SET enabled=?,status=?,revision=revision+1,last_run=0 WHERE uid=?",
+                ).bind(enabled).bind(if enabled { "Starting" } else { "Stopped" })
+                    .bind(binding).execute(&self.store.pool).await?;
+                if updated.rows_affected() == 0 {
+                    return Err(invalid("This Sync is unavailable"));
+                }
+                serde_json::to_value(self.plugin_catalog().await?)?
+            }
+            Command::RemoveBinding { binding } => {
+                let _guard = self.plugin_work.lock().await;
+                let updated = store::sqlx::query("DELETE FROM plugin_binding WHERE uid=?")
+                    .bind(&binding).execute(&self.store.pool).await?;
+                if updated.rows_affected() == 0 {
+                    return Err(invalid("This Sync is unavailable"));
+                }
                 serde_json::to_value(self.plugin_catalog().await?)?
             }
             Command::Retry { delivery } => {

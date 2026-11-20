@@ -14,7 +14,9 @@ use wgpu::hal::api::Vulkan;
 #[cfg(feature = "native-presentation")]
 mod buffers;
 #[cfg(feature = "native-presentation")]
-pub(crate) use buffers::{RetainedCapture, retained_capture, retire_capture};
+pub(crate) use buffers::retire_capture;
+#[cfg(feature = "nested")]
+pub(crate) use buffers::{RetainedCapture, retained_capture};
 #[cfg(feature = "graphics-gate")]
 mod canvas;
 mod import;
@@ -175,6 +177,10 @@ pub(crate) struct ExportedImage {
 
 impl ExportedImage {
     pub(crate) fn ready(&self) -> Result<bool> { self.completion.ready() }
+    #[cfg(feature = "native-presentation")]
+    pub(crate) fn pending_until(&self) -> Result<Option<std::time::Instant>> {
+        self.completion.pending_until()
+    }
     pub(crate) fn wait_for_probe(&self) -> Result<()> { self.completion.wait_for_probe() }
 }
 
@@ -569,6 +575,23 @@ impl GpuContext {
         self.queue.on_submitted_work_done(move || drop(resources));
     }
 
+    fn checked_submission(&self, submit: impl FnOnce() -> Result<()>) -> Result<()> {
+        let validation = self.device.push_error_scope(wgpu::ErrorFilter::Validation);
+        let memory = self.device.push_error_scope(wgpu::ErrorFilter::OutOfMemory);
+        let internal = self.device.push_error_scope(wgpu::ErrorFilter::Internal);
+        let result = submit();
+        let errors = [
+            pollster::block_on(internal.pop()),
+            pollster::block_on(memory.pop()),
+            pollster::block_on(validation.pop()),
+        ];
+        result?;
+        if let Some(error) = errors.into_iter().flatten().next() {
+            return Err(ProbeFailure::at("gpu_submission", error));
+        }
+        Ok(())
+    }
+
     fn initialize(&self, allocation: Arc<Allocation>) -> Result<()> {
         self.submit_raw("initialize_image", |command| self.encode_initialize(&allocation, command))?;
         self.retain(allocation);
@@ -617,10 +640,13 @@ impl GpuContext {
         layout: vk::ImageLayout,
         access: vk::AccessFlags,
         stage: vk::PipelineStageFlags,
-    ) -> Result<wgpu::SubmissionIndex> {
-        let submission = self.submit_raw("release_to_egl", |command| self.encode_release(&allocation, layout, access, stage, command))?;
+    ) -> Result<()> {
+        self.checked_submission(|| {
+            self.submit_raw("release_to_egl", |command| self.encode_release(&allocation, layout, access, stage, command))?;
+            Ok(())
+        })?;
         self.retain(allocation);
-        Ok(submission)
+        Ok(())
     }
 
     fn encode_release(
@@ -678,14 +704,14 @@ impl GpuContext {
             });
         }
         self.queue.submit([encoder.finish()]);
-        let submission = self.release(
+        self.release(
             image.allocation.clone(),
             vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
             vk::AccessFlags::COLOR_ATTACHMENT_WRITE,
             vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT,
         )?;
         Ok(ExportedImage {
-            completion: self.completion.track(submission)?,
+            completion: self.completion.track(&self.queue)?,
             dmabuf: image.dmabuf,
             _allocation: image.allocation,
             #[cfg(all(test, feature = "nested"))]

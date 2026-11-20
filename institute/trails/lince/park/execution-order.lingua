@@ -4,7 +4,7 @@ Park — Remaining verification and conditional work (
     #part-of @park-development: 11,
     #park-workflow @park-development-cycle
 ) { r_1FMCTGVHF35B6D0T70JEQAMYDW
-**Current phase, 2026-11-20.** The approved coding-only pass is complete. Builds, tests and measurements await approval. The remaining optimization proposals need the recorded evidence before implementation.
+**Current phase, 2026-11-20.** The installed `08c087f4` measurement visit is recorded in [Overhaul.md](Overhaul.md#installed-park-measurement--2026-11-20). The `eb01745e` release job hit a compile error. Continue private checks on the repaired source and use its matching optimized artifact for the next physical measurement.
 
 | Remaining category | P-task count |
 | --- | ---: |
@@ -17,33 +17,17 @@ Park — Remaining verification and conditional work (
 | Source and coverage inventory | 2 |
 | Total open P-task Records | 83 |
 
-[P155](record:r_0B3MSPZT92QG5QY441RHB24Z70) is closed with the saved comparison negative control. [P94](record:r_576VQH1YFK5VPC5GM9024714EW) is closed by the owner’s report that the database-lock toast is gone. The detailed implementation and acceptance inventories are in [Overhaul.md](Overhaul.md). The next verification and measurement steps are in the [checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
+The implementation receipts and acceptance details are in [Overhaul.md](Overhaul.md). Use the [checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y) for measured results and the next verification steps.
 
 ## Approved validation and Laboratory work — 8
 
-- [x] **P148 source implementation.** Match tests and helpers to the worker, nested and session feature boundaries.
-- [ ] **P148 verification.** Compile the worker-only and full configurations, then run the affected existing selectors.
-- [x] **P140 source implementation.** Discover Record requirements with Lingua source locations and attach approved mappings to the fast Laboratory results.
-- [ ] **P140 verification.** Compile the feature-enabled Laboratory suite and run the discovery, projection, writeback and rule-mapping checks.
-- [x] **P141 source implementation.** Drive ordinary input with exact target checks, wait for the private Protein feed and target layout, and restore the workspace after cancellation or failure.
+- [ ] **P148 verification.** Run the affected worker-only and nested selectors.
+- [ ] **P140 verification.** Run the feature-enabled Laboratory rule-mapping and invalid-manifest checks. Confirm the rule identities in the common suite.
 - [ ] **P141 verification.** Run the mandatory Protein case, driver route and stale-click cases, and Laboratory Stop/Close/failure restoration case.
-- [x] **P142 source implementation.** Exercise Escape, Enter, Tab, a real filter-value edit and the exact authorized local result set. Check caption and result glyphs in the prepared view.
 - [ ] **P142 verification.** Run the mandatory Protein case and the missing, transparent, moved, clipped and covered caption controls.
-- [x] **P145 source implementation.** Use the same cases, source identities and selections in the CLI, Laboratory and prepared Park checks.
-- [ ] **P145 verification.** Run the default and three feature selections, reject invalid selections, and compare result identities across the CLI, Laboratory and prepared Park run.
-- [x] **P146 source implementation.** Check actual offscreen pixels for the closed, expanded and selected Protein captions using a hidden-caption control.
+- [ ] **P145 verification.** Run the default and three feature selections, then compare result identities across the CLI, Laboratory and prepared Park run.
 - [ ] **P146 verification.** Run the mandatory paint check and its pixel-mask negative control on a supported hardware or software adapter, then record startup and capture costs.
-- [x] **P134 generator and report.** Generate factor pairs against exact prepared fixtures. Report passed, failed, unrun, unavailable, inapplicable and missing-oracle outcomes.
-- [x] **P134 R04 source check.** Apply inherited styling alongside scroll offset, then use current clip and hit geometry.
-- [x] **P134 R05 source check.** Hold a real query reply across a theme update, then inspect the first result frame for current text and icons.
-- [x] **P134 R07 source check.** Change a private inactive editor and its style, reveal the workspace, and use the first published frame for input.
-- [x] **P134 R08 source check.** Hold a submitted readback across output-source replacement and privacy revocation.
-- [x] **P134 R02 source check.** Edit one private file-backed body through Split and verify its Pretty/Raw peers, live queries, unrelated preview and cold reopen.
-- [x] **P134 R03 source check.** Hold a journaled edit through live Protein sort and filter changes, verify its identity when the row returns, then recover it from the private database.
-- [x] **P134 R06 source check.** Type through the native keyboard route during a held Terminal stream, watch the stopwatch advance, and check output order and exit status.
-- [x] **P134 R09 source check.** Acknowledge IDE Save and close, terminate the private child, and reopen the saved file and adjacent dirty draft.
-- [ ] **P134 verification.** Run the coverage accounting negative controls and available prepared rows. Inspect the result in Laboratory.
-- [x] **P147 source coverage.** Join the isolated Protein editor, preview and live Area lifecycle checks while keeping the routine suite's current breadth.
+- [ ] **P134 verification.** Run the available prepared rows and inspect the result in Laboratory.
 - [ ] **P147 verification and timing.** Run the expanded Protein coverage and measure cold setup and warmed routine costs before changing its default case set.
 
 R01 and R10 need the physical session.
@@ -52,7 +36,7 @@ After approval, verify the feature gates and the mandatory Protein-first suite, 
 
 | Task | What is actually left |
 | --- | --- |
-| [P148 — Repair worker-only test feature gates.](record:r_2M3HN9VZMK9XYX5HXKC38XPB97) | Source changes complete. Check worker-only and full test builds, then run the exact retained cases. |
+| [P148 — Repair worker-only test feature gates.](record:r_2M3HN9VZMK9XYX5HXKC38XPB97) | Both repaired configurations compile. Run the exact retained cases. |
 | [P140 — Make rule discovery and hidden-comment coverage explicit.](record:r_0EHDMT2W041ZM1SK253DJVH2C1) | Source changes complete. Verify discovery, source spans, hidden-comment round trips and manifest rejection cases. |
 | [P141 — Finish deterministic input, readiness and cleanup in the native test fixture.](record:r_6JDVCST7MPE4YRB113MGB6FRD7) | Source changes complete. Verify ordinary routes, selector/layout invalidation, private feed readiness and workspace restoration. |
 | [P142 — Complete Protein filter interaction and result-set coverage.](record:r_4RW2K4VB8JBARQ6WJSHM0MPGEF) | Source changes complete. Verify ordinary keyboard filtering, value edits, caption checks and the private query's exact result. |
@@ -133,11 +117,11 @@ These are product outcomes still to demonstrate, not six already-diagnosed code 
 | Task | What is actually left |
 | --- | --- |
 | [P136 — Demonstrate prompt durable local title and description edits in daily use.](record:r_72ZAB2H5VTQ88SE597N9CQHKJ7) | Close real local title/description durability and feedback acceptance. |
-| [P65 — Establish prompt visible interaction under normal load.](record:r_44DT369GKKWNAT9RSK0KX8RTA2) | Reuse current valid causal input observations; close installed gate. |
+| [P65 — Establish prompt visible interaction under normal load.](record:r_44DT369GKKWNAT9RSK0KX8RTA2) | Recheck the worker's 44.35 ms p95 and the mixed editor focus failure on the matching candidate. Verify real visible response. |
 | [P64 — Establish genuinely quiet daily-workspace resource use.](record:r_4GVND1GYBP9J233JRJP59BE7GA) | Reuse current valid quiet-workspace evidence; close installed gate. |
 | [P135 — Measure the combined candidate and repair one harmful interaction.](record:r_6A7V7Y05E0TX6156V5XE0W2N8V) | Run at integration boundaries; diagnose/repair harmful interactions. |
 | [P16 — Establish near-refresh presentation independently on both monitors.](record:r_5S47A4WFMEANPKPKT2BPN5QWTM) | Close each physical output’s near-refresh presentation acceptance. |
-| [P15 — Establish nearly lossless Firefox video under that same load.](record:r_09F37ECZ6MCA18Y6CGNE3D6Y5Y) | Close matched nearly lossless Firefox video acceptance. |
+| [P15 — Establish nearly lossless Firefox video under that same load.](record:r_09F37ECZ6MCA18Y6CGNE3D6Y5Y) | Match the Firefox source and normal scene against Niri, and correlate both physical outputs. The single installed baseline recorded 4 drops in 30 s after warmup. |
 
 ## Implemented source: verification only — 23
 
@@ -171,12 +155,7 @@ The selected implementation is done. Do not code it again. The linked requiremen
 
 ## Source ownership and active-path audit — 2
 
-The source inventory now assigns the native startup, Store and Laboratory registrations. P86 ranks current ownership against the saved observations. The revised package and current release costs still need verification.
-
-- [x] **P124 source inventory.** Assign the shipping native startup registrations, Store constructors and openers to workflow owners. Stamp their source and name the selector or missing oracle for each distinct cost path.
 - [ ] **P124 verification.** Inspect the verified bundle’s source inventory, feature gates and missing selectors against the running revision.
-- [x] **P86 source audit.** Rank removable active units using the existing observations and their current ownership paths. Leave unmeasured cost and installation/build experiments for verification.
-- [x] **Castle readiness source reduction.** Skip initial-visibility collection after a Castle presents and reuse traversal buffers within each pass.
 - [ ] **Castle readiness verification.** Run the existing readiness cases and confirm that current layout/text/capture gating survives the reduction. Measure warm update CPU and allocation cost alongside P66.
 
 | Task | What is actually left |

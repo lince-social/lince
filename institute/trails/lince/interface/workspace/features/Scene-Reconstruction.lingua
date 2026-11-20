@@ -1,0 +1,71 @@
+Scene reconstruction from supplied images (@ws-scene-reconstruction: 0, is #chapter, #part-of @workspace-development, #requires @ws-world-composition) { r_7W7VAWNMRY1HFAXNDWX3JM81AP
+Status pending. Owner refinement, 2026-11-20. Create ordinary local scene models from supplied overlapping photographs and from registered imagery with known terrain. The resulting candidate can be inspected, aligned, edited, placed or used to replace a selected region through the common composition workflow.
+
+[Development graph](../Workspace-Development.lingua) · [World composition](World-Composition.lingua) · [World data and composition contracts](../contracts/World-composition-contracts.lingua)
+
+## Start gate and delivered boundary
+
+Consume the verified creation envelope and candidate/adoption operations owned by World Composition WCO.T02 and WC.R23, the input/method semantics in WC.R24, and retention policy in WC.R25. Reuse [Imports](Imports.lingua) for representation support, registration, layer composition and three-way source repair. Reuse the existing source, frame, asset, bounded job and native authoring services through that boundary.
+
+Deliver two actual method adapters and native workflows. One reconstructs a bounded mesh from an overlapping supplied photo set. The other registers and drapes a supplied orthophoto or suitable satellite appearance raster over an actual elevation/terrain product. Each produces a versioned candidate with source correspondence, coverage, scale/registration status, quality evidence and ordinary portable dependencies. The candidate has its own local frame and can exist before a destination is chosen.
+
+This package consumes the published World Composition boundary before its implementation starts. Its supplied-photo workflow has no geographic source requirement. Geographic inputs use the existing frame/source adapters when selected, while local captured scenes remain valid independent roots. [Live scene reconstruction](Live-Scene-Reconstruction.lingua) owns the additional volatile-feed bridge. [Generated scenes](Generated-Scenes.lingua) owns generative production and completion adapters.
+
+## Ownership and honest parallel work
+
+Own supplied-image method admission, reconstruction/draping workers, their quality results and native method proofs. World Composition owns the shared creation/adoption interface. Imports owns source registration and reconciliation. Offline City owns geographic acquisition and coverage. Preserve those ownership boundaries when the same image or terrain source serves several consumers.
+
+After the complete World Composition package publishes its verified common candidate and job contracts, the photo and terrain-imagery workers can proceed in separate leaf modules with separate bounded fixtures. Generated-scene work can overlap against World composition's stable export. Live reconstruction starts after this package and Observed models have published their verified exports. Shared schema, native job/adoption controls, registration, decoder infrastructure and renderer changes have one owner at a time. The composed workflow joins only after both real methods publish supported outputs and the required native evidence.
+
+## Ordered work
+
+### Task RCN.T01
+
+- [ ] Define and implement the two supported input profiles through the existing creation method registry. For photo reconstruction, accept a bounded supplied image set with content identities, capture metadata, orientation/crop information, image dimensions and available intrinsic/pose data. Pin the actual SfM/MVS implementation and supported image/camera variants, output types, resource limits and scratch behavior. For terrain appearance, accept a supported georeferenced raster or explicitly registered local image plus a declared terrain/elevation product, with units, frame/CRS, height meaning, datum, no-data and pixel-to-surface mapping. Native controls show required inputs, available evidence, processing cost, unsupported variants and method settings before starting the existing job. Provider-specific settings stay namespaced while the common output schema remains usable by other methods.
+
+### Task RCN.T02
+
+- [ ] Run an actual structure-from-motion and multiview-stereo pipeline on the bounded supplied photographs and produce a usable mesh candidate. Preserve reconstructed camera poses, coordinate conventions, source-image correspondence and supported coverage/error products. Diagnose insufficient overlap, pure-rotation/low-parallax capture, textureless or reflective surfaces, moving content and disconnected reconstructions. Register scale from declared measured controls when available. An unscaled reconstruction remains explicitly unscaled until the ordinary alignment workflow supplies it. Mask unsupported geometry and expose reconstructed versus inferred/filled surfaces. Show the actual mesh in native views, with its supported appearance, selection and inspection operations. Point-cloud, texture-atlas, depth and splat outputs are advertised only after their own conversion, fidelity and resource checks. A successful point cloud alone does not complete the required mesh proof.
+
+### Task RCN.T03
+
+- [ ] Implement actual image-to-terrain registration and draping through the common raster/model/material path. Use the input's georeferencing or explicit local control points, a documented interpolation/resampling policy, no-data handling and registered elevation. Preserve horizontal and vertical reference conversions and achieved pixel/terrain resolution separately from source accuracy. Account for existing orthorectification when interpreting an orthophoto. A raw satellite image with sensor perspective needs an implemented orthorectification/sensor adapter or remains unsupported for this profile. Show the resulting textured terrain candidate, inspect its input lineage and test an intentionally offset image and incompatible height reference. A single appearance image does not supply measured terrain relief, building heights, facades or interiors. Where terrain is unavailable, retain a useful image/plane preview with its missing-geometry status and require supplied or explicitly authored support before accepting a terrain result.
+
+### Task RCN.T04
+
+- [ ] Exercise the common candidate workflow using both actual outputs. Create the candidate as an independent local model, inspect its coverage and method evidence, align it through Imports and continue through supported native edits or authored overlays. Place one instance in a local scene and adopt a second candidate into a selected region through WC.R23's declared replace/mask/additive operation. Keep source identity, candidate identity, occurrence identity and target revision distinct. Preserve surrounding content, authored fixed poses, selected source correspondences and normal undo. Report unsupported editing operations and conversion losses in the candidate capability description. Native adoption must use the same accepted commands and receipts that later Fiote callers consume.
+
+### Task RCN.T05
+
+- [ ] Integrate actual worker progress, cancellation, bounded scratch, retry and generation checks with the existing job service. Pin source/method/target generations for processing and publication. Interrupt decoding, sparse reconstruction, dense reconstruction, surface extraction and draping at exercised cancellation boundaries. Retain the previous valid scene when a job fails or is superseded. Handle malformed images, invalid calibration, missing terrain, mismatched dimensions, unavailable output dependencies and worker failure without partial accepted replacement. Measure old/new candidate overlap and reclaim unreferenced scratch and runtime resources after cancellation or final demand release. Retry through existing job identity and source manifests so one request cannot adopt the same replacement twice.
+
+### Task RCN.T06
+
+- [ ] Complete the native acceptance cases below with actual photo and draping methods. Publish the method/build/input/output matrix, measured quality and resource results, local candidate/adoption behavior, portable dependency closure and unresolved limits. Reopen a permitted derived result offline through the normal Workspace loader and instance it in a supplied fictional scene. Preserve local dimensions, source association, supported editing and appearance. Export only the selected permitted source and derived dependencies. Keep optional reconstruction variants unavailable until their own real adapter and proof exist.
+
+## Source retention and execution
+
+Supplied photographs may remain ordinary persistent source assets under their selected source/package policy. Their worker can use bounded processing scratch with a declared cleanup policy. That does not enable recording a live camera. WC.R25 and the existing camera contract govern transient frame/window leases, source retention and derived results.
+
+COLMAP is a candidate for RCN.T02. Its documented workflow recovers camera poses and sparse geometry, then dense geometry from overlapping viewpoints, and its standard application writes images/database/reconstruction products into a workspace directory. The supplied-photo adapter must inspect and bound those files. A stock invocation does not establish compatibility with the live feed's volatile-only profile. A live adapter needs a verified buffer/worker bridge and retention proof owned by Live Scene Reconstruction. [COLMAP tutorial](https://colmap.github.io/tutorial.html)
+
+Keep exact rerun capability tied to retained inputs and pinned software dependencies. A retained derived model can remain usable after permitted input removal, while its recipe reports unavailable replay inputs. Preserve processing provenance and independent quality controls without implying that expired camera frames can be recovered.
+
+## Additional method families
+
+Stereo satellite reconstruction is a separately declared extension. It needs suitable overlapping views, supported sensor/RPC camera models, timing, calibration/registration and actual elevation/mesh derivation. NASA Ames Stereo Pipeline is a candidate provider with documented sensor and terrain products. Its formats, camera models, output losses and bounded execution need their own acceptance before this method appears as available. Geographic source acquisition remains owned by Offline City. [Ames Stereo Pipeline](https://stereopipeline.readthedocs.io/en/latest/introduction.html) · [RPC camera models](https://stereopipeline.readthedocs.io/en/latest/examples/rpc.html)
+
+Aerial-photo providers such as OpenDroneMap can later supply supported meshes, orthophotos and elevation products through the same candidate interface. Their DTM/DSM distinction, classification assumptions, georeferencing and output dependencies remain visible. Gaussian fitting, learned geometry, camera streams and generative completion keep their independently declared input/retention and quality requirements. Adding one method extends the common data/candidate boundary without selecting a universal renderer, source format or model vendor. [OpenDroneMap elevation and image workflows](https://docs.opendronemap.org/tutorials/)
+
+## Native acceptance and handoff
+
+Use a bounded photo fixture with independently known dimensions, usable overlap, withheld views/control points and one deliberately unobserved region. Freeze the selected accuracy/coverage checks, image count/resolution, method settings and named hardware budget before inspecting its output. Include a poor-overlap input and a deliberately wrong scale/alignment. The successful case must produce the actual reconstructed mesh, a reviewable registered candidate and one supported native edit/adoption. Report alignment, geometric error, coverage and visual resemblance separately.
+
+Use a separate registered image/elevation fixture with known horizontal and vertical references, an intentionally missing patch, a registration offset and a changed source revision. Verify the draped output's alignment against independent controls, preserve no-data and reject an unsupported height interpretation. The supplied local version must work without a geographic destination. More complex terrain appearance and satellite methods retain their own additional proofs.
+
+For both methods, exercise preview/cancel, candidate comparison, source update during processing, a concurrent target edit, stale publication, accepted region adoption and normal undo. Verify that surrounding objects and authored fixed placement survive replacement. Maintain separate visible and collision/support products and demonstrate declared movement-support behavior during replacement through the existing owner where the chosen profile includes walking.
+
+Save and reopen each supported candidate offline through ordinary model/package services, then place it in a local fictional composition and inspect the same feature in numeric/table and spatial views. Record decoded/source/derived/scratch bytes, peak RAM/GPU residency, queue/work limits, processing time, input responsiveness and last-demand release. Preserve edit-panel-geometry and readable native controls. These are implementation acceptance obligations, not claims established by checking this Record's syntax.
+
+Export verified method descriptors, ordinary candidate manifests, representation/registration support, source/correspondence and quality reports, job/retention behavior, actual native operation receipts and portable reopening evidence. World Composition and the full contract consume those exports. Current outcome is unbuilt and unverified.
+} r_7W7VAWNMRY1HFAXNDWX3JM81AP

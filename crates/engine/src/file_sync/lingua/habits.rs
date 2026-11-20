@@ -479,7 +479,7 @@ impl Engine {
             let mut frequencies = document.automation.clone();
             frequencies.rules.clear();
             frequencies.frequencies[0].quantity = 0;
-            Box::pin(self.apply_lingua_frequencies_as(&frequencies, &mut report, actor)).await?;
+            Box::pin(self.apply_lingua_frequencies_as(&frequencies, &mut report, actor, None)).await?;
         }
         let frequency =
             store::karma::frequencies::get_handle(&self.store.pool, &definition.objects[1].uid)

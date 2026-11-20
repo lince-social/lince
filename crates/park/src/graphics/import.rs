@@ -375,17 +375,18 @@ impl GpuContext {
         crate::runtime::trace_frame("dmabuf-export-copy", started);
         #[cfg(feature = "native-presentation")]
         let started = std::time::Instant::now();
-        let submission = self.release(
+        let released = self.release(
             target.allocation.clone(),
             vk::ImageLayout::TRANSFER_DST_OPTIMAL,
             vk::AccessFlags::TRANSFER_WRITE,
             vk::PipelineStageFlags::TRANSFER,
-        )?;
+        );
         self.retain((source.clone(), target.texture.clone()));
+        released?;
         #[cfg(feature = "native-presentation")]
         crate::runtime::trace_frame("dmabuf-export-release", started);
         Ok(ExportedImage {
-            completion: self.completion.track(submission)?,
+            completion: self.completion.track(&self.queue)?,
             dmabuf: target.dmabuf,
             _allocation: target.allocation,
             #[cfg(all(test, feature = "nested"))]
@@ -415,17 +416,19 @@ impl GpuContext {
     ) -> Result<completion::Completion> {
         #[cfg(feature = "native-presentation")]
         let started = std::time::Instant::now();
-        let submission = {
+        let submitted = self.checked_submission(|| {
             #[cfg(feature = "native-presentation")]
             let _observation = crate::presentation::observe_work("lince_park::graphics::queue_submit");
-            self.queue.submit(commands)
-        };
+            self.queue.submit(commands);
+            Ok(())
+        });
         #[cfg(feature = "native-presentation")]
         crate::runtime::trace_frame("dmabuf-export-submit", started);
         #[cfg(all(test, feature = "native-presentation"))]
         let retained = (retained, self.export_timestamps.clone());
         self.retain(retained);
-        self.completion.track(submission)
+        submitted?;
+        self.completion.track(&self.queue)
     }
 
     #[cfg(feature = "native-presentation")]

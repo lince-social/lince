@@ -563,7 +563,7 @@ fn resource_sample(pid: rustix::process::Pid, elapsed_ms: u128) -> ResourceSampl
             .ok()?
             .checked_add(values.get(12)?.parse::<u64>().ok()?)
     });
-    let mut drm_clients = BTreeMap::new();
+    let mut drm_clients = BTreeMap::<String, BTreeMap<String, String>>::new();
     if let Ok(entries) = fs::read_dir(base.join("fdinfo")) {
         for entry in entries.flatten() {
             let Ok(contents) = fs::read_to_string(entry.path()) else {

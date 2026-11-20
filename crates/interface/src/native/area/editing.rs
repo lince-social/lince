@@ -188,6 +188,7 @@ pub(super) fn valid(area: &InfluenceArea, edit: Option<&Edit<'_>>) -> bool {
             .is_none_or(crate::native::sound_area::SoundArea::valid)
         && enter.validate()
         && leave.validate()
+        && area.creation.valid()
         && area
             .change_filter
             .as_ref()

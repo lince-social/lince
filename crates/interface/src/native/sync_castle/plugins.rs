@@ -58,6 +58,7 @@ enum Command {
     Preview,
     Save,
     Licenses(String),
+    ConfirmRemoveBinding(String),
     Close,
     Install,
 }
@@ -68,7 +69,7 @@ fn label(world: &mut World, parent: Entity, text: &str) -> Entity {
 
 pub(super) fn populate(world: &mut World, parent: Entity) {
     let owner = panel::column(world, parent);
-    label(world, owner, "Plugins");
+    label(world, owner, "Plugin syncs");
     label(
         world,
         owner,
@@ -200,6 +201,16 @@ impl Action for Command {
             return;
         }
         match self {
+            Self::ConfirmRemoveBinding(binding) => {
+                let editor = view.editor;
+                panel::clear(world, editor);
+                world.get_mut::<View>(owner).expect("mounted plugin syncs").form = None;
+                label(world, editor, "Remove this Sync? Its Records stay in the Cell. Its delivery queue is removed.");
+                let row = panel::row(world, editor);
+                panel::button(world, row, owner, "Remove Sync", Command::Run(Backend::RemoveBinding { binding: binding.clone() }));
+                panel::button(world, row, owner, "Cancel", Command::Close);
+                return;
+            }
             Self::Install => {
                 let directory = match panel::value(world, view.installation) {
                     Ok(directory) if !directory.trim().is_empty() => directory,
@@ -676,6 +687,13 @@ pub(super) fn update(world: &mut World) {
                         render(world, owner, catalog);
                     }
                     panel::status(world, status, "Sync saved and enabled");
+                }
+                Ok((Backend::RemoveBinding { .. }, result)) => {
+                    panel::clear(world, editor);
+                    if let Ok(catalog) = serde_json::from_value::<Catalog>(result) {
+                        render(world, owner, catalog);
+                    }
+                    panel::status(world, status, "Sync removed");
                 }
                 Ok((_, result)) => {
                     if let Ok(catalog) = serde_json::from_value::<Catalog>(result) {

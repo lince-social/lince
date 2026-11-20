@@ -176,7 +176,9 @@ P148 — Repair worker-only test feature gates. (
 
 **Source complete, verification pending (2026-11-20).** Tests for command-file persistence, compositor overview and final output composition use the nested feature that provides their dependencies. The worker build retains standalone pointer/keyboard input, overview settings, focus and raster checks that use worker APIs. Shared display helpers and test selector names are retained.
 
-**Verify next:** compile tests with `cargo check --locked --no-default-features -p lince-park --features native-presentation,server-tests --tests` and with `session,server-tests`. Select existing nonzero worker and nested cases, including display settings, overview callbacks and raster composition. Keep the task open until those checks have run.
+**Verified, 2026-11-20.** The repaired worker-only `native-presentation,server-tests` and full `session,server-tests` configurations both pass `cargo check --locked --no-default-features -p lince-park --tests` with their respective features. [Receipt](Overhaul.md#checkout-verification--2026-11-20).
+
+**Verify next:** run the worker and nested cases, including pointer and keyboard settings, command persistence, display settings, overview callbacks and raster composition.
 } r_2M3HN9VZMK9XYX5HXKC38XPB97
 
 Extension @park-p148 "lince.controls" {

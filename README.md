@@ -1,9 +1,11 @@
 <p align=center>
-<img width="24%" src="https://raw.githubusercontent.com/lince-social/lince/main/institute/assets/logo/white_in_black.svg" alt="Lince Logo">
-<img width="24%" src="https://raw.githubusercontent.com/lince-social/lince/main/institute/assets/logo/black_in_white.svg" alt="Lince Logo">
-<img width="24%" src="https://raw.githubusercontent.com/lince-social/lince/main/institute/assets/logo/white_in_black.svg" alt="Lince Logo">
-<img width="24%" src="https://raw.githubusercontent.com/lince-social/lince/main/institute/assets/logo/black_in_white.svg" alt="Lince Logo">
+<img width="24%" src="institute/assets/logo/white_in_black.svg" alt="Lince Logo">
+<img width="24%" src="institute/assets/logo/black_in_white.svg" alt="Lince Logo">
+<img width="24%" src="institute/assets/logo/white_in_black.svg" alt="Lince Logo">
+<img width="24%" src="institute/assets/logo/black_in_white.svg" alt="Lince Logo">
 </p>
+
+<img src="institute/assets/photos/display.gif" alt="Lince interface demo">
 
 # Lince
 

@@ -1035,6 +1035,8 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
         area.changes_enabled,
     );
     crate::native::area_mutation_panel::render(world, root, changes, entity);
+    let creation = section(world, "creation", "Record creation");
+    crate::native::area::creation::controls(world, creation, entity);
     button(world, root, panel, AreaAction::Remove, "Delete Area");
     crate::native::customization::synchronize_keyboard(world);
 }

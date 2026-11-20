@@ -2,7 +2,36 @@
 
 This is the single active report for the owner-requested responsiveness overhaul of 2026-11-11. It supersedes the execution order and automation instructions archived below. The original Records remain preserved until the owner chooses to remove their native identities; they are historical source material, not a second active queue. This report must be updated in place. Do not start another performance plan or silently mark old acceptance work complete.
 
-The approved queue puts validation, compiler/dependency/fullscreen comparisons and optimization investigations first. Eligible source tasks proceed one at a time. Deferred work, builds, tests and measurements await the owner's approval. The [checkpoint](Development-cycle.lingua) and [execution order](execution-order.lingua) carry the live status.
+The [checkpoint](Development-cycle.lingua) and [execution order](execution-order.lingua) carry the live work. The sections below retain source receipts and revision-specific measurements.
+
+## Checkout verification — 2026-11-20
+
+On `eb01745e`, all 32 Python runner/report tests and all three Anicca requirements tests passed. The source inventory audit also passed. Evidence is in `target/park-verification-eb01745e.rWMXKI3H/`. Prepared execution for P134 and P124 and native rule coverage for P140 remain open.
+
+The P134 source plan selects 15 cases for 21 rows with 265 declared pair oracles. It exposes 1,809 missing pair oracles and three inapplicable pairs, with R01 and R10 still assigned to physical acceptance. `coverage-plan.json` records the exact selection and scope before execution.
+
+The application release job failed to compile the DRM client sampler because its nested map value types were ambiguous. The explicit types compile and all 32 `xtask` Park validation tests pass, including preservation of negative deltas and missing measurements. The CLI rejects empty, unknown and extra Interface selection arguments with exit status 1. The companion measurement probe failed on a Protein virtualized-edit fixture compiled into the runtime library. That fixture is now gated to interface unit tests. The isolated worker check exposed compositor-only consumers that need feature gates while keeping worker capture and command handoffs available. Both repaired Park configurations and standalone Laboratory test code pass `cargo check --tests`. The isolated source receipt records the patches and compile logs. Automatic runtime discovery loaded the installed ELF and confirmed revision `08c087f4` with its graphics metadata. The prepared run still needs executables and a matching application.
+
+## Installed Park measurement — 2026-11-20
+
+The running compositor and installed Nix wrapper both identify the optimized `08c087f41e34113158a8b880180229899e5ee196` release. The checkout at `eb01745ea710047332cb01dc72f03341b92d72cd` contains the newer measurement and Laboratory changes. This visit establishes evidence for the running release. Raw reports are in `target/park-current-08c087f4.PrXRZQow/`.
+
+| Measurement | Result and scope |
+| --- | --- |
+| Private correctness | 97/97 interface cases passed. Native pixels, resize and two-output mapping passed in the private fixture. |
+| Private Edit, 120 samples each | Empty p95 24.79 ms, worst 32.37 ms. Inactive-content p95 26.11 ms, worst 33.23 ms. Both passed the fixture gate. |
+| Private worker, 120 input samples | Quiet CPU was 0.031% of one core. Input to completed publication p95 was 44.35 ms against 33.4 ms, with a 49.79 ms worst sample. |
+| Mixed scene | The pointer click failed to focus the presented editor again. The installed runner aborted that case before its interaction cohorts could complete. The combined suite exited 1. |
+| Private observer | All 50 reports and final drain arrived with zero recorded losses. Mixed typing was absent and system-body coverage was incomplete in typing, scroll, active and pan. There were 8,058 aggregated hardware GPU timings without source-frame identity and zero physical-output records. |
+| Running Park, 30 s ambient window | 147.46% of one core across the process. The canvas thread used 68.90% and compute-pool threads 47.90%. Resident memory was about 1.31 GiB with 319 MiB swapped. Both active i915 clients used render engines at 9.78% and 18.21% of the window. Ordinary activity was uncontrolled, so P64 quiet acceptance remains open. |
+| Active output modes and dispatch | eDP-1 1366×768 at 60.059 Hz and HDMI-A-1 1920×1080 at 60 Hz, both scale 1. Forty read-only Wayland round trips reached 0.56 ms p95. The connection exposed no `wp_presentation` global. These are mode and dispatch observations. |
+| Live Firefox 160, external monitor | At 100% zoom, a private local 720p60 H.264 clip recorded 4 browser-reported drops out of 1,800 frames in 30 s after a 5 s warmup. This is 0.13 drops/s and 59.87 frames/s after browser-reported drops. Warmup recorded 22 drops out of 299. The browser-reported result meets the 0.5 drops/s cutoff for this sample. P15 still needs the matched Niri source and workload and simultaneous P16 scanout evidence. |
+| Firefox graphics/process attribution | A 6.14 s window within playback observed both Park and Firefox on i915 `0000:00:02.0`. Firefox's observed client render counter progressed at 11.29% of the window. Its sampled video-engine counter had no increase. The RDD process used 11.90% of one core. This leaves decoder placement unconfirmed. |
+| Installed Laboratory headless | The bounded 180 s run emitted 42 passes and 14 failures before timing out. Several private practice cases exceeded their own 30 s bounds. It returned no final stress report. |
+
+In the private open/reveal phase, exclusive owner CPU averaged 1.960 ms per queue submission over 607 calls. Phase observation averaged 1.857 ms, and Bevy's pending command-buffer submission averaged 0.735 ms over 607 calls each. These costs belong to the traced private workload. Measure the collector overhead with a matched control on the newer artifact. Firefox's frame callback arrived 747 times while its cumulative `presentedFrames` counter advanced by 1,797. The browser metrics provide different views of playback. The live binary started without frame or phase telemetry, so the Firefox result cannot establish Park's physical frame delivery or interaction latency.
+
+The active queue retains worker latency, the mixed-focus regression, full workload and physical acceptance, and revision-specific verification of the newer changes. The first remaining measurement boundary is a matching `eb01745e` build and prepared bundle with live capture configured at startup.
 
 ## Approved Park work — 2026-11-20
 

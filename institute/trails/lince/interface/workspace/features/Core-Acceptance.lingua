@@ -1,4 +1,4 @@
-Complete core workspace acceptance (@ws-core-acceptance: 0, is #chapter, #part-of @workspace-development, #requires @ws-contract-01, #requires @ws-contract-02, #requires @ws-contract-03, #requires @ws-contract-04, #requires @ws-contract-05, #requires @ws-contract-06, #requires @ws-contract-07, #requires @ws-contract-08, #requires @ws-contract-09, #requires @ws-contract-10, #requires @ws-contract-11, #requires @ws-contract-11a, #requires @ws-contract-12, #requires @ws-contract-13, #requires @ws-contract-14, #requires @ws-contract-exploration, #requires @ws-contract-object-authoring, #requires @ws-contract-camera-vision) { r_3JHQAAN5FYFWYRNVA36409ZFP3
+Complete core workspace acceptance (@ws-core-acceptance: 0, is #chapter, #part-of @workspace-development, #requires @ws-contract-01, #requires @ws-contract-02, #requires @ws-contract-03, #requires @ws-contract-04, #requires @ws-contract-05, #requires @ws-contract-06, #requires @ws-contract-07, #requires @ws-contract-08, #requires @ws-contract-09, #requires @ws-contract-10, #requires @ws-contract-11, #requires @ws-contract-11a, #requires @ws-contract-12, #requires @ws-contract-13, #requires @ws-contract-14, #requires @ws-contract-exploration, #requires @ws-contract-object-authoring, #requires @ws-contract-camera-vision, #requires @ws-contract-world-composition) { r_3JHQAAN5FYFWYRNVA36409ZFP3
 Status: Pending. Dependency readiness is not implementation authorization or evidence of completion.
 
 [Development graph](../Workspace-Development.lingua) · [Contract catalogue](../Workspace-Contracts.lingua)
@@ -13,9 +13,11 @@ Additional required completed export: [Exploration and possession acceptance](..
 
 Additional required completed export: [Reusable object authoring acceptance](../contracts/Object-authoring-contracts.lingua). It joins native recipes, behavior/appearance, CAD/control bindings and bounded trials; later numerical implementations remain independent extensions.
 
-Additional required completed export: [Camera feeds and Fiote vision acceptance](../contracts/Camera-vision-contracts.lingua). Its source/plugin schema, real vision/event workflow and bounded one-shot/periodic observed model updates are core; no raw-video recorder, global camera catalog or research reconstruction system is required.
+Additional required completed export: [Camera feeds and Fiote vision acceptance](../contracts/Camera-vision-contracts.lingua). Its source/plugin schema, real vision/event workflow and bounded one-shot/periodic observed model updates are core; its base proof needs no raw-video recorder, global camera catalog or higher-detail reconstruction. The separate world composition export below joins the newly required bounded creation methods.
 
 This is a core work package. Start only after the named providers publish verified native/backend/persistence contracts and the package's implementation scope is authorized. Do not wait for an entire former numbered stage unless that contract acceptance is explicitly listed above. Do not use an unfinished sibling or mocked replacement as a hidden prerequisite.
+
+Required additional export [World data and composition acceptance](../contracts/World-composition-contracts.lingua) supplies local regional refinement, geographic composition, fragments and actual supplied-photo/terrain, AI-generation and live-reconstruction proofs for 15.T11/15.W10. This full product join does not delay delivery of the earlier local or basic camera exports.
 
 ## Delivered boundary
 
@@ -71,11 +73,17 @@ Follow this package's task order. Original identifiers remain traceable; a refer
 
 - [ ] **15.T10.** Replay CV.W01–CV.W05 on CV.F01 in the mixed native/Fiote workspace. Connect and spatially inspect two providers, deliver actual frames plus metadata to a supported vision model, watch a defined event and generate/update a selected observed model once and periodically. Preserve source/target identity, authored geometry, per-source time/calibration/coverage, access, bounded workers and explicit stale state. Exercise two-source misalignment, source movement, conflicting edits, model failure, stop/revoke and clean media release. Verify that saved metadata/results and task history contain no raw-video archive. Record actual error, event coverage, output age and aggregate resource limits; full-city/high-detail reconstruction remains separate.
 
+Retain the camera/vision integration as 15.W09 alongside the added real-place workflow.
+
+### Task 15.T11
+
+- [ ] **15.T11.** Replay WC.W01–WC.W12 on WC.F01/F02 beside ordinary authored models and native components as 15.W10. Align supplied content, refine overlapping regions, preserve seams/support/mounts and coherent cheap detail, curate source updates, then extract/reopen/instance a fragment in a fictional local root. Join actual geographic acquisition with the independently verified RCN photo/terrain, GEN model-backed generation and LRC live reconstruction outputs. Reuse each worker's captured evidence; the mixed run checks their common candidate/adoption and resource boundary. Preserve source/occurrence identity, canonical dimensions, fixed authored placement, uncertainty, rights, no-video-archive and bounded demand. Check city-sized sparse coverage versus active demand, achieved quality and aggregate costs. Fiote uses the same accepted operation/context path.
+
 ## Required contracts and proof
 
 [Core-acceptance-contracts](../contracts/Core-acceptance-contracts.lingua)
 
-15.W01–15.W09/B25/B38/B41/B42/B43/EXP.F01/OA.F01/CV.F01, EXP.W01–EXP.W05, OA.W01–OA.W06 and CV.W01–CV.W05, all core limits, failure/recovery and source/privacy checks.
+15.W01–15.W10/B25/B38/B41/B42/B43/EXP.F01/OA.F01/CV.F01/WC.F01/WC.F02, EXP.W01–EXP.W05, OA.W01–OA.W06, CV.W01–CV.W05 and WC.W01–WC.W12 with RCN/GEN/LRC evidence, all core limits, failure/recovery and source/privacy checks.
 
 Read the applicable architecture, requirement IDs, fixtures and proof recipes in those Records; task summaries do not replace their limits or failure behavior. Prove this package's exported behavior on a real bounded local fixture. If a legacy milestone also needs another branch, record only this verified subset and leave the full milestone pending for its contract acceptance join. The contract's `#requires` links name those contributors. A combined geographic/hosted/physical example is not permission to omit the local proof, nor a hidden wait for all of its unrelated implementation.
 

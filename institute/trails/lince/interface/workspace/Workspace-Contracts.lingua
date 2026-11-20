@@ -40,6 +40,10 @@ Workspace contracts and acceptance (@workspace-contracts: 0, is #chapter, #part-
 
 - [Camera feeds and Fiote vision](contracts/Camera-vision-contracts.lingua) — required contributors: @ws-camera-feeds, @ws-vision-tasks and @ws-observed-models. Extends F10 through explicit providers and joins core acceptance through 15.T10/15.W09. CFE/VSN/OMD own tasks; CV owns schema/processing requirements, fixture and composed proof. Raw-video archival, a global camera catalog and unimplemented high-detail reconstruction are outside this bounded gate.
 
+## Added real-world composition contracts
+
+- [World data and composition](contracts/World-composition-contracts.lingua) joins @ws-world-composition, @ws-offline-city, @ws-scene-reconstruction, @ws-generated-scenes and @ws-live-scene-reconstruction. WCO delivers local regional refinement after Imports; RCN/GEN/LRC own real creation methods; WC.R01–WC.R26 and WC.W01–WC.W12 define alignment, replacement, curation, fragments, source quality and bounded city-scale use. Core acceptance joins the complete proof through 15.T11/15.W10. Geographic source, registration and package services retain their existing owners.
+
 ## Conversion coverage
 
 All original task and requirement identifiers are retained. 05.T04 is partitioned into shared source/layer delivery and its geographic application; 11.T01 is partitioned into generic joint/assembly relations and exact-solid operations. The full parent text remains in its contract, and both clauses must pass before the parent closes. No other task has multiple implementation owners. Historical fixture evidence is preserved, with links corrected for the moved directory. A missing original supporting document remains explicitly unavailable rather than silently invented.

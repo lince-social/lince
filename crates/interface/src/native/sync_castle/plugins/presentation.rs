@@ -100,18 +100,18 @@ fn items(catalog: &Catalog) -> Vec<(Key, Row<'_>)> {
     if catalog.packages.is_empty() {
         rows.push((Key::EmptyPackages, Row::Text("Install with cargo xtask plugin-example, plugin-activitypub or plugin-irc <data-directory>, then reload packages here.")));
     }
-    rows.extend(catalog.packages.iter().map(|package| {
-        (
-            Key::Package(package.manifest.id.clone()),
-            Row::Package(package),
-        )
-    }));
     rows.extend(
         catalog
             .bindings
             .iter()
             .map(|item| (Key::Binding(item.binding.uid.clone()), Row::Binding(item))),
     );
+    rows.extend(catalog.packages.iter().map(|package| {
+        (
+            Key::Package(package.manifest.id.clone()),
+            Row::Package(package),
+        )
+    }));
     rows.extend(catalog.deliveries.iter().map(|delivery| {
         let retry = matches!(delivery.state.as_str(), "failed" | "uncertain")
             && bindings
@@ -283,7 +283,7 @@ fn fill(world: &mut World, row: Entity, owner: Entity, item: Row<'_>) {
                 world,
                 row,
                 owner,
-                "Edit / start",
+                "Edit",
                 Command::Open(item.binding.provider.clone(), Some(item.binding.clone())),
             );
             if item.binding.enabled {
@@ -305,7 +305,16 @@ fn fill(world: &mut World, row: Entity, owner: Entity, item: Row<'_>) {
                         binding: item.binding.uid.clone(),
                     }),
                 );
+            } else {
+                panel::button(
+                    world, row, owner, "Start Sync",
+                    Command::Run(Backend::Start { binding: item.binding.uid.clone() }),
+                );
             }
+            panel::button(
+                world, row, owner, "Remove Sync",
+                Command::ConfirmRemoveBinding(item.binding.uid.clone()),
+            );
         }
         Row::Delivery(delivery, retry_allowed) => {
             let header = label(world, row, &delivery_caption(delivery));

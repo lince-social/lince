@@ -10,7 +10,7 @@ Park — 3. Make local editing and saving immediate (
 
 [Organization and execution order](record:r_0PCR2DTXNGTQGBE6RBWR0ECTXW). Targets are in [benchmarks](record:r_7CWV5KN1695FW2KNPGW5X19PJ7); interaction coverage is in [workflows](record:r_33DFSQHTZFRCM758HHPN3KRWNA).
 
-**Coordination:** the earlier sync/history/database-lock/Karma delegation is historical. Inspect the current working tree before changing shared mutation/history/transaction/effect paths; do not assume an old agent is still active or that its work is complete. The owner closed P94 on 2026-11-20 after the database-lock toast ceased to be a problem. Preserve unrelated changes and keep backend correctness distinct from measured interface responsiveness.
+Inspect the current working tree before changing shared mutation, history, transaction or effect paths. Preserve unrelated changes and measure local save responsiveness separately from backend correctness.
 
 Backend correctness fixes are not substitutes for Stage A's latency proof, and “saving is another agent's task” does not excuse a frozen interface. Keep immediate echo and unrelated input independent of required durable work, measure contention from normal sync/history/Karma activity and preserve truthful save/effect status. General feature/semantic repairs beyond these dependencies stay outside this performance queue.
 

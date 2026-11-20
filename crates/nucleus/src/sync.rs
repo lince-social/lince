@@ -212,3 +212,13 @@ pub struct Queue {
     pub incoming: u64,
     pub outgoing: u64,
 }
+pub const PERSONAL_FILE_ORIGIN: &str = "personal";
+
+pub fn valid_file_origin(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 64
+        && value.as_bytes()[0].is_ascii_lowercase()
+        && value
+            .bytes()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'-')
+}

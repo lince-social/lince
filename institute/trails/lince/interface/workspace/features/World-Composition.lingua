@@ -1,0 +1,63 @@
+Curated scenes, regional refinement and reusable places (@ws-world-composition: 0, is #chapter, #part-of @workspace-development, #requires @ws-imports) { r_0XD5NSV86FMM2H967KN1JH3KM6
+Status pending. Owner refinement, 2026-11-20. Treat a world representation as cared-for, revisioned data. Start with a cheap flat map, coarse globe or supplied fictional scene; improve selected parts with measured, imported, reconstructed, generated or authored content. The same operations serve a home, workplace, neighborhood or city. Earth association is optional source metadata and a selected frame adapter.
+
+[Development graph](../Workspace-Development.lingua) · [World data and composition contracts](../contracts/World-composition-contracts.lingua)
+
+## Start gate and delivered boundary
+
+Consume verified registration, source layering and reconciliation from [Imports](Imports.lingua). Navigation, local frames, Assets, Geometry and Simplification are transitive providers. Their actual collision/support exports are required for walking. Complete this package on WC.F02's supplied local scene with geographic services inactive. The later full contract joins [Offline city](Offline-City.lingua) to prove geographic ingestion and globe placement on WC.F01.
+
+Deliver native Add model, Align, Add/Overlay/Replace region, Compare, Apply/Cancel, Undo and Extract fragment workflows. A user can improve a coarse home, refine a larger overlapping neighborhood, retain edits during source updates, lower detail, and reuse the improved fragment in an independent fictional root. The imported or created model is useful before any destination is chosen.
+
+Export a real local candidate/recipe/publication path, regional selection and masks, attribution and revision inspection, safe replacement, coarse fallback and portable fragment closure. Reconstruction and generation workers consume this proven export. A completed schema without working import, alignment, replacement and native acceptance cannot unlock those consumers.
+
+## Ownership and parallel work
+
+Own composition recipes, source-to-object association, property/purpose conflict policy, regional refinement transactions and native composed acceptance. Extend existing jobs, accepted operations and product envelopes through their owners. Imports owns registration and three-way source reconciliation; Assets owns manifests, demand and portable closure; Simplification owns support products; Offline city owns geographic acquisition and transforms. Shared files/services have one owner.
+
+Local composition and geographic ingestion can progress independently after their own gates. Once this package passes, [supplied-image reconstruction](Scene-Reconstruction.lingua) and [AI scene generation](Generated-Scenes.lingua) can branch on the common candidate boundary; generation also requires Agent authoring. [Live reconstruction](Live-Scene-Reconstruction.lingua) joins reconstruction with Observed models. Base camera/proxy modeling remains independent. The owner's first Kamalie milestone remains an isolated native Castle with direct Bevy gameplay; these packages supply reusable environment data for a later game integration.
+
+## Ordered work
+
+### Task WCO.T01
+
+- [ ] Deliver native supplied-model/source selection, an actual supported format matrix and inspectable coverage/cost/quality. First support a bounded textured mesh such as an implemented GLB variant plus the existing planar/terrain source representation. Pin WC.F02 before implementation, including deliberately wrong axes/units, overlapping objects and missing support. Distinguish direct model placement from a creation job consuming photographs or other inputs. Publish source/product capabilities and declared losses. Geographic discovery becomes available when the Offline city adapter is joined; it is not required to complete this task locally.
+
+### Task WCO.T02
+
+- [ ] Implement the common versioned model candidate and reproducible composition recipe in WC.R05/WC.R23 using existing source/product/job services. Capture input identities/revisions, optional target and revision, transforms, selection/masks, property authority, operator/version/parameters, retention mode and output dependencies. Keep geometry, appearance, semantics and support independently attributable. Associate overlapping objects using source IDs or reviewed spatial/semantic matches; keep ambiguous alternatives. Stage bounded products, validate them, then publish through normal generation-checked acceptance. A changed target offers rebase/review or a separate local model; obsolete results cannot overwrite accepted work. Prove this with supplied and procedural local inputs before worker branches start.
+
+### Task WCO.T03
+
+- [ ] Construct a usable local scene from supplied terrain/planar surfaces, footprint polygons, heights and appearance assets. Supply actual extrusion and supported roof/detail operators, with editable parameters and conservative missing-data behavior. An optional estimated completion profile records assumptions, seed and lineage under WC.R07/R0495. Authored replacements and measured corrections use normal layers. The geographic join later supplies equivalent normalized vector/elevation/appearance inputs. AI generation and reconstruction have separate actual worker owners; procedural extrusion does not complete them.
+
+### Task WCO.T04
+
+- [ ] Generate and validate collision/support products through existing owners. Prove ground, slope/step, bridge/underpass clearance and a supported opening in WC.F02. Keep walking support resident ahead of movement as visual detail changes. Stage replacement support and perform the declared safe switch; preserve last valid support or visibly stop at a gap. Map picks/contacts to stable source and occurrence identity. Record unsupported interiors and uncertain coverage. Route graphs/navmeshes are separate advertised capabilities; walking uses existing local support queries.
+
+### Task WCO.T05
+
+- [ ] Reimport changed sources through existing three-way review, preserving authored overrides/fixed poses and exposing surface-follow repair. Expose accepted revision history, pin/follow policies, compare/accept/reject updates and normal undo. Export/reopen a permitted visual/edit/walk profile through the ordinary Workspace loader, preserving dependency closure, attribution, canonical scale and optional source association. Test offline use, two instances with independent placements, and last-demand release. Later extraction uses this same closure validator.
+
+### Task WCO.T06
+
+- [ ] Complete the local forms of WC.W01–WC.W05 on WC.F02 through the preceding native operations before expanding regional controls. Include conflicting dates/frames, a missing product, interrupted ingest, stale completion and source rename/split/deletion. Record independent control residuals, semantic correspondence, support coverage and costs. This is a checkpoint; publish this package's consumer-ready export only after WCO.T07–WCO.T09 also pass. WC.F01's geographic acquisition and the creation workers remain pending at their own owners.
+
+### Task WCO.T07
+
+- [ ] Deliver alignment and regional controls in WC.R15–WC.R19. Select objects or draw a footprint with a vertical interval, inspect affected contributors and choose Add, Overlay or Replace with explicit purposes and priority. Align using translation/rotation, numeric coordinates, units/known distance or corresponding control points; preview bounds, residuals and withheld checks. Whole-object selection and source-layer masks have distinct previews. Implement bounded clipping for supported planar/terrain/triangle-mesh variants with declared open-boundary behavior; unsupported representations use whole-object or explicitly supported mask operations. Add, cancel, adopt and undo through ordinary accepted edits. Geographic placement consumes actual conversion when available; a frame label alone never performs registration.
+
+### Task WCO.T08
+
+- [ ] Complete regional replacement and curation in WC.R16–WC.R21. Stage geometry/appearance/support, validate conflicts and seam policy, and switch coherent accepted revisions. Demonstrate overlapping home/neighborhood replacements with declared priority; preserve unrelated authored models and mounted content. Repair only ambiguous source attachments, reject delayed picks to obsolete products and preserve Q17. Publish updated bounds/coarse proxies and invalidate affected ancestor summaries so lowering detail never resurrects the replaced house. Make source refresh and user overrides inspectable, with cancellation, safe rollback and bounded old/new peaks.
+
+### Task WCO.T09
+
+- [ ] Deliver Extract fragment and Place instance/Make editable copy under WC.R22. Select a region or objects, preview dependencies and cut boundaries, rebase to a chosen local frame, and produce an ordinary model/package with required textures, materials, support, source metadata and attributions. Separate shared definition/source identity from new occurrence placement and independent fork identity. Replay WC.W06–WC.W08 on WC.F02, including extraction across source/tile/texture boundaries, reopening offline, two instances and independent edits. Complete WC.P01/WC.P02 for this package's local scope and publish native evidence, supported operations, measured budgets and unresolved limits.
+
+## Handoff
+
+Read WC.R01–WC.R26 and referenced provider requirements. Publish the proven candidate schema, accepted operation/query/save paths, format/selector/mask variants, alignment residuals, replacement/support state transitions, fragment closure, method-independent failure/cancellation and local evidence. Consumers are reconstruction/generation branches and the full [world composition contract](../contracts/World-composition-contracts.lingua).
+
+The full contract later proves globe/map refinement, source ingestion and actual creation methods. Local refinement is a complete earlier deliverable. Larger coverage, more formats and new methods each require captured inputs and real capability evidence. Current outcome is unbuilt and unverified.
+} r_0XD5NSV86FMM2H967KN1JH3KM6

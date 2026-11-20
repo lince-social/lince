@@ -345,19 +345,12 @@ impl Engine {
         Ok(automation)
     }
 
-    pub(super) async fn apply_lingua_frequencies(
-        &self,
-        automation: &Automation,
-        report: &mut FileSyncReport,
-    ) -> Result<(), EngineError> {
-        Box::pin(self.apply_lingua_frequencies_as(automation, report, None)).await
-    }
-
     pub(super) async fn apply_lingua_frequencies_as(
         &self,
         automation: &Automation,
         report: &mut FileSyncReport,
         actor: Option<&str>,
+        origin: Option<&str>,
     ) -> Result<(), EngineError> {
         for frequency in &automation.frequencies {
             let definition = frequency_definition(frequency)?;
@@ -405,8 +398,9 @@ impl Engine {
                     actor_person_uid: actor.map(str::to_owned),
                 };
                 let signer = self.signer.lock().await.clone();
-                let commit = frequencies::create_identified(
-                    &self.store.pool,
+                let mut tx = store::write_tx(&self.store.pool).await?;
+                let commit = frequencies::create_identified_tx(
+                    &mut tx,
                     input,
                     Some(&frequency.uid),
                     None,
@@ -414,6 +408,11 @@ impl Engine {
                     |hash| signer.as_ref().map(|s| s.sign_hash(hash)),
                 )
                 .await?;
+                if let Some(origin) = origin {
+                    super::super::require_origin(&mut tx, origin).await?;
+                    store::records::set_file_origin_on(&mut tx, &frequency.uid, origin).await?;
+                }
+                tx.commit().await?;
                 self.finish_frequency_mutation(commit, now, true).await?;
             }
             let handle = frequencies::get_handle(&self.store.pool, &frequency.uid)

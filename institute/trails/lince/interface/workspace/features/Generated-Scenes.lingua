@@ -1,0 +1,75 @@
+Generated scenes and editable model candidates (@ws-generated-scenes: 0, is #chapter, #part-of @workspace-development, #requires @ws-world-composition, #requires @ws-agent-authoring) { r_7ENPK8JTJVJX127YQK34S4TDCS
+Status pending. Owner refinement, 2026-11-20. Generate a scene or model from a prompt and supported reference images, then inspect, scale, align, add or replace it through ordinary native Workspace controls. The output remains editable, attributable and reusable as local content.
+
+[Development graph](../Workspace-Development.lingua) · [World data and composition contracts](../contracts/World-composition-contracts.lingua)
+
+## Start gate and delivered boundary
+
+Consume the generic candidate and composition export from [World composition](World-Composition.lingua), especially WCO.T02 and WC.R23, and actual geometry/asset operations with delegated execution from [Agent authoring](Agent-Authoring.lingua). The candidate envelope, registration, preview/adoption, source revisions and dependency closure retain their shared owners.
+
+Deliver one actual model-backed generation worker and a native workflow from a prompt to an editable ordinary scene/model candidate. A practical first implementation uses the existing Fiote/model path to produce a validated typed recipe over implemented geometry operations and admitted assets. Execute that recipe to create actual geometry and object instances. Specialized generative-asset or image-to-3D providers can join the same interface after their input/output capabilities and integration are proven.
+
+The first scene is a fictional local room or small environment with declared dimensions. The package can operate with the geographic profile inactive and supplied local inputs. Photo reconstruction, camera inference and a global geographic dataset remain separate provider integrations. Real-place reuse later in this package consumes a supplied place model through the same composition path.
+
+## Ownership and parallel work
+
+Own the generation-worker adapter, prompt/reference controls, supported generation constraints and native generation evidence. Reuse existing Fiote/model execution, bounded jobs, cancellation, cost accounting, candidate publication and accepted operations. World composition owns WC.R23's common envelope and WCO.T02's candidate-to-scene boundary. Imports owns supported registration, source layers and reconciliation. Assets owns admitted payloads and portable closure. Extend shared paths through their owners.
+
+Once the complete World Composition export, including WCO.T07–WCO.T09, and Agent authoring operations are verified, generation and photo reconstruction can proceed in independent adapter modules. Their eventual mixed-scene acceptance joins real outputs. Shared schemas, job/adoption services, geometry operations, rendering and source migrations have one owner at a time. The isolated native Kamalie Castle retains its own first-delivery scope.
+
+## Ordered work
+
+### Task GEN.T01
+
+- [ ] Advertise the selected worker's actual prompt/reference modalities, supported geometry and asset operations, editable output forms, units/frame, constraints, dependencies, model/version and output limits. Capture prompt revision, reference IDs/revisions and their permitted uses, target context, selected output purpose and compute/cost budget through existing job admission. Store seed and sampling settings when the backend exposes them, together with the achieved reproducibility level. Input reference purpose is explicit, such as appearance, layout or dimensional evidence with a known reference. Record the model/provider's actual retention and processing behavior through the existing source settings.
+
+### Task GEN.T02
+
+- [ ] Implement the first real model-backed worker using Fiote's existing model invocation and typed authoring operations. Require the model to produce a bounded recipe whose operation names, dimensions, parameters, asset references and counts can be validated before execution. Resolve referenced assets through actual available IDs and dependency manifests. Execute valid operations into a candidate with real geometry/materials and object instances. Bound repair attempts and retain useful failure details when validation or execution fails. Completion evidence captures a real model request/result, validated recipe and resulting native geometry, with an independently inspected editable result. A specialized generated-asset backend publishes through this same path only after its real decoder, output quality, editability, cost and dependency behavior are proven.
+
+### Task GEN.T03
+
+- [ ] Provide native prompt entry, optional supported reference attachment and a small set of implemented controls for preserving selected layout, retaining named landmarks and constraining supported heights/dimensions. Show units, target frame, output purpose and the selected objects or boundaries each control governs. Validate compatibility before dispatch and verify the resulting geometry against constraints after generation. Unsupported controls show their actual capability status. Contradictory requests produce an actionable validation result. Changes to layout or landmarks outside the selected constraint must be visible in candidate inspection. A reference-image capability requires the worker to receive actual image content with its source metadata and to produce the advertised output from that input. Keep prompt-only generation usable through its own supported capability.
+
+### Task GEN.T04
+
+- [ ] Publish results in WC.R23's shared candidate envelope with model/version, inputs, captured target revision, parameters, seed when available, transform, dependencies, output capabilities, usage/export terms and quality limits. Preserve generated or inferred provenance at meaningful object, patch and property scope, including any source image associations and known measurements. A proposed completion for a missing house carries generated-design provenance and explicit assumptions. Measured properties require their actual measurement sources. Keep visual resemblance, geometric validity and metric accuracy separately inspectable. Use the ordinary native candidate preview to inspect objects, edit supported parameters or local overrides, scale and align the result, then add it or replace an explicitly selected layer/occurrence through generation-checked accepted operations and normal undo. Preserve canonical dimensions and source associations during presentation placement.
+
+### Task GEN.T05
+
+- [ ] Handle regeneration and native continuation through the existing source/override/reconciliation path. Preserve accepted local edits and expose conflicts when a regenerated candidate changes corresponding geometry or parameters. Keep the prior usable scene available while work runs. Bound model requests, execution, geometry/texture output, asset fan-out, retry, staging and resident resources through the shared job lifecycle. Exercise cancellation before and after output arrives, provider failure, stale target/source generations and deletion. Publish actual cancellation and cost receipts where the provider supplies them. Export the selected result through the normal Workspace package format with its permitted geometry, assets, editable definitions, local overrides, attribution and lineage. Report any restricted dependencies and the resulting export capability. Reopen the permitted result offline with its actual editable capabilities.
+
+### Task GEN.T06
+
+- [ ] Complete GEN.W01–GEN.W04 and GEN.P01 below through the actual native, Fiote, worker and composition paths. Prove one real prompt produces an editable fictional scene, then reuse its accepted output as an explicitly generated authored layer in a supplied real-place model with a declared property/purpose authority choice. Exercise supported reference input when advertised. Publish supported operations and constraints, actual model/version, generated output, native adoption/undo evidence, resource limits and remaining capability gaps before the full world composition contract consumes this export.
+
+## Fixtures and acceptance
+
+### GEN.F01 — Fictional room and supplied real-place reuse
+
+Use a small fictional courtyard or room with a declared floor boundary, one retained landmark, a bounded height range and a few editable objects. Pin the input prompt, known dimensions, permitted assets and independent constraint checks before running the actual model. Include a contradictory constraint request and an unavailable asset reference. A supplied local real-place model provides a selected missing/replacement patch with inspectable source provenance. Its origin and existing property authority remain visible when generated content is composed into it.
+
+### GEN.W01 — Generate, inspect and continue editing
+
+Run the actual prompt through the chosen model and recipe/asset worker. Inspect resulting geometry in a native view and object/parameter inspection. Check floor extent, dimensions, retained landmark and valid asset references independently of the model's self-report. Edit one dimension and one local appearance/placement override, then scale/align and add the candidate through ordinary operations. Undo and reload the result. Repeat with actual reference image content for every reference-input capability claimed by this first worker, recording the supported purpose and observed limitations.
+
+### GEN.W02 — Replace and attribute a real-place patch
+
+Place the accepted generated scene/object in GEN.F01's supplied real-place model and inspect its frame, scale and source lineage. Choose additive or replacement composition and explicitly select the property/purpose authority for the target patch. Apply and undo a bounded replacement. Query the mixed result and verify that generated/inferred geometry and measured source properties retain their own provenance. Preserve unrelated authored content and current accepted revisions.
+
+### GEN.W03 — Revise, cancel and recover
+
+Regenerate after a local edit, change prompt or target while an earlier job is pending, cancel work, remove the target and retry a failed request through the existing request identity. Verify stale-generation rejection, bounded retries and resource cleanup. Exercise malformed recipes, unsupported operations, unavailable assets, excessive output and contradictory layout/height constraints. Show useful native failure state and continued access to the previous accepted scene. Verify the generation controls preserve edit-panel-geometry and ordinary keyboard-accessible inspection.
+
+### GEN.W04 — Package and reopen offline
+
+Export the permitted fictional result with editable definitions, local overrides, geometry, material/asset dependencies, provenance and known losses. Open it as an independent local scene with workspace networking disabled, then instance it in another local composition. Verify dimensions, identity, editability, attribution and zero external fetch during offline reopening. Exercise an output with a restricted dependency and inspect its actual available export profile.
+
+### GEN.P01 — Model, quality and cost evidence
+
+Recover provider evidence and replay GEN.W01–GEN.W04 on the selected model and worker build. Record request/model versions, actual output, validated operation counts, achieved constraints, editable properties, visual review and independently checked dimensions. Measure model/worker latency, request cost where available, CPU/GPU/staging residency, output/dependency sizes, adoption latency and cancellation/release behavior. Record which seed/version settings are available and which rerun differences were observed. The saved output and its provenance provide an inspectable artifact even when exact generation replay is unavailable.
+
+## Completion and handoff
+
+Publish the real worker's supported inputs, implemented operations, constraints, model/version, candidate envelope use, adoption/reconciliation behavior, generated/inferred provenance, portable capabilities and measured budgets. The [world composition contract](../contracts/World-composition-contracts.lingua) consumes these exports in its mixed-source acceptance. Additional generators, reference modalities and output representations require their own implemented adapters and native proof. Current outcome is unbuilt and unverified.
+} r_7ENPK8JTJVJX127YQK34S4TDCS

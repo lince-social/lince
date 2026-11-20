@@ -10,7 +10,7 @@ use crate::{Engine, EngineError, actions::ActionOutcome};
 mod validation;
 pub(crate) use validation::{AssertionFields, DraftFields};
 
-#[derive(Clone, Debug, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Assertion {
     pub predicate: String,
@@ -29,6 +29,8 @@ pub struct Draft {
     pub quantity: String,
     pub assertions: Vec<Assertion>,
     pub work: Value,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub file_origin: Option<String>,
 }
 
 impl Default for Draft {
@@ -41,6 +43,7 @@ impl Default for Draft {
             quantity: "0".into(),
             assertions: Vec::new(),
             work: json!({}),
+            file_origin: None,
         }
     }
 }
@@ -92,6 +95,9 @@ impl Draft {
             Predicate::KindEq(value) => value == kind.as_str(),
             Predicate::UidEq(uid) => uid == &self.uid,
             Predicate::SlugEq(slug) => self.slug.as_ref() == Some(slug),
+            Predicate::FileOriginEq(origin) => {
+                self.file_origin.as_deref().unwrap_or(nucleus::sync::PERSONAL_FILE_ORIGIN) == origin
+            }
             Predicate::TextContains(text) => {
                 if text.is_empty() {
                     true
@@ -321,6 +327,17 @@ impl Engine {
             None,
         )
         .await?;
+        if let Some(origin) = draft.file_origin.as_deref() {
+            if actor.is_some() {
+                return Err(EngineError::Forbidden(
+                    "Only the local owner can assign a file sync origin".into(),
+                ));
+            }
+            if origin != nucleus::sync::PERSONAL_FILE_ORIGIN {
+                crate::file_sync::require_origin(&mut tx, origin).await?;
+                store::records::set_file_origin_on(&mut tx, &draft.uid, origin).await?;
+            }
+        }
         for assertion in draft.assertions {
             let uri = assertion
                 .object

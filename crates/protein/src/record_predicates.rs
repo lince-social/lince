@@ -359,6 +359,9 @@ impl<'a> Context<'a> {
                 }),
                 None => false,
             },
+            Predicate::FileOriginEq(origin) => {
+                r.file_origin.as_deref().unwrap_or(nucleus::sync::PERSONAL_FILE_ORIGIN) == origin
+            }
         })
     }
 }

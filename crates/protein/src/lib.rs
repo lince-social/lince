@@ -218,6 +218,7 @@ pub enum Predicate {
     },
     OrganEq(String),
     OrganIn(Vec<String>),
+    FileOriginEq(String),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
@@ -607,6 +608,13 @@ pub fn validate(protein: &Protein) -> Result<(), ProteinError> {
         source: Source,
     ) -> Result<(), ProteinError> {
         match predicate {
+            Predicate::FileOriginEq(origin)
+                if source != Source::Record || !nucleus::sync::valid_file_origin(origin) =>
+            {
+                return Err(store::StoreError::Protocol(
+                    "File origin needs a Record query and a valid origin".into(),
+                ));
+            }
             Predicate::ProjectionWindow(window) => {
                 if !matches!(source, Source::Calendar | Source::Schedule) || group_depth != 0 {
                     return Err(store::StoreError::Protocol("protein_calendar_invalid:projection window must be a top-level Calendar or Schedule filter".into()));
@@ -1528,6 +1536,7 @@ async fn matching_records_for<Body: RecordBody>(
             | Predicate::WorkDate { .. }
             | Predicate::Near { .. }
             | Predicate::OrganEq(_)
+            | Predicate::FileOriginEq(_)
             | Predicate::OrganIn(_) => true,
             _ => false,
         }
@@ -1568,7 +1577,16 @@ async fn matching_records_for<Body: RecordBody>(
         ([Predicate::UidEq(uid)], _) => store::records::RecordSelection::Uid(uid),
         ([Predicate::SlugEq(slug)], _) => store::records::RecordSelection::Token(slug),
         (_, Some(_)) => store::records::RecordSelection::Uids(&uids),
-        (_, None) => store::records::RecordSelection::All,
+        (_, None) => protein
+            .filter
+            .iter()
+            .find_map(|predicate| match predicate {
+                Predicate::FileOriginEq(origin) => Some(store::records::RecordSelection::FileOrigin(
+                    (origin != nucleus::sync::PERSONAL_FILE_ORIGIN).then_some(origin.as_str()),
+                )),
+                _ => None,
+            })
+            .unwrap_or(store::records::RecordSelection::All),
     };
     let all = store::records::read(&store.pool, selection, with_body).await?;
     let ctx = record_predicates::Context::prepare(store, &protein.filter, visible, subject).await?;
@@ -3536,6 +3554,7 @@ fn transfer_predicate_name(predicate: &Predicate) -> &'static str {
         Predicate::Near { .. } => "near",
         Predicate::OrganEq(_) => "organ_eq",
         Predicate::OrganIn(_) => "organ_in",
+        Predicate::FileOriginEq(_) => "file_origin_eq",
     }
 }
 

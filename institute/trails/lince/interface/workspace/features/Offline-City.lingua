@@ -29,6 +29,8 @@ Follow this package's task order. Original identifiers remain traceable; a refer
 
 - [ ] **06.T01.** Extend [stage 05](../contracts/Scale-navigation-and-hosting-contracts.lingua)'s shared map/archive provider, source/coverage and residency path to selected real city data and a larger offline profile. Keep default coarse Earth available and elevation, imagery, routes, supplied 3D models and authored places separate. Add declared elevation/building/3D source adapters that preserve supported height/geometry and report losses; do not route required shape data through the current basemap normalization that drops buildings. Preserve flat ground/footprints where geometry is absent; no procedural relief or building extrusion is inferred from a place name.
 
+For the [world composition acceptance join](../contracts/World-composition-contracts.lingua), publish the actual source-adapter matrix and bounded semantic/vector, georeferenced elevation and appearance inputs required by WC.R02–WC.R04. Preserve source feature IDs, building parts/height/floor/roof tags, road levels/bridges and raster height meaning/no-data masks. Report decoder limitations, source dates, datum/transform dependencies and permitted export. Native coverage/source selection and a real ingest proof belong to this existing source path. World composition owns cross-source recipes, association and optional explicit completion. Its local proof can finish independently; this provider joins geographic inputs into the same operations.
+
 ### Task 06.T02
 
 - [ ] **06.T02.** Extend region/layer budgets, cost preview, offline pins, partial coverage and progress/cancel/resume. Online on-demand fetching is allowed only through configured sources and budgets; explicit offline mode prevents new network work. Include styles/labels/transforms/available shape data required by the chosen package. Reuse [stage 05](../contracts/Scale-navigation-and-hosting-contracts.lingua)'s loader/query/demand implementation instead of a second map cache/runtime.
@@ -43,7 +45,7 @@ Follow this package's task order. Original identifiers remain traceable; a refer
 
 ### Task 06.T06
 
-- [ ] **06.T06.** Prove 30-minute navigation under the default working-set cap, rapid request cancellation, offline closure, missing-tile fallback, disk-full behavior and resource release. Do not claim building/terrain detail from current normalized basemap tiles.
+- [ ] **06.T06.** Prove 30-minute navigation under the default working-set cap, rapid request cancellation, offline closure, missing-tile fallback, disk-full behavior and resource release. Do not claim building/terrain detail from current normalized basemap tiles. Publish the sparse city coverage/input fixture and measured paging/export limits consumed by WC.W12: total addressed content, bounded populated route, active working set, coarse coverage and unavailable detail. Full joined regional editing remains with WCO and the world composition contract.
 
 ## Required contracts and proof
 
@@ -62,4 +64,5 @@ Pass relevant independent correctness/security/performance checks and native acc
 Consumers: [Hosted world and offline publication joins](Hosted-World.lingua)
 
 Current outcome: unbuilt/unverified except the explicitly historical baseline artifacts. Keep unfinished task detail. After verification retain a concise factual handoff and each fulfilled workflow's evidence; do not erase the acceptance obligations still owned by the contract join.
+Additional consumer [World composition acceptance](../contracts/World-composition-contracts.lingua) joins these geographic exports with independently delivered local composition and creation methods. The shared data model also supports supplied fictional worlds. Research examples and further format candidates live in that contract.
 } r_54XJBCBKFM4SZY0QPFJRP1BRD3

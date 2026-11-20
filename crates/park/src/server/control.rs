@@ -44,6 +44,7 @@ impl Guard {
 
 #[derive(Clone)]
 #[cfg(feature = "native-presentation")]
+#[cfg_attr(not(feature = "nested"), expect(dead_code, reason = "Host effects are produced by the worker and applied by the compositor"))]
 pub(crate) enum Effect { Launch(DesktopAction), Close(SurfaceId), Magnification(lince_interface::host::magnification::Request) }
 enum Step {
     Complete(Result<Disposition, Failure>),
@@ -74,6 +75,7 @@ impl Work {
 }
 
 #[cfg(feature = "native-presentation")]
+#[cfg_attr(not(feature = "nested"), expect(dead_code, reason = "Only the host compositor consumes the queued command fields"))]
 pub struct HostCommand {
     pub(crate) ticket: u64,
     pub(crate) effect: Effect,
@@ -82,7 +84,7 @@ pub struct HostCommand {
     guard: Guard,
 }
 
-#[cfg(feature = "native-presentation")]
+#[cfg(feature = "nested")]
 impl HostCommand {
     pub(crate) fn valid(&self) -> Result<(), Failure> { self.guard.check() }
 }

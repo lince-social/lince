@@ -84,7 +84,7 @@ pub(crate) fn pixels(renderer: &VulkanRenderer, color: wgpu::Color) -> (Exported
     // SAFETY: The borrowed HAL queue and semaphore share a device. This probe owns
     // submission and retains the semaphore until the queued signal completes.
     unsafe { renderer.queue.as_hal::<Vulkan>() }.unwrap().add_signal_semaphore(semaphore.handle, None);
-    let submission = renderer.submit_raw("private_client_producer_gate", |command| {
+    renderer.submit_raw("private_client_producer_gate", |command| {
         // SAFETY: The recording command buffer and host-signaled event share a device.
         // The queue retains the event until the submission completes.
         unsafe {
@@ -99,7 +99,7 @@ pub(crate) fn pixels(renderer: &VulkanRenderer, color: wgpu::Color) -> (Exported
     assert!(fd >= 0, "The pending semaphore must export a sync file descriptor");
     // SAFETY: Successful export transferred ownership of this descriptor to us.
     let fd = unsafe { OwnedFd::from_raw_fd(fd) };
-    gate.completion = Some(renderer.completion.track(submission).unwrap());
+    gate.completion = Some(renderer.completion.track(&renderer.queue).unwrap());
     assert!(rustix::io::fcntl_getfd(&fd).unwrap().contains(rustix::io::FdFlags::CLOEXEC));
     #[repr(C)]
     struct Import { flags: u32, fd: i32 }

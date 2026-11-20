@@ -126,6 +126,7 @@ pub struct RecordRow<Body = String> {
     pub unit_uid: Option<String>,
     pub place_uid: Option<String>,
     pub organ_uid: Option<String>,
+    pub file_origin: Option<String>,
     pub created_at: String,
     pub updated_at: String,
     pub created_hlc: Option<i64>,
@@ -155,6 +156,7 @@ pub(crate) fn map_row<Body: RecordBody>(
         unit_uid: r.get("unit_uid"),
         place_uid: r.get("place_uid"),
         organ_uid: r.get("organ_uid"),
+        file_origin: r.try_get("file_origin").ok().flatten(),
         created_at: r.get("created_at"),
         updated_at: r.get("updated_at"),
         created_hlc: r.try_get("created_hlc").ok().flatten(),
@@ -176,9 +178,10 @@ pub enum RecordSelection<'a> {
     Uid(&'a str),
     Token(&'a str),
     Uids(&'a [&'a str]),
+    FileOrigin(Option<&'a str>),
 }
 
-pub(crate) const METADATA_COLUMNS: &str = "r.uid, r.slug, r.kind, r.head, NULL AS body, r.quantity_mantissa, r.quantity_scale, r.unit_uid, r.place_uid, r.organ_uid, r.created_at, r.updated_at, r.created_hlc";
+pub(crate) const METADATA_COLUMNS: &str = "r.uid, r.slug, r.kind, r.head, NULL AS body, r.quantity_mantissa, r.quantity_scale, r.unit_uid, r.place_uid, r.organ_uid, r.created_at, r.updated_at, r.created_hlc, r.file_origin";
 
 pub async fn read<'e, Body: RecordBody>(
     executor: impl sqlx::Executor<'e, Database = Sqlite>,
@@ -232,8 +235,30 @@ pub(crate) async fn read_rows<'e>(
                 .push_bind(ids)
                 .push(")) ORDER BY r.created_at, r.uid");
         }
+        RecordSelection::FileOrigin(origin) => {
+            query.push(" AND r.file_origin IS ").push_bind(origin);
+            query.push(" ORDER BY r.created_at, r.uid");
+        }
     }
     query.build().fetch_all(executor).await
+}
+
+pub async fn set_file_origin_on(
+    tx: &mut Transaction<'_, Sqlite>,
+    uid: &str,
+    origin: &str,
+) -> Result<(), StoreError> {
+    let updated = sqlx::query(
+        "UPDATE record SET file_origin = ? WHERE uid = ? AND deleted_at IS NULL AND file_origin IS NULL",
+    )
+    .bind(origin)
+    .bind(uid)
+    .execute(&mut **tx)
+    .await?;
+    if updated.rows_affected() != 1 {
+        return Err(protocol("This Record already has a file origin or is unavailable"));
+    }
+    Ok(())
 }
 
 pub struct NewRecord<'a> {
@@ -538,15 +563,16 @@ pub async fn live_slugs_for(
 pub struct RecordRouting {
     pub kind: String,
     pub organ_uid: Option<String>,
+    pub file_origin: Option<String>,
 }
 
 pub async fn routing(pool: &SqlitePool, uid: &str) -> Result<Option<RecordRouting>, StoreError> {
-    let row: Option<(String, Option<String>)> =
-        sqlx::query_as("SELECT kind, organ_uid FROM record WHERE uid = ? AND deleted_at IS NULL")
+    let row: Option<(String, Option<String>, Option<String>)> =
+        sqlx::query_as("SELECT kind, organ_uid, file_origin FROM record WHERE uid = ? AND deleted_at IS NULL")
             .bind(uid)
             .fetch_optional(pool)
             .await?;
-    Ok(row.map(|(kind, organ_uid)| RecordRouting { kind, organ_uid }))
+    Ok(row.map(|(kind, organ_uid, file_origin)| RecordRouting { kind, organ_uid, file_origin }))
 }
 
 pub async fn organ_uid(pool: &SqlitePool, uid: &str) -> Result<Option<String>, StoreError> {

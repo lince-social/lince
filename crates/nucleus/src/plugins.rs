@@ -420,6 +420,12 @@ pub enum Command {
     Stop {
         binding: String,
     },
+    Start {
+        binding: String,
+    },
+    RemoveBinding {
+        binding: String,
+    },
     Retry {
         delivery: String,
     },

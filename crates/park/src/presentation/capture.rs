@@ -5,6 +5,7 @@ mod render;
 #[cfg(all(test, feature = "nested", feature = "server-tests"))]
 mod testing;
 
+#[cfg_attr(not(feature = "nested"), expect(dead_code, reason = "The host compositor consumes the worker's capture policy and mappings"))]
 pub(crate) struct CaptureFrame {
     pub revision: u64,
     pub mapping_revision: u64,

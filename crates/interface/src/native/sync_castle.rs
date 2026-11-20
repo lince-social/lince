@@ -11,6 +11,7 @@ use serde_json::{Value, json};
 use std::collections::HashMap;
 
 mod blobs;
+mod directories;
 mod offers;
 mod plugins;
 mod snapshots;
@@ -63,7 +64,7 @@ pub struct SyncCastlePlugin;
 impl Plugin for SyncCastlePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Requests>()
-            .add_systems(Update, (blobs::update, offers::update, plugins::update))
+            .add_systems(Update, (blobs::update, directories::update, offers::update, plugins::update))
             .add_message::<CellMessage>()
             .add_systems(Update, (receive.after(ReceiveCell), maintain).chain());
     }
@@ -386,6 +387,7 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
         .expect("the scroll content has a layout node")
         .row_gap = px(8);
     label(world, content, "Sync", 22.0);
+    label(world, content, "Personal folder", 18.0);
     let toggle = crate::native::information::action_button(
         world,
         content,
@@ -491,6 +493,7 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
         pending: None,
         names: Default::default(),
     });
+    directories::populate(world, content, sand);
     crate::native::source_view::exchange(world, content, "");
     blobs::populate(world, content);
     offers::populate(world, content);

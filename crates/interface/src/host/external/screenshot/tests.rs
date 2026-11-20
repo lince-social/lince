@@ -35,7 +35,43 @@ fn screen_capture_targets_the_focused_output_without_changing_region_selection()
     assert_eq!(region, original);
 }
 
-#[cfg(unix)]
+#[test]
+fn saved_builtin_commands_gain_clipboard_support_and_custom_commands_stay_literal() {
+    for action in [Action::ScreenshotScreen, Action::ScreenshotRegion] {
+        let options = Options {
+            directory: "/tmp/My Pictures".into(),
+            show_pointer: true,
+        };
+        let legacy = options
+            .command_with_script(action, "/bin/sh", LEGACY_SAVE_SCRIPT.into())
+            .unwrap();
+        assert_eq!(
+            Options::from_command(action, &legacy),
+            Some(options.clone())
+        );
+
+        let mut settings = super::super::Settings::default();
+        settings.0.insert(
+            action,
+            super::super::Command {
+                command: legacy.clone(),
+                allow_when_locked: false,
+            },
+        );
+        assert_eq!(
+            settings.command(action, false).unwrap().as_ref(),
+            &options.command(action).unwrap()
+        );
+
+        let mut custom = legacy;
+        custom.arguments[1].push_str("# custom\n");
+        settings.0.get_mut(&action).unwrap().command = custom.clone();
+        assert_eq!(Options::from_command(action, &custom), None);
+        assert_eq!(settings.command(action, false).unwrap().as_ref(), &custom);
+    }
+}
+
+#[cfg(target_os = "linux")]
 fn executable(directory: &std::path::Path, name: &str, body: &str) {
     use std::os::unix::fs::PermissionsExt;
     let path = directory.join(name);
@@ -43,35 +79,47 @@ fn executable(directory: &std::path::Path, name: &str, body: &str) {
     std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o700)).unwrap();
 }
 
-#[cfg(unix)]
+#[cfg(target_os = "linux")]
 #[test]
-fn provider_pipeline_preserves_grim_authority_treats_paths_literally_and_cleans_failures() {
+fn provider_pipeline_saves_and_copies_the_capture_using_separate_connections() {
     let directory = tempfile::tempdir().unwrap();
     executable(
         directory.path(),
         "grim",
-        "printf '%s\\n' \"${WAYLAND_SOCKET-unset}\" \"$@\" > \"$CAPTURE_LOG\"; for last do :; done; printf PNG > \"$last\"; exit \"${GRIM_STATUS-0}\"",
+        "test -e /proc/self/fd/77 || exit 2; printf '%s\\n' \"${WAYLAND_SOCKET-unset}\" \"$@\" > \"$CAPTURE_LOG\"; for last do :; done; printf PNG > \"$last\"; exit \"${GRIM_STATUS-0}\"",
     );
     executable(
         directory.path(),
         "slurp",
         "printf '%s' \"${WAYLAND_SOCKET-unset}\" > \"$SELECTOR_LOG\"; [ \"${CANCEL_SELECTION-0}\" = 0 ] || exit 1; printf '10,20 300x200\\n'",
     );
+    executable(
+        directory.path(),
+        "wl-copy",
+        r#"[ "$#" = 2 ] && [ "$1" = --type ] && [ "$2" = image/png ] || exit 2
+[ -z "${WAYLAND_SOCKET+x}" ] && [ "$WAYLAND_DISPLAY" = park-screenshot-test ] || exit 2
+[ ! -e /proc/self/fd/77 ] || exit 2
+[ "$COPY_STATUS" = 0 ] || exit "$COPY_STATUS"
+cat >> "$CLIPBOARD_LOG""#,
+    );
     let output = directory.path().join("pictures $(touch escaped)");
     let log = directory.path().join("grim.log");
     let selector = directory.path().join("slurp.log");
+    let clipboard = directory.path().join("clipboard.log");
     let options = Options {
         directory: output.to_string_lossy().into_owned(),
         show_pointer: true,
     };
-    let run = |action, cancel: bool, fail: bool| {
+    let run = |action, cancel: bool, grim_status: &str, copy_status: &str| {
         let options = Options {
             show_pointer: action == Action::ScreenshotRegion,
             ..options.clone()
         };
         let mut description = options.command(action).unwrap();
         Options::target_output(action, &mut description, "DP-2");
-        std::process::Command::new(description.program)
+        std::process::Command::new("bash")
+            .args(["-c", "exec 77</dev/null; exec \"$@\"", "test-capture"])
+            .arg(description.program)
             .args(description.arguments)
             .current_dir(directory.path())
             .env(
@@ -83,29 +131,40 @@ fn provider_pipeline_preserves_grim_authority_treats_paths_literally_and_cleans_
                 .unwrap(),
             )
             .env("WAYLAND_SOCKET", "77")
+            .env("WAYLAND_DISPLAY", "park-screenshot-test")
             .env("CAPTURE_LOG", &log)
             .env("SELECTOR_LOG", &selector)
+            .env("CLIPBOARD_LOG", &clipboard)
             .env("CANCEL_SELECTION", if cancel { "1" } else { "0" })
-            .env("GRIM_STATUS", if fail { "1" } else { "0" })
+            .env("GRIM_STATUS", grim_status)
+            .env("COPY_STATUS", copy_status)
             .status()
             .unwrap()
     };
-    assert!(run(Action::ScreenshotRegion, false, false).success());
+    assert!(run(Action::ScreenshotRegion, false, "0", "0").success());
     assert_eq!(std::fs::read_to_string(&selector).unwrap(), "unset");
     let captured = std::fs::read_to_string(&log).unwrap();
     assert!(captured.starts_with("77\n-c\n-g\n10,20 300x200\n"));
     assert!(!directory.path().join("escaped").exists());
     let files = || std::fs::read_dir(&output).unwrap().count();
+    let copied = || std::fs::read(&clipboard).unwrap();
     assert_eq!(files(), 1);
-    assert!(run(Action::ScreenshotRegion, true, false).success());
+    assert_eq!(copied(), b"PNG");
+    assert!(run(Action::ScreenshotRegion, true, "0", "0").success());
     assert_eq!(files(), 1);
-    assert!(!run(Action::ScreenshotScreen, false, true).success());
+    assert_eq!(copied(), b"PNG");
+    assert!(!run(Action::ScreenshotScreen, false, "1", "0").success());
     assert_eq!(files(), 1);
-    assert!(run(Action::ScreenshotScreen, false, false).success());
+    assert_eq!(copied(), b"PNG");
+    assert!(run(Action::ScreenshotScreen, false, "0", "0").success());
     assert_eq!(files(), 2);
+    assert_eq!(copied(), b"PNGPNG");
     assert!(
         std::fs::read_to_string(&log)
             .unwrap()
             .starts_with("77\n-o\nDP-2\n")
     );
+    assert!(!run(Action::ScreenshotScreen, false, "0", "1").success());
+    assert_eq!(files(), 3);
+    assert_eq!(copied(), b"PNGPNG");
 }

@@ -29,6 +29,7 @@ impl Drop for CaptureBudget {
     }
 }
 
+#[cfg(feature = "nested")]
 pub(crate) fn retained_capture(buffer: &ClientBuffer) -> std::result::Result<Option<Arc<RetainedCapture>>, String> {
     let Some(content) = buffer.cached::<Content>() else { return Ok(None); };
     let result = content.capture.lock().unwrap_or_else(|error| error.into_inner()).clone();

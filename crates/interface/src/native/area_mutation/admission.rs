@@ -72,6 +72,7 @@ pub(super) fn same_configuration(
         rules,
         match_all,
         changes,
+        creation: _,
         protein,
         filter,
         sound,

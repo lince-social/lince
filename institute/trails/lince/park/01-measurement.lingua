@@ -8,7 +8,7 @@ Park — 1. Measure complete interactions (
 
 # 1. Measure complete interactions
 
-**Priority, 2026-11-20.** Follow the [approved queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). The measurement tooling implementation is available for the authorized evidence phase. Use P156 for prepared-runtime verification. P155 is already closed.
+**Priority, 2026-11-20.** Follow the [approved queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). Verify the running revision first. Use P156 for prepared-runtime verification when its matching artifact is available.
 
 **Continue through these Records:**
 
@@ -146,7 +146,7 @@ P156 — Verify the installed graphics runtime without an adapter script. (
 
 **Why:** Prepared checks should use the installed runtime without asking for hand-written library paths.
 
-**Current instruction:** source changes only. Do not run checks, compile, measure, ship or restart from this Record. Use [Overhaul.md](Overhaul.md#remaining-acceptance-obligations) and [the checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y); verification resumes only when authorized. Quantity remains zero because implementation is not a performance pass.
+Use the matching prepared artifact alongside the installed application. Record the selected executable, driver identity and any unavailable hardware scope in [the checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 } r_675XKW987Z53WQNE9T0F48XBPH
 
 Extension @park-p156 "lince.controls" {

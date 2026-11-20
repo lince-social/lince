@@ -76,4 +76,26 @@ mod tests {
     fn stalled_gpu_retains_resources_and_does_not_publish_early() {
         super::probe().unwrap();
     }
+
+    #[test]
+    #[ignore = "requires a hardware Vulkan device"]
+    fn rejected_submission_returns_an_error_before_completion_can_be_registered() {
+        let renderer = super::VulkanRenderer::new().unwrap();
+        let buffer = renderer.device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: 4,
+            usage: wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        let mut encoder = renderer.device.create_command_encoder(&Default::default());
+        encoder.clear_buffer(&buffer, 0, None);
+        let commands = encoder.finish();
+        buffer.destroy();
+
+        let error = renderer.checked_submission(|| {
+            renderer.queue.submit([commands]);
+            Ok(())
+        }).unwrap_err();
+        assert_eq!(error.stage, "gpu_submission");
+    }
 }

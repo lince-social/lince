@@ -569,6 +569,9 @@ pub enum Action {
     FileSyncStatus {
         organ: String,
     },
+    DirectorySync {
+        request: crate::file_sync::Request,
+    },
     MailboxRequests,
     MailboxAnswerRequest {
         organ_uid: String,
@@ -1429,6 +1432,7 @@ impl Action {
                 | Self::MailboxSavedStatus
                 | Self::MailboxOutbound
                 | Self::FileSyncStatus { .. }
+                | Self::DirectorySync { request: crate::file_sync::Request::List }
                 | Self::InspectCanvases
                 | Self::InspectFioteActivations { .. }
                 | Self::InspectKarmaRuleHistory { .. }
@@ -4426,6 +4430,7 @@ impl Engine {
                 "record:read"
             }
             Action::Plugins { request } => request.permission(),
+            Action::DirectorySync { request } => request.permission(),
             Action::Social { request } => request.permission(),
             Action::SandPackage { request } => request.permission(),
             Action::DiscardTransferDraft { .. } | Action::RecordTransferOutcome { .. } => {

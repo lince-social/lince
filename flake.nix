@@ -85,7 +85,9 @@
         ])
         ++ linuxBuildInputs pkgs;
 
-      runtimeTools = pkgs: [ pkgs.bash pkgs.dbus pkgs.coreutils pkgs.ffmpeg ];
+      runtimeTools = pkgs:
+        [ pkgs.bash pkgs.dbus pkgs.coreutils pkgs.ffmpeg ]
+        ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux [ pkgs.grim pkgs.slurp pkgs.wl-clipboard ];
 
       graphicsRuntime = pkgs: libraries: {
         schema_version = 1;

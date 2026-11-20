@@ -60,6 +60,8 @@ R06 combines the real native keyboard pipeline, a started stopwatch and a privat
 
 R09 uses a child of the same test executable with a private IDE directory. After it acknowledges Save and close, the parent kills the child before normal exit and opens the saved file through a fresh IDE. It also checks that an adjacent unsaved tab comes back from its checkpoint without changing its original disk contents.
 
+**Source inventory, 2026-11-20.** The registry selects 15 case definitions for 21 rows. It assigns 265 factor pairs to those rows, marks three pairs inapplicable, and records 1,809 candidate pairs without an oracle. The strict coverage result stays open for those gaps. [Source-plan receipt](Overhaul.md#checkout-verification--2026-11-20).
+
 **Remaining acceptance:** run the private R02–R09 cases and verify the generated coverage report. R01 and R10 require physical acceptance. The registry records the exact gap for each unproved combination.
 } r_146KVN0KENZQ88KNMP4NWNNCS3
 
@@ -223,6 +225,8 @@ P15 — Establish nearly lossless Firefox video under that same load. (
 
 
 **Why:** decoding frames that are discarded does not deliver smooth video. **Scope:** the same visible 30-second 720p60 source at matched geometry/100% zoom, comparing the current optimized Park candidate with the existing matched Niri reference. Separate decoded, dropped and compositor-presented frames; correlate P16 rather than treating browser callbacks as physical scanout. **Pass:** drops no worse than 0.5 frames/second and no new input/other-output regression. The historical Park result was 43.9 drops/second. No physical run starts without the needed user readiness.
+
+**Installed baseline, 2026-11-20.** `08c087f4` recorded 4 drops out of 1,800 frames during 30 s of playback after warmup on the 1920×1080 external monitor at 100% zoom. This source has no matched Niri run and the compositor was untraced. Verify the matched scene and both-output behavior before closing the task. [Receipt](Overhaul.md#installed-park-measurement--2026-11-20).
 } r_09F37ECZ6MCA18Y6CGNE3D6Y5Y
 
 Extension @park-p15 "lince.controls" {
@@ -351,7 +355,9 @@ P140 — Make rule discovery and hidden-comment coverage explicit. (
 
 **Source complete.** Anicca discovers requirements from the existing typed Records and syntax tree. Output carries the stable rule ID, Record UID and line location. Markdown fences and decorated example lines are excluded. Laboratory’s fast interface run maps the bundled requirements to the existing first Protein Add filter case and Edit panel geometry case. Its results export identities and locations. Hidden comment text is confined to the Lingua source. Missing, duplicate, stale and unselected requirements produce a failure.
 
-**Verify next.** Run `cargo test --locked -p anicca --test requirements` and the `native::laboratory::requirements::tests` selectors in the feature-enabled interface build. Run the ordinary `test-interface` path to verify the same mappings and ordering in a real common run. Check that the hidden sentinel survives formatting and canonical writeback and stays out of the Instinct payload. P140 remains open for these checks.
+**Verified, 2026-11-20.** All three Anicca requirement tests passed, including the hidden sentinel through formatting, canonical writeback and exclusion from the Instinct payload. [Receipt](Overhaul.md#checkout-verification--2026-11-20).
+
+**Verify next.** Run `native::laboratory::requirements::tests` in the feature-enabled interface build, then verify the same mappings and ordering through the ordinary `test-interface` entry point.
 } r_0EHDMT2W041ZM1SK253DJVH2C1
 
 Extension @park-p140 "lince.controls" {

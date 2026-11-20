@@ -97,7 +97,7 @@ impl Stamp {
         time.checked_sub(self.time)
     }
 
-    #[cfg(any(feature = "nested", test))]
+    #[cfg(feature = "nested")]
     pub(crate) fn record_at(self, stage: Stage, output: OutputId, time: Duration) -> bool {
         if let Some(age) = self.age(time) {
             performance::record_output(stage, output, age);
@@ -117,6 +117,7 @@ pub(crate) struct Dispatch {
 
 #[cfg(any(feature = "nested", test))]
 impl Dispatch {
+    #[cfg(feature = "nested")]
     pub(crate) fn new() -> Self {
         Self::resume(Stamp::current())
     }

@@ -98,6 +98,7 @@ impl Engine {
                     .filter(serde_json::Value::is_object)
                     .unwrap_or_else(|| serde_json::json!({"format":"lingua"}));
                     config["enabled"] = enabled.into();
+                    self.check_legacy_sync_path(&config).await?;
                     store::records::set_extension(
                         &self.store.pool,
                         &organ.uid,
@@ -164,6 +165,7 @@ impl Engine {
                         config["enabled"] = false.into();
                         config
                     };
+                    self.check_legacy_sync_path(&config).await?;
                     store::records::set_extension(
                         &self.store.pool,
                         &organ.uid,
@@ -179,6 +181,24 @@ impl Engine {
                             now,
                         )
                         .await?;
+                }
+                Action::DirectorySync { request } => {
+                    if actor.is_some() {
+                        return Err(EngineError::Forbidden(
+                            "Only the local owner can manage directory syncs".into(),
+                        ));
+                    }
+                    let changed = !matches!(request, crate::file_sync::Request::List);
+                    outcome.data = Some(self.directory_sync_command(request).await?);
+                    if changed {
+                        let organ = store::organs::local(&self.store.pool).await?
+                            .ok_or_else(|| EngineError::Consequence("Local Organ is unavailable".into()))?;
+                        outcome.facts = self.annotate(
+                            organ.uid, actor,
+                            serde_json::json!({"extension": "lince.file_sync"}),
+                            now,
+                        ).await?;
+                    }
                 }
                 Action::FileSyncStatus { organ } => {
                     let organ_uid = self.resolve(&organ).await?;

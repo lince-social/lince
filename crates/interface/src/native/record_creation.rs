@@ -557,7 +557,8 @@ impl Action for Submit {
         if form.pending.is_some() {
             return;
         }
-        let result = collect(world, form).and_then(|draft| {
+        let result = collect(world, form).and_then(|mut draft| {
+            crate::native::area::creation::apply(world, entity, &mut draft)?;
             let id = format!("create-record-{}", draft.uid);
             let bridge = world
                 .get_non_send::<crate::native::cell_bridge::CellBridge>()

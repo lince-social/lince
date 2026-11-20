@@ -13,6 +13,9 @@ impl Engine {
             match action {
                 Action::SetContactDelivery { target, mode } => {
                     let uid = self.resolve(&target).await?;
+                    if namespace == "lince.file_sync" {
+                        self.check_legacy_sync_path(&fds).await?;
+                    }
                     if !matches!(mode.as_str(), "direct" | "mailbox" | "auto") {
                         return Err(EngineError::Consequence(
                             "Choose direct, mailbox or auto delivery".into(),

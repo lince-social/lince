@@ -36,6 +36,8 @@ Finish with the useful local/offline/hosted modeling workspace working as a whol
 
 - [ ] **15.M11.** Complete [camera and vision acceptance](Camera-vision-contracts.lingua): connect a feed with spatial/optical/time metadata through generic providers, let Fiote use an actual supported vision model for observations/events, and model a selected place once or periodically. Preserve authored source, bounded transient media, explicit coverage and generation-checked outputs. No raw-video archive or whole-world reconstruction is required.
 
+- [ ] **15.M12.** Complete [world composition acceptance](World-composition-contracts.lingua): curated local/world data, alignment and regional replacement, coherent lowered detail, safe support/mounts, source revision care and portable fragments. Join actual geographic inputs with the named photo/terrain, AI and live creation methods. Reopen outputs offline and reuse real-place fragments in a fictional world. Preserve uncertainty, source rights, authored layers, no raw-media archive and bounded city-scale demand.
+
 ## Entry and scope
 
 - [ ] Follow the development graph and owned-package delivery rules. Preserve every requirement, composed workflow and evidence obligation below; former stage numbers are stable traceability labels.
@@ -75,6 +77,7 @@ Bounded recipe/behavior authoring trials and their causal diagnostics belong to 
 - [ ] [15.T09 — Reusable object authoring integration](../features/Core-Acceptance.lingua#task-15t09). Full task text and execution order live with the core acceptance owner; its provider is [object authoring acceptance](Object-authoring-contracts.lingua).
 
 - [ ] [15.T10 — Camera feeds and Fiote vision integration](../features/Core-Acceptance.lingua#task-15t10). Full task text and order live with the core acceptance owner; its provider is [camera and vision acceptance](Camera-vision-contracts.lingua).
+- [ ] [15.T11 — Real-world data and place composition](../features/Core-Acceptance.lingua#task-15t11). Provider is [world composition acceptance](World-composition-contracts.lingua).
 
 ## Delivery cycles and retained workflows
 
@@ -97,6 +100,7 @@ Bounded recipe/behavior authoring trials and their causal diagnostics belong to 
 | **15.W07 — Explore and possess objects in the mixed workspace** | EXP.F01 and EXP.W01–EXP.W05; 15.M09/15.T08, replay 15.P05. | Subject/path, relative movement, Place/Play choice, saved versus temporary pose and reliable exit remain clear beside ordinary work. | Same source/command/view/activity authority; exact accepted pose and undo; no leaked trial events, hidden model change or duplicate writer; bounded history, input/frame cost and last-demand release. |
 | **15.W08 — Author and operate reusable creations** | OA.F01 and OA.W01–OA.W06; 15.M10/15.T09, replay 15.P06. | Preset use, internal editing, exposed controls, CAD relationships and causal comparison remain understandable together. | Source/undo/offline/rights, typed binding repair, input parity, state transfer, one writer and trial isolation hold under measured mixed budgets; no unsupported physics is inferred. |
 | **15.W09 — Observe and model a place through camera feeds** | CV.F01 and CV.W01–CV.W05; 15.M11/15.T10, replay 15.P07. | Camera placement/metadata, task purpose, model outputs and current versus stale coverage remain understandable. | Actual pixels plus metadata reach a supported model; event/one-shot/periodic results meet fixture limits; source/authority, manual layers, timing/calibration and transient-media limits survive faults. |
+| **15.W10 — Refine and reuse world data** | WC.F01/F02 and WC.W01–WC.W12, RCN/GEN/LRC method evidence, 15.M12/15.T11, replay 15.P08. | Alignment, regional scope, provenance, source conflicts, seams, creation limits and export losses are understandable. | Real inputs/methods produce ordinary editable candidates; accepted refinement survives low detail/refresh, support and mounts remain valid, and offline fragments preserve scale/lineage in fictional roots under measured budgets. |
 
 - [ ] **Checks to select.** Reuse existing meaningful unit/integration/fault/native suites and run the required composed journeys on their actual services. Exercise controlled failures at the shared acceptance/loader/Agent boundaries and review native outputs; record named build/device/profile and source revisions. Add a test only for an uncovered observed defect or integration contract, then retain its reproducer at the owning stage.
 
@@ -117,6 +121,8 @@ Bounded recipe/behavior authoring trials and their causal diagnostics belong to 
 - [ ] **15.P06 — Reuse and explain authored objects in the mixed core; 15.T09 / 15.W08.** Recover OA.P01–OA.P03 provider evidence and replay the lamp/hatch/pulse workflow beside existing native tools, shared source and possession. Compare known geometry and event outcomes, exercise broken/stale links, lowered visual detail, incompatible live edits and cancellation. Inspect controls, cost/trace meaning and offline recovery; retain actual revisions, measured limits and missing domain adapters. Do not rerun unaffected specialist science or replace absent behavior with a preset-only demonstration.
 
 - [ ] **15.P07 — Integrate camera observation and modeling; 15.T10 / 15.W09.** Recover CV.P01/CV.P02 handoffs and run the two-source workflow with native controls, Fiote and a restricted observer. Compare independently known events and calibrated references, exercise source/format/pose changes, missed windows, stale completion and stop/revoke. Check saved files/logs for unintended raw media, preserve last valid derived state with age, and measure actual output error/latency/cost. Retain implemented source/model limits; do not substitute a rendered simulated camera or metadata-only stub for external-image consumption.
+
+- [ ] **15.P08 — Refine and reuse curated world data in the mixed core.** Recover WC.P01/WC.P02 and each actual RCN/GEN/LRC method proof. Run 15.W10 beside editable native content through existing accepted operations. Check independent alignment controls, regional priority, whole-object/mask/crop distinctions, support seams, coarse-summary invalidation, mounted-panel/source repair and offline fragment closure. Join actual creation outputs into the same bounded scene, including live no-archive/release checks. Measure aggregate rendering/support/query/worker/rebuild and old/new peaks against declared active city coverage. Keep wider coverage and additional method variants separate from the named required methods.
 
 ## Worked contract example
 

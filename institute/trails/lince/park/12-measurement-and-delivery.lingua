@@ -138,6 +138,7 @@ For every coded change, keep a concrete attribution entry: task/source change, p
 This rule improves attribution without claiming independence: reducing layout work can change GPU feeding or lock pressure elsewhere. A coherent boundary refactor may necessarily span several measured stages; label it as a coupled change rather than pretending each sub-edit has its own independently proved gain. Do not disguise many competing changes as one “rewrite” to avoid the ownership rule.
 
 Keep changes reviewable by task/owner in version history and record the aggregate candidate's exact source identity, including integrated external work. Preserve unrelated or unfinished edits. The old sync/history/DB-lock/Karma delegation is historical; inspect current changes before touching shared storage/effect boundaries. Completed source work remains a receipt with verification pending, not another coding task.
+} r_1B71DE5H30SKSRW4AB57AJK09H
 
 Park — Local checks, CI delivery and session boundaries (
     @park-dev-5c9c004ec7f9342f5687: 0,
@@ -204,7 +205,7 @@ Park — A0 artifact entry point prepared in this batch (
 
 ## A0 artifact entry point prepared in this batch
 
-**Historical 3fdc9356 boundary:** orchestration worked, while automatic graphics setup, mixed input and real system attribution had gaps. The observer and mixed-route repairs are now complete. P156 is implemented with automatic installed-runner verification still explicit; P155 retains its negative comparison-control verification. Reuse later source-identified receipts in Overhaul.md, not the old temporary runtime adapter as a new default.
+Use the source-identified receipts in Overhaul.md for historical artifact behavior. P156 still needs a matching prepared run to verify automatic graphics setup through the installed runtime.
 
 
 Extract the CI `park-validation-TARGET-REVISION` artifact's `park-validation-bundle.tar.gz` first; the archive preserves executable permissions. Its bundle contains `performance.py`, `report.py`, `changes.json`, a manifest and matching compiled executables. Execute it through the supported existing Nix environment with `python3 -B performance.py run BUNDLE --output NEW_REPORT_DIRECTORY`; it never invokes Cargo or builds a missing artifact. `--case NAME` keeps the mandatory Protein-first interface suite. On NixOS, the runner first discovers the active same-user Park ELF, then falls back to the installed `lince` ELF or Nix wrapper's `.lince-wrapped` sibling. It reads bounded ELF64 interpreter/library-path metadata with Python’s standard library, without launching a compositor, executing wrapper shell code or requiring `patchelf` on PATH. This also works while developing in Niri; an explicit `--runtime ELF` is available if automatic discovery is unavailable. This loader path still requires actual-binary verification.

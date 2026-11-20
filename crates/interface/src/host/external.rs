@@ -234,6 +234,11 @@ impl Settings {
         if locked && (!action.lockable() || !command.allow_when_locked) {
             return Err("This command is not permitted while locked.".into());
         }
+        if let Some(updated) = screenshot::Options::from_command(action, &command.command)
+            .and_then(|options| options.command(action))
+        {
+            return Ok(std::borrow::Cow::Owned(updated));
+        }
         Ok(std::borrow::Cow::Borrowed(&command.command))
     }
 }

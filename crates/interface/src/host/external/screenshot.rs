@@ -1,6 +1,6 @@
 use super::{Action, Capability, Description};
 
-const SCRIPT: &str = r#"set -eu
+const LEGACY_SAVE_SCRIPT: &str = r#"set -eu
 mode=$1
 directory=$2
 pointer=$3
@@ -27,6 +27,15 @@ grim "$@" "$file"
 trap - EXIT
 "#;
 
+const COPY_SCRIPT: &str = r#"# Drop the capture connection before opening a regular desktop clipboard connection.
+if [ -n "${WAYLAND_SOCKET-}" ]; then
+    wayland_fd=$WAYLAND_SOCKET
+    exec {wayland_fd}>&-
+    unset WAYLAND_SOCKET
+fi
+exec wl-copy --type image/png < "$file"
+"#;
+
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Options {
     pub directory: String,
@@ -41,16 +50,25 @@ impl Options {
     }
 
     pub fn command(&self, action: Action) -> Option<Description> {
+        self.command_with_script(action, "bash", format!("{LEGACY_SAVE_SCRIPT}{COPY_SCRIPT}"))
+    }
+
+    fn command_with_script(
+        &self,
+        action: Action,
+        program: &str,
+        script: String,
+    ) -> Option<Description> {
         let mode = match action {
             Action::ScreenshotScreen => "screen",
             Action::ScreenshotRegion => "region",
             _ => return None,
         };
         Some(Description {
-            program: "/bin/sh".into(),
+            program: program.into(),
             arguments: vec![
                 "-c".into(),
-                SCRIPT.into(),
+                script,
                 "lince-screenshot".into(),
                 mode.into(),
                 self.directory.clone(),
@@ -66,7 +84,12 @@ impl Options {
             directory: command.arguments.get(4)?.clone(),
             show_pointer: command.arguments.get(5)?.parse().ok()?,
         };
-        (options.command(action).as_ref() == Some(command)).then_some(options)
+        let built_in = if command.program == "/bin/sh" {
+            options.command_with_script(action, "/bin/sh", LEGACY_SAVE_SCRIPT.into())
+        } else {
+            options.command(action)
+        };
+        (built_in.as_ref() == Some(command)).then_some(options)
     }
 
     pub fn validate(&self) -> Result<(), String> {

@@ -39,6 +39,12 @@ Across 120 sequential Edit toggles on optimized `08c087f4`, input delivery to a 
 
 The worker can service the next input after the current frame and its geometry, input, and capture state have been prepared. The existing loop already drains eligible input before waiting for the prior GPU result. Shortening synchronous preparation is the next place to investigate. Preserve ordered input and pending target revalidation at that boundary. The private trace times the whole preparation interval and does not tie it to an individual system or physical presentation.
 
+### P60 — Surface derivation and application
+
+In the same optimized `08c087f4` trace, 607 paired open/reveal spans average 0.064 ms for surface derivation and 0.133 ms for application. Their p95 values are 0.176 ms and 0.298 ms, respectively. In the report windows containing the private worker Edit toggles, the 243 paired spans average 0.036 ms and 0.078 ms. These are elapsed times on the native owner. The worker-window exclusive CPU means are 0.072 ms for surface synchronization and 1.371 ms for graphics queue submission. The trace windows do not assign individual surface calls to specific inputs. Local analysis is in `target/park-p60-surface-attribution.m05d0ghm/analysis.json`.
+
+Keep the existing synchronous derivation and application. The measured derivation is small, and the native surfaces and shader effects share one allocation budget. Further splitting needs evidence of a larger independent batch, including snapshot, scheduling, and application costs.
+
 ## Approved Park work — 2026-11-20
 
 - **P148 source complete.** Compile pointer settings, external commands, keyboard persistence, display settings persistence, compositor overview, and final composition tests under the feature that provides their production dependencies. Worker-capable focus and raster tests and the shared display helpers retain their coverage. Selector names are preserved. Verification starts with the worker-only and full test-build checks and continues with the affected existing selectors.

@@ -12,11 +12,9 @@ Run the smallest relevant case first. A shared run can close several boxes when 
 
 ## Existing changes — one targeted check at a time
 
-- [ ] [P60](record:r_4YXRG46DMT22JYM0TFVFYRDGAE) Measure one exclusive system’s derivation and application separately. Pick a split if the dominant work supports it.
-  Use the saved `08c087f4` open-reveal trace, which records surface derivation and application separately.
+- [ ] [P83](record:r_11F5Q868V60YDH4M44A10ETC0V) Locate one remaining foreground blocking operation in the current ranked trace. Identify a safe off-thread ownership boundary.
+  Start with the named wall-time and owner-CPU readings in the saved `08c087f4` worker trace. Check the live ownership boundary in source.
 
-- [ ] [P77](record:r_349MAGE5FADNJ50X348MCC7604) Reveal a Sync view after a held reply. Verify on-demand reads and that the correct view consumes the result.
-- [ ] [P80](record:r_4MPVWB5R7J40MNV571W780DQ9W) Change a dormant camera image, reveal it and verify that the first frame samples the latest revision.
 - [ ] [P120](record:r_5FDXR01ABJBD6FW36MWABGMPZQ) Replay one work update with a slug change. Verify one final projection and one upsert with the exact durable result.
 - [ ] [P128](record:r_5ZXJ3Y0TZEG0T3PDAH61X596QJ) Stream ordered command output while typing. Verify lossless input, exact output and bounded retained history.
 - [ ] [P84](record:r_7G4HJRCVP9TZW0S1XS934HDWPQ) Refresh one unchanged File Explorer listing. Verify row reuse and one sorted listing for the presentation wave.
@@ -33,7 +31,6 @@ Use the matched capture to select the next expensive owner. Each item asks for o
 - [ ] [P52](record:r_0R0MWH247WFE7SYBX74GP66PM8) Compare per-output damage on a one-output activity run. Require the quiet monitor’s unchanged pixels and fewer redraws.
 - [ ] [P116](record:r_7W7WPY7YF5B16QZ47SKY0QR6NH) Compare one batched local edit commit with the current commit path. Verify exact recovery and count actual sync calls.
 - [ ] [P106](record:r_7T8XKYGAMN8B6HBBSF413WX2WS) Compare one bounded busy-queue drain with the current path. Check control latency and exact event order.
-- [ ] [P61](record:r_3YJNV2XSM0QNC1NVE58ZBRE2EZ) Compare serial and parallel execution of one independent expensive batch using the split supported by P60.
 - [ ] [P62](record:r_12ZSCGSGR5ANMWGGYHAK3J2S5G) Compare coherent main/render overlap through the complete consumer path. Record tail latency and how long each frame’s resources stay live.
 - [ ] [P72](record:r_70G3BRDBJCHJFW1RCC27CWWH99) Measure one remaining foreground GPU wait and decide whether ready-only consumption can remove it safely.
 - [ ] [P68](record:r_7NEHBEAZ041VSG76B4TAWJ83PS) Compare CPU and GPU placement for one proven candidate, including transfers and waits.
@@ -44,7 +41,6 @@ Use the matched capture to select the next expensive owner. Each item asks for o
 - [ ] [P139](record:r_6PB6GYZ446CWCNNVS8JENYY414) Measure one reaction that still delays acknowledgement. Decide which effects can finish after acknowledgement.
 - [ ] [P121](record:r_5E9VPP06MSXAM46V1MNA6T163P) Hold one slow Cell request and measure an unrelated local edit’s queue wait. Identify one safe isolation boundary.
 - [ ] [P63](record:r_7DW7DZJMVHBTS4EPRPNG4ZS7E1) Compare the visible latency of one background job family with and without a service budget.
-- [ ] [P83](record:r_11F5Q868V60YDH4M44A10ETC0V) Locate one remaining foreground blocking operation in the current ranked trace. Identify a safe off-thread ownership boundary.
 - [ ] [P129](record:r_080KC3GG64DRMJ9JMAN38AHGTJ) Compare producer work when one media consumer is hidden and visible. Require timely reveal.
 - [ ] [P92](record:r_0ZGYWCG03CHFVF1JASD6DCST15) Compare eager and first-use setup of one unused startup resource. Measure startup and first-use latency.
 - [ ] [P122](record:r_1QNJKH1TQ6VHYJXVKP95M0RN0E) Compare affected-root collection and application with the current layout path for one ordinary edit.
@@ -185,6 +181,11 @@ Use a build with the private fixtures for these cases. The local test inventory 
 - [ ] [P119](record:r_2C28QTRHSFACYE70MCH58SRPYS) Edit Raw description text and reopen Pretty. Verify the latest parse and reuse of unaffected blocks.
   The available preview check covers updated text. The Raw-to-Pretty case needs a fixture that checks which blocks were reused.
 
+- [ ] [P77](record:r_349MAGE5FADNJ50X348MCC7604) Reveal a Sync view after a held reply. Verify on-demand reads and that the correct view consumes the result.
+  The local Sync history case covers the hidden panel. A held-reply fixture still needs to verify routing and demand-driven reads.
+- [ ] [P80](record:r_4MPVWB5R7J40MNV571W780DQ9W) Change a dormant camera image, reveal it and verify that the first frame samples the latest revision.
+  The local alias fixture waits for an updated image. A first-frame fixture must check the revision on reveal.
+
 ### Reveal, caret and presentation checks
 
 - [ ] [P48](record:r_45GB38DS8T74GQD5GMCWG9CCNS) Change an inactive view, reveal it and verify that its first visible frame reflects current data, style and input geometry.
@@ -195,5 +196,10 @@ Use a build with the private fixtures for these cases. The local test inventory 
   Needs a fixture that records all three resolver and allocation cohorts.
 - [ ] [P53](record:r_3HT09KTMPBS113E9QXKT5ASZGQ) Run a client animation on one output. Match its callback pacing to observed presentation and measure idle-output work.
   The installed baseline lacks the physical presentation timing needed for this comparison.
+
+### Parallel batch comparison
+
+- [ ] [P61](record:r_3YJNV2XSM0QNC1NVE58ZBRE2EZ) Compare serial and parallel execution of one independent expensive batch once a measured independent batch is identified.
+  The surface derivation measured in P60 is too small for this comparison. Select a larger batch in a matched capture.
 
 } r_1FMCTGVHF35B6D0T70JEQAMYDW

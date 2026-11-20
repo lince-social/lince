@@ -51,6 +51,12 @@ In the optimized `08c087f4` Edit-toggle report windows, `lince_park::graphics::q
 
 Keep live World reads and import-wait state on the native owner. The bounded handoff demonstrated by P62's private prototype moves the corresponding render epoch and the existing shared GPU context to the export owner after frame state is captured. Render and export must retain their order, and output textures, client upload leases, and source allocations must survive through completion. Preserve submission error scopes, and publish only with matching scene, input, output, and capture revisions. P62 still owns the complete-path validation with clients and filtered capture before any production scheduling change.
 
+### P138 — Engine read gate during Cell refresh
+
+An optimized `08c087f4` warmup window had a 75.368 ms read-gate maximum and a 75.366 ms Cell refresh maximum. Two archived `dbd5cf34` typing runs show near matches at 69.849/69.845 ms and 69.463/69.459 ms. A single archived reveal window recorded one 16.016 ms read hold, one 16.013 ms refresh, and four query calls totaling 15.364 ms. These are window-level correlations supported by source nesting. The backend readings have no operation identifiers for an event-level join. Local analysis is in `target/park-p138-access-attribution.aOIlOW6B/analysis.json`.
+
+The shortest safe lifetime established by the current code ends when the authorized query and materialization return an owned response batch. The local Cell bridge already sends and wakes after that gate is released. An earlier release would need a coherent, versioned snapshot and authority revalidation before applying results. These recordings establish the boundary for this path. They leave the effects of a narrower gate on contention and correctness unmeasured.
+
 ## Approved Park work — 2026-11-20
 
 - **P148 source complete.** Compile pointer settings, external commands, keyboard persistence, display settings persistence, compositor overview, and final composition tests under the feature that provides their production dependencies. Worker-capable focus and raster tests and the shared display helpers retain their coverage. Selector names are preserved. Verification starts with the worker-only and full test-build checks and continues with the affected existing selectors.

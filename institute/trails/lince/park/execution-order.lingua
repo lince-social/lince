@@ -10,32 +10,13 @@ The 83 P Records supply the acceptance criteria. Each checkbox below produces on
 
 Run the smallest relevant case first. A shared run can close several boxes when its report proves each result. Save the first failure with its revision and exact case. Give the fix and the rerun their own boxes when a failure needs more work. A waiting build is a dependency; keep independent checks available. Preserve original acceptance criteria in the linked Records.
 
-## Existing changes — one targeted check at a time
-
-- [ ] [P138](record:r_6T8CDPK9MX8J93FHM5Q5JE1TA4) Attribute one long Engine reader/writer access interval and determine the shortest safe lifetime.
-  Use the retained optimized `dbd5cf34` gate and Cell refresh timings to trace one hold through response delivery.
-
-- [ ] [P84](record:r_7G4HJRCVP9TZW0S1XS934HDWPQ) Refresh one unchanged File Explorer listing. Verify row reuse and one sorted listing for the presentation wave.
-- [ ] [P132](record:r_01Z5DC695MDHGNT51DPHKY2J3T) Audit sibling capture aliases across a privacy change. Verify shared classification work and fresh authorization before pixels are exported.
-- [ ] [P133](record:r_3FWBA6PYBR86X5N7S5QN20Z1P8) Render the same diagram cold and concurrently. Verify exact pixels and shared font storage.
-- [ ] [P89](record:r_2NZ5PKRV5EBGZ2GE75QJXDVTQK) Move an item between two clipped owners. Verify exact clipping and one traversal for the applicable owner.
-
 ## Candidates — decide from one measured change
 
 Use the matched capture to select the next expensive owner. Each item asks for one scoped investigation or comparison. Split any follow-up implementation or regression into its own box once the evidence identifies the work.
 
-- [ ] [P105](record:r_5K1PMRDCBH1RRTQ2KHZGKY5ZRV) Isolate one unrelated dependency of text echo and compare visible response with that dependency out of the path.
-- [ ] [P107](record:r_2C6882M66DF10QM0B8NZ8TA899) Count unsubmitted work for superseded frames in one busy trace. Record whether eliminating that work is warranted.
-- [ ] [P52](record:r_0R0MWH247WFE7SYBX74GP66PM8) Compare per-output damage on a one-output activity run. Require the quiet monitor’s unchanged pixels and fewer redraws.
-- [ ] [P116](record:r_7W7WPY7YF5B16QZ47SKY0QR6NH) Compare one batched local edit commit with the current commit path. Verify exact recovery and count actual sync calls.
-- [ ] [P106](record:r_7T8XKYGAMN8B6HBBSF413WX2WS) Compare one bounded busy-queue drain with the current path. Check control latency and exact event order.
-- [ ] [P62](record:r_12ZSCGSGR5ANMWGGYHAK3J2S5G) Compare coherent main/render overlap through the complete consumer path. Record tail latency and how long each frame’s resources stay live.
-- [ ] [P72](record:r_70G3BRDBJCHJFW1RCC27CWWH99) Measure one remaining foreground GPU wait and decide whether ready-only consumption can remove it safely.
-- [ ] [P68](record:r_7NEHBEAZ041VSG76B4TAWJ83PS) Compare CPU and GPU placement for one proven candidate, including transfers and waits.
-- [ ] [P58](record:r_0NY0TN6Y1JKQ6058HBRD93XHS7) Compare one and two frames in flight using the same bottleneck workload. Record output age, latency and memory.
-- [ ] [P55](record:r_7P9VMMCDVV7ZN72MVSTZ3CHF4J) Compare removing one redundant pass or copy through actual output retirement. Require matching consumer pixels.
 - [ ] [P139](record:r_6PB6GYZ446CWCNNVS8JENYY414) Verify the removal of redundant post-commit reads on one local edit trace.
 - [ ] [P139](record:r_6PB6GYZ446CWCNNVS8JENYY414) Measure one reaction that still delays acknowledgement. Decide which effects can finish after acknowledgement.
+  Compare a saved operation with its reaction and acknowledgement if a trace has that correlation. The available aggregate timings alone do not identify an individual reaction.
 - [ ] [P121](record:r_5E9VPP06MSXAM46V1MNA6T163P) Hold one slow Cell request and measure an unrelated local edit’s queue wait. Identify one safe isolation boundary.
 - [ ] [P63](record:r_7DW7DZJMVHBTS4EPRPNG4ZS7E1) Compare the visible latency of one background job family with and without a service budget.
 - [ ] [P129](record:r_080KC3GG64DRMJ9JMAN38AHGTJ) Compare producer work when one media consumer is hidden and visible. Require timely reveal.
@@ -164,6 +145,11 @@ Use the feature-enabled Laboratory tests and the matching prepared bundle. The i
 
 Use a build with the private fixtures for these cases. The local test inventory lacks the required end-to-end selectors.
 
+- [ ] [P84](record:r_7G4HJRCVP9TZW0S1XS934HDWPQ) Refresh one unchanged File Explorer listing. Verify row reuse and one sorted listing for the presentation wave.
+- [ ] [P132](record:r_01Z5DC695MDHGNT51DPHKY2J3T) Audit sibling capture aliases across a privacy change. Verify shared classification work and fresh authorization before pixels are exported.
+- [ ] [P133](record:r_3FWBA6PYBR86X5N7S5QN20Z1P8) Render the same diagram cold and concurrently. Verify exact pixels and shared font storage.
+- [ ] [P89](record:r_2NZ5PKRV5EBGZ2GE75QJXDVTQK) Move an item between two clipped owners. Verify exact clipping and one traversal for the applicable owner.
+
 - [ ] [P137](record:r_2QC1RKFFQJ09XEE7EP15KJW6E1) Edit one title and verify unchanged body text is shared, with exact canonical text after reopen.
   The November 19 debug probe passed its interface checks. Kanban found no writable editor it could click, and Fiote did not receive pointer focus. A matching probe must reach an actual save and reopen.
 - [ ] [P117](record:r_7HD3G5KF1QDXZ5Y766H0WVQ357) Replay edits just below, at and above the checkpoint threshold. Require one bounded admission query in the write transaction and exact replay.
@@ -198,6 +184,29 @@ Use a build with the private fixtures for these cases. The local test inventory 
   Needs a fixture that records all three resolver and allocation cohorts.
 - [ ] [P53](record:r_3HT09KTMPBS113E9QXKT5ASZGQ) Run a client animation on one output. Match its callback pacing to observed presentation and measure idle-output work.
   The installed baseline lacks the physical presentation timing needed for this comparison.
+
+### Comparisons needing matched captures
+
+- [ ] [P62](record:r_12ZSCGSGR5ANMWGGYHAK3J2S5G) Compare coherent main/render overlap through the complete consumer path. Record tail latency and how long each frame’s resources stay live.
+  Use a matched workload that covers the remaining presentation consumers and measures resource lifetimes against the archived prototype.
+- [ ] [P68](record:r_7NEHBEAZ041VSG76B4TAWJ83PS) Compare CPU and GPU placement for one proven candidate, including transfers and waits.
+  Identify the candidate in matched processor and transfer captures, then compare both implementations under the same workload.
+- [ ] [P58](record:r_0NY0TN6Y1JKQ6058HBRD93XHS7) Compare one and two frames in flight using the same bottleneck workload. Record output age, latency and memory.
+  Use matched one-frame and two-frame captures that include device memory and actual output age.
+- [ ] [P55](record:r_7P9VMMCDVV7ZN72MVSTZ3CHF4J) Compare removing one redundant pass or copy through actual output retirement. Require matching consumer pixels.
+  The archived probe covers the prototype. Use the actual consumers to check pixels and retirement for the selected path.
+- [ ] [P105](record:r_5K1PMRDCBH1RRTQ2KHZGKY5ZRV) Isolate one unrelated dependency of text echo and compare visible response with that dependency out of the path.
+  Compare matched text-echo captures with a controlled delay at the selected dependency.
+- [ ] [P107](record:r_2C6882M66DF10QM0B8NZ8TA899) Count unsubmitted work for superseded frames in one busy trace. Record whether eliminating that work is warranted.
+  The saved Edit toggles lack a busy frame-lifecycle trace that identifies superseded work before submission.
+- [ ] [P52](record:r_0R0MWH247WFE7SYBX74GP66PM8) Compare per-output damage on a one-output activity run. Require the quiet monitor’s unchanged pixels and fewer redraws.
+  The local damage checks cover geometry. Capture both outputs to check quiet-output pixels and redraw counts.
+- [ ] [P116](record:r_7W7WPY7YF5B16QZ47SKY0QR6NH) Compare one batched local edit commit with the current commit path. Verify exact recovery and count actual sync calls.
+  Use matched edit paths with observed sync calls and a crash/reopen recovery check.
+- [ ] [P106](record:r_7T8XKYGAMN8B6HBBSF413WX2WS) Compare one bounded busy-queue drain with the current path. Check control latency and exact event order.
+  The local queue checks cover event order. Use matched busy-queue runs to measure control latency.
+- [ ] [P72](record:r_70G3BRDBJCHJFW1RCC27CWWH99) Measure one remaining foreground GPU wait and decide whether ready-only consumption can remove it safely.
+  Use a capture that identifies a blocking production caller. The saved GPU-ready timings measure asynchronous completion.
 
 ### Parallel batch comparison
 

@@ -12,11 +12,9 @@ Run the smallest relevant case first. A shared run can close several boxes when 
 
 ## Existing changes — one targeted check at a time
 
-- [ ] [P83](record:r_11F5Q868V60YDH4M44A10ETC0V) Locate one remaining foreground blocking operation in the current ranked trace. Identify a safe off-thread ownership boundary.
-  Start with the named wall-time and owner-CPU readings in the saved `08c087f4` worker trace. Check the live ownership boundary in source.
+- [ ] [P138](record:r_6T8CDPK9MX8J93FHM5Q5JE1TA4) Attribute one long Engine reader/writer access interval and determine the shortest safe lifetime.
+  Use the retained optimized `dbd5cf34` gate and Cell refresh timings to trace one hold through response delivery.
 
-- [ ] [P120](record:r_5FDXR01ABJBD6FW36MWABGMPZQ) Replay one work update with a slug change. Verify one final projection and one upsert with the exact durable result.
-- [ ] [P128](record:r_5ZXJ3Y0TZEG0T3PDAH61X596QJ) Stream ordered command output while typing. Verify lossless input, exact output and bounded retained history.
 - [ ] [P84](record:r_7G4HJRCVP9TZW0S1XS934HDWPQ) Refresh one unchanged File Explorer listing. Verify row reuse and one sorted listing for the presentation wave.
 - [ ] [P132](record:r_01Z5DC695MDHGNT51DPHKY2J3T) Audit sibling capture aliases across a privacy change. Verify shared classification work and fresh authorization before pixels are exported.
 - [ ] [P133](record:r_3FWBA6PYBR86X5N7S5QN20Z1P8) Render the same diagram cold and concurrently. Verify exact pixels and shared font storage.
@@ -36,7 +34,6 @@ Use the matched capture to select the next expensive owner. Each item asks for o
 - [ ] [P68](record:r_7NEHBEAZ041VSG76B4TAWJ83PS) Compare CPU and GPU placement for one proven candidate, including transfers and waits.
 - [ ] [P58](record:r_0NY0TN6Y1JKQ6058HBRD93XHS7) Compare one and two frames in flight using the same bottleneck workload. Record output age, latency and memory.
 - [ ] [P55](record:r_7P9VMMCDVV7ZN72MVSTZ3CHF4J) Compare removing one redundant pass or copy through actual output retirement. Require matching consumer pixels.
-- [ ] [P138](record:r_6T8CDPK9MX8J93FHM5Q5JE1TA4) Attribute one long Engine reader/writer access interval and determine the shortest safe lifetime.
 - [ ] [P139](record:r_6PB6GYZ446CWCNNVS8JENYY414) Verify the removal of redundant post-commit reads on one local edit trace.
 - [ ] [P139](record:r_6PB6GYZ446CWCNNVS8JENYY414) Measure one reaction that still delays acknowledgement. Decide which effects can finish after acknowledgement.
 - [ ] [P121](record:r_5E9VPP06MSXAM46V1MNA6T163P) Hold one slow Cell request and measure an unrelated local edit’s queue wait. Identify one safe isolation boundary.
@@ -185,6 +182,11 @@ Use a build with the private fixtures for these cases. The local test inventory 
   The local Sync history case covers the hidden panel. A held-reply fixture still needs to verify routing and demand-driven reads.
 - [ ] [P80](record:r_4MPVWB5R7J40MNV571W780DQ9W) Change a dormant camera image, reveal it and verify that the first frame samples the latest revision.
   The local alias fixture waits for an updated image. A first-frame fixture must check the revision on reveal.
+
+- [ ] [P120](record:r_5FDXR01ABJBD6FW36MWABGMPZQ) Replay one work update with a slug change. Verify one final projection and one upsert with the exact durable result.
+  The available Engine harness has no work update case that observes durable slug arbitration and write counts.
+- [ ] [P128](record:r_5ZXJ3Y0TZEG0T3PDAH61X596QJ) Stream ordered command output while typing. Verify lossless input, exact output and bounded retained history.
+  The local runner covers command streaming alone. The combined typing, output, and history case needs the prepared R06 fixture.
 
 ### Reveal, caret and presentation checks
 

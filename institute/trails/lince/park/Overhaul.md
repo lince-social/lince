@@ -45,6 +45,12 @@ In the same optimized `08c087f4` trace, 607 paired open/reveal spans average 0.0
 
 Keep the existing synchronous derivation and application. The measured derivation is small, and the native surfaces and shader effects share one allocation budget. Further splitting needs evidence of a larger independent batch, including snapshot, scheduling, and application costs.
 
+### P83 — Export submission on the native owner
+
+In the optimized `08c087f4` Edit-toggle report windows, `lince_park::graphics::queue_submit` averaged 1.395 ms wall time and 1.371 ms exclusive owner CPU across 243 calls on the native owner. The maximum wall time was 3.002 ms. Submission was the largest named product cost by exclusive CPU in those windows. The opt-in phase observer used more CPU. Submission's owner CPU was 98.3% of its elapsed time. These samples quantify CPU work, with no per-input join or hardware GPU timing. Local analysis is in `target/park-p83-foreground.y26ivpmy/analysis.json`.
+
+Keep live World reads and import-wait state on the native owner. The bounded handoff demonstrated by P62's private prototype moves the corresponding render epoch and the existing shared GPU context to the export owner after frame state is captured. Render and export must retain their order, and output textures, client upload leases, and source allocations must survive through completion. Preserve submission error scopes, and publish only with matching scene, input, output, and capture revisions. P62 still owns the complete-path validation with clients and filtered capture before any production scheduling change.
+
 ## Approved Park work — 2026-11-20
 
 - **P148 source complete.** Compile pointer settings, external commands, keyboard persistence, display settings persistence, compositor overview, and final composition tests under the feature that provides their production dependencies. Worker-capable focus and raster tests and the shared display helpers retain their coverage. Selector names are preserved. Verification starts with the worker-only and full test-build checks and continues with the affected existing selectors.

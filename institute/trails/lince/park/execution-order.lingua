@@ -12,18 +12,9 @@ Run the smallest relevant case first. A shared run can close several boxes when 
 
 ## Existing changes — one targeted check at a time
 
-- [ ] [P137](record:r_2QC1RKFFQJ09XEE7EP15KJW6E1) Edit one title and verify unchanged body text is shared, with exact canonical text after reopen.
-- [ ] [P117](record:r_7HD3G5KF1QDXZ5Y766H0WVQ357) Replay edits just below, at and above the checkpoint threshold. Require one bounded admission query in the write transaction and exact replay.
-- [ ] [P108](record:r_1K92JXDXHW5573N1AS06VJPEGE) Hold editor work until its deadline, then verify a fresh-authority cursor update and wakeup.
-- [ ] [P127](record:r_67MRGZ514V671TTWEDTTGXXD86) Change a collapsed Record field, reopen it and verify current content with the draft preserved.
-- [ ] [P85](record:r_2HNW14DMJ8ES1TVSXSHYQNFSDA) Hold a pointer click across a geometry replacement. Require the current owner and revalidated target to receive input.
-- [ ] [P130](record:r_36APBSWDH21W59H8997BQSW0DP) Move a participant through overlapping Areas and wait for settling. Verify membership and the intended final motion state.
-- [ ] [P73](record:r_0940K6JWSTJRZPPTWJP8KF6T7X) Hold a shader compilation and verify that the first usable frame publishes only after completion.
-- [ ] [P48](record:r_45GB38DS8T74GQD5GMCWG9CCNS) Change an inactive view, reveal it and verify that its first visible frame reflects current data, style and input geometry.
-- [ ] [P78](record:r_7V8V15DFDKXCGGT99VR6KJ25G4) Move the caret without changing styling. Verify unchanged style/layout counters and correct inherited fonts.
-- [ ] [P111](record:r_6TZTP766V7XVXM52YEHB3EMJKZ) Change one consumer’s style input. Verify that writes follow affected consumers and same-tick rendering sees the new value.
-- [ ] [P109](record:r_0DFPHA7M8KBYDS8GQVG89MJAZ8) Compare resolver time and allocation cost for unchanged, caret-only and one-theme-change cohorts.
-- [ ] [P53](record:r_3HT09KTMPBS113E9QXKT5ASZGQ) Run a client animation on one output. Match its callback pacing to observed presentation and measure idle-output work.
+- [ ] [P43](record:r_5TEM3NBDTK092YB5VBQ7EA80XP) Measure the longest foreground section delaying input. Record a boundary at which input can safely proceed.
+  Start with the saved `08c087f4` open-reveal trace. It records input enqueue, dequeue, delivery, GPU readiness and publication.
+
 - [ ] [P131](record:r_1N8KS1ZEKV1WQX606K6MH5NKR1) Change one accessible text field. Verify the incremental adapter update and exact projected text.
 - [ ] [P119](record:r_2C28QTRHSFACYE70MCH58SRPYS) Edit Raw description text and reopen Pretty. Verify the latest parse and reuse of unaffected blocks.
 - [ ] [P77](record:r_349MAGE5FADNJ50X348MCC7604) Reveal a Sync view after a held reply. Verify on-demand reads and that the correct view consumes the result.
@@ -39,7 +30,6 @@ Run the smallest relevant case first. A shared run can close several boxes when 
 
 Use the matched capture to select the next expensive owner. Each item asks for one scoped investigation or comparison. Split any follow-up implementation or regression into its own box once the evidence identifies the work.
 
-- [ ] [P43](record:r_5TEM3NBDTK092YB5VBQ7EA80XP) Measure the longest foreground section delaying input. Record a boundary at which input can safely proceed.
 - [ ] [P105](record:r_5K1PMRDCBH1RRTQ2KHZGKY5ZRV) Isolate one unrelated dependency of text echo and compare visible response with that dependency out of the path.
 - [ ] [P107](record:r_2C6882M66DF10QM0B8NZ8TA899) Count unsubmitted work for superseded frames in one busy trace. Record whether eliminating that work is warranted.
 - [ ] [P52](record:r_0R0MWH247WFE7SYBX74GP66PM8) Compare per-output damage on a one-output activity run. Require the quiet monitor’s unchanged pixels and fewer redraws.
@@ -179,5 +169,29 @@ Use the feature-enabled Laboratory tests and the matching prepared bundle. The i
 - [ ] [P104](record:r_3HYSQ1RTAA930T57X9W5CXKFQN) **Picker cancellation.** Cancel report selection and verify that the previous report remains available.
 - [ ] [P104](record:r_3HYSQ1RTAA930T57X9W5CXKFQN) **Report export.** Export the imported result and verify that its data and identity survive the round trip.
 - [ ] [P124](record:r_3XG5M214AQAQKBTADAR44A0MQ0) **Bundle inventory.** Verify source hashes, revision, feature gates and available selectors for the actual prepared bundle.
+
+### Targeted checks needing matching fixtures
+
+Use a build with the private fixtures for these cases. The local test inventory lacks the required end-to-end selectors.
+
+- [ ] [P137](record:r_2QC1RKFFQJ09XEE7EP15KJW6E1) Edit one title and verify unchanged body text is shared, with exact canonical text after reopen.
+  The November 19 debug probe passed its interface checks. Kanban found no writable editor it could click, and Fiote did not receive pointer focus. A matching probe must reach an actual save and reopen.
+- [ ] [P117](record:r_7HD3G5KF1QDXZ5Y766H0WVQ357) Replay edits just below, at and above the checkpoint threshold. Require one bounded admission query in the write transaction and exact replay.
+- [ ] [P108](record:r_1K92JXDXHW5573N1AS06VJPEGE) Hold editor work until its deadline, then verify a fresh-authority cursor update and wakeup.
+- [ ] [P127](record:r_67MRGZ514V671TTWEDTTGXXD86) Change a collapsed Record field, reopen it and verify current content with the draft preserved.
+- [ ] [P85](record:r_2HNW14DMJ8ES1TVSXSHYQNFSDA) Hold a pointer click across a geometry replacement. Require the current owner and revalidated target to receive input.
+- [ ] [P130](record:r_36APBSWDH21W59H8997BQSW0DP) Move a participant through overlapping Areas and wait for settling. Verify membership and the intended final motion state.
+- [ ] [P73](record:r_0940K6JWSTJRZPPTWJP8KF6T7X) Hold a shader compilation and verify that the first usable frame publishes only after completion.
+
+### Reveal, caret and presentation checks
+
+- [ ] [P48](record:r_45GB38DS8T74GQD5GMCWG9CCNS) Change an inactive view, reveal it and verify that its first visible frame reflects current data, style and input geometry.
+  Local interface cases passed hidden text, style and retained geometry checks. The exact GPU first-frame case needs a newer prepared Park test binary.
+- [ ] [P78](record:r_7V8V15DFDKXCGGT99VR6KJ25G4) Move the caret without changing styling. Verify unchanged style/layout counters and correct inherited fonts.
+  Local caret checks preserve text and skip eager shaping. The style and layout counters still need a caret-only fixture.
+- [ ] [P109](record:r_0DFPHA7M8KBYDS8GQVG89MJAZ8) Compare resolver time and allocation cost for unchanged, caret-only and one-theme-change cohorts.
+  Needs a fixture that records all three resolver and allocation cohorts.
+- [ ] [P53](record:r_3HT09KTMPBS113E9QXKT5ASZGQ) Run a client animation on one output. Match its callback pacing to observed presentation and measure idle-output work.
+  The installed baseline lacks the physical presentation timing needed for this comparison.
 
 } r_1FMCTGVHF35B6D0T70JEQAMYDW

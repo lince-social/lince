@@ -10,11 +10,6 @@ The 83 P Records supply the acceptance criteria. Each checkbox below produces on
 
 Run the smallest relevant case first. A shared run can close several boxes when its report proves each result. Save the first failure with its revision and exact case. Give the fix and the rerun their own boxes when a failure needs more work. A waiting build is a dependency; keep independent checks available. Preserve original acceptance criteria in the linked Records.
 
-## Source cleanup
-
-- [ ] [P90](record:r_4MEAW1HQ46BK0WKQ8ABX0T6X4K) **Remove Sandbox's unused direct hand-input dependency.** Remove its activation and lockfile edge while preserving the Interface dependency.
-  The shipped Linux graph enables the same default dependency through Interface and Sandbox. Only Interface uses it and registers the hand-camera plugin. The cleanup removes a redundant graph edge.
-
 ## Existing changes — one targeted check at a time
 
 - [ ] [P137](record:r_2QC1RKFFQJ09XEE7EP15KJW6E1) Edit one title and verify unchanged body text is shared, with exact canonical text after reopen.
@@ -148,6 +143,7 @@ Use a nested test executable that includes the current settings fixtures and the
 ### Dependency cleanup verification
 
 - [ ] [P90](record:r_4MEAW1HQ46BK0WKQ8ABX0T6X4K) **Verify the hand-input cleanup.** Check the supported Linux build and run the focused hand-camera workload from the updated binary.
+  Offline Cargo resolution preserved the package and feature sets for the shipped, Park, Sandbox and headless Linux configurations. The only lockfile change drops the direct Sandbox dependency. Interface still owns hand input.
 
 ### Laboratory and prepared cases
 

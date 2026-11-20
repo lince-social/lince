@@ -14,7 +14,6 @@ stuff = ["native-runtime", "lince-interface/stuff"]
 instinct = ["native-runtime", "lince-interface/instinct"]
 native-media = ["native-runtime", "lince-interface/native-media"]
 native-runtime = [
-    "dep:lince-hand-input",
     "dep:lince-map",
     "dep:zbus",
     "dep:futures-util",
@@ -87,7 +86,6 @@ native-runtime = [
 ]
 
 [dependencies]
-lince-hand-input = { path = "../hand-input", optional = true }
 lince-map = { workspace = true, optional = true }
 store = { workspace = true, optional = true }
 simulation = { workspace = true, optional = true }

@@ -9794,7 +9794,6 @@ dependencies = [
  "lince-cell",
  "lince-document",
  "lince-editor",
- "lince-hand-input",
  "lince-interface",
  "lince-map",
  "lince-media",

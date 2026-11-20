@@ -12,11 +12,9 @@ Run the smallest relevant case first. A shared run can close several boxes when 
 
 ## Existing changes — one targeted check at a time
 
-- [ ] [P43](record:r_5TEM3NBDTK092YB5VBQ7EA80XP) Measure the longest foreground section delaying input. Record a boundary at which input can safely proceed.
-  Start with the saved `08c087f4` open-reveal trace. It records input enqueue, dequeue, delivery, GPU readiness and publication.
+- [ ] [P60](record:r_4YXRG46DMT22JYM0TFVFYRDGAE) Measure one exclusive system’s derivation and application separately. Pick a split if the dominant work supports it.
+  Use the saved `08c087f4` open-reveal trace, which records surface derivation and application separately.
 
-- [ ] [P131](record:r_1N8KS1ZEKV1WQX606K6MH5NKR1) Change one accessible text field. Verify the incremental adapter update and exact projected text.
-- [ ] [P119](record:r_2C28QTRHSFACYE70MCH58SRPYS) Edit Raw description text and reopen Pretty. Verify the latest parse and reuse of unaffected blocks.
 - [ ] [P77](record:r_349MAGE5FADNJ50X348MCC7604) Reveal a Sync view after a held reply. Verify on-demand reads and that the correct view consumes the result.
 - [ ] [P80](record:r_4MPVWB5R7J40MNV571W780DQ9W) Change a dormant camera image, reveal it and verify that the first frame samples the latest revision.
 - [ ] [P120](record:r_5FDXR01ABJBD6FW36MWABGMPZQ) Replay one work update with a slug change. Verify one final projection and one upsert with the exact durable result.
@@ -35,7 +33,6 @@ Use the matched capture to select the next expensive owner. Each item asks for o
 - [ ] [P52](record:r_0R0MWH247WFE7SYBX74GP66PM8) Compare per-output damage on a one-output activity run. Require the quiet monitor’s unchanged pixels and fewer redraws.
 - [ ] [P116](record:r_7W7WPY7YF5B16QZ47SKY0QR6NH) Compare one batched local edit commit with the current commit path. Verify exact recovery and count actual sync calls.
 - [ ] [P106](record:r_7T8XKYGAMN8B6HBBSF413WX2WS) Compare one bounded busy-queue drain with the current path. Check control latency and exact event order.
-- [ ] [P60](record:r_4YXRG46DMT22JYM0TFVFYRDGAE) Measure one exclusive system’s derivation and application separately. Pick a split if the dominant work supports it.
 - [ ] [P61](record:r_3YJNV2XSM0QNC1NVE58ZBRE2EZ) Compare serial and parallel execution of one independent expensive batch using the split supported by P60.
 - [ ] [P62](record:r_12ZSCGSGR5ANMWGGYHAK3J2S5G) Compare coherent main/render overlap through the complete consumer path. Record tail latency and how long each frame’s resources stay live.
 - [ ] [P72](record:r_70G3BRDBJCHJFW1RCC27CWWH99) Measure one remaining foreground GPU wait and decide whether ready-only consumption can remove it safely.
@@ -182,6 +179,11 @@ Use a build with the private fixtures for these cases. The local test inventory 
 - [ ] [P85](record:r_2HNW14DMJ8ES1TVSXSHYQNFSDA) Hold a pointer click across a geometry replacement. Require the current owner and revalidated target to receive input.
 - [ ] [P130](record:r_36APBSWDH21W59H8997BQSW0DP) Move a participant through overlapping Areas and wait for settling. Verify membership and the intended final motion state.
 - [ ] [P73](record:r_0940K6JWSTJRZPPTWJP8KF6T7X) Hold a shader compilation and verify that the first usable frame publishes only after completion.
+
+- [ ] [P131](record:r_1N8KS1ZEKV1WQX606K6MH5NKR1) Change one accessible text field. Verify the incremental adapter update and exact projected text.
+  The available accessibility checks cover text projection. The adapter update needs a fixture that observes changed nodes.
+- [ ] [P119](record:r_2C28QTRHSFACYE70MCH58SRPYS) Edit Raw description text and reopen Pretty. Verify the latest parse and reuse of unaffected blocks.
+  The available preview check covers updated text. The Raw-to-Pretty case needs a fixture that checks which blocks were reused.
 
 ### Reveal, caret and presentation checks
 

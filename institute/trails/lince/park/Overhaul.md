@@ -33,6 +33,12 @@ In the private open/reveal phase, exclusive owner CPU averaged 1.960 ms per queu
 
 The active queue retains worker latency, the mixed-focus regression, full workload and physical acceptance, and revision-specific verification of the newer changes. The first remaining measurement boundary is a matching `eb01745e` build and prepared bundle with live capture configured at startup.
 
+### P43 — Private worker input delay
+
+Across 120 sequential Edit toggles on optimized `08c087f4`, input delivery to a prepared frame was the longest segment in 99 samples (p95 26.47 ms, maximum 31.14 ms). Queue wait reached 17.13 ms p95 and the wait from frame preparation to GPU readiness reached 13.46 ms p95. The worst enqueue-to-publication sample took 49.56 ms, including 31.14 ms of frame preparation. The trace reports no dropped input records. Local analysis is in `target/park-p43-input-attribution.Q5urvXaW/analysis.json`.
+
+The worker can service the next input after the current frame and its geometry, input, and capture state have been prepared. The existing loop already drains eligible input before waiting for the prior GPU result. Shortening synchronous preparation is the next place to investigate. Preserve ordered input and pending target revalidation at that boundary. The private trace times the whole preparation interval and does not tie it to an individual system or physical presentation.
+
 ## Approved Park work — 2026-11-20
 
 - **P148 source complete.** Compile pointer settings, external commands, keyboard persistence, display settings persistence, compositor overview, and final composition tests under the feature that provides their production dependencies. Worker-capable focus and raster tests and the shared display helpers retain their coverage. Selector names are preserved. Verification starts with the worker-only and full test-build checks and continues with the affected existing selectors.

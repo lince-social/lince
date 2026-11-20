@@ -45,6 +45,14 @@ fn keyboard_settings_use_native_fields_and_the_host_transaction_at_wide_and_narr
         native::edit_mode::EditAction::Open.apply(canvas.world_mut(), root);
         native::edit_mode::EditAction::Park.apply(canvas.world_mut(), root);
         settle(&mut canvas);
+        let customization = named_button(&mut canvas, "Configure Park in Customization");
+        reveal(&mut canvas, customization);
+        click(&mut canvas, customization, size);
+        settle(&mut canvas);
+        let keyboard_section = named_button(&mut canvas, "Keyboard");
+        reveal(&mut canvas, keyboard_section);
+        click(&mut canvas, keyboard_section, size);
+        settle(&mut canvas);
         let open = named_button(&mut canvas, "Edit keyboard settings");
         reveal(&mut canvas, open);
         click(&mut canvas, open, size);

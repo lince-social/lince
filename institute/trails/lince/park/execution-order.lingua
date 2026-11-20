@@ -4,163 +4,179 @@ Park — Remaining verification and conditional work (
     #part-of @park-development: 11,
     #park-workflow @park-development-cycle
 ) { r_1FMCTGVHF35B6D0T70JEQAMYDW
-**Current phase, 2026-11-20.** The installed `08c087f4` measurement visit is recorded in [Overhaul.md](Overhaul.md#installed-park-measurement--2026-11-20). The `eb01745e` release job hit a compile error. Continue private checks on the repaired source and use its matching optimized artifact for the next physical measurement.
+Park still runs `08c087f4`. The release and probe jobs for `083dfa95` failed the Store migration integrity check. The checksum entry for `0047_directory_syncs.sql` now passes the existing local Store guard. The GPU freeze fix has local test evidence. [CI run](https://github.com/lince-social/lince/actions/runs/44768978417)
 
-| Remaining category | P-task count |
-| --- | ---: |
-| Approved validation and Laboratory work | 8 |
-| Approved compiler, dependency and fullscreen experiments | 7 |
-| Approved optimization investigations | 31 |
-| Measurement verification and attribution | 6 |
-| Daily performance acceptance | 6 |
-| Earlier implementations awaiting verification | 23 |
-| Source and coverage inventory | 2 |
-| Total open P-task Records | 83 |
+The 83 P Records supply the acceptance criteria. Each checkbox below produces one build receipt, test verdict, measurement, or decision about one change. Use the [development checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y) for earlier measurements and [Overhaul.md](Overhaul.md) for the 471 detailed coverage checks.
 
-The implementation receipts and acceptance details are in [Overhaul.md](Overhaul.md). Use the [checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y) for measured results and the next verification steps.
+Run the smallest relevant case first. A shared run can close several boxes when its report proves each result. Save the first failure with its revision and exact case. Give the fix and the rerun their own boxes when a failure needs more work. A waiting build is a dependency; keep independent checks available. Preserve original acceptance criteria in the linked Records.
 
-## Approved validation and Laboratory work — 8
+## Settings fixture updates
 
-- [ ] **P148 verification.** Run the affected worker-only and nested selectors.
-- [ ] **P140 verification.** Run the feature-enabled Laboratory rule-mapping and invalid-manifest checks. Confirm the rule identities in the common suite.
-- [ ] **P141 verification.** Run the mandatory Protein case, driver route and stale-click cases, and Laboratory Stop/Close/failure restoration case.
-- [ ] **P142 verification.** Run the mandatory Protein case and the missing, transparent, moved, clipped and covered caption controls.
-- [ ] **P145 verification.** Run the default and three feature selections, then compare result identities across the CLI, Laboratory and prepared Park run.
-- [ ] **P146 verification.** Run the mandatory paint check and its pixel-mask negative control on a supported hardware or software adapter, then record startup and capture costs.
-- [ ] **P134 verification.** Run the available prepared rows and inspect the result in Laboratory.
-- [ ] **P147 verification and timing.** Run the expanded Protein coverage and measure cold setup and warmed routine costs before changing its default case set.
+- [ ] [P148](record:r_2M3HN9VZMK9XYX5HXKC38XPB97) **Display settings fixture.** Open Displays and magnification through Park’s Customization link so the test can reach Arrange monitors.
 
-R01 and R10 need the physical session.
+## Laboratory and prepared cases
 
-After approval, verify the feature gates and the mandatory Protein-first suite, then run the prepared combinations and compare their report with Laboratory. Use the cold and warmed readings to decide whether to expand the routine selection.
+- [ ] [P140](record:r_0EHDMT2W041ZM1SK253DJVH2C1) **Rule manifests.** Run `native::laboratory::requirements::tests`. Require invalid mappings to fail with a source location.
+- [ ] [P140](record:r_0EHDMT2W041ZM1SK253DJVH2C1) **Rule identity.** Inspect one passing common-suite report for the mapped Protein and Edit rule IDs, Record UIDs and locations.
+- [ ] [P141](record:r_6JDVCST7MPE4YRB113MGB6FRD7) **Stale click.** Run the driver’s target-replacement case. Require cancellation of the stale click.
+- [ ] [P141](record:r_6JDVCST7MPE4YRB113MGB6FRD7) **Workspace restoration.** Run `cancelled_and_failed_interface_checks_close_the_temporary_workspace`. Require the suspended workspace to return.
+- [ ] [P142](record:r_4RW2K4VB8JBARQ6WJSHM0MPGEF) **Protein filter.** Run the mandatory ordinary-input case. Require keyboard selection of Kind, typed `plain`, and the exact matching Record.
+- [ ] [P142](record:r_4RW2K4VB8JBARQ6WJSHM0MPGEF) **Hidden caption controls.** Run the structural caption negative controls. Require missing, transparent, moved, clipped and covered captions to fail.
+- [ ] [P145](record:r_4MRRZFHGR96FCYBPE2BQ713Z3G) **Default selection.** Run `cargo xtask test-interface` and verify that the full common selection starts with Protein.
+- [ ] [P145](record:r_4MRRZFHGR96FCYBPE2BQ713Z3G) **Protein selection.** Run `cargo xtask test-interface protein` and compare the ordered selection with Laboratory.
+- [ ] [P145](record:r_4MRRZFHGR96FCYBPE2BQ713Z3G) **Edit selection.** Run `cargo xtask test-interface edit` and compare the ordered selection with Laboratory.
+- [ ] [P145](record:r_4MRRZFHGR96FCYBPE2BQ713Z3G) **Input selection.** Run `cargo xtask test-interface input` and compare the ordered selection with Laboratory.
+- [ ] [P145](record:r_4MRRZFHGR96FCYBPE2BQ713Z3G) **Prepared suite identity.** Compare the prepared run’s registration and rule sources with the CLI and Laboratory report.
+- [ ] [P146](record:r_0FE1T50GYR90N30RMVDXR308QV) **Glyph mask.** Run `paint_requires_changed_pixels_inside_the_glyph_mask`. Require a background-only change to fail.
+- [ ] [P146](record:r_0FE1T50GYR90N30RMVDXR308QV) **Rendered glyphs.** Run the mandatory Protein case on a supported adapter. Require the closed, expanded and selected glyph regions to pass readback.
+- [ ] [P146](record:r_0FE1T50GYR90N30RMVDXR308QV) **Missing adapter.** Run the same gate without a Vulkan adapter. Require an explicit adapter failure.
+- [ ] [P146](record:r_0FE1T50GYR90N30RMVDXR308QV) **Paint cost.** Record adapter startup and glyph readback costs for one supported run.
+- [ ] [P147](record:r_1N3QPSMRJD367JE1R39EG315SV) **Protein lifecycle.** Run `protein-lifecycle` and verify the named preview, spawn, update and removal lifecycle.
+- [ ] [P147](record:r_1N3QPSMRJD367JE1R39EG315SV) **Routine budget.** Measure one first-process and repeated warm runs of the common suite. Record whether the expanded case fits the routine budget.
+- [ ] [P134](record:r_146KVN0KENZQ88KNMP4NWNNCS3) **R02.** Run `local-edit-preview-fanout`. Verify exact local body text across dependent views and reopen.
+- [ ] [P134](record:r_146KVN0KENZQ88KNMP4NWNNCS3) **R03.** Run `virtualized-dirty-record`. Verify draft identity through sort, filter and recovery.
+- [ ] [P134](record:r_146KVN0KENZQ88KNMP4NWNNCS3) **R04.** Run the inherited-style scroll/hit-test row and verify the current target receives the click.
+- [ ] [P134](record:r_146KVN0KENZQ88KNMP4NWNNCS3) **R05.** Run `held-first-open-theme`. Verify that the first result frame uses the changed theme.
+- [ ] [P134](record:r_146KVN0KENZQ88KNMP4NWNNCS3) **R06.** Run `typing-timer-command-stream`. Verify typing and timer progress while command output stays ordered.
+- [ ] [P134](record:r_146KVN0KENZQ88KNMP4NWNNCS3) **R07.** Run `first-revealed-input`. Verify immediate input against current geometry on reveal.
+- [ ] [P134](record:r_146KVN0KENZQ88KNMP4NWNNCS3) **R08.** Run `held-capture-source-privacy`. Require the retired readback to protect private pixels.
+- [ ] [P134](record:r_146KVN0KENZQ88KNMP4NWNNCS3) **R09.** Run `explicit-ide-save-crash-reopen`. Verify durable saved contents and recovery of the adjacent draft.
+- [ ] [P134](record:r_146KVN0KENZQ88KNMP4NWNNCS3) **Coverage report.** Check `--workflow-coverage` output against observed results and require unavailable or missing cases to stay visible.
+- [ ] [P104](record:r_3HYSQ1RTAA930T57X9W5CXKFQN) **Report import.** Load the actual prepared or installed JSON/JSONL report in Laboratory. Check revision, budget status, failures and missing values.
+- [ ] [P104](record:r_3HYSQ1RTAA930T57X9W5CXKFQN) **Picker cancellation.** Cancel report selection and verify that the previous report remains available.
+- [ ] [P104](record:r_3HYSQ1RTAA930T57X9W5CXKFQN) **Report export.** Export the imported result and verify that its data and identity survive the round trip.
+- [ ] [P124](record:r_3XG5M214AQAQKBTADAR44A0MQ0) **Bundle inventory.** Verify source hashes, revision, feature gates and available selectors for the actual prepared bundle.
 
-| Task | What is actually left |
-| --- | --- |
-| [P148 — Repair worker-only test feature gates.](record:r_2M3HN9VZMK9XYX5HXKC38XPB97) | Both repaired configurations compile. Run the exact retained cases. |
-| [P140 — Make rule discovery and hidden-comment coverage explicit.](record:r_0EHDMT2W041ZM1SK253DJVH2C1) | Source changes complete. Verify discovery, source spans, hidden-comment round trips and manifest rejection cases. |
-| [P141 — Finish deterministic input, readiness and cleanup in the native test fixture.](record:r_6JDVCST7MPE4YRB113MGB6FRD7) | Source changes complete. Verify ordinary routes, selector/layout invalidation, private feed readiness and workspace restoration. |
-| [P142 — Complete Protein filter interaction and result-set coverage.](record:r_4RW2K4VB8JBARQ6WJSHM0MPGEF) | Source changes complete. Verify ordinary keyboard filtering, value edits, caption checks and the private query's exact result. |
-| [P145 — Complete regression source identities and local default-check integration.](record:r_4MRRZFHGR96FCYBPE2BQ713Z3G) | Source changes complete. Verify default and selected runs, exact source/rule identity, and the prepared check. |
-| [P146 — Verify actual text paint with one small offscreen render check.](record:r_0FE1T50GYR90N30RMVDXR308QV) | Source changes complete. Verify the offscreen glyph-region comparison, adapter failures and capture costs. |
-| [P134 — Generate the finite cross-feature workflow coverage set.](record:r_146KVN0KENZQ88KNMP4NWNNCS3) | Generator, runner report and R02–R09 source checks are present. Verify coverage results. R01/R10 remain physical. |
-| [P147 — Broaden coverage and optimize the routine suite against measurements.](record:r_1N3QPSMRJD367JE1R39EG315SV) | Run the private Protein lifecycle selector. Measure and tune the routine suite while preserving mandatory visual coverage. |
+## Attribution before performance changes
 
-## Approved compiler, dependency and fullscreen experiments — 7
+- [ ] [P153](record:r_7N5NNV5N2RBD81C5EYXHM22NPB) **Frame-to-output join.** Follow one sampled image from source frame to the actual presentation sequence on both outputs.
+- [ ] [P70](record:r_77FM19KDX0GXG96YB4AD0W4YP0) **GLES cost.** In one capture, validate available hardware intervals and driver/fence wait records against the consumer and record collection overhead.
+- [ ] [P67](record:r_425JQ5QS3D33JJTE0QFYNP3CCW) **CPU/GPU ownership.** Attribute one matched Firefox/native workload by process, DRM engine and transfer. Record any unknown decode or render path.
+- [ ] [P36](record:r_0ABQ7XDA1CYGHYJ7C6S8H0CSJE) **Excess wakes.** Attribute the largest repeating wake source in a quiet daily-workspace sample.
+- [ ] [P86](record:r_394ME6MH9S27PVQDAF9DDC5V16) **Castle readiness.** Run the existing readiness fixture. Compare warm owner CPU and allocations with the same UI and capture results.
+- [ ] [P86](record:r_394ME6MH9S27PVQDAF9DDC5V16) **First ranked active cost.** Execute the first workload selected by the source audit and record whether the suspected work remains expensive.
+- [ ] [P66](record:r_5MBWC32RYVSQ5XZA4MYYH87ME8) **Rank the observed costs.** Turn the matching quiet, input and media captures into a short ordered list of blocking stages with evidence and next action.
 
-Establish the effective release flags from the selected build recipe. The workspace release enables full LTO and the main CI build sets ThinLTO. P96 and P98 share a matched full-versus-thin comparison when source and settings match. P97 changes codegen units alone, P100 uses an explicit supported target, and P99 evaluates an uninstrumented artifact on a held-out workload after representative training. P90 starts with evidence from P86. P57 requires eligible real fullscreen scanout and a working composition fallback. These experiments start when builds or physical measurements resume.
+## Existing changes — one targeted check at a time
 
-| Task | What is actually left |
-| --- | --- |
-| [P96 — Compare cross-crate ThinLTO with the current release profile.](record:r_190695NHABBHGYRZB62XXP74QS) | Compare effective full and ThinLTO configurations with every other build input fixed. |
-| [P97 — Compare release codegen-units = 1 with the current partition count.](record:r_1FH0MBZENE67NA66JEQVEM5W1A) | Compare codegen partitioning at fixed LTO/profile. |
-| [P98 — Compare full LTO with the best measured ThinLTO release.](record:r_0XJVFNAXG09PFFVWQT4GSCTRJT) | Use the matched P96 controls when applicable. Judge full LTO on runtime and build cost. |
-| [P100 — Compare a deliberate CPU target with the shipping target.](record:r_281DJ2H4CE3CT2GTYDCDZZNRJ2) | Test an intentional supported machine target, not runner-native. |
-| [P99 — Test representative profile-guided optimization for the selected release profile.](record:r_1J322KWM9Y9KHGF3Q9B4ZG5QJG) | Representative PGO last, after hot paths stabilize. |
-| [P90 — Remove one unused dependency or redundant feature activation.](record:r_4MEAW1HQ46BK0WKQ8ABX0T6X4K) | Remove a proven unnecessary dependency/feature activation. |
-| [P57 — Test direct scanout for one eligible fullscreen SDR client.](record:r_1W82JGD8E7MYX2XM60YYXGMM53) | Conditional fullscreen-only win after broader rendering costs. |
+- [ ] [P137](record:r_2QC1RKFFQJ09XEE7EP15KJW6E1) Edit one title and verify unchanged body text is shared, with exact canonical text after reopen.
+- [ ] [P117](record:r_7HD3G5KF1QDXZ5Y766H0WVQ357) Replay edits just below, at and above the checkpoint threshold. Require one bounded admission query in the write transaction and exact replay.
+- [ ] [P108](record:r_1K92JXDXHW5573N1AS06VJPEGE) Hold editor work until its deadline, then verify a fresh-authority cursor update and wakeup.
+- [ ] [P127](record:r_67MRGZ514V671TTWEDTTGXXD86) Change a collapsed Record field, reopen it and verify current content with the draft preserved.
+- [ ] [P85](record:r_2HNW14DMJ8ES1TVSXSHYQNFSDA) Hold a pointer click across a geometry replacement. Require the current owner and revalidated target to receive input.
+- [ ] [P130](record:r_36APBSWDH21W59H8997BQSW0DP) Move a participant through overlapping Areas and wait for settling. Verify membership and the intended final motion state.
+- [ ] [P73](record:r_0940K6JWSTJRZPPTWJP8KF6T7X) Hold a shader compilation and verify that the first usable frame publishes only after completion.
+- [ ] [P48](record:r_45GB38DS8T74GQD5GMCWG9CCNS) Change an inactive view, reveal it and verify that its first visible frame reflects current data, style and input geometry.
+- [ ] [P78](record:r_7V8V15DFDKXCGGT99VR6KJ25G4) Move the caret without changing styling. Verify unchanged style/layout counters and correct inherited fonts.
+- [ ] [P111](record:r_6TZTP766V7XVXM52YEHB3EMJKZ) Change one consumer’s style input. Verify that writes follow affected consumers and same-tick rendering sees the new value.
+- [ ] [P109](record:r_0DFPHA7M8KBYDS8GQVG89MJAZ8) Compare resolver time and allocation cost for unchanged, caret-only and one-theme-change cohorts.
+- [ ] [P53](record:r_3HT09KTMPBS113E9QXKT5ASZGQ) Run a client animation on one output. Match its callback pacing to observed presentation and measure idle-output work.
+- [ ] [P131](record:r_1N8KS1ZEKV1WQX606K6MH5NKR1) Change one accessible text field. Verify the incremental adapter update and exact projected text.
+- [ ] [P119](record:r_2C28QTRHSFACYE70MCH58SRPYS) Edit Raw description text and reopen Pretty. Verify the latest parse and reuse of unaffected blocks.
+- [ ] [P77](record:r_349MAGE5FADNJ50X348MCC7604) Reveal a Sync view after a held reply. Verify on-demand reads and that the correct view consumes the result.
+- [ ] [P80](record:r_4MPVWB5R7J40MNV571W780DQ9W) Change a dormant camera image, reveal it and verify that the first frame samples the latest revision.
+- [ ] [P120](record:r_5FDXR01ABJBD6FW36MWABGMPZQ) Replay one work update with a slug change. Verify one final projection and one upsert with the exact durable result.
+- [ ] [P128](record:r_5ZXJ3Y0TZEG0T3PDAH61X596QJ) Stream ordered command output while typing. Verify lossless input, exact output and bounded retained history.
+- [ ] [P84](record:r_7G4HJRCVP9TZW0S1XS934HDWPQ) Refresh one unchanged File Explorer listing. Verify row reuse and one sorted listing for the presentation wave.
+- [ ] [P132](record:r_01Z5DC695MDHGNT51DPHKY2J3T) Audit sibling capture aliases across a privacy change. Verify shared classification work and fresh authorization before pixels are exported.
+- [ ] [P133](record:r_3FWBA6PYBR86X5N7S5QN20Z1P8) Render the same diagram cold and concurrently. Verify exact pixels and shared font storage.
+- [ ] [P89](record:r_2NZ5PKRV5EBGZ2GE75QJXDVTQK) Move an item between two clipped owners. Verify exact clipping and one traversal for the applicable owner.
 
-## Approved optimization investigations — 31
+## Candidates — decide from one measured change
 
-Use the current candidate to confirm each proposal’s cost before coding its intervention. The measurements and daily acceptance below are prerequisites where the corresponding cost is still unknown. Select one independent mechanism, preserve its behavior oracle, and retain the outcome in the evidence if the change is rejected.
+Use the matched capture to select the next expensive owner. Each item asks for one scoped investigation or comparison. Split any follow-up implementation or regression into its own box once the evidence identifies the work.
 
-| Task | What is actually left |
-| --- | --- |
-| [P43 — Bound input waiting behind the longest native work section.](record:r_5TEM3NBDTK092YB5VBQ7EA80XP) | Bound a measured remaining foreground dependency shared by typing, clicking and dragging; preserve input order and current geometry. |
-| [P105 — Remove the longest unrelated dependency from native text feedback.](record:r_5K1PMRDCBH1RRTQ2KHZGKY5ZRV) | Make native text feedback independent of unrelated expensive work. |
-| [P107 — Stop preparing one superseded unsubmitted native frame.](record:r_2C6882M66DF10QM0B8NZ8TA899) | Establish and stop residual superseded unsubmitted work. No-progress imports and callback demand are separate completed mechanisms. |
-| [P52 — Retain damage independently for each output.](record:r_0R0MWH247WFE7SYBX74GP66PM8) | Avoid forcing the quiet monitor to recomposite. |
-| [P116 — Amortize one stream of local edit commits without delaying feedback.](record:r_7W7WPY7YF5B16QZ47SKY0QR6NH) | P102 syscall follow-up finds 16/17 sync calls for three edits and up to 610 ms in actual durable I/O; reduce safe boundaries, preserving honest recovery/history. |
-| [P106 — Bound one busy queue drain so control input remains serviceable.](record:r_7T8XKYGAMN8B6HBBSF413WX2WS) | Prevent one bulk drain from starving current input/control. |
-| [P60 — Split the highest-cost exclusive system into derivation and application.](record:r_4YXRG46DMT22JYM0TFVFYRDGAE) | Named-body attribution is implemented. Use the later optimized evidence and verify the current source batch before selecting a remaining expensive owner; the old unnamed small-frame control is historical. |
-| [P61 — Parallelize one sufficiently expensive independent batch.](record:r_3YJNV2XSM0QNC1NVE58ZBRE2EZ) | Exploit expensive independent work after the split proves its boundary. |
-| [P62 — Integrate a justified coherent main/render handoff.](record:r_12ZSCGSGR5ANMWGGYHAK3J2S5G) | Matched native-only overlap is finished. Optimized complete-consumer value and immutable epoch/lifetime integration remain; production is still serial. |
-| [P72 — Remove one avoidable foreground GPU-completion wait.](record:r_70G3BRDBJCHJFW1RCC27CWWH99) | Promote a proven foreground GPU wait; safe readiness already exists. |
-| [P68 — Compare processor placement for one evidenced misplaced stage.](record:r_7NEHBEAZ041VSG76B4TAWJ83PS) | Move the evidenced misplaced work, including all transfer/wait costs. |
-| [P58 — Compare one versus two frames in flight at the actual bottleneck.](record:r_0NY0TN6Y1JKQ6058HBRD93XHS7) | Compare bounded overlap after the actual bottleneck is known. |
-| [P55 — Remove one measured redundant render pass or copy.](record:r_7P9VMMCDVV7ZN72MVSTZ3CHF4J) | Fresh and pooled comparisons are finished. Resolve the demonstrated consumer cost and actual retirement before a justified copy-removal integration. |
-| [P138 — Shorten the engine-wide access gate without weakening operation validity.](record:r_6T8CDPK9MX8J93FHM5Q5JE1TA4) | Potential engine-wide serialization of otherwise unrelated work. |
-| [P139 — Remove unnecessary post-commit reaction waiting from local save feedback.](record:r_6PB6GYZ446CWCNNVS8JENYY414) | Membership scans and unused full-Record lookup reads are removed in source; verify them. Separate reaction detachment remains conditional on effect semantics. |
-| [P121 — Prevent a slow Cell request from delaying unrelated local edit service.](record:r_5E9VPP06MSXAM46V1MNA6T163P) | Potential long Cell request blocking every local request. |
-| [P63 — Limit one background job family that delays visible work.](record:r_7DW7DZJMVHBTS4EPRPNG4ZS7E1) | Promote on demonstrated background contention with foreground work. |
-| [P83 — Move one remaining blocking foreground operation off the interaction path.](record:r_11F5Q868V60YDH4M44A10ETC0V) | Promote a remaining dominant blocking operation beyond named paths. |
-| [P129 — Tie one media producer to real consumer presentation demand.](record:r_080KC3GG64DRMJ9JMAN38AHGTJ) | Share/limit unnecessary media preparation for actual consumer demand. |
-| [P92 — Initialize one unused-at-startup resource family on demand.](record:r_0ZGYWCG03CHFVF1JASD6DCST15) | Avoid an unused eager resource while keeping first use responsive. |
-| [P122 — Resolve only the layout root affected by one ordinary edit.](record:r_1QNJKH1TQ6VHYJXVKP95M0RN0E) | Unchanged-root work and collection/solve/application are measured. A numerical-solver cache misses most cost, and earlier optimized entire layout is only 0.179–0.255 ms. Revisit safe collection/application retention for a representative workload after larger main costs; bookkeeping must earn its cost. |
-| [P49 — Virtualize one measured large Record-result list.](record:r_2RAG5FY8WZ7AQ0058R9R7H93M5) | Make a large result list scale with visible rows. |
-| [P74 — Test a translation-only canvas-pan path.](record:r_25KXXVAXE06K8K87Y8NTTEGE9T) | Retain unchanged content during canvas pan. |
-| [P75 — Test transform retention during an ordinary item drag.](record:r_62Y5RSBWZX1QB494T35WQDX4AF) | Retain unchanged content during ordinary item drag. |
-| [P76 — Test scrolling through one retained presentation transform.](record:r_3JHQMSAT7R2NZH8GH21EFCPZ41) | Retain children under one scroll transform. |
-| [P50 — Compare an incremental spatial index with one expensive canvas scan.](record:r_25CXY3R3S912EREHNQM34JHHX9) | Index only a dominant scan where maintenance earns its cost. |
-| [P110 — Compare a compact resolved-style read representation.](record:r_7EVHK9QKV4WZHW8NB2Y2SKN421) | Make the remaining frequent resolved reads compact and cheap. |
-| [P112 — Publish expensive style edits as one coherent revision.](record:r_7G9YA455AKWX5F0Z31Y2N2MHJP) | Only if read optimization makes style writes too costly/incoherent. |
-| [P81 — Retain compatible incoming DMA-BUF import bindings.](record:r_3NRE33E28Y9X36N8D8VJ6WC1Z1) | Retain actual compatible DMA-BUF imports safely. |
-| [P54 — Reuse compatible exported/output resources within a bounded budget.](record:r_6DMZQYSZSS9119FGZY71NC5TYE) | Reuse compatible output resources instead of allocating repeatedly. |
-| [P59 — Reduce measured raster-resolution churn during navigation.](record:r_6YRB2V4SHY7M6SN3NDXWKJ8YYZ) | Avoid navigation-time raster replacement churn. |
+- [ ] [P43](record:r_5TEM3NBDTK092YB5VBQ7EA80XP) Measure the longest foreground section delaying input. Record a boundary at which input can safely proceed.
+- [ ] [P105](record:r_5K1PMRDCBH1RRTQ2KHZGKY5ZRV) Isolate one unrelated dependency of text echo and compare visible response with that dependency out of the path.
+- [ ] [P107](record:r_2C6882M66DF10QM0B8NZ8TA899) Count unsubmitted work for superseded frames in one busy trace. Record whether eliminating that work is warranted.
+- [ ] [P52](record:r_0R0MWH247WFE7SYBX74GP66PM8) Compare per-output damage on a one-output activity run. Require the quiet monitor’s unchanged pixels and fewer redraws.
+- [ ] [P116](record:r_7W7WPY7YF5B16QZ47SKY0QR6NH) Compare one batched local edit commit with the current commit path. Verify exact recovery and count actual sync calls.
+- [ ] [P106](record:r_7T8XKYGAMN8B6HBBSF413WX2WS) Compare one bounded busy-queue drain with the current path. Check control latency and exact event order.
+- [ ] [P60](record:r_4YXRG46DMT22JYM0TFVFYRDGAE) Measure one exclusive system’s derivation and application separately. Pick a split if the dominant work supports it.
+- [ ] [P61](record:r_3YJNV2XSM0QNC1NVE58ZBRE2EZ) Compare serial and parallel execution of one independent expensive batch using the split supported by P60.
+- [ ] [P62](record:r_12ZSCGSGR5ANMWGGYHAK3J2S5G) Compare coherent main/render overlap through the complete consumer path. Record tail latency and how long each frame’s resources stay live.
+- [ ] [P72](record:r_70G3BRDBJCHJFW1RCC27CWWH99) Measure one remaining foreground GPU wait and decide whether ready-only consumption can remove it safely.
+- [ ] [P68](record:r_7NEHBEAZ041VSG76B4TAWJ83PS) Compare CPU and GPU placement for one proven candidate, including transfers and waits.
+- [ ] [P58](record:r_0NY0TN6Y1JKQ6058HBRD93XHS7) Compare one and two frames in flight using the same bottleneck workload. Record output age, latency and memory.
+- [ ] [P55](record:r_7P9VMMCDVV7ZN72MVSTZ3CHF4J) Compare removing one redundant pass or copy through actual output retirement. Require matching consumer pixels.
+- [ ] [P138](record:r_6T8CDPK9MX8J93FHM5Q5JE1TA4) Attribute one long Engine reader/writer access interval and determine the shortest safe lifetime.
+- [ ] [P139](record:r_6PB6GYZ446CWCNNVS8JENYY414) Verify the removal of redundant post-commit reads on one local edit trace.
+- [ ] [P139](record:r_6PB6GYZ446CWCNNVS8JENYY414) Measure one reaction that still delays acknowledgement. Decide which effects can finish after acknowledgement.
+- [ ] [P121](record:r_5E9VPP06MSXAM46V1MNA6T163P) Hold one slow Cell request and measure an unrelated local edit’s queue wait. Identify one safe isolation boundary.
+- [ ] [P63](record:r_7DW7DZJMVHBTS4EPRPNG4ZS7E1) Compare the visible latency of one background job family with and without a service budget.
+- [ ] [P83](record:r_11F5Q868V60YDH4M44A10ETC0V) Locate one remaining foreground blocking operation in the current ranked trace. Identify a safe off-thread ownership boundary.
+- [ ] [P129](record:r_080KC3GG64DRMJ9JMAN38AHGTJ) Compare producer work when one media consumer is hidden and visible. Require timely reveal.
+- [ ] [P92](record:r_0ZGYWCG03CHFVF1JASD6DCST15) Compare eager and first-use setup of one unused startup resource. Measure startup and first-use latency.
+- [ ] [P122](record:r_1QNJKH1TQ6VHYJXVKP95M0RN0E) Compare affected-root collection and application with the current layout path for one ordinary edit.
+- [ ] [P49](record:r_2RAG5FY8WZ7AQ0058R9R7H93M5) Compare viewport-bounded preparation with the current path for one large Record list. Verify identity through scroll.
+- [ ] [P74](record:r_25KXXVAXE06K8K87Y8NTTEGE9T) Compare a translation-only pan with the current path on one populated scene. Verify the resulting pixels and hit mapping.
+- [ ] [P75](record:r_62Y5RSBWZX1QB494T35WQDX4AF) Compare retained item transforms with the current drag path. Verify geometry and input through the drag.
+- [ ] [P76](record:r_3JHQMSAT7R2NZH8GH21EFCPZ41) Compare scroll via a retained transform with the current path. Verify clipped content and hit targets.
+- [ ] [P50](record:r_25CXY3R3S912EREHNQM34JHHX9) Compare one incremental spatial index with the dominant scan, including update and memory costs.
+- [ ] [P110](record:r_7EVHK9QKV4WZHW8NB2Y2SKN421) Compare a compact resolved-style read representation against current per-consumer reads.
+- [ ] [P112](record:r_7G9YA455AKWX5F0Z31Y2N2MHJP) If P110 exposes an expensive style write, compare publishing one coherent style revision with the current write.
+- [ ] [P81](record:r_3NRE33E28Y9X36N8D8VJ6WC1Z1) Compare import reuse for one compatible DMA-BUF stream. Verify identity and lifetime across replacement.
+- [ ] [P54](record:r_6DMZQYSZSS9119FGZY71NC5TYE) Compare reuse of one compatible export family within a fixed memory budget. Verify retirement on replacement.
+- [ ] [P59](record:r_6YRB2V4SHY7M6SN3NDXWKJ8YYZ) Measure raster replacements in one pan/zoom trace and compare one proposed way to avoid unnecessary replacements.
 
-## Measurement verification and attribution — 6
+## Build and fullscreen comparisons — after the baseline
 
-Use this group to establish the costs that inform the approved investigations. The source implementation is complete for this cluster. The checks below require a build and real observations.
+- [ ] [P96](record:r_190695NHABBHGYRZB62XXP74QS)/[P98](record:r_0XJVFNAXG09PFFVWQT4GSCTRJT) Compare matched full LTO and ThinLTO builds once. Record runtime tails, artifact size and build cost against identical inputs.
+- [ ] [P97](record:r_1FH0MBZENE67NA66JEQVEM5W1A) Compare codegen-units = 1 with the current setting at a fixed LTO level.
+- [ ] [P100](record:r_281DJ2H4CE3CT2GTYDCDZZNRJ2) Compare the shipping CPU target with one explicitly supported target. Verify that the resulting artifact runs on the declared machine class.
+- [ ] [P99](record:r_1J322KWM9Y9KHGF3Q9B4ZG5QJG) Train one release PGO profile on the representative workload and record the training inputs.
+- [ ] [P99](record:r_1J322KWM9Y9KHGF3Q9B4ZG5QJG) Compare the PGO candidate and uninstrumented baseline on a held-out workload.
+- [ ] [P90](record:r_4MEAW1HQ46BK0WKQ8ABX0T6X4K) Identify one unused dependency or redundant feature with the active-path audit.
+- [ ] [P90](record:r_4MEAW1HQ46BK0WKQ8ABX0T6X4K) Remove that activation and verify the same supported build and focused workload.
+- [ ] [P57](record:r_1W82JGD8E7MYX2XM60YYXGMM53) Compare direct scanout and composition for one eligible fullscreen SDR client on real hardware.
+- [ ] [P57](record:r_1W82JGD8E7MYX2XM60YYXGMM53) Interrupt direct scanout with a normal transition and verify that composition safely resumes.
 
-| Task | What is actually left |
-| --- | --- |
-| [P153 — Finish GPU/source-frame and physical-output attribution.](record:r_7N5NNV5N2RBD81C5EYXHM22NPB) | Verify asynchronous source links, sampled images and both output clocks in a bounded capture. |
-| [P70 — Measure GLES consumer GPU execution and driver waits.](record:r_77FM19KDX0GXG96YB4AD0W4YP0) | Validate actual host CPU, hardware query, fence and DRM coverage and measure collection cost. |
-| [P67 — Finish the CPU/GPU ownership map for the complete consumer path.](record:r_425JQ5QS3D33JJTE0QFYNP3CCW) | Finish complete-consumer/Firefox/device/data ownership; GPU rendering is already active. No broad CPU-to-GPU migration is justified yet. |
-| [P36 — Attribute the remaining native wake stream.](record:r_0ABQ7XDA1CYGHYJ7C6S8H0CSJE) | Clock attribution and its source fix are finished. Attribute remaining excess in the current daily workload, preserving real animation and deadlines. |
-| [P104 — Expose the existing performance cases as useful Laboratory results.](record:r_3HYSQ1RTAA930T57X9W5CXKFQN) | Verify real report import, budgets, failures, cancellation and export in Laboratory. |
-| [P66 — Produce one ranked bottleneck report for the current optimized candidate.](record:r_5MBWC32RYVSQ5XZA4MYYH87ME8) | Rank the current candidate after matched quiet, Firefox and interaction captures. |
+## Waiting for another build
 
-## Daily performance acceptance — 6
+- [ ] **Application artifact.** Verify the optimized Lince binary produced by CI includes the GPU freeze fix. The available local binary, `08c087f4`, predates it.
+- [ ] **Measurement probe artifact.** Verify that the optimized Park probe matches the application revision. The available local probe is a debug build from `d5048aca-backlog-final`.
+- [ ] **Install the candidate.** Use the saved shipment Command for the verified optimized release and retain its installation receipt. The local installation is still `08c087f4`.
 
-These are product outcomes still to demonstrate, not six already-diagnosed code defects.
+### Live release and freeze
 
-| Task | What is actually left |
-| --- | --- |
-| [P136 — Demonstrate prompt durable local title and description edits in daily use.](record:r_72ZAB2H5VTQ88SE597N9CQHKJ7) | Close real local title/description durability and feedback acceptance. |
-| [P65 — Establish prompt visible interaction under normal load.](record:r_44DT369GKKWNAT9RSK0KX8RTA2) | Recheck the worker's 44.35 ms p95 and the mixed editor focus failure on the matching candidate. Verify real visible response. |
-| [P64 — Establish genuinely quiet daily-workspace resource use.](record:r_4GVND1GYBP9J233JRJP59BE7GA) | Reuse current valid quiet-workspace evidence; close installed gate. |
-| [P135 — Measure the combined candidate and repair one harmful interaction.](record:r_6A7V7Y05E0TX6156V5XE0W2N8V) | Run at integration boundaries; diagnose/repair harmful interactions. |
-| [P16 — Establish near-refresh presentation independently on both monitors.](record:r_5S47A4WFMEANPKPKT2BPN5QWTM) | Close each physical output’s near-refresh presentation acceptance. |
-| [P15 — Establish nearly lossless Firefox video under that same load.](record:r_09F37ECZ6MCA18Y6CGNE3D6Y5Y) | Match the Firefox source and normal scene against Niri, and correlate both physical outputs. The single installed baseline recorded 4 drops in 30 s after warmup. |
+- [ ] **Live build identity.** Verify that the running Park executable uses the new optimized revision after installation. Record the full revision and profile.
+- [ ] **Freeze replay.** Use Ghostty and normal agent activity on the new build. Check that the desktop stays interactive and that the GPU-completion panic is absent during the observed session.
+- [ ] [P156](record:r_675XKW987Z53WQNE9T0F48XBPH) **Installed graphics loader.** Run the mandatory prepared case through automatic discovery. Confirm matching artifact identity, graphics setup and preservation of caller driver choices.
 
-## Implemented source: verification only — 23
+### Mixed scene and daily acceptance
 
-The selected implementation is done. Do not code it again. The linked requirements overlap the 471 detailed obligations in Overhaul.md; those obligations are not 471 new optimizations or necessarily 471 executable tests.
+Use the installed candidate and its matching probe for these measurements.
 
-| Task | What is actually left |
-| --- | --- |
-| [P137 — Verify canonical field-text sharing.](record:r_2QC1RKFFQJ09XEE7EP15KJW6E1) | Existing implementation; remaining verification is specified in the linked Record. |
-| [P117 — Verify bounded canonical checkpoint admission.](record:r_7HD3G5KF1QDXZ5Y766H0WVQ357) | Existing implementation; remaining verification is specified in the linked Record. |
-| [P108 — Verify deadline-driven editor binding work.](record:r_1K92JXDXHW5573N1AS06VJPEGE) | Verify editor deadlines and scoped cursor preparation, wakeups and fresh authority through PRESENCE-VERIFY. |
-| [P127 — Verify first-reveal construction of collapsed Record fields.](record:r_67MRGZ514V671TTWEDTTGXXD86) | Existing implementation; remaining verification is specified in the linked Record. |
-| [P85 — Verify shared pointer derivation and immutable frame geometry.](record:r_2HNW14DMJ8ES1TVSXSHYQNFSDA) | Existing implementation; remaining verification is specified in the linked Record. |
-| [P130 — Verify participant-driven Area and physics work.](record:r_36APBSWDH21W59H8997BQSW0DP) | Existing implementation; remaining verification is specified in the linked Record. |
-| [P73 — Verify completion-driven pipeline preparation.](record:r_0940K6JWSTJRZPPTWJP8KF6T7X) | Existing implementation; remaining verification is specified in the linked Record. |
-| [P48 — Verify hidden presentation demand after the source batch.](record:r_45GB38DS8T74GQD5GMCWG9CCNS) | Existing implementation; remaining verification is specified in the linked Record. |
-| [P78 — Verify narrowed text and style invalidation.](record:r_7V8V15DFDKXCGGT99VR6KJ25G4) | Existing implementation; remaining verification is specified in the linked Record. |
-| [P111 — Verify changed-consumer style application.](record:r_6TZTP766V7XVXM52YEHB3EMJKZ) | Existing implementation; remaining verification is specified in the linked Record. |
-| [P109 — Evaluate the retained read-heavy styling reductions.](record:r_0DFPHA7M8KBYDS8GQVG89MJAZ8) | Existing implementation; remaining verification is specified in the linked Record. |
-| [P53 — Verify implemented output demand and callback pacing.](record:r_3HT09KTMPBS113E9QXKT5ASZGQ) | Validate existing per-output pacing against real callback traffic and physical presentation. |
-| [P156 — Verify the installed graphics runtime without an adapter script.](record:r_675XKW987Z53WQNE9T0F48XBPH) | Existing implementation; remaining verification is specified in the linked Record. |
-| [P131 — Verify incremental accessibility publication and prepared text projection.](record:r_1N8KS1ZEKV1WQX606K6MH5NKR1) | Verify prepared per-field projection and incremental adapter delivery. Full candidate construction remains; wider retention is conditional. |
-| [P119 — Verify retained description blocks and deferred Raw preview.](record:r_2C28QTRHSFACYE70MCH58SRPYS) | Verify block/span/media retention, full-parser semantics and latest-text reveal after Raw edits. |
-| [P77 — Verify demand-driven Sync presentation reads.](record:r_349MAGE5FADNJ50X348MCC7604) | Verify Sync demand/deadlines, direct reply ownership, retained Protein choices and catalog projection. |
-| [P80 — Verify dormant camera-image retention.](record:r_4MPVWB5R7J40MNV571W780DQ9W) | Verify dormant-camera write revisions with conservative dynamic/unknown fallbacks. |
-| [P120 — Verify single final work projections and slug-register writes.](record:r_5FDXR01ABJBD6FW36MWABGMPZQ) | Verify one final WorkMetadata projection and one slug-register upsert, preserving exact durable outcomes. |
-| [P128 — Verify retained terminal and Command output.](record:r_5ZXJ3Y0TZEG0T3PDAH61X596QJ) | Verify retained output, typed Wasm bindings, lossless input/reply wakeups and history retention; attribute any remaining service-bound failure. |
-| [P84 — Verify retained File Explorer rows and listing preparation.](record:r_7G4HJRCVP9TZW0S1XS934HDWPQ) | Verify retained visible buttons, one sorted listing per presentation wave and one owned search-result model. |
-| [P132 — Verify capture contributor reuse within each audit.](record:r_01Z5DC695MDHGNT51DPHKY2J3T) | Existing implementation; remaining verification is specified in the linked Record. |
-| [P133 — Verify shared immutable diagram fonts.](record:r_3FWBA6PYBR86X5N7S5QN20Z1P8) | DIAGRAM-FONTS-VERIFY owns exact rendering, cold/concurrent use and retained-memory checks; the sharing implementation is complete. |
-| [P89 — Verify single-owner canvas clipping.](record:r_2NZ5PKRV5EBGZ2GE75QJXDVTQK) | Verify ownership transitions, exact clipping, one nested traversal and per-pass preparation through CLIP-VERIFY. |
+- [ ] [P65](record:r_44DT369GKKWNAT9RSK0KX8RTA2) **Editor focus.** Run the mixed scene up to its first editor click. Require the presented editor to receive focus and accept the first character.
+- [ ] [P65](record:r_44DT369GKKWNAT9RSK0KX8RTA2) **Worker publication.** Repeat the 120-input worker fixture and compare p95 with the 33.4 ms budget.
+- [ ] [P65](record:r_44DT369GKKWNAT9RSK0KX8RTA2) **Visible interaction.** Measure event-to-changed-pixel latency for typing, click, scroll and drag in the populated session. Report each distribution against B02.
+- [ ] [P64](record:r_4GVND1GYBP9J233JRJP59BE7GA) **Quiet resources.** Sample the settled daily workspace and record Park CPU, GPU and wake rates against B10.
+- [ ] [P136](record:r_72ZAB2H5VTQ88SE597N9CQHKJ7) **Short title edit.** Replace a short Fiote or Kanban title and measure visible echo and durable acknowledgement separately.
+- [ ] [P136](record:r_72ZAB2H5VTQ88SE597N9CQHKJ7) **Short description edit.** Replace a short local description, measure acknowledgement and verify the exact text after reopening.
+- [ ] [P16](record:r_5S47A4WFMEANPKPKT2BPN5QWTM) **Laptop presentation.** Record physical eDP presentation cadence and gap tails against B01 under normal load.
+- [ ] [P16](record:r_5S47A4WFMEANPKPKT2BPN5QWTM) **External presentation.** Record physical HDMI presentation cadence and gap tails against B01 under the same load.
+- [ ] [P15](record:r_09F37ECZ6MCA18Y6CGNE3D6Y5Y) **Firefox comparison.** Compare dropped frames for the same visible 720p60 clip and zoom against the matching Niri reference. Correlate with the HDMI presentation record.
+- [ ] [P134](record:r_146KVN0KENZQ88KNMP4NWNNCS3) **R01.** Hold a real private Record write while Firefox runs on the other output. Verify continued typing and honest pending status.
+- [ ] [P134](record:r_146KVN0KENZQ88KNMP4NWNNCS3) **R10.** Play video on one output while typing or dragging on the other in the populated scene. Verify both activities progress.
+- [ ] [P135](record:r_6A7V7Y05E0TX6156V5XE0W2N8V) **Combined replay.** Replay the matching baseline and candidate with the same scene. Save the worst repeatable regression, or record a passing comparison.
 
-## Source ownership and active-path audit — 2
+### Worker-only cases
 
-- [ ] **P124 verification.** Inspect the verified bundle’s source inventory, feature gates and missing selectors against the running revision.
-- [ ] **Castle readiness verification.** Run the existing readiness cases and confirm that current layout/text/capture gating survives the reduction. Measure warm update CPU and allocation cost alongside P66.
+These cases need a test executable with the worker-only feature set.
 
-| Task | What is actually left |
-| --- | --- |
-| [P124 — Complete the source-to-workflow inventory for active interface features.](record:r_3XG5M214AQAQKBTADAR44A0MQ0) | Source inventory reconciled. Check the captured build identity and execute the first ranked workload. |
-| [P86 — Rank actual bloat in active paths.](record:r_394ME6MH9S27PVQDAF9DDC5V16) | Source audit ranked four active units. Verify their residual cost after building the current candidate. |
+- [ ] [P148](record:r_2M3HN9VZMK9XYX5HXKC38XPB97) **Worker pointer routing.** Run `host_pointer_targets_follow_outputs_without_retargeting_content_surfaces` with the worker-only features. Require one passing case.
+- [ ] [P148](record:r_2M3HN9VZMK9XYX5HXKC38XPB97) **Worker Edit click.** Run `ordinary_click_opens_edit_mode_from_the_workspace_controls` with the worker-only features. Require one passing case.
+- [ ] [P148](record:r_2M3HN9VZMK9XYX5HXKC38XPB97) **Worker SHM damage.** Run `shared_memory_damage_preserves_untouched_and_retained_frames_then_replaces_resized_content` with the worker-only features. Require one passing case.
+
+### Nested cases
+
+Use a nested test executable that includes the current settings fixtures and the overview and raster selectors.
+
+- [ ] [P148](record:r_2M3HN9VZMK9XYX5HXKC38XPB97) **External commands.** Rerun the nested literal-arguments and command-save case.
+  The November 15 local executable stopped at the old editor lookup. The fixture now opens External programs and desktop bindings through Customization.
+- [ ] [P148](record:r_2M3HN9VZMK9XYX5HXKC38XPB97) **Keyboard settings.** Run the nested keyboard-settings host transaction case through Customization at both fixture sizes.
+- [ ] [P148](record:r_2M3HN9VZMK9XYX5HXKC38XPB97) **Display settings.** Run the virtual monitor arrange, confirm and revert case after updating its navigation.
+- [ ] [P148](record:r_2M3HN9VZMK9XYX5HXKC38XPB97) **Overview callbacks.** Run the inactive Wayland client overview case and check its presented callbacks.
+- [ ] [P148](record:r_2M3HN9VZMK9XYX5HXKC38XPB97) **Scaled-output composition.** Run the nested final-composition raster case and check native pixels and editor input mapping.
 
 } r_1FMCTGVHF35B6D0T70JEQAMYDW

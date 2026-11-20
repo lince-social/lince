@@ -80,6 +80,14 @@ fn external_commands_use_real_fields_literal_arguments_save_retry_cancel_and_sha
         native::edit_mode::EditAction::Open.apply(canvas.world_mut(), root);
         native::edit_mode::EditAction::Park.apply(canvas.world_mut(), root);
         settle(&mut canvas);
+        let customization = named_button(&mut canvas, "Configure Park in Customization");
+        reveal(&mut canvas, customization);
+        click(&mut canvas, customization, size);
+        settle(&mut canvas);
+        let section = named_button(&mut canvas, "External programs and desktop bindings");
+        reveal(&mut canvas, section);
+        click(&mut canvas, section, size);
+        settle(&mut canvas);
         let open = named_button(&mut canvas, "Edit external commands");
         reveal(&mut canvas, open);
         click(&mut canvas, open, size);

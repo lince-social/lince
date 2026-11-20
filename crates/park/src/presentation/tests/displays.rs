@@ -279,7 +279,16 @@ fn monitor_panel_arranges_tests_confirms_reverts_and_identifies_the_named_virtua
     native::edit_mode::EditAction::Open.apply(canvas.world_mut(), root);
     native::edit_mode::EditAction::Park.apply(canvas.world_mut(), root);
     settle(&mut canvas);
+    let customization = named_button(&mut canvas, "Configure Park in Customization");
+    reveal(&mut canvas, customization);
+    click(&mut canvas, customization, size);
+    settle(&mut canvas);
+    let displays_section = named_button(&mut canvas, "Displays and magnification");
+    reveal(&mut canvas, displays_section);
+    click(&mut canvas, displays_section, size);
+    settle(&mut canvas);
     let open = named_button(&mut canvas, "Arrange monitors");
+    reveal(&mut canvas, open);
     click(&mut canvas, open, size);
     let frame = settle(&mut canvas);
     assert!(frame.input.keyboard_modal);
@@ -343,6 +352,7 @@ fn monitor_panel_arranges_tests_confirms_reverts_and_identifies_the_named_virtua
     key(&mut canvas, KeyCode::Escape, true);
     key(&mut canvas, KeyCode::Escape, false);
     let open = named_button(&mut canvas, "Arrange monitors");
+    reveal(&mut canvas, open);
     click(&mut canvas, open, size);
     let second = named_button(&mut canvas, "Park-2");
     reveal(&mut canvas, second);

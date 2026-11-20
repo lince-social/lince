@@ -10,42 +10,9 @@ The 83 P Records supply the acceptance criteria. Each checkbox below produces on
 
 Run the smallest relevant case first. A shared run can close several boxes when its report proves each result. Save the first failure with its revision and exact case. Give the fix and the rerun their own boxes when a failure needs more work. A waiting build is a dependency; keep independent checks available. Preserve original acceptance criteria in the linked Records.
 
-## Settings fixture updates
+## Source audit
 
-- [ ] [P148](record:r_2M3HN9VZMK9XYX5HXKC38XPB97) **Display settings fixture.** Open Displays and magnification through Park’s Customization link so the test can reach Arrange monitors.
-
-## Laboratory and prepared cases
-
-- [ ] [P140](record:r_0EHDMT2W041ZM1SK253DJVH2C1) **Rule manifests.** Run `native::laboratory::requirements::tests`. Require invalid mappings to fail with a source location.
-- [ ] [P140](record:r_0EHDMT2W041ZM1SK253DJVH2C1) **Rule identity.** Inspect one passing common-suite report for the mapped Protein and Edit rule IDs, Record UIDs and locations.
-- [ ] [P141](record:r_6JDVCST7MPE4YRB113MGB6FRD7) **Stale click.** Run the driver’s target-replacement case. Require cancellation of the stale click.
-- [ ] [P141](record:r_6JDVCST7MPE4YRB113MGB6FRD7) **Workspace restoration.** Run `cancelled_and_failed_interface_checks_close_the_temporary_workspace`. Require the suspended workspace to return.
-- [ ] [P142](record:r_4RW2K4VB8JBARQ6WJSHM0MPGEF) **Protein filter.** Run the mandatory ordinary-input case. Require keyboard selection of Kind, typed `plain`, and the exact matching Record.
-- [ ] [P142](record:r_4RW2K4VB8JBARQ6WJSHM0MPGEF) **Hidden caption controls.** Run the structural caption negative controls. Require missing, transparent, moved, clipped and covered captions to fail.
-- [ ] [P145](record:r_4MRRZFHGR96FCYBPE2BQ713Z3G) **Default selection.** Run `cargo xtask test-interface` and verify that the full common selection starts with Protein.
-- [ ] [P145](record:r_4MRRZFHGR96FCYBPE2BQ713Z3G) **Protein selection.** Run `cargo xtask test-interface protein` and compare the ordered selection with Laboratory.
-- [ ] [P145](record:r_4MRRZFHGR96FCYBPE2BQ713Z3G) **Edit selection.** Run `cargo xtask test-interface edit` and compare the ordered selection with Laboratory.
-- [ ] [P145](record:r_4MRRZFHGR96FCYBPE2BQ713Z3G) **Input selection.** Run `cargo xtask test-interface input` and compare the ordered selection with Laboratory.
-- [ ] [P145](record:r_4MRRZFHGR96FCYBPE2BQ713Z3G) **Prepared suite identity.** Compare the prepared run’s registration and rule sources with the CLI and Laboratory report.
-- [ ] [P146](record:r_0FE1T50GYR90N30RMVDXR308QV) **Glyph mask.** Run `paint_requires_changed_pixels_inside_the_glyph_mask`. Require a background-only change to fail.
-- [ ] [P146](record:r_0FE1T50GYR90N30RMVDXR308QV) **Rendered glyphs.** Run the mandatory Protein case on a supported adapter. Require the closed, expanded and selected glyph regions to pass readback.
-- [ ] [P146](record:r_0FE1T50GYR90N30RMVDXR308QV) **Missing adapter.** Run the same gate without a Vulkan adapter. Require an explicit adapter failure.
-- [ ] [P146](record:r_0FE1T50GYR90N30RMVDXR308QV) **Paint cost.** Record adapter startup and glyph readback costs for one supported run.
-- [ ] [P147](record:r_1N3QPSMRJD367JE1R39EG315SV) **Protein lifecycle.** Run `protein-lifecycle` and verify the named preview, spawn, update and removal lifecycle.
-- [ ] [P147](record:r_1N3QPSMRJD367JE1R39EG315SV) **Routine budget.** Measure one first-process and repeated warm runs of the common suite. Record whether the expanded case fits the routine budget.
-- [ ] [P134](record:r_146KVN0KENZQ88KNMP4NWNNCS3) **R02.** Run `local-edit-preview-fanout`. Verify exact local body text across dependent views and reopen.
-- [ ] [P134](record:r_146KVN0KENZQ88KNMP4NWNNCS3) **R03.** Run `virtualized-dirty-record`. Verify draft identity through sort, filter and recovery.
-- [ ] [P134](record:r_146KVN0KENZQ88KNMP4NWNNCS3) **R04.** Run the inherited-style scroll/hit-test row and verify the current target receives the click.
-- [ ] [P134](record:r_146KVN0KENZQ88KNMP4NWNNCS3) **R05.** Run `held-first-open-theme`. Verify that the first result frame uses the changed theme.
-- [ ] [P134](record:r_146KVN0KENZQ88KNMP4NWNNCS3) **R06.** Run `typing-timer-command-stream`. Verify typing and timer progress while command output stays ordered.
-- [ ] [P134](record:r_146KVN0KENZQ88KNMP4NWNNCS3) **R07.** Run `first-revealed-input`. Verify immediate input against current geometry on reveal.
-- [ ] [P134](record:r_146KVN0KENZQ88KNMP4NWNNCS3) **R08.** Run `held-capture-source-privacy`. Require the retired readback to protect private pixels.
-- [ ] [P134](record:r_146KVN0KENZQ88KNMP4NWNNCS3) **R09.** Run `explicit-ide-save-crash-reopen`. Verify durable saved contents and recovery of the adjacent draft.
-- [ ] [P134](record:r_146KVN0KENZQ88KNMP4NWNNCS3) **Coverage report.** Check `--workflow-coverage` output against observed results and require unavailable or missing cases to stay visible.
-- [ ] [P104](record:r_3HYSQ1RTAA930T57X9W5CXKFQN) **Report import.** Load the actual prepared or installed JSON/JSONL report in Laboratory. Check revision, budget status, failures and missing values.
-- [ ] [P104](record:r_3HYSQ1RTAA930T57X9W5CXKFQN) **Picker cancellation.** Cancel report selection and verify that the previous report remains available.
-- [ ] [P104](record:r_3HYSQ1RTAA930T57X9W5CXKFQN) **Report export.** Export the imported result and verify that its data and identity survive the round trip.
-- [ ] [P124](record:r_3XG5M214AQAQKBTADAR44A0MQ0) **Bundle inventory.** Verify source hashes, revision, feature gates and available selectors for the actual prepared bundle.
+- [ ] [P90](record:r_4MEAW1HQ46BK0WKQ8ABX0T6X4K) Identify one unused dependency or redundant feature with the active-path audit.
 
 ## Attribution before performance changes
 
@@ -126,7 +93,6 @@ Use the matched capture to select the next expensive owner. Each item asks for o
 - [ ] [P100](record:r_281DJ2H4CE3CT2GTYDCDZZNRJ2) Compare the shipping CPU target with one explicitly supported target. Verify that the resulting artifact runs on the declared machine class.
 - [ ] [P99](record:r_1J322KWM9Y9KHGF3Q9B4ZG5QJG) Train one release PGO profile on the representative workload and record the training inputs.
 - [ ] [P99](record:r_1J322KWM9Y9KHGF3Q9B4ZG5QJG) Compare the PGO candidate and uninstrumented baseline on a held-out workload.
-- [ ] [P90](record:r_4MEAW1HQ46BK0WKQ8ABX0T6X4K) Identify one unused dependency or redundant feature with the active-path audit.
 - [ ] [P90](record:r_4MEAW1HQ46BK0WKQ8ABX0T6X4K) Remove that activation and verify the same supported build and focused workload.
 - [ ] [P57](record:r_1W82JGD8E7MYX2XM60YYXGMM53) Compare direct scanout and composition for one eligible fullscreen SDR client on real hardware.
 - [ ] [P57](record:r_1W82JGD8E7MYX2XM60YYXGMM53) Interrupt direct scanout with a normal transition and verify that composition safely resumes.
@@ -175,8 +141,43 @@ Use a nested test executable that includes the current settings fixtures and the
 - [ ] [P148](record:r_2M3HN9VZMK9XYX5HXKC38XPB97) **External commands.** Rerun the nested literal-arguments and command-save case.
   The November 15 local executable stopped at the old editor lookup. The fixture now opens External programs and desktop bindings through Customization.
 - [ ] [P148](record:r_2M3HN9VZMK9XYX5HXKC38XPB97) **Keyboard settings.** Run the nested keyboard-settings host transaction case through Customization at both fixture sizes.
-- [ ] [P148](record:r_2M3HN9VZMK9XYX5HXKC38XPB97) **Display settings.** Run the virtual monitor arrange, confirm and revert case after updating its navigation.
+- [ ] [P148](record:r_2M3HN9VZMK9XYX5HXKC38XPB97) **Display settings.** Run the virtual monitor arrange, confirm and revert case through Customization.
 - [ ] [P148](record:r_2M3HN9VZMK9XYX5HXKC38XPB97) **Overview callbacks.** Run the inactive Wayland client overview case and check its presented callbacks.
 - [ ] [P148](record:r_2M3HN9VZMK9XYX5HXKC38XPB97) **Scaled-output composition.** Run the nested final-composition raster case and check native pixels and editor input mapping.
+
+### Laboratory and prepared cases
+
+Use the feature-enabled Laboratory tests and the matching prepared bundle. The installed baseline predates the required Laboratory rules, workflow cases and report import.
+
+- [ ] [P140](record:r_0EHDMT2W041ZM1SK253DJVH2C1) **Rule manifests.** Run `native::laboratory::requirements::tests`. Require invalid mappings to fail with a source location.
+- [ ] [P140](record:r_0EHDMT2W041ZM1SK253DJVH2C1) **Rule identity.** Inspect one passing common-suite report for the mapped Protein and Edit rule IDs, Record UIDs and locations.
+- [ ] [P141](record:r_6JDVCST7MPE4YRB113MGB6FRD7) **Stale click.** Run the driver’s target-replacement case. Require cancellation of the stale click.
+- [ ] [P141](record:r_6JDVCST7MPE4YRB113MGB6FRD7) **Workspace restoration.** Run `cancelled_and_failed_interface_checks_close_the_temporary_workspace`. Require the suspended workspace to return.
+- [ ] [P142](record:r_4RW2K4VB8JBARQ6WJSHM0MPGEF) **Protein filter.** Run the mandatory ordinary-input case. Require keyboard selection of Kind, typed `plain`, and the exact matching Record.
+- [ ] [P142](record:r_4RW2K4VB8JBARQ6WJSHM0MPGEF) **Hidden caption controls.** Run the structural caption negative controls. Require missing, transparent, moved, clipped and covered captions to fail.
+- [ ] [P145](record:r_4MRRZFHGR96FCYBPE2BQ713Z3G) **Default selection.** Run `cargo xtask test-interface` and verify that the full common selection starts with Protein.
+- [ ] [P145](record:r_4MRRZFHGR96FCYBPE2BQ713Z3G) **Protein selection.** Run `cargo xtask test-interface protein` and compare the ordered selection with Laboratory.
+- [ ] [P145](record:r_4MRRZFHGR96FCYBPE2BQ713Z3G) **Edit selection.** Run `cargo xtask test-interface edit` and compare the ordered selection with Laboratory.
+- [ ] [P145](record:r_4MRRZFHGR96FCYBPE2BQ713Z3G) **Input selection.** Run `cargo xtask test-interface input` and compare the ordered selection with Laboratory.
+- [ ] [P145](record:r_4MRRZFHGR96FCYBPE2BQ713Z3G) **Prepared suite identity.** Compare the prepared run’s registration and rule sources with the CLI and Laboratory report.
+- [ ] [P146](record:r_0FE1T50GYR90N30RMVDXR308QV) **Glyph mask.** Run `paint_requires_changed_pixels_inside_the_glyph_mask`. Require a background-only change to fail.
+- [ ] [P146](record:r_0FE1T50GYR90N30RMVDXR308QV) **Rendered glyphs.** Run the mandatory Protein case on a supported adapter. Require the closed, expanded and selected glyph regions to pass readback.
+- [ ] [P146](record:r_0FE1T50GYR90N30RMVDXR308QV) **Missing adapter.** Run the same gate without a Vulkan adapter. Require an explicit adapter failure.
+- [ ] [P146](record:r_0FE1T50GYR90N30RMVDXR308QV) **Paint cost.** Record adapter startup and glyph readback costs for one supported run.
+- [ ] [P147](record:r_1N3QPSMRJD367JE1R39EG315SV) **Protein lifecycle.** Run `protein-lifecycle` and verify the named preview, spawn, update and removal lifecycle.
+- [ ] [P147](record:r_1N3QPSMRJD367JE1R39EG315SV) **Routine budget.** Measure one first-process and repeated warm runs of the common suite. Record whether the expanded case fits the routine budget.
+- [ ] [P134](record:r_146KVN0KENZQ88KNMP4NWNNCS3) **R02.** Run `local-edit-preview-fanout`. Verify exact local body text across dependent views and reopen.
+- [ ] [P134](record:r_146KVN0KENZQ88KNMP4NWNNCS3) **R03.** Run `virtualized-dirty-record`. Verify draft identity through sort, filter and recovery.
+- [ ] [P134](record:r_146KVN0KENZQ88KNMP4NWNNCS3) **R04.** Run the inherited-style scroll/hit-test row and verify the current target receives the click.
+- [ ] [P134](record:r_146KVN0KENZQ88KNMP4NWNNCS3) **R05.** Run `held-first-open-theme`. Verify that the first result frame uses the changed theme.
+- [ ] [P134](record:r_146KVN0KENZQ88KNMP4NWNNCS3) **R06.** Run `typing-timer-command-stream`. Verify typing and timer progress while command output stays ordered.
+- [ ] [P134](record:r_146KVN0KENZQ88KNMP4NWNNCS3) **R07.** Run `first-revealed-input`. Verify immediate input against current geometry on reveal.
+- [ ] [P134](record:r_146KVN0KENZQ88KNMP4NWNNCS3) **R08.** Run `held-capture-source-privacy`. Require the retired readback to protect private pixels.
+- [ ] [P134](record:r_146KVN0KENZQ88KNMP4NWNNCS3) **R09.** Run `explicit-ide-save-crash-reopen`. Verify durable saved contents and recovery of the adjacent draft.
+- [ ] [P134](record:r_146KVN0KENZQ88KNMP4NWNNCS3) **Coverage report.** Check `--workflow-coverage` output against observed results and require unavailable or missing cases to stay visible.
+- [ ] [P104](record:r_3HYSQ1RTAA930T57X9W5CXKFQN) **Report import.** Load the actual prepared or installed JSON/JSONL report in Laboratory. Check revision, budget status, failures and missing values.
+- [ ] [P104](record:r_3HYSQ1RTAA930T57X9W5CXKFQN) **Picker cancellation.** Cancel report selection and verify that the previous report remains available.
+- [ ] [P104](record:r_3HYSQ1RTAA930T57X9W5CXKFQN) **Report export.** Export the imported result and verify that its data and identity survive the round trip.
+- [ ] [P124](record:r_3XG5M214AQAQKBTADAR44A0MQ0) **Bundle inventory.** Verify source hashes, revision, feature gates and available selectors for the actual prepared bundle.
 
 } r_1FMCTGVHF35B6D0T70JEQAMYDW

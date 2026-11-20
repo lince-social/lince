@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use store::Store;
 
 async fn convert_one(store: &Store, from: &str, to: &str) -> Option<nucleus::DecimalValue> {

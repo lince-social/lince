@@ -31,7 +31,10 @@ unsafe extern "C" {
 struct Information(NonNull<c_void>);
 
 impl Drop for Information {
-    fn drop(&mut self) { unsafe { di_info_destroy(self.0.as_ptr()) }; }
+    fn drop(&mut self) {
+        // SAFETY: Information uniquely owns the successful parse result.
+        unsafe { di_info_destroy(self.0.as_ptr()) };
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -44,11 +47,14 @@ pub(super) fn hdr(bytes: &[u8]) -> io::Result<Hdr> {
     if bytes.len() < 128 || bytes.len() > 32768 || bytes.len() % 128 != 0 {
         return Err(io::Error::other("The display information has an invalid length."));
     }
-    let information = Information(NonNull::new(unsafe {
-        di_info_parse_edid(bytes.as_ptr().cast(), bytes.len())
-    }).ok_or_else(|| io::Error::other("The display information could not be parsed."))?);
+    // SAFETY: The input slice remains readable for the entire parse call.
+    let information = unsafe { di_info_parse_edid(bytes.as_ptr().cast(), bytes.len()) };
+    let information = Information(NonNull::new(information)
+        .ok_or_else(|| io::Error::other("The display information could not be parsed."))?);
+    // SAFETY: The metadata is read only while its owning Information is live.
     let metadata = unsafe { di_info_get_hdr_static_metadata(information.0.as_ptr()).as_ref() }
         .ok_or_else(|| io::Error::other("The display has no HDR metadata information."))?;
+    // SAFETY: The colorimetry is read only while its owning Information is live.
     let colorimetry = unsafe { di_info_get_supported_signal_colorimetry(information.0.as_ptr()).as_ref() }
         .ok_or_else(|| io::Error::other("The display has no signal colorimetry information."))?;
     if !metadata.pq || !metadata.type1 || !colorimetry.rgb {

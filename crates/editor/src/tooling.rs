@@ -94,9 +94,9 @@ pub async fn run(
         return Err("Language tools are limited to files up to 2 MiB".into());
     }
     let mut process = launch(&command, &directory)?;
-    let mut stdin = process.0.stdin.take().unwrap();
-    let stdout = process.0.stdout.take().unwrap();
-    let stderr = process.0.stderr.take().unwrap();
+    let mut stdin = process.0.stdin.take().ok_or("Missing tool stdin")?;
+    let stdout = process.0.stdout.take().ok_or("Missing tool stdout")?;
+    let stderr = process.0.stderr.take().ok_or("Missing tool stderr")?;
     let text = input.to_string();
     let operation = async {
         let write = async move {

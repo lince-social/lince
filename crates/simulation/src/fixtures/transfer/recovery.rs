@@ -5,7 +5,8 @@ use serde_json::json;
 use crate::scenario::{Check, Event, Input, Invocation, Scenario};
 
 fn append(case: &mut Scenario, cell: &str, id: &str, event: Event) {
-    let at_ms = case.inputs.iter().map(|input| input.at_ms).max().unwrap() + 20;
+    let at_ms = case.inputs.iter().map(|input| input.at_ms).max()
+        .expect("recovery appends to a seeded scenario") + 20;
     case.inputs.push(Input {
         id: id.into(),
         cell: cell.into(),
@@ -42,7 +43,7 @@ fn quantity(case: &mut Scenario, cell: &str, record: &str, amount: &str) {
             record: format!("${record}"),
             comparison: Comparison::Equal,
             expected: Quantity {
-                value: nucleus::DecimalValue::parse_inferred(amount).unwrap(),
+                value: nucleus::DecimalValue::parse_inferred(amount).expect("the literal recovery quantity is an exact decimal"),
                 unit: None,
             },
         },
@@ -67,7 +68,7 @@ pub fn declined_invitation(replicated: bool) -> Scenario {
         .inputs
         .iter()
         .position(|input| input.id == "accept")
-        .unwrap();
+        .expect("the seeded transfer includes acceptance");
     case.inputs.truncate(accept);
     append(
         &mut case,
@@ -94,7 +95,7 @@ pub fn private_correction_after_restart(replicated: bool) -> Scenario {
         "action":"set-transfer-private-application-policy","transfer":"$routes","exchange":"payment",
         "effects":[{"record":"$money-b","formula":"-incoming() * 100","mode":"quantity"}],
         "person":"$beto","expected_version":1,"request_id":"change-policy"
-    })).unwrap());
+    })).expect("the literal policy correction matches the action schema"));
     let correction = Action::CompensateTransferApplication {
         application: "$pay-last".into(),
         person: "$beto".into(),

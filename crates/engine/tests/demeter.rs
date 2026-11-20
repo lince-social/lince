@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 mod support;
 
 use engine::{
@@ -363,7 +365,7 @@ async fn generic_optimization_runs_through_the_normal_action_path_and_can_be_can
 async fn imports_the_complete_meal_trail_as_ordinary_sources() {
     let engine = support::engine().await;
     let uri = format!(
-        "{}/../../institute/trails/health/Meal-preparation.lingua",
+        "{}/../../institute/trails/ergon/gaia/nutrition/Meal-preparation.lingua",
         env!("CARGO_MANIFEST_DIR")
     );
     let preview = engine

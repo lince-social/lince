@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 #[path = "../build_support/migration_guard.rs"]
 mod migration_guard;
 

@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use std::collections::BTreeSet;
 
 use engine::private_requests::{

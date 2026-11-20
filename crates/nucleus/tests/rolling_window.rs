@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use nucleus::projection::RollingWindow;
 
 fn at(value: &str) -> i64 {

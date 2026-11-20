@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use std::sync::Arc;
 
 use base64::{Engine as _, engine::general_purpose::STANDARD as B64};

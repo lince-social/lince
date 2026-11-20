@@ -219,8 +219,10 @@ impl Consumer {
             .unwrap()
             .find(|device| !device.is_software())
             .unwrap();
+        // SAFETY: Smithay owns this display lifetime and no raw caller terminates it.
         let display = unsafe { EGLDisplay::new(device) }.unwrap();
         let context = EGLContext::new(&display).unwrap();
+        // SAFETY: The context was created here and has never been bound to another thread.
         let renderer = unsafe { GlesRenderer::new(context) }.unwrap();
         Self {
             renderer,

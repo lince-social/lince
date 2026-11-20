@@ -50,8 +50,8 @@ pub fn configured_relays(fields: Option<&Value>) -> Result<Vec<RelayUrl>, Engine
             return Err(invalid());
         }
         let relay: RelayUrl = text.parse().map_err(|_| invalid())?;
+        let host = relay.host_str().ok_or_else(invalid)?;
         if relay.scheme() != "https"
-            || relay.host_str().is_none()
             || !relay.username().is_empty()
             || relay.password().is_some()
             || relay.path() != "/"
@@ -62,7 +62,7 @@ pub fn configured_relays(fields: Option<&Value>) -> Result<Vec<RelayUrl>, Engine
             return Err(invalid());
         }
         let identity = (
-            relay.host_str().unwrap().trim_end_matches('.').to_owned(),
+            host.trim_end_matches('.').to_owned(),
             relay.port_or_known_default(),
         );
         if !seen.insert(identity) {

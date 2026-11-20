@@ -21,6 +21,10 @@ mod admission;
 mod cycles;
 mod snapshot;
 #[path = "area_mutation_tests.rs"]
+#[allow(
+    clippy::unwrap_used,
+    reason = "Laboratory Area mutation fixtures must fail if their prepared Records or entities are missing"
+)]
 pub(crate) mod tests;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]

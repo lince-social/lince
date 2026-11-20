@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use lince_ailuros::{
     profile,
     project::{self, FirmwareMode, Toolchain},

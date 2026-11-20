@@ -305,7 +305,7 @@ pub fn sale() -> Scenario {
         Event::SettleReviewed {
             occurrence: "$occurrence".into(),
             person: "$ana".into(),
-            quantity: nucleus::DecimalValue::parse_inferred("1").unwrap(),
+            quantity: store::exact::integer(1),
         },
     );
     add(

@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use protein::{Include, Protein, Source};
 use serde_json::json;
 use std::collections::BTreeMap;
@@ -23,6 +25,7 @@ fn process_cpu_us() -> Option<u64> {
         tv_sec: 0,
         tv_nsec: 0,
     };
+    // SAFETY: `time` is a writable timespec kept alive for the duration of the call.
     if unsafe { libc::clock_gettime(libc::CLOCK_PROCESS_CPUTIME_ID, &mut time) } != 0 {
         return None;
     }

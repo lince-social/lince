@@ -531,7 +531,7 @@ impl SavedMedia {
     }
 }
 
-pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedMedia> {
+pub(crate) fn snapshot(world: &mut World, root: Entity) -> Result<Vec<SavedMedia>, String> {
     world
         .query::<(
             Entity,
@@ -547,13 +547,15 @@ pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedMedia> {
                     .get::<crate::native::canvas_item::Ephemeral>(*entity)
                     .is_none()
         })
-        .map(|(entity, _, member, item, sand)| SavedMedia {
-            workspace: member.0,
-            sand: sand.clone(),
-            position: item.position.to_array(),
-            size: item.size.to_array(),
-            placement: crate::native::sand_placement::Placement::capture(world, entity),
-            tokens: crate::native::token_style::overrides(world, entity),
+        .map(|(entity, _, member, item, sand)| {
+            Ok(SavedMedia {
+                workspace: member.0,
+                sand: sand.clone(),
+                position: item.position.to_array(),
+                size: item.size.to_array(),
+                placement: crate::native::sand_placement::Placement::capture(world, entity)?,
+                tokens: crate::native::token_style::overrides(world, entity),
+            })
         })
         .collect()
 }

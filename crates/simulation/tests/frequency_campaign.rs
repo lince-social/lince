@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use nucleus::simulation::{Predicate, ReplayStatus, Verdict};
 use simulation::{artifacts, fixtures::frequencies, scenario::Scenario};
 

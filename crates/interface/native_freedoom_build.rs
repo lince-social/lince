@@ -1,11 +1,15 @@
 pub fn compile() {
-    let output = std::path::PathBuf::from(std::env::var_os("OUT_DIR").unwrap());
+    let output = std::path::PathBuf::from(
+        std::env::var_os("OUT_DIR").expect("Cargo provides the Freedoom output directory"),
+    );
     let executable = output.join("lince-freedoom");
     println!("cargo:rerun-if-changed={}", executable.display());
     let directory = "src/native/freedoom/vendor/engine";
     println!("cargo:rerun-if-changed={directory}");
     println!("cargo:rerun-if-changed=src/native/freedoom/host.c");
-    if std::env::var("CARGO_CFG_TARGET_FAMILY").unwrap() != "unix" {
+    if std::env::var("CARGO_CFG_TARGET_FAMILY").expect("Cargo specifies the target family")
+        != "unix"
+    {
         if std::fs::read(&executable).ok().as_deref() != Some(&[]) {
             std::fs::write(executable, []).expect("write unavailable game host");
         }
@@ -26,7 +30,8 @@ pub fn compile() {
     ] {
         build.flag(flag);
     }
-    let sources = std::fs::read_to_string(format!("{directory}/SOURCES.txt")).unwrap();
+    let sources = std::fs::read_to_string(format!("{directory}/SOURCES.txt"))
+        .expect("the vendored Freedoom source list is readable");
     for source in sources.lines() {
         build.file(format!("{directory}/{source}"));
     }

@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use chrono::{DateTime, TimeDelta, Utc};
 use engine::Engine;
 use nucleus::karma::{Cadence, Consequence};

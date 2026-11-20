@@ -106,6 +106,13 @@ pub struct DecimalValue {
 }
 
 impl DecimalValue {
+    pub const fn from_integer(value: i128) -> Self {
+        Self {
+            scale: 0,
+            mantissa: value,
+        }
+    }
+
     pub fn from_mantissa(scale: u8, mantissa: i128) -> Result<Self, KarmaBoundaryError> {
         if scale <= MAX_DECIMAL_SCALE {
             Ok(Self { scale, mantissa })

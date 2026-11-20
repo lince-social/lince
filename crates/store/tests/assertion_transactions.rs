@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use nucleus::{DecimalValue, RecordKind};
 use serde_json::{Value, json};
 use store::assertions::{self, AssertionQuantity, AssertionRole, AssertionRow, NewAssertion};

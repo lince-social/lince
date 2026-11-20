@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use nucleus::RecordKind;
 use serde_json::{Value, json};
 use std::sync::atomic::{AtomicU64, Ordering};

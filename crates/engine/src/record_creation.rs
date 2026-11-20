@@ -236,7 +236,11 @@ impl Engine {
                     if draft.slug.is_some() {
                         required.insert(Property::Slug);
                     }
-                    required.extend(draft.work.as_object().unwrap().keys().map(|field| {
+                    let work = draft
+                        .work
+                        .as_object()
+                        .ok_or_else(|| invalid("Record work must be an object"))?;
+                    required.extend(work.keys().map(|field| {
                         Property::Extension(ExtensionProperty {
                             namespace: "work".into(),
                             field: field.clone(),

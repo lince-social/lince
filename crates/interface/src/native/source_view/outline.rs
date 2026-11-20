@@ -22,7 +22,9 @@ pub(super) enum Control {
 
 impl Action for Control {
     fn apply(&self, world: &mut World, owner: Entity) {
-        capture(world, owner);
+        if !capture(world, owner) {
+            return;
+        }
         let Some(data) = world
             .get::<View>(owner)
             .and_then(|view| view.preview.clone())
@@ -64,7 +66,9 @@ impl Action for Control {
             Operation::Read.apply(world, preview);
             return;
         }
-        let mut outline = world.get_mut::<Outline>(owner).unwrap();
+        let Some(mut outline) = world.get_mut::<Outline>(owner) else {
+            return;
+        };
         match self {
             Self::All => {
                 outline.all = !outline.all;
@@ -107,9 +111,14 @@ pub(super) fn render_tree(world: &mut World, owner: Entity, body: Entity, data: 
 fn paint(world: &mut World, owner: Entity, body: Entity, tree: tree::Tree<'_>) {
     let _prepare = nucleus::performance::Span::new("source-outline-row-preparation");
     if world.get::<Outline>(owner).is_none() {
-        world.entity_mut(owner).insert(Outline::default());
+        let Ok(mut owner) = world.get_entity_mut(owner) else {
+            return;
+        };
+        owner.insert(Outline::default());
     }
-    let state = world.get::<Outline>(owner).unwrap();
+    let Some(state) = world.get::<Outline>(owner) else {
+        return;
+    };
     let all = state.all;
     let expanded = &state.expanded;
     let closed = &state.closed;
@@ -173,7 +182,11 @@ fn paint(world: &mut World, owner: Entity, body: Entity, tree: tree::Tree<'_>) {
     for (key, depth, has_children, open, inspect) in rows {
         let tree::Branch { title, members, .. } = &nodes[&key];
         let row = panel::row(world, body);
-        world.get_mut::<Node>(row).unwrap().padding.left = px(depth.min(20) as f32 * 16.0);
+        world
+            .get_mut::<Node>(row)
+            .expect("panel::row creates a layout node")
+            .padding
+            .left = px(depth.min(20) as f32 * 16.0);
         if has_children {
             let button = panel::button(
                 world,
@@ -191,7 +204,9 @@ fn paint(world: &mut World, owner: Entity, body: Entity, tree: tree::Tree<'_>) {
         }
         let label = crate::native::edit_mode::label(world, row, title, 14.0);
         {
-            let mut node = world.get_mut::<Node>(label).unwrap();
+            let mut node = world
+                .get_mut::<Node>(label)
+                .expect("label creates a text layout node");
             node.flex_shrink = 1.0;
             node.flex_grow = 1.0;
             node.flex_basis = px(0);
@@ -276,7 +291,7 @@ pub(super) fn controls(
             13.0,
         );
         let row = panel::row(world, parent);
-        let all = world.get::<Outline>(owner).unwrap().all;
+        let all = world.get::<Outline>(owner).is_some_and(|state| state.all);
         panel::button(
             world,
             row,

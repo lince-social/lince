@@ -918,8 +918,12 @@ fn lifecycle(
         let samples: Vec<_> = result["client_lifecycle"]["rounds"].as_array().ok_or("Missing lifecycle samples")?.iter().map(|round| &round["resources"]).collect();
         let descriptors: Vec<_> = samples.iter().map(|sample| sample["descriptors"].as_u64().ok_or_else(|| "Missing lifecycle descriptor count".to_owned())).collect::<Result<_>>()?;
         let rss: Vec<_> = samples.iter().map(|sample| sample["rss"].as_str().and_then(|rss| rss.split_whitespace().next()?.parse::<u64>().ok()).ok_or_else(|| "Missing lifecycle RSS".to_owned())).collect::<Result<_>>()?;
-        let growing = |values: &[u64], allowance: u64| values.windows(2).all(|pair| pair[1] > pair[0]) && values.last().unwrap().saturating_sub(values[0]) > allowance;
-        let passed = !growing(&descriptors, 4) && !growing(&rss, 32 * 1024);
+        let growing = |values: &[u64], allowance: u64| -> Result<bool> {
+            let first = values.first().ok_or("Missing resource samples")?;
+            let last = values.last().ok_or("Missing resource samples")?;
+            Ok(values.windows(2).all(|pair| pair[1] > pair[0]) && last.saturating_sub(*first) > allowance)
+        };
+        let passed = !growing(&descriptors, 4)? && !growing(&rss, 32 * 1024)?;
         result["client_lifecycle"]["resource_summary"] = json!({"descriptors":descriptors,"rss_kib":rss,"passed":passed,"scope":"Three settled samples detect obvious accumulation, not a long-term leak guarantee; capture-owner queues are checked separately by the capture fixture."});
         ensure(passed, "Closed application windows show obvious accumulating resources")?;
     }

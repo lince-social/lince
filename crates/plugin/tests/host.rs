@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use nucleus::plugins::{Contribution, Manifest};
 use std::path::Path;
 

@@ -70,8 +70,9 @@ impl Plugin for SyncCastlePlugin {
 }
 
 fn status(world: &mut World, owner: Entity, value: &str) {
-    let entity = world.get::<SyncCastle>(owner).unwrap().status;
-    crate::native::sand_panel::status(world, entity, value);
+    if let Some(entity) = world.get::<SyncCastle>(owner).map(|view| view.status) {
+        crate::native::sand_panel::status(world, entity, value);
+    }
 }
 
 fn config_status(config: &Value) -> &'static str {
@@ -85,32 +86,41 @@ fn config_status(config: &Value) -> &'static str {
 }
 
 fn set_enabled(world: &mut World, owner: Entity, enabled: bool) {
-    let mut view = world.get_mut::<SyncCastle>(owner).unwrap();
+    let Some(mut view) = world.get_mut::<SyncCastle>(owner) else {
+        return;
+    };
     if view.enabled == enabled {
         return;
     }
     view.enabled = enabled;
     let (toggle, controls) = (view.toggle, view.controls);
-    world.get_mut::<Node>(controls).unwrap().display = if enabled {
-        Display::Flex
-    } else {
-        Display::None
-    };
+    if let Some(mut node) = world.get_mut::<Node>(controls) {
+        node.display = if enabled {
+            Display::Flex
+        } else {
+            Display::None
+        };
+    }
     let name = if enabled {
         "File sync: on"
     } else {
         "File sync: off"
     };
-    let label = world.get::<Children>(toggle).unwrap()[0];
-    world.get_mut::<Text>(label).unwrap().0 = name.into();
-    let mut node = world
-        .get_mut::<bevy::a11y::AccessibilityNode>(toggle)
-        .unwrap();
-    node.set_toggled(if enabled {
-        accesskit::Toggled::True
-    } else {
-        accesskit::Toggled::False
-    });
+    if let Some(label) = world
+        .get::<Children>(toggle)
+        .and_then(|children| children.first())
+        .copied()
+        && let Some(mut text) = world.get_mut::<Text>(label)
+    {
+        text.0 = name.into();
+    }
+    if let Some(mut node) = world.get_mut::<bevy::a11y::AccessibilityNode>(toggle) {
+        node.set_toggled(if enabled {
+            accesskit::Toggled::True
+        } else {
+            accesskit::Toggled::False
+        });
+    }
 }
 
 fn send(
@@ -123,36 +133,45 @@ fn send(
     }
     let sender = crate::native::practice_cells::sender(world, owner).ok_or("No Cell connection")?;
     {
-        let mut permits = sender.try_reserve_many(1).map_err(|error| match error {
+        let permit = sender.try_reserve().map_err(|error| match error {
             tokio::sync::mpsc::error::TrySendError::Full(_) => "Connection busy. Try again.",
             tokio::sync::mpsc::error::TrySendError::Closed(_) => "Connection closed",
         })?;
-        permits.next().unwrap().send(message());
+        permit.send(message());
     }
     Ok(sender)
 }
 
 fn begin_save(world: &mut World, owner: Entity, id: String) {
     clear_save(world, owner);
+    let Some(mut view) = world.get_mut::<SyncCastle>(owner) else {
+        return;
+    };
+    view.pending = Some(id.clone());
     world.resource_mut::<Requests>().routes.insert(
-        id.clone(),
+        id,
         Route {
             owner,
             reply: Reply::Save,
             sender: None,
         },
     );
-    world.get_mut::<SyncCastle>(owner).unwrap().pending = Some(id);
 }
 
 fn clear_save(world: &mut World, owner: Entity) {
-    if let Some(id) = world.get_mut::<SyncCastle>(owner).unwrap().pending.take() {
+    if let Some(id) = world
+        .get_mut::<SyncCastle>(owner)
+        .and_then(|mut view| view.pending.take())
+    {
         world.resource_mut::<Requests>().routes.remove(&id);
     }
 }
 
 fn failed(world: &mut World, owner: Entity, message: &str) {
-    let enabled = world.get::<SyncCastle>(owner).unwrap().confirmed_enabled;
+    let Some(view) = world.get::<SyncCastle>(owner) else {
+        return;
+    };
+    let enabled = view.confirmed_enabled;
     clear_save(world, owner);
     set_enabled(world, owner, enabled);
     status(world, owner, message);
@@ -178,43 +197,54 @@ impl Action for Command {
         match self {
             Self::Select(uid, name) => {
                 let selected = view.selected;
-                world.get_mut::<SyncCastle>(owner).unwrap().protein = uid.clone();
-                world.get_mut::<Text>(selected).unwrap().0 = name.clone();
+                world
+                    .get_mut::<SyncCastle>(owner)
+                    .expect("the action's Sync panel is still present")
+                    .protein = uid.clone();
+                if let Some(mut text) = world.get_mut::<Text>(selected) {
+                    text.0 = name.clone();
+                }
             }
             Self::Format(format) => {
                 let label = view.format_label;
-                world.get_mut::<SyncCastle>(owner).unwrap().format = *format;
-                world.get_mut::<Text>(label).unwrap().0 = format_name(*format).into();
+                world
+                    .get_mut::<SyncCastle>(owner)
+                    .expect("the action's Sync panel is still present")
+                    .format = *format;
+                if let Some(mut text) = world.get_mut::<Text>(label) {
+                    text.0 = format_name(*format).into();
+                }
             }
             Self::Reload => {
-                let mut view = world.get_mut::<SyncCastle>(owner).unwrap();
+                let mut view = world
+                    .get_mut::<SyncCastle>(owner)
+                    .expect("the action's Sync panel is still present");
                 view.loaded = false;
                 view.config_requested = false;
                 view.library_requested = false;
                 status(world, owner, "Loading…");
             }
             Self::Save | Self::Toggle => {
-                let path = world
-                    .get::<EditableText>(view.path)
-                    .unwrap()
-                    .value()
-                    .to_string();
                 let action = if matches!(self, Self::Toggle) {
                     engine::actions::Action::SetFileSyncEnabled {
                         enabled: !view.enabled,
                     }
                 } else {
+                    if !view.enabled {
+                        status(world, owner, "Enable file sync first");
+                        return;
+                    }
+                    let Some(path) = world.get::<EditableText>(view.path) else {
+                        status(world, owner, "The directory field is unavailable");
+                        return;
+                    };
                     engine::actions::Action::ConfigureFileSync {
                         protein: view.protein.clone(),
-                        path,
+                        path: path.value().to_string(),
                         format: view.format,
                         enabled: true,
                     }
                 };
-                if matches!(self, Self::Save) && !view.enabled {
-                    status(world, owner, "Enable file sync first");
-                    return;
-                }
                 world.resource_mut::<Requests>().next += 1;
                 let id = format!("sync-save-{}", world.resource::<Requests>().next);
                 match send(world, owner, || ClientMessage::Act {
@@ -226,9 +256,7 @@ impl Action for Command {
                         status(world, owner, "Saving…");
                     }
                     Err(error) => {
-                        let enabled = world.get::<SyncCastle>(owner).unwrap().confirmed_enabled;
-                        set_enabled(world, owner, enabled);
-                        status(world, owner, error);
+                        failed(world, owner, error);
                     }
                 }
             }
@@ -262,11 +290,10 @@ pub(crate) fn prepare_directory(
         return false;
     }
     let field = view.path;
-    world
-        .get_mut::<EditableText>(field)
-        .unwrap()
-        .editor
-        .set_text(path);
+    let Some(mut field) = world.get_mut::<EditableText>(field) else {
+        return false;
+    };
+    field.editor.set_text(path);
     Command::Select(protein.into(), "Only the practice disk note".into()).apply(world, owner);
     Command::Format(FileFormat::Markdown).apply(world, owner);
     true
@@ -354,7 +381,10 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
         crate::native::token_style::background(crate::native::tokens::Token::Surface),
     ));
     let content = crate::native::scroll_sand::fill(world, sand);
-    world.get_mut::<Node>(content).unwrap().row_gap = px(8);
+    world
+        .get_mut::<Node>(content)
+        .expect("the scroll content has a layout node")
+        .row_gap = px(8);
     label(world, content, "Sync", 22.0);
     let toggle = crate::native::information::action_button(
         world,
@@ -365,7 +395,7 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
     );
     let mut node = world
         .get_mut::<bevy::a11y::AccessibilityNode>(toggle)
-        .unwrap();
+        .expect("the toggle constructor adds its accessibility node");
     node.set_role(accesskit::Role::Switch);
     node.set_label("File sync");
     node.set_toggled(accesskit::Toggled::False);
@@ -483,7 +513,7 @@ fn query(library: bool) -> protein::Protein {
         json!({"source":"record", "where":[{"kind_eq":"protein"},{"quantity_gt":"0"}], "fields":["uid","head"], "order":[{"asc":"head"}]})
     } else {
         json!({"source":"record", "where":[{"slug_eq":"local-organ"}], "fields":["uid","extension"], "include":{"extension":{"namespace":"lince.file_sync"}}})
-    }).unwrap()
+    }).expect("the literal Sync query matches the Protein schema")
 }
 
 fn maintain(world: &mut World) {
@@ -530,9 +560,11 @@ fn maintain(world: &mut World) {
                     .resource_mut::<Requests>()
                     .routes
                     .get_mut(&id)
-                    .unwrap()
+                    .expect("a Sync panel registers both subscription routes")
                     .sender = Some(sender);
-                let mut view = world.get_mut::<SyncCastle>(owner).unwrap();
+                let mut view = world
+                    .get_mut::<SyncCastle>(owner)
+                    .expect("the subscription was prepared for this panel");
                 if library {
                     view.library_requested = true;
                 } else {
@@ -572,7 +604,9 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
 
 fn library(world: &mut World, owner: Entity, rows: &[Value]) {
     let _span = Span::new(Stage::NativeSyncLibrary);
-    let view = world.get::<SyncCastle>(owner).unwrap();
+    let Some(view) = world.get::<SyncCastle>(owner) else {
+        return;
+    };
     let (parent, selected) = (view.library, view.selected);
     let mut names = HashMap::with_capacity(rows.len());
     let mut choices = Vec::with_capacity(rows.len() + 1);
@@ -595,7 +629,9 @@ fn library(world: &mut World, owner: Entity, rows: &[Value]) {
     if let Some(name) = selected_name {
         crate::native::sand_panel::status(world, selected, name);
     }
-    let mut view = world.get_mut::<SyncCastle>(owner).unwrap();
+    let Some(mut view) = world.get_mut::<SyncCastle>(owner) else {
+        return;
+    };
     view.names = names;
     let mut children = std::mem::take(&mut view.library_rows);
     let (mut created, mut retained) = (0, 0);
@@ -617,7 +653,9 @@ fn library(world: &mut World, owner: Entity, rows: &[Value]) {
     );
     performance::add(Count::SyncProteinChoicesCreated, created);
     performance::add(Count::SyncProteinChoicesRetained, retained);
-    world.get_mut::<SyncCastle>(owner).unwrap().library_rows = children;
+    if let Some(mut view) = world.get_mut::<SyncCastle>(owner) {
+        view.library_rows = children;
+    }
 }
 
 fn receive_message(world: &mut World, message: impl std::borrow::Borrow<ServerMessage>) {
@@ -661,7 +699,7 @@ fn receive_message(world: &mut World, message: impl std::borrow::Borrow<ServerMe
                     .unwrap_or(&Value::Null);
                 world
                     .get_mut::<SyncCastle>(owner)
-                    .unwrap()
+                    .expect("the configuration reply belongs to a mounted panel")
                     .confirmed_enabled = config["enabled"] == true;
                 set_enabled(world, owner, config["enabled"] == true);
                 status(world, owner, config_status(config));
@@ -686,31 +724,36 @@ fn receive_message(world: &mut World, message: impl std::borrow::Borrow<ServerMe
                 .unwrap_or_else(|| protein.clone());
             let format =
                 serde_json::from_value(config["format"].clone()).unwrap_or(FileFormat::Lingua);
-            world
-                .get_mut::<EditableText>(path)
-                .unwrap()
-                .editor
-                .set_text(config["path"].as_str().unwrap_or_default());
-            world.get_mut::<Text>(selected).unwrap().0 = if protein.is_empty() {
-                "All local Records".into()
-            } else {
-                name
-            };
-            world.get_mut::<Text>(format_label).unwrap().0 = format_name(format).into();
-            let mut view = world.get_mut::<SyncCastle>(owner).unwrap();
+            if let Some(mut field) = world.get_mut::<EditableText>(path) {
+                field
+                    .editor
+                    .set_text(config["path"].as_str().unwrap_or_default());
+            }
+            if let Some(mut label) = world.get_mut::<Text>(selected) {
+                label.0 = if protein.is_empty() {
+                    "All local Records".into()
+                } else {
+                    name
+                };
+            }
+            if let Some(mut label) = world.get_mut::<Text>(format_label) {
+                label.0 = format_name(format).into();
+            }
+            let mut view = world
+                .get_mut::<SyncCastle>(owner)
+                .expect("the configuration reply belongs to a mounted panel");
             view.loaded = true;
             view.protein = protein;
             view.format = format;
-            world
-                .get_mut::<SyncCastle>(owner)
-                .unwrap()
-                .confirmed_enabled = config["enabled"] == true;
+            view.confirmed_enabled = config["enabled"] == true;
             set_enabled(world, owner, config["enabled"] == true);
             status(world, owner, config_status(config));
         }
         (Reply::Save, ServerMessage::ActionOk { id, .. }) if view.pending.as_ref() == Some(id) => {
             clear_save(world, owner);
-            let mut view = world.get_mut::<SyncCastle>(owner).unwrap();
+            let mut view = world
+                .get_mut::<SyncCastle>(owner)
+                .expect("the save reply belongs to a mounted panel");
             view.config_requested = false;
             status(world, owner, "Saved");
         }
@@ -723,6 +766,10 @@ fn receive_message(world: &mut World, message: impl std::borrow::Borrow<ServerMe
     }
 }
 
+#[allow(
+    clippy::unwrap_used,
+    reason = "Sync Laboratory fixtures require every expected state and control to be present"
+)]
 pub(crate) mod tests {
     use super::*;
 

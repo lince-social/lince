@@ -366,14 +366,11 @@ impl Host {
                                     break;
                                 }
                                 if state == "finished"
-                                    && !message["body"]
-                                        .as_str()
-                                        .unwrap_or_default()
-                                        .trim()
-                                        .is_empty()
+                                    && let Some(reply) = message["body"].as_str()
+                                    && !reply.trim().is_empty()
                                     && user
                                 {
-                                    report.reply = message["body"].as_str().unwrap().into();
+                                    report.reply = reply.into();
                                     report.persisted = true;
                                     report.outcome = "passed".into();
                                     report.stage = "persistence".into();

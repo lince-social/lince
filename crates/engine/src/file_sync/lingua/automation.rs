@@ -314,18 +314,16 @@ impl Engine {
             else {
                 continue;
             };
-            let slug = document
-                .automation
-                .rules
-                .iter()
-                .find(|r| r.uid == rule.uid)
-                .map(|r| r.slug.clone())
-                .unwrap_or_else(|| {
-                    format!(
-                        "rule-{}",
-                        rule.uid.split_once('_').unwrap().1.to_ascii_lowercase()
-                    )
-                });
+            let slug =
+                if let Some(rule) = document.automation.rules.iter().find(|r| r.uid == rule.uid) {
+                    rule.slug.clone()
+                } else {
+                    let (_, suffix) = rule
+                        .uid
+                        .split_once('_')
+                        .ok_or_else(|| invalid("Rule UID has no prefix"))?;
+                    format!("rule-{}", suffix.to_ascii_lowercase())
+                };
             automation.rules.push(ProjectedRule {
                 uid: rule.uid.clone(),
                 slug,

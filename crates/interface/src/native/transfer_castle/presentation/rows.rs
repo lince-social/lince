@@ -52,9 +52,10 @@ fn content(world: &mut World, entity: Entity, owner: Entity, value: &Row) {
             if let Some(mut node) = world.get_mut::<bevy::a11y::AccessibilityNode>(entity) {
                 node.set_label(card.title.as_str());
             }
-            let mut node = world.get_mut::<Node>(entity).unwrap();
             let margin = px((card.depth * 12) as f32);
-            if node.margin.left != margin {
+            if let Some(mut node) = world.get_mut::<Node>(entity)
+                && node.margin.left != margin
+            {
                 node.margin.left = margin;
             }
             crate::native::edit_mode::label(world, entity, &card.title, 14.0);
@@ -127,7 +128,9 @@ fn selection(world: &mut World, entity: Entity, value: &Row, selected: &str) {
             .remove::<crate::native::token_style::BorderToken>();
         world.entity_mut(entity).insert(BorderColor::default());
     }
-    world.get_mut::<Node>(entity).unwrap().border = UiRect::all(px(if selected { 1 } else { 0 }));
+    if let Some(mut node) = world.get_mut::<Node>(entity) {
+        node.border = UiRect::all(px(if selected { 1 } else { 0 }));
+    }
     world.entity_mut(entity).insert(Selected(selected));
     nucleus::performance::add("transfer-selection-writes", 1);
 }

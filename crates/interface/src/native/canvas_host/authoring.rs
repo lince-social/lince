@@ -416,12 +416,13 @@ fn index(world: &mut World, host: Entity) -> Result<Editing, String> {
         let captured = world
             .get::<Content>(host)
             .is_none()
-            .then(|| capture_content(world, host));
+            .then(|| capture_content(world, host))
+            .transpose()?;
         let component = world
             .get::<Content>(host)
             .map(|content| &content.0)
             .or(captured.as_ref())
-            .unwrap();
+            .expect("the host has stored or newly captured content");
         let defaults = api::authoring::edits_ref(component).map(|edits| &edits.defaults);
         for id in indexed {
             if defaults.is_none_or(|defaults| !defaults.contains_key(&id)) {

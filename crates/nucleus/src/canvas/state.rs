@@ -560,7 +560,7 @@ impl State {
                     next.workspaces
                         .iter()
                         .find(|w| w.id != *workspace)
-                        .unwrap()
+                        .ok_or("Keep at least one workspace.")?
                         .id
                 };
                 let affected = next

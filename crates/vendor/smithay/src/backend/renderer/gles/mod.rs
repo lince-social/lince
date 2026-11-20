@@ -1806,6 +1806,17 @@ impl GlesRenderer {
         &self.egl
     }
 
+    /// Reports whether this context advertises the GLES hardware timer query extension.
+    pub fn supports_disjoint_timer_query(&self) -> bool {
+        self.extensions.iter().any(|extension| extension == "GL_EXT_disjoint_timer_query")
+            && self.gl.GenQueriesEXT.is_loaded()
+            && self.gl.DeleteQueriesEXT.is_loaded()
+            && self.gl.QueryCounterEXT.is_loaded()
+            && self.gl.GetQueryivEXT.is_loaded()
+            && self.gl.GetQueryObjectuivEXT.is_loaded()
+            && self.gl.GetQueryObjectui64vEXT.is_loaded()
+    }
+
     /// Run custom code in the GL context owned by this renderer.
     ///
     /// The OpenGL state of the renderer is considered an implementation detail

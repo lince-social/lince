@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 mod support;
 
 use engine::{Engine, actions::Action, sync::OpBatch};

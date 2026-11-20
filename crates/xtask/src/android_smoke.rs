@@ -613,7 +613,8 @@ pub(crate) fn run(root: &Path, args: &[OsString]) -> Result<()> {
     Ok(())
 }
 
-#[cfg(all(test, unix))]
+#[cfg(test)]
+#[cfg(unix)]
 mod tests {
     use super::*;
     use std::os::unix::fs::PermissionsExt;

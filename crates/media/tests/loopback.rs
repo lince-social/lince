@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 #![cfg(feature = "native")]
 
 use std::time::{Duration, Instant};

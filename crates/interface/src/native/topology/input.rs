@@ -3,6 +3,7 @@ use bevy::{
     asset::uuid::Uuid,
     ecs::message::MessageCursor,
     input::ButtonState,
+    input_focus::AcquireFocus,
     math::DVec3,
     picking::{
         backend::{HitData, PointerHits},
@@ -16,6 +17,19 @@ pub(crate) mod cursor;
 
 pub const CONTENT_POINTER: PointerId =
     PointerId::Custom(Uuid::from_u128(0x4c696e6365546f706f6c6f6779));
+
+pub(super) fn keep_forwarded_focus(
+    mut request: On<AcquireFocus>,
+    roots: Query<(), With<SpatialRoot>>,
+    hover: Res<bevy::picking::hover::HoverMap>,
+) {
+    if request.focused_entity == request.original_event_target()
+        && roots.contains(request.focused_entity)
+        && hover.get(&CONTENT_POINTER).is_some_and(|hits| !hits.is_empty())
+    {
+        request.propagate(false);
+    }
+}
 
 #[derive(Resource, Default)]
 pub struct PointerState {
@@ -777,6 +791,57 @@ fn editing_text(world: &World) -> bool {
 pub(crate) mod tests {
     use super::*;
     use crate::native::canvas::CanvasView;
+
+    #[test]
+    fn forwarded_editor_focus_survives_the_spatial_root_press() {
+        use bevy::{
+            camera::RenderTarget,
+            input_focus::{
+                InputFocus, InputFocusPlugin, pointer_focus::PointerFocusPlugin,
+                tab_navigation::TabIndex,
+            },
+            picking::events::{Pointer, PointerPress},
+            window::WindowRef,
+        };
+        let mut app = App::new();
+        app.add_plugins((InputFocusPlugin, PointerFocusPlugin))
+            .init_resource::<bevy::picking::hover::HoverMap>()
+            .add_observer(keep_forwarded_focus);
+        let world = app.world_mut();
+        let window = world.spawn((Window::default(), PrimaryWindow)).id();
+        let root = world.spawn(SpatialRoot).id();
+        let editor = world.spawn((Node::default(), TabIndex(0), ChildOf(root))).id();
+        let hit = HitData::new(window, 0.0, None, None);
+        let location = Location {
+            target: RenderTarget::Window(WindowRef::Entity(window))
+                .normalize(Some(window))
+                .unwrap(),
+            position: Vec2::ZERO,
+        };
+        let press = |world: &mut World, pointer, entity| {
+            world.trigger(PointerPress {
+                entity,
+                pointer: Pointer::new(pointer, location.clone()),
+                button: bevy::picking::pointer::PointerButton::Primary,
+                hit: hit.clone(),
+                count: 1,
+            });
+            world.flush();
+        };
+        world
+            .resource_mut::<bevy::picking::hover::HoverMap>()
+            .entry(CONTENT_POINTER)
+            .or_default()
+            .insert(editor, hit.clone());
+        press(world, CONTENT_POINTER, editor);
+        press(world, PointerId::Mouse, root);
+        assert_eq!(world.resource::<InputFocus>().get(), Some(editor));
+        world
+            .resource_mut::<bevy::picking::hover::HoverMap>()
+            .remove(&CONTENT_POINTER);
+        press(world, PointerId::Mouse, root);
+        assert_eq!(world.resource::<InputFocus>().get(), None);
+    }
 
     #[test]
     fn area_controls_receive_pointer_input_in_both_modes() {

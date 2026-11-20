@@ -59,7 +59,10 @@ impl SdkEcdsa {
     ) -> Result<(), InvalidSignature> {
         #[cfg(target_os = "espidf")]
         {
+            // SAFETY: ESP-IDF initializes this timer before application startup.
             let started = unsafe { esp_idf_svc::sys::esp_timer_get_time() };
+            // SAFETY: Each pointer is paired with its slice length and the C verifier
+            // reads the buffers only during this call.
             let result = unsafe {
                 esp_idf_svc::sys::ailuros::lince_ecdsa_verify(
                     self.curve_bits,
@@ -72,6 +75,7 @@ impl SdkEcdsa {
                     signature.len(),
                 )
             };
+            // SAFETY: This reads the same initialized monotonic timer.
             let elapsed = unsafe { esp_idf_svc::sys::esp_timer_get_time() } - started;
             if elapsed >= 250_000 {
                 crate::device::report(serde_json::json!({
@@ -79,6 +83,7 @@ impl SdkEcdsa {
                     "elapsed_ms":elapsed / 1000,"valid":result == 0,
                 }));
             }
+            // SAFETY: This runs on a firmware task with the FreeRTOS scheduler active.
             unsafe { esp_idf_svc::sys::vTaskDelay(1) };
             if result == 0 {
                 Ok(())

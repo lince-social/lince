@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use engine::{Engine, actions::Action, social::Worker};
 use nucleus::social::{Command, PostDraft, PostState, PublicRequest, Search, ServiceSettings};
 use serde_json::{Value, json};

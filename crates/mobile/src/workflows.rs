@@ -570,7 +570,8 @@ pub fn apply(world: &mut World, intent: Intent) -> Result<(), String> {
                 );
             }
             let state = &mut *world.resource_mut::<State>();
-            state.form.as_mut().unwrap().review["Current fields"] = Value::Object(fields);
+            state.form.as_mut().ok_or("Open a form first")?.review["Current fields"] =
+                Value::Object(fields);
             state.review = Some(key);
         }
         Intent::Cancel => {
@@ -941,8 +942,8 @@ pub fn render(world: &mut World, parent: Entity) {
         details(world, parent, &detail, "/details", 0);
         return;
     }
-    if world.resource::<State>().form.is_some() {
-        render_form(world, parent);
+    if let Some(form) = world.resource::<State>().form.clone() {
+        render_form(world, parent, form);
         return;
     }
     match world.resource::<Mobile>().navigation.current.clone() {
@@ -1154,8 +1155,7 @@ pub fn render(world: &mut World, parent: Entity) {
     }
 }
 
-fn render_form(world: &mut World, parent: Entity) {
-    let mut form = world.resource::<State>().form.clone().unwrap();
+fn render_form(world: &mut World, parent: Entity, mut form: Form) {
     if form.step.is_some() {
         model::fields::composer_fields(&mut form);
     }

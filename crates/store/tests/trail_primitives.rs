@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use nucleus::{RecordKind,knowledge::Item};
 use serde_json::json;
 

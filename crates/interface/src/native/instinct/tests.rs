@@ -118,7 +118,7 @@ fn saved_reader_restores_geometry_and_selection_without_copying_the_book() {
         },
     );
     world.get_mut::<CanvasItem>(entity).unwrap().size = Vec2::new(850.0, 640.0);
-    let saved = snapshot(world, root);
+    let saved = snapshot(world, root).expect("capture the fixture snapshots");
     let encoded = serde_json::to_string(&saved).unwrap();
     assert!(!encoded.contains("Everything is a Record"));
     assert!(!encoded.contains("It is possible to find"));
@@ -172,7 +172,10 @@ fn child_records_are_ordered_indented_and_restore_their_section() {
     Command::Page(expected.id.clone()).apply(world, reader);
     let nav = world.get::<View>(reader).unwrap().nav.unwrap();
     world.get_mut::<ScrollPosition>(nav).unwrap().0.y = 200.0;
-    let saved = snapshot(world, root).pop().unwrap();
+    let saved = snapshot(world, root)
+        .expect("capture the fixture snapshots")
+        .pop()
+        .unwrap();
     world.despawn(reader);
     saved.restore(world, root);
     let restored = world

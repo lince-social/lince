@@ -1459,7 +1459,7 @@ pub async fn extension_number(
     let raw: Option<String> = sqlx::query_scalar(
         "SELECT substr(fds, 1, ?) FROM record_extension WHERE record_uid = ? AND namespace = ?",
     )
-    .bind(i64::try_from(MAX_EXTENSION_BYTES + 1).unwrap())
+    .bind(i64::try_from(MAX_EXTENSION_BYTES + 1).expect("the extension limit fits a SQLite integer"))
     .bind(record_uid)
     .bind(namespace)
     .fetch_optional(pool)
@@ -1498,7 +1498,7 @@ pub async fn numeric_extensions_for_records(
         "SELECT record_uid, namespace, substr(fds, 1, ?) AS fds FROM record_extension
          WHERE record_uid IN (SELECT value FROM json_each(?)) ORDER BY record_uid, namespace",
     )
-    .bind(i64::try_from(MAX_EXTENSION_BYTES + 1).unwrap())
+    .bind(i64::try_from(MAX_EXTENSION_BYTES + 1).expect("the extension limit fits a SQLite integer"))
     .bind(selected)
     .fetch_all(pool)
     .await?;
@@ -1538,18 +1538,16 @@ impl<'a> ExtensionNumbers<'a> {
         }
         let mut value = self;
         for part in path {
-            if value.fields.is_none() {
-                value.fields = Some(
+            let fields = match &mut value.fields {
+                Some(fields) => fields,
+                slot @ None => slot.insert(
                     extension_raw_fields(value.raw)?
                         .into_iter()
                         .map(|(key, raw)| (key, Self::new(raw.get())))
                         .collect(),
-                );
-            }
-            value = value
-                .fields
-                .as_mut()
-                .unwrap()
+                ),
+            };
+            value = fields
                 .get_mut(part)
                 .ok_or_else(|| protocol("Numeric extension field is unavailable"))?;
         }

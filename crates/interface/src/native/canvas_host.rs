@@ -102,7 +102,10 @@ fn handle_checked(
         next.normalize_applied_snapshot(capture(world, root)?)?;
         crate::native::workspace::request_save(world);
     }
-    world.get_mut::<Workspaces>(root).unwrap().canvas_state = Some(next);
+    world
+        .get_mut::<Workspaces>(root)
+        .ok_or("Canvas has no workspaces.")?
+        .canvas_state = Some(next);
     Ok(response)
 }
 
@@ -118,11 +121,11 @@ pub(crate) fn synchronize_saved_state(world: &mut World, root: Entity) -> Result
     let saved = crate::native::workspace::saved_canvas_revision(world, root);
     let state = world
         .get_mut::<Workspaces>(root)
-        .unwrap()
+        .ok_or("Canvas has no workspaces.")?
         .into_inner()
         .canvas_state
         .as_mut()
-        .unwrap();
+        .ok_or("Canvas recovery state is unavailable.")?;
     state.refresh_registry(shared_registry())?;
     state.synchronize(snapshot)?;
     state.mark_saved_through(saved);
@@ -144,12 +147,15 @@ fn update(world: &mut World) {
                 let Some(runtime) = world.get_resource::<crate::native::app::CellHandle>() else {
                     return Ok(());
                 };
-                let id = world.get::<Workspaces>(root).unwrap().canvas_id.clone();
-                let receiver =
-                    runtime
-                        .0
-                        .engine
-                        .register_canvas(id, "Lince canvas".into(), shared_registry())?;
+                let Some(spaces) = world.get::<Workspaces>(root) else {
+                    return Ok(());
+                };
+                let id = spaces.canvas_id.clone();
+                let receiver = runtime.0.engine.register_canvas(
+                    id,
+                    "Lince canvas".into(),
+                    shared_registry(),
+                )?;
                 if let Some(wake) = world
                     .get_resource::<crate::native::wake::WakeSignal>()
                     .cloned()
@@ -187,10 +193,12 @@ fn update(world: &mut World) {
                 .is_none_or(|failure| failure.0 != error)
             {
                 crate::native::notifications::report(world, "interface::canvas", &error);
-                world.entity_mut(root).insert(Failure(error));
+                if let Ok(mut entity) = world.get_entity_mut(root) {
+                    entity.insert(Failure(error));
+                }
             }
-        } else {
-            world.entity_mut(root).remove::<Failure>();
+        } else if let Ok(mut entity) = world.get_entity_mut(root) {
+            entity.remove::<Failure>();
         }
     }
 }

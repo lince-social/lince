@@ -15,7 +15,8 @@ pub fn grouped_needs(replicated: bool, assumed: bool, ride_first: bool) -> Scena
             nucleus::simulation::Predicate::Quantity { .. }
         )
     });
-    let receiver = case.cells.iter_mut().find(|cell| cell.name == "b").unwrap();
+    let receiver = case.cells.iter_mut().find(|cell| cell.name == "b")
+        .expect("the seeded sale includes a receiver Cell");
     for seed in &mut receiver.seed {
         if let Action::CreateRecord { slug, quantity, .. } = &mut seed.action
             && slug.as_deref() == Some("stock-b")
@@ -38,15 +39,15 @@ pub fn grouped_needs(replicated: bool, assumed: bool, ride_first: bool) -> Scena
         .inputs
         .iter()
         .find(|input| input.id == "hide-stock-b")
-        .unwrap();
+        .expect("the seeded sale hides the receiver stock");
     case.inputs.push(Input {id:"hide-transport".into(),cell:"b".into(),at_ms:hide.at_ms+1,event:Event::Action {invocation:Invocation {
-        id:"hide-transport".into(),actor:None,action:serde_json::from_value(serde_json::json!({"action":"hide-record-from-contact","target":"$cell:a:organ","record":"$transport","hidden":true})).unwrap(),
+        id:"hide-transport".into(),actor:None,action:serde_json::from_value(serde_json::json!({"action":"hide-record-from-contact","target":"$cell:a:organ","record":"$transport","hidden":true})).expect("the literal transport visibility action matches the schema"),
     }}});
     let receive = case
         .inputs
         .iter()
         .find(|input| input.id == "receive-apples")
-        .unwrap()
+        .expect("the seeded sale includes receipt of the apple delivery")
         .clone();
     case.inputs.push(Input {
         id: "private-needs".into(),
@@ -117,7 +118,7 @@ pub fn grouped_needs(replicated: bool, assumed: bool, ride_first: bool) -> Scena
         case.inputs
             .iter_mut()
             .find(|input| input.id == receive.id)
-            .unwrap()
+            .expect("the receive step was cloned from the same fixture")
             .event = assumption(4);
         case.inputs.push(Input {
             id: "receive-rest".into(),
@@ -136,7 +137,7 @@ pub fn grouped_needs(replicated: bool, assumed: bool, ride_first: bool) -> Scena
             .inputs
             .iter_mut()
             .find(|input| input.id == "settle")
-            .unwrap();
+            .expect("the seeded transfer includes settlement");
         if let Event::SettleReviewed { quantity, .. } = &mut settlement.event {
             *quantity = store::exact::integer(4);
         }

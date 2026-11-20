@@ -106,6 +106,7 @@ fn configure(
     effect: TopologyEffect,
 ) -> Result<String, String> {
     effect.compile()?;
+    let component = component(&effect)?;
     if let Some(entity) = find(world, root, &id) {
         world.entity_mut(entity).remove::<Preview>();
     }
@@ -114,7 +115,7 @@ fn configure(
         root,
         Mutation::Configure {
             placement: id,
-            component: component(&effect),
+            component,
         },
     )
 }
@@ -297,7 +298,7 @@ impl Action for Control {
                         Mutation::Add {
                             placement: id.clone(),
                             workspace,
-                            component: component(&effect),
+                            component: component(&effect)?,
                             geometry: api::Geometry {
                                 position,
                                 size: [32.0; 2],

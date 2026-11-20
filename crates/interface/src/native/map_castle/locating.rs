@@ -17,7 +17,9 @@ pub(super) fn start(world: &mut World, owner: Entity) {
     let Ok(runtime) = tokio::runtime::Handle::try_current() else {
         return;
     };
-    let key = paging::key(world, owner);
+    let Some(key) = paging::key(world, owner) else {
+        return;
+    };
     let (sender, receiver) = tokio::sync::oneshot::channel();
     let wake = world
         .get_resource::<crate::native::wake::WakeSignal>()
@@ -39,8 +41,9 @@ pub(super) fn start(world: &mut World, owner: Entity) {
         receiver,
         task,
     });
-    world.get_mut::<MapSand>(owner).unwrap().notice =
-        "Waiting for one device position. This only centers the map.".into();
+    if let Some(mut sand) = world.get_mut::<MapSand>(owner) {
+        sand.notice = "Waiting for one device position. This only centers the map.".into();
+    }
 }
 
 pub(super) fn maintain(world: &mut World) {
@@ -49,21 +52,25 @@ pub(super) fn maintain(world: &mut World) {
         .iter(world)
         .collect();
     for owner in owners {
-        if !visible(world, owner) || {
-            let current = paging::key(world, owner);
-            world.get::<Locate>(owner).unwrap().key != current
-        } {
+        let current = visible(world, owner)
+            .then(|| paging::key(world, owner))
+            .flatten();
+        let Some(mut locate) = world.get_mut::<Locate>(owner) else {
+            continue;
+        };
+        if current.as_ref() != Some(&locate.key) {
             world.entity_mut(owner).remove::<Locate>();
             continue;
         }
-        let result = world.get_mut::<Locate>(owner).unwrap().receiver.try_recv();
-        let result = match result {
+        let result = match locate.receiver.try_recv() {
             Ok(result) => result,
             Err(tokio::sync::oneshot::error::TryRecvError::Empty) => continue,
             Err(_) => Err("Device location request ended".into()),
         };
         world.entity_mut(owner).remove::<Locate>();
-        let mut sand = world.get_mut::<MapSand>(owner).unwrap();
+        let Some(mut sand) = world.get_mut::<MapSand>(owner) else {
+            continue;
+        };
         match result {
             Ok(fix)
                 if fix.capture_age_ms < nucleus::location::MAX_FIX_AGE_MS as u64
@@ -106,7 +113,7 @@ mod tests {
         };
         for response in [Err("OS permission denied".to_string()), Ok(result(-23.5))] {
             let (sender, receiver) = tokio::sync::oneshot::channel();
-            let key = paging::key(app.world_mut(), owner);
+            let key = paging::key(app.world_mut(), owner).unwrap();
             let task = tokio::spawn(std::future::pending());
             app.world_mut().entity_mut(owner).insert(Locate {
                 key,
@@ -123,7 +130,7 @@ mod tests {
         assert!(sand.markers.is_empty());
         assert!(sand.device_centered);
         let (sender, receiver) = tokio::sync::oneshot::channel();
-        let key = paging::key(app.world_mut(), owner);
+        let key = paging::key(app.world_mut(), owner).unwrap();
         app.world_mut().entity_mut(owner).insert(Locate {
             key,
             receiver,
@@ -142,5 +149,23 @@ mod tests {
             -23.5
         );
         assert!(app.world().get::<Locate>(owner).is_none());
+    }
+
+    #[tokio::test]
+    async fn discards_pending_device_request_when_map_component_is_removed() {
+        let (mut app, _, owner) = super::super::tests::fixture();
+        let (sender, receiver) = tokio::sync::oneshot::channel();
+        let key = paging::key(app.world_mut(), owner).unwrap();
+        app.world_mut().entity_mut(owner).insert(Locate {
+            key,
+            receiver,
+            task: tokio::spawn(std::future::pending()),
+        });
+        app.world_mut().entity_mut(owner).remove::<MapSand>();
+
+        maintain(app.world_mut());
+
+        assert!(app.world().get::<Locate>(owner).is_none());
+        assert!(sender.is_closed());
     }
 }

@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 fn run(work: impl Future<Output = ()> + Send + 'static) {
     std::thread::Builder::new()
         .stack_size(16 * 1024 * 1024)

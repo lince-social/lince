@@ -114,7 +114,9 @@ fn restores_two_books_positions_modes_zoom_and_placement() {
         DVec2::new(50.0, -20.0),
         document.clone(),
     );
-    let saved = snapshot(&mut world, root).remove(0);
+    let saved = snapshot(&mut world, root)
+        .expect("capture the fixture snapshots")
+        .remove(0);
     assert!(saved.valid());
     let bytes = serde_json::to_vec(&saved).unwrap();
     world.despawn(owner);

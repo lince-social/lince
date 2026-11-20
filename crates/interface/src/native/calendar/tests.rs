@@ -146,7 +146,7 @@ fn calendar_persists_and_quiet_updates_keep_the_same_nodes() {
         .get_mut::<crate::native::canvas::CanvasItem>(entity)
         .unwrap()
         .size = Vec2::new(1000.0, 800.0);
-    let saved = snapshot(app.world_mut(), root);
+    let saved = snapshot(app.world_mut(), root).expect("capture the fixture snapshots");
     assert_eq!(saved.len(), 1);
     let encoded = serde_json::to_string(&saved[0]).unwrap();
     let restored: SavedCalendar = serde_json::from_str(&encoded).unwrap();
@@ -386,7 +386,12 @@ async fn real_protein_dates_feed_calendar_and_both_picker_fields_save_through_ce
             .to_string(),
         "2026-09-05"
     );
-    assert_eq!(snapshot(app.world_mut(), root).len(), 1);
+    assert_eq!(
+        snapshot(app.world_mut(), root)
+            .expect("capture the fixture snapshots")
+            .len(),
+        1
+    );
     app.world_mut()
         .get_mut::<bevy::text::EditableText>(start)
         .unwrap()
@@ -491,7 +496,11 @@ fn record_date_popup_reuses_endpoints_without_joining_canvas_layout() {
             .is_none()
     );
     assert!(world.get::<crate::native::castle::Castle>(popup).is_none());
-    assert!(snapshot(world, root).is_empty());
+    assert!(
+        snapshot(world, root)
+            .expect("capture the fixture snapshots")
+            .is_empty()
+    );
     assert_eq!(
         world.get::<Node>(popup).unwrap().position_type,
         PositionType::Absolute

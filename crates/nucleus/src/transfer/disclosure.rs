@@ -574,7 +574,7 @@ pub fn project_transfer(row: &mut Value, viewer: Option<&str>, privileged: bool)
             let messages: Vec<_> = thread["messages"].as_array().into_iter().flatten().filter_map(|message| {
                 let shared = crate::simulation::sharing::Shared::parse(message["body"].as_str()?)?;
                 shared.disclosed(row["uid"].as_str()?, row["revision"].as_u64()?, &access_by_promise).then(|| {
-                    json!({"uid":message["uid"], "created_at":message["created_at"], "body":serde_json::to_string(&shared).unwrap(),
+                    json!({"uid":message["uid"], "created_at":message["created_at"], "body":serde_json::to_string(&shared).expect("the parsed shared body can be serialized"),
                         "sender":message.get("sender").filter(|sender| !hidden_people || sender.as_str().is_some_and(|person| visible_people.contains(person)))})
                 })
             }).collect();

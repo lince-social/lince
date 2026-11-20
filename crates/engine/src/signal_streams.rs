@@ -5,7 +5,7 @@ use crate::{Engine, EngineError};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex, MutexGuard},
     time::Instant,
 };
 use tokio::sync::watch;
@@ -65,7 +65,12 @@ pub struct Runtime {
 
 impl Drop for Runtime {
     fn drop(&mut self) {
-        for channel in self.channels.get_mut().unwrap().values() {
+        for channel in self
+            .channels
+            .get_mut()
+            .expect("live Signal registry lock poisoned")
+            .values()
+        {
             channel.close();
         }
     }
@@ -84,7 +89,7 @@ pub struct Publisher {
 
 impl Drop for Subscription {
     fn drop(&mut self) {
-        let mut inner = self.channel.inner.lock().unwrap();
+        let mut inner = self.channel.lock_inner();
         if inner.closed {
             return;
         }
@@ -102,7 +107,7 @@ impl Drop for Subscription {
 
 impl Drop for Publisher {
     fn drop(&mut self) {
-        let mut inner = self.channel.inner.lock().unwrap();
+        let mut inner = self.channel.lock_inner();
         inner.publisher = false;
         if inner.closed {
             return;
@@ -125,6 +130,12 @@ impl Drop for Publisher {
 }
 
 impl Channel {
+    fn lock_inner(&self) -> MutexGuard<'_, Inner> {
+        self.inner
+            .lock()
+            .expect("live Signal channel lock poisoned")
+    }
+
     fn new(config: store::signal_streams::Configuration) -> Self {
         let (state, _) = watch::channel(Snapshot {
             epoch: nucleus::new_uid("stream"),
@@ -149,11 +160,11 @@ impl Channel {
     }
 
     pub fn is_closed(&self) -> bool {
-        self.inner.lock().unwrap().closed
+        self.lock_inner().closed
     }
 
     fn close(&self) {
-        let mut inner = self.inner.lock().unwrap();
+        let mut inner = self.lock_inner();
         inner.closed = true;
         self.state.send_modify(|state| {
             state.epoch = nucleus::new_uid("stream");
@@ -164,7 +175,7 @@ impl Channel {
     }
 
     pub fn subscribe(self: &Arc<Self>) -> Result<Subscription, EngineError> {
-        let mut inner = self.inner.lock().unwrap();
+        let mut inner = self.lock_inner();
         if inner.closed {
             return Err(invalid("Stream configuration changed"));
         }
@@ -188,7 +199,7 @@ impl Channel {
     }
 
     pub fn publisher(self: &Arc<Self>) -> Result<Publisher, EngineError> {
-        let mut inner = self.inner.lock().unwrap();
+        let mut inner = self.lock_inner();
         if inner.closed {
             return Err(invalid("Stream configuration changed"));
         }
@@ -255,7 +266,7 @@ impl Publisher {
                 .await
                 .map_err(|_| invalid("Image worker failed"))??;
         }
-        let mut inner = self.channel.inner.lock().unwrap();
+        let mut inner = self.channel.lock_inner();
         if inner.closed {
             return Err(invalid("Stream configuration changed"));
         }
@@ -307,7 +318,10 @@ pub fn decode_jpeg(bytes: &[u8]) -> Result<(u32, u32, Vec<u8>), EngineError> {
 
 impl Runtime {
     pub fn scalar(&self, signal: &str) -> Result<nucleus::DecimalValue, EngineError> {
-        let channels = self.channels.lock().unwrap();
+        let channels = self
+            .channels
+            .lock()
+            .expect("live Signal registry lock poisoned");
         let value = channels
             .get(signal)
             .and_then(|channel| channel.snapshot().value)
@@ -321,7 +335,12 @@ impl Runtime {
         .map_err(|_| invalid("Invalid numeric value"))
     }
     pub fn invalidate(&self, signal: &str) {
-        if let Some(channel) = self.channels.lock().unwrap().remove(signal) {
+        if let Some(channel) = self
+            .channels
+            .lock()
+            .expect("live Signal registry lock poisoned")
+            .remove(signal)
+        {
             channel.close();
         }
     }
@@ -330,7 +349,10 @@ impl Runtime {
         &self,
         config: store::signal_streams::Configuration,
     ) -> Result<Arc<Channel>, EngineError> {
-        let mut channels = self.channels.lock().unwrap();
+        let mut channels = self
+            .channels
+            .lock()
+            .expect("live Signal registry lock poisoned");
         if let Some(channel) = channels.get(&config.signal_uid) {
             if channel.config == config {
                 return Ok(channel.clone());
@@ -339,8 +361,7 @@ impl Runtime {
         }
         channels.retain(|_, channel| {
             let keep = channel.snapshot().consumers > 0
-                || (channel.config.source_url.is_empty()
-                    && channel.inner.lock().unwrap().publisher);
+                || (channel.config.source_url.is_empty() && channel.lock_inner().publisher);
             if !keep {
                 channel.close();
             }

@@ -17,6 +17,7 @@ pub struct Runtime {
 
 impl Runtime {
     fn field(&self, name: &std::ffi::CStr) -> anyhow::Result<serde_json::Value> {
+        // SAFETY: Startup retains the validated configuration, and `name` is NUL-terminated.
         let bytes = unsafe {
             ailuros::cJSON_PrintUnformatted(ailuros::cJSON_GetObjectItemCaseSensitive(
                 self.configuration,
@@ -24,7 +25,9 @@ impl Runtime {
             ))
         };
         ensure!(!bytes.is_null(), "Missing provisioned device setting");
+        // SAFETY: cJSON returned an owned NUL-terminated string that stays live until freed below.
         let value = serde_json::from_slice(unsafe { std::ffi::CStr::from_ptr(bytes).to_bytes() });
+        // SAFETY: Deserialization returned an owned value and cJSON allocated this buffer.
         unsafe { ailuros::cJSON_free(bytes.cast()) };
         value.context("Invalid provisioned device setting")
     }
@@ -71,28 +74,40 @@ impl Runtime {
 
     pub fn ready(&self) -> bool {
         self.readiness.ready(
+            // SAFETY: Runtime startup initialized the C network state before creating `self`.
             unsafe { ailuros::lince_network_connected() },
-            || SyncStatus::from(unsafe { sys::sntp_get_sync_status() }) == SyncStatus::Completed,
+            || {
+                // SAFETY: Readiness is checked after startup initialized the SNTP service.
+                SyncStatus::from(unsafe { sys::sntp_get_sync_status() }) == SyncStatus::Completed
+            },
+            // SAFETY: This reads the C runtime's initialized clock state without borrowing it.
             unsafe { ailuros::lince_time_ready() },
         )
     }
 
     pub fn network(&self) -> Option<crate::network::Snapshot> {
+        // SAFETY: The C runtime maintains the network generation as an atomic value.
         let generation = unsafe { ailuros::lince_network_generation() };
+        // SAFETY: Runtime startup initialized the C network state before creating `self`.
         if !unsafe { ailuros::lince_network_connected() } {
             return None;
         }
+        // SAFETY: The key is a NUL-terminated string and startup initialized ESP-NETIF.
         let interface = unsafe { sys::esp_netif_get_handle_from_ifkey(c"WIFI_STA_DEF".as_ptr()) };
         if interface.is_null() {
             return None;
         }
+        // SAFETY: The C struct contains only IPv4 integers, for which all-zero is valid.
         let mut information = unsafe { std::mem::zeroed::<sys::esp_netif_ip_info_t>() };
+        // SAFETY: Startup keeps the station interface live across reconnects. The output is writable.
         if unsafe { sys::esp_netif_get_ip_info(interface, &mut information) } != sys::ESP_OK {
             return None;
         }
-        if generation != unsafe { ailuros::lince_network_generation() }
-            || !unsafe { ailuros::lince_network_connected() }
-        {
+        // SAFETY: Read the same initialized network state again to detect a change during the query.
+        let unchanged = unsafe {
+            generation == ailuros::lince_network_generation() && ailuros::lince_network_connected()
+        };
+        if !unchanged {
             return None;
         }
         Some(crate::network::Snapshot {
@@ -128,8 +143,11 @@ impl Runtime {
 pub fn resources(stage: &str) {
     let internal = sys::MALLOC_CAP_INTERNAL | sys::MALLOC_CAP_8BIT;
     let mut power_save = 0;
+    // SAFETY: `power_save` is writable and the SDK reports failure if Wi-Fi is unavailable.
     let power_save =
         (unsafe { sys::esp_wifi_get_ps(&mut power_save) } == sys::ESP_OK).then_some(power_save);
+    // SAFETY: These SDK counters take valid capability flags or no arguments. FreeRTOS
+    // interprets a null task handle as the current task, and this runs in a task.
     let report = unsafe {
         serde_json::json!({
             "type": "ailuros-iroh-resources", "stage": stage,
@@ -150,13 +168,16 @@ pub fn resources(stage: &str) {
 pub fn report(value: serde_json::Value) {
     if let Ok(mut bytes) = serde_json::to_vec(&value) {
         bytes.push(b'\n');
+        // SAFETY: UART0 is the firmware console and the byte slice stays live through the write.
         unsafe { sys::uart_write_bytes(0, bytes.as_ptr().cast(), bytes.len()) };
     }
 }
 
 pub fn start() -> anyhow::Result<Runtime> {
     let mut configuration = std::ptr::null_mut();
-    sys::esp!(unsafe { ailuros::lince_runtime_start(&mut configuration) })
+    // SAFETY: The firmware calls startup once and provides a writable configuration slot.
+    let started = unsafe { ailuros::lince_runtime_start(&mut configuration) };
+    sys::esp!(started)
         .context("Shared device startup failed; inspect Ailuros USB status")?;
     let secret = identity(EspDefaultNvsPartition::take_with(false)?)?;
     Ok(Runtime {
@@ -166,18 +187,24 @@ pub fn start() -> anyhow::Result<Runtime> {
     })
 }
 
-pub struct Identity;
+struct Identity;
 
 impl crate::client::Identity for Identity {
     fn confirm_time(&mut self, time: i64) -> anyhow::Result<()> {
-        sys::esp!(unsafe { ailuros::lince_time_from_server(time) })?;
+        // SAFETY: Startup initialized the clock state and the C API checks the timestamp range.
+        let result = unsafe { ailuros::lince_time_from_server(time) };
+        sys::esp!(result)?;
         Ok(())
     }
 
     fn sign(&mut self, payload: &str) -> anyhow::Result<String> {
         let payload = std::ffi::CString::new(payload)?;
         let mut signature = [0 as std::ffi::c_char; 129];
-        sys::esp!(unsafe { ailuros::lince_sign(payload.as_ptr(), signature.as_mut_ptr()) })?;
+        // SAFETY: Startup initialized the signing context. The input is NUL-terminated and
+        // the output has the 129 writable bytes required by lince_sign.
+        let result = unsafe { ailuros::lince_sign(payload.as_ptr(), signature.as_mut_ptr()) };
+        sys::esp!(result)?;
+        // SAFETY: Successful signing writes 128 hexadecimal characters and a NUL terminator.
         Ok(unsafe { std::ffi::CStr::from_ptr(signature.as_ptr()) }
             .to_str()?
             .into())
@@ -185,6 +212,7 @@ impl crate::client::Identity for Identity {
 }
 
 pub fn status(value: &'static std::ffi::CStr) {
+    // SAFETY: The C runtime retains this NUL-terminated pointer, which has static storage.
     unsafe { ailuros::lince_status_set(value.as_ptr()) };
 }
 
@@ -297,6 +325,7 @@ fn identity(partition: EspDefaultNvsPartition) -> anyhow::Result<iroh::SecretKey
         Some(value) => ensure!(value.len() == 32, "Iroh identity recovery required"),
         None => {
             ensure!(!retained_public, "Iroh identity recovery required");
+            // SAFETY: The buffer is writable for exactly the supplied length.
             unsafe { esp_idf_svc::sys::esp_fill_random(bytes.as_mut_ptr().cast(), bytes.len()) };
             storage.set_blob("iroh_identity", &bytes)?;
         }

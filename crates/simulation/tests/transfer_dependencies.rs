@@ -98,7 +98,14 @@ fn received_outcomes_are_signed_fresh_revocable_and_independent_of_observer_agre
                                 );
                             }
                             while session.world.next_ms().is_some_and(|next| next <= at) {
-                                assert!(session.step().await.unwrap());
+                                assert!(
+                                    session.step().await.unwrap(),
+                                    "Stopped before {stage} (replicated={replicated}, steps={}, time={}): {:?}; last finding: {:?}",
+                                    session.world.steps,
+                                    session.world.now_ms,
+                                    session.world.stop,
+                                    session.checks.findings.last(),
+                                );
                             }
                             let time = chrono::DateTime::from_timestamp_millis(at).unwrap();
                             let pool = &session.world.nodes["d"].engine().store.pool;

@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use engine::actions::{Action, TransferReservePoint};
 use nucleus::transfer::AgreementType;
 mod support;

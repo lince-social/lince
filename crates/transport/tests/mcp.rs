@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 #![cfg(feature = "mcp")]
 
 use std::sync::Arc;

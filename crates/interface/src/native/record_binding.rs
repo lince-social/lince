@@ -1237,18 +1237,7 @@ mod tests {
         let (mut world, engine, uid, first, _) = fixture().await;
         let record = world.get::<TextBinding>(first).unwrap().record.clone();
         let key = key(&record);
-        let (sender, mut commands) = tokio::sync::mpsc::channel(1);
-        sender
-            .try_send(ClientMessage::CollabLeave {
-                record_uid: uid.clone(),
-            })
-            .unwrap();
-        world
-            .resource_mut::<Bindings>()
-            .documents
-            .get_mut(&key)
-            .unwrap()
-            .sender = Some(sender.into());
+        let mut commands = hold_canonical_requests(&mut world, first);
         world
             .get_mut::<EditableText>(first)
             .unwrap()
@@ -1928,6 +1917,26 @@ pub fn can_edit(world: &World, entity: Entity) -> bool {
         .is_some_and(|document| {
             document.joined && document.writable.contains(&binding.property) && !document.failed
         })
+}
+
+#[cfg(test)]
+pub(crate) fn hold_canonical_requests(
+    world: &mut World,
+    entity: Entity,
+) -> tokio::sync::mpsc::Receiver<ClientMessage> {
+    let binding = &world.get::<TextBinding>(entity).unwrap().record;
+    let key = key(binding);
+    let (sender, receiver) = tokio::sync::mpsc::channel(1);
+    sender
+        .try_send(ClientMessage::CollabLeave {
+            record_uid: key.1.clone(),
+        })
+        .unwrap();
+    let mut bindings = world.resource_mut::<Bindings>();
+    let document = bindings.documents.get_mut(&key).unwrap();
+    assert!(document.joined && document.pending.is_empty());
+    document.sender = Some(sender.into());
+    receiver
 }
 
 fn gate(

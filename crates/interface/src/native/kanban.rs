@@ -1,4 +1,8 @@
 use lince_interface::records::KANBAN_COLUMNS as COLUMNS;
+#[allow(
+    clippy::unwrap_used,
+    reason = "Laboratory Kanban fixtures must fail if their prepared board or controls are missing"
+)]
 mod checks;
 mod headers;
 mod persistence;
@@ -286,7 +290,7 @@ pub fn spawn(world: &mut World, root: Entity, workspace: u64, position: DVec2) -
         .flatten()
         .filter(|e| world.get::<InfluenceArea>(**e).is_some())
         .count();
-    if count + 8 > crate::native::area::MAX_AREAS {
+    if count + COLUMNS.len() + 1 > crate::native::area::MAX_AREAS {
         return None;
     }
     let mut source = rectangle(position, DVec2::new(COLUMNS.len() as f64 * 680.0, 720.0));
@@ -300,29 +304,37 @@ pub fn spawn(world: &mut World, root: Entity, workspace: u64, position: DVec2) -
         source: source.id.clone(),
         columns: Vec::new(),
     };
-    crate::native::area::spawn_area(world, root, workspace, source)?;
+    let source = crate::native::area::spawn_area(world, root, workspace, source)?;
+    let mut members = vec![source];
     for (index, (title, slug, quantity)) in COLUMNS.iter().enumerate() {
         let center = position + DVec2::new((index as f64 - 3.0) * 680.0, 0.0);
         let mut area = rectangle(center, DVec2::new(680.0, 640.0));
         area.name = (*title).into();
         area.include_right_edge = index == COLUMNS.len() - 1;
         area.change_filter = Some(config());
-        area.filter = Some(config());
+        let mut filter = config();
         area.changes.enter.quantity = Some(quantity.to_string());
         area.changes.enter.assert = vec![(*slug).into()];
         area.changes.leave.quantity = Some("0".into());
         area.changes.leave.retract = vec![(*slug).into()];
-        area.filter.as_mut().unwrap().draft.query["where"][0]["all"]
+        filter.draft.query["where"][0]["all"]
             .as_array_mut()
-            .unwrap()
+            .expect("the built-in Kanban filter has a conjunction")
             .push(json!({"quantity_eq":quantity.to_string()}));
+        area.filter = Some(filter);
         area.strength = 100.0;
         area.reach.mode = crate::native::area::ReachMode::Unlimited;
         area.sorting = Some(Default::default());
         board.columns.push(Column {
             area: area.id.clone(),
         });
-        let area = crate::native::area::spawn_area(world, root, workspace, area)?;
+        let Some(area) = crate::native::area::spawn_area(world, root, workspace, area) else {
+            for member in members {
+                world.despawn(member);
+            }
+            return None;
+        };
+        members.push(area);
         let mut rules = Rules::fixed(Vec2::new(680.0, 640.0));
         rules.arrangement = Arrangement::Column;
         rules.padding = 12.0;
@@ -331,12 +343,11 @@ pub fn spawn(world: &mut World, root: Entity, workspace: u64, position: DVec2) -
         let _ = crate::native::layout::configure(world, area, rules);
     }
     let targets: Vec<_> = board.columns.iter().map(|c| c.area.clone()).collect();
-    if let Some(source) = world
-        .query::<&mut InfluenceArea>()
-        .iter_mut(world)
-        .find(|a| a.id == board.source)
+    if let Some(config) = world
+        .get_mut::<InfluenceArea>(source)
+        .and_then(|area| area.into_inner().protein.as_mut())
     {
-        source.into_inner().protein.as_mut().unwrap().spawn_targets = targets;
+        config.spawn_targets = targets;
     }
     let owner = restore(
         world,
@@ -347,10 +358,7 @@ pub fn spawn(world: &mut World, root: Entity, workspace: u64, position: DVec2) -
     );
     let mut id = [0; 16];
     getrandom::fill(&mut id).expect("Kanban group identity");
-    let board = world.get::<Kanban>(owner).unwrap();
-    let members: Vec<_> = std::iter::once(owner)
-        .chain(board.ids().filter_map(|id| area(world, owner, id)))
-        .collect();
+    members.insert(0, owner);
     for member in &members {
         world
             .entity_mut(*member)
@@ -408,18 +416,19 @@ pub(crate) fn restore(
     }
     for (index, column) in board.columns.iter().enumerate() {
         if let Some(column) = area(world, owner, &column.area) {
-            if let Some((_, slug, quantity)) = COLUMNS.get(index) {
-                let mut area = world.get_mut::<InfluenceArea>(column).unwrap();
-                if let Some(filter) = area.filter.as_mut() {
-                    let conditions = &mut filter.draft.query["where"];
-                    if *conditions
-                        == json!([{"all":[
-                            {"kind_eq":"plain"}, {"concept_in":"task"},
-                            {"quantity_eq":quantity.to_string()}, {"concept_in":slug}
-                        ]}])
-                    {
-                        conditions[0]["all"].as_array_mut().unwrap().pop();
-                    }
+            if let Some((_, slug, quantity)) = COLUMNS.get(index)
+                && let Some(mut area) = world.get_mut::<InfluenceArea>(column)
+                && let Some(filter) = area.filter.as_mut()
+            {
+                let conditions = &mut filter.draft.query["where"];
+                if *conditions
+                    == json!([{"all":[
+                        {"kind_eq":"plain"}, {"concept_in":"task"},
+                        {"quantity_eq":quantity.to_string()}, {"concept_in":slug}
+                    ]}])
+                    && let Some(predicates) = conditions[0]["all"].as_array_mut()
+                {
+                    predicates.pop();
                 }
             }
             world
@@ -482,16 +491,17 @@ pub(crate) fn store_entry(world: &mut World, root: Entity, parent: Entity) {
         "Move Tasks through columns of work.",
         Command::Create,
         |world, root| {
-            let owner = spawn(world, root, 1, DVec2::ZERO).unwrap();
-            maintain(world, owner);
+            if let Some(owner) = spawn(world, root, 1, DVec2::ZERO) {
+                maintain(world, owner);
+            }
             crate::native::sand_store::preview::compose(world, root)
         },
     );
 }
 
-fn header(world: &mut World, owner: Entity, column: usize, position: DVec2) -> Entity {
-    let root = world.get::<ChildOf>(owner).unwrap().parent();
-    let workspace = world.get::<WorkspaceMember>(owner).unwrap().0;
+fn header(world: &mut World, owner: Entity, column: usize, position: DVec2) -> Option<Entity> {
+    let root = world.get::<ChildOf>(owner)?.parent();
+    let workspace = world.get::<WorkspaceMember>(owner)?.0;
     let entity = if column == 0 {
         owner
     } else {
@@ -499,14 +509,20 @@ fn header(world: &mut World, owner: Entity, column: usize, position: DVec2) -> E
     };
     world.entity_mut(entity).insert(Part { owner, column });
     let row = ui_row(world, entity);
-    world.get_mut::<Node>(row).unwrap().min_height = px(40);
+    world
+        .get_mut::<Node>(row)
+        .expect("the header row was just created")
+        .min_height = px(40);
     let title = crate::native::edit_mode::label(world, row, "", 18.0);
     world.entity_mut(title).insert((
         ColumnTitle,
         TextLayout::no_wrap(),
         bevy::text::LineHeight::RelativeToFont(1.4),
     ));
-    world.get_mut::<Node>(title).unwrap().flex_grow = 1.0;
+    world
+        .get_mut::<Node>(title)
+        .expect("the column label was just created")
+        .flex_grow = 1.0;
     button(
         world,
         row,
@@ -525,7 +541,7 @@ fn header(world: &mut World, owner: Entity, column: usize, position: DVec2) -> E
     );
     let count = crate::native::edit_mode::label(world, entity, "… records", 13.0);
     world.entity_mut(count).insert(Status);
-    entity
+    Some(entity)
 }
 
 #[derive(Component)]
@@ -559,7 +575,12 @@ impl Action for Command {
         let Some(board) = world.get::<Kanban>(owner) else {
             return;
         };
-        let root = world.get::<ChildOf>(owner).unwrap().parent();
+        let Some(root) = world.get::<ChildOf>(owner).map(ChildOf::parent) else {
+            return;
+        };
+        if world.get::<View>(owner).is_none() {
+            return;
+        }
         match self {
             Self::Initialize => {
                 if world
@@ -573,14 +594,21 @@ impl Action for Command {
                 request(world, owner, Request::Concepts, |id| {
                     ClientMessage::Subscribe {
                         id,
-                        protein: serde_json::from_value(
-                            json!({"source":"concept", "fields":["uid","name"], "limit":null}),
-                        )
-                        .unwrap(),
+                        protein: protein::Protein {
+                            source: protein::Source::Concept,
+                            filter: Vec::new(),
+                            fields: Some(vec!["uid".into(), "name".into()]),
+                            include: Default::default(),
+                            aggregate: None,
+                            order: Vec::new(),
+                            limit: None,
+                        },
                     }
                 });
-                world.get_mut::<View>(owner).unwrap().initialized = true;
-                world.get_mut::<View>(owner).unwrap().status = "Setting up statuses…".into();
+                if let Some(mut view) = world.get_mut::<View>(owner) {
+                    view.initialized = true;
+                    view.status = "Setting up statuses…".into();
+                }
             }
             Self::Column(index) => {
                 if let Some(area) = board
@@ -602,8 +630,9 @@ impl Action for Command {
                     .filter_map(|c| area(world, owner, &c.area))
                     .any(|e| world.get::<Preparing>(e).is_some())
                 {
-                    world.get_mut::<View>(owner).unwrap().status =
-                        "Preparing task statuses…".into();
+                    if let Some(mut view) = world.get_mut::<View>(owner) {
+                        view.status = "Preparing task statuses…".into();
+                    }
                     return;
                 }
                 if world
@@ -626,7 +655,7 @@ impl Action for Command {
                 else {
                     return;
                 };
-                let zero = nucleus::DecimalValue::parse_inferred("0").unwrap();
+                let zero = nucleus::DecimalValue::from_integer(0);
                 let quantity = if let Some(value) = changes.quantity.as_ref() {
                     engine::area_transition::QuantityOperation::parse(value)
                         .and_then(|(operation, operand)| operation.evaluate(zero, operand))
@@ -637,8 +666,9 @@ impl Action for Command {
                     nucleus::DecimalValue::from_f64_lossy(value.to_f64())
                         .is_ok_and(|roundtrip| roundtrip.exact_numeric_cmp(*value).is_eq())
                 }) else {
-                    world.get_mut::<View>(owner).unwrap().status =
-                        "This quantity cannot be used when creating a Record".into();
+                    if let Some(mut view) = world.get_mut::<View>(owner) {
+                        view.status = "This quantity cannot be used when creating a Record".into();
+                    }
                     return;
                 };
                 let mut tags = changes.assert;
@@ -709,21 +739,27 @@ fn receive(
             }
             continue;
         }
-        let id = reply_id(message).unwrap();
+        let Some(id) = reply_id(message) else {
+            continue;
+        };
         if !world.resource::<Requests>().pending.contains_key(id) {
             continue;
         }
         let message = message.clone();
         nucleus::performance::add("kanban-replies-retained", 1);
-        let id = reply_id(&message).unwrap();
-        let (owner, kind) = world.resource_mut::<Requests>().pending.remove(id).unwrap();
+        let Some(id) = reply_id(&message) else {
+            continue;
+        };
+        let Some((owner, kind)) = world.resource_mut::<Requests>().pending.remove(id) else {
+            continue;
+        };
         if matches!(kind, Request::Concepts) {
             world
                 .resource_mut::<Requests>()
                 .outgoing
                 .push_back((owner, ClientMessage::Unsubscribe { id: id.to_owned() }));
         }
-        if world.get::<Kanban>(owner).is_none() {
+        if world.get::<Kanban>(owner).is_none() || world.get::<View>(owner).is_none() {
             continue;
         }
         match message.as_ref() {
@@ -743,17 +779,22 @@ fn receive(
                         });
                     }
                 }
-                world.get_mut::<View>(owner).unwrap().setup = true;
+                if let Some(mut view) = world.get_mut::<View>(owner) {
+                    view.setup = true;
+                }
             }
             ServerMessage::ActionOk { .. } => {
-                if matches!(kind, Request::Create(_)) {
-                    world.get_mut::<View>(owner).unwrap().status = "Record created".into();
+                if matches!(kind, Request::Create(_))
+                    && let Some(mut view) = world.get_mut::<View>(owner)
+                {
+                    view.status = "Record created".into();
                 }
             }
             ServerMessage::Error { message, .. } => {
-                let mut view = world.get_mut::<View>(owner).unwrap();
-                view.setup = false;
-                view.status = message.clone();
+                if let Some(mut view) = world.get_mut::<View>(owner) {
+                    view.setup = false;
+                    view.status = message.clone();
+                }
             }
             _ => {}
         }
@@ -821,9 +862,10 @@ fn update(
         if crate::native::laboratory::blocked(world, owner) {
             continue;
         }
-        if !world.get::<View>(owner).unwrap().initialized
-            && crate::native::practice_cells::sender(world, owner).is_some()
-        {
+        let Some(view) = world.get::<View>(owner) else {
+            continue;
+        };
+        if !view.initialized && crate::native::practice_cells::sender(world, owner).is_some() {
             Command::Initialize.apply(world, owner);
         }
         maintain(world, owner);
@@ -864,30 +906,41 @@ fn maintain_board(
     >,
     mut cards: Local<Vec<Entity>>,
 ) {
-    let board = world.get::<Kanban>(owner).unwrap();
+    let Some(board) = world.get::<Kanban>(owner) else {
+        return;
+    };
     let Some(source) = area(world, owner, &board.source) else {
-        let mut view = world.get_mut::<View>(owner).unwrap();
-        if view.status != "Task source Area removed" {
-            view.status = "Task source Area removed".into();
-        }
-        if !view.orders.is_empty() {
-            view.orders.clear();
-        }
-        if !view.header_captions.is_empty() {
-            view.header_captions.clear();
+        if let Some(mut view) = world.get_mut::<View>(owner) {
+            if view.status != "Task source Area removed" {
+                view.status = "Task source Area removed".into();
+            }
+            if !view.orders.is_empty() {
+                view.orders.clear();
+            }
+            if !view.header_captions.is_empty() {
+                view.header_captions.clear();
+            }
         }
         *cards = Vec::new();
         return;
     };
-    let root = world.get::<ChildOf>(owner).unwrap().parent();
+    let Some(root) = world.get::<ChildOf>(owner).map(ChildOf::parent) else {
+        return;
+    };
     let columns: Vec<_> = board
         .columns
         .iter()
-        .map(|c| area(world, owner, &c.area))
+        .map(|column| {
+            area(world, owner, &column.area)
+                .filter(|entity| world.get::<CanvasItem>(*entity).is_some())
+        })
         .collect();
     arrange(world, &columns, source);
     let orders = crate::native::protein_area::ordering::columns(world, &columns);
-    let previous = &world.get::<View>(owner).unwrap().orders;
+    let Some(view) = world.get::<View>(owner) else {
+        return;
+    };
+    let previous = &view.orders;
     let ranks: Vec<_> = orders
         .into_iter()
         .enumerate()
@@ -918,7 +971,9 @@ fn maintain_board(
                 _ => false,
             })
     {
-        world.get_mut::<View>(owner).unwrap().orders = ranks.clone();
+        if let Some(mut view) = world.get_mut::<View>(owner) {
+            view.orders = ranks.clone();
+        }
     }
     let counts: Vec<_> = {
         let rows = crate::native::protein_area::calendar_feed(world, source)
@@ -939,7 +994,7 @@ fn maintain_board(
             .collect()
     };
     headers::update(world, owner, &columns, &counts);
-    let setup = world.get::<View>(owner).unwrap().setup;
+    let setup = world.get::<View>(owner).is_some_and(|view| view.setup);
     if setup
         && !world
             .resource::<Requests>()
@@ -960,8 +1015,10 @@ fn maintain_board(
                 crate::native::area_mutation::preview(world, root, *column);
                 crate::native::area_mutation::arm(world, root, *column);
             }
-            world.get_mut::<View>(owner).unwrap().setup = false;
-            world.get_mut::<View>(owner).unwrap().status = "Ready".into();
+            if let Some(mut view) = world.get_mut::<View>(owner) {
+                view.setup = false;
+                view.status = "Ready".into();
+            }
         }
     }
     let _cards = nucleus::performance::Span::new("kanban-card-maintenance");
@@ -988,23 +1045,30 @@ fn maintain_board(
             }
             world.entity_mut(entity).remove::<HeldMembership>();
         }
-        let record = world.get::<RecordProperties>(entity).unwrap();
+        let (Some(record), Some(item)) = (
+            world.get::<RecordProperties>(entity),
+            world.get::<CanvasItem>(entity),
+        ) else {
+            continue;
+        };
+        let item_size = item.size;
         let binding = world.get::<RecordBinding>(entity);
         let mut matching = columns
             .iter()
             .enumerate()
             .filter(|(_, column)| {
                 column.is_some_and(|column| {
-                    let area = world.get::<InfluenceArea>(column).unwrap();
-                    area.enabled
-                        && area.attraction_enabled
-                        && if area.filter.is_some() {
-                            world
-                                .get::<crate::native::protein_area::filter::Matches>(column)
-                                .is_some_and(|matches| matches.allows(record, binding))
-                        } else {
-                            area.matches(record)
-                        }
+                    world.get::<InfluenceArea>(column).is_some_and(|area| {
+                        area.enabled
+                            && area.attraction_enabled
+                            && if area.filter.is_some() {
+                                world
+                                    .get::<crate::native::protein_area::filter::Matches>(column)
+                                    .is_some_and(|matches| matches.allows(record, binding))
+                            } else {
+                                area.matches(record)
+                            }
+                    })
                 })
             })
             .map(|(index, _)| index);
@@ -1015,13 +1079,16 @@ fn maintain_board(
         let quantity = CardQuantity::from_value(&record.0["quantity"]);
         let returned = released
             && column.is_some_and(|column| {
-                crate::native::topology::position(world, entity).is_some_and(|point| {
-                    crate::native::topology::influence::contains(
-                        world.get::<InfluenceArea>(column).unwrap(),
-                        crate::native::topology::spatial(world, column),
-                        point,
-                    )
-                })
+                world
+                    .get::<InfluenceArea>(column)
+                    .zip(crate::native::topology::position(world, entity))
+                    .is_some_and(|(area, point)| {
+                        crate::native::topology::influence::contains(
+                            area,
+                            crate::native::topology::spatial(world, column),
+                            point,
+                        )
+                    })
             });
         let changed = returned || old.is_none_or(|c| c.quantity != quantity || c.column != column);
         let next_card = changed.then(|| Card {
@@ -1036,7 +1103,7 @@ fn maintain_board(
         if changed {
             if let Some(column) = column {
                 let _ = crate::native::layout::attach(world, entity, column);
-                let mut rules = Rules::fixed(world.get::<CanvasItem>(entity).unwrap().size);
+                let mut rules = Rules::fixed(item_size);
                 rules.axes[0].sizing = Sizing::Fill;
                 rules.axes[1].sizing = Sizing::Fit;
                 let _ = crate::native::layout::configure(world, entity, rules);
@@ -1048,11 +1115,11 @@ fn maintain_board(
             world.entity_mut(entity).insert(card);
             nucleus::performance::add("kanban-card-publications", 1);
         }
-        if world
-            .get::<LayoutBox>(entity)
-            .is_some_and(|layout| layout.parent.is_some() && layout.order != order)
+        if let Some(mut layout) = world.get_mut::<LayoutBox>(entity)
+            && layout.parent.is_some()
+            && layout.order != order
         {
-            world.get_mut::<LayoutBox>(entity).unwrap().order = order;
+            layout.order = order;
         }
     }
     if count == 0 {
@@ -1162,30 +1229,39 @@ fn arrange(world: &mut World, resolved: &[Option<Entity>], source: Entity) {
         return;
     };
     for column in &columns {
-        if let Some(layout) = world.get::<LayoutBox>(*column) {
-            let mut size = world.get::<CanvasItem>(*column).unwrap().size;
+        if let Some(layout) = world.get::<LayoutBox>(*column).copied()
+            && let Some(mut item) = world.get_mut::<CanvasItem>(*column)
+        {
+            let mut size = item.size;
             for axis in 0..2 {
                 let rule = layout.rules.axes[axis];
                 if rule.sizing == Sizing::Fixed {
                     size[axis] = rule.size.clamp(rule.min, rule.max);
                 }
             }
-            if world.get::<CanvasItem>(*column).unwrap().size != size {
-                world.get_mut::<CanvasItem>(*column).unwrap().size = size;
+            if item.size != size {
+                item.size = size;
             }
-            if world.get::<InfluenceArea>(*column).unwrap().size != size.as_dvec2().to_array() {
-                world.get_mut::<InfluenceArea>(*column).unwrap().size = size.as_dvec2().to_array();
+            let area_size = size.as_dvec2().to_array();
+            if let Some(mut area) = world.get_mut::<InfluenceArea>(*column)
+                && area.size != area_size
+            {
+                area.size = area_size;
             }
         }
     }
     let placement = crate::native::topology::spatial(world, first);
     let first_position = crate::native::topology::position(world, first).unwrap_or_default();
-    let first_size = world.get::<CanvasItem>(first).unwrap().size;
+    let Some(first_size) = world.get::<CanvasItem>(first).map(|item| item.size) else {
+        return;
+    };
     let mut left = -f64::from(first_size.x) * 0.5;
     let mut bottom = 0.0_f64;
     let mut top = 0.0_f64;
     for column in columns {
-        let size = world.get::<CanvasItem>(column).unwrap().size;
+        let Some(size) = world.get::<CanvasItem>(column).map(|item| item.size) else {
+            continue;
+        };
         let offset = DVec3::new(left + f64::from(size.x) * 0.5, 0.0, 0.0);
         place(
             world,
@@ -1213,15 +1289,20 @@ fn arrange(world: &mut World, resolved: &[Option<Entity>], source: Entity) {
             0.0
         };
         let shield_size = size + DVec2::splat(tolerance * 2.0);
-        if world.get::<CanvasItem>(source).unwrap().size != size.as_vec2() {
-            world.get_mut::<CanvasItem>(source).unwrap().size = size.as_vec2();
-        }
-        if world.get::<InfluenceArea>(source).unwrap().size != shield_size.to_array() {
-            world.get_mut::<InfluenceArea>(source).unwrap().size = shield_size.to_array();
+        let Some(mut item) = world.get_mut::<CanvasItem>(source) else {
+            return;
+        };
+        if item.size != size.as_vec2() {
+            item.size = size.as_vec2();
         }
         let depth = crate::native::topology::spatial(world, source).depth(size.as_vec2());
-        if world.get::<InfluenceArea>(source).unwrap().depth != depth {
-            world.get_mut::<InfluenceArea>(source).unwrap().depth = depth;
+        if let Some(mut area) = world.get_mut::<InfluenceArea>(source) {
+            if area.size != shield_size.to_array() {
+                area.size = shield_size.to_array();
+            }
+            if area.depth != depth {
+                area.depth = depth;
+            }
         }
         place(
             world,
@@ -1240,11 +1321,10 @@ fn place(world: &mut World, entity: Entity, point: DVec3) {
 }
 
 fn rotate(world: &mut World, entity: Entity, rotation: [f64; 4]) {
-    if crate::native::topology::spatial(world, entity).rotation != rotation {
-        world
-            .get_mut::<crate::native::topology::Spatial>(entity)
-            .unwrap()
-            .rotation = rotation;
+    if let Some(mut placement) = world.get_mut::<crate::native::topology::Spatial>(entity)
+        && placement.rotation != rotation
+    {
+        placement.rotation = rotation;
     }
 }
 
@@ -1278,6 +1358,10 @@ fn refresh_attachment(world: &mut World, entity: Entity, anchor: Entity) {
     }
 }
 
+#[allow(
+    clippy::unwrap_used,
+    reason = "This Laboratory check requires its synthetic board and expected query state"
+)]
 pub(crate) mod query_checks {
     use super::*;
 

@@ -218,7 +218,9 @@ impl Action for Command {
             Self::Close => {
                 let editor = view.editor;
                 panel::clear(world, editor);
-                world.get_mut::<View>(owner).unwrap().form = None;
+                if let Some(mut view) = world.get_mut::<View>(owner) {
+                    view.form = None;
+                }
                 return;
             }
             Self::Protein(_) | Self::Direction(_) => {
@@ -264,7 +266,9 @@ impl Action for Command {
                     .cloned();
                 let editor = view.editor;
                 panel::clear(world, editor);
-                world.get_mut::<View>(owner).unwrap().form = None;
+                if let Some(mut view) = world.get_mut::<View>(owner) {
+                    view.form = None;
+                }
                 if let Some(package) = package {
                     for credit in package.manifest.credits {
                         label(world, editor, &credit);
@@ -287,7 +291,10 @@ impl Action for Command {
                     .ok_or("Choose a Sync provider".into())
             }),
             Self::Save => snapshot(world, owner).and_then(|(arguments, binding)| {
-                let form = world.get::<View>(owner).unwrap().form.as_ref().unwrap();
+                let form = world
+                    .get::<View>(owner)
+                    .and_then(|view| view.form.as_ref())
+                    .ok_or("Plugin settings are closed")?;
                 match binding {
                     Some(binding) => {
                         let preview = if binding.direction.outgoing() {
@@ -351,7 +358,9 @@ impl Action for Command {
 }
 
 fn open(world: &mut World, owner: Entity, target: &str, binding: Option<Binding>) {
-    let view = world.get::<View>(owner).unwrap();
+    let Some(view) = world.get::<View>(owner) else {
+        return;
+    };
     let Some(catalog) = view.catalog.clone() else {
         return;
     };
@@ -526,17 +535,23 @@ fn open(world: &mut World, owner: Entity, target: &str, binding: Option<Binding>
     );
     panel::button(world, editor, owner, "Close settings", Command::Close);
     form.preview_area = panel::column(world, editor);
-    world.get_mut::<View>(owner).unwrap().form = Some(form);
+    if let Some(mut view) = world.get_mut::<View>(owner) {
+        view.form = Some(form);
+    }
 }
 
 fn render(world: &mut World, owner: Entity, catalog: impl Into<Arc<Catalog>>) {
     let catalog = catalog.into();
-    let mut view = world.get_mut::<View>(owner).unwrap();
+    let Some(mut view) = world.get_mut::<View>(owner) else {
+        return;
+    };
     let list = view.list;
     let previous = view.catalog.replace(catalog.clone());
     let mut rows = std::mem::take(&mut view.rows);
     rows.render(world, list, owner, previous.as_deref(), &catalog);
-    world.get_mut::<View>(owner).unwrap().rows = rows;
+    if let Some(mut view) = world.get_mut::<View>(owner) {
+        view.rows = rows;
+    }
 }
 
 pub(super) fn update(world: &mut World) {
@@ -590,11 +605,16 @@ pub(super) fn update(world: &mut World) {
             });
         if let Some(result) = result {
             world.entity_mut(owner).remove::<Job>();
-            let status = world.get::<View>(owner).unwrap().status;
+            let Some(view) = world.get::<View>(owner) else {
+                continue;
+            };
+            let (status, editor) = (view.status, view.editor);
             match result {
                 Ok((Backend::Preview { binding }, result)) => {
                     let token = result["preview"].as_str().unwrap_or("").to_owned();
-                    let mut view = world.get_mut::<View>(owner).unwrap();
+                    let Some(mut view) = world.get_mut::<View>(owner) else {
+                        continue;
+                    };
                     if let Some(form) = &mut view.form {
                         form.preview =
                             Some((serde_json::to_value(binding).unwrap_or(Value::Null), token));
@@ -648,9 +668,10 @@ pub(super) fn update(world: &mut World) {
                     format!("Action result: {}", result["result"]),
                 ),
                 Ok((Backend::SaveBinding { .. }, result)) => {
-                    let editor = world.get::<View>(owner).unwrap().editor;
                     panel::clear(world, editor);
-                    world.get_mut::<View>(owner).unwrap().form = None;
+                    if let Some(mut view) = world.get_mut::<View>(owner) {
+                        view.form = None;
+                    }
                     if let Ok(catalog) = serde_json::from_value::<Catalog>(result) {
                         render(world, owner, catalog);
                     }
@@ -675,15 +696,19 @@ pub(super) fn update(world: &mut World) {
         if let Some(snapshot) = snapshot {
             match snapshot {
                 Ok(catalog) => {
-                    if world.get::<View>(owner).unwrap().catalog.is_none() {
-                        let status = world.get::<View>(owner).unwrap().status;
+                    if let Some(status) = world
+                        .get::<View>(owner)
+                        .filter(|view| view.catalog.is_none())
+                        .map(|view| view.status)
+                    {
                         panel::status(world, status, "Installed packages loaded");
                     }
                     render(world, owner, catalog);
                 }
                 Err(error) => {
-                    let status = world.get::<View>(owner).unwrap().status;
-                    panel::status(world, status, error);
+                    if let Some(status) = world.get::<View>(owner).map(|view| view.status) {
+                        panel::status(world, status, error);
+                    }
                 }
             }
         }

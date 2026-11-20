@@ -19,6 +19,10 @@ pub(crate) mod record_layout;
 mod routing;
 mod rows;
 mod sessions;
+#[allow(
+    clippy::unwrap_used,
+    reason = "Protein Area Laboratory fixtures must fail when the expected query, glyphs, or controls are missing"
+)]
 pub(crate) mod tests;
 mod ui;
 

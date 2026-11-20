@@ -47,7 +47,7 @@ pub(crate) async fn snapshot(
             .await
             .map_err(internal)?
             .into_iter()
-            .map(|(uid, name)| Value::from_iter([("uid", uid.into()), ("name", name.into())]))
+            .map(|(uid, name)| json!({"uid": uid, "name": name}))
             .collect::<Vec<_>>()
     } else {
         vec![]

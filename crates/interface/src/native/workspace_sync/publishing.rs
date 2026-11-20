@@ -63,7 +63,12 @@ impl Action for Publish {
         }
         let root = view.root;
         let sand = view.sand;
-        let field = world.get::<Publisher>(owner).unwrap().workspace;
+        let Some(field) = world
+            .get::<Publisher>(owner)
+            .map(|publisher| publisher.workspace)
+        else {
+            return;
+        };
         let workspace = panel::value(world, field)
             .ok()
             .and_then(|value| value.parse::<u64>().ok());
@@ -161,9 +166,22 @@ impl Action for Publish {
                 geometry: placement.geometry,
             });
         }
-        let layout = serde_json::to_value(layout).unwrap();
-        world.get_mut::<Publisher>(owner).unwrap().captured =
-            Some((name.clone(), policy.clone(), layout.clone(), source));
+        let Some(mut publisher) = world.get_mut::<Publisher>(owner) else {
+            return;
+        };
+        let layout = match serde_json::to_value(layout) {
+            Ok(layout) => layout,
+            Err(error) => {
+                publisher.captured = None;
+                status(
+                    world,
+                    owner,
+                    &format!("Could not capture the workspace: {error}"),
+                );
+                return;
+            }
+        };
+        publisher.captured = Some((name.clone(), policy.clone(), layout.clone(), source));
         act(
             world,
             owner,
@@ -213,7 +231,9 @@ pub(super) fn mount(world: &mut World, owner: Entity, root: Entity, _: Entity) {
 }
 
 pub(super) fn report(world: &mut World, owner: Entity, data: &Value) {
-    let parent = world.get::<WorkspaceSync>(owner).unwrap().history;
+    let Some(parent) = world.get::<WorkspaceSync>(owner).map(|view| view.history) else {
+        return;
+    };
     panel::clear(world, parent);
     label(
         world,
@@ -265,7 +285,9 @@ pub(super) fn report(world: &mut World, owner: Entity, data: &Value) {
 }
 
 pub(super) fn capabilities(world: &mut World, owner: Entity, data: &Value) {
-    let parent = world.get::<WorkspaceSync>(owner).unwrap().history;
+    let Some(parent) = world.get::<WorkspaceSync>(owner).map(|view| view.history) else {
+        return;
+    };
     panel::clear(world, parent);
     label(
         world,

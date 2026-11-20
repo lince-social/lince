@@ -179,13 +179,20 @@ impl Action for Command {
         match self {
             Self::Select(node, name) => {
                 let recipient = view.recipient;
-                world.get_mut::<View>(owner).unwrap().target = Some(node.clone());
+                world
+                    .get_mut::<View>(owner)
+                    .expect("the recipient action targets a mounted Blob Sync panel")
+                    .target = Some(node.clone());
                 panel::status(world, recipient, format!("To: {name}"));
                 return;
             }
             Self::Clear => {
                 let selection = view.selection;
-                world.get_mut::<View>(owner).unwrap().paths.clear();
+                world
+                    .get_mut::<View>(owner)
+                    .expect("the clear action targets a mounted Blob Sync panel")
+                    .paths
+                    .clear();
                 panel::status(world, selection, "No files selected");
                 return;
             }
@@ -351,8 +358,11 @@ pub(crate) fn prepare_copy(world: &mut World, ancestor: Entity, file: PathBuf, t
     if world.get::<Job>(owner).is_some() {
         return;
     }
-    let selection = world.get::<View>(owner).unwrap().selection;
-    world.get_mut::<View>(owner).unwrap().paths = vec![file];
+    let Some(mut view) = world.get_mut::<View>(owner) else {
+        return;
+    };
+    let selection = view.selection;
+    view.paths = vec![file];
     panel::status(world, selection, "blob-sample.txt · bundled practice file");
     Command::Select(target.into(), "Prepared peer".into()).apply(world, owner);
 }
@@ -419,14 +429,15 @@ pub(super) fn update(world: &mut World) {
         let snapshot = match update {
             Some(Ok(snapshot)) => Some(snapshot),
             Some(Err(error)) => {
-                let status = world.get::<View>(owner).unwrap().status;
-                panel::status(world, status, error);
+                if let Some(status) = world.get::<View>(owner).map(|view| view.status) {
+                    panel::status(world, status, error);
+                }
                 None
             }
             None => None,
         }
         .or_else(|| {
-            let view = world.get::<View>(owner).unwrap();
+            let view = world.get::<View>(owner)?;
             view.snapshot
                 .as_ref()
                 .filter(|snapshot| {
@@ -450,7 +461,9 @@ pub(super) fn update(world: &mut World) {
             });
         if let Some(result) = result {
             world.entity_mut(owner).remove::<Job>();
-            let view = world.get::<View>(owner).unwrap();
+            let Some(mut view) = world.get_mut::<View>(owner) else {
+                continue;
+            };
             let (status, selection) = (view.status, view.selection);
             match result {
                 Ok(Outcome::Files(paths)) => {
@@ -460,7 +473,7 @@ pub(super) fn update(world: &mut World) {
                         .map(|name| name.to_string_lossy())
                         .collect::<Vec<_>>()
                         .join(", ");
-                    world.get_mut::<View>(owner).unwrap().paths = paths;
+                    view.paths = paths;
                     panel::status(world, selection, names);
                     panel::status(world, status, "Choose a recipient, then send the copy.");
                 }
@@ -532,7 +545,9 @@ fn start_watch(world: &mut World, owner: Entity) {
 
 fn render(world: &mut World, owner: Entity, snapshot: impl Into<Arc<Snapshot>>) {
     let snapshot = snapshot.into();
-    let view = world.get::<View>(owner).unwrap();
+    let Some(mut view) = world.get_mut::<View>(owner) else {
+        return;
+    };
     let first = view.snapshot.is_none();
     let status = view.status;
     let shown = view
@@ -544,7 +559,7 @@ fn render(world: &mut World, owner: Entity, snapshot: impl Into<Arc<Snapshot>>) 
         .as_ref()
         .is_none_or(|current| !Arc::ptr_eq(current, &snapshot))
     {
-        world.get_mut::<View>(owner).unwrap().snapshot = Some(snapshot.clone());
+        view.snapshot = Some(snapshot.clone());
     }
     if first {
         panel::status(world, status, "Ready");
@@ -553,13 +568,16 @@ fn render(world: &mut World, owner: Entity, snapshot: impl Into<Arc<Snapshot>>) 
         return;
     }
     let (previous, mut rows) = {
-        let mut view = world.get_mut::<View>(owner).unwrap();
+        let Some(mut view) = world.get_mut::<View>(owner) else {
+            return;
+        };
         (view.shown.take(), std::mem::take(&mut view.rows))
     };
     presentation::render(world, owner, previous.as_deref(), &snapshot, &mut rows);
-    let mut view = world.get_mut::<View>(owner).unwrap();
-    view.rows = rows;
-    view.shown = Some(snapshot);
+    if let Some(mut view) = world.get_mut::<View>(owner) {
+        view.rows = rows;
+        view.shown = Some(snapshot);
+    }
 }
 
 #[cfg(test)]

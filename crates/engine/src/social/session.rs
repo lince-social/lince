@@ -119,17 +119,17 @@ pub fn open_local<T: serde::de::DeserializeOwned>(
     let bytes = B64
         .decode(body)
         .map_err(|_| invalid("Invalid encrypted session state"))?;
-    if bytes.len() < 28 {
-        return Err(invalid("Incomplete encrypted session state"));
-    }
-    let nonce: [u8; 12] = bytes[..12].try_into().unwrap();
+    let (nonce, ciphertext) = bytes
+        .split_first_chunk::<12>()
+        .filter(|(_, ciphertext)| ciphertext.len() >= 16)
+        .ok_or_else(|| invalid("Incomplete encrypted session state"))?;
     let aad = format!("lince/social/local-session/1\n{scope}");
     let plaintext = zeroize::Zeroizing::new(
         ChaCha20Poly1305::new(key.into())
             .decrypt(
-                (&nonce).into(),
+                nonce.into(),
                 Payload {
-                    msg: &bytes[12..],
+                    msg: ciphertext,
                     aad: aad.as_bytes(),
                 },
             )

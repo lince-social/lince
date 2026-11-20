@@ -335,7 +335,11 @@ fn hovering_is_translucent_unsaved_and_cancelled_without_creating_records() {
             .position,
         DVec2::new(100.0, 50.0)
     );
-    assert!(crate::native::media_sand::snapshot(app.world_mut(), root).is_empty());
+    assert!(
+        crate::native::media_sand::snapshot(app.world_mut(), root)
+            .expect("capture the fixture snapshots")
+            .is_empty()
+    );
     assert!(!crate::native::canvas_selection::eligible(
         app.world(),
         root,
@@ -403,7 +407,11 @@ fn release_requires_a_choice_then_keeps_the_real_image_and_its_file() {
         .write_message(FileDragAndDrop::HoveredFileCanceled { window });
     app.update();
     assert!(app.world().get::<Preview>(preview).is_some());
-    assert!(crate::native::media_sand::snapshot(app.world_mut(), root).is_empty());
+    assert!(
+        crate::native::media_sand::snapshot(app.world_mut(), root)
+            .expect("capture the fixture snapshots")
+            .is_empty()
+    );
     assert!(!app.world().resource::<Sessions>().entries[&root].hovering);
     std::fs::remove_file(path).unwrap();
     ui::Control::Show.apply(app.world_mut(), root);
@@ -433,7 +441,9 @@ fn release_requires_a_choice_then_keeps_the_real_image_and_its_file() {
         panic!("Expected image")
     };
     assert!(Path::new(path).is_file());
-    let saved = crate::native::media_sand::snapshot(app.world_mut(), root).remove(0);
+    let saved = crate::native::media_sand::snapshot(app.world_mut(), root)
+        .expect("capture the fixture snapshots")
+        .remove(0);
     let bytes = serde_json::to_vec(&saved).unwrap();
     assert!(saved.valid());
     app.world_mut().despawn(preview);
@@ -475,7 +485,11 @@ fn workspace_changes_cancel_pending_previews_and_old_choices() {
     ui::Control::Show.apply(app.world_mut(), root);
     update(app.world_mut());
     assert!(app.world().resource::<Sessions>().entries.is_empty());
-    assert!(crate::native::media_sand::snapshot(app.world_mut(), root).is_empty());
+    assert!(
+        crate::native::media_sand::snapshot(app.world_mut(), root)
+            .expect("capture the fixture snapshots")
+            .is_empty()
+    );
     no_records(app.world_mut());
 }
 
@@ -502,14 +516,19 @@ fn model_packages_are_removed_on_cancel_and_retained_on_accept() {
             .clone();
         let package = directory.path().join("assets").join(&asset.id);
         assert!(package.is_dir());
-        assert!(crate::native::topology::assets::snapshot(app.world_mut(), root).is_empty());
+        assert!(
+            crate::native::topology::assets::snapshot(app.world_mut(), root)
+                .expect("capture the fixture snapshots")
+                .is_empty()
+        );
         if accept {
             app.world_mut()
                 .entity_mut(preview)
                 .insert(crate::native::topology::assets::Ready);
             update(app.world_mut());
             ui::Control::Show.apply(app.world_mut(), root);
-            let saved = crate::native::topology::assets::snapshot(app.world_mut(), root);
+            let saved = crate::native::topology::assets::snapshot(app.world_mut(), root)
+                .expect("capture the fixture snapshots");
             assert_eq!(saved.len(), 1);
             assert!(saved[0].centered);
             assert!(package.is_dir());
@@ -555,7 +574,9 @@ fn urls_are_not_fetched_until_requested_and_can_be_saved_as_links() {
         matches!(sand, crate::native::media_sand::MediaSand::Link { url: value } if value == url)
     );
     assert_eq!(
-        crate::native::media_sand::snapshot(app.world_mut(), root).len(),
+        crate::native::media_sand::snapshot(app.world_mut(), root)
+            .expect("capture the fixture snapshots")
+            .len(),
         1
     );
     no_records(app.world_mut());
@@ -662,7 +683,11 @@ fn stale_choice_buttons_cannot_accept_a_different_url() {
         false,
     );
     old.run(app.world_mut(), root);
-    assert!(crate::native::media_sand::snapshot(app.world_mut(), root).is_empty());
+    assert!(
+        crate::native::media_sand::snapshot(app.world_mut(), root)
+            .expect("capture the fixture snapshots")
+            .is_empty()
+    );
     assert!(
         app.world()
             .resource::<Sessions>()
@@ -775,7 +800,11 @@ fn document_confirmation_waits_for_rendering_and_rejects_bad_documents() {
         assert!(!app.world().resource::<Sessions>().entries[&root].ready);
         ui::Control::Show.apply(app.world_mut(), root);
         assert!(app.world().get::<Preview>(preview).is_some());
-        assert!(crate::native::document_viewer::snapshot(app.world_mut(), root).is_empty());
+        assert!(
+            crate::native::document_viewer::snapshot(app.world_mut(), root)
+                .expect("capture the fixture snapshots")
+                .is_empty()
+        );
         let viewport = app
             .world_mut()
             .query_filtered::<(Entity, &ChildOf, &ScrollPosition), With<crate::native::scroll_sand::ScrollSand>>()
@@ -809,7 +838,9 @@ fn document_confirmation_waits_for_rendering_and_rejects_bad_documents() {
             );
             ui::Control::Show.apply(app.world_mut(), root);
             assert_eq!(
-                crate::native::document_viewer::snapshot(app.world_mut(), root).len(),
+                crate::native::document_viewer::snapshot(app.world_mut(), root)
+                    .expect("capture the fixture snapshots")
+                    .len(),
                 1
             );
         } else {
@@ -819,7 +850,11 @@ fn document_confirmation_waits_for_rendering_and_rejects_bad_documents() {
                     .is_none()
             );
             assert!(app.world().get_entity(preview).is_err());
-            assert!(crate::native::document_viewer::snapshot(app.world_mut(), root).is_empty());
+            assert!(
+                crate::native::document_viewer::snapshot(app.world_mut(), root)
+                    .expect("capture the fixture snapshots")
+                    .is_empty()
+            );
             assert_eq!(
                 std::fs::read_dir(directory.path().join("assets"))
                     .unwrap()

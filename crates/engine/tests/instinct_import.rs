@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 #![cfg(feature = "instinct")]
 
 use engine::{Engine, actions::Action};

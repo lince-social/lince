@@ -419,32 +419,33 @@ fn hints(world: &mut World) {
             (world.get::<UiGlobalTransform>(root)?.translation - viewport.size() * 0.5) * scale;
         Some((
             root,
+            target,
             text,
             bounds.center() - origin,
             bounds.size(),
             viewport.size() * scale,
         ))
     });
-    let Some((root, text, point, size, viewport)) = content else {
+    let Some((root, target, text, point, size, viewport)) = content else {
         world.resource_mut::<Hints>().shown = None;
         if let Some((_, tip)) = previous
             && let Some(mut node) = world.get_mut::<Node>(tip)
             && node.display != Display::None
         {
             node.display = Display::None;
-            world
-                .get_mut::<Visibility>(tip)
-                .unwrap()
-                .set_if_neq(Visibility::Hidden);
+            if let Some(mut visibility) = world.get_mut::<Visibility>(tip) {
+                visibility.set_if_neq(Visibility::Hidden);
+            }
             ring(world);
         }
         return;
     };
-    let tip = if let Some((owner, tip)) = previous
+    let (tip, reused) = if let Some((owner, tip)) = previous
         && owner == root
-        && world.get_entity(tip).is_ok()
+        && world.get::<Node>(tip).is_some()
+        && world.get::<Text>(tip).is_some()
     {
-        tip
+        (tip, true)
     } else {
         if let Some((_, tip)) = previous
             && world.get_entity(tip).is_ok()
@@ -484,10 +485,9 @@ fn hints(world: &mut World) {
             ))
             .id();
         world.resource_mut::<Hints>().tip = Some((root, tip));
-        tip
+        (tip, false)
     };
-    let target = target.unwrap();
-    if shown != Some((target, generation)) {
+    if !reused || shown != Some((target, generation)) {
         world
             .entity_mut(tip)
             .insert(Visibility::Hidden)
@@ -497,7 +497,7 @@ fn hints(world: &mut World) {
     } else if !world.resource::<Hints>().positioning
         && world.get::<Visibility>(tip) == Some(&Visibility::Hidden)
     {
-        let mut node = world.get_mut::<Node>(tip).unwrap();
+        let mut node = world.get_mut::<Node>(tip).expect("the prepared tooltip has a UI node");
         if node.display != Display::None {
             node.display = Display::None;
             ring(world);
@@ -519,12 +519,12 @@ fn hints(world: &mut World) {
         (point.y + size.y * 0.5 + 8.0).min((viewport.y - bounds.y - 4.0).max(4.0))
     });
     let mut changed = false;
-    let mut label = world.get_mut::<Text>(tip).unwrap();
+    let mut label = world.get_mut::<Text>(tip).expect("the prepared tooltip has a label");
     if label.0 != text {
         label.0 = text;
         changed = true;
     }
-    let mut node = world.get_mut::<Node>(tip).unwrap();
+    let mut node = world.get_mut::<Node>(tip).expect("the prepared tooltip has a UI node");
     if node.display != Display::Flex || node.left != left || node.top != top {
         node.display = Display::Flex;
         node.left = left;
@@ -561,6 +561,10 @@ fn ring(world: &World) {
     }
 }
 
+#[allow(
+    clippy::unwrap_used,
+    reason = "Runnable tooltip fixtures must fail when a required test entity or layout is missing"
+)]
 pub(crate) mod tests {
     use super::*;
 

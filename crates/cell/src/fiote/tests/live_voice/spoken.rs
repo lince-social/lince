@@ -55,7 +55,9 @@ async fn listening(
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 #[ignore = "Consumes native provider usage; requires protected connection environment, LINCE_SPEECH_TEST_CACHE and LINCE_VOICE_TEST_ASSETS; uses frozen synthetic WAVs after acoustic activation, without physical capture"]
 async fn actual_recorded_speech_uses_native_conversation_followups_closing_and_synthesis() {
-    let (mut settings, key) = existing_connection().await;
+    let (mut settings, key) = existing_connection()
+        .await
+        .expect("valid native live-test configuration");
     let setup_started = Instant::now();
     let (base, _script, root, record, _) = fixture(false).await;
     settings.directory = root.path().join("workspace");

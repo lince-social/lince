@@ -49,7 +49,10 @@ impl Scope {
             .unwrap_or(Path::new("."));
         Ok((
             self.dir.open_dir(parent).map_err(|e| e.to_string())?,
-            relative.file_name().unwrap().to_owned(),
+            relative
+                .file_name()
+                .expect("a nonempty path of normal components has a file name")
+                .to_owned(),
         ))
     }
 

@@ -5,6 +5,24 @@ use bevy::{
 };
 
 #[test]
+#[ignore = "requires hardware Vulkan and EGL"]
+fn ordinary_click_opens_edit_mode_from_the_workspace_controls() {
+    let runtime = tokio::runtime::Runtime::new().unwrap();
+    let _entered = runtime.enter();
+    let directory = tempfile::tempdir().unwrap();
+    let size = [1000, 720];
+    let mut canvas = Presentation::new(size, directory.path().into(), WakeSignal::new(|| {}))
+        .unwrap();
+    super::shortcuts::settle(&mut canvas);
+    let root = canvas.canvas_root().unwrap();
+    let toggle = canvas.world_mut().get::<native::edit_mode::EditMode>(root).unwrap().toggle;
+    super::shortcuts::pixel_pointer(&mut canvas, [8.0, 712.0]);
+    super::shortcuts::settle(&mut canvas);
+    super::shortcuts::click(&mut canvas, toggle, size);
+    assert!(canvas.world_mut().get::<native::edit_mode::EditMode>(root).unwrap().enabled);
+}
+
+#[test]
 fn host_pointer_targets_follow_outputs_without_retargeting_content_surfaces() {
     let mut app = App::new();
     app.add_plugins(MinimalPlugins)

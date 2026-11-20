@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use engine::{
     Engine,
     actions::Action,

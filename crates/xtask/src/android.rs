@@ -35,11 +35,8 @@ impl Options {
             release: false,
         };
         let mut args = args.iter().peekable();
-        if args
-            .peek()
-            .is_some_and(|arg| !arg.to_string_lossy().starts_with('-'))
-        {
-            options.action = args.next().unwrap().to_string_lossy().into_owned();
+        if let Some(action) = args.next_if(|arg| !arg.to_string_lossy().starts_with('-')) {
+            options.action = action.to_string_lossy().into_owned();
         }
         while let Some(arg) = args.next() {
             match arg.to_str() {

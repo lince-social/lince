@@ -443,3 +443,5 @@ inherits = "release"
 dbg_macro = "deny"
 todo = "deny"
 allow_attributes_without_reason = "deny"
+# Keep the imported FFI and generated bindings advisory until their proofs are reviewed upstream.
+undocumented_unsafe_blocks = "warn"

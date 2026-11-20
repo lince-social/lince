@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use engine::Engine;
 use engine::sync::Delivery;
 use engine::trust::Signer;

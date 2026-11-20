@@ -54,7 +54,9 @@ fn saving_and_reloading_during_move_or_resize_keeps_only_committed_scene_data() 
                 .unwrap()
                 .id,
         );
-        let before = canonical(snapshot(app.world_mut(), root));
+        let before =
+            snapshot(app.world_mut(), root).expect("capture the workspace before manipulation");
+        let before = canonical(before);
         let operation = if mode == WorkspaceLayout::Free {
             Manipulation::Resize
         } else {
@@ -72,17 +74,18 @@ fn saving_and_reloading_during_move_or_resize_keeps_only_committed_scene_data() 
             side: Direction::Right,
         });
         assert!(manipulation::propose(app.world_mut(), [80.0, 50.0], slot));
-        assert_eq!(canonical(snapshot(app.world_mut(), root)), before);
+        let during =
+            snapshot(app.world_mut(), root).expect("capture the workspace during manipulation");
+        assert_eq!(canonical(during), before);
         tests::flush(&mut app);
         assert!(manipulation::active(app.world()));
         assert!(app.world().get::<Workspaces>(root).unwrap().error.is_none());
         let saved = read_document(&path).unwrap().unwrap();
         assert_eq!(canonical(saved), before);
         let (mut restored, restored_root) = tests::fixture(Some(path));
-        assert_eq!(
-            canonical(snapshot(restored.world_mut(), restored_root)),
-            before
-        );
+        let reopened =
+            snapshot(restored.world_mut(), restored_root).expect("capture the reopened workspace");
+        assert_eq!(canonical(reopened), before);
         assert_eq!(
             restored
                 .world()

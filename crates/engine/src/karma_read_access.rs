@@ -28,16 +28,16 @@ impl Engine {
                     self.require_permission(actor, "transfer:read").await?;
                     let mut references = token.slug.split('|');
                     let state = self
-                        .cached_transfer_snapshot(references.next().unwrap(), actor)
+                        .cached_transfer_snapshot(references.next().unwrap_or_default(), actor)
                         .await?;
                     if nucleus::transfer::karma::is_agreement_reading(&token.func) {
-                        let person = store::records::resolve_kind(
-                            &self.store.pool,
-                            references.next().unwrap(),
-                        )
-                        .await?
-                        .filter(|record| record.kind == "person")
-                        .ok_or_else(|| invalid("Agreement Person is unavailable"))?;
+                        let reference = references
+                            .next()
+                            .ok_or_else(|| invalid("Agreement Person is unavailable"))?;
+                        let person = store::records::resolve_kind(&self.store.pool, reference)
+                            .await?
+                            .filter(|record| record.kind == "person")
+                            .ok_or_else(|| invalid("Agreement Person is unavailable"))?;
                         if !state.participants.contains_key(&person.uid) {
                             return Err(invalid(
                                 "This Person's agreement is unavailable or hidden",
@@ -57,11 +57,17 @@ impl Engine {
                     continue;
                 }
                 if token.func == nucleus::expr::HAS_ASSERTION {
-                    let mut references = token.slug.split('|');
-                    let first = references.next().unwrap();
-                    store::concepts::resolve(&self.store.pool, references.next().unwrap())
-                        .await?
+                    let (first, rest) = token
+                        .slug
+                        .split_once('|')
                         .ok_or_else(|| invalid("Condition concept is unavailable"))?;
+                    let mut references = rest.split('|');
+                    store::concepts::resolve(
+                        &self.store.pool,
+                        references.next().unwrap_or_default(),
+                    )
+                    .await?
+                    .ok_or_else(|| invalid("Condition concept is unavailable"))?;
                     for reference in std::iter::once(first).chain(references) {
                         records.insert(self.resolve(reference).await?);
                     }
@@ -106,15 +112,13 @@ impl Engine {
                         .await?
                         .ok_or_else(|| invalid("Condition Record is unavailable"))?;
                     if token.func == "value" {
-                        let rule = store::recurrence::for_record(&self.store.pool, &record)
+                        let condition = store::recurrence::for_record(&self.store.pool, &record)
                             .await?
                             .into_iter()
-                            .find(|rule| rule.condition.is_some() && !rule.is_paused())
+                            .filter(|rule| !rule.is_paused())
+                            .find_map(|rule| rule.condition)
                             .ok_or_else(|| invalid("Record has no value Rule"))?;
-                        pending.push((
-                            rule.condition.unwrap().parsed().map_err(invalid)?,
-                            depth + 1,
-                        ));
+                        pending.push((condition.parsed().map_err(invalid)?, depth + 1));
                     }
                     records.insert(record);
                 }

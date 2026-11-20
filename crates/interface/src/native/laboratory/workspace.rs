@@ -1,5 +1,6 @@
 use super::{BehaviorRun, StressConfig, StressReport, stress::StressRun};
 use crate::native::{actions::Action, container::BoxRoot, edit_mode::label, workspace::Workspaces};
+use crate::testing::InterfaceSelection;
 use bevy::{
     input_focus::{FocusCause, InputFocus},
     prelude::*,
@@ -35,6 +36,8 @@ pub struct Laboratory {
     pub status: String,
     pub fiote_target: Option<String>,
     pub resources: super::ResourceSnapshot,
+    park_report: Option<super::park_report::ParkReport>,
+    loading_park_report: bool,
     resources_open: bool,
     component_index: Option<usize>,
     resource_sort: super::resources::ResourceSort,
@@ -157,7 +160,7 @@ pub enum LaboratoryAction {
     Showoff,
     Open,
     RunAll,
-    Interface,
+    Interface(InterfaceSelection),
     Behavior,
     Stress,
     Stop,
@@ -165,6 +168,7 @@ pub enum LaboratoryAction {
     Budget,
     Limit,
     Export,
+    LoadParkReport,
     Resources,
     SortResources,
     NextResources,
@@ -199,12 +203,12 @@ impl Action for LaboratoryAction {
                 }
             }
             Self::Stop => stop(world),
-            Self::RunAll | Self::Interface | Self::Behavior if !busy(world) => {
+            Self::RunAll | Self::Interface(_) | Self::Behavior if !busy(world) => {
                 let wake = world
                     .get_resource::<crate::native::wake::WakeSignal>()
                     .cloned();
-                let run = if matches!(self, Self::Interface) {
-                    BehaviorRun::start_interface(wake)
+                let run = if let Self::Interface(selection) = *self {
+                    BehaviorRun::start_interface_selected(wake, selection)
                 } else {
                     BehaviorRun::start(wake)
                 };
@@ -236,6 +240,7 @@ impl Action for LaboratoryAction {
                 };
             }
             Self::Export => export(world),
+            Self::LoadParkReport if !busy(world) => load_park_report(world),
             Self::Components | Self::PreviousComponent | Self::NextComponent if !busy(world) => {
                 let index = world.resource::<Laboratory>().component_index.unwrap_or(0);
                 let count = super::components::count(world);
@@ -356,6 +361,7 @@ pub fn open(world: &mut World) {
     lab.refresh = None;
     lab.closing = false;
     lab.component_index = None;
+    lab.loading_park_report = false;
     lab.status = if scope.is_some() {
         "Tests use a temporary workspace on this output."
     } else {
@@ -469,6 +475,44 @@ fn busy(world: &World) -> bool {
         || super::fiote::busy(world)
 }
 
+fn load_park_report(world: &mut World) {
+    if world.resource::<Laboratory>().loading_park_report {
+        return;
+    }
+    let Some(panel) = world.query_filtered::<Entity, With<LaboratoryPanel>>().iter(world).next() else {
+        return;
+    };
+    let queued = crate::native::file_explorer::worker::run(
+        world,
+        || rfd::FileDialog::new().add_filter("Park responsiveness report", &["json", "jsonl"])
+            .pick_file().map(|path| super::park_report::ParkReport::read(&path)),
+        move |world, report| {
+            if !active(world) || world.get::<LaboratoryPanel>(panel).is_none() {
+                return;
+            }
+            let mut lab = world.resource_mut::<Laboratory>();
+            lab.loading_park_report = false;
+            lab.refresh = None;
+            lab.status = match report {
+                Some(Ok(report)) => {
+                    lab.park_report = Some(report);
+                    "Park report loaded".into()
+                }
+                Some(Err(error)) => format!("Could not load Park report: {error}"),
+                None => "Report selection cancelled".into(),
+            };
+        },
+    );
+    let mut lab = world.resource_mut::<Laboratory>();
+    lab.status = match queued {
+        Ok(()) => {
+            lab.loading_park_report = true;
+            "Choose a Park responsiveness report".into()
+        }
+        Err(error) => error,
+    };
+}
+
 fn stop(world: &mut World) {
     super::fiote::cancel(world);
     let mut lab = world.resource_mut::<Laboratory>();
@@ -486,7 +530,17 @@ fn stop(world: &mut World) {
     }
     let root = lab.root;
     let settings = lab.settings.clone();
-    lab.status = "Stopped. A behavior check already in progress finishes before returning.".into();
+    let finished_interface = lab
+        .behavior
+        .as_ref()
+        .is_some_and(|run| run.selection.is_some() && run.finished());
+    if !lab.closing || !finished_interface {
+        lab.status = if lab.behavior.as_ref().is_some_and(|run| !run.finished()) {
+            "Stopping behavior checks".into()
+        } else {
+            "Stopped".into()
+        };
+    }
     if let Some(settings) = settings {
         world.insert_resource(settings);
     }
@@ -541,6 +595,7 @@ fn tick(world: &mut World) {
         let previous = (run.results.len(), run.current.clone(), run.finished());
         run.poll();
         if !previous.2 && run.finished() {
+            let failed = run.results.iter().filter(|row| row.error.is_some()).count();
             lab.status = if run.cancelled {
                 "Behavior cancelled".into()
             } else {
@@ -548,9 +603,14 @@ fn tick(world: &mut World) {
                     "Behavior complete: {} / {} checks, {} failed",
                     run.results.len(),
                     run.total,
-                    run.results.iter().filter(|row| row.error.is_some()).count()
+                    failed
                 )
             };
+            if run.selection.is_some()
+                && (run.cancelled || failed > 0 || run.results.len() != run.total)
+            {
+                lab.closing = true;
+            }
         }
         if previous != (run.results.len(), run.current.clone(), run.finished()) {
             lab.refresh = None;
@@ -614,14 +674,21 @@ fn render(world: &mut World) {
     if lab.resources_open {
         lines.extend(lab.resources.lines(lab.resource_sort, lab.resource_page));
     }
+    if let Some(report) = &lab.park_report {
+        lines.extend(report.lines.iter().cloned());
+    }
     if let Some(run) = &lab.behavior {
         let failures = run
             .results
             .iter()
             .filter(|result| result.error.is_some())
             .count();
+        let kind = run.selection.map_or_else(
+            || "Behavior".into(),
+            |selection| format!("Interface ({})", selection.name()),
+        );
         lines.push(format!(
-            "Behavior: {} / {} · {} failed{}",
+            "{kind}: {} / {} · {} failed{}",
             run.results.len(),
             run.total,
             failures,
@@ -646,6 +713,18 @@ fn render(world: &mut World) {
                 result.name,
                 result.error.as_deref().unwrap()
             ));
+            if let Some(source) = result.source {
+                lines.push(format!(
+                    "Registered at {}:{}",
+                    source.path, source.registration_line
+                ));
+            }
+            for rule in &result.rules {
+                lines.push(format!(
+                    "[{}] {}:{}",
+                    rule.requirement.id, rule.source, rule.requirement.line
+                ));
+            }
         }
     }
     if let Some(run) = &lab.stress {
@@ -739,13 +818,29 @@ fn render(world: &mut World) {
         for (title, action) in [
             ("showoff workspace", LaboratoryAction::Showoff),
             ("Run all", LaboratoryAction::RunAll),
-            ("Interface checks", LaboratoryAction::Interface),
+            (
+                "Interface checks",
+                LaboratoryAction::Interface(InterfaceSelection::All),
+            ),
+            (
+                "Protein checks",
+                LaboratoryAction::Interface(InterfaceSelection::Protein),
+            ),
+            (
+                "Edit checks",
+                LaboratoryAction::Interface(InterfaceSelection::Edit),
+            ),
+            (
+                "Input checks",
+                LaboratoryAction::Interface(InterfaceSelection::Input),
+            ),
             ("Behavior", LaboratoryAction::Behavior),
             ("Stress", LaboratoryAction::Stress),
             ("Stop", LaboratoryAction::Stop),
             ("Frame budget", LaboratoryAction::Budget),
             ("Sand limit", LaboratoryAction::Limit),
             ("Export results", LaboratoryAction::Export),
+            ("Load Park report", LaboratoryAction::LoadParkReport),
             ("Sand resources", LaboratoryAction::Resources),
             ("Components", LaboratoryAction::Components),
             ("Sort resources", LaboratoryAction::SortResources),
@@ -833,9 +928,11 @@ fn export(world: &mut World) {
         "sand_resources_before_suspension": lab.resources,
         "behavior": lab.behavior.as_ref().map(|run| &run.results),
         "behavior_total": lab.behavior.as_ref().map(|run| run.total),
+        "interface_selection": lab.behavior.as_ref().and_then(|run| run.selection).map(InterfaceSelection::name),
         "behavior_cancelled": lab.behavior.as_ref().is_some_and(|run| run.cancelled),
         "stress": lab.reports,
         "running_stress": lab.stress.as_ref().map(|run| &run.report),
+        "park_responsiveness": lab.park_report.as_ref().map(|report| &report.source),
         "fiote": super::fiote::exported(world),
     });
     let directory = world

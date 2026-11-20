@@ -539,7 +539,9 @@ impl Engine {
                 {
                     return Err(denied("Someone is already sharing a screen"));
                 }
-                active.occupants[index.unwrap()].participant.tracks = tracks;
+                let index =
+                    index.ok_or_else(|| denied("Join this call before sending controls"))?;
+                active.occupants[index].participant.tracks = tracks;
             }
             Operation::Signal { to, signal, .. } => {
                 if !signal.valid() || to == identity {
@@ -567,8 +569,9 @@ impl Engine {
                 });
             }
             Operation::Leave { .. } => {
-                active.occupants.remove(index.unwrap());
-                index = None;
+                if let Some(index) = index.take() {
+                    active.occupants.remove(index);
+                }
             }
             Operation::End { .. } => {
                 if active.starter.identity != identity {
@@ -582,7 +585,10 @@ impl Engine {
             _ => {}
         }
         if active.occupants.is_empty() {
-            let ended = calls.active.remove(&request.thread).unwrap();
+            let ended = calls
+                .active
+                .remove(&request.thread)
+                .ok_or_else(|| denied("The call has ended"))?;
             if let Err(error) = self.complete_call(&request.thread, &ended).await {
                 calls.active.insert(request.thread, ended);
                 return Err(error);
@@ -632,8 +638,9 @@ impl Engine {
                     .inbox
                     .retain(|envelope| present.contains(&envelope.from));
             }
-            if active.occupants.is_empty() {
-                let ended = calls.active.remove(thread).unwrap();
+            if active.occupants.is_empty()
+                && let Some(ended) = calls.active.remove(thread)
+            {
                 if let Err(error) = self.complete_call(thread, &ended).await {
                     calls.active.insert(thread.into(), ended);
                     return Err(error);

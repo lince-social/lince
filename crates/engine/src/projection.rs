@@ -8,6 +8,7 @@ use nucleus::execution::Execution;
 use nucleus::karma::{ReferenceKind, TypedUid};
 use nucleus::projection::{Context, Incomplete, MAX_SPANS, MAX_STEPS, Scheduled, Span};
 use nucleus::simulation::{Cause, Quantity, RuleOccurrence};
+use sha2::{Digest, Sha256};
 use store::sqlx::Row;
 
 use crate::{Engine, EngineError};
@@ -411,12 +412,8 @@ pub async fn calculate(
     let key = context
         .key(execution_identity())
         .map_err(|error| EngineError::Consequence(error.to_string()))?;
-    let entropy = nucleus::fact::sha256_hex(
-        format!("{key:?}:{}:{base_ms}", result.source_revision).as_bytes(),
-    );
-    let seed = std::array::from_fn(|index| {
-        u8::from_str_radix(&entropy[index * 2..index * 2 + 2], 16).unwrap()
-    });
+    let seed =
+        Sha256::digest(format!("{key:?}:{}:{base_ms}", result.source_revision).as_bytes()).into();
     let execution =
         Execution::new(seed, base_ms).map_err(|error| EngineError::Consequence(error.into()))?;
     let outcome = execution.scope(async {

@@ -203,7 +203,9 @@ fn create(world: &mut World, parent: Entity, owner: Entity, transfer: &Arc<Trans
 
 fn update(world: &mut World, root: Entity, owner: Entity, transfer: &Arc<Transfer>) {
     performance::count(Count::BlobTransferRowsRetained);
-    let row = world.get::<TransferRow>(root).unwrap();
+    let Some(row) = world.get::<TransferRow>(root) else {
+        return;
+    };
     if row
         .current
         .as_ref()
@@ -229,8 +231,10 @@ fn apply(
     if manifest_changed {
         row.bytes = transfer.manifest.bytes();
         row.extra = file_list(world, row.files, transfer);
-    } else if let Some(extra) = row.extra {
-        world.get_mut::<FileList>(extra).unwrap().transfer = transfer.clone();
+    } else if let Some(extra) = row.extra
+        && let Some(mut files) = world.get_mut::<FileList>(extra)
+    {
+        files.transfer = transfer.clone();
     }
     if manifest_changed
         || previous.is_none_or(|old| {
@@ -319,7 +323,9 @@ pub(super) fn render(
     rows: &mut Rows,
 ) {
     let _timing = performance::Span::new(Stage::NativeBlobPresentation);
-    let view = world.get::<View>(owner).unwrap();
+    let Some(view) = world.get::<View>(owner) else {
+        return;
+    };
     let (targets, transfers) = (view.targets, view.transfers);
     if previous.is_none_or(|old| old.targets != snapshot.targets) {
         let items = snapshot

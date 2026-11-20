@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use nucleus::RecordKind;
 use store::{
     Store, communication,

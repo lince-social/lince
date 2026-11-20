@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use store::Store;
 
 async fn seed_units(store: &Store) -> (String, String, String) {

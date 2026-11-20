@@ -100,16 +100,22 @@ pub(super) fn snapshot(world: &World) -> serde_json::Value {
 }
 
 pub(super) fn toggle(world: &mut World, owner: Entity) {
-    if let Some(panel) = world
-        .get::<MapSand>(owner)
-        .and_then(|sand| sand.diagnostics)
-    {
+    let Some(sand) = world.get::<MapSand>(owner) else {
+        return;
+    };
+    let panel = if let Some(panel) = sand.diagnostics {
         world.despawn(panel);
-        world.get_mut::<MapSand>(owner).unwrap().diagnostics = None;
+        None
     } else {
-        let panel =
-            crate::native::edit_mode::label(world, owner, "Collecting map diagnostics", 12.0);
-        world.get_mut::<MapSand>(owner).unwrap().diagnostics = Some(panel);
+        Some(crate::native::edit_mode::label(
+            world,
+            owner,
+            "Collecting map diagnostics",
+            12.0,
+        ))
+    };
+    if let Some(mut sand) = world.get_mut::<MapSand>(owner) {
+        sand.diagnostics = panel;
     }
 }
 
@@ -157,16 +163,13 @@ fn report(world: &World) -> String {
 
 pub(super) fn maintain(world: &mut World) {
     world.init_resource::<Diagnostics>();
-    let owners: Vec<_> = world
-        .query_filtered::<Entity, With<MapSand>>()
+    let images: BTreeMap<_, _> = world
+        .query::<(Entity, &MapSand)>()
         .iter(world)
-        .filter(|owner| visible(world, *owner))
+        .filter(|(owner, _)| visible(world, *owner))
+        .map(|(owner, sand)| (owner, sand.image.id()))
         .collect();
     world.init_resource::<ImagesOwned>();
-    let images: BTreeMap<_, _> = owners
-        .iter()
-        .map(|owner| (*owner, world.get::<MapSand>(*owner).unwrap().image.id()))
-        .collect();
     let retired: Vec<_> = world
         .resource::<ImagesOwned>()
         .0
@@ -180,19 +183,20 @@ pub(super) fn maintain(world: &mut World) {
         }
     }
     world.resource_mut::<ImagesOwned>().0 = images;
+    let owners = &world.resource::<ImagesOwned>().0;
     let rows: Vec<_> = owners
-        .iter()
-        .map(|owner| {
-            let sand = world.get::<MapSand>(*owner).unwrap();
+        .keys()
+        .filter_map(|owner| {
+            let sand = world.get::<MapSand>(*owner)?;
             let bytes = sand.markers.capacity() * std::mem::size_of::<feed::Marker>()
                 + sand.records.capacity() * std::mem::size_of::<String>()
                 + sand.records.iter().map(String::capacity).sum::<usize>()
                 + paging::retained_bytes(world, *owner);
-            (
+            Some((
                 format!("{owner:?}"),
                 u64::from(sand.size[0]) * u64::from(sand.size[1]) * 4,
                 bytes as u64,
-            )
+            ))
         })
         .collect();
     {
@@ -229,7 +233,7 @@ pub(super) fn maintain(world: &mut World) {
         }
     }
     let panels: Vec<_> = owners
-        .iter()
+        .keys()
         .filter_map(|owner| {
             world
                 .get::<MapSand>(*owner)

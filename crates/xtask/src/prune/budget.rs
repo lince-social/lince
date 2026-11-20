@@ -218,7 +218,7 @@ fn candidates(profile: &Path, running: &HashSet<Identity>) -> io::Result<Vec<Can
         if entry.file_type()?.is_file() && !entry.file_name().to_string_lossy().starts_with('.') {
             let metadata = entry.metadata()?;
             if let Some(hash) = aliases.get(&identity(&entry.path(), &metadata)) {
-                groups.get_mut(hash).unwrap().add(entry.path(), running)?;
+                groups.get_mut(hash).ok_or_else(|| io::Error::other("Artifact alias has no matching group"))?.add(entry.path(), running)?;
             }
         }
     }

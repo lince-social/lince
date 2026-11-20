@@ -101,7 +101,7 @@ impl Collection {
             .map(|signed| signed.event.id().map_err(invalid))
             .collect::<Result<BTreeSet<_>, _>>()?;
         for artifact in self.artifacts.values() {
-            let other = artifact.saved().document.public_bundle().unwrap();
+            let other = artifact.bundle()?;
             nucleus::performance::add("receipt-artifact-identities-reused", 1);
             if artifact.scope() != &scope {
                 return Err(invalid("Proof context contains a different approved scope"));
@@ -229,7 +229,7 @@ impl Collection {
         match loaded {
             Ok(Some(saved)) => {
                 let artifact = Artifact::new(saved)?;
-                let bundle = artifact.saved().document.public_bundle().unwrap();
+                let bundle = artifact.bundle()?;
                 let scope = &bundle.publication.scope;
                 if self.scopes.get(artifact.scope()) != Some(scope) {
                     self.scopes.insert(artifact.scope().clone(), scope.clone());

@@ -161,10 +161,10 @@ impl Engine {
                     ));
                 }
             }
-            for definition in payload["definitions"]
+            let definitions = payload["definitions"]
                 .as_array()
-                .ok_or_else(|| invalid("Knowledge bundle has no local meaning definitions"))?
-            {
+                .ok_or_else(|| invalid("Knowledge bundle has no local meaning definitions"))?;
+            for definition in definitions {
                 let dictionary: nucleus::vocabulary::Dictionary =
                     serde_json::from_value(definition.clone())?;
                 store::vocabulary::validate_dictionary(&dictionary)?;
@@ -177,20 +177,16 @@ impl Engine {
                         "A knowledge mapping does not match its external meaning version",
                     ));
                 }
-                let known = payload["definitions"]
-                    .as_array()
-                    .unwrap()
-                    .iter()
-                    .any(|dictionary| {
-                        dictionary["source"]["concept_uid"] == mapping.concept_uid
-                            && dictionary["definitions"]
-                                .as_array()
-                                .is_some_and(|versions| {
-                                    versions.iter().any(|version| {
-                                        version["revision"] == mapping.definition_revision
-                                    })
+                let known = definitions.iter().any(|dictionary| {
+                    dictionary["source"]["concept_uid"] == mapping.concept_uid
+                        && dictionary["definitions"]
+                            .as_array()
+                            .is_some_and(|versions| {
+                                versions.iter().any(|version| {
+                                    version["revision"] == mapping.definition_revision
                                 })
-                    });
+                            })
+                });
                 if !known {
                     return Err(invalid(
                         "A mapped meaning version is missing from the knowledge bundle",
@@ -203,7 +199,10 @@ impl Engine {
         let mut resolved = BTreeMap::new();
         let mut checkpoints = Vec::new();
         for (old, (item, payload)) in &incoming {
-            for definition in payload["definitions"].as_array().unwrap() {
+            for definition in payload["definitions"]
+                .as_array()
+                .ok_or_else(|| invalid("Knowledge bundle has no local meaning definitions"))?
+            {
                 let dictionary: nucleus::vocabulary::Dictionary =
                     serde_json::from_value(definition.clone())?;
                 let exists: bool = store::sqlx::query_scalar(
@@ -296,14 +295,21 @@ impl Engine {
                 continue;
             }
             let mut payload = payload.clone();
-            payload["dependencies"] = json!(
-                payload["dependencies"]
-                    .as_array()
-                    .unwrap()
-                    .iter()
-                    .map(|dependency| resolved[dependency.as_str().unwrap()].clone())
-                    .collect::<Vec<_>>()
-            );
+            let dependencies = payload["dependencies"]
+                .as_array()
+                .ok_or_else(|| invalid("Knowledge bundle has no dependency list"))?
+                .iter()
+                .map(|dependency| {
+                    dependency
+                        .as_str()
+                        .and_then(|uid| resolved.get(uid))
+                        .cloned()
+                        .ok_or_else(|| {
+                            invalid("Knowledge bundle is missing a required related Record")
+                        })
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            payload["dependencies"] = json!(dependencies);
             let metadata = store::knowledge::record_metadata_on(&mut tx, uid).await?;
             payload["local_baseline"] = json!({"head":metadata["head"],"body":metadata["body"]});
             store::knowledge::save_payload_on(&mut tx, uid, item, &payload).await?;

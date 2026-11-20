@@ -147,7 +147,9 @@ impl Engine {
                         }
                     }
                 }
-                let record = store::records::get(&self.store.pool, &uid).await?.unwrap();
+                let Some(record) = store::records::get(&self.store.pool, &uid).await? else {
+                    continue;
+                };
                 if !template.food_outputs.is_empty() {
                     matched = template.food_outputs.clone();
                 }
@@ -181,12 +183,15 @@ impl Engine {
                         && a.role == "ordinary"
                 })
                 .collect();
-            let valid =
-                prices.len() == 1 && prices[0].quantity.is_some() && prices[0].unit_uid.is_some();
-            if valid {
-                offer.offer.price = prices[0].quantity.unwrap();
-                offer.offer.currency = prices[0].unit_uid.clone().unwrap();
-            }
+            let valid = if let [price] = prices.as_slice()
+                && let (Some(quantity), Some(currency)) = (price.quantity, &price.unit_uid)
+            {
+                offer.offer.price = quantity;
+                offer.offer.currency.clone_from(currency);
+                true
+            } else {
+                false
+            };
             offers.push(json!({"uid":uid,"market":offer,"valid":valid}));
         }
         for uid in self.planning_ids(PLAN, actor).await? {

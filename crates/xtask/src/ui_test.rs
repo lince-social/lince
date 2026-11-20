@@ -340,7 +340,7 @@ fn scroll_region(nodes: &[Node], requested: [u32; 4]) -> Result<[u32; 4]> {
     if roots.next().is_some() {
         return Err("Scroll region owner is ambiguous".into());
     }
-    let [x1, y1, x2, y2] = root.bounds.unwrap();
+    let [x1, y1, x2, y2] = root.bounds.ok_or("ScrollView has no visible bounds")?;
     if left < x1 || top < y1 || right > x2 || bottom > y2 {
         return Err("Scroll region is outside its visible ScrollView".into());
     }
@@ -412,7 +412,7 @@ impl Android {
                 }
                 let [left, top, right, bottom] = match action.scroll_bounds {
                     Some(region) => scroll_region(&snapshot.nodes, region)?,
-                    None => scroll.bounds.unwrap(),
+                    None => scroll.bounds.ok_or("Reveal ScrollView has no visible bounds")?,
                 };
                 let (from, to) = match action.direction.as_deref().unwrap_or("down") {
                     "down" => (top + (bottom - top) * 3 / 4, top + (bottom - top) / 4),
@@ -574,7 +574,10 @@ impl Backend for Android {
                 Ok(target) => target,
                 Err(error) => return Dispatch::Rejected(error),
             };
-        let [left, top, right, bottom] = action.scroll_bounds.unwrap_or(target.bounds.unwrap());
+        let Some(target_bounds) = target.bounds else {
+            return Dispatch::Unavailable("The fallback target has no visible bounds".into());
+        };
+        let [left, top, right, bottom] = action.scroll_bounds.unwrap_or(target_bounds);
         let center = ((left + right) / 2, (top + bottom) / 2);
         let command = if focused_enter {
             if !target.focused {

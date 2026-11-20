@@ -33,7 +33,7 @@ impl SavedExtensions {
         let size = Vec2::from_array(self.size);
         world
             .get_mut::<crate::native::canvas::CanvasItem>(owner)
-            .unwrap()
+            .expect("an extension panel is spawned as a canvas item")
             .size = size;
         self.placement.restore(world, owner);
         world
@@ -42,7 +42,7 @@ impl SavedExtensions {
     }
 }
 
-pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedExtensions> {
+pub(crate) fn snapshot(world: &mut World, root: Entity) -> Result<Vec<SavedExtensions>, String> {
     world
         .query::<(
             Entity,
@@ -55,13 +55,15 @@ pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedExtensions> 
         .filter(|(_, parent, _, _, settings)| {
             parent.parent() == root && settings.mode != Mode::Column
         })
-        .map(|(entity, _, workspace, item, settings)| SavedExtensions {
-            workspace: workspace.0,
-            settings: settings.clone(),
-            position: item.position.to_array(),
-            size: item.size.to_array(),
-            placement: crate::native::sand_placement::Placement::capture(world, entity),
-            tokens: crate::native::token_style::overrides(world, entity),
+        .map(|(entity, _, workspace, item, settings)| {
+            Ok(SavedExtensions {
+                workspace: workspace.0,
+                settings: settings.clone(),
+                position: item.position.to_array(),
+                size: item.size.to_array(),
+                placement: crate::native::sand_placement::Placement::capture(world, entity)?,
+                tokens: crate::native::token_style::overrides(world, entity),
+            })
         })
         .collect()
 }

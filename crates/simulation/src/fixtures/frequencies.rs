@@ -57,7 +57,7 @@ pub fn shared(seed: u64) -> Scenario {
     } else {
         "2025-12-28T00:00:00Z"
     })
-    .unwrap()
+    .expect("both frequency scenario dates are RFC 3339 literals")
     .timestamp_millis();
     case.end_ms = case.start_ms + 100 * DAY - 1;
     case.cells[0].seed.clear();
@@ -66,7 +66,8 @@ pub fn shared(seed: u64) -> Scenario {
     case.limits.steps = 50_000;
     case.limits.rule_evaluations = 500_000;
     case.limits.evidence_bytes = 512 * 1024 * 1024;
-    let start = chrono::DateTime::from_timestamp_millis(case.start_ms).unwrap();
+    let start = chrono::DateTime::from_timestamp_millis(case.start_ms)
+        .expect("the seed selects one of the two fixed start dates");
     let rewind_day = 30 + next() % 30;
     let mut tasks = Vec::new();
     for (family, slug, step, count) in [
@@ -114,12 +115,12 @@ pub fn shared(seed: u64) -> Scenario {
         };
         let anchor = start + TimeDelta::days(offset as i64) + TimeDelta::minutes(1);
         let frequency = nucleus::karma::simple_frequency::frequency_from_cadence(
-            Slug::new(slug).unwrap(),
+            Slug::new(slug).expect("the frequency families use valid literal slugs"),
             slug.into(),
             &Cadence::every(step),
-            TimestampMs::from_millis(anchor.timestamp_millis()).unwrap(),
+            TimestampMs::from_millis(anchor.timestamp_millis()).expect("the calendar anchor stays near the fixed start date"),
         )
-        .unwrap();
+        .expect("the fixture uses a supported cadence for each frequency family");
         case.cells[0].seed.push(invocation(
             slug.into(),
             Action::SaveKarmaFrequency {
@@ -192,7 +193,7 @@ pub fn shared(seed: u64) -> Scenario {
         .map(|(target, amount, ..)| {
             (
                 target.clone(),
-                nucleus::DecimalValue::parse_inferred(&(-amount).to_string()).unwrap(),
+                nucleus::DecimalValue::parse_inferred(&(-amount).to_string()).expect("the generated work amount is bounded"),
             )
         })
         .collect();
@@ -206,14 +207,14 @@ pub fn shared(seed: u64) -> Scenario {
     let anchor = chrono::DateTime::from_timestamp_millis(
         case.start_ms + (rewind_day as i64 - 1) * DAY + 60_000,
     )
-    .unwrap();
+    .expect("the rewind stays within 60 days of the fixed start date");
     let frequency = nucleus::karma::simple_frequency::frequency_from_cadence(
-        Slug::new("daily").unwrap(),
+        Slug::new("daily").expect("daily is a valid literal slug"),
         "daily".into(),
         &Cadence::every_days(1),
-        TimestampMs::from_millis(anchor.timestamp_millis()).unwrap(),
+        TimestampMs::from_millis(anchor.timestamp_millis()).expect("the rewind anchor stays near the fixed start date"),
     )
-    .unwrap();
+    .expect("a daily cadence is supported");
     let action = Action::SaveKarmaFrequency {
         request_id: "rewind-daily".into(),
         frequency_uid: Some("$daily".into()),
@@ -258,7 +259,7 @@ pub fn shared(seed: u64) -> Scenario {
                 (
                     target.clone(),
                     Quantity {
-                        value: nucleus::DecimalValue::parse_inferred(&value.to_string()).unwrap(),
+                        value: nucleus::DecimalValue::parse_inferred(&value.to_string()).expect("the 100-day fixture bounds each generated quantity"),
                         unit: None,
                     },
                 )
@@ -275,7 +276,7 @@ pub fn shared(seed: u64) -> Scenario {
             .map(|(target, amount, ..)| {
                 (
                     target.clone(),
-                    nucleus::DecimalValue::parse_inferred(&(-amount).to_string()).unwrap(),
+                    nucleus::DecimalValue::parse_inferred(&(-amount).to_string()).expect("the generated work amount is bounded"),
                 )
             })
             .collect();

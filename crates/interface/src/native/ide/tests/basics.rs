@@ -395,7 +395,10 @@ fn settings_and_tab_positions_round_trip_with_the_castle() {
     world.get_mut::<Ide>(owner).unwrap().settings = settings;
     editing::select(&mut world, owner, [2, 5], 0);
     runtime::render(&mut world, owner);
-    let saved = snapshot(&mut world, root).pop().unwrap();
+    let saved = snapshot(&mut world, root)
+        .expect("capture the fixture snapshots")
+        .pop()
+        .unwrap();
     let bytes = serde_json::to_vec(&saved).unwrap();
     let saved: SavedIde = serde_json::from_slice(&bytes).unwrap();
     assert!(saved.valid());

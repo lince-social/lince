@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use nucleus::karma::{ReferenceKind, TypedUid};
 use nucleus::projection::{Context, ExecutionIdentity, Scheduled, Window};
 use nucleus::schedule::TimeRange;

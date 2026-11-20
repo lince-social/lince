@@ -275,9 +275,11 @@ fn render(
         .map_err(|error| ProbeFailure::at("bevy_egl", error))?
         .find(|device| !device.is_software())
         .ok_or_else(|| ProbeFailure::at("bevy_egl", "no hardware EGL device"))?;
+    // SAFETY: Smithay owns this display lifetime and no raw caller terminates it.
     let display = unsafe { EGLDisplay::new(egl_device) }
         .map_err(|error| ProbeFailure::at("bevy_egl", error))?;
     let context = EGLContext::new(&display).map_err(|error| ProbeFailure::at("bevy_egl", error))?;
+    // SAFETY: The context was created here and has never been bound to another thread.
     let mut gles = unsafe { GlesRenderer::new(context) }
         .map_err(|error| ProbeFailure::at("bevy_egl", error))?;
     let texture = gles

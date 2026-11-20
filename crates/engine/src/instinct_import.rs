@@ -20,8 +20,12 @@ pub struct Preview {
 
 fn canonical_uid(prefix: &str, name: &str) -> String {
     let hash = Sha256::digest(format!("Lince Instinct/{prefix}/{name}"));
-    let entropy = u128::from_be_bytes(hash[..16].try_into().unwrap());
-    format!("{prefix}_{}", nucleus::ulid_from(0, entropy))
+    let mut entropy = [0; 16];
+    entropy.copy_from_slice(&hash[..16]);
+    format!(
+        "{prefix}_{}",
+        nucleus::ulid_from(0, u128::from_be_bytes(entropy))
+    )
 }
 
 fn failure(message: impl Into<String>) -> EngineError {

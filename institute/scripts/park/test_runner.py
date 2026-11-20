@@ -55,6 +55,11 @@ class RunnerTests(unittest.TestCase):
             self.assertEqual(manifest["revision"], "fixture-revision")
             self.assertEqual(manifest["cases"][0]["id"], "protein-first-interface")
             self.assertEqual(manifest["unavailable"][-1]["case"], "physical-daily-S3")
+            ownership = runner.load_json(arguments.output / manifest["artifacts"]["source-inventory"]["path"])
+            self.assertEqual(ownership["revision"], manifest["revision"])
+            self.assertEqual({entry["kind"] for entry in ownership["registrations"]},
+                             {"plugin", "sand", "laboratory", "castle-store"})
+            self.assertEqual(ownership["unavailable_prepared_cases"], [])
 
     def test_staged_artifacts_reject_mismatched_build_identity_and_tampering(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -105,6 +110,52 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(len(edits), 6)
         self.assertEqual({case["environment"]["LINCE_EDIT_PROBE_VIEWS"] for case in edits}, {"1", "8"})
         self.assertTrue(all(case["phases"] == ["warmup", "quiet", "local-save", "reopen"] for case in edits))
+
+    def test_workflow_pair_coverage_requires_verified_cases_and_exact_arguments(self):
+        first = {"id": "protein-first-interface", "selector": "native::protein"}
+        later = {"id": "held", "selector": "native::replacement", "environment": {"CHANGE": "SourceThenPrivacy"}}
+        checks = [{"case": case["id"], "selector": case["selector"], "passed": True} for case in (first, later)]
+        workloads = {
+            "identity": "private-test", "required_workflows": ["W22"],
+            "workflow_coverage": {
+                "factors": {"output": ["one", "two"], "worker": ["held"]},
+                "inapplicable": [],
+                "selectors": {first["id"]: first, later["id"]: later},
+                "required": [{"id": "R08", "workflows": ["W22"], "outcome": "Fresh output only"}],
+                "rows": [
+                    {"id": "one", "case": first["id"], "factors": {"output": "one", "worker": "held"},
+                     "workflows": ["W22"], "oracle": "Known first case"},
+                    {"id": "two", "case": later["id"], "factors": {"output": "two", "worker": "held"},
+                     "workflows": ["W22"], "oracle": "Known replacement", "required": ["R08"]},
+                ],
+            },
+        }
+        planned = runner.plan_coverage(workloads, [later, first])
+        self.assertEqual(planned["selected"], [first["id"], later["id"]])
+        self.assertTrue(runner.coverage_report(planned, checks)["complete"])
+        incomplete = runner.coverage_report(planned, checks[:1])
+        self.assertFalse(incomplete["complete"])
+        self.assertEqual(incomplete["pair_counts"], {"passed": 1, "not_run": 1})
+        failed = runner.coverage_report(planned, [checks[0], {**checks[1], "passed": False}])
+        self.assertFalse(failed["complete"])
+        self.assertEqual(failed["required"][0]["status"], "failed")
+        wrong_case = runner.plan_coverage(workloads, [first, {**later, "environment": {"CHANGE": "Privacy"}}])
+        self.assertEqual(runner.coverage_report(wrong_case, checks)["pair_counts"]["selector_unavailable"], 1)
+        workloads["workflow_coverage"]["rows"].pop()
+        missing = runner.coverage_report(runner.plan_coverage(workloads, [first, later]), checks)
+        self.assertFalse(missing["complete"])
+        self.assertEqual(missing["pair_counts"]["missing_oracle"], 1)
+        self.assertEqual(missing["required"][0]["status"], "missing_oracle")
+        with self.assertRaisesRegex(ValueError, "mismatched"):
+            runner.coverage_report(planned, [{**checks[0], "selector": "different::test"}])
+
+    def test_workflow_only_cases_leave_the_default_selection_unchanged(self):
+        manifest = {"cases": runner.suite_cases()}
+        selected = runner.selected_cases(manifest, None)
+        self.assertTrue(all(not case.get("coverage_only") for case in selected))
+        first, held = runner.selected_cases(manifest, ["held-capture-source-privacy"])
+        self.assertEqual(first["id"], "protein-first-interface")
+        self.assertEqual(held["environment"]["LINCE_PARK_TEST_CAPTURE_CHANGE"], "SourceThenPrivacy")
 
     def test_missing_artifact_fails_without_invoking_a_build_or_child_process(self):
         with tempfile.TemporaryDirectory() as temporary:

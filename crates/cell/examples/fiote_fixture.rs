@@ -24,7 +24,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .into());
     }
-    let (mut settings, credential) = native_connection::existing_connection().await;
+    let (mut settings, credential) = native_connection::existing_connection().await?;
     std::fs::create_dir_all(&directory)?;
     #[cfg(unix)]
     {

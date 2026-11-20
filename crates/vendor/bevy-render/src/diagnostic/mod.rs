@@ -11,6 +11,7 @@ mod tracy_gpu;
 
 use alloc::{borrow::Cow, sync::Arc};
 use bevy_ecs::{
+    resource::Resource,
     schedule::IntoScheduleConfigs,
     system::{Res, ResMut},
     world::{FromWorld, World},
@@ -28,7 +29,7 @@ use crate::{
 use self::internal::{sync_diagnostics, Pass, RenderDiagnosticsMutex, WriteTimestamp};
 pub use self::{
     erased_render_asset_diagnostic_plugin::ErasedRenderAssetDiagnosticPlugin,
-    internal::DiagnosticsRecorder, mesh_allocator_diagnostic_plugin::MeshAllocatorDiagnosticPlugin,
+    internal::{DiagnosticsRecorder, RenderDiagnostic}, mesh_allocator_diagnostic_plugin::MeshAllocatorDiagnosticPlugin,
     render_asset_diagnostic_plugin::RenderAssetDiagnosticPlugin,
 };
 
@@ -62,6 +63,11 @@ use crate::renderer::RenderDevice;
 /// On other platforms (Metal, WebGPU, WebGL2) only CPU time will be recorded.
 #[derive(Default)]
 pub struct RenderDiagnosticsPlugin;
+
+/// Receives the diagnostics of a single render submission when they become available.
+/// The callback installed at submission is retained across asynchronous GPU readback.
+#[derive(Resource)]
+pub struct RenderDiagnosticsObserver(pub Arc<dyn Fn(&[RenderDiagnostic]) + Send + Sync>);
 
 impl Plugin for RenderDiagnosticsPlugin {
     fn build(&self, app: &mut App) {
@@ -128,9 +134,14 @@ fn finish_diagnostics_frame(
     mut recorder: ResMut<DiagnosticsRecorder>,
     render_device: Res<RenderDevice>,
     mutex: Res<RenderDiagnosticsMutex>,
+    observer: Option<Res<RenderDiagnosticsObserver>>,
 ) {
     let mutex = mutex.0.clone();
+    let observer = observer.map(|observer| observer.0.clone());
     recorder.finish_frame(&render_device, move |diagnostics| {
+        if let Some(observer) = observer {
+            observer(diagnostics.readings());
+        }
         *mutex.lock().unwrap() = Some(diagnostics);
     });
 }

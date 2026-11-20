@@ -17,6 +17,7 @@ use std::{
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
+mod attribution;
 mod browser;
 mod diagnostics;
 mod metrics;
@@ -579,16 +580,26 @@ fn resource_sample(pid: rustix::process::Pid, elapsed_ms: u128) -> ResourceSampl
             let Some(client) = fields.get("drm-client-id") else {
                 continue;
             };
-            let device = fields
+            let Some(device) = fields
                 .get("drm-pdev")
                 .cloned()
                 .or_else(|| {
                     fs::read_link(base.join("fd").join(entry.file_name()))
                         .ok()
+                        .filter(|path| path.starts_with("/dev/dri"))
                         .map(|path| path.to_string_lossy().into_owned())
                 })
-                .unwrap_or_else(|| entry.file_name().to_string_lossy().into_owned());
-            drm_clients.insert(format!("{device}:{client}"), fields);
+            else {
+                continue;
+            };
+            let known = drm_clients.entry(format!("{device}:{client}")).or_insert_with(BTreeMap::new);
+            for (name, value) in fields {
+                known.entry(name.clone()).and_modify(|previous| {
+                    if drm_engine_ns(&name, &value) > drm_engine_ns(&name, previous) {
+                        *previous = value.clone();
+                    }
+                }).or_insert(value);
+            }
         }
     }
     ResourceSample {
@@ -602,6 +613,40 @@ fn resource_sample(pid: rustix::process::Pid, elapsed_ms: u128) -> ResourceSampl
         cpu_ticks,
         drm_clients: (!drm_clients.is_empty()).then_some(drm_clients),
     }
+}
+
+fn drm_engine_ns(name: &str, value: &str) -> Option<u64> {
+    if !name.starts_with("drm-engine-") || name.starts_with("drm-engine-capacity-") {
+        return None;
+    }
+    value.strip_suffix(" ns")?.trim().parse().ok()
+}
+
+fn drm_engine_window(previous: &ResourceSample, current: &ResourceSample) -> serde_json::Value {
+    let elapsed_ms = current.elapsed_ms.saturating_sub(previous.elapsed_ms);
+    let (Some(previous), Some(current)) = (&previous.drm_clients, &current.drm_clients) else {
+        return serde_json::json!({"elapsed_ms":elapsed_ms, "status":"DRM client counters unavailable at one or both boundaries"});
+    };
+    let mut counters = Vec::new();
+    for (client, fields) in current {
+        for (name, value) in fields {
+            let Some(end) = drm_engine_ns(name, value) else { continue; };
+            let start = previous.get(client).and_then(|fields| fields.get(name))
+                .and_then(|value| drm_engine_ns(name, value));
+            let delta = start.and_then(|start| end.checked_sub(start)).filter(|_| elapsed_ms > 0);
+            let status = match (start, delta) {
+                (_, Some(_)) => "sampled",
+                (None, None) => "no matching earlier counter",
+                (Some(_), None) if elapsed_ms == 0 => "empty observation interval",
+                (Some(_), None) => "counter decreased",
+            };
+            counters.push(serde_json::json!({"device_client":client, "driver":fields.get("drm-driver"),
+                "engine":name, "elapsed_engine_ns":delta, "status":status}));
+        }
+    }
+    let departed: Vec<_> = previous.keys().filter(|client| !current.contains_key(*client)).collect();
+    serde_json::json!({"elapsed_ms":elapsed_ms, "counters":counters, "departed_clients":departed,
+        "status":if counters.is_empty() { "no DRM engine time counters in nanoseconds" } else { "per-client engine time; clients may be shared across processes" }})
 }
 
 fn resource_summary(samples: &[ResourceSample]) -> String {
@@ -640,6 +685,7 @@ pub(super) fn dispatch(arguments: &[OsString]) -> Result<()> {
     match arguments.first().and_then(|argument| argument.to_str()) {
         Some("final") => final_suite::dispatch(&arguments[1..]),
         Some("analyze") => metrics::analyze(&arguments[1..]),
+        Some("attribute") => attribution::analyze(&arguments[1..]),
         Some("browser") => browser::run(&arguments[1..]),
         Some("observe") => observe::run(&arguments[1..]),
         Some("prepare") if arguments.len() == 2 => prepare(Path::new(&arguments[1]), None),
@@ -660,7 +706,7 @@ pub(super) fn dispatch(arguments: &[OsString]) -> Result<()> {
             );
             println!("cargo xtask park validate report /absolute/path/to/run");
             println!(
-                "cargo xtask park validate observe /installed/bin/lince PID [--seconds 5400] [--unit USER_UNIT]"
+                "cargo xtask park validate observe /installed/bin/lince PID [--seconds 5400] [--unit USER_UNIT] [--peer-pid PID ...]"
             );
             println!(
                 "cargo xtask park validate browser /installed/bin/lince --geckodriver PATH [--plain] [--provider FIXTURE.json] [--host-close PROGRAM] [--host-prepare PROGRAM] [--ownership] [--save-failure] [--reopen-sandbox] [--lifecycle-rounds 0] [--fullscreen] [--seconds 75] [--outputs 1]"
@@ -668,6 +714,7 @@ pub(super) fn dispatch(arguments: &[OsString]) -> Result<()> {
             println!(
                 "cargo xtask park validate analyze LOG [--warmup 10] [--seconds 60] [--minimum-fps 57] [--surface ID]"
             );
+            println!("cargo xtask park validate attribute PHASES_LOG [--pid PID] [--frames FRAME_LOG]");
             println!(
                 "Fixtures: {{\"terminal\":{{\"program\":\"xdg-terminal-exec\",\"arguments\":[]}},\"showoff\":false,\"clients\":[]}}"
             );
@@ -2611,7 +2658,7 @@ fn prepare_into(configuration: &Path, installed: Option<&Path>, destination: Opt
     let peer = TcpListener::bind("127.0.0.1:0").map_err(error)?;
     let run = Run {
         repository: repository.clone(), directory: directory.clone(),
-        executable_sha256: digest(&target)?, revision: build_info["revision"].as_str().unwrap().to_owned(),
+        executable_sha256: digest(&target)?, revision: build_info["revision"].as_str().ok_or("Build report has no revision")?.to_owned(),
         process_sha256: digest(&process_executable)?, process_executable, build_info,
         installed: selected.is_some(),
         probe_sha256: digest(&directory.join("bin/session-probe"))?,

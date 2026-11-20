@@ -8,7 +8,7 @@ Park — 1. Measure complete interactions (
 
 # 1. Measure complete interactions
 
-**Priority, 2026-11-19:** this chapter now leads the next Park visit: P153 → P70 → P67 → P36 → P66, with existing P156/P155 runner/identity checks as prerequisites when needed. Follow the [current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y); dated source-only execution deferrals below are superseded for the resumed measurement visit after the owner’s reboot. Reuse working instrumentation and label missing signals rather than rebuilding completed tooling.
+**Priority, 2026-11-20.** Follow the [approved queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). The measurement tooling implementation is available for the authorized evidence phase. Use P156 for prepared-runtime verification. P155 is already closed.
 
 **Continue through these Records:**
 
@@ -54,7 +54,6 @@ Twenty-two standard-library tooling tests passed in Niri. The local combined nat
 **Continue through these Records:**
 
 - [P153 — Finish GPU/source-frame and physical-output attribution.](record:r_7N5NNV5N2RBD81C5EYXHM22NPB)
-- [P155 — Verify comparison identity across independently changed cases.](record:r_0B3MSPZT92QG5QY441RHB24Z70)
 - [P156 — Verify the installed graphics runtime without an adapter script.](record:r_675XKW987Z53WQNE9T0F48XBPH)
 - [P66 — Produce one ranked bottleneck report for the current optimized candidate.](record:r_5MBWC32RYVSQ5XZA4MYYH87ME8)
 - [P67 — Finish the CPU/GPU ownership map for the complete consumer path.](record:r_425JQ5QS3D33JJTE0QFYNP3CCW)
@@ -98,9 +97,9 @@ P153 — Finish GPU/source-frame and physical-output attribution. (
 **Context:** [Source chapter](record:r_3MCKF8DH9AWW9EGKNZANAVS95C); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A0 · tooling.
 
 
-**Why:** hardware queries now work, but completed-pass values are not joined to an actual source frame or GLES/DRM consumption. **Verified:** the optimized 24-full/24-pixel hardware case passes on Intel Iris Xe (TGL GT2), Vulkan, Mesa 26.2.6, with exact reference pixels. The final GPU/text repeat has complete report transport. Per-UI-pass medians are about 0.04 ms, not whole-frame GPU duration; mesh/clustering/upscale work and preprocessing spikes remain separate. No evidence supports calling the renderer software-only.
+**Why:** asynchronous pass readings need their originating render, the sampled output image and the correct presentation clock. The optimized 24-full/24-pixel Intel Iris Xe hardware case already verified exact reference pixels. Its per-pass medians do not describe a whole frame.
 
-**Remaining:** connect actual available native GPU/render/extraction/export/consumer observations to stable frame/output identities and independent presentation/deadline evidence, preserving asynchronous query-result age and unsupported signals. Full-phase global render diagnostics are unobserved in this controlled drain/clear fixture even though its raw hardware JSON has valid samples; fix or clearly separate that consumption boundary. Its `gpu-pixel` phase also includes verification/finish full updates after the 24 measured pixel-only samples. Keep epilogue work separate from the timed frame cohort rather than claiming the whole phase performs zero main updates. Verify P70/P67 consumer boundaries and physical outputs with startup capture prepared; no blocking telemetry readback or extra duplicate GPU workload is added to ordinary rendering.
+**Verify:** use the combined phase and frame capture to check extraction/export, asynchronous pass readback, actual GLES image sampling and the distinct DRM and dispatch clocks. Confirm that the input join follows the image sampled on the expected output. Check reported frame loss and the measured overhead against a capture-off control. Keep the readback age and unavailable data explicit.
 } r_7N5NNV5N2RBD81C5EYXHM22NPB
 
 Extension @park-p153 "lince.controls" {
@@ -124,32 +123,14 @@ P154 — Mixed-route input handshake is repaired. (
 **Evidence:** [Overhaul.md](Overhaul.md#fresh-verification-after-the-evidence-directory-loss). The stable Record identity is retained for old links. This is a receipt, not another task. The current source-only batch remains unbuilt and untested.
 } r_6DQDKS9BNWN9CZD570GRFA8A3V
 
-P155 — Verify comparison identity across independently changed cases. (
-    @park-p155: 0,
-    is #task,
-    #park-performance-task,
-    #park-stage-a0,
+P155 — Independent case comparison is verified. (
+    @park-p155: 1,
+    is #chapter,
     #part-of @park-dev-7a6bbca2f8f348a63131: 52,
     #park-workflow @park-development-cycle
 ) { r_0B3MSPZT92QG5QY441RHB24Z70
-**Status — implemented, verification pending (2026-11-15).** Per-case fixture/selector/environment identities and required-cost reporting are implemented. Existing complete comparisons are retained as evidence; the old instruction to build a second comparison engine is removed.
-
-**Still to verify:** Retain or obtain the specific negative-control receipt: changing one case refuses its comparison while unchanged cases remain comparable. Missing old body/GPU signals remain unavailable, not zero.
-
-**Why:** Independent fixture changes should not erase useful controls or permit incomparable measurements.
-
-**Current instruction:** source changes only. Do not run checks, compile, measure, ship or restart from this Record. Use [Overhaul.md](Overhaul.md#remaining-acceptance-obligations) and [the checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y); verification resumes only when authorized. Quantity remains zero because implementation is not a performance pass.
+**Closed 2026-11-20.** The 27 passing Python runner/report checks at `dcc20703` include `test_changed_fixture_does_not_erase_independent_unchanged_case_controls`. The negative control rejects the changed fixture while preserving the unchanged case. The comparison code and test are unchanged since that receipt. [Passing receipt](Overhaul.md#approved-park-work--2026-11-20).
 } r_0B3MSPZT92QG5QY441RHB24Z70
-
-Extension @park-p155 "lince.controls" {
-    quantities [{
-        label "Mark verified"
-        value "1"
-    } {
-        label "Reopen task"
-        value "0"
-    }]
-}
 
 P156 — Verify the installed graphics runtime without an adapter script. (
     @park-p156: 0,
@@ -195,7 +176,7 @@ P66 — Produce one ranked bottleneck report for the current optimized candidate
 
 **Completed prerequisites, removed from this task:** named Bevy-system attribution (P152), local-edit attribution (P102), mixed-route input repair (P154), and output-submission callback ownership/pacing (P53) are implemented. The November 7/9 setup diagnoses and pre-submission callback finding are historical evidence in 00 and Overhaul.md's lossless archive. They are not instructions to rebuild the observer, repeat an untraced relogin or repair callbacks again. P53 retains physical verification only.
 
-Reuse Overhaul.md's later optimized results and source-only receipts. The current accumulated candidate has not been built or measured. Preserve the title-save backlog, populated-reveal failure and unresolved physical gates; distinguish the remaining GLES/consumer attribution (P70), worker CPU and overlapping stages. Missing coverage stays unavailable, and required native updates carried across a GPU wait are not automatically wasted work. Execution remains deferred by the current instruction.
+Use `cargo xtask park validate attribute` with the combined observer log. Check its capture identity, phase-level owner CPU rankings, merged timing percentiles, frame links and loss counts against the raw readings. Preserve the installed title-save backlog, populated-reveal and mixed-focus failures until reproduced or resolved. The ranking still awaits matched current evidence.
 } r_5MBWC32RYVSQ5XZA4MYYH87ME8
 
 Extension @park-p66 "lince.controls" {
@@ -221,7 +202,7 @@ P67 — Finish the CPU/GPU ownership map for the complete consumer path. (
 **Context:** [Source chapter](record:r_3MCKF8DH9AWW9EGKNZANAVS95C); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A0 · baseline.
 
 
-**Why:** processor placement decisions need actual work/transfer/wait ownership. Hardware Vulkan rendering, private client GL/WebGL and grouped export are already verified; low utilization does not identify misplaced work. **Scope:** complete Firefox compositing/decoding selection, real-client device/driver identity, actual daily cadence/data sizes and final GLES/color/DRM consumption. Correlate CPU-required semantic/layout/control work with GPU passes, submission, imports/uploads and actual presentation. Reuse the ownership table, current optimized phases and native/export hardware observations in 00.
+**Verify:** use the current phase/consumer trace and `observe --peer-pid` per-device DRM engine deltas. Confirm active Firefox compositing and decoding paths on ordinary workloads, Park’s device affinity and relevant transfer sizes. Preserve separate CPU semantic/layout, driver, import/copy, GPU and DRM observations.
 
 **Close with:** the completed stage/thread/device/bytes/dependency table and one supported placement comparison, or evidence that wrong processor placement is not the dominant problem. Preserve actual resource affinity and include preparation, copies, synchronization and result consumption. P70 owns the remaining consumer GPU/wait measurement. Render/executor, direct-target and overlap comparisons already have decisions; their finished controls are not further placement work.
 } r_425JQ5QS3D33JJTE0QFYNP3CCW
@@ -249,7 +230,7 @@ P70 — Measure GLES consumer GPU execution and driver waits. (
 **Context:** [Source chapter](record:r_3MCKF8DH9AWW9EGKNZANAVS95C); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A0 · baseline.
 
 
-**Why:** native-pass and export hardware intervals are already measured, but host-observed consumer waits still lack their actual device/submission boundary. **Scope:** measure the selected actual GLES consumer and missing upload/full-submission/driver envelope with supported hardware timestamps or an existing profiler. Distinguish GPU execution, submission CPU, observed completion, DMA-BUF acquire readiness and consumption of an older image during newer work. Preserve source/device identity and asynchronous query-result age; calibrate diagnostic overhead with complete controls.
+**Verify:** measure actual GLES host owner CPU and elapsed time, supported command timestamp intervals, observed fence readiness and DRM submission/presentation. Compare a matching capture-off run to quantify collection overhead. Query completion age, runtime scheduling and command time are separate signals. Unsupported, disjoint, skipped and unfinished queries remain visible as missing coverage.
 
 **Close with:** a current complete-consumer CPU/GPU/wait timeline that can select P67/P55 work. Reuse the finished native/export timestamp experiments in 00; do not add their nested spans as independent utilization or repeat them unchanged. Preserve precision, retained-image/capture lifetimes and unsupported-coverage reporting. No blocking readback is added to ordinary rendering. Current optimized daily/physical attribution and P140/P146 coverage remain open.
 } r_77FM19KDX0GXG96YB4AD0W4YP0
@@ -307,20 +288,16 @@ P104 — Expose the existing performance cases as useful Laboratory results. (
     @park-p104: 0,
     is #task,
     #park-performance-task,
-    #park-stage-b,
+    #park-stage-a0,
     #part-of @park-dev-7a6bbca2f8f348a63131: 108,
     #park-workflow @park-development-cycle
 ) { r_3HYSQ1RTAA930T57X9W5CXKFQN
 **Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
 
-**Context:** [Source chapter](record:r_3MCKF8DH9AWW9EGKNZANAVS95C); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** B · deferred.
+**Context:** [Source chapter](record:r_3MCKF8DH9AWW9EGKNZANAVS95C); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A0 · verification.
 
 
-**Current boundary:** the combined precompiled runner/report is coded, but the existing Laboratory UI has not been changed in this delivery. Validate the P151/P155/P156 source-stamped report contract with the new artifacts before wiring per-case visible values/status into the UI; do not manufacture missing GPU, save or physical measurements. This remains open.
-
-**Deferred until the performance gates are met:** reuse the existing Laboratory button/results and catalogue for the combined suite's supported private phases, timing scopes, budget comparisons and missing-check status. Show results with useful readable controls; do not create new optimization configuration UI. Live S3 observation remains separate from Laboratory's suspended-workspace fixtures. P156 supplies prepared execution without an implicit build during Park measurements; explicit local checks wait for an authorized execution phase.
-
-**Why:** ordinary tests must catch expensive work and the user needs a repeatable way to check the new behavior. **Scope:** extend the current Laboratory catalogue/driver and xtask report wiring for the selected workflow cases, work-count assertions and the benchmark metrics in 08. Show case/source/workload identity, observed values, target, timing scope, missing hardware evidence and cancellation. Reuse headless CPU cases and hardware cases through the same result model, without running physical-session acceptance inside an isolated fixture. **Verify:** known passing/failing controls, exact nonzero selectors, Stop/Close cleanup, temporary data isolation and no writes to the user's Records. A debug duration is not an optimized desktop pass. This is integration of the agreed measurements, not a new general benchmark product. **Needs:** P93 and the first usable P101/P102 cases.
+**Verify:** load the actual `--park-performance-check` JSON or JSONL in Laboratory. Check case status, budgets, optimized/source identity, partial results, missing hardware evidence, picker cancellation, Close/reopen and export. The existing isolated suite retains execution and cancellation ownership. Laboratory imports the result without launching a second runner or touching Records. Do not use this private report as physical acceptance.
 } r_3HYSQ1RTAA930T57X9W5CXKFQN
 
 Extension @park-p104 "lince.controls" {

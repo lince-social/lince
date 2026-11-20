@@ -579,9 +579,13 @@ pub(crate) mod tests {
             .unwrap()
             .depth = Some(crate::native::topology::DEFAULT_DEPTH);
         world.run_system_cached(sync_geometry).unwrap();
-        assert_eq!(world.get::<InfluenceArea>(owner).unwrap().depth, crate::native::topology::DEFAULT_DEPTH);
+        assert_eq!(
+            world.get::<InfluenceArea>(owner).unwrap().depth,
+            crate::native::topology::DEFAULT_DEPTH
+        );
         let snapshot = SavedArea {
-            placement: crate::native::sand_placement::Placement::capture(&world, owner),
+            placement: crate::native::sand_placement::Placement::capture(&world, owner)
+                .expect("capture the fixture placement"),
             workspace: 1,
             area: world.get::<InfluenceArea>(owner).unwrap().clone(),
         };
@@ -601,7 +605,8 @@ pub(crate) mod tests {
         world.run_system_cached(sync_geometry).unwrap();
         assert_eq!(world.get::<InfluenceArea>(owner).unwrap().depth, 100.0);
         let saved = SavedArea {
-            placement: crate::native::sand_placement::Placement::capture(&world, owner),
+            placement: crate::native::sand_placement::Placement::capture(&world, owner)
+                .expect("capture the fixture placement"),
             workspace: 1,
             area: world.get::<InfluenceArea>(owner).unwrap().clone(),
         };

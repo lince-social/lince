@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 #[path = "../../engine/tests/support/mod.rs"]
 mod support;
 

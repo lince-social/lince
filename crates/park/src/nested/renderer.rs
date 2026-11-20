@@ -104,6 +104,8 @@ pub(crate) struct Composition {
     submitted: Option<smithay::backend::renderer::sync::SyncPoint>,
     submitted_watch: Option<crate::graphics::wait::Watch>,
     canvases: HashMap<OutputId, GlesTexture>,
+    #[cfg(feature = "session")]
+    canvas_render: Option<u64>,
     views: HashMap<(WlSurface, u64), View>,
     touched: HashSet<(WlSurface, u64)>,
     layers: HashMap<WlSurface, LayerSnapshot>,
@@ -170,6 +172,8 @@ pub(crate) struct Presented {
     pub pointer_owner: crate::server::CaptureContentOwner,
     pub drag_owner: crate::server::CaptureContentOwner,
     pub locked: bool,
+    #[cfg(feature = "session")]
+    pub native_render: Option<u64>,
     pub callbacks: Vec<(Option<OutputId>, Vec<SurfaceNode>)>,
     pub sync: smithay::backend::renderer::sync::SyncPoint,
     pub layers: Vec<LayerSnapshot>,
@@ -245,6 +249,7 @@ impl Composition {
         renderer: &mut GlesRenderer,
         frame: &crate::presentation::Frame,
     ) -> io::Result<()> {
+        let started = frame.traced_render.map(|_| crate::presentation::frame_trace::timestamp());
         let mut canvases = HashMap::new();
         if let Some(buffer) = frame.dmabuf() {
             canvases.insert(
@@ -263,6 +268,16 @@ impl Composition {
             );
         }
         self.canvases = canvases;
+        #[cfg(feature = "session")]
+        {
+            self.canvas_render = frame.traced_render;
+        }
+        if let Some((render, started)) = frame.traced_render.zip(started) {
+            let outputs: Vec<_> = self.canvases.keys().map(|id| id.0).collect();
+            crate::presentation::frame_trace::record(serde_json::json!({"event":"native-import",
+                "render":render, "started_us":started, "outputs":outputs,
+                "monotonic_us":crate::presentation::frame_trace::timestamp()}));
+        }
         Ok(())
     }
 
@@ -437,6 +452,7 @@ impl Composition {
             .egl_context()
             .display()
             .get_display_handle();
+        // SAFETY: The display guard is live and the renderer was bound on this thread.
         if unsafe { smithay::backend::egl::ffi::egl::SwapInterval(**display, 0) }
             == smithay::backend::egl::ffi::egl::FALSE
         {
@@ -869,6 +885,8 @@ impl Composition {
             pointer_owner: server.capture_cursor_owner(),
             drag_owner: server.capture_drag_owner(),
             locked: false,
+            #[cfg(feature = "session")]
+            native_render: None,
             callbacks,
             sync: smithay::backend::renderer::sync::SyncPoint::signaled(),
             layers,
@@ -896,7 +914,7 @@ impl Composition {
                 };
                 if let Some(clip) = clip {
                     let output_mapping = Self::output_raster(canvas.map(|canvas| &canvas.frame), output.id, mapping)?;
-                    self.draw_output(
+                    let native_drawn = self.draw_output(
                         &mut frame,
                         canvas.map(|canvas| &canvas.frame),
                         &presented,
@@ -905,6 +923,12 @@ impl Composition {
                         self.canvases.get(&output.id),
                         clip,
                     )?;
+                    #[cfg(feature = "session")]
+                    if native_drawn && view.is_some() {
+                        presented.native_render = self.canvas_render;
+                    }
+                    #[cfg(not(feature = "session"))]
+                    let _ = native_drawn;
                 }
             }
             if let Some(output) = server.output_viewports().into_iter().map(|(_, output)| output)
@@ -1011,6 +1035,8 @@ impl Composition {
             pointer_owner: crate::server::CaptureContentOwner::Unknown,
             drag_owner: crate::server::CaptureContentOwner::Unknown,
             locked: true,
+            #[cfg(feature = "session")]
+            native_render: None,
             callbacks: ready
                 .into_iter()
                 .map(|(id, _, nodes)| (Some(id), nodes))

@@ -32,14 +32,17 @@ pub enum UiCondition {
     Absent(Selector),
     Value(Selector, String),
     Focused(Selector),
+    Ready(Selector, fn(&World, Entity) -> bool),
     Check(fn(&World) -> bool),
 }
 
+#[derive(Clone)]
 struct Target {
     entity: Entity,
     name: String,
     role: String,
     enabled: bool,
+    activates_on_press: bool,
     context: accessibility::Context,
 }
 
@@ -56,7 +59,8 @@ pub struct UiBackend<'a> {
     app: &'a mut App,
     root: Entity,
     window: Option<Entity>,
-    target: Option<(Entity, accessibility::Context)>,
+    pointer_target: Option<NormalizedRenderTarget>,
+    target: Option<Target>,
     pending: VecDeque<Input>,
     held: Vec<(KeyCode, Key)>,
     pointer: Option<Location>,
@@ -81,6 +85,7 @@ impl<'a> UiBackend<'a> {
             app,
             root,
             window,
+            pointer_target: None,
             target: None,
             pending: VecDeque::new(),
             held: Vec::new(),
@@ -97,6 +102,11 @@ impl<'a> UiBackend<'a> {
         self
     }
 
+    pub fn with_pointer_target(mut self, target: NormalizedRenderTarget) -> Self {
+        self.pointer_target = Some(target);
+        self
+    }
+
     fn scoped(&self, entity: Entity) -> bool {
         let mut current = Some(entity);
         for _ in 0..crate::native::layout::MAX_DEPTH {
@@ -109,7 +119,10 @@ impl<'a> UiBackend<'a> {
         false
     }
 
-    fn selected<'s>(snapshot: &'s UiSnapshot, selector: &Selector) -> Result<&'s Target, String> {
+    fn matching<'s>(
+        snapshot: &'s UiSnapshot,
+        selector: &Selector,
+    ) -> Result<Option<&'s Target>, String> {
         let mut matching = snapshot.targets.iter().filter(|target| {
             target.enabled
                 && target.name == selector.name
@@ -118,13 +131,58 @@ impl<'a> UiBackend<'a> {
                     .as_ref()
                     .is_none_or(|role| *role == target.role)
         });
-        let target = matching
-            .next()
-            .ok_or_else(|| "No visible target matches the exact label and role".to_string())?;
+        let target = matching.next();
         if matching.next().is_some() {
             return Err("The target is ambiguous within this root".into());
         }
         Ok(target)
+    }
+
+    fn selected<'s>(snapshot: &'s UiSnapshot, selector: &Selector) -> Result<&'s Target, String> {
+        Self::matching(snapshot, selector)?
+            .ok_or_else(|| "No visible target matches the exact label and role".into())
+    }
+
+    fn target_is_current(&self, target: &Target, ignore_selection_revision: bool) -> bool {
+        self.scoped(target.entity)
+            && accessibility::context(self.app.world(), target.entity, true).is_some_and(
+                |current| {
+                    if ignore_selection_revision {
+                        target.context.same_input_target(current)
+                    } else {
+                        current == target.context
+                    }
+                },
+            )
+            && self
+                .app
+                .world()
+                .get::<AccessibilityNode>(target.entity)
+                .is_some_and(|node| {
+                    node.label().unwrap_or_default() == target.name
+                        && format!("{:?}", node.role()) == target.role
+                })
+    }
+
+    fn focused(&self) -> Option<Entity> {
+        self.app
+            .world()
+            .get_resource::<InputFocus>()
+            .and_then(InputFocus::get)
+    }
+
+    fn pointer_position(world: &World, entity: Entity) -> Option<Vec2> {
+        let node = world.get::<ComputedNode>(entity)?;
+        let transform = world.get::<UiGlobalTransform>(entity)?;
+        let center = transform.to_scale_angle_translation().2;
+        let position = center * node.inverse_scale_factor;
+        (node.size().is_finite()
+            && node.size().min_element() > 0.0
+            && position.is_finite()
+            && world
+                .get::<bevy::ui::CalculatedClip>(entity)
+                .is_none_or(|clip| clip.contains_point(center)))
+        .then_some(position)
     }
 
     fn assist(
@@ -267,6 +325,11 @@ impl Backend for UiBackend<'_> {
                     name,
                     role,
                     enabled: accessibility::context(self.app.world(), entity, true).is_some(),
+                    activates_on_press: self
+                        .app
+                        .world()
+                        .get::<bevy::ui_widgets::ActivateOnPress>(entity)
+                        .is_some(),
                     context,
                 })
             })
@@ -295,10 +358,7 @@ impl Backend for UiBackend<'_> {
             Ok(target) => target,
             Err(error) => return Dispatch::Rejected(error),
         };
-        if !self.scoped(target.entity)
-            || accessibility::context(self.app.world(), target.entity, true).as_ref()
-                != Some(&target.context)
-        {
+        if !self.target_is_current(target, false) {
             return Dispatch::Rejected(
                 "The selected control became stale, hidden or disabled".into(),
             );
@@ -334,6 +394,12 @@ impl Backend for UiBackend<'_> {
         }
         match action {
             UiAction::Click => {
+                if self.pointer_target.is_some() && self.app.is_plugin_added::<PointerInputPlugin>()
+                {
+                    return Dispatch::Unavailable(
+                        "An explicit pointer target requires direct virtual pointer input".into(),
+                    );
+                }
                 if self.app.is_plugin_added::<PointerInputPlugin>()
                     && self
                         .app
@@ -352,23 +418,17 @@ impl Backend for UiBackend<'_> {
                         "The pointer input pipeline is unavailable".into(),
                     );
                 }
-                let world = self.app.world();
-                let Some(node) = world
-                    .get::<ComputedNode>(target.entity)
-                    .filter(|node| node.size().min_element() > 0.0)
-                else {
+                let Some(position) = Self::pointer_position(self.app.world(), target.entity) else {
                     return Dispatch::Unavailable(
-                        "The target has no laid-out pointer bounds".into(),
+                        "The target has no visible laid-out pointer bounds".into(),
                     );
                 };
-                let Some(transform) = world.get::<UiGlobalTransform>(target.entity) else {
-                    return Dispatch::Unavailable("The target has no pointer transform".into());
-                };
-                let position = transform.to_scale_angle_translation().2 * node.inverse_scale_factor;
                 let location = Location {
-                    target: NormalizedRenderTarget::Window(
-                        WindowRef::Entity(window).normalize(None).unwrap(),
-                    ),
+                    target: self.pointer_target.clone().unwrap_or_else(|| {
+                        NormalizedRenderTarget::Window(
+                            WindowRef::Entity(window).normalize(None).unwrap(),
+                        )
+                    }),
                     position,
                 };
                 self.pending.push_back(Input::Pointer(
@@ -402,10 +462,10 @@ impl Backend for UiBackend<'_> {
                 {
                     return Dispatch::Rejected("The target is not an editable text control".into());
                 }
-                if let Dispatch::Rejected(error) =
-                    self.assist(target, accesskit::Action::Focus, None)
-                {
-                    return Dispatch::Rejected(error);
+                if self.focused() != Some(target.entity) {
+                    return Dispatch::Rejected(
+                        "Use ordinary input to focus the field first".into(),
+                    );
                 }
                 self.pending.push_back(Input::Keyboard(
                     KeyCode::ControlLeft,
@@ -436,15 +496,24 @@ impl Backend for UiBackend<'_> {
                         "The keyboard input pipeline is unavailable".into(),
                     );
                 }
-                if let Dispatch::Rejected(error) =
-                    self.assist(target, accesskit::Action::Focus, None)
-                {
-                    return Dispatch::Rejected(error);
+                if *code == KeyCode::Tab {
+                    if self
+                        .focused()
+                        .is_some_and(|focused| focused != window && !self.scoped(focused))
+                    {
+                        return Dispatch::Rejected(
+                            "Keyboard focus belongs outside the test root".into(),
+                        );
+                    }
+                } else if self.focused() != Some(target.entity) {
+                    return Dispatch::Rejected(
+                        "Use ordinary input to focus the control first".into(),
+                    );
                 }
                 self.keyboard(*code, key.clone(), None);
             }
         }
-        self.target = Some((target.entity, target.context.clone()));
+        self.target = Some(target.clone());
         Dispatch::Accepted
     }
 
@@ -454,7 +523,7 @@ impl Backend for UiBackend<'_> {
         }
         match condition {
             UiCondition::Check(check) => Ok(check(self.app.world())),
-            UiCondition::Visible(selector) => Ok(Self::selected(snapshot, selector).is_ok()),
+            UiCondition::Visible(selector) => Ok(Self::matching(snapshot, selector)?.is_some()),
             UiCondition::Absent(selector) => Ok(!snapshot.targets.iter().any(|target| {
                 target.name == selector.name
                     && selector
@@ -462,14 +531,13 @@ impl Backend for UiBackend<'_> {
                         .as_ref()
                         .is_none_or(|role| *role == target.role)
             })),
-            UiCondition::Focused(selector) => Ok(Self::selected(snapshot, selector)
-                .ok()
+            UiCondition::Focused(selector) => Ok(Self::matching(snapshot, selector)?
+                .is_some_and(|target| self.focused() == Some(target.entity))),
+            UiCondition::Ready(selector, check) => Ok(Self::matching(snapshot, selector)?
                 .is_some_and(|target| {
-                    self.app
-                        .world()
-                        .get_resource::<InputFocus>()
-                        .and_then(InputFocus::get)
-                        == Some(target.entity)
+                    self.target_is_current(target, false)
+                        && Self::pointer_position(self.app.world(), target.entity).is_some()
+                        && check(self.app.world(), target.entity)
                 })),
             UiCondition::Value(selector, value) => {
                 let target = Self::selected(snapshot, selector)?;
@@ -488,18 +556,49 @@ impl Backend for UiBackend<'_> {
     }
 
     fn pump(&mut self, _: Duration) -> Result<(), String> {
-        if !self.pending.is_empty()
-            && self.target.as_ref().is_some_and(|(entity, context)| {
-                !context.describes(self.app.world(), *entity)
-                    || accessibility::context(self.app.world(), *entity, true).is_none()
-            })
-        {
-            self.release();
-            self.app.update();
-            return Err("The input target changed while its accepted sequence was pending".into());
-        }
         if let Some(input) = self.pending.pop_front() {
             let window = self.window.ok_or("The test window was removed")?;
+            let release_only = match &input {
+                Input::Keyboard(_, _, _, ButtonState::Released) => true,
+                Input::Pointer(_, PointerAction::Release(_)) => self
+                    .target
+                    .as_ref()
+                    .is_some_and(|target| target.activates_on_press),
+                _ => false,
+            };
+            let keyboard =
+                matches!(&input, Input::Keyboard(code, _, _, _) if *code != KeyCode::Tab);
+            let current = self
+                .app
+                .world()
+                .get::<Window>(window)
+                .is_some_and(|window| window.focused)
+                && self.target.as_ref().is_some_and(|target| {
+                    let focused = self.focused() == Some(target.entity);
+                    self.target_is_current(target, keyboard || self.mouse_held && focused)
+                        && (!keyboard || focused)
+                        && match &input {
+                            Input::Pointer(location, _) => {
+                                Self::pointer_position(self.app.world(), target.entity)
+                                    == Some(location.position)
+                            }
+                            Input::Keyboard(KeyCode::Tab, _, _, _) => self
+                                .focused()
+                                .is_none_or(|focused| focused == window || self.scoped(focused)),
+                            Input::Keyboard(..) => true,
+                        }
+                        && self
+                            .app
+                            .world()
+                            .get::<crate::native::actions::WindowActionTarget>(window)
+                            .is_none_or(|owner| owner.0 == target.context.root)
+                });
+            if !release_only && !current {
+                self.release();
+                return Err(
+                    "The input window, target or keyboard focus changed before dispatch".into(),
+                );
+            }
             match input {
                 Input::Pointer(location, action) => {
                     let forwarded = self.app.is_plugin_added::<PointerInputPlugin>();

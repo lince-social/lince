@@ -104,8 +104,11 @@ fn valid_window(from: &str, until: Option<&str>) -> Result<(), String> {
     Ok(())
 }
 
-fn eligible(day: chrono::NaiveDate, from: &str, until: Option<&str>) -> bool {
-    day >= date(from).unwrap() && until.is_none_or(|until| day <= date(until).unwrap())
+fn eligible(day: chrono::NaiveDate, from: &str, until: Option<&str>) -> Result<bool, String> {
+    if day < date(from)? {
+        return Ok(false);
+    }
+    Ok(until.map(date).transpose()?.is_none_or(|until| day <= until))
 }
 
 impl Input {
@@ -234,14 +237,16 @@ impl Input {
         let start = date(&self.start)?;
         for (food_index, food) in self.foods.iter().enumerate() {
             for day in 0..self.days {
-                let at = start.checked_add_days(Days::new(u64::from(day))).unwrap();
+                let at = start
+                    .checked_add_days(Days::new(u64::from(day)))
+                    .ok_or("Plan date is out of range")?;
                 for (index, offer) in self
                     .offers
                     .iter()
                     .enumerate()
                     .filter(|(_, o)| o.food == food.choice.food)
                 {
-                    if eligible(at, &offer.available_on, offer.valid_until.as_deref()) {
+                    if eligible(at, &offer.available_on, offer.valid_until.as_deref())? {
                         compiled.add(
                             food_index,
                             day,
@@ -259,7 +264,7 @@ impl Input {
                     .enumerate()
                     .filter(|(_, s)| s.food == food.choice.food)
                 {
-                    if eligible(at, &stock.available_on, stock.expires_on.as_deref()) {
+                    if eligible(at, &stock.available_on, stock.expires_on.as_deref())? {
                         compiled.add(
                             food_index,
                             day,
@@ -281,7 +286,7 @@ impl Input {
                             at,
                             &forecast.stock.available_on,
                             forecast.stock.expires_on.as_deref(),
-                        ) {
+                        )? {
                             compiled.add(
                                 food_index,
                                 day,
@@ -403,8 +408,8 @@ impl Input {
                     compiled.model.constraints.push(Constraint {
                         name: format!("energy-share:{}:{suffix}:{day}", share.nutrient),
                         terms,
-                        lower: lower.then(|| decimal(0.0).unwrap()),
-                        upper: (!lower).then(|| decimal(0.0).unwrap()),
+                        lower: lower.then_some(DecimalValue::from_integer(0)),
+                        upper: (!lower).then_some(DecimalValue::from_integer(0)),
                     });
                 }
             }
@@ -414,11 +419,17 @@ impl Input {
                     .iter()
                     .enumerate()
                     .filter(|(_, a)| a.day == day)
-                    .map(|(variable, a)| Term {
-                        variable,
-                        coefficient: self.foods[a.food].choice.volume_ml_per_g.unwrap(),
+                    .map(|(variable, a)| {
+                        let coefficient = self.foods[a.food]
+                            .choice
+                            .volume_ml_per_g
+                            .ok_or("Container limits require a volume for every selected food")?;
+                        Ok(Term {
+                            variable,
+                            coefficient,
+                        })
                     })
-                    .collect();
+                    .collect::<Result<_, &str>>()?;
                 compiled.model.constraints.push(Constraint {
                     name: format!("container:{day}"),
                     terms,
@@ -487,7 +498,7 @@ impl Input {
             let mut summary = DaySummary {
                 date: start
                     .checked_add_days(Days::new(u64::from(day)))
-                    .unwrap()
+                    .ok_or("Plan date is out of range")?
                     .to_string(),
                 foods_g: BTreeMap::new(),
                 nutrients: BTreeMap::new(),
@@ -514,7 +525,7 @@ impl Input {
                             .forecasts
                             .iter()
                             .find(|f| f.stock.id == a.source)
-                            .unwrap()
+                            .ok_or("Forecast allocation has no matching source")?
                             .cost_per_usable_g
                             .to_f64();
                 }
@@ -590,7 +601,7 @@ impl Compiled {
             .filter(|(_, a)| a.source == source)
             .map(|(variable, _)| Term {
                 variable,
-                coefficient: decimal(1.0).unwrap(),
+                coefficient: DecimalValue::from_integer(1),
             })
             .collect();
         self.model.constraints.push(Constraint {

@@ -33,7 +33,10 @@ pub(crate) async fn general(state: &State) -> Result<Value, Failure> {
         {
             if let Some(fields) = custom.as_object() {
                 let mut configured = general_defaults();
-                configured.as_object_mut().unwrap().extend(fields.clone());
+                configured
+                    .as_object_mut()
+                    .expect("Facade defaults are a JSON object literal")
+                    .extend(fields.clone());
                 if validate(CUSTOM, &configured).is_ok() {
                     value = configured;
                 }

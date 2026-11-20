@@ -389,7 +389,7 @@ pub fn compare(
                 })
                 .map(|row| &row.source)
                 .collect::<BTreeSet<_>>();
-            group.map(|_| DecimalValue::from_mantissa(0, sources.len() as i128).unwrap())
+            group.map(|_| DecimalValue::from_integer(sources.len() as i128))
         }
     };
     let state = match observed {

@@ -1,4 +1,5 @@
 use super::*;
+use serde_json::Value;
 
 fn follows_native_state(state: &nucleus::component::ComponentState) -> bool {
     matches!(
@@ -11,23 +12,29 @@ fn follows_native_state(state: &nucleus::component::ComponentState) -> bool {
     )
 }
 
-pub(super) fn capture_content(world: &World, entity: Entity) -> ContentKind {
+pub(super) fn json_text(label: &str, value: &impl serde::Serialize) -> Result<Value, String> {
+    serde_json::to_string(value)
+        .map(Value::String)
+        .map_err(|error| format!("Could not encode {label} for the canvas. {error}"))
+}
+
+pub(super) fn capture_content(world: &World, entity: Entity) -> Result<ContentKind, String> {
     let _timing = nucleus::performance::Span::new("native-canvas-content-preparation");
     if let Some(Content(ContentKind::Authored { base, edits })) = world.get::<Content>(entity) {
-        return ContentKind::Authored {
+        return Ok(ContentKind::Authored {
             base: base.clone(),
             edits: edits.clone(),
-        };
+        });
     }
     capture_base_content(world, entity)
 }
 
-fn capture_base_content(world: &World, entity: Entity) -> ContentKind {
+fn capture_base_content(world: &World, entity: Entity) -> Result<ContentKind, String> {
     if let Some(effect) = world.get::<crate::native::topology::terrain::Effect>(entity) {
         return crate::native::topology::terrain::component(&effect.0);
     }
-    if let Some(composition) = composition::capture(world, entity) {
-        return ContentKind::Composition { composition };
+    if let Some(composition) = composition::capture(world, entity)? {
+        return Ok(ContentKind::Composition { composition });
     }
     if let Some(content) = world.get::<Content>(entity) {
         if !matches!(
@@ -35,7 +42,7 @@ fn capture_base_content(world: &World, entity: Entity) -> ContentKind {
             ContentKind::Native { .. } | ContentKind::Authored { .. }
         ) && !matches!(&content.0, ContentKind::Builtin { state } if follows_native_state(state))
         {
-            return content.0.clone();
+            return Ok(content.0.clone());
         }
     }
     if let Some(placed) = world
@@ -45,16 +52,16 @@ fn capture_base_content(world: &World, entity: Entity) -> ContentKind {
         let state = crate::native::component_push::composition::capture(world, entity)
             .map(|composition| nucleus::component::ComponentState::Composition { composition })
             .unwrap_or_else(|| placed.component.clone());
-        return ContentKind::Builtin { state };
+        return Ok(ContentKind::Builtin { state });
     }
     if let Some(record) = world.get::<crate::native::workspace::RecordPlacement>(entity) {
-        return ContentKind::Builtin {
+        return Ok(ContentKind::Builtin {
             state: nucleus::component::ComponentState::Record {
                 record: record.0.clone(),
                 mode: nucleus::component::RecordMode::Full,
                 start_call: None,
             },
-        };
+        });
     }
     if let Some(area) = world.get::<crate::native::area::InfluenceArea>(entity) {
         return super::area::component(area);
@@ -62,45 +69,33 @@ fn capture_base_content(world: &World, entity: Entity) -> ContentKind {
     if let Some(sand) = world.get::<StoredSand>(entity) {
         if matches!(world.get::<Content>(entity), Some(Content(ContentKind::Native { kind, .. })) if kind == "layout")
         {
-            if let Some(component) = super::factories::capture(world, entity) {
-                return component;
+            if let Some(component) = super::factories::capture(world, entity)? {
+                return Ok(component);
             }
         }
         let texts = crate::native::sand_text::snapshot(world, entity);
-        let mut settings = BTreeMap::from([(
-            "texts".into(),
-            serde_json::Value::String(serde_json::to_string(&texts).unwrap()),
-        )]);
-        let appearance = crate::native::token_style::overrides_ref(world, entity)
-            .map_or_else(
-                || serde_json::to_string(&crate::native::tokens::TokenOverrides::default()),
-                serde_json::to_string,
-            )
-            .unwrap();
-        settings.insert("appearance".into(), serde_json::Value::String(appearance));
+        let mut settings = BTreeMap::from([("texts".into(), json_text("Sand text", &texts)?)]);
+        let appearance = crate::native::token_style::overrides_ref(world, entity).map_or_else(
+            || {
+                json_text(
+                    "Sand appearance",
+                    &crate::native::tokens::TokenOverrides::default(),
+                )
+            },
+            |appearance| json_text("Sand appearance", appearance),
+        )?;
+        settings.insert("appearance".into(), appearance);
         if let Some(timer) = world.get::<crate::native::work_timer::LocalTimer>(entity) {
-            settings.insert(
-                "timer".into(),
-                serde_json::Value::String(serde_json::to_string(timer).unwrap()),
-            );
+            settings.insert("timer".into(), json_text("Sand timer", timer)?);
         }
         if let Some(clock) = world.get::<crate::native::time_castle::TimeSettings>(entity) {
-            settings.insert(
-                "time_castle".into(),
-                serde_json::Value::String(serde_json::to_string(&clock.0).unwrap()),
-            );
+            settings.insert("time_castle".into(), json_text("time settings", &clock.0)?);
         }
         if let Some(todo) = crate::native::todo::snapshot(world, entity) {
-            settings.insert(
-                "todo".into(),
-                serde_json::Value::String(serde_json::to_string(&todo).unwrap()),
-            );
+            settings.insert("todo".into(), json_text("checklist settings", &todo)?);
         }
         if let Some(video) = world.get::<crate::native::video_castle::Settings>(entity) {
-            settings.insert(
-                "video".into(),
-                serde_json::Value::String(serde_json::to_string(video).unwrap()),
-            );
+            settings.insert("video".into(), json_text("video settings", video)?);
         }
         if let Some(selection) = sand
             .content
@@ -108,7 +103,7 @@ fn capture_base_content(world: &World, entity: Entity) -> ContentKind {
         {
             settings.insert(
                 "visibility".into(),
-                serde_json::Value::String(serde_json::to_string(&selection).unwrap()),
+                json_text("visibility selection", &selection)?,
             );
         }
         if matches!(
@@ -118,7 +113,10 @@ fn capture_base_content(world: &World, entity: Entity) -> ContentKind {
             if let Some(text) = texts.first() {
                 for (id, value) in &text.area.settings.0 {
                     if sand.kind != SandKind::Square {
-                        settings.insert(id.clone(), serde_json::to_value(value).unwrap());
+                        let value = serde_json::to_value(value).map_err(|error| {
+                            format!("Could not encode Sand text setting {id}. {error}")
+                        })?;
+                        settings.insert(id.clone(), value);
                     }
                 }
             }
@@ -133,39 +131,39 @@ fn capture_base_content(world: &World, entity: Entity) -> ContentKind {
                 ),
             );
         }
-        return ContentKind::Native {
+        return Ok(ContentKind::Native {
             kind: kind_id(sand.kind),
             settings,
             bindings: Vec::new(),
-        };
+        });
     }
-    if let Some(component) = super::factories::capture(world, entity) {
-        return component;
+    if let Some(component) = super::factories::capture(world, entity)? {
+        return Ok(component);
     }
-    if let Some(component) = super::kanban::capture(world, entity) {
-        return component;
+    if let Some(component) = super::kanban::capture(world, entity).transpose()? {
+        return Ok(component);
     }
     if let Some(castle) = world.get::<crate::native::protein_castle::ProteinCastle>(entity) {
-        let query = serde_json::to_string(&castle.draft.query).unwrap();
-        return ContentKind::Native {
+        let query = json_text("Protein query", &castle.draft.query)?;
+        return Ok(ContentKind::Native {
             kind: "protein".into(),
             settings: BTreeMap::from([
                 ("name".into(), serde_json::json!(castle.draft.name)),
                 ("slug".into(), serde_json::json!(castle.draft.slug)),
-                ("query".into(), serde_json::Value::String(query)),
+                ("query".into(), query),
             ]),
             bindings: record_references(&castle.draft.query),
-        };
+        });
     }
     if let Some(instinct) = world.get::<crate::native::instinct::Instinct>(entity) {
-        return ContentKind::Native {
+        return Ok(ContentKind::Native {
             kind: "instinct".into(),
             settings: BTreeMap::from([(
                 "page".into(),
                 serde_json::Value::String(instinct.page.clone().unwrap_or_default()),
             )]),
             bindings: Vec::new(),
-        };
+        });
     }
     use nucleus::component::ComponentState as Builtin;
     let state = if let Some(castle) = world.get::<crate::native::karma_castle::KarmaCastle>(entity)
@@ -193,9 +191,9 @@ fn capture_base_content(world: &World, entity: Entity) -> ContentKind {
         None
     };
     if let Some(state) = state {
-        return ContentKind::Builtin { state };
+        return Ok(ContentKind::Builtin { state });
     }
-    ContentKind::Native {
+    Ok(ContentKind::Native {
         kind: if world.get::<crate::native::kanban::Kanban>(entity).is_some() {
             "kanban"
         } else if world
@@ -256,7 +254,7 @@ fn capture_base_content(world: &World, entity: Entity) -> ContentKind {
         .into(),
         settings: BTreeMap::new(),
         bindings: Vec::new(),
-    }
+    })
 }
 
 pub(super) fn record_references(value: &serde_json::Value) -> Vec<String> {
@@ -287,7 +285,14 @@ pub fn capture(world: &mut World, root: Entity) -> Result<api::Snapshot, String>
     let _timing =
         crate::host::performance::Span::new(crate::host::performance::Stage::NativeCanvasSnapshot);
     crate::host::performance::count(crate::host::performance::Count::NativeCanvasSnapshots);
-    let spaces = world.get::<Workspaces>(root);
+    let spaces = world
+        .get::<Workspaces>(root)
+        .ok_or("Canvas has no workspaces.")?;
+    let default_workspace = spaces
+        .entries
+        .first()
+        .ok_or("Canvas has no saved workspace entries.")?
+        .id;
     let entities: Vec<_> = world
         .get::<Children>(root)
         .map(|children| {
@@ -298,9 +303,7 @@ pub fn capture(world: &mut World, root: Entity) -> Result<api::Snapshot, String>
                         && !crate::native::laboratory::temporary_owner(world, *entity)
                         && super::authoring::owner(world, *entity) == *entity
                         && world.get::<WorkspaceMember>(*entity).is_none_or(|member| {
-                            spaces.is_some_and(|spaces| {
-                                spaces.entries.iter().any(|space| space.id == member.0)
-                            })
+                            spaces.entries.iter().any(|space| space.id == member.0)
                         })
                         && world
                             .get::<crate::native::canvas_item::Ephemeral>(*entity)
@@ -318,7 +321,10 @@ pub fn capture(world: &mut World, root: Entity) -> Result<api::Snapshot, String>
         {
             let id = nucleus::new_uid("placement");
             used.insert(id.clone());
-            world.entity_mut(*entity).insert(Identity(id));
+            world
+                .get_entity_mut(*entity)
+                .map_err(|_| "Canvas placement disappeared during capture.")?
+                .insert(Identity(id));
         }
     }
     let spaces = world
@@ -372,13 +378,18 @@ pub fn capture(world: &mut World, root: Entity) -> Result<api::Snapshot, String>
     let placements = entities
         .into_iter()
         .map(|entity| {
-            let item = world.get::<CanvasItem>(entity).unwrap();
-            api::Placement {
-                id: world.get::<Identity>(entity).unwrap().0.clone(),
+            let item = world
+                .get::<CanvasItem>(entity)
+                .ok_or("Canvas placement lost its geometry during capture.")?;
+            let id = world
+                .get::<Identity>(entity)
+                .ok_or("Canvas placement lost its identity during capture.")?;
+            Ok(api::Placement {
+                id: id.0.clone(),
                 workspace: world
                     .get::<WorkspaceMember>(entity)
-                    .map_or(spaces.entries[0].id, |member| member.0),
-                component: capture_content(world, entity),
+                    .map_or(default_workspace, |member| member.0),
+                component: capture_content(world, entity)?,
                 geometry: api::Geometry {
                     position: item.position.to_array(),
                     size: item.size.as_dvec2().to_array(),
@@ -388,9 +399,9 @@ pub fn capture(world: &mut World, root: Entity) -> Result<api::Snapshot, String>
                     .get::<crate::native::canvas_selection::SandGroup>(entity)
                     .map(|group| group.0.iter().map(|byte| format!("{byte:02x}")).collect()),
                 metadata: super::metadata::capture(world, entity),
-            }
+            })
         })
-        .collect();
+        .collect::<Result<_, String>>()?;
     Ok(api::Snapshot {
         revision: spaces
             .canvas_state

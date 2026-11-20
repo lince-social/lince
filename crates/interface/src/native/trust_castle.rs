@@ -26,6 +26,10 @@ mod remote_controls;
 mod root_controls;
 mod serving_controls;
 mod snapshot;
+#[allow(
+    clippy::unwrap_used,
+    reason = "Trust Laboratory fixtures need a hard failure when a test action or its evidence is missing"
+)]
 pub(crate) mod tests;
 mod ui;
 use snapshot::{JsonPart, Snapshot, decode};

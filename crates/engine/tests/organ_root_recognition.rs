@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 pub mod support;
 use base64::Engine as _;
 use engine::{Engine, actions::Action, trust::Signer, trust_analysis::IdentityAuthenticity};

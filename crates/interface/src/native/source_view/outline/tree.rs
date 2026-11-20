@@ -125,7 +125,9 @@ impl<'a> Tree<'a> {
                         },
                     );
                     for key in descendants {
-                        let relative = key.strip_prefix(&prefix).unwrap();
+                        let relative = key
+                            .strip_prefix(&prefix)
+                            .expect("only paths below this prefix were collected");
                         let parts = relative.split('/').collect::<Vec<_>>();
                         let mut parent = entry.clone();
                         for (index, part) in parts.iter().enumerate() {
@@ -139,7 +141,10 @@ impl<'a> Tree<'a> {
                                 members: Vec::new(),
                                 children: Vec::new(),
                             });
-                            let children = &mut nodes.get_mut(&parent).unwrap().children;
+                            let children = &mut nodes
+                                .get_mut(&parent)
+                                .expect("the parent branch was inserted before its child")
+                                .children;
                             if !children.contains(&child) {
                                 children.push(child.clone());
                             }

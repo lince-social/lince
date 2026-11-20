@@ -45,8 +45,10 @@ pub(super) fn trim_publication_state(state: &mut Value) -> Result<(), EngineErro
     revisions.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
     let mut retained = 0;
     for (key, _) in revisions {
-        let hash = key.strip_prefix("revision_").unwrap();
-        if !ancestors.contains(hash) {
+        if !key
+            .strip_prefix("revision_")
+            .is_some_and(|hash| ancestors.contains(hash))
+        {
             continue;
         }
         retained += 1;

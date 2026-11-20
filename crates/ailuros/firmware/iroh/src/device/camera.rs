@@ -35,12 +35,16 @@ impl crate::power::Power for Wifi {
 
     fn current(&mut self) -> anyhow::Result<Self::Mode> {
         let mut mode = Self::LOW_LATENCY;
-        sys::esp!(unsafe { sys::esp_wifi_get_ps(&mut mode) })?;
+        // SAFETY: This runs after Wi-Fi startup and `mode` is writable.
+        let result = unsafe { sys::esp_wifi_get_ps(&mut mode) };
+        sys::esp!(result)?;
         Ok(mode)
     }
 
     fn set(&mut self, mode: Self::Mode) -> anyhow::Result<()> {
-        sys::esp!(unsafe { sys::esp_wifi_set_ps(mode) })?;
+        // SAFETY: Wi-Fi remains initialized. The mode is LOW_LATENCY or the prior SDK value.
+        let result = unsafe { sys::esp_wifi_set_ps(mode) };
+        sys::esp!(result)?;
         Ok(())
     }
 }
@@ -48,8 +52,10 @@ impl crate::power::Power for Wifi {
 impl Drop for Driver {
     fn drop(&mut self) {
         if self.active {
+            // SAFETY: Only this worker controls the open camera and all frame borrows have ended.
             unsafe { ailuros::lince_camera_close() };
         }
+        // SAFETY: The worker owns the parsed workflow and no camera call still uses it.
         unsafe { ailuros::cJSON_Delete(self.workflow) };
     }
 }
@@ -58,6 +64,7 @@ struct Frame(ailuros::lince_frame_t);
 
 impl Drop for Frame {
     fn drop(&mut self) {
+        // SAFETY: This is the sole owner of a successfully acquired frame.
         unsafe { ailuros::lince_camera_release(&self.0) };
     }
 }
@@ -66,7 +73,10 @@ impl Driver {
     fn set_active(&mut self, active: bool) -> anyhow::Result<()> {
         if active && !self.active {
             self.latency.enable()?;
-            if let Err(error) = sys::esp!(unsafe { ailuros::lince_camera_open(self.workflow) }) {
+            // SAFETY: Provisioning validated the camera fields. The worker owns the JSON
+            // and is the only task that opens, captures from, or closes this camera.
+            let result = unsafe { ailuros::lince_camera_open(self.workflow) };
+            if let Err(error) = sys::esp!(result) {
                 self.latency
                     .disable()
                     .context("Restore Wi-Fi power after camera startup failure")?;
@@ -77,6 +87,7 @@ impl Driver {
         } else if !active {
             let was_active = self.active;
             if self.active {
+                // SAFETY: The camera is open on this worker and no frame is borrowed.
                 unsafe { ailuros::lince_camera_close() };
                 self.active = false;
             }
@@ -95,11 +106,14 @@ impl Driver {
 
     fn capture(&mut self, maximum: usize) -> anyhow::Result<Option<CapturedFrame>> {
         ensure!(self.active, "Camera capture requires viewer demand");
+        // SAFETY: The C frame struct contains pointers, integers and a boolean, all valid at zero.
         let mut raw = unsafe { std::mem::zeroed() };
+        // SAFETY: This worker owns the open camera and supplies a writable frame struct.
         if !unsafe { ailuros::lince_camera_capture(&mut raw) } {
             anyhow::bail!("Camera capture failed");
         }
         let frame = Frame(raw);
+        // SAFETY: ESP-IDF initializes this timer before application startup.
         let age = unsafe { sys::esp_timer_get_time() }
             .checked_sub(frame.0.captured_us)
             .context("Invalid camera timestamp")?;
@@ -107,6 +121,7 @@ impl Driver {
             || frame.0.bytes.is_null()
             || frame.0.length == 0
             || frame.0.length > maximum
+            || frame.0.length > isize::MAX as usize
             || !(0..=5_000_000).contains(&age)
         {
             return Ok(None);
@@ -118,11 +133,11 @@ impl Driver {
                 .context("Invalid camera capture time")?
                 .as_millis(),
         )?;
-        let bytes = Bytes::copy_from_slice(unsafe {
-            std::slice::from_raw_parts(frame.0.bytes, frame.0.length)
-        });
+        // SAFETY: Capture provides these initialized bytes. The frame keeps the buffer live
+        // through the copy, and the pointer and length checks above bound the slice.
+        let bytes = unsafe { std::slice::from_raw_parts(frame.0.bytes, frame.0.length) };
         Ok(Some(CapturedFrame {
-            bytes,
+            bytes: Bytes::copy_from_slice(bytes),
             captured_at,
             age,
         }))
@@ -137,6 +152,7 @@ impl Camera {
             .name("ailuros-camera".into())
             .stack_size(8192)
             .spawn(move || {
+                // SAFETY: The CString stays live through parsing. cJSON returns an owned tree.
                 let workflow = unsafe { ailuros::cJSON_Parse(workflow.as_ptr()) };
                 if workflow.is_null() {
                     return;
@@ -165,8 +181,10 @@ impl Camera {
 
 impl crate::client::Camera for Camera {
     fn report(&mut self, statistics: crate::client::Statistics) {
+        // SAFETY: ESP-IDF initializes this timer before application startup.
+        let monotonic_ms = unsafe { sys::esp_timer_get_time() } / 1000;
         super::report(serde_json::json!({"type":"ailuros-camera-statistics",
-            "monotonic_ms":unsafe { sys::esp_timer_get_time() } / 1000,
+            "monotonic_ms":monotonic_ms,
             "statistics":statistics}));
     }
 

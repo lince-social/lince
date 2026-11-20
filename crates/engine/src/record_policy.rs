@@ -229,13 +229,13 @@ async fn actor_readable_on(
             .await?
             .into_iter()
             .collect();
-        if prepared.is_none() {
-            prepared = Some((
+        let (graph, ceiling) = match &mut prepared {
+            Some(prepared) => prepared,
+            slot @ None => slot.insert((
                 authority::ReadGraph::new(graph, &limits).map_err(denied)?,
                 ceiling(graph, BTreeSet::new()),
-            ));
-        }
-        let (graph, ceiling) = prepared.as_mut().unwrap();
+            )),
+        };
         ceiling.records = records;
         result.extend(graph.readable_records(&policy, ceiling).map_err(denied)?);
     }
@@ -484,18 +484,26 @@ impl Engine {
                 Property::Unit,
                 Property::Place,
             ]);
-            if let Some(policy) = &policy {
+            let effective_policy = if let Some(policy) = &policy {
                 candidates.extend(
                     policy
                         .grants
                         .iter()
                         .flat_map(|grant| grant.properties.iter().cloned()),
                 );
-            }
+                Some(
+                    checkpoint
+                        .policy
+                        .as_ref()
+                        .ok_or_else(|| denied("Update policy is unavailable"))?,
+                )
+            } else {
+                None
+            };
             for property in candidates {
-                if policy.as_ref().is_none_or(|_| {
+                if effective_policy.is_none_or(|policy| {
                     check(
-                        checkpoint.policy.as_ref().unwrap(),
+                        policy,
                         &graph,
                         &graph,
                         &checkpoint.ceiling,

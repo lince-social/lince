@@ -4,15 +4,16 @@ pub(in crate::fiote) async fn start(agents: &Agents, record: &str) -> Result<Str
     let mut state = agents.info.lock().await;
     let info = state
         .get_mut(record)
+        .and_then(Value::as_object_mut)
         .ok_or("Discover the agent before signing in.")?;
-    if info["loginPending"] == true {
+    if info.get("loginPending") == Some(&Value::Bool(true)) {
         return Err("Finish or cancel the current sign-in first.".into());
     }
     let id = nucleus::new_uid("login");
-    info["loginId"] = id.clone().into();
-    info["loginPending"] = true.into();
-    info.as_object_mut().unwrap().remove("loginResult");
-    info.as_object_mut().unwrap().remove("connectionCheck");
+    info.insert("loginId".into(), id.clone().into());
+    info.insert("loginPending".into(), true.into());
+    info.remove("loginResult");
+    info.remove("connectionCheck");
     Ok(id)
 }
 
@@ -22,16 +23,17 @@ pub(in crate::fiote) async fn finish(
     id: String,
     result: Result<(), String>,
 ) {
-    if let Some(info) = state.lock().await.get_mut(&record) {
-        if info["loginId"] != id {
+    if let Some(info) = state.lock().await.get_mut(&record).and_then(Value::as_object_mut) {
+        if info.get("loginId").and_then(Value::as_str) != Some(id.as_str()) {
             return;
         }
-        info["loginPending"] = false.into();
-        info["loginResult"] = match result {
+        info.insert("loginPending".into(), false.into());
+        let result = match result {
             Ok(()) => "Sign-in completed. Check connection to confirm session access without using model tokens.".into(),
             Err(error) => format!("Sign-in failed: {error}").into(),
         };
-        info.as_object_mut().unwrap().remove("loginId");
+        info.insert("loginResult".into(), result);
+        info.remove("loginId");
     }
 }
 
@@ -153,11 +155,13 @@ impl Host {
         if let Some((_, connection)) = discovery.remove(record) {
             connection.close();
         }
-        if let Some(info) = self.agents.info.lock().await.get_mut(record) {
-            info["loginResult"] =
+        if let Some(info) = self.agents.info.lock().await.get_mut(record).and_then(Value::as_object_mut) {
+            info.insert(
+                "loginResult".into(),
                 "Agent logout completed. Provider-side credential revocation is not confirmed."
-                    .into();
-            info.as_object_mut().unwrap().remove("connectionCheck");
+                    .into(),
+            );
+            info.remove("connectionCheck");
         }
         Ok(())
     }
@@ -166,13 +170,15 @@ impl Host {
         if let Some((_, terminal)) = self.agents.terminals.lock().await.remove(record) {
             terminal.close();
         }
-        if let Some(info) = self.agents.info.lock().await.get_mut(record) {
-            info.as_object_mut().unwrap().remove("terminalLogin");
-            info["loginPending"] = false.into();
-            info["loginResult"] =
-                "Sign-in cancelled. Choose Discover agent / sign in to retry.".into();
-            info.as_object_mut().unwrap().remove("loginId");
-            info.as_object_mut().unwrap().remove("connectionCheck");
+        if let Some(info) = self.agents.info.lock().await.get_mut(record).and_then(Value::as_object_mut) {
+            info.remove("terminalLogin");
+            info.insert("loginPending".into(), false.into());
+            info.insert(
+                "loginResult".into(),
+                "Sign-in cancelled. Choose Discover agent / sign in to retry.".into(),
+            );
+            info.remove("loginId");
+            info.remove("connectionCheck");
         }
         self.agents.clear_options(record).await;
         let mut discovery = self.agents.discovery.lock().await;

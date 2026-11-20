@@ -114,7 +114,7 @@ fn summarize(
         .iter()
         .map(|(_, _, time)| *time)
         .max_by(f64::total_cmp)
-        .unwrap();
+        .ok_or("No application presentation traces; enable LINCE_PARK_TRACE_FRAMES=1")?;
     let start = first + warmup;
     let end = start + seconds;
     if last + 0.001 < end {
@@ -141,11 +141,11 @@ fn summarize(
     let selected_window = windows
         .get(&selected)
         .ok_or("Requested application surface was not present")?;
-    let fps = selected_window["fresh_fps"].as_f64().unwrap();
+    let fps = selected_window["fresh_fps"].as_f64().ok_or("Selected window is missing its frame rate")?;
     let p95 = selected_window["interval_p95_ms"].as_f64();
     let passed = fps >= minimum_fps
         && p95.is_some_and(|p95| p95 <= 25.0)
-        && selected_window["stalls_over_100_ms"].as_u64().unwrap() <= 1;
+        && selected_window["stalls_over_100_ms"].as_u64().ok_or("Selected window is missing its stall count")? <= 1;
     let stages: BTreeMap<_, _> = samples.stages.into_iter().map(|(stage, samples)| {
         let values: Vec<_> = samples.into_iter().filter(|(time, _)| *time >= start && *time < end).map(|(_, elapsed)| elapsed).collect();
         (stage, json!({"samples": values.len(), "median_ms": percentile(&values, 0.5), "p95_ms": percentile(&values, 0.95)}))

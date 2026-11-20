@@ -165,12 +165,18 @@ pub(super) fn mount(world: &mut World, owner: Entity) {
     );
     let record = panel::field(world, owner, "Record UID (also used for restoration)", "");
     let head = panel::field(world, owner, "Record head / control caption", "");
-    world.get_mut::<EditableText>(head).unwrap().max_characters = Some(65536);
+    world
+        .get_mut::<EditableText>(head)
+        .expect("panel::field attaches an editable Record head")
+        .max_characters = Some(65536);
     panel::button(world, owner, owner, "Propose head", Edit::Head);
     let body = panel::field(world, owner, "Record body", "");
-    world.get_mut::<EditableText>(body).unwrap().allow_newlines = true;
-    world.get_mut::<EditableText>(body).unwrap().visible_lines = Some(4.0);
-    world.get_mut::<EditableText>(body).unwrap().max_characters = Some(131072);
+    let mut editor = world
+        .get_mut::<EditableText>(body)
+        .expect("panel::field attaches an editable Record body");
+    editor.allow_newlines = true;
+    editor.visible_lines = Some(4.0);
+    editor.max_characters = Some(131072);
     panel::button(world, owner, owner, "Propose body", Edit::Body);
     let slug = panel::field(world, owner, "Slug (empty clears it)", "");
     panel::button(world, owner, owner, "Propose slug", Edit::Slug);
@@ -185,7 +191,7 @@ pub(super) fn mount(world: &mut World, owner: Entity) {
     );
     world
         .get_mut::<EditableText>(extension)
-        .unwrap()
+        .expect("panel::field attaches an editable extension field")
         .max_characters = Some(65536);
     panel::button(
         world,
@@ -226,7 +232,7 @@ pub(super) fn mount(world: &mut World, owner: Entity) {
     );
     world
         .get_mut::<EditableText>(action)
-        .unwrap()
+        .expect("panel::field attaches an editable control action")
         .max_characters = Some(65536);
     panel::button(
         world,

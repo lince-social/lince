@@ -13,7 +13,7 @@ impl Rule for NoComments {
     }
 
     fn remedy(&self) -> &'static str {
-        "The reasoning belongs in a Record under institute/anicca/, which is versioned, linked and searchable. Delete them and this crate compiles. A comment is spared only when it is attribution a dependency requires: SPDX-License-Identifier, Copyright, Licensed under, License:, Licence:, Credits:, Vendored from, Upstream:, @generated."
+        "General reasoning belongs in a Record under institute/anicca/. Preserve required attribution and local safety proofs written with `// SAFETY:`."
     }
 
     fn inspect(&self, source: &str) -> Vec<Finding> {
@@ -56,6 +56,7 @@ pub fn comments_in(source: &str) -> Vec<Comment> {
     let mut found = Vec::new();
     let mut line = 1usize;
     let mut at = 0usize;
+    let mut safety_line = None;
 
     while at < bytes.len() {
         let byte = bytes[at];
@@ -71,12 +72,26 @@ pub fn comments_in(source: &str) -> Vec<Comment> {
             while at < bytes.len() && bytes[at] != b'\n' {
                 at += 1;
             }
+            let text = &source[start..at];
+            let indent = source[..start].rsplit('\n').next().unwrap_or_default();
+            let standalone = indent.bytes().all(|byte| matches!(byte, b' ' | b'\t'));
+            let safety = standalone
+                && match text.strip_prefix("// SAFETY:") {
+                    Some(proof) => !proof.trim().is_empty(),
+                    None => {
+                        safety_line == Some((line - 1, indent))
+                            && text
+                                .strip_prefix("// ")
+                                .is_some_and(|text| !text.trim().is_empty())
+                    }
+                };
+            safety_line = safety.then_some((line, indent));
             found.push(Comment {
                 line,
                 opener: "//",
                 start,
                 end: at,
-                permitted: is_attribution(&source[start..at]),
+                permitted: safety || is_attribution(text),
             });
             continue;
         }

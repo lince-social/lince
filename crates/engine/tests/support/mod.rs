@@ -297,7 +297,10 @@ pub async fn settlement_preview(
         source: Source::TransferSettlementPreview,
         filter: vec![
             Predicate::UidEq(occurrence.into()),
-            Predicate::QuantityEq(nucleus::DecimalValue::from_f64_lossy(quantity).unwrap()),
+            Predicate::QuantityEq(
+                nucleus::DecimalValue::from_f64_lossy(quantity)
+                    .expect("fixture settlement quantities fit a DecimalValue"),
+            ),
         ],
         fields: None,
         include: Include::default(),

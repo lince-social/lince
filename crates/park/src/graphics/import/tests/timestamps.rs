@@ -16,11 +16,13 @@ pub(in crate::graphics) struct ExportTimestamps {
 
 impl ExportTimestamps {
     fn new(gpu: &GpuContext, pairs: u32) -> Result<Self> {
+        // SAFETY: The physical device was enumerated from this live Vulkan instance.
         let families = unsafe {
             gpu.raw_instance
                 .get_physical_device_queue_family_properties(gpu.physical_device)
         };
         let valid_bits = families[gpu.queue_family as usize].timestamp_valid_bits;
+        // SAFETY: The physical device was enumerated from this live Vulkan instance.
         let properties = unsafe {
             gpu.raw_instance
                 .get_physical_device_properties(gpu.physical_device)
@@ -36,6 +38,7 @@ impl ExportTimestamps {
             .checked_mul(2)
             .filter(|value| *value > 0)
             .ok_or_else(|| ProbeFailure::at("gpu_timestamps", "Invalid query capacity"))?;
+        // SAFETY: The live device supports queue timestamps and capacity is nonzero.
         let pool = unsafe {
             gpu.raw_device.create_query_pool(
                 &vk::QueryPoolCreateInfo::default()
@@ -63,6 +66,8 @@ impl ExportTimestamps {
                 next.checked_add(2).filter(|end| *end <= self.capacity)
             })
             .map_err(|_| ProbeFailure::at("gpu_timestamps", "Bounded query capacity exhausted"))?;
+        // SAFETY: The encoder records for this device, and the reserved pair is in range
+        // and unique to this copy. The submission keeps the pool alive.
         unsafe {
             self.raw_device
                 .cmd_reset_query_pool(command, self.pool, query, 2);
@@ -77,6 +82,7 @@ impl ExportTimestamps {
     }
 
     pub(in crate::graphics) fn end(&self, command: vk::CommandBuffer, query: u32) {
+        // SAFETY: The same encoder's begin call reset and reserved this query pair.
         unsafe {
             self.raw_device.cmd_write_timestamp(
                 command,
@@ -89,6 +95,8 @@ impl ExportTimestamps {
 
     fn read(&self, first: u32, outputs: usize) -> Result<serde_json::Value> {
         let mut values = vec![[0_u64; 2]; outputs * 2];
+        // SAFETY: The caller waits for the reserved queries in this batch to finish.
+        // Each array element fits a timestamp and its 64-bit availability flag.
         unsafe {
             self.raw_device.get_query_pool_results(
                 self.pool,
@@ -123,6 +131,7 @@ impl ExportTimestamps {
 
 impl Drop for ExportTimestamps {
     fn drop(&mut self) {
+        // SAFETY: The device is still live and each submission retains the pool until completion.
         unsafe {
             self.raw_device.destroy_query_pool(self.pool, None);
         }

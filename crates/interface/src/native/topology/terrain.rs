@@ -124,7 +124,7 @@ impl Saved {
     }
 }
 
-pub fn snapshot(world: &mut World, root: Entity) -> Vec<Saved> {
+pub fn snapshot(world: &mut World, root: Entity) -> Result<Vec<Saved>, String> {
     let entities: Vec<_> = world
         .query::<(
             Entity,
@@ -141,24 +141,28 @@ pub fn snapshot(world: &mut World, root: Entity) -> Vec<Saved> {
         .collect();
     entities
         .into_iter()
-        .map(|(e, effect, position, workspace)| Saved {
-            workspace,
-            position,
-            effect,
-            placement: crate::native::sand_placement::Placement::capture(world, e),
+        .map(|(e, effect, position, workspace)| {
+            Ok(Saved {
+                workspace,
+                position,
+                effect,
+                placement: crate::native::sand_placement::Placement::capture(world, e)?,
+            })
         })
         .collect()
 }
 
-pub fn component(effect: &TopologyEffect) -> nucleus::canvas::Component {
-    nucleus::canvas::Component::Native {
+pub fn component(effect: &TopologyEffect) -> Result<nucleus::canvas::Component, String> {
+    let state = serde_json::to_string(effect)
+        .map_err(|error| format!("Could not capture the topology effect. {error}"))?;
+    Ok(nucleus::canvas::Component::Native {
         kind: "topology-effect".into(),
         settings: std::collections::BTreeMap::from([(
             "state".into(),
-            serde_json::json!(serde_json::to_string(effect).unwrap()),
+            serde_json::Value::String(state),
         )]),
         bindings: Vec::new(),
-    }
+    })
 }
 
 pub fn is_effect(component: &nucleus::canvas::Component) -> bool {
@@ -204,6 +208,7 @@ pub fn spawn(
     if count >= 256 {
         return Err("This canvas already has 256 topology effects.".into());
     }
+    let content = component(&effect)?;
     let entity = world
         .spawn((
             Effect(effect.clone()),
@@ -213,7 +218,7 @@ pub fn spawn(
             },
             crate::native::workspace::WorkspaceMember(workspace),
             crate::native::canvas_host::Identity(nucleus::new_uid("placement")),
-            crate::native::canvas_host::Content(component(&effect)),
+            crate::native::canvas_host::Content(content),
             crate::native::sand::Square,
             Node {
                 width: px(32),

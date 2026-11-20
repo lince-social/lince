@@ -285,7 +285,10 @@ fn solve_inner(
     let variables: Vec<_> = model
         .variables
         .iter()
-        .map(|v| problem.add_var(v.cost.to_f64(), bounds(v.lower, v.upper, true).unwrap()))
+        .map(|v| {
+            let bounds = bounds(v.lower, v.upper, true).expect("the solver validates variable bounds");
+            problem.add_var(v.cost.to_f64(), bounds)
+        })
         .collect();
     for c in &model.constraints {
         let terms: Vec<_> = c
@@ -293,8 +296,8 @@ fn solve_inner(
             .iter()
             .map(|t| (variables[t.variable], t.coefficient.to_f64()))
             .collect();
-        if c.lower == c.upper && c.lower.is_some() {
-            problem.add_constraint(&terms, ComparisonOp::Eq, c.lower.unwrap().to_f64());
+        if let Some(lower) = c.lower && Some(lower) == c.upper {
+            problem.add_constraint(&terms, ComparisonOp::Eq, lower.to_f64());
         } else {
             if let Some(lower) = c.lower {
                 problem.add_constraint(&terms, ComparisonOp::Ge, lower.to_f64());
@@ -387,7 +390,7 @@ fn impossible_requirements(model: &Model) -> Vec<Diagnostic> {
                     continue;
                 }
                 let v = &model.variables[term.variable];
-                let (lo, hi) = bounds(v.lower, v.upper, true).unwrap();
+                let (lo, hi) = bounds(v.lower, v.upper, true).expect("the solver validates variable bounds");
                 if coefficient >= 0.0 {
                     min += coefficient * lo;
                     max += coefficient * hi;
@@ -423,7 +426,7 @@ fn relaxation(model: &Model, budget: u64, cancelled: &AtomicBool) -> Vec<Diagnos
             .iter()
             .cloned()
             .map(|mut v| {
-                v.cost = decimal(0.0).unwrap();
+                v.cost = DecimalValue::from_integer(0);
                 v
             })
             .collect(),
@@ -431,27 +434,28 @@ fn relaxation(model: &Model, budget: u64, cancelled: &AtomicBool) -> Vec<Diagnos
     };
     let mut slacks = Vec::new();
     for (index, c) in model.constraints.iter().enumerate() {
-        for (suffix, target, coefficient) in [("lower", c.lower, 1.0), ("upper", c.upper, -1.0)] {
+        for (suffix, target, coefficient) in [("lower", c.lower, 1), ("upper", c.upper, -1)] {
             let Some(target) = target else {
                 continue;
             };
             let variable = relaxed.variables.len();
             relaxed.variables.push(Variable {
                 name: format!("relax:{index}:{suffix}"),
-                cost: decimal(1.0 / target.to_f64().abs().max(1.0)).unwrap(),
+                cost: decimal(1.0 / target.to_f64().abs().max(1.0))
+                    .expect("the reciprocal of a validated bound is finite and at most one"),
                 lower: None,
                 upper: None,
             });
             let mut terms = c.terms.clone();
             terms.push(Term {
                 variable,
-                coefficient: decimal(coefficient).unwrap(),
+                coefficient: DecimalValue::from_integer(coefficient),
             });
             relaxed.constraints.push(Constraint {
                 name: format!("relax:{index}:{suffix}"),
                 terms,
-                lower: (coefficient > 0.0).then_some(target),
-                upper: (coefficient < 0.0).then_some(target),
+                lower: (coefficient > 0).then_some(target),
+                upper: (coefficient < 0).then_some(target),
             });
             slacks.push((variable, c.name.clone(), suffix));
         }

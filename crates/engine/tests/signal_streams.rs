@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use engine::{
     Engine,
     signal_streams::{MAX_PAYLOAD, Metadata},

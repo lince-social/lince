@@ -91,6 +91,10 @@ fn warm_signature_results_preserve_hostname_time_trust_and_tamper_rejection() {
     );
 }
 
+#[allow(
+    clippy::unwrap_used,
+    reason = "TLS fixture failures must panic so they cannot be mistaken for certificate rejection"
+)]
 async fn handshake(
     algorithm: &'static rcgen::SignatureAlgorithm,
     trusted: bool,

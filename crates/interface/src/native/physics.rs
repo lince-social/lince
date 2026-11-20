@@ -38,7 +38,7 @@ pub(crate) fn sleep_threshold(force: DVec3, mass: f64) -> SleepThreshold {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Clone, Copy)]
 struct BodyLink {
     sand: Entity,
     root: Entity,
@@ -128,6 +128,13 @@ impl MotionTimer {
             sender: Some(sender),
             task: Some(task),
         }
+    }
+
+    fn set_active(&self, active: bool) -> Result<(), mpsc::SendError<bool>> {
+        self.sender
+            .as_ref()
+            .ok_or(mpsc::SendError(active))?
+            .send(active)
     }
 }
 
@@ -252,12 +259,16 @@ pub(crate) fn room_transform(
         .map(|(entity, link)| (entity, link.origin))
         .collect();
     for (entity, origin) in bodies {
-        world
-            .entity_mut(entity)
-            .insert(Position((point - origin).extend(0.0)));
-        world.get_mut::<BodyLink>(entity).unwrap().last = point;
-        if let Some(mut velocity) = world.get_mut::<LinearVelocity>(entity) {
-            let rotated = rotation * DVec3::new(f64::from(velocity.0.x), 0.0, f64::from(velocity.0.y));
+        let Ok(mut body) = world.get_entity_mut(entity) else {
+            continue;
+        };
+        body.insert(Position((point - origin).extend(0.0)));
+        if let Some(mut link) = body.get_mut::<BodyLink>() {
+            link.last = point;
+        }
+        if let Some(mut velocity) = body.get_mut::<LinearVelocity>() {
+            let rotated =
+                rotation * DVec3::new(f64::from(velocity.0.x), 0.0, f64::from(velocity.0.y));
             velocity.0 = DVec3::new(rotated.x, rotated.z, 0.0).as_vec3();
         }
     }
@@ -365,28 +376,27 @@ fn synchronize(world: &mut World) -> bool {
         let held = dragged.contains(&sand)
             || held_items.contains(world, sand)
             || group.is_some_and(|group| held_groups.contains(&(root, workspace, group)));
-        let body = if let Some(entity) = existing.get(&sand).copied() {
-            let link = world.get::<BodyLink>(entity).unwrap();
+        let body = existing.get(&sand).and_then(|&entity| {
+            let link = world.get::<BodyLink>(entity).copied()?;
             if link.root != root || link.workspace != workspace {
                 world.despawn(entity);
                 None
             } else {
-                Some(entity)
+                Some((entity, link))
             }
-        } else {
-            None
-        };
-        if let Some(entity) = body {
-            let link = world.get::<BodyLink>(entity).unwrap();
+        });
+        if let Some((entity, link)) = body {
             let moved = link.last != item.position;
             let resized = link.size != item.size;
             let changed_held = link.held != held;
             if moved || resized || link.group != group {
                 edited.insert(entity);
             }
-            if link.group != group {
+            if link.group != group
+                && let Some(mut link) = world.get_mut::<BodyLink>(entity)
+            {
                 changed = true;
-                world.get_mut::<BodyLink>(entity).unwrap().group = group;
+                link.group = group;
             }
             if moved || changed_held {
                 world
@@ -410,9 +420,10 @@ fn synchronize(world: &mut World) -> bool {
                 world.entity_mut(entity).insert(collider(item.size));
                 world.entity_mut(entity).remove::<Sleeping>();
             }
-            if moved || resized || changed_held {
+            if (moved || resized || changed_held)
+                && let Some(mut link) = world.get_mut::<BodyLink>(entity)
+            {
                 changed = true;
-                let mut link = world.get_mut::<BodyLink>(entity).unwrap();
                 link.last = item.position;
                 link.size = item.size;
                 link.held = held;
@@ -636,7 +647,9 @@ fn simulate(world: &mut World) {
             if let Some(mut item) = world.get_mut::<CanvasItem>(sand) {
                 item.position = position;
             }
-            world.get_mut::<BodyLink>(body).unwrap().last = position;
+            if let Some(mut link) = world.get_mut::<BodyLink>(body) {
+                link.last = position;
+            }
         } else {
             world.entity_mut(body).insert((
                 Position((last - origin).extend(0.0)),
@@ -672,18 +685,22 @@ fn simulate(world: &mut World) {
         && world.resource::<Simulation>().timer.is_none()
     {
         let timer = MotionTimer::new(wake);
-        let _ = timer.sender.as_ref().unwrap().send(active);
+        let _ = timer.set_active(active);
         world.resource_mut::<Simulation>().timer = Some(timer);
     }
     if active != was_active {
         if let Some(timer) = &world.resource::<Simulation>().timer {
-            let _ = timer.sender.as_ref().unwrap().send(active);
+            let _ = timer.set_active(active);
         }
         world.resource_mut::<Simulation>().active = active;
     }
     crate::native::protein_motion::remember(world);
 }
 
+#[allow(
+    clippy::unwrap_used,
+    reason = "Laboratory physics fixtures must fail when their prepared bodies or simulation results are missing"
+)]
 pub(crate) mod tests {
     use super::*;
     use crate::native::area::{AreaShape, Direction, Property, PropertyRule};
@@ -1556,9 +1573,9 @@ pub(crate) mod tests {
             let _ = sender.send(());
         }));
         assert!(receiver.recv_timeout(Duration::from_millis(40)).is_err());
-        timer.sender.as_ref().unwrap().send(true).unwrap();
+        timer.set_active(true).unwrap();
         receiver.recv_timeout(Duration::from_secs(2)).unwrap();
-        timer.sender.as_ref().unwrap().send(false).unwrap();
+        timer.set_active(false).unwrap();
         drop(timer);
         while receiver.try_recv().is_ok() {}
         assert!(receiver.recv_timeout(Duration::from_millis(40)).is_err());

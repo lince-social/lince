@@ -182,7 +182,7 @@ impl CustomCastle {
         }
         if selection.len() == 1
             && let Some(mut composition) =
-                crate::native::canvas_host::composition::capture(world, selection[0])
+                crate::native::canvas_host::composition::capture(world, selection[0])?
         {
             composition.name = name.trim().into();
             let castle = Self {
@@ -339,8 +339,10 @@ impl CustomCastle {
             } else {
                 return Err("This selection contains a Record or imported object that cannot be saved as a custom Castle. Select its Protein Area or the Sands to reuse.".into());
             };
-            let item = world.get::<CanvasItem>(entity).unwrap();
-            let mut placement = Placement::capture(world, entity);
+            let item = world
+                .get::<CanvasItem>(entity)
+                .ok_or("A selected Castle part has no geometry.")?;
+            let mut placement = Placement::capture(world, entity)?;
             placement.group = None;
             placement.attachment = None;
             placement.group_pose = None;

@@ -2,6 +2,8 @@ use super::*;
 use bevy::math::DVec2;
 use serde_json::json;
 
+mod virtualized_edit;
+
 #[test]
 fn protein_cards_open_typed_person_and_organ_experience_without_discovery() {
     for (kind, organ) in [("person", false), ("organ", true)] {

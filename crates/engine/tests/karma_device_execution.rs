@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use engine::{
     Engine,
     actions::Action,
@@ -278,6 +280,7 @@ async fn default_phone_syncs_and_edits_but_never_executes_reactive_rules() {
                     script: "printf 7".into(),
                 },
                 host: None,
+                unlimited: false,
             },
             None,
         )
@@ -612,6 +615,7 @@ async fn saved_numeric_samples_remain_readable_after_sync_to_a_nonexecuting_cell
                     script: "printf 2.50".into(),
                 },
                 host: None,
+                unlimited: false,
             },
             None,
         )

@@ -220,6 +220,8 @@ pub(crate) fn store_entry(world: &mut World, root: Entity, parent: Entity) {
 pub(super) fn command(world: &mut World, target: Entity, command: Command) {
     if let Some(mut sand) = world.get_mut::<MapSand>(target) {
         sand.pending_input = Some(std::time::Instant::now());
+    } else if !matches!(command, Command::Create) {
+        return;
     }
     if matches!(command, Command::Diagnostics) {
         diagnostics::toggle(world, target);
@@ -240,8 +242,9 @@ pub(super) fn command(world: &mut World, target: Entity, command: Command) {
                     .set_text(&document)
                     .map_err(|error| error.to_string())
             });
-        world.get_mut::<MapSand>(target).unwrap().notice =
-            result.map_or_else(|error| error, |()| "Measurement trace copied".into());
+        if let Some(mut sand) = world.get_mut::<MapSand>(target) {
+            sand.notice = result.map_or_else(|error| error, |()| "Measurement trace copied".into());
+        }
         return;
     }
     if let Command::RecordListPage(delta) = command {
@@ -250,7 +253,9 @@ pub(super) fn command(world: &mut World, target: Entity, command: Command) {
     }
     if let Command::FocusRecord(uid) = &command {
         let viewport = {
-            let mut sand = world.get_mut::<MapSand>(target).unwrap();
+            let Some(mut sand) = world.get_mut::<MapSand>(target) else {
+                return;
+            };
             if let Some(point) = sand
                 .markers
                 .iter()
@@ -330,7 +335,9 @@ pub(super) fn command(world: &mut World, target: Entity, command: Command) {
                     world.despawn(picker);
                 }
                 feed::reset(world, target);
-                let mut sand = world.get_mut::<MapSand>(target).unwrap();
+                let Some(mut sand) = world.get_mut::<MapSand>(target) else {
+                    return;
+                };
                 sand.source_picker = None;
                 sand.area = None;
                 sand.records = vec![invitation.record_uid.clone()];
@@ -348,17 +355,21 @@ pub(super) fn command(world: &mut World, target: Entity, command: Command) {
                 sand.auto_center = true;
                 sand.notice = "Viewing permitted saved and live locations".into();
             }
-            Err(error) => world.get_mut::<MapSand>(target).unwrap().notice = error,
+            Err(error) => {
+                if let Some(mut sand) = world.get_mut::<MapSand>(target) {
+                    sand.notice = error;
+                }
+            }
         }
         return;
     }
-    if matches!(&command, Command::Source(_))
-        && let Some(picker) = world
-            .get::<MapSand>(target)
-            .and_then(|sand| sand.source_picker)
-    {
-        world.despawn(picker);
-        world.get_mut::<MapSand>(target).unwrap().source_picker = None;
+    if matches!(&command, Command::Source(_)) {
+        let picker = world
+            .get_mut::<MapSand>(target)
+            .and_then(|mut sand| sand.source_picker.take());
+        if let Some(picker) = picker {
+            world.despawn(picker);
+        }
     }
     let Some(mut sand) = world.get_mut::<MapSand>(target) else {
         return;
@@ -498,7 +509,9 @@ fn download(world: &mut World, owner: Entity) {
         });
         Ok(job)
     })();
-    let mut sand = world.get_mut::<MapSand>(owner).unwrap();
+    let Some(mut sand) = world.get_mut::<MapSand>(owner) else {
+        return;
+    };
     match result {
         Ok(job) => {
             sand.job = Some(job);
@@ -527,37 +540,33 @@ pub(super) fn update(world: &mut World) {
         .get_resource::<Time>()
         .map_or(0, |time| (time.elapsed_secs() * 4.0) as usize % 4);
     for owner in owners {
-        let point = world
-            .get::<MapSand>(owner)
-            .map(|sand| sand.picked.unwrap_or(sand.camera.center))
-            .unwrap_or(Coordinate {
-                latitude: 0.0,
-                longitude: 0.0,
-            });
-        let scope = world
-            .get::<MapSand>(owner)
-            .map(|sand| format!("{}:{:?}", sand.person, sand.authority_node_id))
-            .unwrap_or_default();
-        let bounds = world.get::<MapSand>(owner).and_then(|sand| sand.selection);
+        let Some(sand) = world.get::<MapSand>(owner) else {
+            continue;
+        };
+        let point = sand.picked.unwrap_or(sand.camera.center);
+        let scope = format!("{}:{:?}", sand.person, sand.authority_node_id);
+        let bounds = sand.selection;
         crate::map_navigation::region(world, owner, bounds, store.clone());
         let (changed, place) = crate::map_navigation::update(world, owner, point, &scope);
-        if changed {
-            world
-                .get_mut::<MapSand>(owner)
-                .unwrap()
-                .marker_stamp
-                .clear();
-        }
-        if let Some(place) = place {
-            let sand = &mut *world.get_mut::<MapSand>(owner).unwrap();
-            sand.picked = Some(place.coordinate);
-            sand.camera.center = place.coordinate;
-            sand.camera.zoom = 14.0;
+        if changed || place.is_some() {
+            let Some(mut sand) = world.get_mut::<MapSand>(owner) else {
+                continue;
+            };
+            if changed {
+                sand.marker_stamp.clear();
+            }
+            if let Some(place) = place {
+                sand.picked = Some(place.coordinate);
+                sand.camera.center = place.coordinate;
+                sand.camera.zoom = 14.0;
+            }
         }
         if !visible(world, owner) {
             world.resource_mut::<render::Scenes>().0.remove(&owner);
             let viewport = {
-                let mut sand = world.get_mut::<MapSand>(owner).unwrap();
+                let Some(mut sand) = world.get_mut::<MapSand>(owner) else {
+                    continue;
+                };
                 sand.scene = None;
                 sand.job = None;
                 sand.rendered_camera = None;
@@ -570,10 +579,14 @@ pub(super) fn update(world: &mut World) {
             continue;
         }
         source_records(world, owner);
-        let (viewport, status, selected_text) = {
-            let sand = world.get::<MapSand>(owner).unwrap();
-            (sand.viewport, sand.status, sand.selected_text)
+        let Some(sand) = world.get::<MapSand>(owner) else {
+            continue;
         };
+        let (viewport, status, selected_text) = (sand.viewport, sand.status, sand.selected_text);
+        if world.get::<ImageNode>(viewport).is_none() {
+            world.resource_mut::<render::Scenes>().0.remove(&owner);
+            continue;
+        }
         let size = world
             .get::<ComputedNode>(viewport)
             .map(|node| node.size() * node.inverse_scale_factor())
@@ -585,7 +598,7 @@ pub(super) fn update(world: &mut World) {
                 ]
             });
         let palette = palette(world, owner);
-        let resized = world.get::<MapSand>(owner).unwrap().size != size;
+        let resized = sand.size != size;
         if resized {
             let image = world
                 .resource_mut::<Assets<Image>>()
@@ -595,12 +608,19 @@ pub(super) fn update(world: &mut World) {
                     TextureFormat::Rgba8Unorm,
                     None,
                 ));
-            world.get_mut::<ImageNode>(viewport).unwrap().image = image.clone();
-            let mut sand = world.get_mut::<MapSand>(owner).unwrap();
+            let Some(mut viewport_image) = world.get_mut::<ImageNode>(viewport) else {
+                continue;
+            };
+            viewport_image.image = image.clone();
+            let Some(mut sand) = world.get_mut::<MapSand>(owner) else {
+                continue;
+            };
             sand.image = image;
             sand.size = size;
         }
-        let sand = world.get::<MapSand>(owner).unwrap();
+        let Some(sand) = world.get::<MapSand>(owner) else {
+            continue;
+        };
         let new_scene = sand.scene.is_none()
             || sand.source_revision != source_revision
             || sand.scene.as_ref().is_some_and(|scene| {
@@ -627,7 +647,9 @@ pub(super) fn update(world: &mut World) {
                                 + 1
                         });
                         scene.revision.store(previous, Ordering::Relaxed);
-                        let mut sand = world.get_mut::<MapSand>(owner).unwrap();
+                        let Some(mut sand) = world.get_mut::<MapSand>(owner) else {
+                            continue;
+                        };
                         sand.scene = Some(Arc::new(Mutex::new(scene)));
                         if sand.source_revision != source_revision {
                             sand.job = None;
@@ -635,26 +657,31 @@ pub(super) fn update(world: &mut World) {
                         sand.source_revision = source_revision;
                         sand.rendered_camera = None;
                     }
-                    Err(error) => world.get_mut::<MapSand>(owner).unwrap().notice = error,
+                    Err(error) => {
+                        if let Some(mut sand) = world.get_mut::<MapSand>(owner) {
+                            sand.notice = error;
+                        }
+                    }
                 }
             }
         }
-        let (scene, camera, image, changed) = {
-            let sand = world.get::<MapSand>(owner).unwrap();
-            (
-                sand.scene.clone(),
-                sand.camera,
-                sand.image.id(),
-                resized || sand.rendered_camera != Some(sand.camera),
-            )
+        let Some(sand) = world.get::<MapSand>(owner) else {
+            continue;
         };
+        let camera = sand.camera;
+        let image = sand.image.id();
+        let input_sent = sand.pending_input;
+        let changed = resized || sand.rendered_camera != Some(camera);
+        let scene = sand.scene.clone();
         if let Some(scene) = scene {
             if changed {
                 scene
                     .lock()
                     .unwrap_or_else(|error| error.into_inner())
                     .set_camera(camera, size);
-                world.get_mut::<MapSand>(owner).unwrap().rendered_camera = Some(camera);
+                if let Some(mut sand) = world.get_mut::<MapSand>(owner) {
+                    sand.rendered_camera = Some(camera);
+                }
             }
             if tokio::runtime::Handle::try_current().is_ok() {
                 scene
@@ -662,7 +689,6 @@ pub(super) fn update(world: &mut World) {
                     .unwrap_or_else(|error| error.into_inner())
                     .load();
             }
-            let input_sent = world.get::<MapSand>(owner).unwrap().pending_input;
             let on_render = Some(diagnostics::callback(world, owner));
             world.resource_mut::<render::Scenes>().0.insert(
                 owner,
@@ -676,7 +702,9 @@ pub(super) fn update(world: &mut World) {
             );
         }
         {
-            let mut sand = world.get_mut::<MapSand>(owner).unwrap();
+            let Some(mut sand) = world.get_mut::<MapSand>(owner) else {
+                continue;
+            };
             if sand
                 .public_deadline
                 .is_some_and(|deadline| deadline <= std::time::Instant::now())
@@ -709,7 +737,9 @@ pub(super) fn update(world: &mut World) {
             }
         }
         overlays(world, owner);
-        let sand = world.get::<MapSand>(owner).unwrap();
+        let Some(sand) = world.get::<MapSand>(owner) else {
+            continue;
+        };
         let mut caption = String::new();
         if let Some(error) = &source_error {
             caption.push_str(error);
@@ -737,12 +767,8 @@ pub(super) fn update(world: &mut World) {
         if !sand.notice.is_empty() {
             caption.push_str(&format!(" · {}", sand.notice));
         }
-        if caption != sand.last_status {
-            crate::native::sand_panel::status(world, status, caption.clone());
-            world.get_mut::<MapSand>(owner).unwrap().last_status = caption;
-        }
-        let sand = world.get::<MapSand>(owner).unwrap();
-        let caption = if let Some(point) = sand.picked {
+        let status_changed = caption != sand.last_status;
+        let selected_caption = if let Some(point) = sand.picked {
             format!(
                 "Reference point: {:.6}, {:.6}",
                 point.latitude, point.longitude
@@ -772,18 +798,28 @@ pub(super) fn update(world: &mut World) {
                 .unwrap_or_else(|error| error.into_inner())
                 .is_none()
         });
+        let now = std::time::Instant::now();
+        let should_wake = pending && sand.next_wake <= now;
+        if status_changed {
+            crate::native::sand_panel::status(world, status, caption.clone());
+            if let Some(mut sand) = world.get_mut::<MapSand>(owner) {
+                sand.last_status = caption;
+            }
+        }
         if world
             .get::<Text>(selected_text)
-            .is_some_and(|text| text.0 != caption)
+            .is_some_and(|text| text.0 != selected_caption)
         {
-            crate::native::sand_panel::status(world, selected_text, caption);
+            crate::native::sand_panel::status(world, selected_text, selected_caption);
         }
-        if pending && world.get::<MapSand>(owner).unwrap().next_wake <= std::time::Instant::now() {
+        if should_wake {
+            let delay = std::time::Duration::from_millis(250);
             if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
-                wake.after(std::time::Duration::from_millis(250));
+                wake.after(delay);
             }
-            world.get_mut::<MapSand>(owner).unwrap().next_wake =
-                std::time::Instant::now() + std::time::Duration::from_millis(250);
+            if let Some(mut sand) = world.get_mut::<MapSand>(owner) {
+                sand.next_wake = now + delay;
+            }
         }
     }
 }
@@ -806,7 +842,12 @@ pub(super) fn palette(world: &World, owner: Entity) -> Palette {
 }
 
 fn overlays(world: &mut World, owner: Entity) {
-    let sand = world.get::<MapSand>(owner).unwrap();
+    let Some(sand) = world.get::<MapSand>(owner) else {
+        return;
+    };
+    if world.get_entity(sand.overlay).is_err() {
+        return;
+    }
     let stamp = format!(
         "{:?}:{:?}:{:?}:{:?}:{:?}:{:?}",
         sand.camera,
@@ -987,7 +1028,9 @@ fn overlays(world: &mut World, owner: Entity) {
             crate::native::accessibility::input(world, dot, &label, false);
         }
     }
-    world.get_mut::<MapSand>(owner).unwrap().marker_stamp = stamp;
+    if let Some(mut sand) = world.get_mut::<MapSand>(owner) {
+        sand.marker_stamp = stamp;
+    }
 }
 
 fn pointer(world: &World, viewport: Entity) -> Option<[f64; 2]> {
@@ -1042,12 +1085,9 @@ fn shared_picker(world: &mut World, owner: Entity) {
 }
 
 fn picker(world: &mut World, owner: Entity) -> Option<Entity> {
-    let Some(sand) = world.get::<MapSand>(owner) else {
-        return None;
-    };
-    if let Some(picker) = sand.source_picker {
+    let mut sand = world.get_mut::<MapSand>(owner)?;
+    if let Some(picker) = sand.source_picker.take() {
         world.despawn(picker);
-        world.get_mut::<MapSand>(owner).unwrap().source_picker = None;
         return None;
     }
     let picker = crate::native::sand_panel::column(world, owner);
@@ -1068,7 +1108,11 @@ fn picker(world: &mut World, owner: Entity) -> Option<Entity> {
         crate::native::token_style::background(crate::native::tokens::Token::Surface),
     ));
     crate::native::scroll_sand::attach(world, picker);
-    world.get_mut::<MapSand>(owner).unwrap().source_picker = Some(picker);
+    let Some(mut sand) = world.get_mut::<MapSand>(owner) else {
+        world.despawn(picker);
+        return None;
+    };
+    sand.source_picker = Some(picker);
     Some(picker)
 }
 
@@ -1098,8 +1142,9 @@ fn source_records(world: &mut World, owner: Entity) {
                 .take(10_000)
                 .collect()
         });
-    if world.get::<MapSand>(owner).unwrap().records != records {
-        let mut sand = world.get_mut::<MapSand>(owner).unwrap();
+    if let Some(mut sand) = world.get_mut::<MapSand>(owner)
+        && sand.records != records
+    {
         sand.records = records;
         sand.markers.clear();
     }
@@ -1156,8 +1201,10 @@ fn drag_start(mut event: On<PointerDragStart>, mut commands: Commands) {
         let Some(point) = pointer(world, viewport) else {
             return;
         };
-        if let Some(owner) = world.get::<Viewport>(viewport).map(|viewport| viewport.0) {
-            world.get_mut::<MapSand>(owner).unwrap().drag_start = Some(point);
+        if let Some(owner) = world.get::<Viewport>(viewport).map(|viewport| viewport.0)
+            && let Some(mut sand) = world.get_mut::<MapSand>(owner)
+        {
+            sand.drag_start = Some(point);
         }
     });
     event.propagate(false);

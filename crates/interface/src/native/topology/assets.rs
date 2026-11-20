@@ -1176,7 +1176,7 @@ mod tests {
             world.get::<Bounds>(copy).unwrap().min,
             Vec3::new(-0.5, 0.0, -0.5)
         );
-        let saved = snapshot(&mut world, root);
+        let saved = snapshot(&mut world, root).expect("capture the fixture snapshots");
         assert!(
             saved
                 .iter()
@@ -1350,7 +1350,7 @@ impl SavedAsset {
     }
 }
 
-pub fn snapshot(world: &mut World, root: Entity) -> Vec<SavedAsset> {
+pub fn snapshot(world: &mut World, root: Entity) -> Result<Vec<SavedAsset>, String> {
     world
         .query::<(
             Entity,
@@ -1366,13 +1366,15 @@ pub fn snapshot(world: &mut World, root: Entity) -> Vec<SavedAsset> {
                     .get::<crate::native::canvas_item::Ephemeral>(*entity)
                     .is_none()
         })
-        .map(|(e, asset, item, member, _)| SavedAsset {
-            asset: asset.clone(),
-            workspace: member.0,
-            position: item.position.to_array(),
-            size: item.size.to_array(),
-            placement: crate::native::sand_placement::Placement::capture(world, e),
-            centered: world.get::<CenteredAsset>(e).is_some(),
+        .map(|(e, asset, item, member, _)| {
+            Ok(SavedAsset {
+                asset: asset.clone(),
+                workspace: member.0,
+                position: item.position.to_array(),
+                size: item.size.to_array(),
+                placement: crate::native::sand_placement::Placement::capture(world, e)?,
+                centered: world.get::<CenteredAsset>(e).is_some(),
+            })
         })
         .collect()
 }

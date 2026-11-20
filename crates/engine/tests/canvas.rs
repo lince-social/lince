@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use engine::{Engine, actions::Action};
 use nucleus::canvas::{
     Component, Geometry, Mutation, Placement, Request, Response, Snapshot, State, Workspace,

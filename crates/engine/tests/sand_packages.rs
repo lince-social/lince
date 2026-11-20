@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use engine::{Engine, EngineError, actions::Action, enrolment::CellTransport, trust::Signer};
 use nucleus::sand_package::{
     self as model, Command, Identity, Kind, License, Package, Query, Response,

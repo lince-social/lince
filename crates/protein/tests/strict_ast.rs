@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use protein::authority::RolePolicy;
 use protein::{LinkDirection, Predicate, Protein};
 use serde::Serialize;

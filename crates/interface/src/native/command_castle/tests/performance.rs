@@ -1,4 +1,5 @@
 use super::*;
+mod mixed_stream;
 use std::sync::{
     Arc,
     atomic::{AtomicBool, AtomicU64, Ordering},

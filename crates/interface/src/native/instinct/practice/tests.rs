@@ -937,7 +937,8 @@ fn discard_removes_moved_samples_and_restores_source_bindings() {
         .insert(crate::native::practice_cells::PracticeSource(
             source.clone(),
         ));
-    let saved = crate::native::sand_placement::Placement::capture(app.world(), sample);
+    let saved = crate::native::sand_placement::Placement::capture(app.world(), sample)
+        .expect("capture the fixture placement");
     assert!(saved.valid());
     let target = app.world_mut().spawn_empty().id();
     saved.restore(app.world_mut(), target);

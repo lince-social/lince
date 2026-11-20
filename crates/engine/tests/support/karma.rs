@@ -7,15 +7,21 @@ use engine::{
 pub async fn authorize(engine: &Engine) {
     let organ = store::organs::ensure_local(&engine.store.pool, "http://karma.test")
         .await
-        .unwrap();
+        .expect("the Karma test requires a local Organ");
     let cell = store::cells::local(&engine.store.pool)
         .await
-        .unwrap()
-        .unwrap();
+        .expect("read the local Cell for the Karma test")
+        .expect("the Karma test requires a local Cell");
     let root = Signer::generate(&organ.uid, ROOT_KEY_ID);
     let key = Signer::generate(&organ.uid, &engine::roster::cell_key_id(&cell.uid));
-    engine.set_signer(key.clone()).await.unwrap();
-    engine.publish_root_key(&root).await.unwrap();
+    engine
+        .set_signer(key.clone())
+        .await
+        .expect("install the Karma test signer");
+    engine
+        .publish_root_key(&root)
+        .await
+        .expect("publish the Karma test root key");
     let mut roster = engine
         .publish_roster(
             &root,
@@ -30,19 +36,25 @@ pub async fn authorize(engine: &Engine) {
             }],
         )
         .await
-        .unwrap();
+        .expect("publish the fixture roster with full capabilities");
     roster.roster.version += 1;
     roster.roster.not_after = "2100-01-01T00:00:00Z".into();
-    roster.signature =
-        root.sign_bytes(&engine::roster::roster_signing_payload(&roster.roster).unwrap());
+    let payload = engine::roster::roster_signing_payload(&roster.roster)
+        .expect("serialize the extended Karma test roster for signing");
+    roster.signature = root.sign_bytes(&payload);
     assert_eq!(
-        engine.adopt_roster(&roster).await.unwrap(),
+        engine
+            .adopt_roster(&roster)
+            .await
+            .expect("adopt the Karma test roster"),
         engine::roster::RosterOutcome::Accepted
     );
 }
 
 pub async fn engine() -> Engine {
-    let engine = Engine::open_memory().await.unwrap();
+    let engine = Engine::open_memory()
+        .await
+        .expect("open the in-memory Karma test Engine");
     authorize(&engine).await;
     engine
 }

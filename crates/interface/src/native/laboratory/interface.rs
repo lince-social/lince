@@ -1,11 +1,19 @@
-use super::driver::{Selector, UiCondition};
+use super::driver::{Limits, Runner, Selector, Step, UiAction, UiBackend, UiCondition};
 use crate::native::{actions::Action, edit_mode::EditAction};
-use bevy::{a11y::AccessibilityNode, math::DVec2, prelude::*};
+use crate::testing::InterfaceSelection;
+use bevy::{a11y::AccessibilityNode, camera::RenderTarget, math::DVec2, prelude::*};
+
+#[path = "interface/protein_visuals.rs"]
+mod protein_visuals;
+#[cfg(test)]
+#[path = "interface/protein_lifecycle.rs"]
+mod protein_lifecycle;
 
 pub(super) fn fast_cases() -> Vec<super::Case> {
     let mut cases = Vec::new();
     laboratory_cases(&mut cases);
     crate::native::accessibility::laboratory_cases(&mut cases);
+    super::driver::laboratory_cases(&mut cases);
     let mut readiness = Vec::new();
     crate::native::castle::tests::laboratory_cases(&mut readiness);
     for name in [
@@ -125,6 +133,54 @@ pub(super) fn fast_cases() -> Vec<super::Case> {
     cases
 }
 
+pub(super) fn select_cases(
+    cases: &[super::Case],
+    selection: InterfaceSelection,
+) -> std::io::Result<Vec<super::Case>> {
+    let Some((mandatory, rest)) = cases.split_first() else {
+        return Err(std::io::Error::other("No Interface checks are registered"));
+    };
+    let short_name = mandatory.name.rsplit("::").next();
+    if short_name != Some(super::requirements::PROTEIN_FILTER_CASE) {
+        return Err(std::io::Error::other(
+            "The mandatory Protein Add filter case must run first",
+        ));
+    }
+    let mut selected = vec![*mandatory];
+    selected.extend(rest.iter().copied().filter(|case| {
+        match selection {
+            InterfaceSelection::All => true,
+            InterfaceSelection::Protein => {
+                case.name.contains("::protein_area::")
+                    || case
+                        .name
+                        .ends_with("::shared_dropdown_captions_follow_available_width_and_theme")
+            }
+            InterfaceSelection::Edit => {
+                case.name.contains("::record_binding::")
+                    || case.name.ends_with("::edit_panel_usable_bounds")
+                    || case.name.ends_with(
+                        "::workspace_passwords_retain_idle_layout_and_preserve_masking_and_edits",
+                    )
+            }
+            InterfaceSelection::Input => {
+                case.name.contains("::laboratory::driver::")
+                    || case.name.contains("::accessibility::")
+                    || case.name.ends_with(
+                        "::retained_layout_keeps_scroll_reparenting_clips_and_input_order_current",
+                    )
+            }
+        }
+    }));
+    if selection != InterfaceSelection::All && selected.len() == 1 {
+        return Err(std::io::Error::other(format!(
+            "No Interface checks match the {:?} selection",
+            selection.name()
+        )));
+    }
+    Ok(selected)
+}
+
 #[cfg_attr(test, test)]
 fn performance_traces_preserve_concurrent_samples_and_report_overflow() {
     #[cfg(feature = "native-presentation")]
@@ -146,6 +202,10 @@ fn workspace_passwords_retain_idle_layout_and_preserve_masking_and_edits() {
 }
 
 #[cfg_attr(test, test)]
+#[allow(
+    clippy::unwrap_used,
+    reason = "The font regression case must fail if a fixture glyph or text component is missing"
+)]
 fn inherited_font_changes_prepare_current_glyphs_once_in_the_same_update() {
     use bevy::text::{FontSize, TextLayoutInfo};
     use crate::native::tokens::{Token, TokenOverrides, TokenValue};
@@ -202,6 +262,10 @@ fn inherited_font_changes_prepare_current_glyphs_once_in_the_same_update() {
 }
 
 #[cfg_attr(test, test)]
+#[allow(
+    clippy::unwrap_used,
+    reason = "The visibility regression case requires all fixture text components"
+)]
 fn hidden_text_defers_visual_work_and_reveals_current_edits_and_styles() {
     use bevy::text::{EditableText, FontHinting, FontSize, TextEdit, TextLayoutInfo};
     use bevy::ui::widget::TextScroll;
@@ -335,6 +399,10 @@ fn hidden_text_defers_visual_work_and_reveals_current_edits_and_styles() {
 }
 
 #[cfg_attr(test, test)]
+#[allow(
+    clippy::unwrap_used,
+    reason = "The cursor regression case treats absent fixture editor state as a failed assertion"
+)]
 fn logical_end_cursor_preserves_text_and_selection_without_eager_shaping() {
     use bevy::text::{FontCx, LayoutCx, TextBrush};
 
@@ -397,6 +465,10 @@ fn logical_end_cursor_preserves_text_and_selection_without_eager_shaping() {
 }
 
 #[cfg_attr(test, test)]
+#[allow(
+    clippy::unwrap_used,
+    reason = "The editor change-tick case requires text, cursor, and fixture observation state"
+)]
 fn untouched_editors_preserve_change_ticks_while_edits_and_cursor_updates_remain_live() {
     use bevy::{
         input_focus::{FocusCause, InputFocus},
@@ -510,13 +582,28 @@ fn untouched_editors_preserve_change_ticks_while_edits_and_cursor_updates_remain
     }
 }
 
+const INTERFACE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
+
 pub fn run_interface_checks() -> std::io::Result<Vec<super::CaseResult>> {
+    run_interface_checks_with_timeout(INTERFACE_TIMEOUT)
+}
+
+pub fn run_interface_checks_with_timeout(
+    timeout: std::time::Duration,
+) -> std::io::Result<Vec<super::CaseResult>> {
+    run_selected_interface_checks(InterfaceSelection::All, timeout)
+}
+
+fn run_selected_interface_checks(
+    selection: InterfaceSelection,
+    timeout: std::time::Duration,
+) -> std::io::Result<Vec<super::CaseResult>> {
     let (sender, incoming) = std::sync::mpsc::sync_channel(1);
     let wake = crate::native::wake::WakeSignal::new(move || {
         let _ = sender.try_send(());
     });
-    let mut run = super::BehaviorRun::start_interface(Some(wake))?;
-    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(30);
+    let mut run = super::BehaviorRun::start_interface_selected(Some(wake), selection)?;
+    let deadline = std::time::Instant::now() + timeout;
     let mut reported = 0;
     loop {
         run.poll();
@@ -531,6 +618,21 @@ pub fn run_interface_checks() -> std::io::Result<Vec<super::CaseResult>> {
                 result.name,
                 result.milliseconds
             );
+            if let Some(source) = result.source {
+                eprintln!(
+                    "  Registered at {}:{}",
+                    source.path, source.registration_line
+                );
+            }
+            for rule in &result.rules {
+                eprintln!(
+                    "  [{}] {}:{}",
+                    rule.requirement.id, rule.source, rule.requirement.line
+                );
+            }
+            if let Some(error) = &result.error {
+                eprintln!("  {error}");
+            }
         }
         reported = run.results.len();
         if run.finished() {
@@ -555,12 +657,36 @@ pub fn run_interface_checks() -> std::io::Result<Vec<super::CaseResult>> {
 
 #[test]
 fn fast_interface_rules() {
-    let results = run_interface_checks().unwrap();
+    let selection = match std::env::var(InterfaceSelection::ENV) {
+        Ok(value) => value.parse().unwrap_or_else(|error| panic!("{error}")),
+        Err(std::env::VarError::NotPresent) => InterfaceSelection::All,
+        Err(error) => panic!("Could not read Interface selection: {error}"),
+    };
+    let results = run_selected_interface_checks(selection, INTERFACE_TIMEOUT).unwrap();
+    let expected = select_cases(&fast_cases(), selection).unwrap();
+    assert_eq!(results.len(), expected.len());
+    for (result, case) in results.iter().zip(expected) {
+        assert_eq!(result.name, case.name);
+        let source = result
+            .source
+            .expect("Every completed Interface case has a source");
+        assert_eq!(source.path, case.source.path);
+        assert_eq!(source.registration_line, case.source.registration_line);
+    }
     assert!(
         results[0]
             .name
             .ends_with("::protein_area_filter_visible_and_selectable")
     );
+    assert_eq!(results[0].rules.len(), 2);
+    let failures: Vec<_> = results
+        .iter()
+        .filter(|result| result.error.is_some())
+        .collect();
+    assert!(failures.is_empty(), "{failures:?}");
+    if selection != InterfaceSelection::All {
+        return;
+    }
     for name in [
         "::layout_snapshots_track_optional_components_commands_and_removals",
         "::presented_castles_keep_their_surface_while_replacement_content_settles",
@@ -595,24 +721,48 @@ fn fast_interface_rules() {
             .name
             .ends_with("::journal_updates_remain_incremental_across_acknowledgements")
     }));
-    let expected = fast_cases();
-    assert_eq!(results.len(), expected.len());
-    assert!(
-        results
-            .iter()
-            .zip(&expected)
-            .all(|(result, case)| result.name == case.name)
-    );
     let catalogue = super::catalogue();
-    let missing_or_duplicate: Vec<_> = results.iter().filter(|result| {
-        catalogue.iter().filter(|case| case.name == result.name).count() != 1
-    }).map(|result| result.name.as_str()).collect();
-    assert!(missing_or_duplicate.is_empty(), "{missing_or_duplicate:?}");
-    let failures: Vec<_> = results
+    let missing_or_duplicate: Vec<_> = results
         .iter()
-        .filter(|result| result.error.is_some())
+        .filter(|result| {
+            catalogue
+                .iter()
+                .filter(|case| case.name == result.name)
+                .count()
+                != 1
+        })
+        .map(|result| result.name.as_str())
         .collect();
-    assert!(failures.is_empty(), "{failures:?}");
+    assert!(missing_or_duplicate.is_empty(), "{missing_or_duplicate:?}");
+}
+
+#[test]
+fn interface_selections_preserve_order_and_require_a_matching_feature() {
+    let cases = fast_cases();
+    for selection in [
+        InterfaceSelection::Protein,
+        InterfaceSelection::Edit,
+        InterfaceSelection::Input,
+    ] {
+        let subset = select_cases(&cases, selection).unwrap();
+        assert_eq!(subset[0].name, cases[0].name);
+        assert!(subset.len() > 1 && subset.len() < cases.len());
+        let positions: Vec<_> = subset
+            .iter()
+            .map(|case| {
+                cases
+                    .iter()
+                    .position(|candidate| candidate.name == case.name)
+                    .unwrap()
+            })
+            .collect();
+        assert!(positions.windows(2).all(|pair| pair[0] < pair[1]));
+        assert!(select_cases(&cases[..1], selection).is_err());
+    }
+    assert!(select_cases(&[], InterfaceSelection::All).is_err());
+    assert!(select_cases(&cases[1..], InterfaceSelection::All).is_err());
+    assert!("".parse::<InterfaceSelection>().is_err());
+    assert!("missing-feature".parse::<InterfaceSelection>().is_err());
 }
 
 fn fixture(size: UVec2, scale: f32) -> (App, Entity) {
@@ -642,20 +792,35 @@ fn fixture(size: UVec2, scale: f32) -> (App, Entity) {
         bevy::input_focus::InputFocusPlugin,
         bevy::ui_widgets::ButtonPlugin,
         bevy::ui::UiPlugin,
-        crate::native::theme::ThemePlugin,
-        crate::native::sand::SandPlugin,
-        crate::native::workspace::WorkspacePlugin,
-        crate::native::edit_mode::EditModePlugin,
     ))
     .add_plugins((
         bevy::mesh::MeshPlugin,
         bevy::camera::visibility::VisibilityPlugin,
+        bevy::input_focus::InputDispatchPlugin,
+    ));
+    prepare_fixture(app, size, scale, RenderTarget::default())
+}
+
+#[allow(
+    clippy::unwrap_used,
+    reason = "Missing edit controls make the shared interface fixture invalid"
+)]
+fn prepare_fixture(mut app: App, size: UVec2, scale: f32, target: RenderTarget) -> (App, Entity) {
+    app.add_plugins((
+        crate::native::theme::ThemePlugin,
+        crate::native::sand::SandPlugin,
+        crate::native::workspace::WorkspacePlugin,
+        crate::native::edit_mode::EditModePlugin,
+        bevy::input_focus::tab_navigation::TabNavigationPlugin,
+        bevy::input_focus::pointer_focus::PointerFocusPlugin,
         crate::native::icons::IconPlugin,
     ))
     .init_resource::<Assets<TextureAtlasLayout>>()
-    .insert_resource(UiScale(scale));
+    .insert_resource(UiScale(scale))
+    .insert_resource(ClearColor(crate::native::theme::PAPER));
     app.world_mut().spawn((
         Camera2d,
+        target,
         Camera {
             computed: bevy::camera::ComputedCameraValues {
                 target_info: Some(bevy::camera::RenderTargetInfo {
@@ -678,6 +843,8 @@ fn fixture(size: UVec2, scale: f32) -> (App, Entity) {
             },
         ))
         .id();
+    app.finish();
+    app.cleanup();
     app.update();
     let toggle = app
         .world()
@@ -689,6 +856,35 @@ fn fixture(size: UVec2, scale: f32) -> (App, Entity) {
         .entity_mut(toolbar)
         .insert(Visibility::Visible);
     (app, root)
+}
+
+fn rendered_fixture(size: UVec2, configure: impl FnOnce(&mut App)) -> (App, Entity) {
+    use bevy::{
+        picking::{input::PointerInputPlugin, pointer::PointerId},
+        render::render_resource::TextureFormat,
+    };
+    let mut app = App::new();
+    super::isolate(app.world_mut());
+    let mut plugins = super::showoff::screenshot::offscreen_plugins(size.to_array())
+        .disable::<PointerInputPlugin>();
+    if plugins.contains::<bevy::ui_widgets::MenuPlugin>() {
+        plugins = plugins.disable::<bevy::ui_widgets::MenuPlugin>();
+    }
+    app.add_plugins(plugins);
+    let target = app
+        .world_mut()
+        .resource_mut::<Assets<Image>>()
+        .add(Image::new_target_texture(
+            size.x,
+            size.y,
+            TextureFormat::Bgra8UnormSrgb,
+            None,
+        ));
+    app.world_mut().spawn(PointerId::Mouse);
+    let target = RenderTarget::Image(target.into());
+    app.insert_resource(crate::native::app::OutputTarget(target.clone()));
+    configure(&mut app);
+    prepare_fixture(app, size, 1.0, target)
 }
 
 fn named(world: &mut World, parent: Entity, name: &str) -> Entity {
@@ -786,99 +982,582 @@ fn settle(app: &mut App) {
     panic!("Native UI layout did not settle within 16 frames");
 }
 
-fn click(app: &mut App, root: Entity, name: &str, condition: UiCondition) {
-    use super::driver::{Limits, Runner, Selector, Step, UiAction, UiBackend};
+fn drive_step(
+    app: &mut App,
+    root: Entity,
+    step: Step<UiAction, UiCondition>,
+) -> crate::testing::Report {
     let mut runner = Runner::new(Limits {
         timeout: std::time::Duration::from_secs(2),
         max_polls: 16,
     });
-    let step = Step::action(
+    let target = app
+        .world()
+        .get_resource::<crate::native::app::OutputTarget>()
+        .and_then(|target| target.0.normalize(None));
+    let mut backend = UiBackend::new(app, root);
+    if let Some(target) = target {
+        backend = backend.with_pointer_target(target);
+    }
+    runner.run(&mut backend, &step)
+}
+
+fn click_step(name: &str, condition: UiCondition) -> Step<UiAction, UiCondition> {
+    Step::action(
         name,
         Selector::new(name).with_role("Button"),
         UiAction::Click,
         condition,
-    );
-    let report = runner.run(&mut UiBackend::new(app, root), &step);
+    )
+}
+
+fn click(app: &mut App, root: Entity, name: &str, condition: UiCondition) {
+    let report = drive_step(app, root, click_step(name, condition));
     assert!(report.is_success(), "{report:?}");
 }
 
-#[cfg_attr(test, test)]
-fn protein_area_filter_visible_and_selectable() {
-    let (mut app, root) = fixture(UVec2::new(1000, 800), 1.0);
+fn protein_step(app: &mut App, root: Entity, step: Step<UiAction, UiCondition>) -> bool {
+    let report = drive_step(app, root, step);
+    if report.outcome == crate::testing::Outcome::Cancelled {
+        return false;
+    }
+    assert!(
+        report.is_success(),
+        "{report:?}\n{}",
+        protein_visuals::describe(app.world(), root, &report.selector.name)
+    );
+    true
+}
+
+fn protein_steps(
+    app: &mut App,
+    root: Entity,
+    steps: impl IntoIterator<Item = Step<UiAction, UiCondition>>,
+) -> bool {
+    steps.into_iter().all(|step| protein_step(app, root, step))
+}
+
+fn protein_paint(app: &mut App, editor: Entity, phase: &str, label: &str, caption: &str) -> bool {
+    let control = named(app.world_mut(), editor, label);
+    match protein_visuals::verify_paint(app, control, caption) {
+        Ok(()) => true,
+        Err(error) if error.kind() == std::io::ErrorKind::Interrupted => false,
+        Err(error) => panic!(
+            "{phase}: {error}\n{}",
+            protein_visuals::describe(app.world(), editor, label)
+        ),
+    }
+}
+
+async fn wait_for_protein(
+    app: &mut App,
+    wake: &tokio::sync::Notify,
+    condition: impl Fn(&World) -> bool,
+) -> bool {
+    let cancellation = crate::testing::Cancellation::current();
+    let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(5);
+    for _ in 0..32 {
+        if cancellation.is_cancelled() {
+            return false;
+        }
+        app.update();
+        if condition(app.world()) {
+            return true;
+        }
+        tokio::select! {
+            biased;
+            () = cancellation.cancelled() => return false,
+            wake = tokio::time::timeout_at(deadline, wake.notified()) => {
+                wake.expect("The private Protein fixture did not publish a ready result before the deadline");
+            }
+        }
+    }
+    panic!("The private Protein fixture exceeded its readiness wake budget");
+}
+
+struct PrivateProteinFixture {
+    app: App,
+    root: Entity,
+    area: Entity,
+    records: Vec<String>,
+    ready: std::sync::Arc<tokio::sync::Notify>,
+}
+
+async fn private_protein_fixture(
+    seeds: &[(nucleus::RecordKind, &str)],
+    configure: impl FnOnce(&mut App),
+) -> PrivateProteinFixture {
+    use crate::native::{
+        app::CellHandle,
+        cell_bridge::CellBridgePlugin,
+        protein_area::{self, ProteinAreaPlugin},
+        protein_castle::ProteinCastlePlugin,
+        wake::WakeSignal,
+    };
+    use std::sync::Arc;
+
+    let engine = Arc::new(
+        engine::Engine::open_memory()
+            .await
+            .expect("Private Protein store"),
+    );
+    let mut records = Vec::new();
+    for &(kind, title) in seeds {
+        let uid = engine
+            .act(
+                engine::actions::Action::CreateRecord {
+                    slug: None,
+                    kind,
+                    head: title.into(),
+                    body: "Private Laboratory data".into(),
+                    quantity: 1.0,
+                },
+                None,
+            )
+            .await
+            .expect("Seed the private Protein store")
+            .created
+            .expect("The seeded Record has a UID");
+        records.push(uid);
+    }
+    let cell = cell::CellRuntime {
+        commands: Default::default(),
+        store: engine.store.clone(),
+        engine,
+        lanes: Arc::new(cell::LaneHub::new()),
+        wire: Default::default(),
+        fiote: None,
+        speech: None,
+        information: None,
+    };
+    let ready = Arc::new(tokio::sync::Notify::new());
+    let wake = Arc::clone(&ready);
+    let (mut app, root) = rendered_fixture(UVec2::new(800, 720), |app| {
+        app.insert_resource(CellHandle(cell))
+            .insert_resource(WakeSignal::new(move || wake.notify_one()))
+            .init_resource::<bevy::clipboard::Clipboard>()
+            .add_plugins((
+                CellBridgePlugin,
+                ProteinAreaPlugin,
+                ProteinCastlePlugin,
+                crate::controls::editing::TextEditingPlugin,
+            ));
+        configure(app);
+    });
     EditAction::Open.apply(app.world_mut(), root);
     let mut area = crate::native::area::InfluenceArea::new(
         crate::native::area::AreaShape::Square,
         DVec2::ZERO,
         DVec2::splat(320.0),
     );
-    area.protein = Some(crate::native::protein_area::Config::default());
-    let area = crate::native::area::spawn_area(app.world_mut(), root, 1, area).unwrap();
-    crate::native::protein_area::ConfigureProtein.apply(app.world_mut(), area);
+    area.protein = Some(protein_area::Config::default());
+    let area = crate::native::area::spawn_area(app.world_mut(), root, 1, area)
+        .expect("The fixture has an active workspace");
+    PrivateProteinFixture {
+        app,
+        root,
+        area,
+        records,
+        ready,
+    }
+}
+
+fn open_protein_editor(app: &mut App, root: Entity, area: Entity) -> Entity {
+    use crate::native::protein_area::{ConfigureProtein, QueryEditor};
+
+    ConfigureProtein.apply(app.world_mut(), area);
     EditAction::Close.apply(app.world_mut(), root);
     let editor = app
         .world_mut()
-        .query::<(Entity, &crate::native::protein_area::QueryEditor)>()
+        .query::<(Entity, &QueryEditor)>()
         .iter(app.world())
         .find(|(_, link)| link.0 == area)
-        .unwrap()
+        .expect("An Area opens its Protein editor")
         .0;
+    size_protein_editor(app.world_mut(), editor);
+    editor
+}
+
+fn size_protein_editor(world: &mut World, editor: Entity) {
+    let mut node = world
+        .get_mut::<Node>(editor)
+        .expect("The Protein editor is laid out");
+    node.width = px(720);
+    node.height = px(680);
+}
+
+#[cfg_attr(test, tokio::test)]
+#[allow(
+    clippy::unwrap_used,
+    reason = "The mandatory Protein Area case must fail if a filter control or rendered choice is missing"
+)]
+async fn protein_area_filter_visible_and_selectable() {
+    use crate::native::{
+        protein_area,
+        protein_castle::{ProteinCastle, ProteinResults},
+    };
+    use bevy::input::keyboard::Key;
+
+    const MATCHING_TITLE: &str = "Visible filter fixture";
+    const FILTER_VALUE: &str = "plain";
+    const RUN_QUERY: &str = "Run this query and keep results live";
+
+    let PrivateProteinFixture {
+        mut app,
+        root,
+        area,
+        records,
+        ready,
+    } = private_protein_fixture(
+        &[
+            (nucleus::RecordKind::Plain, MATCHING_TITLE),
+            (nucleus::RecordKind::Rule, "Unmatched filter fixture"),
+        ],
+        |_| {},
+    )
+    .await;
+    if !wait_for_protein(&mut app, &ready, |world| {
+        protein_area::feed_ready(world, area)
+            && protein_area::calendar_feed(world, area).is_some_and(|(rows, _)| {
+                records.iter().all(|uid| {
+                    rows.iter()
+                        .any(|row| row["uid"].as_str() == Some(uid.as_str()))
+                })
+            })
+    })
+    .await
     {
-        let mut node = app.world_mut().get_mut::<Node>(editor).unwrap();
-        node.width = px(720);
-        node.height = px(680);
+        return;
     }
-    settle(&mut app);
-    click(
+    let editor = open_protein_editor(&mut app, root, area);
+    let add = Selector::new("Add a condition").with_role("Button");
+    let condition = Selector::new("Condition").with_role("Button");
+    let text = Selector::new("Text contains").with_role("Button");
+    let kind = Selector::new("Kind").with_role("Button");
+    let value = Selector::new("Record kind").with_role("TextInput");
+    let tab = |target: &Selector| {
+        Step::action(
+            "Tab to the visible choice",
+            target.clone(),
+            UiAction::Key(KeyCode::Tab, Key::Tab),
+            UiCondition::Focused(target.clone()),
+        )
+    };
+    let open = || {
+        UiCondition::Ready(kind.clone(), |world, choice| {
+            protein_visuals::caption(world, choice, "Kind")
+        })
+    };
+    let pending_caption = || {
+        UiCondition::Ready(condition.clone(), |world, control| {
+            protein_visuals::caption(world, control, "Text contains")
+        })
+    };
+    let selected_caption = || {
+        UiCondition::Ready(condition.clone(), |world, control| {
+            protein_visuals::caption(world, control, "Kind")
+        })
+    };
+    if !protein_steps(
         &mut app,
         editor,
-        "Add a condition",
-        UiCondition::Visible(Selector::new("Condition").with_role("Button")),
-    );
-    settle(&mut app);
-    let toggle = named(app.world_mut(), editor, "Condition");
-    assert!(
-        glyphs(app.world(), toggle, "Text contains"),
-        "The closed Protein condition caption has no visible glyphs"
-    );
-    click(
+        [
+            Step::observe(
+                "lay out the filter editor",
+                add.clone(),
+                UiCondition::Ready(add, |_, _| true),
+            ),
+            click_step("Add a condition", pending_caption()),
+        ],
+    ) || !protein_paint(&mut app, editor, "closed", "Condition", "Text contains")
+    {
+        return;
+    }
+    if !protein_steps(
         &mut app,
         editor,
-        "Condition",
-        UiCondition::Visible(Selector::new("Kind").with_role("Button")),
-    );
-    settle(&mut app);
-    let menu = app
-        .world()
-        .get::<crate::native::dropdown::Dropdown>(toggle)
-        .unwrap()
-        .menu;
-    let choice = named(app.world_mut(), menu, "Kind");
-    assert!(
-        glyphs(app.world(), choice, "Kind"),
-        "The Protein filter choice has no visible glyphs"
-    );
-    click(
+        [
+            click_step("Condition", open()),
+            Step::observe(
+                "ordinary pointer input focuses the condition",
+                condition.clone(),
+                UiCondition::Focused(condition.clone()),
+            ),
+            Step::observe(
+                "shape the first open choice",
+                text.clone(),
+                UiCondition::Ready(text.clone(), |world, control| {
+                    protein_visuals::caption(world, control, "Text contains")
+                }),
+            ),
+        ],
+    ) || !protein_paint(&mut app, editor, "expanded", "Kind", "Kind")
+    {
+        return;
+    }
+    if !protein_steps(
         &mut app,
         editor,
-        "Kind",
-        UiCondition::Absent(Selector::new("Kind").with_role("Button")),
-    );
-    settle(&mut app);
-    let toggle = named(app.world_mut(), editor, "Condition");
-    assert!(glyphs(app.world(), toggle, "Kind"));
+        [
+            tab(&text),
+            tab(&kind),
+            Step::action(
+                "Escape from the open menu",
+                kind.clone(),
+                UiAction::Key(KeyCode::Escape, Key::Escape),
+                UiCondition::Focused(condition.clone()),
+            ),
+            Step::observe(
+                "Escape closes without selecting",
+                kind.clone(),
+                UiCondition::Absent(kind.clone()),
+            ),
+            Step::observe(
+                "Escape preserves the caption",
+                condition.clone(),
+                pending_caption(),
+            ),
+            Step::action(
+                "open the current condition with Enter",
+                condition.clone(),
+                UiAction::Key(KeyCode::Enter, Key::Enter),
+                open(),
+            ),
+            tab(&text),
+            tab(&kind),
+            Step::action(
+                "select Kind with Enter",
+                kind.clone(),
+                UiAction::Key(KeyCode::Enter, Key::Enter),
+                UiCondition::Absent(kind.clone()),
+            ),
+            Step::observe(
+                "shape the selected condition's caption",
+                condition.clone(),
+                selected_caption(),
+            ),
+        ],
+    ) || !protein_paint(&mut app, editor, "selected", "Condition", "Kind")
+    {
+        return;
+    }
+    if !protein_steps(
+        &mut app,
+        editor,
+        [
+            Step::observe(
+                "lay out the condition value",
+                value.clone(),
+                UiCondition::Ready(value.clone(), |_, _| true),
+            ),
+            Step::action(
+                "click the condition value",
+                value.clone(),
+                UiAction::Click,
+                UiCondition::Focused(value.clone()),
+            ),
+            Step::action(
+                "type the condition value",
+                value.clone(),
+                UiAction::Text(FILTER_VALUE.into()),
+                UiCondition::Value(value, FILTER_VALUE.into()),
+            ),
+        ],
+    ) {
+        return;
+    }
     let query = &app
         .world()
-        .get::<crate::native::protein_castle::ProteinCastle>(editor)
+        .get::<ProteinCastle>(editor)
         .unwrap()
         .draft
         .query;
-    assert!(
-        query["where"][0]["all"][0].get("kind_eq").is_some(),
-        "{query:?}"
+    assert_eq!(
+        query["where"],
+        serde_json::json!([{"all":[{"kind_eq":FILTER_VALUE}]}])
+    );
+
+    let previous_revision = app.world().get::<ProteinResults>(editor).unwrap().revision;
+    if !protein_step(
+        &mut app,
+        editor,
+        click_step(RUN_QUERY, UiCondition::Check(|_| true)),
+    ) {
+        return;
+    }
+    if !wait_for_protein(&mut app, &ready, |world| {
+        protein_area::calendar_status(world, area) == "Live"
+            && world
+                .get::<ProteinResults>(editor)
+                .is_some_and(|results| results.current && results.revision != previous_revision)
+    })
+    .await
+    {
+        return;
+    }
+    let rows = &app.world().get::<ProteinResults>(editor).unwrap().rows;
+    let observed: Vec<_> = rows
+        .iter()
+        .map(|row| (row["uid"].as_str(), row["head"].as_str()))
+        .collect();
+    assert_eq!(
+        observed,
+        [(Some(records[0].as_str()), Some(MATCHING_TITLE))]
+    );
+    let run = Selector::new(RUN_QUERY).with_role("Button");
+    protein_step(
+        &mut app,
+        editor,
+        Step::observe(
+            "shape the title of the returned record",
+            run.clone(),
+            UiCondition::Ready(run, |world, button| {
+                protein_visuals::result_caption(world, button, MATCHING_TITLE)
+            }),
+        ),
     );
 }
 
+#[cfg(test)]
+#[tokio::test]
+#[ignore = "private offscreen cross-feature coverage case"]
+async fn first_protein_result_frame_uses_the_theme_changed_during_held_delivery() {
+    use crate::native::{
+        cell_bridge::{CellBridge, CellMessage, RECORDS, ReceiveCell},
+        protein_castle::ProteinResults,
+        tokens::{ThemeSettings, Token, TokenValue},
+    };
+    use bevy::render::view::screenshot::Screenshot;
+    use std::time::{Duration, Instant};
+
+    const TITLE: &str = "First asynchronous result";
+    const RUN: &str = "Run this query and keep results live";
+    #[derive(Resource, Default)]
+    struct FirstResultFrame(Option<(Entity, Entity)>);
+
+    let PrivateProteinFixture {
+        mut app,
+        root,
+        area,
+        records,
+        ..
+    } = private_protein_fixture(&[(nucleus::RecordKind::Plain, TITLE)], |app| {
+        app.configure_sets(Update, ReceiveCell.run_if(|| false));
+    })
+    .await;
+    let editor = open_protein_editor(&mut app, root, area);
+    app.update();
+
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    let cancellation = crate::testing::Cancellation::current();
+    let mut held = Vec::new();
+    let mut found = false;
+    while held.len() < 32 && !found {
+        let mut bridge = app.world_mut().non_send_mut::<CellBridge>();
+        let message = tokio::select! {
+            biased;
+            () = cancellation.cancelled() => return,
+            message = tokio::time::timeout_at(deadline, bridge.incoming.recv()) => {
+                message.expect("The private Area should submit its initial query").expect("Private Cell disconnected")
+            }
+        };
+        found = matches!(&message, cell::ServerMessage::Snapshot { id, rows }
+            if id != RECORDS && rows.iter().any(|row| row["uid"] == records[0]));
+        held.push(message);
+    }
+    assert!(
+        found,
+        "The first private query result did not reach the receive boundary"
+    );
+    assert!(
+        app.world()
+            .get::<ProteinResults>(editor)
+            .unwrap()
+            .rows
+            .is_empty()
+    );
+
+    let ink = TokenValue::Color([145, 235, 250, 255]);
+    assert!(
+        app.world_mut()
+            .resource_mut::<ThemeSettings>()
+            .global
+            .set(Token::Ink, ink)
+    );
+    app.update();
+    assert!(protein_visuals::result_text(app.world(), editor, TITLE).is_none());
+    let run = named(app.world_mut(), editor, RUN);
+    let run_icon = app
+        .world()
+        .get::<Children>(run)
+        .unwrap()
+        .iter()
+        .find(|child| app.world().get::<ImageNode>(*child).is_some())
+        .expect("The first-open editor shell has a Run icon");
+
+    let target = protein_visuals::paint_target(app.world()).unwrap();
+    app.init_resource::<FirstResultFrame>()
+        .add_systems(Last, move |world: &mut World| {
+            if world.resource::<FirstResultFrame>().0.is_some() {
+                return;
+            }
+            let Some(text) = protein_visuals::result_text(world, editor, TITLE) else {
+                return;
+            };
+            if !world
+                .get::<ComputedNode>(text)
+                .is_some_and(|node| node.size().min_element() > 0.0)
+            {
+                return;
+            }
+            let screenshot = world.spawn(Screenshot::image(target.clone())).id();
+            world.resource_mut::<FirstResultFrame>().0 = Some((screenshot, text));
+        });
+    for message in held {
+        app.world_mut().write_message(CellMessage::new(message));
+    }
+    for _ in 0..8 {
+        if cancellation.is_cancelled() {
+            return;
+        }
+        app.update();
+        if app.world().resource::<FirstResultFrame>().0.is_some() {
+            break;
+        }
+    }
+    let (request, text) = app
+        .world()
+        .resource::<FirstResultFrame>()
+        .0
+        .expect("The held result should reach the first laid-out frame");
+    let results = app.world().get::<ProteinResults>(editor).unwrap();
+    assert!(results.current && results.rows.iter().any(|row| row["uid"] == records[0]));
+    assert_eq!(
+        app.world().get::<TextColor>(text).unwrap().0.to_linear(),
+        ink.linear_color().to_linear()
+    );
+    assert_eq!(
+        app.world()
+            .get::<ImageNode>(run_icon)
+            .unwrap()
+            .color
+            .to_linear(),
+        ink.linear_color().to_linear()
+    );
+    let regions = [
+        protein_visuals::PaintRegion::text(app.world(), text, TITLE).unwrap(),
+        protein_visuals::PaintRegion::icon(app.world(), run_icon, RUN).unwrap(),
+    ];
+    let deadline = Instant::now() + Duration::from_secs(5);
+    let frame = super::showoff::screenshot::read_capture(&mut app, request, deadline).unwrap();
+    protein_visuals::verify_frame(&mut app, frame, &regions, deadline).unwrap();
+}
+
 #[cfg_attr(test, test)]
+#[allow(
+    clippy::unwrap_used,
+    reason = "The edit panel geometry case requires known fixture bounds and visible workspace controls"
+)]
 fn edit_panel_usable_bounds() {
     use crate::host::{OutputId, OutputViewport, Rectangle};
     for (size, scale) in [(UVec2::new(360, 640), 1.0), (UVec2::new(1000, 1200), 1.25)] {
@@ -902,7 +1581,35 @@ fn edit_panel_usable_bounds() {
                     rotation: Default::default(),
                 },
             ));
-        EditAction::Open.apply(app.world_mut(), root);
+        if scale == 1.0 {
+            settle(&mut app);
+            let toggle = app
+                .world()
+                .get::<crate::native::edit_mode::EditMode>(root)
+                .unwrap()
+                .toggle;
+            let caption = app
+                .world()
+                .get::<AccessibilityNode>(toggle)
+                .unwrap()
+                .label()
+                .unwrap()
+                .to_owned();
+            click(
+                &mut app,
+                root,
+                &caption,
+                UiCondition::Check(|world| {
+                    world.iter_entities().any(|entity| {
+                        entity
+                            .get::<crate::native::edit_mode::EditMode>()
+                            .is_some_and(|mode| mode.enabled)
+                    })
+                }),
+            );
+        } else {
+            EditAction::Open.apply(app.world_mut(), root);
+        }
         settle(&mut app);
         let mode = app
             .world()
@@ -927,6 +1634,10 @@ fn edit_panel_usable_bounds() {
 }
 
 #[cfg_attr(test, test)]
+#[allow(
+    clippy::unwrap_used,
+    reason = "The dropdown caption case treats missing fixture labels and layout state as failures"
+)]
 fn shared_dropdown_captions_follow_available_width_and_theme() {
     let (mut app, root) = fixture(UVec2::new(1000, 800), 1.0);
     let panel = app
@@ -1033,8 +1744,19 @@ fn sync_history_controls_draw_and_respond_while_live_status_stays_visible() {
 }
 
 #[cfg_attr(test, test)]
+#[allow(
+    clippy::unwrap_used,
+    reason = "The retained layout case requires complete fixture geometry and input ordering evidence"
+)]
 fn retained_layout_keeps_scroll_reparenting_clips_and_input_order_current() {
+    use crate::native::tokens::{Token, TokenOverrides, TokenValue};
+    use bevy::text::FontSize;
+
+    #[derive(Resource, Default)]
+    struct Activated(Option<Entity>);
+
     let (mut app, root) = fixture(UVec2::new(1000, 700), 1.0);
+    app.init_resource::<Activated>();
     let mut panels = Vec::new();
     for left in [20.0, 420.0] {
         panels.push(
@@ -1067,23 +1789,38 @@ fn retained_layout_keeps_scroll_reparenting_clips_and_input_order_current() {
         ))
         .id();
     let mut controls = Vec::new();
-    for _ in 0..2 {
+    for name in ["Scrolled control", "Overlapping control"] {
+        let mut semantics = accesskit::Node::new(accesskit::Role::Button);
+        semantics.set_label(name);
         controls.push(
             app.world_mut()
                 .spawn((
                     Node {
                         position_type: PositionType::Absolute,
+                        top: px(80),
                         width: px(80),
                         height: px(30),
                         ..default()
                     },
+                    crate::native::sand::button(0),
+                    AccessibilityNode(semantics),
                     ChildOf(body),
                 ))
+                .observe(
+                    |event: On<bevy::ui_widgets::Activate>, mut activated: ResMut<Activated>| {
+                        activated.0 = Some(event.entity);
+                    },
+                )
                 .id(),
         );
     }
-    let font = app.world().resource::<crate::native::theme::Typography>().text(16.0);
-    app.world_mut().entity_mut(controls[0]).insert((Text::new("Scroll"), font));
+    let font = app
+        .world()
+        .resource::<crate::native::theme::Typography>()
+        .text(16.0);
+    app.world_mut()
+        .entity_mut(controls[0])
+        .insert((Text::new("Scroll"), font));
     settle(&mut app);
     let original = app
         .world()
@@ -1096,9 +1833,12 @@ fn retained_layout_keeps_scroll_reparenting_clips_and_input_order_current() {
         crate::native::canvas_clip::clipped_rect(viewport, clip)
     };
     let original_clip = clip_bounds(app.world());
+    let mut overrides = TokenOverrides::default();
+    overrides.set(Token::FontSize, TokenValue::Number(24.0));
     app.world_mut()
         .entity_mut(panels[0])
-        .insert(ScrollPosition(Vec2::new(0.0, 40.0)));
+        .insert((ScrollPosition(Vec2::new(0.0, 40.0)), overrides));
+    app.world_mut().entity_mut(controls[0]).insert(ZIndex(1));
     app.update();
     assert_eq!(
         app.world()
@@ -1114,10 +1854,25 @@ fn retained_layout_keeps_scroll_reparenting_clips_and_input_order_current() {
             .translation,
         original - Vec2::new(0.0, 40.0)
     );
+    assert_eq!(clip_bounds(app.world()), original_clip);
     assert_eq!(
-        clip_bounds(app.world()),
-        original_clip
+        app.world().get::<TextFont>(controls[0]).unwrap().font_size,
+        FontSize::Px(24.0)
     );
+    let report = drive_step(
+        &mut app,
+        root,
+        click_step(
+            "Scrolled control",
+            UiCondition::Check(|world| world.resource::<Activated>().0.is_some()),
+        ),
+    );
+    if report.outcome == crate::testing::Outcome::Cancelled {
+        return;
+    }
+    assert!(report.is_success(), "{report:?}");
+    assert_eq!(app.world().resource::<Activated>().0, Some(controls[0]));
+    app.world_mut().entity_mut(controls[0]).remove::<ZIndex>();
     app.world_mut().entity_mut(body).insert(ChildOf(panels[1]));
     app.update();
     assert_eq!(
@@ -1166,7 +1921,7 @@ fn retained_layout_keeps_scroll_reparenting_clips_and_input_order_current() {
 }
 
 crate::native::laboratory_cases! {
-    protein_area_filter_visible_and_selectable,
+    async protein_area_filter_visible_and_selectable,
     shared_dropdown_captions_follow_available_width_and_theme,
     edit_panel_usable_bounds,
     sync_history_controls_draw_and_respond_while_live_status_stays_visible,

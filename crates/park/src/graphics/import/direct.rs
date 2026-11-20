@@ -105,6 +105,8 @@ impl Prepared {
         }
         let prepare = prepare.finish();
         let mut release = gpu.device.create_command_encoder(&Default::default());
+        // SAFETY: Only the callback records raw commands. The source transition
+        // precedes release and the submission retains all released images.
         unsafe {
             release.as_hal_mut::<Vulkan, _, _>(|encoder| {
                 let encoder = encoder
@@ -295,6 +297,8 @@ impl Pool {
                         .dst_queue_family_index(vk::QUEUE_FAMILY_IGNORED)
                         .src_access_mask(vk::AccessFlags::TRANSFER_WRITE)
                         .dst_access_mask(vk::AccessFlags::TRANSFER_READ);
+                    // SAFETY: The old lease is gone and its submission is complete.
+                    // The barriers reacquire the live pooled image before the clear.
                     unsafe {
                         gpu.raw_device.cmd_pipeline_barrier(
                             command,

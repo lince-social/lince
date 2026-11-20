@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use simulation::fixtures::transfer::{trade, counteroffer, open_offer, private_trade};
 use nucleus::simulation::{Comparison, Predicate, Quantity, ReplayStatus, Verdict};
 use serde_json::{Value, json};

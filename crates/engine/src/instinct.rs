@@ -325,10 +325,9 @@ fn project_source(
         {
             use sha2::{Digest, Sha256};
             let hash = Sha256::digest(format!("Instinct/{name}/{}", identity.name));
-            record.uid = format!(
-                "r_{}",
-                nucleus::ulid_from(0, u128::from_be_bytes(hash[..16].try_into().unwrap()))
-            );
+            let mut entropy = [0; 16];
+            entropy.copy_from_slice(&hash[..16]);
+            record.uid = format!("r_{}", nucleus::ulid_from(0, u128::from_be_bytes(entropy)));
         }
     }
     Ok(records)

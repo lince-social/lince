@@ -102,7 +102,9 @@ pub(super) fn refresh(world: &mut World, preparation: &mut Preparation) {
             target,
             "Property changes inactive after an edit. Configured changes resume automatically.",
         );
-        let area = world.get::<InfluenceArea>(target).unwrap();
+        let Some(area) = world.get::<InfluenceArea>(target) else {
+            continue;
+        };
         let edit = candidate(field, area, &value).filter(|edit| edit.valid(area));
         let valid = edit.is_some();
         if let Some(edit) = edit {
@@ -127,17 +129,18 @@ pub(super) fn refresh(world: &mut World, preparation: &mut Preparation) {
                     crate::native::layout::edited(world, target, before, after);
                 }
             }
-            if changed {
-                edit.apply(&mut world.get_mut::<InfluenceArea>(target).unwrap());
+            if changed && let Some(mut area) = world.get_mut::<InfluenceArea>(target) {
+                edit.apply(&mut area);
             }
         }
-        world.get_mut::<AreaField>(entity).unwrap().observed = value;
+        if let Some(mut field) = world.get_mut::<AreaField>(entity) {
+            field.observed = value;
+        }
         let message = if valid { "" } else { "Invalid value" };
-        if world
-            .get::<Text>(status)
-            .is_some_and(|text| text.0 != message)
+        if let Some(mut text) = world.get_mut::<Text>(status)
+            && text.0 != message
         {
-            message.clone_into(&mut world.get_mut::<Text>(status).unwrap().0);
+            message.clone_into(&mut text.0);
             nucleus::performance::add("area-editor-status-published", 1);
         }
     }
@@ -173,12 +176,13 @@ pub(super) fn refresh(world: &mut World, preparation: &mut Preparation) {
         }
     }
     for (entity, value) in updates.drain(..) {
-        world
-            .get_mut::<EditableText>(entity)
-            .unwrap()
-            .editor
-            .set_text(&value);
-        world.get_mut::<AreaField>(entity).unwrap().observed = value;
+        let Some(mut text) = world.get_mut::<EditableText>(entity) else {
+            continue;
+        };
+        text.editor.set_text(&value);
+        if let Some(mut field) = world.get_mut::<AreaField>(entity) {
+            field.observed = value;
+        }
     }
     values.clear();
     for (entity, slider) in sliders.iter(world) {

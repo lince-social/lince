@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use engine::{Engine, actions::Action};
 use nucleus::{RecordKind, vocabulary::Command};
 use serde_json::json;

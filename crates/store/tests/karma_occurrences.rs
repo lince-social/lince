@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use std::num::NonZeroU32;
 
 use chrono::{DateTime, TimeDelta, Utc};

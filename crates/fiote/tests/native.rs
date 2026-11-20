@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use fiote::{
     communication::{
         auth::{Account, Auth, MemoryCredential, Session},

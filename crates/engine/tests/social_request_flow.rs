@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use engine::{Engine, EngineError, actions::Action, social::Network};
 use nucleus::social::{
     Command, PostDraft, PostState, PublicRequest, RequestDecision, ServiceSettings, Snippet,

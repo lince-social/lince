@@ -29,14 +29,14 @@ pub(super) fn start(channel: Arc<Channel>) {
         return;
     }
     {
-        let mut inner = channel.inner.lock().unwrap();
+        let mut inner = channel.lock_inner();
         if inner.source_started || inner.closed {
             return;
         }
         inner.source_started = true;
     }
     let Ok(handle) = tokio::runtime::Handle::try_current() else {
-        channel.inner.lock().unwrap().source_started = false;
+        channel.lock_inner().source_started = false;
         return;
     };
     handle.spawn(async move {
@@ -62,7 +62,7 @@ pub(super) fn start(channel: Arc<Channel>) {
                 _ = producer.demand.changed() => continue,
             };
             if let Ok(Ok((mut socket, _))) = connection {
-                let mut sequence = channel.inner.lock().unwrap().sequence;
+                let mut sequence = channel.lock_inner().sequence;
                 loop {
                     let message = tokio::select! {
                         _ = producer.demand.changed() => {

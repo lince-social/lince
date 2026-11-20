@@ -187,7 +187,7 @@ impl Parser<'_> {
                 }
             }
             let number = std::str::from_utf8(&self.source[start..self.cursor])
-                .unwrap()
+                .expect("the scanner accepted only ASCII number characters")
                 .parse::<f64>()
                 .map_err(|_| "Invalid number.")?;
             if !number.is_finite() {
@@ -206,7 +206,8 @@ impl Parser<'_> {
         if start == self.cursor {
             return Err(format!("Unexpected input at byte {}.", self.cursor));
         }
-        let name = std::str::from_utf8(&self.source[start..self.cursor]).unwrap();
+        let name = std::str::from_utf8(&self.source[start..self.cursor])
+            .expect("the scanner accepted only ASCII identifier characters");
         match name {
             "x" => return self.push(Instruction::Variable(0)),
             "y" => return self.push(Instruction::Variable(1)),

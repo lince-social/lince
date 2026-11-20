@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use ailuros_protocol::{Codec, Frame, HEADER_BYTES, Kind, Phase};
 use engine::{
     Engine,

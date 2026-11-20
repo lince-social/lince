@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 pub mod support;
 
 use chrono::{DateTime, TimeDelta, Utc};

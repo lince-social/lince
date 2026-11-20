@@ -10,7 +10,7 @@ Park — 3. Make local editing and saving immediate (
 
 [Organization and execution order](record:r_0PCR2DTXNGTQGBE6RBWR0ECTXW). Targets are in [benchmarks](record:r_7CWV5KN1695FW2KNPGW5X19PJ7); interaction coverage is in [workflows](record:r_33DFSQHTZFRCM758HHPN3KRWNA).
 
-**Coordination:** the earlier sync/history/database-lock/Karma delegation is historical. Inspect the current working tree before changing shared mutation/history/transaction/effect paths; do not assume an old agent is still active or that its work is complete. P94 remains unresolved without its own cause/result receipt. Preserve unrelated changes and keep backend correctness distinct from measured interface responsiveness.
+**Coordination:** the earlier sync/history/database-lock/Karma delegation is historical. Inspect the current working tree before changing shared mutation/history/transaction/effect paths; do not assume an old agent is still active or that its work is complete. The owner closed P94 on 2026-11-20 after the database-lock toast ceased to be a problem. Preserve unrelated changes and keep backend correctness distinct from measured interface responsiveness.
 
 Backend correctness fixes are not substitutes for Stage A's latency proof, and “saving is another agent's task” does not excuse a frozen interface. Keep immediate echo and unrelated input independent of required durable work, measure contention from normal sync/history/Karma activity and preserve truthful save/effect status. General feature/semantic repairs beyond these dependencies stay outside this performance queue.
 
@@ -33,7 +33,6 @@ Preserve immediate draft text, durable recovery, canonical local commit, publica
 - [P116 — Amortize one stream of local edit commits without delaying feedback.](record:r_7W7WPY7YF5B16QZ47SKY0QR6NH)
 - [P117 — Verify bounded canonical checkpoint admission.](record:r_7HD3G5KF1QDXZ5Y766H0WVQ357)
 - [P137 — Verify canonical field-text sharing.](record:r_2QC1RKFFQJ09XEE7EP15KJW6E1)
-- [P94 — Identify the cause of the database-locked toast.](record:r_576VQH1YFK5VPC5GM9024714EW)
 - [P138 — Shorten the engine-wide access gate without weakening operation validity.](record:r_6T8CDPK9MX8J93FHM5Q5JE1TA4)
 - [P139 — Remove unnecessary post-commit reaction waiting from local save feedback.](record:r_6PB6GYZ446CWCNNVS8JENYY414)
 - [P121 — Prevent a slow Cell request from delaying unrelated local edit service.](record:r_5E9VPP06MSXAM46V1MNA6T163P)
@@ -127,31 +126,14 @@ Extension @park-p137 "lince.controls" {
     }]
 }
 
-P94 — Identify the cause of the database-locked toast. (
-    @park-p94: 0,
-    is #task,
-    #park-performance-task,
-    #park-stage-a1,
+P94 — Database-lock toast is no longer reproducible in daily use. (
+    @park-p94: 1,
+    is #chapter,
     #part-of @park-dev-03-local-edits-and-storage: 35,
     #park-workflow @park-development-cycle
 ) { r_576VQH1YFK5VPC5GM9024714EW
-**Current workflow:** [Development cycle](record:r_043BC6V4K9R3X6E9E4TZP3P6J0). **Resume state:** [Current checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y).
-
-**Context:** [Source chapter](record:r_0BZMR3P9CJ1WPW82SG9AX5WPVA); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** A1 · conditional investigation. The earlier delegation is historical; no active owner or finished diagnosis is assumed.
-
-
-**Why:** contention may stall operations or expose a correctness failure independently of rendering speed. **Scope:** attribute one occurrence to the responsible database/operation and transaction/connection lifetime, using bounded logs without private values. **Close with:** the cause and one concrete fix target, or an explicit missing reproduction. Do not assume it is the FPS cause, increase timeouts to hide it, relax durability, or alter existing migrations. A subsequent implementation gets its own atomic task once its mechanism is known.
+**Closed 2026-11-20.** The owner reports the database-lock toast is no longer a problem. Local-save latency remains covered by [P136](record:r_72ZAB2H2VTQ88SE597N9CQHKJ7).
 } r_576VQH1YFK5VPC5GM9024714EW
-
-Extension @park-p94 "lince.controls" {
-    quantities [{
-        label "Mark verified"
-        value "1"
-    } {
-        label "Reopen task"
-        value "0"
-    }]
-}
 
 P138 — Shorten the engine-wide access gate without weakening operation validity. (
     @park-p138: 0,

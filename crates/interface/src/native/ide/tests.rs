@@ -3,6 +3,7 @@ use crate::native::actions::Action;
 use bevy::text::{FontCx, LayoutCx, TextEdit};
 
 mod basics;
+mod crash_recovery;
 
 #[test]
 fn editor_schedule_runs_with_the_action_and_file_services() {
@@ -22,16 +23,10 @@ pub(super) fn fixture(value: &str) -> (World, Entity, Entity, tempfile::TempDir,
 }
 
 fn fixture_in(
-    mut world: World,
+    world: World,
     value: &str,
 ) -> (World, Entity, Entity, tempfile::TempDir, PathBuf) {
-    world.init_resource::<Assets<Font>>();
-    world.init_resource::<crate::native::theme::Typography>();
-    world.init_resource::<crate::native::tokens::ThemeSettings>();
-    world.init_resource::<Documents>();
-    world.init_resource::<FontCx>();
-    world.init_resource::<LayoutCx>();
-    world.init_resource::<bevy::input_focus::InputFocus>();
+    let mut world = editor_world(world);
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("file.txt");
     std::fs::write(&path, value).unwrap();
@@ -75,6 +70,17 @@ fn fixture_in(
     world.get_mut::<ComputedNode>(viewport).unwrap().size = Vec2::new(650.0, 500.0);
     runtime::render(&mut world, owner);
     (world, root, owner, dir, path)
+}
+
+fn editor_world(mut world: World) -> World {
+    world.init_resource::<Assets<Font>>();
+    world.init_resource::<crate::native::theme::Typography>();
+    world.init_resource::<crate::native::tokens::ThemeSettings>();
+    world.init_resource::<Documents>();
+    world.init_resource::<FontCx>();
+    world.init_resource::<LayoutCx>();
+    world.init_resource::<bevy::input_focus::InputFocus>();
+    world
 }
 
 #[test]
@@ -406,7 +412,9 @@ fn stale_visible_drafts_are_retained_and_cannot_be_saved_or_closed() {
 #[test]
 fn workspace_persistence_stores_paths_and_roots_without_file_contents() {
     let (mut world, root, owner, _dir, path) = fixture("PRIVATE FILE CONTENT");
-    let saved = snapshot(&mut world, root).remove(0);
+    let saved = snapshot(&mut world, root)
+        .expect("capture the fixture snapshots")
+        .remove(0);
     assert!(saved.valid());
     let json = serde_json::to_string(&saved).unwrap();
     assert!(!json.contains("PRIVATE FILE CONTENT"));

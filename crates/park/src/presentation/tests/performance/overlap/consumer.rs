@@ -31,8 +31,10 @@ impl Consumer {
             .unwrap()
             .find(|device| !device.is_software())
             .expect("A hardware EGL device is required");
+        // SAFETY: Smithay owns this display lifetime and no raw caller terminates it.
         let display = unsafe { EGLDisplay::new(device) }.unwrap();
         let context = EGLContext::new(&display).unwrap();
+        // SAFETY: The context was created here and has never been bound to another thread.
         let mut renderer = unsafe { GlesRenderer::new(context) }.unwrap();
         let targets = std::array::from_fn(|index| {
             let buffer = output_buffer(warm, OutputId(index as u64 + 1));

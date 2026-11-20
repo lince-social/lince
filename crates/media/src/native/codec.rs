@@ -100,15 +100,18 @@ pub struct VideoDecoder(Option<Dav1dContext>);
 impl VideoDecoder {
     pub fn new() -> Result<Self> {
         let mut settings = std::mem::MaybeUninit::<Dav1dSettings>::uninit();
+        // SAFETY: `settings` provides aligned, writable storage for one Dav1dSettings.
         unsafe {
-            dav1d_default_settings(NonNull::new(settings.as_mut_ptr()).unwrap());
+            dav1d_default_settings(NonNull::from(&mut settings).cast());
         }
+        // SAFETY: dav1d_default_settings initializes the entire settings value.
         let mut settings = unsafe { settings.assume_init() };
         settings.n_threads = 1;
         settings.max_frame_delay = 1;
         settings.apply_grain = 0;
         settings.frame_size_limit = 1920 * 1080;
         let mut context = None;
+        // SAFETY: Both locals are initialized and exclusively borrowed for this call.
         let result = unsafe {
             dav1d_open(
                 Some(NonNull::from(&mut context)),
@@ -126,14 +129,18 @@ impl VideoDecoder {
             return Err(MediaError("Invalid AV1 frame size".into()));
         }
         let mut data = Dav1dData::default();
+        // SAFETY: `data` is valid writable storage for the new packet reference.
         let buffer = unsafe { dav1d_data_create(Some(NonNull::from(&mut data)), packet.len()) };
         if buffer.is_null() {
             return Err(MediaError("AV1 buffer allocation failed".into()));
         }
+        // SAFETY: The fresh allocation is disjoint from `packet` and holds `packet.len()` bytes.
         unsafe {
             std::ptr::copy_nonoverlapping(packet.as_ptr(), buffer, packet.len());
         }
+        // SAFETY: The decoder is open and `data` holds an initialized, uniquely borrowed packet.
         let sent = unsafe { dav1d_send_data(self.0, Some(NonNull::from(&mut data))) };
+        // SAFETY: Sending leaves `data` initialized, clearing its reference if it consumed it.
         unsafe {
             dav1d_data_unref(Some(NonNull::from(&mut data)));
         }
@@ -141,11 +148,13 @@ impl VideoDecoder {
             return Err(MediaError("Invalid AV1 packet".into()));
         }
         let mut picture = Dav1dPicture::default();
+        // SAFETY: The decoder is open and `picture` is writable output storage.
         let got = unsafe { dav1d_get_picture(self.0, Some(NonNull::from(&mut picture))) };
         if got.0 < 0 {
             return Ok(None);
         }
         let result = Self::frame(&picture);
+        // SAFETY: The successful get gave us an owned picture reference, and all reads are done.
         unsafe {
             dav1d_picture_unref(Some(NonNull::from(&mut picture)));
         }
@@ -180,6 +189,8 @@ impl VideoDecoder {
             let ptr = picture.data[index].ok_or_else(|| MediaError("Missing AV1 plane".into()))?;
             let mut plane = Vec::with_capacity(rows * columns);
             for row in 0..rows {
+                // SAFETY: The owned 8-bit I420 picture keeps this plane live until unref.
+                // The checked dimensions and stride keep the row within the decoder's plane.
                 let row = unsafe {
                     std::slice::from_raw_parts(
                         ptr.as_ptr().cast::<u8>().add(row * stride as usize),
@@ -211,6 +222,7 @@ impl VideoDecoder {
 
 impl Drop for VideoDecoder {
     fn drop(&mut self) {
+        // SAFETY: This is the sole close of the context returned by dav1d_open.
         unsafe {
             dav1d_close(Some(NonNull::from(&mut self.0)));
         }

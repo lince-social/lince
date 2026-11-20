@@ -43,7 +43,7 @@ impl SavedFrequencyCastle {
     }
 }
 
-pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedFrequencyCastle> {
+pub(crate) fn snapshot(world: &mut World, root: Entity) -> Result<Vec<SavedFrequencyCastle>, String> {
     world
         .query::<(
             Entity,
@@ -54,13 +54,15 @@ pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedFrequencyCas
         )>()
         .iter(world)
         .filter(|(_, parent, _, _, _)| parent.parent() == root)
-        .map(|(entity, _, member, item, castle)| SavedFrequencyCastle {
-            workspace: member.0,
-            castle: castle.clone(),
-            position: item.position.to_array(),
-            size: item.size.to_array(),
-            placement: crate::native::sand_placement::Placement::capture(world, entity),
-            tokens: crate::native::token_style::overrides(world, entity),
+        .map(|(entity, _, member, item, castle)| {
+            Ok(SavedFrequencyCastle {
+                workspace: member.0,
+                castle: castle.clone(),
+                position: item.position.to_array(),
+                size: item.size.to_array(),
+                placement: crate::native::sand_placement::Placement::capture(world, entity)?,
+                tokens: crate::native::token_style::overrides(world, entity),
+            })
         })
         .collect()
 }

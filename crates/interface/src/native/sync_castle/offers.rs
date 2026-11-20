@@ -239,14 +239,15 @@ pub(super) fn update(world: &mut World) {
             });
         if let Some(result) = result {
             world.entity_mut(owner).remove::<Job>();
-            let view = world.get::<View>(owner).unwrap();
+            let Some(mut view) = world.get_mut::<View>(owner) else {
+                continue;
+            };
             let status = view.status;
             let parent = view.preview;
             match result {
                 Ok((Backend::PreviewRecordMove { record, target }, Some(preview))) => {
                     let hash = preview["hash"].as_str().unwrap_or("").to_owned();
-                    world.get_mut::<View>(owner).unwrap().prepared =
-                        Some((record.trim().into(), target.trim().into(), hash));
+                    view.prepared = Some((record.trim().into(), target.trim().into(), hash));
                     panel::clear(world, parent);
                     label(
                         world,
@@ -279,7 +280,7 @@ pub(super) fn update(world: &mut World) {
                     );
                 }
                 Ok((Backend::MoveRecordTo { .. }, _)) => {
-                    world.get_mut::<View>(owner).unwrap().prepared = None;
+                    view.prepared = None;
                     panel::status(
                         world,
                         status,
@@ -301,8 +302,9 @@ pub(super) fn update(world: &mut World) {
             match result {
                 Ok(snapshot) => render(world, owner, snapshot),
                 Err(error) => {
-                    let status = world.get::<View>(owner).unwrap().status;
-                    panel::status(world, status, error);
+                    if let Some(status) = world.get::<View>(owner).map(|view| view.status) {
+                        panel::status(world, status, error);
+                    }
                 }
             }
         }
@@ -317,12 +319,16 @@ fn strval(value: &Value, key: &str) -> String {
 }
 fn render(world: &mut World, owner: Entity, snapshot: impl Into<Arc<Value>>) {
     let snapshot = snapshot.into();
-    let mut view = world.get_mut::<View>(owner).unwrap();
+    let Some(mut view) = world.get_mut::<View>(owner) else {
+        return;
+    };
     let parent = view.list;
     let previous = view.shown.replace(snapshot.clone());
     let mut rows = std::mem::take(&mut view.rows);
     rows.render(world, parent, owner, previous.as_deref(), &snapshot);
-    world.get_mut::<View>(owner).unwrap().rows = rows;
+    if let Some(mut view) = world.get_mut::<View>(owner) {
+        view.rows = rows;
+    }
 }
 
 fn show_move(world: &mut World, parent: Entity, m: &Value) {

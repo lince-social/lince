@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use nucleus::{
     DecimalValue,
     schedule::allocation::{Work, allocate},

@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 pub mod support;
 
 use engine::{Engine, actions::Action, trust::Signer};

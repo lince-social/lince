@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use chrono::{DateTime, Utc};
 use nucleus::karma::CadenceStep;
 use store::Store;

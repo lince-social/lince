@@ -1,5 +1,8 @@
 use super::*;
-use crate::graphics::import::tests::batches::{read, target, write};
+use crate::graphics::{
+    import::tests::batches::{read, target, write},
+    synchronization::Event,
+};
 
 fn interface_checks() {
     let checks = lince_interface::native::laboratory::run_interface_checks().unwrap();
@@ -136,20 +139,6 @@ fn pooled_targets_keep_output_and_capture_leases_clear_reuse_and_bound_replaceme
         .unwrap();
 }
 
-struct Event {
-    event: vk::Event,
-    device: ash::Device,
-    _owner: wgpu::Device,
-}
-
-impl Drop for Event {
-    fn drop(&mut self) {
-        unsafe {
-            self.device.destroy_event(self.event, None);
-        }
-    }
-}
-
 #[test]
 #[ignore = "private hardware pool GPU gate proof with bounded delayed submission; ordered interface suite first"]
 fn dropped_image_leases_cannot_recycle_a_gpu_pending_target() {
@@ -165,6 +154,7 @@ fn dropped_image_leases_cannot_recycle_a_gpu_pending_target() {
         }
         drop(actual);
         let event = Arc::new(Event {
+            // SAFETY: The renderer owns the live device and the event keeps it alive.
             event: unsafe {
                 renderer
                     .raw_device
@@ -179,20 +169,25 @@ fn dropped_image_leases_cannot_recycle_a_gpu_pending_target() {
             let event = event.clone();
             std::thread::spawn(move || {
                 let _ = gate.recv_timeout(std::time::Duration::from_secs(1));
+                // SAFETY: This thread is the only host writer and owns an Arc to the live event.
                 unsafe { event.device.set_event(event.event) }.unwrap();
             })
         };
         renderer
-            .submit_raw("pool_delayed_submission", |command| unsafe {
-                renderer.raw_device.cmd_wait_events(
-                    command,
-                    &[event.event],
-                    vk::PipelineStageFlags::HOST,
-                    vk::PipelineStageFlags::ALL_COMMANDS,
-                    &[],
-                    &[],
-                    &[],
-                );
+            .submit_raw("pool_delayed_submission", |command| {
+                // SAFETY: The recording command buffer and host-signaled event share a device.
+                // The queue retains the event until the submission completes.
+                unsafe {
+                    renderer.raw_device.cmd_wait_events(
+                        command,
+                        &[event.event],
+                        vk::PipelineStageFlags::HOST,
+                        vk::PipelineStageFlags::ALL_COMMANDS,
+                        &[],
+                        &[],
+                        &[],
+                    );
+                }
             })
             .unwrap();
         renderer.retain(event);

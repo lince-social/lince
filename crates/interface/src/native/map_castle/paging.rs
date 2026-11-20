@@ -23,19 +23,18 @@ pub(super) struct Pages {
     next: Instant,
 }
 
-pub(super) fn key(world: &mut World, owner: Entity) -> Arc<Key> {
-    identity::prepare(world, owner).key.clone()
+pub(super) fn key(world: &mut World, owner: Entity) -> Option<Arc<Key>> {
+    identity::prepare(world, owner).map(|prepared| prepared.key.clone())
 }
 
 pub(super) fn records(world: &World, owner: Entity) -> impl Iterator<Item = &String> + Clone {
-    let pages = world.get::<Pages>(owner);
+    let sand = world.get::<MapSand>(owner);
+    let pages = sand.and_then(|_| world.get::<Pages>(owner));
     pages
         .into_iter()
         .flat_map(|pages| pages.rows.iter().map(|(uid, _)| uid))
         .chain(
-            pages
-                .is_none()
-                .then(|| world.get::<MapSand>(owner).unwrap())
+            sand.filter(|_| pages.is_none())
                 .into_iter()
                 .flat_map(|sand| sand.records.iter()),
         )
@@ -51,7 +50,9 @@ pub(super) fn more(world: &mut World, owner: Entity) {
         pages.seen = 0;
         pages.rows.clear();
         pages.list_page = 0;
-        world.get_mut::<MapSand>(owner).unwrap().markers.clear();
+        if let Some(mut sand) = world.get_mut::<MapSand>(owner) {
+            sand.markers.clear();
+        }
     }
 }
 
@@ -61,27 +62,25 @@ pub(super) fn maintain(world: &mut World) {
         .iter(world)
         .collect();
     for owner in owners {
-        if !visible(world, owner)
-            || world
-                .get::<MapSand>(owner)
-                .unwrap()
-                .authority_node_id
-                .is_some()
-        {
+        let Some(sand) = world.get::<MapSand>(owner) else {
+            continue;
+        };
+        if !visible(world, owner) || sand.authority_node_id.is_some() {
             world.entity_mut(owner).remove::<Pages>();
             continue;
         }
-        if world
-            .get::<MapSand>(owner)
-            .is_some_and(|sand| sand.records.is_empty() && sand.area.is_none())
-        {
+        let list = sand.record_list;
+        let prepared = if sand.records.is_empty() && sand.area.is_none() {
+            None
+        } else {
+            identity::prepare(world, owner)
+        };
+        let Some(prepared) = prepared else {
             world.entity_mut(owner).remove::<Pages>();
             feed::reset(world, owner);
-            let list = world.get::<MapSand>(owner).unwrap().record_list;
             crate::native::sand_panel::clear(world, list);
             continue;
-        }
-        let prepared = identity::prepare(world, owner);
+        };
         let current = prepared.key.clone();
         let changed = world
             .get::<Pages>(owner)
@@ -101,11 +100,12 @@ pub(super) fn maintain(world: &mut World) {
                 next: Instant::now() + Duration::from_millis(150),
             });
             feed::reset(world, owner);
-            let list = world.get::<MapSand>(owner).unwrap().record_list;
             crate::native::sand_panel::clear(world, list);
         }
         let now = Instant::now();
-        let pages = world.get::<Pages>(owner).unwrap();
+        let Some(pages) = world.get::<Pages>(owner) else {
+            continue;
+        };
         if pages.next > now {
             continue;
         }
@@ -114,23 +114,29 @@ pub(super) fn maintain(world: &mut World) {
                 continue;
             }
             world.entity_mut(owner).remove::<Pages>();
-            world.get_mut::<MapSand>(owner).unwrap().markers.clear();
+            if let Some(mut sand) = world.get_mut::<MapSand>(owner) {
+                sand.markers.clear();
+            }
             continue;
         }
         if pages.done || pages.limited {
-            let mut pages = world.get_mut::<Pages>(owner).unwrap();
+            let Some(mut pages) = world.get_mut::<Pages>(owner) else {
+                continue;
+            };
             pages.after = pages.window_start.clone();
             pages.seen = 0;
             pages.rows.clear();
             pages.done = false;
             pages.limited = false;
-            let mut sand = world.get_mut::<MapSand>(owner).unwrap();
-            sand.markers.retain(|marker| marker.live);
-            let list = sand.record_list;
+            if let Some(mut sand) = world.get_mut::<MapSand>(owner) {
+                sand.markers.retain(|marker| marker.live);
+            }
             crate::native::sand_panel::clear(world, list);
         }
-        let pages = world.get::<Pages>(owner).unwrap();
-        let sand = world.get::<MapSand>(owner).unwrap();
+        let (Some(pages), Some(sand)) = (world.get::<Pages>(owner), world.get::<MapSand>(owner))
+        else {
+            continue;
+        };
         let query = prepared.query.as_deref().cloned();
         let action = engine::actions::Action::SavedLocation {
             request: nucleus::vocabulary::SavedLocationCommand::Page {
@@ -142,20 +148,25 @@ pub(super) fn maintain(world: &mut World) {
             },
         };
         let id = nucleus::new_uid("map-page");
-        match crate::native::sand_panel::send(
+        let sent = crate::native::sand_panel::send(
             world,
             owner,
             cell::ClientMessage::Act {
                 id: id.clone(),
                 action,
             },
-        ) {
-            Ok(()) => world.get_mut::<Pages>(owner).unwrap().pending = Some((id, now)),
+        );
+        let Some(mut pages) = world.get_mut::<Pages>(owner) else {
+            continue;
+        };
+        match sent {
+            Ok(()) => pages.pending = Some((id, now)),
             Err(error) => {
-                let mut pages = world.get_mut::<Pages>(owner).unwrap();
                 pages.done = true;
                 pages.next = now + Duration::from_secs(5);
-                world.get_mut::<MapSand>(owner).unwrap().notice = error;
+                if let Some(mut sand) = world.get_mut::<MapSand>(owner) {
+                    sand.notice = error;
+                }
             }
         }
     }
@@ -186,7 +197,9 @@ pub(super) fn receive(
             for owner in owners {
                 world.entity_mut(owner).remove::<Pages>();
                 world.entity_mut(owner).remove::<locating::Locate>();
-                let mut sand = world.get_mut::<MapSand>(owner).unwrap();
+                let Some(mut sand) = world.get_mut::<MapSand>(owner) else {
+                    continue;
+                };
                 sand.camera = Camera::default();
                 sand.picked = None;
                 sand.selection = None;
@@ -217,21 +230,22 @@ pub(super) fn receive(
             continue;
         };
         let _apply = nucleus::performance::Span::new("map-page-application");
-        if !visible(world, owner) || {
-            let current = key(world, owner);
-            world.get::<Pages>(owner).unwrap().key != current
-        } {
+        let current = visible(world, owner).then(|| key(world, owner)).flatten();
+        let Some(mut pages) = world.get_mut::<Pages>(owner) else {
+            continue;
+        };
+        if current.as_ref() != Some(&pages.key) {
             world.entity_mut(owner).remove::<Pages>();
             feed::reset(world, owner);
             continue;
         }
-        let generation = world.get::<Pages>(owner).unwrap().generation.clone();
-        let mut pages = world.get_mut::<Pages>(owner).unwrap();
         pages.pending = None;
-        let Some(data) = data.filter(|data| data["generation"] == generation) else {
+        let Some(data) = data.filter(|data| data["generation"] == pages.generation) else {
             pages.done = true;
             pages.next = Instant::now() + Duration::from_secs(5);
-            world.get_mut::<MapSand>(owner).unwrap().markers.clear();
+            if let Some(mut sand) = world.get_mut::<MapSand>(owner) {
+                sand.markers.clear();
+            }
             continue;
         };
         let features = data["features"].as_array().map_or(&[][..], Vec::as_slice);
@@ -271,7 +285,9 @@ pub(super) fn receive(
             .enumerate()
             .filter_map(|(index, feature)| feature["record"].as_str().map(|uid| (uid, index)))
             .collect();
-        let mut sand = world.get_mut::<MapSand>(owner).unwrap();
+        let Some(mut sand) = world.get_mut::<MapSand>(owner) else {
+            continue;
+        };
         sand.markers
             .retain(|marker| marker.live || !latest.contains_key(marker.record.as_str()));
         for (index, feature) in features.iter().enumerate() {
@@ -339,7 +355,7 @@ mod tests {
 
     fn respond(app: &mut App, owner: Entity, index: usize, features: Vec<Value>) {
         let id = format!("page-{index}");
-        let current = key(app.world_mut(), owner);
+        let current = key(app.world_mut(), owner).unwrap();
         if app.world().get::<Pages>(owner).is_none() {
             app.world_mut().entity_mut(owner).insert(Pages {
                 key: current,
@@ -404,9 +420,9 @@ mod tests {
             vec![json!({"record":records[2048],"head":"Next permitted Record","location":null})],
         );
         assert_eq!(app.world().get::<Pages>(owner).unwrap().rows.len(), 1);
-        let previous = key(app.world_mut(), owner);
+        let previous = key(app.world_mut(), owner).unwrap();
         app.world_mut().get_mut::<MapSand>(owner).unwrap().person = nucleus::new_uid("r");
-        assert_ne!(key(app.world_mut(), owner), previous);
+        assert_ne!(key(app.world_mut(), owner).unwrap(), previous);
         respond(
             &mut app,
             owner,
@@ -427,19 +443,55 @@ mod tests {
                 .all(|text| !text.0.contains("Old private result"))
         );
     }
+
+    #[test]
+    fn discards_pending_page_when_map_component_is_removed() {
+        let (mut app, _, owner) = super::super::tests::fixture();
+        let world = app.world_mut();
+        let key = key(world, owner).unwrap();
+        let now = Instant::now();
+        world.entity_mut(owner).insert(Pages {
+            key,
+            generation: "closed-map".into(),
+            pending: Some(("late-page".into(), now)),
+            after: None,
+            window_start: None,
+            seen: 0,
+            done: false,
+            limited: false,
+            rows: vec![(nucleus::new_uid("r"), "Previous page".into())],
+            list_page: 0,
+            next: now,
+        });
+        world.entity_mut(owner).remove::<MapSand>();
+        world.write_message(crate::native::cell_bridge::CellMessage::new(
+            cell::ServerMessage::ActionOk {
+                id: "late-page".into(),
+                created: None,
+                facts: 0,
+                warnings: vec![],
+                data: Some(json!({"generation": "closed-map", "features": []})),
+            },
+        ));
+
+        assert!(records(world, owner).next().is_none());
+        world.run_system_cached(receive).unwrap();
+        assert!(world.get::<Pages>(owner).is_none());
+    }
 }
 
 fn render_list(world: &mut World, owner: Entity) {
     let _prepare = nucleus::performance::Span::new("map-record-list-preparation");
-    let parent = world.get::<MapSand>(owner).unwrap().record_list;
+    let Some(sand) = world.get::<MapSand>(owner) else {
+        return;
+    };
+    let parent = sand.record_list;
     let page = world.get::<Pages>(owner).map_or(0, |pages| pages.list_page);
     let count = world
         .get::<Pages>(owner)
         .map_or(0, |pages| pages.rows.len());
     let rows = {
-        let located: HashSet<_> = world
-            .get::<MapSand>(owner)
-            .unwrap()
+        let located: HashSet<_> = sand
             .markers
             .iter()
             .map(|marker| marker.record.as_str())

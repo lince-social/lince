@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use engine::actions::Action;
 use nucleus::karma::Consequence;
 use nucleus::karma::scheduled_change::{BoundaryInput, DateInput, Purpose};

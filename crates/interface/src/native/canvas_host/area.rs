@@ -11,21 +11,41 @@ const OWNED: &[&str] = &[
     "paused",
 ];
 
-pub(super) fn settings(area: &InfluenceArea) -> BTreeMap<String, serde_json::Value> {
-    let mut value = serde_json::to_value(area).unwrap();
-    for key in OWNED {
-        value.as_object_mut().unwrap().remove(*key);
+fn fields(area: &InfluenceArea) -> Result<serde_json::Map<String, serde_json::Value>, String> {
+    match serde_json::to_value(area).map_err(|error| error.to_string())? {
+        serde_json::Value::Object(object) => Ok(object),
+        _ => Err("Area settings must encode as a JSON object.".into()),
     }
-    BTreeMap::from([
+}
+
+fn configuration(area: &InfluenceArea) -> Result<serde_json::Value, String> {
+    let mut value = fields(area)?;
+    for key in OWNED {
+        value.remove(*key);
+    }
+    Ok(serde_json::Value::Object(value))
+}
+
+fn encode_settings(
+    area: &InfluenceArea,
+    configuration: &serde_json::Value,
+) -> Result<BTreeMap<String, serde_json::Value>, String> {
+    Ok(BTreeMap::from([
         (
             "configuration".into(),
-            serde_json::json!(serde_json::to_string(&value).unwrap()),
+            snapshot::json_text("Area settings", configuration)?,
         ),
         (
             "activate".into(),
             serde_json::json!(area.enabled && !area.paused),
         ),
-    ])
+    ]))
+}
+
+pub(super) fn settings(
+    area: &InfluenceArea,
+) -> Result<BTreeMap<String, serde_json::Value>, String> {
+    encode_settings(area, &configuration(area)?)
 }
 
 pub(super) fn parse(
@@ -40,7 +60,7 @@ pub(super) fn parse(
             DVec2::from_array(geometry.size),
         )
     });
-    let mut value = serde_json::to_value(&area).unwrap();
+    let mut value = fields(&area)?;
     if let Some(configuration) = settings.get("configuration") {
         let configuration: serde_json::Value = serde_json::from_str(
             configuration
@@ -52,15 +72,16 @@ pub(super) fn parse(
             .as_object()
             .ok_or("Area configuration needs an object.")?;
         for (key, entry) in object {
-            if OWNED.contains(&key.as_str()) || !value.as_object().unwrap().contains_key(key) {
+            if OWNED.contains(&key.as_str()) || !value.contains_key(key) {
                 return Err(format!(
                     "Area field {key} is unknown or controlled by placement/Record ownership."
                 ));
             }
-            value[key] = entry.clone();
+            value.insert(key.clone(), entry.clone());
         }
     }
-    area = serde_json::from_value(value).map_err(|error| error.to_string())?;
+    area = serde_json::from_value(serde_json::Value::Object(value))
+        .map_err(|error| error.to_string())?;
     area.center = geometry.position;
     area.size = geometry.size;
     area.paused = !settings
@@ -74,15 +95,13 @@ pub(super) fn parse(
     Ok(area)
 }
 
-pub(super) fn component(area: &InfluenceArea) -> ContentKind {
-    let settings = settings(area);
-    let value: serde_json::Value =
-        serde_json::from_str(settings["configuration"].as_str().unwrap()).unwrap();
-    ContentKind::Native {
+pub(super) fn component(area: &InfluenceArea) -> Result<ContentKind, String> {
+    let value = configuration(area)?;
+    Ok(ContentKind::Native {
         kind: "area".into(),
-        settings,
+        settings: encode_settings(area, &value)?,
         bindings: record_references(&value),
-    }
+    })
 }
 
 pub(super) fn is_area(component: &ContentKind) -> bool {
@@ -105,7 +124,7 @@ pub(super) fn validate(
         .get::<InfluenceArea>(entity)
         .ok_or("The native area is missing.")?;
     let area = parse(settings, Some(existing), geometry)?;
-    let captured = self::component(&area);
+    let captured = self::component(&area)?;
     if captured
         .records()
         .iter()

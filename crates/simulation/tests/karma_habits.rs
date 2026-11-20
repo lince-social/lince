@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use std::future::Future;
 
 use engine::{

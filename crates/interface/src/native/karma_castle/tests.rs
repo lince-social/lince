@@ -201,7 +201,7 @@ fn new_form_is_first_and_unlinking_clears_only_the_chosen_field() {
         children.iter().position(|entity| entity == view.form)
             < children.iter().position(|entity| entity == view.list)
     );
-    let saved = snapshot(app.world_mut(), root);
+    let saved = snapshot(app.world_mut(), root).expect("capture the fixture snapshots");
     assert_eq!(saved.len(), 1);
     assert!(saved[0].valid());
 }

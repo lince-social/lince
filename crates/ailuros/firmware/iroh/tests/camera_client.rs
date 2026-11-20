@@ -23,6 +23,10 @@ struct Observations {
 
 struct Hardware(Arc<Mutex<Observations>>);
 
+#[allow(
+    clippy::unwrap_used,
+    reason = "A poisoned observations lock must fail the camera test fixture"
+)]
 impl Identity for Hardware {
     fn confirm_time(&mut self, time: i64) -> anyhow::Result<()> {
         self.0.lock().unwrap().clock = Some(time);
@@ -35,6 +39,10 @@ impl Identity for Hardware {
     }
 }
 
+#[allow(
+    clippy::unwrap_used,
+    reason = "A poisoned observations lock must fail the camera test fixture"
+)]
 impl Camera for Hardware {
     fn report(&mut self, statistics: client::Statistics) {
         self.0.lock().unwrap().reports.push(statistics);
@@ -102,13 +110,11 @@ impl Receiver {
     }
 
     async fn send(&mut self, message: Value) {
+        let payload = serde_json::to_vec(&message).expect("encode the test control message");
         self.writer
-            .send(Frame::new(
-                Kind::Control,
-                serde_json::to_vec(&message).unwrap(),
-            ))
+            .send(Frame::new(Kind::Control, payload))
             .await
-            .unwrap();
+            .expect("send the test control message");
     }
 
     fn challenge() -> Value {
@@ -118,9 +124,14 @@ impl Receiver {
 
     async fn authenticate(&mut self) {
         self.send(Self::challenge()).await;
-        let frame = self.reader.next().await.unwrap().unwrap();
+        let frame = self
+            .reader
+            .next()
+            .await
+            .expect("the device sends an authentication proof")
+            .expect("decode the authentication proof frame");
         assert_eq!(frame.kind, Kind::Control);
-        let proof: Value = serde_json::from_slice(&frame.payload).unwrap();
+        let proof: Value = serde_json::from_slice(&frame.payload).expect("parse the test proof");
         assert_eq!(proof["device"], setup().device);
         assert_eq!(proof["signal"], setup().signal);
         assert_eq!(proof["key_epoch"], 1);
@@ -141,12 +152,17 @@ impl Receiver {
     async fn frame(&mut self) -> Value {
         let frame = tokio::time::timeout(Duration::from_secs(2), self.reader.next())
             .await
-            .unwrap()
-            .unwrap()
-            .unwrap();
+            .expect("the test camera sends metadata within two seconds")
+            .expect("the test camera sends a metadata frame")
+            .expect("decode the test metadata frame");
         assert_eq!(frame.kind, Kind::Metadata);
-        let metadata: Value = serde_json::from_slice(&frame.payload).unwrap();
-        let frame = self.reader.next().await.unwrap().unwrap();
+        let metadata: Value = serde_json::from_slice(&frame.payload).expect("parse test metadata");
+        let frame = self
+            .reader
+            .next()
+            .await
+            .expect("the test camera sends data after metadata")
+            .expect("decode the test data frame");
         assert_eq!(frame.kind, Kind::Data);
         let expected_bytes = self
             .observations
@@ -183,7 +199,9 @@ impl Receiver {
             .expect("the camera client stops within one second after disconnect")
             .expect("the camera client task returns a result");
         assert!(result.is_err());
-        let state = observations.lock().expect("read the final camera test state");
+        let state = observations
+            .lock()
+            .expect("read the final camera test state");
         assert!(!state.active);
         assert_eq!(state.changes.last(), Some(&false));
     }

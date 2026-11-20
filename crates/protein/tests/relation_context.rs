@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use engine::{Engine, actions::Action};
 use serde_json::{Value, json};
 

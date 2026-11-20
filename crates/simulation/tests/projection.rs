@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use std::sync::{Arc, atomic::Ordering};
 
 use engine::actions::Action;

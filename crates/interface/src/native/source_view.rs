@@ -170,7 +170,7 @@ mod tests {
             .unwrap()
             .editor
             .set_text("");
-        capture(world, owner);
+        assert!(capture(world, owner));
         assert!(
             !world
                 .get::<SourceView>(owner)
@@ -179,6 +179,41 @@ mod tests {
                 .contains_key("learner")
         );
         assert!(world.get::<View>(owner).unwrap().preview.is_none());
+    }
+
+    #[test]
+    fn missing_source_editors_leave_the_current_preview_and_bindings_intact() {
+        let mut app = crate::native::sand_panel::tests::app();
+        let world = app.world_mut();
+        let root = world.spawn(Node::default()).id();
+        let original = "https://example.invalid/Root.lingua";
+        let owner = spawn(
+            world,
+            root,
+            1,
+            DVec2::ZERO,
+            SourceView {
+                uri: original.into(),
+                bindings: BTreeMap::from([("learner".into(), "r_first".into())]),
+                ..Default::default()
+            },
+        );
+        let preview = Arc::new(serde_json::json!({"parameters":{"learner":{"label":"Person"}}}));
+        render(world, owner, Arc::clone(&preview));
+        let view = world.get::<View>(owner).unwrap();
+        let field = view.parameters["learner"];
+        let input = view.input;
+        world.despawn(field);
+        assert!(!capture(world, owner));
+        world.despawn(input);
+        set_source(world, owner, "https://example.invalid/Other.lingua");
+        let castle = world.get::<SourceView>(owner).unwrap();
+        assert_eq!(castle.uri, original);
+        assert_eq!(castle.bindings["learner"], "r_first");
+        assert_eq!(
+            world.get::<View>(owner).unwrap().preview.as_ref(),
+            Some(&preview)
+        );
     }
 
     #[test]
@@ -204,7 +239,11 @@ mod tests {
                 .any(|text| text.0 == "Add to Cell")
         );
         assert!(world.get::<Exchange>(owner).is_some());
-        assert!(snapshot(world, root).is_empty());
+        assert!(
+            snapshot(world, root)
+                .expect("capture the fixture snapshots")
+                .is_empty()
+        );
         world.despawn(owner);
         let owner = spawn(world, root, 1, DVec2::ZERO, SourceView::default());
         render(
@@ -300,7 +339,7 @@ mod tests {
         assert!(labels.iter().any(|text| text.contains("Authored measure")));
         assert!(labels.iter().any(|text| text == "Set target quantity to 7"));
         assert!(!labels.iter().any(|text| text == "Loading source preview…"));
-        let saved = snapshot(world, root);
+        let saved = snapshot(world, root).expect("capture the fixture snapshots");
         assert_eq!(saved.len(), 1);
         let encoded = serde_json::to_value(&saved[0]).unwrap();
         assert_eq!(encoded["workspace"], 7);
@@ -434,15 +473,21 @@ pub(crate) fn exchange(world: &mut World, parent: Entity, uri: &str) -> Entity {
 }
 
 pub(crate) fn set_source(world: &mut World, owner: Entity, uri: &str) {
-    let field = world.get::<View>(owner).unwrap().input;
-    if let Some(mut text) = world.get_mut::<bevy::text::EditableText>(field) {
+    if let Some(field) = world.get::<View>(owner).map(|view| view.input)
+        && let Some(mut text) = world.get_mut::<bevy::text::EditableText>(field)
+    {
         text.editor.set_text(uri);
+        Operation::Read.apply(world, owner);
     }
-    Operation::Read.apply(world, owner);
 }
 
 fn populate(world: &mut World, owner: Entity, frame: Entity, exchange: bool) {
-    let uri = world.get::<SourceView>(owner).unwrap().uri.clone();
+    let Some(uri) = world
+        .get::<SourceView>(owner)
+        .map(|source| source.uri.clone())
+    else {
+        return;
+    };
     let input = panel::field(world, frame, "Source file, folder or URI", &uri);
     let row = panel::row(world, frame);
     panel::button(world, row, owner, "Open source", Operation::Read);
@@ -495,8 +540,9 @@ fn status(world: &mut World, owner: Entity, text: impl Into<String>) {
     if let Some(view) = world.get::<View>(owner) {
         let target = view.status;
         let text = text.into();
-        let mut current = world.get_mut::<Text>(target).unwrap();
-        if current.0 != text {
+        if let Some(mut current) = world.get_mut::<Text>(target)
+            && current.0 != text
+        {
             current.0 = text;
         }
     } else if world.entities().contains(owner) {
@@ -552,56 +598,67 @@ fn request(world: &mut World, owner: Entity, source: Source, command: Command, c
     }
 }
 
-fn capture(world: &mut World, owner: Entity) {
+fn capture(world: &mut World, owner: Entity) -> bool {
     let Some(view) = world.get::<View>(owner) else {
-        return;
+        return false;
     };
-    let uri = panel::value(world, view.input)
-        .unwrap_or_default()
-        .trim()
-        .to_owned();
-    let bindings = view
-        .parameters
-        .iter()
-        .map(|(name, input)| {
-            (
-                name.clone(),
-                panel::value(world, *input).unwrap_or_default(),
-            )
-        })
-        .collect::<BTreeMap<_, _>>();
-    let source_changed = world.get::<SourceView>(owner).unwrap().uri != uri;
+    let Ok(uri) = panel::value(world, view.input) else {
+        return false;
+    };
+    let uri = uri.trim().to_owned();
+    let Some(castle) = world.get::<SourceView>(owner) else {
+        return false;
+    };
+    let source_changed = castle.uri != uri;
+    let bindings = if source_changed {
+        BTreeMap::new()
+    } else {
+        let bindings = view
+            .parameters
+            .iter()
+            .map(|(name, input)| panel::value(world, *input).map(|value| (name.clone(), value)))
+            .collect::<Result<BTreeMap<_, _>, _>>();
+        match bindings {
+            Ok(bindings) => bindings,
+            Err(_) => {
+                status(world, owner, "A source binding editor is unavailable.");
+                return false;
+            }
+        }
+    };
+    let Some(mut castle) = world.get_mut::<SourceView>(owner) else {
+        return false;
+    };
     let mut inputs_changed = false;
-    {
-        let mut castle = world.get_mut::<SourceView>(owner).unwrap();
-        castle.uri = uri;
-        if source_changed {
-            castle.selected.clear();
-            castle.bindings.clear();
+    castle.uri = uri;
+    if source_changed {
+        castle.selected.clear();
+        castle.bindings.clear();
+        castle.current = None;
+        castle.binding = None;
+    } else {
+        for (name, value) in bindings {
+            let value = value.trim();
+            if value.is_empty() {
+                inputs_changed |= castle.bindings.remove(&name).is_some();
+            } else if castle
+                .bindings
+                .get(&name)
+                .is_none_or(|current| current != value)
+            {
+                castle.bindings.insert(name, value.into());
+                inputs_changed = true;
+            }
+        }
+        if inputs_changed {
             castle.current = None;
             castle.binding = None;
-        } else {
-            for (name, value) in bindings {
-                let value = value.trim();
-                if value.is_empty() {
-                    inputs_changed |= castle.bindings.remove(&name).is_some();
-                } else if castle
-                    .bindings
-                    .get(&name)
-                    .is_none_or(|current| current != value)
-                {
-                    castle.bindings.insert(name, value.into());
-                    inputs_changed = true;
-                }
-            }
-            if inputs_changed {
-                castle.current = None;
-                castle.binding = None;
-            }
         }
     }
     if source_changed || inputs_changed {
-        let mut view = world.get_mut::<View>(owner).unwrap();
+        let Some(mut view) = world.get_mut::<View>(owner) else {
+            return false;
+        };
         view.preview = None;
         if source_changed {
             view.pulling = false;
@@ -613,13 +670,16 @@ fn capture(world: &mut World, owner: Entity) {
             world.entity_mut(owner).remove::<outline::Outline>();
         }
     }
+    true
 }
 
 impl Action for Operation {
     fn apply(&self, world: &mut World, owner: Entity) {
         match self {
             Self::Pull => {
-                capture(world, owner);
+                if !capture(world, owner) {
+                    return;
+                }
                 let Some(view) = world.get::<View>(owner) else {
                     return;
                 };
@@ -636,8 +696,8 @@ impl Action for Operation {
                     .is_some_and(|data| data["ready"] == true)
                 {
                     Self::Import(false).apply(world, owner);
-                } else {
-                    world.get_mut::<View>(owner).unwrap().pulling = true;
+                } else if let Some(mut view) = world.get_mut::<View>(owner) {
+                    view.pulling = true;
                     Self::Preview.apply(world, owner);
                 }
             }
@@ -654,7 +714,9 @@ impl Action for Operation {
                 let source = reference_source(world, owner);
                 let destination = if world.get::<SourceView>(owner).is_some() {
                     world.entity_mut(owner).remove::<outline::Outline>();
-                    let mut castle = world.get_mut::<SourceView>(owner).unwrap();
+                    let Some(mut castle) = world.get_mut::<SourceView>(owner) else {
+                        return;
+                    };
                     castle.current = None;
                     castle.binding = None;
                     castle.selected.clear();
@@ -702,9 +764,15 @@ impl Action for Operation {
             | Self::Preview
             | Self::Import(_)
             | Self::Export(_) => {
-                capture(world, owner);
+                if !capture(world, owner) {
+                    return;
+                }
                 let _prepare = nucleus::performance::Span::new("source-command-preparation");
-                let castle = world.get::<SourceView>(owner).unwrap();
+                let (Some(castle), Some(view)) =
+                    (world.get::<SourceView>(owner), world.get::<View>(owner))
+                else {
+                    return;
+                };
                 let command = match self {
                     Self::Audit => Command::Audit {
                         uri: castle.uri.clone(),
@@ -716,11 +784,7 @@ impl Action for Operation {
                     },
                     Self::Extract => Command::Extract {
                         uri: castle.uri.clone(),
-                        destination: panel::value(
-                            world,
-                            world.get::<View>(owner).unwrap().destination,
-                        )
-                        .unwrap_or_default(),
+                        destination: panel::value(world, view.destination).unwrap_or_default(),
                     },
                     Self::Preview => Command::Preview {
                         uri: castle.uri.clone(),
@@ -729,9 +793,9 @@ impl Action for Operation {
                         refresh: true,
                     },
                     Self::Import(update) => {
-                        let Some(revision) = world
-                            .get::<View>(owner)
-                            .and_then(|view| view.preview.as_ref())
+                        let Some(revision) = view
+                            .preview
+                            .as_ref()
                             .and_then(|value| value["revision"].as_str())
                         else {
                             status(
@@ -752,11 +816,7 @@ impl Action for Operation {
                     Self::Export(media) => Command::Export {
                         uri: castle.uri.clone(),
                         selected: castle.selected.clone(),
-                        destination: panel::value(
-                            world,
-                            world.get::<View>(owner).unwrap().destination,
-                        )
-                        .unwrap_or_default(),
+                        destination: panel::value(world, view.destination).unwrap_or_default(),
                         media: *media,
                     },
                     _ => unreachable!(),
@@ -770,8 +830,12 @@ impl Action for Operation {
                 request(world, owner, source, command, false);
             }
             Self::Select(uri) => {
-                capture(world, owner);
-                let mut castle = world.get_mut::<SourceView>(owner).unwrap();
+                if !capture(world, owner) {
+                    return;
+                }
+                let Some(mut castle) = world.get_mut::<SourceView>(owner) else {
+                    return;
+                };
                 castle.current = None;
                 castle.binding = None;
                 if castle.selected.contains(uri) {
@@ -790,16 +854,16 @@ impl Action for Operation {
                 {
                     text.editor.set_text(uid);
                 }
-                world
-                    .get_mut::<SourceView>(owner)
-                    .unwrap()
-                    .bindings
-                    .insert(name.clone(), uid.clone());
-                let mut castle = world.get_mut::<SourceView>(owner).unwrap();
+                let Some(mut castle) = world.get_mut::<SourceView>(owner) else {
+                    return;
+                };
+                castle.bindings.insert(name.clone(), uid.clone());
                 castle.current = None;
                 castle.binding = None;
-                world.get_mut::<View>(owner).unwrap().preview = None;
-                Self::Preview.apply(world, owner);
+                if let Some(mut view) = world.get_mut::<View>(owner) {
+                    view.preview = None;
+                    Self::Preview.apply(world, owner);
+                }
             }
             Self::Request(command) => {
                 if let Command::Activate { record } = command
@@ -845,10 +909,12 @@ impl Action for Operation {
                 let Some(root) = root(world, owner) else {
                     return;
                 };
-                let workspace = world
+                let Some(workspace) = world
                     .get::<crate::native::workspace::Workspaces>(root)
-                    .unwrap()
-                    .active;
+                    .map(|spaces| spaces.active)
+                else {
+                    return;
+                };
                 let position = world
                     .get::<crate::native::canvas::CanvasView>(root)
                     .map_or(DVec2::ZERO, |view| view.center);
@@ -920,17 +986,18 @@ impl Action for Operation {
                             .copied()
                         {
                             let spatial = crate::native::canvas::presented_spatial(world, entity);
-                            world
-                                .get_mut::<crate::native::canvas::CanvasItem>(viewer)
-                                .unwrap()
-                                .position = item.position;
-                            world
-                                .entity_mut(viewer)
-                                .insert(crate::native::topology::Spatial {
-                                    elevation: spatial.elevation + 1.0,
-                                    rotation: spatial.rotation,
-                                    ..default()
-                                });
+                            if let Some(mut placement) =
+                                world.get_mut::<crate::native::canvas::CanvasItem>(viewer)
+                            {
+                                placement.position = item.position;
+                                world
+                                    .entity_mut(viewer)
+                                    .insert(crate::native::topology::Spatial {
+                                        elevation: spatial.elevation + 1.0,
+                                        rotation: spatial.rotation,
+                                        ..default()
+                                    });
+                            }
                             break;
                         }
                         origin = world.get::<ChildOf>(entity).map(ChildOf::parent);
@@ -1030,7 +1097,10 @@ impl Action for Operation {
                 }
             }
             Self::Focus(uid) => {
-                world.get_mut::<SourceView>(owner).unwrap().current = Some(uid.clone());
+                let Some(mut castle) = world.get_mut::<SourceView>(owner) else {
+                    return;
+                };
+                castle.current = Some(uid.clone());
                 let preview = world
                     .get::<View>(owner)
                     .and_then(|view| view.preview.clone());
@@ -1046,9 +1116,12 @@ fn render(world: &mut World, owner: Entity, data: impl Into<Arc<Value>>) {
     let _present = nucleus::performance::Span::new("source-preview-presentation");
     let data = data.into();
     let exchange = world.get::<Exchange>(owner).is_some();
-    let body = world.get::<View>(owner).unwrap().body;
+    let Some(mut view) = world.get_mut::<View>(owner) else {
+        return;
+    };
+    let (body, controls) = (view.body, view.controls);
+    view.parameters.clear();
     panel::clear(world, body);
-    let controls = world.get::<View>(owner).unwrap().controls;
     panel::clear(world, controls);
     outline::controls(world, owner, controls, &data, exchange);
     if data["audit"].is_object() {
@@ -1072,8 +1145,10 @@ fn render(world: &mut World, owner: Entity, data: impl Into<Arc<Value>>) {
             }
         }
     }
-    world.get_mut::<View>(owner).unwrap().parameters.clear();
-    if let Some(current) = world.get::<SourceView>(owner).unwrap().current.clone() {
+    if let Some(current) = world
+        .get::<SourceView>(owner)
+        .and_then(|castle| castle.current.clone())
+    {
         panel::button(
             world,
             body,
@@ -1089,18 +1164,15 @@ fn render(world: &mut World, owner: Entity, data: impl Into<Arc<Value>>) {
         for (name, input) in parameters {
             let value = world
                 .get::<SourceView>(owner)
-                .unwrap()
-                .bindings
-                .get(name)
+                .and_then(|castle| castle.bindings.get(name))
                 .cloned()
                 .or_else(|| data["bindings"][name].as_str().map(str::to_owned))
                 .unwrap_or_default();
             let field = panel::field(world, body, input["label"].as_str().unwrap_or(name), &value);
-            world
-                .get_mut::<View>(owner)
-                .unwrap()
-                .parameters
-                .insert(name.clone(), field);
+            let Some(mut view) = world.get_mut::<View>(owner) else {
+                return;
+            };
+            view.parameters.insert(name.clone(), field);
             for person in data["actors"].as_array().into_iter().flatten() {
                 if let Some(uid) = person["uid"].as_str() {
                     panel::button(
@@ -1125,10 +1197,7 @@ fn render(world: &mut World, owner: Entity, data: impl Into<Arc<Value>>) {
             "{} {}",
             if world
                 .get::<SourceView>(owner)
-                .unwrap()
-                .selected
-                .iter()
-                .any(|value| value == uri)
+                .is_some_and(|castle| castle.selected.iter().any(|value| value == uri))
             {
                 "☑"
             } else {
@@ -1191,9 +1260,7 @@ fn render(world: &mut World, owner: Entity, data: impl Into<Arc<Value>>) {
     }
     if let Some(binding) = world
         .get::<SourceView>(owner)
-        .unwrap()
-        .binding
-        .as_ref()
+        .and_then(|castle| castle.binding.as_ref())
         .filter(|_| {
             data["rules"]
                 .as_array()
@@ -1209,7 +1276,9 @@ fn render(world: &mut World, owner: Entity, data: impl Into<Arc<Value>>) {
             Operation::Request(Command::Activate { record: binding }),
         );
     }
-    world.get_mut::<View>(owner).unwrap().preview = Some(data);
+    if let Some(mut view) = world.get_mut::<View>(owner) {
+        view.preview = Some(data);
+    }
 }
 
 fn render_file(world: &mut World, owner: Entity, body: Entity, uri: &str) {
@@ -1550,8 +1619,7 @@ fn media(
             );
         }
     }
-    if world.get::<Card>(owner).is_some() {
-        let reference = world.get::<Card>(owner).unwrap().reference.clone();
+    if let Some(reference) = world.get::<Card>(owner).map(|card| card.reference.clone()) {
         panel::button(
             world,
             row,
@@ -1634,7 +1702,9 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
             .collect::<Vec<_>>();
         for card in cards {
             panel::clear(world, card);
-            world.get_mut::<Card>(card).unwrap().requested = false;
+            if let Some(mut card) = world.get_mut::<Card>(card) {
+                card.requested = false;
+            }
         }
     }
     let id = match message {
@@ -1664,21 +1734,12 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
         return;
     }
     match message {
-        ServerMessage::ActionOk { data: None, .. } if card => {
-            let reference = world.get::<Card>(owner).unwrap().reference.clone();
-            request(
-                world,
-                owner,
-                source.clone(),
-                Command::Inspect { record: reference },
-                true,
-            );
-        }
-        ServerMessage::ActionOk {
-            data: Some(data), ..
-        } if card => {
-            if !data["related"].is_array() {
-                let reference = world.get::<Card>(owner).unwrap().reference.clone();
+        ServerMessage::ActionOk { data, .. } if card => {
+            let Some(reference) = world.get::<Card>(owner).map(|card| card.reference.clone())
+            else {
+                return;
+            };
+            let Some(data) = data.as_ref().filter(|data| data["related"].is_array()) else {
                 request(
                     world,
                     owner,
@@ -1687,7 +1748,7 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
                     true,
                 );
                 return;
-            }
+            };
             panel::clear(world, owner);
             if (data["related"]
                 .as_array()
@@ -1816,7 +1877,6 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
                 }
             }
             if data["local"].is_object() && data["resource"].is_null() {
-                let reference = world.get::<Card>(owner).unwrap().reference.clone();
                 request(
                     world,
                     owner,
@@ -1829,17 +1889,6 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
         ServerMessage::ActionOk {
             data: Some(data), ..
         } => {
-            if card {
-                let reference = world.get::<Card>(owner).unwrap().reference.clone();
-                request(
-                    world,
-                    owner,
-                    source.clone(),
-                    Command::Inspect { record: reference },
-                    true,
-                );
-                return;
-            }
             if let Some(uid) = data["local_record"].as_str() {
                 Operation::Open(uid.into(), source.clone()).apply(world, owner);
                 if world.get::<ReferenceSource>(owner).is_some() {
@@ -1855,25 +1904,32 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
                 Operation::Resource(resource).apply(world, owner);
                 return;
             }
+            let Some(field) = world.get::<View>(owner).map(|view| view.input) else {
+                return;
+            };
+            let Some(mut castle) = world.get_mut::<SourceView>(owner) else {
+                return;
+            };
+            review_state(&mut castle, data);
             if let Some(entry) = data["entry"].as_str() {
                 let mut target = lince_resources::address(entry).ok();
                 if let Some(target) = &mut target {
                     target.set_fragment(data["fragment"].as_str());
                 }
                 let uri = target.map_or_else(|| entry.to_owned(), |target| target.to_string());
-                world.get_mut::<SourceView>(owner).unwrap().uri = uri.clone();
-                let field = world.get::<View>(owner).unwrap().input;
+                castle.uri.clone_from(&uri);
                 if let Some(mut text) = world.get_mut::<bevy::text::EditableText>(field) {
                     text.editor.set_text(&uri);
                 }
             }
-            review_state(&mut world.get_mut::<SourceView>(owner).unwrap(), data);
             if data["extracted"] == true {
                 Operation::Read.apply(world, owner);
             }
             if data["records"].is_array() {
-                let pulling = world.get::<View>(owner).unwrap().pulling;
-                world.get_mut::<View>(owner).unwrap().pulling = false;
+                let Some(mut view) = world.get_mut::<View>(owner) else {
+                    return;
+                };
+                let pulling = std::mem::take(&mut view.pulling);
                 render(world, owner, data.clone());
                 if pulling
                     && data["ready"] == true

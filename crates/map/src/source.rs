@@ -677,11 +677,11 @@ impl LocalArchive {
         {
             return Err("Use a version 3 PMTiles archive with plain or gzip directories".into());
         }
+        let (fields, _) = bytes[8..72].as_chunks::<8>();
         let sections: [(u64, u64); 4] = std::array::from_fn(|i| {
-            let offset = 8 + i * 16;
             (
-                u64::from_le_bytes(bytes[offset..offset + 8].try_into().unwrap()),
-                u64::from_le_bytes(bytes[offset + 8..offset + 16].try_into().unwrap()),
+                u64::from_le_bytes(fields[2 * i]),
+                u64::from_le_bytes(fields[2 * i + 1]),
             )
         });
         if sections.iter().any(|(offset, length)| {

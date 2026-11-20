@@ -25,14 +25,15 @@ fn scene(reference: bool, roots: usize, children: usize) -> Scene {
     app.add_plugins(TaskPoolPlugin::default())
         .init_resource::<UiSurface>()
         .init_resource::<UiStack>()
-        .init_resource::<FontCx>();
+        .init_resource::<FontCx>()
+        .init_resource::<RemSize>();
     if reference {
         app.add_systems(
             PostUpdate,
             (
                 reference::ui_layout_system,
                 crate::stack::reference_ui_stack_system,
-                crate::update::reference_clipping_system,
+                clipping::reference_clipping_system,
             )
                 .chain(),
         );
@@ -127,13 +128,11 @@ fn equivalent(candidate: &mut Scene, reference: &mut Scene, step: usize) {
             candidate
                 .app
                 .world()
-                .get::<CalculatedClip>(entity)
-                .map(|clip| clip.clip),
+                .get::<CalculatedClip>(entity),
             reference
                 .app
                 .world()
-                .get::<CalculatedClip>(entity)
-                .map(|clip| clip.clip),
+                .get::<CalculatedClip>(entity),
             "Clip differs at step {step}, entity {entity:?}"
         );
         assert_eq!(
@@ -628,9 +627,12 @@ fn incremental_geometry_matches_the_original_across_layout_and_hierarchy_transit
                     world.entity_mut(leaf).remove::<OverrideClip>();
                 }
                 38 => {
-                    world.entity_mut(leaf).insert(CalculatedClip {
-                        clip: bevy_math::Rect::from_corners(Vec2::ZERO, Vec2::splat(12.0)),
-                    });
+                    let mut clip = CalculatedClip::default();
+                    clip.push_rect(
+                        bevy_math::Rect::from_corners(Vec2::ZERO, Vec2::splat(12.0)),
+                        Affine2::IDENTITY,
+                    );
+                    world.entity_mut(leaf).insert(clip);
                 }
                 39 => {
                     world.entity_mut(leaf).remove::<CalculatedClip>();

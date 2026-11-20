@@ -10,7 +10,7 @@ pub fn competing_reservations(replicated: bool) -> Scenario {
         .inputs
         .iter_mut()
         .find(|input| input.id == "routes")
-        .unwrap();
+        .expect("the seeded reservation includes the route draft");
     let Event::Action { invocation } = &mut draft.event else {
         unreachable!()
     };
@@ -39,10 +39,8 @@ pub fn competing_reservations(replicated: bool) -> Scenario {
         promise
             .item
             .as_mut()
-            .unwrap()
-            .exchange
-            .as_mut()
-            .unwrap()
+            .and_then(|item| item.exchange.as_mut())
+            .expect("the seeded reservation contains a physical exchange")
             .uid = "competing-apples".into();
     }
     case.inputs.push(Input {

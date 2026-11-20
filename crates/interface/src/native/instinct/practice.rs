@@ -28,6 +28,10 @@ mod lessons;
 mod local;
 mod media_practice;
 #[cfg(feature = "instinct")]
+#[allow(
+    clippy::unwrap_used,
+    reason = "Laboratory practice fixtures require their prepared sessions and expected observations"
+)]
 pub(crate) mod tests;
 mod tools;
 mod visual;

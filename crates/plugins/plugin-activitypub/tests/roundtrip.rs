@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use axum::{
     Json, Router,
     extract::{Query, State},

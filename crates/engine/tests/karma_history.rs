@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use engine::{Engine, actions::Action};
 use nucleus::karma::rule_field::RuleFieldInput;
 use serde_json::Value;

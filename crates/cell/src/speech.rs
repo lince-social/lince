@@ -132,11 +132,13 @@ impl Host {
             Ok(profile) => (profile, None),
             Err(error) => (None, Some(error)),
         };
-        let credentials = credentials.unwrap_or_else(|| {
-            Arc::new(crate::fiote::credentials::Store::new(
-                path.parent().unwrap().join("fiote/credentials"),
-            ))
-        });
+        let credentials = match credentials {
+            Some(credentials) => credentials,
+            None => {
+                let directory = path.parent().ok_or("Speech settings need a parent directory.")?;
+                Arc::new(crate::fiote::credentials::Store::new(directory.join("fiote/credentials")))
+            }
+        };
         Ok(Self {
             credentials,
             path,
@@ -334,22 +336,16 @@ impl transport::speech::Service for Host {
                 | Request::Decide { .. }
                 | Request::Poll { .. }
         );
-        if let Some(running) = state.job.as_mut() {
-            if running.task.as_ref().is_some_and(|task| task.is_finished()) {
-                let result = running
-                    .task
-                    .take()
-                    .unwrap()
-                    .await
-                    .map_err(|error| error.to_string())
-                    .and_then(|result| result);
-                running.result.pending = false;
-                running.updated = Instant::now();
-                match result {
-                    Ok(JobResult::Text(text)) => running.result.text = Some(text),
-                    Ok(JobResult::Decision(output)) => running.result.decision = Some(output),
-                    Err(error) => running.result.error = Some(error),
-                }
+        if let Some(running) = state.job.as_mut()
+            && let Some(task) = running.task.take_if(|task| task.is_finished())
+        {
+            let result = task.await.map_err(|error| error.to_string()).and_then(|result| result);
+            running.result.pending = false;
+            running.updated = Instant::now();
+            match result {
+                Ok(JobResult::Text(text)) => running.result.text = Some(text),
+                Ok(JobResult::Decision(output)) => running.result.decision = Some(output),
+                Err(error) => running.result.error = Some(error),
             }
         }
         if state

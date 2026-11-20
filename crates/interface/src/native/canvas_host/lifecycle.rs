@@ -12,7 +12,11 @@ pub(crate) fn spawn(
         let entity = spawn(world, root, workspace, position, base)?;
         world.entity_mut(entity).insert(Content(component.clone()));
         if let Some(size) = edits.size {
-            world.get_mut::<CanvasItem>(entity).unwrap().size = DVec2::from_array(size).as_vec2();
+            let Some(mut item) = world.get_mut::<CanvasItem>(entity) else {
+                authoring::discard(world, entity);
+                return Err("An authored canvas placement requires geometry.".into());
+            };
+            item.size = DVec2::from_array(size).as_vec2();
         }
         return Ok(entity);
     }
@@ -47,7 +51,7 @@ pub(crate) fn spawn(
                 size: [640.0, 480.0],
             };
             let area = super::area::parse(settings, None, &geometry)?;
-            if super::area::component(&area)
+            if super::area::component(&area)?
                 .records()
                 .iter()
                 .any(|uid| !bindings.iter().any(|binding| binding == uid))
@@ -282,7 +286,10 @@ pub(crate) fn spawn(
                     kind,
                     SandKind::Text | SandKind::EditableText | SandKind::WorkTimer
                 ) {
-                    world.get_mut::<StoredSand>(entity).unwrap().content = first;
+                    world
+                        .get_mut::<StoredSand>(entity)
+                        .expect("the text or timer Sand was just spawned")
+                        .content = first;
                 }
             }
             if let Some(appearance) = appearance {

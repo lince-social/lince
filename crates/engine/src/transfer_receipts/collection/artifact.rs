@@ -1,4 +1,5 @@
 use super::{CanonicalHash, EngineError, Resolution, invalid};
+use nucleus::transfer::receipt::Bundle;
 use serde_json::{Value, json};
 use std::collections::BTreeMap;
 
@@ -43,13 +44,20 @@ impl Artifact {
         &self.events
     }
 
+    pub(super) fn bundle(&self) -> Result<&Bundle, EngineError> {
+        self.saved
+            .document
+            .public_bundle()
+            .ok_or_else(|| invalid("Choose an original public proof artifact"))
+    }
+
     pub(in super::super) fn project_history(
         &self,
         resolution: &Resolution,
     ) -> Result<(Vec<nucleus::transfer::receipt_history::Copy>, Vec<Value>), EngineError> {
         let _span = nucleus::performance::Span::new("receipt-artifact-history-projection");
         let saved = &self.saved;
-        let bundle = saved.document.public_bundle().unwrap();
+        let bundle = self.bundle()?;
         let scope = &bundle.publication.scope;
         let scope_id = &self.scope;
         nucleus::performance::add(

@@ -186,8 +186,8 @@ mod tests {
             ))
             .id();
         let saved = [
-            Placement::capture(&world, root),
-            Placement::capture(&world, child),
+            Placement::capture(&world, root).expect("capture the fixture placement"),
+            Placement::capture(&world, child).expect("capture the fixture placement"),
         ];
         assert!(saved.iter().all(Placement::valid));
         let restored: [Placement; 2] =

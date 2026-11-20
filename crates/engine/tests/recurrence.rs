@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use chrono::{DateTime, Utc};
 use engine::Engine;
 use engine::actions::Action;

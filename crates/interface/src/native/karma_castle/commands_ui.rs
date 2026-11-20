@@ -12,6 +12,7 @@ pub(super) struct Commands {
     revision: Option<i64>,
     values: [String; 5],
     shell: bool,
+    unlimited: bool,
     editing: bool,
 }
 
@@ -33,6 +34,7 @@ enum Command {
     New,
     Edit(String),
     Shell(bool),
+    ToggleUnlimited,
     Save,
     Run(String),
     Close,
@@ -102,6 +104,7 @@ pub(super) fn spawn(world: &mut World, owner: Entity, parent: Entity) {
         revision: None,
         values: Default::default(),
         shell: true,
+        unlimited: false,
         editing: false,
     });
     render(world, owner);
@@ -199,6 +202,7 @@ impl crate::native::actions::Action for Command {
                 state.revision = None;
                 state.values = Default::default();
                 state.shell = true;
+                state.unlimited = false;
                 state.editing = true;
                 let panel = state.panel;
                 world.get_mut::<Node>(panel).unwrap().display = Display::Flex;
@@ -216,6 +220,7 @@ impl crate::native::actions::Action for Command {
                 state.target = Some(uid.clone());
                 state.revision = row["revision"].as_i64();
                 state.shell = row["configuration"]["kind"] == "shell";
+                state.unlimited = row["unlimited"].as_bool().unwrap_or(false);
                 state.editing = true;
                 state.values = [
                     row["slug"].as_str().unwrap_or_default().into(),
@@ -232,6 +237,10 @@ impl crate::native::actions::Action for Command {
                 ];
             }
             Self::Shell(shell) => world.get_mut::<Commands>(owner).unwrap().shell = *shell,
+            Self::ToggleUnlimited => {
+                let mut state = world.get_mut::<Commands>(owner).unwrap();
+                state.unlimited = !state.unlimited;
+            }
             Self::Close => world.get_mut::<Commands>(owner).unwrap().editing = false,
             Self::Save => {
                 let state = world.get::<Commands>(owner).unwrap();
@@ -263,18 +272,22 @@ impl crate::native::actions::Action for Command {
                     head: state.values[1].clone(),
                     configuration,
                     host: (!state.values[4].is_empty()).then(|| state.values[4].clone()),
+                    unlimited: state.unlimited,
                 };
                 submit(world, owner, action, false);
                 return;
             }
             Self::Run(command) => {
+                let numeric = !world.get::<Commands>(owner).unwrap().rows.iter().any(|row| {
+                    row["uid"] == *command && row["unlimited"].as_bool() == Some(true)
+                });
                 submit(
                     world,
                     owner,
                     engine::actions::Action::RunKarmaCommand {
                         command: command.clone(),
                         request_id: nucleus::new_uid("command-run"),
-                        numeric: true,
+                        numeric,
                     },
                     false,
                 );

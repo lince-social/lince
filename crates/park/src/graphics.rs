@@ -156,6 +156,8 @@ struct Allocation {
 
 impl Drop for Allocation {
     fn drop(&mut self) {
+        // SAFETY: This is the last owner. HAL textures and queued work retain their
+        // own references, and `_device` keeps the allocating device live here.
         unsafe {
             self.raw_device.destroy_image(self.image, None);
             self.raw_device.free_memory(self.memory, None);
@@ -207,6 +209,7 @@ impl VulkanRenderer {
             let mut external_properties = vk::ExternalImageFormatProperties::default();
             let supported = {
                 let mut properties = vk::ImageFormatProperties2::default().push_next(&mut external_properties);
+                // SAFETY: The physical device belongs to this instance and both chains are live.
                 unsafe { self.raw_instance.get_physical_device_image_format_properties2(self.physical_device, &information, &mut properties) }.is_ok()
             };
             if supported && external_properties.external_memory_properties.external_memory_features.contains(vk::ExternalMemoryFeatureFlags::IMPORTABLE)
@@ -246,20 +249,24 @@ impl VulkanRenderer {
                 "a hardware Vulkan adapter is required; software rendering is not a graphics proof",
             ));
         }
+        // SAFETY: Only borrow the HAL instance. GpuContext retains its wgpu owner.
         let raw_instance = unsafe { instance.as_hal::<Vulkan>() }
             .ok_or_else(|| ProbeFailure::at("vulkan_instance", "Vulkan HAL unavailable"))?
             .shared_instance()
             .raw_instance()
             .clone();
+        // SAFETY: Borrow the adapter for device creation without destroying its handle.
         let hal_adapter = unsafe { adapter.as_hal::<Vulkan>() }
             .ok_or_else(|| ProbeFailure::at("vulkan_adapter", "Vulkan HAL unavailable"))?;
         let descriptor = wgpu::DeviceDescriptor {
             required_features: adapter.features(),
             required_limits: adapter.limits(),
+            // SAFETY: This native path opts into the risks of wgpu's advertised experimental features.
             experimental_features: unsafe { wgpu::ExperimentalFeatures::enabled() },
             memory_hints: wgpu::MemoryHints::MemoryUsage,
             ..Default::default()
         };
+        // SAFETY: The live HAL adapter was selected from this instance.
         let available = unsafe {
             raw_instance.enumerate_device_extension_properties(hal_adapter.raw_physical_device())
         }
@@ -267,7 +274,7 @@ impl VulkanRenderer {
         for required in EXTENSIONS {
             if !available
                 .iter()
-                .any(|extension| unsafe { CStr::from_ptr(extension.extension_name.as_ptr()) } == required)
+                .any(|extension| extension.extension_name_as_c_str().ok() == Some(required))
             {
                 return Err(ProbeFailure::at(
                     "vulkan_extensions",
@@ -275,6 +282,8 @@ impl VulkanRenderer {
                 ));
             }
         }
+        // SAFETY: Use this adapter's features and limits. The callback only adds
+        // extensions confirmed by enumeration and preserves the selected features.
         let open = unsafe {
             hal_adapter.open_with_callback(
                 descriptor.required_features,
@@ -293,9 +302,9 @@ impl VulkanRenderer {
         let raw_device = open.device.raw_device().clone();
         let physical_device = open.device.raw_physical_device();
         let queue_family = open.device.queue_family_index();
-        let (device, queue) =
-            unsafe { adapter.create_device_from_hal::<Vulkan>(open, &descriptor) }
-                .map_err(|error| ProbeFailure::at("wgpu_device", error))?;
+        // SAFETY: `open` came from this adapter with the same feature set as `descriptor`.
+        let (device, queue) = unsafe { adapter.create_device_from_hal::<Vulkan>(open, &descriptor) }
+            .map_err(|error| ProbeFailure::at("wgpu_device", error))?;
         drop(hal_adapter);
         #[cfg(feature = "native-presentation")]
         let reactor = {
@@ -381,9 +390,13 @@ impl GpuContext {
             .initial_layout(vk::ImageLayout::UNDEFINED)
             .push_next(&mut modifier_info)
             .push_next(&mut external_info);
+        // SAFETY: The device enables modifier and DMA-BUF support. The format,
+        // dimensions, and live descriptor chain specify a single linear image.
         let image = unsafe { self.raw_device.create_image(&image_info, None) }
             .map_err(|error| ProbeFailure::at("exportable_image", error))?;
+        // SAFETY: The image was just created on this device and is still owned here.
         let requirements = unsafe { self.raw_device.get_image_memory_requirements(image) };
+        // SAFETY: This physical device belongs to the retained Vulkan instance.
         let properties = unsafe {
             self.raw_instance
                 .get_physical_device_memory_properties(self.physical_device)
@@ -391,6 +404,7 @@ impl GpuContext {
         let memory_type = (0..properties.memory_type_count)
             .find(|index| requirements.memory_type_bits & (1 << index) != 0);
         let Some(memory_type) = memory_type else {
+            // SAFETY: This fresh image has never been submitted or registered elsewhere.
             unsafe { self.raw_device.destroy_image(image, None) };
             return Err(ProbeFailure::at(
                 "image_memory",
@@ -405,9 +419,12 @@ impl GpuContext {
             .memory_type_index(memory_type)
             .push_next(&mut export_info)
             .push_next(&mut dedicated);
+        // SAFETY: The size and memory type come from the image's requirements,
+        // and the allocation chain names that same image.
         let memory = match unsafe { self.raw_device.allocate_memory(&allocation_info, None) } {
             Ok(memory) => memory,
             Err(error) => {
+                // SAFETY: Failed allocation leaves the fresh image unused and unbound.
                 unsafe { self.raw_device.destroy_image(image, None) };
                 return Err(ProbeFailure::at("image_memory", error));
             }
@@ -420,6 +437,8 @@ impl GpuContext {
             #[cfg(all(test, feature = "nested"))]
             bytes: requirements.size,
         });
+        // SAFETY: Both handles belong to this device and the memory was dedicated
+        // to this unbound image. Offset zero satisfies its alignment.
         unsafe { self.raw_device.bind_image_memory(image, memory, 0) }
             .map_err(|error| ProbeFailure::at("bind_image_memory", error))?;
         #[cfg(feature = "native-presentation")]
@@ -427,6 +446,7 @@ impl GpuContext {
         #[cfg(feature = "native-presentation")]
         let started = std::time::Instant::now();
         let memory_fd = khr::external_memory_fd::Device::new(&self.raw_instance, &self.raw_device);
+        // SAFETY: The retained allocation was created with the same DMA-BUF handle type.
         let fd = unsafe {
             memory_fd.get_memory_fd(
                 &vk::MemoryGetFdInfoKHR::default()
@@ -435,7 +455,9 @@ impl GpuContext {
             )
         }
         .map_err(|error| ProbeFailure::at("export_dmabuf", error))?;
+        // SAFETY: Successful export transfers a new, owned descriptor to this caller.
         let fd = unsafe { std::os::fd::OwnedFd::from_raw_fd(fd) };
+        // SAFETY: Query the only memory plane of the live single-plane linear image.
         let layout = unsafe {
             self.raw_device.get_image_subresource_layout(
                 image,
@@ -472,9 +494,12 @@ impl GpuContext {
         let image = allocation.image;
         #[cfg(feature = "native-presentation")]
         let started = std::time::Instant::now();
+        // SAFETY: Borrow the HAL handle without destroying the device.
         let hal_device = unsafe { self.device.as_hal::<Vulkan>() }
             .ok_or_else(|| ProbeFailure::at("wgpu_texture", "Vulkan HAL unavailable"))?;
         let retained = allocation.clone();
+        // SAFETY: The descriptor matches allocate_shared_image and the drop
+        // callback retains both the external image and its dedicated memory.
         let hal_texture = unsafe {
             hal_device.texture_from_raw(
                 image,
@@ -496,6 +521,8 @@ impl GpuContext {
                 wgpu::hal::vulkan::TextureMemory::External,
             )
         };
+        // SAFETY: The texture belongs to this device and matches the descriptor.
+        // Callers submit initialization in TRANSFER_DST_OPTIMAL before registration.
         let texture = unsafe {
             self.device.create_texture_from_hal::<Vulkan>(
                 hal_texture,
@@ -526,6 +553,8 @@ impl GpuContext {
 
     fn submit_raw(&self, stage: &str, record: impl FnOnce(vk::CommandBuffer)) -> Result<wgpu::SubmissionIndex> {
         let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some(stage) });
+        // SAFETY: Callers only record commands inside the HAL borrow. wgpu finishes
+        // and owns the command buffer, and callers retain submitted resources.
         unsafe {
             encoder.as_hal_mut::<Vulkan, _, _>(|encoder| {
                 let encoder = encoder.ok_or_else(|| ProbeFailure::at(stage, "Vulkan HAL unavailable"))?;
@@ -560,6 +589,8 @@ impl GpuContext {
             .src_queue_family_index(vk::QUEUE_FAMILY_IGNORED)
             .dst_queue_family_index(vk::QUEUE_FAMILY_IGNORED)
             .dst_access_mask(vk::AccessFlags::TRANSFER_WRITE);
+        // SAFETY: Record into this device's active command buffer. The fresh image
+        // supports transfer writes and the barrier establishes its layout before clearing it.
         unsafe {
             self.raw_device.cmd_pipeline_barrier(
                 command,
@@ -613,6 +644,8 @@ impl GpuContext {
             .src_queue_family_index(self.queue_family)
             .dst_queue_family_index(vk::QUEUE_FAMILY_EXTERNAL)
             .src_access_mask(access);
+        // SAFETY: The active command buffer is from the same queue as the image's
+        // preceding use. The caller supplies that use's layout, access, and stage.
         unsafe {
             self.raw_device.cmd_pipeline_barrier(
                 command,
@@ -678,10 +711,12 @@ fn run_probe(report: &mut ProbeReport) -> Result<()> {
             .display()
             .to_string(),
     );
+    // SAFETY: Smithay owns this display lifetime and no raw caller terminates it.
     let display = unsafe { EGLDisplay::new(egl_device) }
         .map_err(|error| ProbeFailure::at("egl_display", error))?;
     let context =
         EGLContext::new(&display).map_err(|error| ProbeFailure::at("egl_context", error))?;
+    // SAFETY: The context was created here and has never been bound to another thread.
     let mut renderer = unsafe { GlesRenderer::new(context) }
         .map_err(|error| ProbeFailure::at("gles_renderer", error))?;
     report.completed.push("hardware EGL/GLES renderer".into());

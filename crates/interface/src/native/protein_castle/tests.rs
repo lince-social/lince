@@ -102,7 +102,7 @@ fn editor_controls_restore_drafts_and_keep_live_results_separate() {
     assert_eq!(draft.query["order"][0], json!({"desc":"quantity"}));
     assert!(draft.compile().is_ok());
     ui::Command::Set("/limit".into(), json!("unfinished")).apply(app.world_mut(), castle);
-    let saved = snapshot(app.world_mut(), root);
+    let saved = snapshot(app.world_mut(), root).expect("capture the fixture snapshots");
     assert_eq!(saved.len(), 1);
     assert!(saved[0].valid());
     let encoded = serde_json::to_vec(&saved).unwrap();

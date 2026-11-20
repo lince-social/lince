@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use engine::trust::Signer;
 use engine::wire::{ALPN_LIVE, Reach, Wire};
 use engine::{

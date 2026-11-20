@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use super::{TransferRevisionPromise, TransferRevisionSnapshot};
+use super::TransferRevisionSnapshot;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -49,17 +49,16 @@ pub fn validate_exchanges(snapshot: &TransferRevisionSnapshot) -> Result<(), &'s
                 .map(|invitation| invitation.addressed_person_uid.as_str()),
         )
         .collect::<BTreeSet<_>>();
-    let mut routes: BTreeMap<&str, Vec<&TransferRevisionPromise>> = BTreeMap::new();
+    let mut routes = BTreeMap::<_, Vec<_>>::new();
     for promise in snapshot
         .promises
         .iter()
         .filter(|promise| promise.state != "withdrawn")
     {
-        let Some(route) = promise
-            .item
-            .as_ref()
-            .and_then(|item| item.exchange.as_ref())
-        else {
+        let Some(item) = &promise.item else {
+            continue;
+        };
+        let Some(route) = &item.exchange else {
             continue;
         };
         route.validate()?;
@@ -73,15 +72,13 @@ pub fn validate_exchanges(snapshot: &TransferRevisionSnapshot) -> Result<(), &'s
         if !people.contains(route.giver.as_str()) || !people.contains(route.receiver.as_str()) {
             return Err("exchange People must be participants or addressed invitees");
         }
-        routes.entry(&route.uid).or_default().push(promise);
+        routes.entry(&route.uid).or_default().push((promise, item));
     }
     for promises in routes.values() {
         if promises.len() > 2 {
             return Err("split contributions require separate exchange identities");
         }
-        if let [left, right] = promises.as_slice() {
-            let left_item = left.item.as_ref().unwrap();
-            let right_item = right.item.as_ref().unwrap();
+        if let [(left, left_item), (right, right_item)] = promises.as_slice() {
             if left_item.exchange != right_item.exchange
                 || left_item.loan != right_item.loan
                 || left_item.return_of != right_item.return_of

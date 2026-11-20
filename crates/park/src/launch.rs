@@ -165,6 +165,8 @@ impl Application {
         use std::os::{fd::AsRawFd, unix::process::CommandExt};
         let mut command = self.command(socket)?;
         command.env("WAYLAND_SOCKET", connection.as_raw_fd().to_string());
+        // SAFETY: The hook only calls fcntl on its captured socket. It sets the
+        // child's descriptor flags without allocating or acquiring a lock.
         unsafe {
             command.pre_exec(move || {
                 rustix::io::fcntl_setfd(&connection, rustix::io::FdFlags::empty())?;

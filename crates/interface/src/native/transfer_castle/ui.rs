@@ -66,26 +66,27 @@ impl Action for Command {
             return;
         }
         capture(world, owner);
-        if world
-            .get::<View>(owner)
-            .unwrap()
-            .pending
-            .as_ref()
-            .is_some_and(|pending| {
-                !matches!(self, Self::Person(_))
-                    || !matches!(
-                        pending.form.data["action"].as_str(),
-                        Some("transfer-receipt" | "identity")
-                    )
-            })
-        {
+        let (Some(castle), Some(view)) =
+            (world.get::<TransferCastle>(owner), world.get::<View>(owner))
+        else {
+            return;
+        };
+        if view.pending.as_ref().is_some_and(|pending| {
+            !matches!(self, Self::Person(_))
+                || !matches!(
+                    pending.form.data["action"].as_str(),
+                    Some("transfer-receipt" | "identity")
+                )
+        }) {
             status(world, owner, "Waiting for the Cell to finish this action");
             return;
         }
         match self {
             Self::Transport => {
-                let scope = super::transport_workspace::scope(world, owner);
-                let mut castle = world.get_mut::<TransferCastle>(owner).unwrap();
+                let scope = super::transport_workspace::scope(world, owner, view);
+                let Some(mut castle) = world.get_mut::<TransferCastle>(owner) else {
+                    return;
+                };
                 if castle.form.is_some() {
                     status(world, owner, "Save or cancel the open form first");
                     return;
@@ -96,8 +97,8 @@ impl Action for Command {
             }
             Self::SimulateChildren => {
                 let _prepare = nucleus::performance::Span::new("transfer-action-input-preparation");
-                let rows = &world.get::<View>(owner).unwrap().rows;
-                let root = &world.get::<TransferCastle>(owner).unwrap().selected;
+                let rows = &view.rows;
+                let root = &castle.selected;
                 let person = person(world, owner);
                 let result = crate::native::simulation_castle::transfer_entry::group_balance(
                     rows, root, &person,
@@ -122,7 +123,7 @@ impl Action for Command {
                 return;
             }
             Self::Simulate(uid) | Self::SimulateLoan(uid) | Self::SimulateShared(uid, _) => {
-                let form = world.get::<TransferCastle>(owner).unwrap().form.clone();
+                let form = castle.form.clone();
                 let row = if let Some(mut form) = form.filter(|form| form.step.is_some()) {
                     if let Err(error) = form.commit_fields() {
                         status(world, owner, error);
@@ -179,37 +180,76 @@ impl Action for Command {
             Self::Create => {}
             Self::Refresh => runtime::refresh(world, owner),
             Self::ViewAs(person) => {
-                world.get_mut::<View>(owner).unwrap().disclosure_preview = Some(person.clone());
-                if world.get::<TransferCastle>(owner).unwrap().form.is_some() {
+                let has_form = castle.form.is_some();
+                let Some(mut view) = world.get_mut::<View>(owner) else {
+                    return;
+                };
+                view.disclosure_preview = Some(person.clone());
+                if has_form {
                     forms::render(world, owner);
                     return;
                 }
             }
             Self::Select(uid) => {
-                world.get_mut::<TransferCastle>(owner).unwrap().selected = uid.clone();
-                world
-                    .get_mut::<View>(owner)
-                    .unwrap()
-                    .selected_occurrences
-                    .clear();
+                let Ok((mut castle, mut view)) = world
+                    .query::<(&mut TransferCastle, &mut View)>()
+                    .get_mut(world, owner)
+                else {
+                    return;
+                };
+                castle.selected = uid.clone();
+                view.selected_occurrences.clear();
             }
             Self::Mine(mine) => {
-                world.get_mut::<TransferCastle>(owner).unwrap().mine = *mine;
-                world.get_mut::<View>(owner).unwrap().page = 0;
+                let Ok((mut castle, mut view)) = world
+                    .query::<(&mut TransferCastle, &mut View)>()
+                    .get_mut(world, owner)
+                else {
+                    return;
+                };
+                castle.mine = *mine;
+                view.page = 0;
             }
             Self::Filter(filter) => {
-                world.get_mut::<TransferCastle>(owner).unwrap().filter = filter.clone();
-                world.get_mut::<View>(owner).unwrap().page = 0;
+                let Ok((mut castle, mut view)) = world
+                    .query::<(&mut TransferCastle, &mut View)>()
+                    .get_mut(world, owner)
+                else {
+                    return;
+                };
+                castle.filter = filter.clone();
+                view.page = 0;
             }
-            Self::Sort(sort) => world.get_mut::<TransferCastle>(owner).unwrap().sort = sort.clone(),
-            Self::Tree(tree) => world.get_mut::<TransferCastle>(owner).unwrap().tree = *tree,
-            Self::Page(page) => world.get_mut::<View>(owner).unwrap().page = *page,
-            Self::ReceiptPage(page) => world.get_mut::<View>(owner).unwrap().receipt_page = *page,
+            Self::Sort(sort) => {
+                if let Some(mut castle) = world.get_mut::<TransferCastle>(owner) {
+                    castle.sort = sort.clone();
+                }
+            }
+            Self::Tree(tree) => {
+                if let Some(mut castle) = world.get_mut::<TransferCastle>(owner) {
+                    castle.tree = *tree;
+                }
+            }
+            Self::Page(page) => {
+                if let Some(mut view) = world.get_mut::<View>(owner) {
+                    view.page = *page;
+                }
+            }
+            Self::ReceiptPage(page) => {
+                if let Some(mut view) = world.get_mut::<View>(owner) {
+                    view.receipt_page = *page;
+                }
+            }
             Self::Person(person) => {
-                world.get_mut::<TransferCastle>(owner).unwrap().person = person.clone();
+                let Some(mut castle) = world.get_mut::<TransferCastle>(owner) else {
+                    return;
+                };
+                castle.person = person.clone();
                 super::receipts::clear_form(world, owner);
 
-                let mut view = world.get_mut::<View>(owner).unwrap();
+                let Some(mut view) = world.get_mut::<View>(owner) else {
+                    return;
+                };
                 view.receipt = None;
                 if view.pending.as_ref().is_some_and(|pending| {
                     matches!(
@@ -228,7 +268,7 @@ impl Action for Command {
                 let document = if let Self::CopyText(text) = self {
                     Some(text.clone())
                 } else {
-                    world.get::<View>(owner).unwrap().receipt_export.clone()
+                    view.receipt_export.clone()
                 };
                 let Some(document) = document else {
                     return;
@@ -266,13 +306,15 @@ impl Action for Command {
                 return;
             }
             Self::Toggle(key) => {
-                let mut view = world.get_mut::<View>(owner).unwrap();
+                let Some(mut view) = world.get_mut::<View>(owner) else {
+                    return;
+                };
                 if !view.expanded.remove(key) {
                     view.expanded.insert(key.clone());
                 }
             }
             Self::New(preset) => {
-                if !capability(&world.get::<View>(owner).unwrap().context, "create") {
+                if !capability(&view.context, "create") {
                     status(
                         world,
                         owner,
@@ -298,9 +340,15 @@ impl Action for Command {
                 return;
             }
             Self::Cancel => {
-                world.get_mut::<TransferCastle>(owner).unwrap().form = None;
+                let Ok((mut castle, mut view)) = world
+                    .query::<(&mut TransferCastle, &mut View)>()
+                    .get_mut(world, owner)
+                else {
+                    return;
+                };
+                castle.form = None;
+                view.preview_request = None;
                 runtime::cancel(world, owner, "preview");
-                world.get_mut::<View>(owner).unwrap().preview_request = None;
                 forms::render(world, owner);
             }
             Self::Submit => {
@@ -308,8 +356,7 @@ impl Action for Command {
                 return;
             }
             Self::Step(step) => {
-                let Some(mut form) = world.get::<TransferCastle>(owner).unwrap().form.clone()
-                else {
+                let Some(mut form) = castle.form.clone() else {
                     return;
                 };
                 if let Err(error) = form.commit_fields() {
@@ -326,13 +373,19 @@ impl Action for Command {
                     return;
                 }
                 form.step = Some(*step);
-                world.get_mut::<TransferCastle>(owner).unwrap().form = Some(form);
+                let Some(mut castle) = world.get_mut::<TransferCastle>(owner) else {
+                    return;
+                };
+                castle.form = Some(form);
                 forms::render(world, owner);
                 return;
             }
             Self::Set(index, value) => {
-                if let Some(form) = &mut world.get_mut::<TransferCastle>(owner).unwrap().form
-                    && let Some(field) = form.fields.get_mut(*index)
+                if let Some(mut castle) = world.get_mut::<TransferCastle>(owner)
+                    && let Some(field) = castle
+                        .form
+                        .as_mut()
+                        .and_then(|form| form.fields.get_mut(*index))
                 {
                     field.value = value.clone();
                 }
@@ -340,8 +393,7 @@ impl Action for Command {
                 return;
             }
             Self::Add(key) | Self::Remove(key, _) => {
-                let Some(mut form) = world.get::<TransferCastle>(owner).unwrap().form.clone()
-                else {
+                let Some(mut form) = castle.form.clone() else {
                     return;
                 };
                 if let Err(error) = form.commit_fields() {
@@ -352,8 +404,19 @@ impl Action for Command {
                     form.data[key] = if matches!(self, Self::Remove(_, _)) {
                         Value::Null
                     } else {
-                        serde_json::to_value(nucleus::transfer::public_history::Terms::default())
-                            .unwrap()
+                        match serde_json::to_value(
+                            nucleus::transfer::public_history::Terms::default(),
+                        ) {
+                            Ok(terms) => terms,
+                            Err(error) => {
+                                status(
+                                    world,
+                                    owner,
+                                    format!("Could not prepare public history: {error}"),
+                                );
+                                return;
+                            }
+                        }
                     };
                 }
                 let new = if key == "promises" {
@@ -377,7 +440,10 @@ impl Action for Command {
                 if form.step.is_none() {
                     form.data["request_id"] = json!(form.request_id);
                 }
-                world.get_mut::<TransferCastle>(owner).unwrap().form = Some(form);
+                let Some(mut castle) = world.get_mut::<TransferCastle>(owner) else {
+                    return;
+                };
+                castle.form = Some(form);
                 forms::render(world, owner);
                 return;
             }
@@ -386,15 +452,17 @@ impl Action for Command {
                 return;
             }
             Self::ReviewParticipation => {
-                let Some(mut form) = world.get::<TransferCastle>(owner).unwrap().form.clone()
-                else {
+                let Some(mut form) = castle.form.clone() else {
                     return;
                 };
                 if let Err(error) = receipts::review_participation_form(&mut form) {
                     status(world, owner, error);
                     return;
                 }
-                world.get_mut::<TransferCastle>(owner).unwrap().form = Some(form);
+                let Some(mut castle) = world.get_mut::<TransferCastle>(owner) else {
+                    return;
+                };
+                castle.form = Some(form);
                 forms::render(world, owner);
                 return;
             }
@@ -407,7 +475,9 @@ impl Action for Command {
                 return;
             }
             Self::SelectOccurrence(uid) => {
-                let mut view = world.get_mut::<View>(owner).unwrap();
+                let Some(mut view) = world.get_mut::<View>(owner) else {
+                    return;
+                };
                 if !view.selected_occurrences.remove(uid) {
                     view.selected_occurrences.insert(uid.clone());
                 }
@@ -417,7 +487,9 @@ impl Action for Command {
                 return;
             }
             Self::Record(uid) => {
-                let root = world.get::<ChildOf>(owner).unwrap().parent();
+                let Some(root) = world.get::<ChildOf>(owner).map(ChildOf::parent) else {
+                    return;
+                };
                 let source = crate::native::practice_cells::source(world, owner)
                     .map(crate::native::protein_area::Source::Organ)
                     .unwrap_or(crate::native::protein_area::Source::Local);
@@ -430,12 +502,18 @@ impl Action for Command {
 }
 
 fn open(world: &mut World, owner: Entity, form: Form) {
-    if world.get::<TransferCastle>(owner).unwrap().form.is_some() {
+    let Ok((mut castle, mut view)) = world
+        .query::<(&mut TransferCastle, &mut View)>()
+        .get_mut(world, owner)
+    else {
+        return;
+    };
+    if castle.form.is_some() {
         status(world, owner, "Save or cancel the open form first");
         return;
     }
-    world.get_mut::<View>(owner).unwrap().preview = None;
-    world.get_mut::<TransferCastle>(owner).unwrap().form = Some(form);
+    view.preview = None;
+    castle.form = Some(form);
     forms::render(world, owner);
 }
 
@@ -471,8 +549,7 @@ pub(super) fn stack(world: &mut World, parent: Entity) -> Entity {
 }
 pub(super) fn scroll(world: &mut World, parent: Entity) -> Entity {
     let entity = stack(world, parent);
-    {
-        let mut node = world.get_mut::<Node>(entity).unwrap();
+    if let Some(mut node) = world.get_mut::<Node>(entity) {
         node.flex_grow = 1.0;
         node.flex_shrink = 1.0;
         node.min_height = px(0);
@@ -530,8 +607,10 @@ pub(super) fn input(
     multiline: bool,
 ) {
     let group = stack(world, parent);
-    if index.is_none() {
-        world.get_mut::<Node>(group).unwrap().width = px(200);
+    if index.is_none()
+        && let Some(mut node) = world.get_mut::<Node>(group)
+    {
+        node.width = px(200);
     }
     crate::native::edit_mode::label(world, group, label, 12.0);
     let entity = world
@@ -550,7 +629,10 @@ pub(super) fn input(
         ChildOf(group),
         Input { owner, index },
     ));
-    let mut editor = world.get_mut::<EditableText>(entity).unwrap();
+    let Some(mut editor) = world.get_mut::<EditableText>(entity) else {
+        world.despawn(group);
+        return;
+    };
     editor.allow_newlines = multiline;
     editor.max_characters = Some(if multiline { 16_384 } else { 1024 });
     editor.visible_lines = Some(if multiline { 4.0 } else { 1.0 });
@@ -621,22 +703,31 @@ pub(super) fn inputs(world: &mut World) {
     }
     let searches = capture_fields(world, None);
     for owner in owners.into_iter().filter(|owner| searches.contains(owner)) {
-        world.get_mut::<View>(owner).unwrap().page = 0;
-        render(world, owner);
+        if let Some(mut view) = world.get_mut::<View>(owner) {
+            view.page = 0;
+            render(world, owner);
+        }
     }
 }
 
 pub(super) fn render(world: &mut World, owner: Entity) {
     audience::capture(world, owner);
+    if world.get::<TransferCastle>(owner).is_none() || world.get::<View>(owner).is_none() {
+        return;
+    }
     if super::transport_workspace::render(world, owner) {
         return;
     }
-    let castle = world.get::<TransferCastle>(owner).unwrap();
-    let view = world.get::<View>(owner).unwrap();
+    let (Some(castle), Some(view)) = (world.get::<TransferCastle>(owner), world.get::<View>(owner))
+    else {
+        return;
+    };
     let (controls, summary, list, detail) = (view.controls, view.summary, view.list, view.detail);
     let mut prepared = super::presentation::prepare(owner, castle, view);
-    if view.page != prepared.page {
-        world.get_mut::<View>(owner).unwrap().page = prepared.page;
+    if view.page != prepared.page
+        && let Some(mut view) = world.get_mut::<View>(owner)
+    {
+        view.page = prepared.page;
     }
     let selected = prepared.detail.take();
     super::presentation::render(world, controls, summary, list, prepared);

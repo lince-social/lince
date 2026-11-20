@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use nucleus::sand_package::{self as model, Identity, Kind, License, Manifest, Package};
 
 fn package() -> Package {

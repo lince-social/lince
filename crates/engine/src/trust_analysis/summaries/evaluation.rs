@@ -1,5 +1,5 @@
 use super::*;
-use nucleus::{DecimalValue, karma::canonical_hash};
+use nucleus::karma::canonical_hash;
 use recipes::EvaluationState;
 
 impl Engine {
@@ -73,7 +73,7 @@ impl Engine {
         let evaluated = self
             .evaluate_trust_query_mode(person, actor, &query, false, now, true)
             .await?;
-        let zero = DecimalValue::from_mantissa(0, 0).unwrap();
+        let zero = store::exact::zero();
         let expires = terms
             .expires_at
             .min(evaluated.publication_expires_at.unwrap_or(i64::MAX))
@@ -107,11 +107,11 @@ impl Engine {
         } else {
             EvaluationState::Unknown
         };
-        statement.amount = if availability == EvaluationState::Available {
-            support.observed.unwrap()
-        } else {
-            zero
-        };
+        if let Some(amount) = support.observed
+            && availability == EvaluationState::Available
+        {
+            statement.amount = amount;
+        }
         statement.withdrawn = availability != EvaluationState::Available;
         statement.authorship = Authorship::Generated {
             recipe: definition.id().map_err(invalid)?,

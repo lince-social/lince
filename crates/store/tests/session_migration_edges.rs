@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use store::Store;
 use store::session_access;
 

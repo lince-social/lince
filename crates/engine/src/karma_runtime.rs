@@ -473,7 +473,10 @@ impl Engine {
     }
 
     fn set_karma_runtime_failure(&self, failure: Option<RuntimeFailure>) {
-        let mut current = self.karma_runtime_failure.lock().unwrap();
+        let mut current = self
+            .karma_runtime_failure
+            .lock()
+            .expect("Karma runtime failure lock poisoned");
         if *current != failure {
             *current = failure;
             drop(current);

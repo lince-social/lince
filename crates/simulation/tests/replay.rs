@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use engine::actions::Action;
 use nucleus::simulation::{Predicate, ReplayStatus, Verdict};
 use simulation::scenario::{Check, Scenario};

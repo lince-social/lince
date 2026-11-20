@@ -27,10 +27,12 @@ fn hash(value: &impl serde::Serialize) -> Result<String, EngineError> {
 
 fn uid(organ: &str, kind: &str) -> String {
     let digest = Sha256::digest(format!("lince.karma-habit.v1\0{organ}\0{TUTORIAL}\0{kind}"));
+    let mut entropy = [0; 16];
+    entropy.copy_from_slice(&digest[..16]);
     format!(
         "{}_{}",
         if kind == "rule" { "rule" } else { "r" },
-        nucleus::ulid_from(0, u128::from_be_bytes(digest[..16].try_into().unwrap()))
+        nucleus::ulid_from(0, u128::from_be_bytes(entropy))
     )
 }
 
@@ -107,8 +109,10 @@ impl Engine {
                 .date_naive()
                 .checked_add_signed(chrono::Duration::days(offset))
                 .ok_or_else(|| refused("The first habit date is out of range"))?;
-            let civil = CivilDateTime::from_naive(date.and_hms_opt(hour, minute, 0).unwrap())
-                .map_err(refused)?;
+            let datetime = date
+                .and_hms_opt(hour, minute, 0)
+                .ok_or_else(|| refused("The first habit time is out of range"))?;
+            let civil = CivilDateTime::from_naive(datetime).map_err(refused)?;
             for revision in runtime.provider_revisions() {
                 let Some(provider) = runtime.provider(revision) else {
                     continue;
@@ -180,7 +184,7 @@ impl Engine {
             cadence: CadenceAst {
                 every: CadenceStepAst {
                     days: Some(PositiveIntegerBinding::Literal {
-                        value: NonZeroU32::new(1).unwrap(),
+                        value: NonZeroU32::MIN,
                     }),
                     ..Default::default()
                 },
@@ -451,6 +455,10 @@ impl Engine {
         tx.commit().await?;
         if !preview.objects[0].exists {
             let record = &document.records[0];
+            let (quantity, _) = record
+                .quantity
+                .as_ref()
+                .ok_or_else(|| refused("The imported habit Record needs a quantity"))?;
             self.act(
                 Action::CreateRecordDraft {
                     draft: crate::record_creation::Draft {
@@ -458,7 +466,7 @@ impl Engine {
                         head: record.head.clone(),
                         body: record.body.clone(),
                         slug: record.slug.clone(),
-                        quantity: record.quantity.as_ref().unwrap().0.clone(),
+                        quantity: quantity.clone(),
                         ..Default::default()
                     },
                 },
@@ -495,13 +503,17 @@ impl Engine {
             && identity.name.is_empty()
         {
             let fields = store::karma_fields::for_rule(&self.store.pool, &rule.uid).await?;
-            let fields = nucleus::karma::rule_field::RuleFieldKind::ALL.map(|kind| {
-                let field = fields.iter().find(|field| field.kind == kind).unwrap();
-                nucleus::karma::rule_field::RuleFieldInput::Reference {
-                    uid: field.uid.clone(),
-                    revision: field.revision,
-                }
-            });
+            let [condition, threshold, consequence] =
+                nucleus::karma::rule_field::RuleFieldKind::ALL.map(|kind| {
+                    let field = fields
+                        .iter()
+                        .find(|field| field.kind == kind)
+                        .ok_or_else(|| refused("The imported Rule is missing a field"))?;
+                    Ok::<_, EngineError>(nucleus::karma::rule_field::RuleFieldInput::Reference {
+                        uid: field.uid.clone(),
+                        revision: field.revision,
+                    })
+                });
             self.act(
                 Action::SaveKarmaRule {
                     identity: Some(nucleus::karma::rule_field::RuleIdentity {
@@ -510,7 +522,7 @@ impl Engine {
                     }),
                     rule: Some(rule.uid),
                     expected_revision: Some(rule.revision),
-                    fields,
+                    fields: [condition?, threshold?, consequence?],
                     request_id: format!("habit-name:{}", definition.objects[2].uid),
                 },
                 actor.map(str::to_owned),

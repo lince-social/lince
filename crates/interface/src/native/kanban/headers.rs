@@ -43,12 +43,10 @@ fn update_headers(
 ) {
     let _prepare = nucleus::performance::Span::new("kanban-header-preparation");
     if !columns.iter().any(Option::is_some) {
-        if !world.get::<View>(owner).unwrap().header_captions.is_empty() {
-            world
-                .get_mut::<View>(owner)
-                .unwrap()
-                .header_captions
-                .clear();
+        if let Some(mut view) = world.get_mut::<View>(owner)
+            && !view.header_captions.is_empty()
+        {
+            view.header_captions.clear();
         }
         *preparation = Preparation::default();
         return;
@@ -78,7 +76,10 @@ fn update_headers(
             continue;
         };
         let slot = &mut slots[index];
-        let item = *world.get::<CanvasItem>(column).unwrap();
+        let Some(item) = world.get::<CanvasItem>(column).copied() else {
+            slot.part = None;
+            continue;
+        };
         let part = slot.part.and_then(|entity| {
             if !slot.duplicate
                 && world
@@ -94,10 +95,17 @@ fn update_headers(
             }
         });
         let position = item.position + DVec2::new(0.0, -f64::from(item.size.y) * 0.5 - 40.0);
-        let part = part.unwrap_or_else(|| header(world, owner, index, position));
+        let Some(part) = part.or_else(|| header(world, owner, index, position)) else {
+            slot.part = None;
+            continue;
+        };
+        let Some(mut header_item) = world.get_mut::<CanvasItem>(part) else {
+            slot.part = None;
+            continue;
+        };
         slot.part = Some(part);
-        if world.get::<CanvasItem>(part).unwrap().size.x != item.size.x {
-            world.get_mut::<CanvasItem>(part).unwrap().size.x = item.size.x;
+        if header_item.size.x != item.size.x {
+            header_item.size.x = item.size.x;
         }
         let placement = crate::native::topology::spatial(world, column);
         let offset = position - item.position;
@@ -132,18 +140,10 @@ fn update_headers(
             .enumerate()
             .any(|(index, slot)| columns[index].is_some() && slot.part == Some(*part))
     };
-    if world
-        .get::<View>(owner)
-        .unwrap()
-        .header_captions
-        .keys()
-        .any(|part| !live(part))
+    if let Some(mut view) = world.get_mut::<View>(owner)
+        && view.header_captions.keys().any(|part| !live(part))
     {
-        world
-            .get_mut::<View>(owner)
-            .unwrap()
-            .header_captions
-            .retain(|part, _| live(part));
+        view.header_captions.retain(|part, _| live(part));
     }
 
     let mut candidates = 0;
@@ -152,10 +152,13 @@ fn update_headers(
             continue;
         };
         let slot = &mut slots[index];
-        let part = slot.part.unwrap();
+        let Some(part) = slot.part else {
+            continue;
+        };
         candidates += collect_labels(world, part, &mut slot.labels);
         if !slot.labels.is_empty() {
-            prepare_captions(world, owner, part, column, counts[index], &slot.labels);
+            let count = counts.get(index).copied().unwrap_or_default();
+            prepare_captions(world, owner, part, column, count, &slot.labels);
             for (label, status) in slot.labels.drain(..) {
                 publish(world, owner, part, label, status);
             }
@@ -202,9 +205,12 @@ fn prepare_captions(
     count: usize,
     labels: &[(Entity, bool)],
 ) {
-    let area = world.get::<InfluenceArea>(column).unwrap();
+    let (Some(area), Some(view)) = (world.get::<InfluenceArea>(column), world.get::<View>(owner))
+    else {
+        return;
+    };
     let quantity = area.changes.enter.quantity.as_deref().unwrap_or("—");
-    let captions = world.get::<View>(owner).unwrap().header_captions.get(&part);
+    let captions = view.header_captions.get(&part);
     let title = (labels.iter().any(|(_, status)| !*status)
         && captions.is_none_or(|captions| {
             captions
@@ -224,7 +230,9 @@ fn prepare_captions(
         "kanban-header-captions-prepared",
         u64::from(title.is_some()) + u64::from(count_text.is_some()),
     );
-    let mut view = world.get_mut::<View>(owner).unwrap();
+    let Some(mut view) = world.get_mut::<View>(owner) else {
+        return;
+    };
     let captions = view.header_captions.entry(part).or_default();
     if let Some(title) = title {
         captions.title = title;
@@ -236,7 +244,12 @@ fn prepare_captions(
 }
 
 fn publish(world: &mut World, owner: Entity, part: Entity, label: Entity, status: bool) {
-    let captions = &world.get::<View>(owner).unwrap().header_captions[&part];
+    let Some(captions) = world
+        .get::<View>(owner)
+        .and_then(|view| view.header_captions.get(&part))
+    else {
+        return;
+    };
     let value = if status {
         &captions.count_text
     } else {
@@ -247,7 +260,9 @@ fn publish(world: &mut World, owner: Entity, part: Entity, label: Entity, status
         .is_some_and(|text| &text.0 != value)
     {
         let value = value.clone();
-        world.get_mut::<Text>(label).unwrap().0 = value;
-        nucleus::performance::add("kanban-header-labels-written", 1);
+        if let Some(mut text) = world.get_mut::<Text>(label) {
+            text.0 = value;
+            nucleus::performance::add("kanban-header-labels-written", 1);
+        }
     }
 }

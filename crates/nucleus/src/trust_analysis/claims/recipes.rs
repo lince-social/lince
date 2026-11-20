@@ -38,7 +38,7 @@ impl Terms {
             revision: 1,
             descriptor: self.descriptor.clone(),
             comparator: self.comparator,
-            amount: DecimalValue::from_mantissa(0, 0).unwrap(),
+            amount: DecimalValue::from_integer(0),
             as_of: self.issued_at,
             issued_at: self.issued_at,
             expires_at: self.expires_at,

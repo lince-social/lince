@@ -1,5 +1,9 @@
 use lince_interface::frequency::{interval, model};
 mod persistence;
+#[allow(
+    clippy::unwrap_used,
+    reason = "Frequency Laboratory fixtures require complete setup and expected controls before they can pass"
+)]
 pub(crate) mod tests;
 mod ui;
 

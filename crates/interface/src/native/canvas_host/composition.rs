@@ -42,6 +42,9 @@ pub(crate) fn populate(
     if world.get::<Generated>(host).is_some() {
         return Ok(());
     }
+    if world.get::<CanvasItem>(host).is_none() {
+        return Err("A native composition needs canvas geometry.".into());
+    }
     ContentKind::Composition {
         composition: composition.clone(),
     }
@@ -56,13 +59,15 @@ pub(crate) fn populate(
     }
     let size = (maximum - minimum).max(DVec2::new(480.0, 320.0));
     let fiote = crate::native::fiote::spawn(world, host);
-    let mut node = world.get_mut::<Node>(fiote).unwrap();
+    let mut node = world
+        .get_mut::<Node>(fiote)
+        .expect("the spawned Fiote has a layout node");
     node.position_type = PositionType::Relative;
     node.right = Val::Auto;
     node.bottom = Val::Auto;
     let bubble = world
         .get::<crate::native::fiote::Fiote>(fiote)
-        .unwrap()
+        .expect("the spawned Fiote has its bubble state")
         .bubble;
     crate::native::edit_mode::label(world, bubble, &composition.name, 18.0);
     let name = crate::native::sand_panel::field(world, bubble, "Component name", &composition.name);
@@ -119,14 +124,27 @@ pub(crate) fn populate(
             }
         };
         let size = DVec2::from_array(part.geometry.size);
-        world.get_mut::<CanvasItem>(entity).unwrap().size = size.as_vec2();
+        let Some(mut item) = world.get_mut::<CanvasItem>(entity) else {
+            world.despawn(fiote);
+            return Err("A composition part lost its canvas geometry.".into());
+        };
+        item.size = size.as_vec2();
         if let Some(mut area) = world.get_mut::<crate::native::area::InfluenceArea>(entity) {
             area.size = size.to_array();
         }
-        crate::native::component_push::composition::bind_events(world, entity, &part.events)?;
+        if let Err(error) =
+            crate::native::component_push::composition::bind_events(world, entity, &part.events)
+        {
+            world.despawn(fiote);
+            return Err(error);
+        }
         parts.push(entity);
     }
-    world.get_mut::<CanvasItem>(host).unwrap().size = (size + DVec2::new(120.0, 210.0)).as_vec2();
+    let Some(mut item) = world.get_mut::<CanvasItem>(host) else {
+        world.despawn(fiote);
+        return Err("The composition lost its canvas geometry.".into());
+    };
+    item.size = (size + DVec2::new(120.0, 210.0)).as_vec2();
     if let Some(mut area) = world.get_mut::<crate::native::area::InfluenceArea>(host) {
         area.immunity = crate::native::area_effects::Immunity::Isolation;
         area.attraction_enabled = false;
@@ -142,18 +160,22 @@ pub(crate) fn populate(
     Ok(())
 }
 
-pub(crate) fn capture(world: &World, host: Entity) -> Option<api::Composition> {
-    let generated = world.get::<Generated>(host)?;
+pub(crate) fn capture(world: &World, host: Entity) -> Result<Option<api::Composition>, String> {
+    let Some(generated) = world.get::<Generated>(host) else {
+        return Ok(None);
+    };
     let mut composition = generated.composition.clone();
     for (part, entity) in composition.parts.iter_mut().zip(&generated.parts) {
-        let item = world.get::<CanvasItem>(*entity)?;
+        let Some(item) = world.get::<CanvasItem>(*entity) else {
+            return Ok(None);
+        };
         part.geometry = api::Geometry {
             position: item.position.to_array(),
             size: item.size.as_dvec2().to_array(),
         };
-        part.component = super::capture_content(world, *entity);
+        part.component = super::capture_content(world, *entity)?;
     }
-    Some(composition)
+    Ok(Some(composition))
 }
 
 #[derive(Clone)]
@@ -167,7 +189,7 @@ impl Action for Save {
             if generated.pending.is_some() {
                 return Err("Wait for the current save.".into());
             }
-            let mut composition = capture(world, host).ok_or("A composition part was removed.")?;
+            let mut composition = capture(world, host)?.ok_or("A composition part was removed.")?;
             composition.name = crate::native::sand_panel::value(world, self.0)?
                 .trim()
                 .into();
@@ -183,7 +205,9 @@ impl Action for Save {
                     action: engine::actions::Action::CreateCustomComponent { head, body },
                 },
             )?;
-            world.get_mut::<Generated>(host).unwrap().pending = Some(id);
+            if let Some(mut generated) = world.get_mut::<Generated>(host) {
+                generated.pending = Some(id);
+            }
             Ok::<_, String>("Saving component…".into())
         })();
         if let Some(status) = world
@@ -218,9 +242,10 @@ pub(crate) fn receive(world: &mut World, message: &cell::ServerMessage) {
         .map(|(entity, _)| entity)
         .collect();
     for host in hosts {
-        let mut generated = world.get_mut::<Generated>(host).unwrap();
-        generated.pending = None;
-        let status = generated.status;
-        crate::native::sand_panel::status(world, status, &result);
+        if let Some(mut generated) = world.get_mut::<Generated>(host) {
+            generated.pending = None;
+            let status = generated.status;
+            crate::native::sand_panel::status(world, status, &result);
+        }
     }
 }

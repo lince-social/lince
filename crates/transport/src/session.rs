@@ -782,9 +782,9 @@ impl Session {
                 .iter()
                 .filter(|(_, subscription)| match change {
                     SubscriptionChange::All => true,
-                    SubscriptionChange::Facts(_) => {
-                        facts.as_ref().unwrap().affects(&subscription.query)
-                    }
+                    SubscriptionChange::Facts(_) => facts
+                        .as_ref()
+                        .is_some_and(|facts| facts.affects(&subscription.query)),
                     SubscriptionChange::Projection => {
                         protein::depends_on_forecast(&subscription.query)
                     }
@@ -810,9 +810,12 @@ impl Session {
             } else {
                 self.execute_sync(id, query, reused).await
             };
+            let subscription = self
+                .subscriptions
+                .get_mut(id)
+                .expect("query execution does not change the selected subscriptions");
             match result {
                 Ok(rows) => {
-                    let subscription = self.subscriptions.get_mut(id).unwrap();
                     let result = results.entry(key).or_insert(QueryResult {
                         rows,
                         compared: None,
@@ -830,7 +833,7 @@ impl Session {
                     subscription.rows = Some(rows);
                 }
                 Err(error) => {
-                    self.subscriptions.get_mut(id).unwrap().rows = None;
+                    subscription.rows = None;
                     out.push(ServerMessage::Error {
                         id: id.clone(),
                         message: error.to_string(),

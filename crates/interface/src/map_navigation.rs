@@ -327,7 +327,10 @@ fn operate(world: &mut World, panel: Entity, intent: Intent) -> Result<(), Strin
             Display::None
         };
         if node.display == Display::None {
-            world.get_mut::<Panel>(panel).unwrap().job = None;
+            world
+                .get_mut::<Panel>(panel)
+                .ok_or("Map navigation closed")?
+                .job = None;
         }
         return Ok(());
     }
@@ -363,9 +366,10 @@ fn operate(world: &mut World, panel: Entity, intent: Intent) -> Result<(), Strin
         };
         settings.validate()?;
         let provider = Arc::new(Provider::new(settings.clone())?);
-        let path = state.path.clone();
-        settings.save_atomic(&path)?;
-        let state = &mut *world.get_mut::<Panel>(panel).unwrap();
+        let mut state = world
+            .get_mut::<Panel>(panel)
+            .ok_or("Map navigation closed")?;
+        settings.save_atomic(&state.path)?;
         state.job = None;
         state.selection.invalidate();
         state.selected = None;
@@ -376,7 +380,9 @@ fn operate(world: &mut World, panel: Entity, intent: Intent) -> Result<(), Strin
         return Ok(());
     }
     if let Intent::Choose(index) = intent {
-        let state = &mut *world.get_mut::<Panel>(panel).unwrap();
+        let mut state = world
+            .get_mut::<Panel>(panel)
+            .ok_or("Map navigation closed")?;
         state.selected = state.selection.choose(index).cloned();
         state.changed = true;
         controls::status(
@@ -390,7 +396,9 @@ fn operate(world: &mut World, panel: Entity, intent: Intent) -> Result<(), Strin
         intent,
         Intent::Origin | Intent::Destination | Intent::Mode | Intent::Cancel
     ) {
-        let state = &mut *world.get_mut::<Panel>(panel).unwrap();
+        let mut state = world
+            .get_mut::<Panel>(panel)
+            .ok_or("Map navigation closed")?;
         state.job = None;
         state.selection.invalidate();
         state.selected = None;
@@ -452,7 +460,9 @@ fn operate(world: &mut World, panel: Entity, intent: Intent) -> Result<(), Strin
         );
         let (cancel, counts) = (cancelled.clone(), progress.clone());
         let (sender, response) = tokio::sync::oneshot::channel();
-        let state = &mut *world.get_mut::<Panel>(panel).unwrap();
+        let mut state = world
+            .get_mut::<Panel>(panel)
+            .ok_or("Map navigation closed")?;
         state.job = None;
         let generation = state.selection.invalidate();
         let task = runtime.spawn(async move {
@@ -484,7 +494,9 @@ fn operate(world: &mut World, panel: Entity, intent: Intent) -> Result<(), Strin
         .clone()
         .ok_or("Map provider runtime unavailable")?;
     let (sender, response) = tokio::sync::oneshot::channel();
-    let state = &mut *world.get_mut::<Panel>(panel).unwrap();
+    let mut state = world
+        .get_mut::<Panel>(panel)
+        .ok_or("Map navigation closed")?;
     state.job = None;
     let generation = state.selection.invalidate();
     state.changed = true;
@@ -527,10 +539,13 @@ fn poll(world: &mut World) {
         .map(|(entity, _)| entity)
         .collect::<Vec<_>>();
     for entity in panels {
-        let mut job = match world.get_mut::<Panel>(entity).unwrap().job.take() {
-            Some(job) => job,
-            None => continue,
+        let Some(mut panel) = world.get_mut::<Panel>(entity) else {
+            continue;
         };
+        let Some(mut job) = panel.job.take() else {
+            continue;
+        };
+        let (status, results) = (panel.status, panel.results);
         if let Some(progress) = &job.progress {
             let caption = format!(
                 "Region: {}/{} tiles · {} bytes",
@@ -540,25 +555,24 @@ fn poll(world: &mut World) {
                 progress.total.load(std::sync::atomic::Ordering::Relaxed),
                 progress.bytes.load(std::sync::atomic::Ordering::Relaxed)
             );
-            let status = world.get::<Panel>(entity).unwrap().status;
             controls::status(world, status, caption);
         }
         let result = match job.response.try_recv() {
             Ok(result) => result,
             Err(tokio::sync::oneshot::error::TryRecvError::Empty) => {
-                world.get_mut::<Panel>(entity).unwrap().job = Some(job);
+                if let Some(mut panel) = world.get_mut::<Panel>(entity) {
+                    panel.job = Some(job);
+                }
                 continue;
             }
             Err(_) => Err("Provider request cancelled".into()),
         };
-        let (status, results) = {
-            let panel = world.get::<Panel>(entity).unwrap();
-            (panel.status, panel.results)
-        };
         controls::clear(world, results);
         match result {
             Ok(Response::Places(places)) => {
-                let state = &mut *world.get_mut::<Panel>(entity).unwrap();
+                let Some(mut state) = world.get_mut::<Panel>(entity) else {
+                    continue;
+                };
                 if state.selection.accept_places(job.generation, places) {
                     let places = state.selection.places.clone();
                     for (index, place) in places.iter().enumerate() {
@@ -599,7 +613,9 @@ fn poll(world: &mut World) {
                     route.credits
                 );
                 let caption = format!("{caption} · estimated arrival {arrival}");
-                let state = &mut *world.get_mut::<Panel>(entity).unwrap();
+                let Some(mut state) = world.get_mut::<Panel>(entity) else {
+                    continue;
+                };
                 if state.selection.accept_route(job.generation, route) {
                     state.changed = true;
                     controls::status(world, status, caption);
@@ -631,10 +647,9 @@ pub fn update(
         .iter(world)
         .find(|(_, panel)| panel.owner == owner)
         .map(|(entity, _)| entity);
-    let Some(panel) = panel else {
+    let Some(mut state) = panel.and_then(|panel| world.get_mut::<Panel>(panel)) else {
         return (false, None);
     };
-    let state = &mut *world.get_mut::<Panel>(panel).unwrap();
     state.point = point;
     if state.scope != scope {
         state.scope = scope.into();
@@ -643,17 +658,17 @@ pub fn update(
         state.selected = None;
         state.origin = None;
         state.destination = None;
-        state.changed = true;
         let results = state.results;
         let status = state.status;
         let query = state.fields[0];
+        state.changed = false;
         if let Some(mut editor) = world.get_mut::<bevy::text::EditableText>(query) {
             editor.editor.set_text("");
         }
         controls::clear(world, results);
         controls::status(world, status, "");
+        return (true, None);
     }
-    let state = &mut *world.get_mut::<Panel>(panel).unwrap();
     (std::mem::take(&mut state.changed), state.selected.take())
 }
 pub fn draw_route(
@@ -715,7 +730,7 @@ pub fn region(
         .iter(world)
         .find(|(_, panel)| panel.owner == owner)
         .map(|(entity, _)| entity);
-    if let Some(panel) = panel {
-        world.get_mut::<Panel>(panel).unwrap().region = bounds.zip(store);
+    if let Some(mut state) = panel.and_then(|panel| world.get_mut::<Panel>(panel)) {
+        state.region = bounds.zip(store);
     }
 }

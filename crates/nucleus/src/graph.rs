@@ -138,7 +138,6 @@ pub fn cycles(nodes: &[String], edges: &[(String, String)]) -> Vec<Vec<String>> 
             }
         }
     }
-    #[derive(Clone)]
     struct Frame {
         v: usize,
         child: usize,
@@ -161,11 +160,11 @@ pub fn cycles(nodes: &[String], edges: &[(String, String)]) -> Vec<Vec<String>> 
         counter += 1;
         stack.push(start);
         on_stack[start] = true;
-        while let Some(frame) = frames.last().cloned() {
+        while let Some(frame) = frames.last_mut() {
             let v = frame.v;
             if frame.child < succ[v].len() {
                 let w = succ[v][frame.child];
-                frames.last_mut().unwrap().child += 1;
+                frame.child += 1;
                 if idx[w] == usize::MAX {
                     idx[w] = counter;
                     low[w] = counter;

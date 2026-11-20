@@ -10,9 +10,11 @@ use std::{
 
 fn identity(prefix: &str, value: &str) -> String {
     let digest = Sha256::digest(value.as_bytes());
+    let mut entropy = [0; 16];
+    entropy.copy_from_slice(&digest[..16]);
     format!(
         "{prefix}_{}",
-        nucleus::ulid_from(0, u128::from_be_bytes(digest[..16].try_into().unwrap()))
+        nucleus::ulid_from(0, u128::from_be_bytes(entropy))
     )
 }
 
@@ -991,10 +993,10 @@ fn rewrite_condition(
         }
         if !quoted && matches!(character, '@' | '#') {
             let mut name = String::new();
-            while chars.peek().is_some_and(|character| {
+            while let Some(part) = chars.next_if(|character| {
                 character.is_ascii_alphanumeric() || matches!(character, '_' | '-' | '.')
             }) {
-                name.push(chars.next().unwrap());
+                name.push(part);
             }
             output.push(character);
             output.push_str(
@@ -1050,8 +1052,8 @@ fn remap(
                     }) {
                         *value = json!(name);
                     }
-                } else if name == "action" && value.is_string() {
-                    if let Ok(mut action) = serde_json::from_str::<Value>(value.as_str().unwrap()) {
+                } else if let Some(action) = value.as_str().filter(|_| name == "action") {
+                    if let Ok(mut action) = serde_json::from_str::<Value>(action) {
                         remap(&mut action, identities, concepts);
                         *value = json!(action.to_string());
                     }

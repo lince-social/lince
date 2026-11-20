@@ -144,10 +144,10 @@ impl Modify {
             }
         }
         *chosen = serde_json::to_value(policy).map_err(|error| error.to_string())?;
+        let text = serde_json::to_string_pretty(&value).map_err(|error| error.to_string())?;
         *world
             .get_mut::<EditableText>(self.raw)
-            .ok_or("Policy editor unavailable")? =
-            draft_editor(&serde_json::to_string_pretty(&value).unwrap());
+            .ok_or("Policy editor unavailable")? = draft_editor(&text);
         Ok(())
     }
 }

@@ -1,7 +1,8 @@
 use std::collections::BTreeSet;
 
 fn publication(source: &str) -> anicca::ProjectedDocument {
-    anicca::project(&anicca::parse(source).unwrap()).unwrap()
+    let document = anicca::parse(source).expect("parse the publication fixture");
+    anicca::project(&document).expect("project the publication fixture")
 }
 
 #[test]

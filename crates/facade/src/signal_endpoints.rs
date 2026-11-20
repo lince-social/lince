@@ -79,11 +79,14 @@ pub(crate) async fn reading(
 ) -> Response {
     let mut authorization = headers.get_all(header::AUTHORIZATION).iter();
     let result = if let Some(header) = authorization.next() {
-        let token = header
+        let Some(token) = header
             .to_str()
             .ok()
-            .and_then(|value| value.strip_prefix("Bearer "));
-        if authorization.next().is_some() || token.is_none() {
+            .and_then(|value| value.strip_prefix("Bearer "))
+        else {
+            return StatusCode::FORBIDDEN.into_response();
+        };
+        if authorization.next().is_some() {
             return StatusCode::FORBIDDEN.into_response();
         }
         let submission = match serde_json::from_value::<Submission>(body) {
@@ -95,7 +98,7 @@ pub(crate) async fn reading(
             Err(error) => return crate::auth::internal(error).into_response(),
         };
         match volatile {
-            Ok(Some(_)) => return match state.cell.engine.publish_stream_http(&signal, token.unwrap(), submission).await {
+            Ok(Some(_)) => return match state.cell.engine.publish_stream_http(&signal, token, submission).await {
                 Ok(retained) => Json(json!({"retained": retained, "storage": "memory"})).into_response(),
                 Err(_) => StatusCode::FORBIDDEN.into_response(),
             },
@@ -105,7 +108,7 @@ pub(crate) async fn reading(
         state
             .cell
             .engine
-            .accept_signal_token(&signal, token.unwrap(), submission)
+            .accept_signal_token(&signal, token, submission)
             .await
     } else {
         let reading = match serde_json::from_value::<Reading>(body) {

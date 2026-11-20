@@ -102,3 +102,5 @@ optional = true
 dbg_macro = "deny"
 todo = "deny"
 allow_attributes_without_reason = "deny"
+# Keep the imported SIMD implementations advisory until their proofs are reviewed upstream.
+undocumented_unsafe_blocks = "warn"

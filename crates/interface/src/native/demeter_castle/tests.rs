@@ -175,7 +175,7 @@ fn drafts_are_specific_to_each_food_and_workspace_recovery_keeps_unfinished_valu
         &format!("food:{first}:day:upper"),
         "unfinished",
     );
-    let saved = snapshot(app.world_mut(), root);
+    let saved = snapshot(app.world_mut(), root).expect("capture the fixture snapshots");
     assert_eq!(saved.len(), 1);
     assert!(saved[0].valid());
     let serialized = serde_json::to_string(&saved[0]).unwrap();

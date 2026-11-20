@@ -17,7 +17,9 @@ fn native_assets() {
     native_freedoom_build::compile();
     println!("cargo:rerun-if-changed=native_icon_art.rs");
     let height = native_icon_art::COUNT.div_ceil(5) as u32 * 128;
-    let output = std::path::PathBuf::from(std::env::var_os("OUT_DIR").unwrap());
+    let output = std::path::PathBuf::from(
+        std::env::var_os("OUT_DIR").expect("Cargo provides the icon atlas output directory"),
+    );
     let atlas_path = output.join("icons.rgba");
     println!("cargo:rerun-if-changed={}", atlas_path.display());
     let mut generator = std::collections::hash_map::DefaultHasher::new();
@@ -40,7 +42,8 @@ fn native_assets() {
     if stamp.exists() {
         std::fs::remove_file(&stamp).expect("invalidate icon inputs");
     }
-    let mut atlas = resvg::tiny_skia::Pixmap::new(640, height).unwrap();
+    let mut atlas = resvg::tiny_skia::Pixmap::new(640, height)
+        .expect("the generated icon atlas dimensions must fit a pixmap");
     for index in 0..native_icon_art::COUNT {
         let source = native_icon_art::source(index).replace("currentColor", "white");
         let tree = resvg::usvg::Tree::from_data(source.as_bytes(), &Default::default())

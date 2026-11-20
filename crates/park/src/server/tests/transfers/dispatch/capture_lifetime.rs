@@ -161,7 +161,7 @@ fn decorations(fixture: &mut Fixture, owner: Entity) -> usize {
 }
 
 #[derive(Clone, Copy, Debug)]
-enum Change { Privacy, Source, Revoke, Lock, Deadline, ColorThenLock, ColorThenVt, ColorThenOutput }
+enum Change { Privacy, Source, SourceThenPrivacy, Revoke, Lock, Deadline, ColorThenLock, ColorThenVt, ColorThenOutput }
 
 #[test]
 #[ignore = "requires hardware Vulkan and EGL"]
@@ -170,7 +170,7 @@ fn queued_effect_capture_revalidates_privacy_source_revocation_lock_and_deadline
     let _entered = runtime.enter();
     let directory = tempfile::tempdir().unwrap();
     let mut samples = Vec::new();
-    let changes = [Change::Privacy, Change::Source, Change::Revoke, Change::Lock, Change::Deadline,
+    let changes = [Change::Privacy, Change::Source, Change::SourceThenPrivacy, Change::Revoke, Change::Lock, Change::Deadline,
         Change::ColorThenLock, Change::ColorThenVt, Change::ColorThenOutput];
     let selected = std::env::var("LINCE_PARK_TEST_CAPTURE_CHANGE").ok();
     assert!(selected.as_ref().is_none_or(|selected| changes.iter().any(|change| format!("{change:?}") == *selected)), "Unknown capture retirement case: {selected:?}");
@@ -208,7 +208,17 @@ fn queued_effect_capture_revalidates_privacy_source_revocation_lock_and_deadline
             Change::Privacy => {
                 exclude(&mut fixture, first_id);
             }
-            Change::Source | Change::ColorThenOutput => fixture.desktop.server.configure_outputs(&[crate::server::Monitor { id: lince_interface::host::OutputId(1), name: "Capture-Replacement".into(), origin: [0, 0], size: [1000, 720] }]).unwrap(),
+            Change::Source | Change::SourceThenPrivacy | Change::ColorThenOutput => {
+                fixture.desktop.server.configure_outputs(&[crate::server::Monitor {
+                    id: lince_interface::host::OutputId(1),
+                    name: "Capture-Replacement".into(),
+                    origin: [0, 0],
+                    size: [1000, 720],
+                }]).unwrap();
+                if matches!(change, Change::SourceThenPrivacy) {
+                    exclude(&mut fixture, first_id);
+                }
+            }
             Change::Revoke => {
                 let id = fixture.desktop.server.capture_status().sessions[0].id;
                 fixture.desktop.server.stop_capture_session(id);
@@ -238,12 +248,12 @@ fn queued_effect_capture_revalidates_privacy_source_revocation_lock_and_deadline
             let version = fixture.desktop.server.windows().into_iter().find(|window| window.id == second_id).unwrap().nodes[0].content.version;
             fixture.until(|fixture| fixture.desktop.current.as_ref().is_some_and(|frame| frame.windows.iter().any(|window| window.id == second_id
                 && window.nodes.iter().any(|node| node.content.version == version))));
-            let replacement = if matches!(change, Change::Source | Change::Revoke | Change::ColorThenOutput) { Some(output_session(&mut fixture)) } else { None };
+            let replacement = if matches!(change, Change::Source | Change::SourceThenPrivacy | Change::Revoke | Change::ColorThenOutput) { Some(output_session(&mut fixture)) } else { None };
             let active = replacement.as_ref().map_or(&session, |(_, session)| session);
             let fresh = Pending::new(&mut fixture, active, [1000, 720]);
             let pixels = completed(&mut fixture, &fresh);
             assert!(pixels.chunks_exact(4).filter(|pixel| pixel[0] > 220 && pixel[1] > 220 && pixel[2] < 40).count() > 200, "Fresh public content did not recover after {change:?}");
-            if matches!(change, Change::Privacy) { assert_eq!(pixels.chunks_exact(4).filter(|pixel| pixel[0] > 220 && pixel[1] < 40 && pixel[2] > 220).count(), 0); }
+            if matches!(change, Change::Privacy | Change::SourceThenPrivacy) { assert_eq!(pixels.chunks_exact(4).filter(|pixel| pixel[0] > 220 && pixel[1] < 40 && pixel[2] > 220).count(), 0); }
             fresh.destroy(&mut fixture);
             if let Some((source, session)) = replacement { session.destroy(); source.destroy(); fixture.exchange(); }
         }

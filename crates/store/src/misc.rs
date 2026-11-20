@@ -322,11 +322,18 @@ pub async fn due_effects(pool: &SqlitePool) -> Result<Vec<EffectRow>, StoreError
     due_effects_for_lane(pool, None).await
 }
 
+#[derive(Clone, Copy)]
+pub enum EffectLane {
+    Actions,
+    Commands,
+    UnlimitedCommands,
+}
+
 pub async fn due_effects_for_lane(
     pool: &SqlitePool,
-    commands: Option<bool>,
+    lane: Option<EffectLane>,
 ) -> Result<Vec<EffectRow>, StoreError> {
-    Ok(due_effect_rows(pool, commands)
+    Ok(due_effect_rows(pool, lane)
         .await?
         .iter()
         .filter_map(effect_row)
@@ -342,13 +349,32 @@ pub async fn first_due_effect(pool: &SqlitePool) -> Result<Option<EffectRow>, St
 
 async fn due_effect_rows(
     pool: &SqlitePool,
-    commands: Option<bool>,
+    lane: Option<EffectLane>,
 ) -> Result<Vec<sqlx::sqlite::SqliteRow>, StoreError> {
     let _read = nucleus::performance::Span::new("effect-queue-read-await");
-    let rows = sqlx::query("SELECT effect.uid, effect.kind, effect.payload, effect.origin_uid FROM effect_queue effect WHERE status = 'queued' AND (? IS NULL OR (kind IN ('command', 'signal', 'saved-command')) = ?) AND (? IS NULL OR NOT EXISTS (SELECT 1 FROM effect_queue earlier WHERE earlier.rowid < effect.rowid AND earlier.status IN ('queued', 'running') AND json_extract(earlier.payload, '$.rule') = json_extract(effect.payload, '$.rule') AND json_extract(earlier.payload, '$.revision') = json_extract(effect.payload, '$.revision') AND json_extract(earlier.payload, '$.occurrence.event_id') = json_extract(effect.payload, '$.occurrence.event_id'))) ORDER BY effect.rowid LIMIT 64")
-        .bind(commands)
-        .bind(commands)
-        .bind(commands)
+    let lane = lane.map(|lane| match lane {
+        EffectLane::Actions => 0,
+        EffectLane::Commands => 1,
+        EffectLane::UnlimitedCommands => 2,
+    });
+    let rows = sqlx::query(
+        "SELECT effect.uid, effect.kind, effect.payload, effect.origin_uid
+         FROM effect_queue effect
+         WHERE status = 'queued'
+           AND (?1 IS NULL OR ?1 = CASE
+               WHEN kind = 'saved-command' AND COALESCE(json_extract(payload, '$.unlimited'),
+                   json_extract(payload, '$.command_snapshot.unlimited'), 0) = 1 THEN 2
+               WHEN kind IN ('command', 'signal', 'saved-command') THEN 1
+               ELSE 0 END)
+           AND (?1 IS NULL OR NOT EXISTS (
+               SELECT 1 FROM effect_queue earlier
+               WHERE earlier.rowid < effect.rowid AND earlier.status IN ('queued', 'running')
+                 AND json_extract(earlier.payload, '$.rule') = json_extract(effect.payload, '$.rule')
+                 AND json_extract(earlier.payload, '$.revision') = json_extract(effect.payload, '$.revision')
+                 AND json_extract(earlier.payload, '$.occurrence.event_id') = json_extract(effect.payload, '$.occurrence.event_id')))
+         ORDER BY effect.rowid LIMIT 64",
+    )
+        .bind(lane)
         .fetch_all(pool)
         .await?;
     nucleus::performance::add("effect-queue-rows-read", rows.len() as u64);

@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use simulation::{artifacts, fixtures, scenario::Database, world::World};
 
 async fn audience(store: &store::Store) -> String {

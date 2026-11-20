@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use chrono::Utc;
 use nucleus::{Cause, CauseKind, NewFact};
+use store::misc::EffectLane;
 
 use crate::Engine;
 use crate::append::append_one;
@@ -23,7 +24,7 @@ pub struct DatabaseEffects {
 
 impl Engine {
     pub fn start_effect_worker(self: Arc<Self>) -> tokio::task::JoinHandle<()> {
-        let mut changed = self.effects_changed.subscribe();
+        let changed = self.effects_changed.subscribe();
         tokio::spawn(async move {
             let recovery = self.effect_execution.lock().await;
             if let Err(error) = store::sqlx::query("UPDATE effect_queue SET status = 'uncertain', result = 'Worker stopped after claiming this effect; inspect before retrying', finished_at = ? WHERE status = 'running'")
@@ -36,46 +37,33 @@ impl Engine {
                 tracing::warn!(%error, "Could not recover command evaluations");
                 return;
             }
-            let mut commands_changed = self.effects_changed.subscribe();
-            let work = async {
-                loop {
-                    changed.borrow_and_update();
-                    match self.run_effects(false, Some(false)).await {
-                        Ok(outcomes) if !outcomes.is_empty() => {
-                            tokio::task::yield_now().await;
-                            continue;
+            let lanes = [EffectLane::Actions, EffectLane::Commands]
+                .into_iter()
+                .chain(std::iter::repeat_n(EffectLane::UnlimitedCommands, 4));
+            let workers = lanes.map(|lane| {
+                let mut changed = changed.clone();
+                let engine = &self;
+                async move {
+                    loop {
+                        changed.borrow_and_update();
+                        match engine.run_effects(false, Some(lane)).await {
+                            Ok(outcomes) if !outcomes.is_empty() => {
+                                tokio::task::yield_now().await;
+                                continue;
+                            }
+                            Ok(_) => {}
+                            Err(error) => {
+                                tracing::warn!(%error, "Effect worker stopped");
+                                return;
+                            }
                         }
-                        Ok(_) => {}
-                        Err(error) => {
-                            tracing::warn!(%error, "Effect worker stopped");
+                        if changed.changed().await.is_err() {
                             return;
                         }
                     }
-                    if changed.changed().await.is_err() {
-                        return;
-                    }
                 }
-            };
-            let commands = async {
-                loop {
-                    commands_changed.borrow_and_update();
-                    match self.run_effects(false, Some(true)).await {
-                        Ok(outcomes) if !outcomes.is_empty() => {
-                            tokio::task::yield_now().await;
-                            continue;
-                        }
-                        Ok(_) => {}
-                        Err(error) => {
-                            tracing::warn!(%error, "Command worker stopped");
-                            return;
-                        }
-                    }
-                    if commands_changed.changed().await.is_err() {
-                        return;
-                    }
-                }
-            };
-            tokio::join!(work, commands);
+            });
+            futures::future::join_all(workers).await;
         })
     }
 
@@ -107,18 +95,14 @@ impl Engine {
     async fn run_effects(
         &self,
         database_only: bool,
-        command_lane: Option<bool>,
+        lane: Option<EffectLane>,
     ) -> Result<Vec<EffectOutcome>, EngineError> {
         let guard = self.effect_execution.lock().await;
         let signer = self.signer.lock().await.clone();
         let mut out = Vec::new();
-        let effects = store::misc::due_effects_for_lane(&self.store.pool, command_lane).await?;
+        let effects = store::misc::due_effects_for_lane(&self.store.pool, lane).await?;
         drop(guard);
         for effect in effects {
-            let command = matches!(effect.kind.as_str(), "command" | "signal" | "saved-command");
-            if command_lane.is_some_and(|lane| lane != command) {
-                continue;
-            }
             crate::rule_runtime::execution_checkpoint(false).await?;
             if database_only
                 && !database_effect(&effect)

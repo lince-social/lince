@@ -110,7 +110,7 @@ impl Window {
             .checked_add_months(chrono::Months::new(1))
             .ok_or("Calendar month overflow")?;
         let boundary = |date: chrono::NaiveDate| {
-            let midnight = date.and_hms_opt(0, 0, 0).unwrap();
+            let midnight = date.and_time(chrono::NaiveTime::MIN);
             (0..180)
                 .find_map(|minute| {
                     zone.from_local_datetime(&(midnight + chrono::TimeDelta::minutes(minute)))

@@ -117,6 +117,13 @@ jobs:
             headless) cargo check --locked -p lince --no-default-features --features instinct --timings ;;
             *) exit 1 ;;
           esac
+      - name: Run fast interface checks
+        if: matrix.mode == 'desktop'
+        env:
+          WGPU_BACKEND: vulkan
+        run: |
+          sudo apt-get install -y --no-install-recommends mesa-vulkan-drivers
+          cargo xtask test-interface
       - name: Save compiled inputs
         if: ${{ !cancelled() && steps.cache.outputs.hit != 'true' && steps.cache.outputs.key != '' }}
         uses: actions/cache/save@v4

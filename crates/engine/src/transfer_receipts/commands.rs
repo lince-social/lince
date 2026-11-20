@@ -181,8 +181,11 @@ impl Engine {
                         "This receipt's sharing term has expired; review new terms before exporting",
                     ));
                 }
-                outcome.data.as_mut().unwrap()["receipt_export"] =
-                    json!(serde_json::to_string(&saved.document)?);
+                let data = outcome
+                    .data
+                    .as_mut()
+                    .ok_or_else(|| invalid("Receipt details are unavailable"))?;
+                data["receipt_export"] = json!(serde_json::to_string(&saved.document)?);
             }
             return Ok(outcome);
         }

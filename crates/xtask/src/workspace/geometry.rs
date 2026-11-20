@@ -38,11 +38,11 @@ impl Glb {
         if node.get("children").is_none() {
             node["children"] = json!([]);
         }
-        node["children"].as_array_mut().unwrap().push(json!(child));
+        node["children"].as_array_mut().expect("GLB node children are stored as an array").push(json!(child));
     }
 
     pub(super) fn array(&mut self, key: &str, value: Value) -> usize {
-        let entries = self.document[key].as_array_mut().unwrap();
+        let entries = self.document[key].as_array_mut().expect("the GLB field is declared as an array");
         let index = entries.len();
         entries.push(value);
         index

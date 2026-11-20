@@ -53,6 +53,35 @@ fn a_word_ending_in_r_before_a_string_is_not_a_raw_string() {
 use sensei::rules::no_comments::strip;
 
 #[test]
+fn check_and_fix_preserve_a_standalone_safety_proof_and_its_continuation() {
+    let source = concat!(
+        "fn byte(value: &u8) -> u8 {\n",
+        "    let ptr = std::ptr::from_ref(value);\n",
+        "    // SAFETY: ptr comes from an aligned, live reference.\n",
+        "    // The reference outlives this read.\n",
+        "    unsafe { *ptr }\n",
+        "}\n",
+    );
+    assert!(lines(source).is_empty());
+    assert_eq!(strip(source), source);
+}
+
+#[test]
+fn safety_exception_does_not_cover_empty_inline_or_detached_comments() {
+    let source = concat!(
+        "fn f() {} // SAFETY: inline text\n",
+        "// SAFETY:\n",
+        "// ordinary after an empty marker\n",
+        "// SAFETY: legitimate proof\n",
+        "    // ordinary at a different indentation\n",
+        "\n",
+        "// ordinary after a gap\n",
+    );
+    assert_eq!(lines(source), vec![1, 2, 3, 5, 7]);
+    assert_eq!(strip(source), "fn f() {}\n// SAFETY: legitimate proof\n");
+}
+
+#[test]
 fn a_comment_on_its_own_line_leaves_no_blank_behind() {
     let source = "fn a() {}\n// gone\nfn b() {}\n";
     assert_eq!(strip(source), "fn a() {}\nfn b() {}\n");

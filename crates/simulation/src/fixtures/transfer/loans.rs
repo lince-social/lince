@@ -10,10 +10,10 @@ pub fn temporary_loan(replicated: bool, assumed: bool) -> Scenario {
     let end = from + 3 * 86_400_000;
     let interval = Interval {
         from: chrono::DateTime::from_timestamp_millis(from)
-            .unwrap()
+            .expect("the loan starts near the fixed scenario date")
             .to_rfc3339(),
         until: chrono::DateTime::from_timestamp_millis(end)
-            .unwrap()
+            .expect("the loan ends near the fixed scenario date")
             .to_rfc3339(),
     };
     for input in &mut case.inputs {
@@ -91,7 +91,7 @@ pub fn extended_loan(replicated: bool) -> Scenario {
         &mut case,
         "b",
         "propose-extension",
-        json!({"action":"propose-transfer-loan-extension","transfer":"$routes","exchange":"apples","expected_revision":2,"request_id":"propose-extension","person":"$beto","until":chrono::DateTime::from_timestamp_millis(until).unwrap().to_rfc3339()}),
+        json!({"action":"propose-transfer-loan-extension","transfer":"$routes","exchange":"apples","expected_revision":2,"request_id":"propose-extension","person":"$beto","until":chrono::DateTime::from_timestamp_millis(until).expect("the extension ends near the fixed scenario date").to_rfc3339()}),
     );
     publish(&mut case, "b", "pending-extension");
     for (cell, person) in [("a", "ana"), ("b", "beto")] {

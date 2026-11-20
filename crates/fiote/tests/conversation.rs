@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use fiote::{
     conversation::{self, Summary},
     provider::{Message, Provider, Reply, TextOutput, ToolDefinition},

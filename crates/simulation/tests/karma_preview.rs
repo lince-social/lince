@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use std::future::Future;
 
 use chrono::{DateTime, Utc};
@@ -127,7 +129,7 @@ fn command_queries_and_consequences_use_controlled_responses_in_a_private_copy()
         let engine = engine().await;
         let command = engine.act_at(Action::SaveKarmaCommand {
             target: None, expected_revision: None, slug: "reader".into(), head: "Reader".into(),
-            configuration: nucleus::command::Command::Shell { script: "exit 99".into() }, host: None,
+            configuration: nucleus::command::Command::Shell { script: "exit 99".into() }, host: None, unlimited: false,
         }, None, now()).await.unwrap().created.unwrap();
         let before = engine.store.state_hash().await.unwrap();
         let mut query = request(vec![proposal("query_command(@reader)", "@stock")]);

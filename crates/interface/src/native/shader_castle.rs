@@ -115,32 +115,37 @@ pub fn spawn(
     owner
 }
 
-fn remember(world: &mut World, owner: Entity) {
+fn remember(world: &mut World, owner: Entity) -> Result<(), String> {
     let Some(castle) = world.get::<ShaderCastle>(owner) else {
-        return;
+        return Ok(());
     };
     let (Some(editor), Some(binding)) = (castle.editor, castle.selection.clone()) else {
-        return;
+        return Ok(());
     };
-    if let Some(saved) = shader_effects::capture_editor(world, editor) {
-        let mut castle = world.get_mut::<ShaderCastle>(owner).unwrap();
+    if let Some(saved) = shader_effects::capture_editor(world, editor)?
+        && let Some(mut castle) = world.get_mut::<ShaderCastle>(owner)
+    {
         castle.drafts.retain(|draft| !draft.matches(&binding));
         castle.drafts.push(saved);
         if castle.drafts.len() > 8 {
             castle.drafts.remove(0);
         }
     }
+    Ok(())
 }
 
-fn detach(world: &mut World, owner: Entity) {
-    remember(world, owner);
-    let mut castle = world.get_mut::<ShaderCastle>(owner).unwrap();
+fn detach(world: &mut World, owner: Entity) -> Result<(), String> {
+    remember(world, owner)?;
+    let Some(mut castle) = world.get_mut::<ShaderCastle>(owner) else {
+        return Ok(());
+    };
     let editor = castle.editor.take();
     castle.selection = None;
     castle.create_requested = false;
     if let Some(editor) = editor {
         world.despawn(editor);
     }
+    Ok(())
 }
 
 #[derive(Clone)]
@@ -164,7 +169,10 @@ impl Action for Select {
             .get::<crate::native::area::InfluenceArea>(area)
             .and_then(|area| area.protein.as_ref())
             .map_or(Source::Local, |config| config.source.clone());
-        detach(world, owner);
+        if let Err(error) = detach(world, owner) {
+            crate::native::notifications::report(world, "interface::shader-castle", &error);
+            return;
+        }
         world
             .get_mut::<crate::native::area::InfluenceArea>(area)
             .unwrap()
@@ -233,7 +241,10 @@ fn update(world: &mut World) {
             })
             .flatten();
         if changed {
-            detach(world, owner);
+            if let Err(error) = detach(world, owner) {
+                crate::native::sand_panel::status(world, status, &error);
+                continue;
+            }
             if let Some(binding) = replacement {
                 let saved = world
                     .get::<ShaderCastle>(owner)
@@ -347,7 +358,7 @@ impl SavedShader {
     }
 }
 
-pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedShader> {
+pub(crate) fn snapshot(world: &mut World, root: Entity) -> Result<Vec<SavedShader>, String> {
     let owners: Vec<_> = world
         .query_filtered::<(Entity, &ChildOf), With<ShaderCastle>>()
         .iter(world)
@@ -357,17 +368,25 @@ pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedShader> {
     owners
         .into_iter()
         .filter_map(|owner| {
-            remember(world, owner);
-            Some(SavedShader {
-                frame: castle_feed::Saved::capture(world, owner)?,
-                drafts: world.get::<ShaderCastle>(owner)?.drafts.clone(),
-            })
+            if let Err(error) = remember(world, owner) {
+                return Some(Err(error));
+            }
+            let drafts = &world.get::<ShaderCastle>(owner)?.drafts;
+            Some(
+                castle_feed::Saved::capture(world, owner)?.map(|frame| SavedShader {
+                    frame,
+                    drafts: drafts.clone(),
+                }),
+            )
         })
         .collect()
 }
 
 pub(crate) fn prepare_source(world: &mut World, owner: Entity, source: Source) {
-    detach(world, owner);
+    if let Err(error) = detach(world, owner) {
+        crate::native::notifications::report(world, "interface::shader-castle", &error);
+        return;
+    }
     let area = world.get::<Frame>(owner).unwrap().area;
     if let Some(config) = world
         .get_mut::<crate::native::area::InfluenceArea>(area)

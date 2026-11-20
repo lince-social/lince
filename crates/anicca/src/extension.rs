@@ -113,14 +113,15 @@ pub(crate) fn format_ast(output: &mut String, extension: &ast::Extension) {
         extension.target.value(),
         extension.namespace.0
     )
-    .unwrap();
+    .expect("writing to a String cannot fail");
     format_fields(output, &extension.fields, 1);
     output.push_str("}\n");
 }
 
 fn format_fields(output: &mut String, object: &ast::ExtensionObject, depth: usize) {
     for field in &object.fields {
-        write!(output, "{}{} ", "    ".repeat(depth), field.key.0).unwrap();
+        write!(output, "{}{} ", "    ".repeat(depth), field.key.0)
+            .expect("writing to a String cannot fail");
         format_value(output, &field.value, depth);
         output.push('\n');
     }
@@ -131,7 +132,7 @@ fn format_value(output: &mut String, value: &ast::ExtensionValue, depth: usize) 
         ast::ExtensionValue::Object(value) => {
             output.push_str("{\n");
             format_fields(output, value, depth + 1);
-            write!(output, "{}}}", "    ".repeat(depth)).unwrap();
+            write!(output, "{}}}", "    ".repeat(depth)).expect("writing to a String cannot fail");
         }
         ast::ExtensionValue::List(value) => {
             output.push('[');
@@ -181,7 +182,7 @@ fn render_fields(
                 "Extension key `{key}` is not a Lingua key"
             )));
         }
-        write!(output, "{}{key} ", "    ".repeat(depth)).unwrap();
+        write!(output, "{}{key} ", "    ".repeat(depth)).expect("writing to a String cannot fail");
         render_value(output, value, depth)?;
         output.push('\n');
     }
@@ -196,7 +197,7 @@ fn render_value(output: &mut String, value: &Value, depth: usize) -> Result<(), 
         Value::Object(fields) => {
             output.push_str("{\n");
             render_fields(output, fields, depth + 1)?;
-            write!(output, "{}}}", "    ".repeat(depth)).unwrap();
+            write!(output, "{}}}", "    ".repeat(depth)).expect("writing to a String cannot fail");
         }
         Value::Array(values) => {
             output.push('[');

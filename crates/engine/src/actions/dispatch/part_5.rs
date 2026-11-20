@@ -288,12 +288,10 @@ impl Engine {
                                 .into(),
                         });
                     }
-                    if terms
-                        .party
-                        .as_deref()
-                        .is_some_and(|token| token.trim() != claimant)
+                    if let Some(token) = terms.party.as_deref().map(str::trim)
+                        && token != claimant
                     {
-                        let party = self.resolve(terms.party.as_deref().unwrap().trim()).await?;
+                        let party = self.resolve(token).await?;
                         if party != claimant {
                             return Err(EngineError::Consequence(
                                 "a claimed promise belongs to the claiming Person".into(),

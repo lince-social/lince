@@ -7,6 +7,16 @@ pub(super) fn apply(
     after: &api::Snapshot,
 ) -> Result<(), String> {
     let _timing = nucleus::performance::Span::new("native-canvas-placement-application");
+    if world.get::<Workspaces>(root).is_none() {
+        return Err("Canvas has no workspaces.".into());
+    }
+    if !after
+        .workspaces
+        .iter()
+        .any(|space| space.id == after.active_workspace)
+    {
+        return Err("The canvas has no active workspace in the new snapshot.".into());
+    }
     super::rooms::validate(world, root, before, after)?;
     let groups = after
         .placements
@@ -121,7 +131,7 @@ pub(super) fn apply(
             }
         }
     }
-    let mut added = Vec::new();
+    let mut to_spawn = Vec::new();
     for placement in &after.placements {
         let old = before_map.get(placement.id.as_str()).copied();
         let retained = old.is_none()
@@ -133,7 +143,9 @@ pub(super) fn apply(
             })
             && entities
                 .get(&placement.id)
-                .is_some_and(|entity| capture_content(world, *entity) == placement.component);
+                .map(|entity| capture_content(world, *entity))
+                .transpose()?
+                .is_some_and(|component| component == placement.component);
         if retained {
             continue;
         }
@@ -144,20 +156,24 @@ pub(super) fn apply(
                 && !(crate::native::topology::terrain::is_effect(&old.component)
                     && crate::native::topology::terrain::is_effect(&placement.component))
         }) {
-            match spawn(
-                world,
-                root,
-                placement.workspace,
-                DVec2::from_array(placement.geometry.position),
-                &placement.component,
-            ) {
-                Ok(entity) => added.push((placement, entity)),
-                Err(error) => {
-                    for (_, entity) in added {
-                        authoring::discard(world, entity);
-                    }
-                    return Err(error);
+            to_spawn.push(placement);
+        }
+    }
+    let mut added = Vec::with_capacity(to_spawn.len());
+    for placement in to_spawn {
+        match spawn(
+            world,
+            root,
+            placement.workspace,
+            DVec2::from_array(placement.geometry.position),
+            &placement.component,
+        ) {
+            Ok(entity) => added.push((placement, entity)),
+            Err(error) => {
+                for (_, entity) in added {
+                    authoring::discard(world, entity);
                 }
+                return Err(error);
             }
         }
     }
@@ -178,11 +194,14 @@ pub(super) fn apply(
             .enumerate()
             .map(|(index, placement)| (placement.id.clone(), index))
             .collect();
-        for (placement, entity) in &added {
-            canonical.placements[indices[&placement.id]].component =
-                capture_content(world, *entity);
-        }
-        if let Err(error) = api::State::new(canonical, shared_registry()) {
+        let validated = (|| {
+            for (placement, entity) in &added {
+                canonical.placements[indices[&placement.id]].component =
+                    capture_content(world, *entity)?;
+            }
+            api::State::new(canonical, shared_registry())
+        })();
+        if let Err(error) = validated {
             for (_, entity) in added {
                 authoring::discard(world, entity);
             }
@@ -247,10 +266,11 @@ pub(super) fn apply(
                 && entities.contains_key(&old.id)
         })
         .collect();
-    let previous_entries = (!removed_placements.is_empty())
-        .then(|| world.get::<Workspaces>(root).unwrap().entries.clone());
-    let restored = {
-        let mut spaces = world.get_mut::<Workspaces>(root).unwrap();
+    let (previous_entries, restored) = {
+        let mut spaces = world
+            .get_mut::<Workspaces>(root)
+            .ok_or("Canvas has no workspaces.")?;
+        let previous_entries = (!removed_placements.is_empty()).then(|| spaces.entries.clone());
         let deleted: Vec<_> = spaces
             .entries
             .iter()
@@ -269,7 +289,7 @@ pub(super) fn apply(
             .map(|entry| entry.workspace)
             .collect();
         spaces.trash.extend(deleted);
-        restored
+        (previous_entries, restored)
     };
     for old in removed_placements {
         if let Some(entity) = entities.remove(&old.id) {
@@ -280,7 +300,9 @@ pub(super) fn apply(
     let default_layout = world
         .get_resource::<crate::native::layout::desktop::DefaultLayout>()
         .map_or(crate::host::WorkspaceLayout::Free, |mode| mode.0);
-    let mut spaces = world.get_mut::<Workspaces>(root).unwrap();
+    let mut spaces = world
+        .get_mut::<Workspaces>(root)
+        .ok_or("Canvas has no workspaces.")?;
     let entries = previous_entries.unwrap_or_else(|| std::mem::take(&mut spaces.entries));
     let mut previous = HashMap::new();
     for entry in entries.into_iter().chain(restored) {
@@ -326,7 +348,7 @@ pub(super) fn apply(
         .entries
         .iter()
         .find(|entry| entry.id == after.active_workspace)
-        .unwrap();
+        .expect("workspace entries include the validated active workspace");
     let view = CanvasView {
         center: DVec2::from_array(active.center),
         zoom: active.zoom,
@@ -368,15 +390,9 @@ pub(super) fn apply(
                 size: DVec2::from_array(placement.geometry.size).as_vec2(),
             },
         );
-        if world
-            .get::<crate::native::area::InfluenceArea>(entity)
-            .is_some_and(|area| {
-                area.center != placement.geometry.position || area.size != placement.geometry.size
-            })
+        if let Some(mut area) = world.get_mut::<crate::native::area::InfluenceArea>(entity)
+            && (area.center != placement.geometry.position || area.size != placement.geometry.size)
         {
-            let mut area = world
-                .get_mut::<crate::native::area::InfluenceArea>(entity)
-                .unwrap();
             area.center = placement.geometry.position;
             area.size = placement.geometry.size;
         }

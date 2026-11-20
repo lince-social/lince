@@ -168,6 +168,7 @@ warnings = "deny"
 dbg_macro = "deny"
 todo = "deny"
 allow_attributes_without_reason = "deny"
+undocumented_unsafe_blocks = "deny"
 
 [profile.release]
 opt-level = 3          # Maximum optimization

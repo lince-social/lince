@@ -15,13 +15,21 @@ struct ManagedTask {
     task: production::Task,
 }
 
+impl ManagedTask {
+    fn pending_quantity(&self) -> Result<nucleus::DecimalValue, EngineError> {
+        self.task
+            .amount
+            .checked_neg()
+            .ok_or_else(|| invalid("Managed task amount is out of range"))
+    }
+}
+
 fn identity(plan: &str, key: &str) -> String {
     use sha2::{Digest, Sha256};
     let digest = Sha256::digest(format!("demeter:{plan}:{key}"));
-    format!(
-        "r_{}",
-        nucleus::ulid_from(0, u128::from_be_bytes(digest[..16].try_into().unwrap()))
-    )
+    let mut entropy = [0; 16];
+    entropy.copy_from_slice(&digest[..16]);
+    format!("r_{}", nucleus::ulid_from(0, u128::from_be_bytes(entropy)))
 }
 
 impl Engine {
@@ -50,7 +58,7 @@ impl Engine {
                 "superseded"
             } else if record.quantity.to_f64() >= 0.0 {
                 "completed"
-            } else if record.quantity != meta.task.amount.checked_neg().unwrap() {
+            } else if record.quantity != meta.pending_quantity()? {
                 "started"
             } else {
                 "pending"
@@ -434,9 +442,7 @@ impl Engine {
                         "Generated task belongs to another controller".into(),
                     ));
                 }
-                if old.state != "superseded"
-                    && record.quantity != old.task.amount.checked_neg().unwrap()
-                {
+                if old.state != "superseded" && record.quantity != old.pending_quantity()? {
                     preserved += 1;
                     continue;
                 }
@@ -502,12 +508,12 @@ impl Engine {
             let mut old: ManagedTask = serde_json::from_value(
                 store::records::get_extension(&self.store.pool, &old_uid, TASK)
                     .await?
-                    .unwrap(),
+                    .ok_or_else(|| invalid("Managed task disappeared"))?,
             )
             .map_err(invalid)?;
             let record = store::records::get(&self.store.pool, &old_uid)
                 .await?
-                .unwrap();
+                .ok_or_else(|| invalid("Managed task Record disappeared"))?;
             if old.controller != saved.controller {
                 return Err(EngineError::Forbidden(
                     "Generated task controller changed".into(),
@@ -517,10 +523,7 @@ impl Engine {
                 && established
                     .iter()
                     .any(|batch| old.task.key.starts_with(batch));
-            if old.state == "pending"
-                && record.quantity == old.task.amount.checked_neg().unwrap()
-                && !ongoing
-            {
+            if old.state == "pending" && record.quantity == old.pending_quantity()? && !ongoing {
                 outcome.facts.extend(
                     self.change_record(
                         Request {

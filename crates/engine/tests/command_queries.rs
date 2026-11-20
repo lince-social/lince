@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use engine::{Engine, actions::Action};
 use nucleus::command::Command;
 use nucleus::karma::{Cadence, Consequence};
@@ -16,6 +18,7 @@ async fn command(engine: &Engine, script: &str) -> String {
                     script: script.into(),
                 },
                 host: None,
+                unlimited: false,
             },
             None,
         )
@@ -61,6 +64,82 @@ async fn diagnostics(engine: &Engine) -> String {
             .await
             .unwrap();
     format!("Rules: {rules:?}; commands: {commands:?}")
+}
+
+#[tokio::test]
+async fn unlimited_commands_leave_numeric_execution_available() {
+    let engine = std::sync::Arc::new(support::karma::engine().await);
+    let directory = tempfile::tempdir().unwrap();
+    engine.set_command_directory(directory.path()).unwrap();
+    let command = engine
+        .act(
+            Action::SaveKarmaCommand {
+                target: None,
+                expected_revision: None,
+                slug: "unlimited-reader".into(),
+                head: "Unlimited reader".into(),
+                configuration: Command::Shell {
+                    script: r#"if [ "${LINCE_COMMAND_UNLIMITED:-}" = "1" ]; then
+                        until [ -f release ]; do sleep 0.05; done
+                        printf 'released'
+                    else
+                        printf '7'
+                    fi"#.into(),
+                },
+                host: None,
+                unlimited: true,
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    let worker = engine.clone().start_effect_worker();
+    let wait_for = |request: &'static str, expected: &'static str| {
+        let pool = engine.store.pool.clone();
+        async move {
+            tokio::time::timeout(std::time::Duration::from_secs(5), async {
+                loop {
+                    let row: Option<(String, Option<String>)> = store::sqlx::query_as(
+                        "SELECT status, stdout FROM karma_command_invocation WHERE uid = ?",
+                    )
+                    .bind(request)
+                    .fetch_optional(&pool)
+                    .await
+                    .unwrap();
+                    if let Some((status, stdout)) = row
+                        && status == expected
+                    {
+                        return stdout;
+                    }
+                    tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+                }
+            })
+            .await
+            .unwrap_or_else(|_| panic!("{request} did not reach {expected}"))
+        }
+    };
+    for (request, numeric) in [("unlimited-run", false), ("numeric-run", true)] {
+        engine
+            .act(
+                Action::RunKarmaCommand {
+                    command: command.clone(),
+                    request_id: request.into(),
+                    numeric,
+                },
+                None,
+            )
+            .await
+            .unwrap();
+        if !numeric {
+            wait_for(request, "running").await;
+        }
+    }
+    assert_eq!(wait_for("numeric-run", "completed").await.as_deref(), Some("7"));
+    std::fs::write(directory.path().join("release"), "").unwrap();
+    assert_eq!(wait_for("unlimited-run", "completed").await.as_deref(), Some("released"));
+    worker.abort();
 }
 
 #[tokio::test]
@@ -165,6 +244,7 @@ async fn malformed_numeric_output_is_not_zero_and_does_not_replace_a_good_sample
                     script: "printf '12 apples'".into(),
                 },
                 host: None,
+                unlimited: false,
             },
             None,
         )
@@ -229,6 +309,7 @@ async fn pause_revision_delete_and_wrong_targets_refuse_queued_queries() {
                                 script: "printf 10".into(),
                             },
                             host: None,
+                            unlimited: false,
                         },
                         None,
                     )

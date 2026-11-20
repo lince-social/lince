@@ -82,12 +82,16 @@ impl VulkanRenderer {
         let fd = buffer
             .handles()
             .next()
-            .unwrap()
+            .ok_or_else(|| ProbeFailure::at("vulkan_import_fd", "missing DMA-BUF plane descriptor"))?
             .try_clone_to_owned()
             .map_err(|error| ProbeFailure::at("vulkan_import_fd", error))?;
+        let offset = buffer.offsets().next()
+            .ok_or_else(|| ProbeFailure::at("vulkan_import", "missing DMA-BUF plane offset"))?;
+        let stride = buffer.strides().next()
+            .ok_or_else(|| ProbeFailure::at("vulkan_import", "missing DMA-BUF plane stride"))?;
         let layout = vk::SubresourceLayout::default()
-            .offset(u64::from(buffer.offsets().next().unwrap()))
-            .row_pitch(u64::from(buffer.strides().next().unwrap()));
+            .offset(u64::from(offset))
+            .row_pitch(u64::from(stride));
         let buffer_size = rustix::fs::seek(&fd, rustix::fs::SeekFrom::End(0))
             .map_err(|error| ProbeFailure::at("vulkan_import_size", error))?;
         rustix::fs::seek(&fd, rustix::fs::SeekFrom::Start(0))
@@ -142,9 +146,11 @@ impl VulkanRenderer {
             .sharing_mode(vk::SharingMode::EXCLUSIVE)
             .push_next(&mut modifier)
             .push_next(&mut external);
+        // SAFETY: The live modifier chain describes the validated single-plane DMA-BUF.
         let image = unsafe { self.raw_device.create_image(&image_info, None) }
             .map_err(|error| ProbeFailure::at("vulkan_import_image", error))?;
         let imported = (|| {
+            // SAFETY: The image was just created on this device and is still live.
             let requirements = unsafe { self.raw_device.get_image_memory_requirements(image) };
             if requirements.size > buffer_size {
                 return Err(ProbeFailure::at(
@@ -153,6 +159,7 @@ impl VulkanRenderer {
                 ));
             }
             let mut fd_properties = vk::MemoryFdPropertiesKHR::default();
+            // SAFETY: `fd` owns a live DMA-BUF descriptor and the result is writable.
             unsafe {
                 khr::external_memory_fd::Device::new(&self.raw_instance, &self.raw_device)
                     .get_memory_fd_properties(
@@ -177,6 +184,8 @@ impl VulkanRenderer {
                 .memory_type_index(memory_type)
                 .push_next(&mut import)
                 .push_next(&mut dedicated);
+            // SAFETY: The chosen type satisfies both the image and fd requirements.
+            // On success the caller relinquishes the descriptor to Vulkan.
             unsafe { self.raw_device.allocate_memory(&info, None) }
                 .map_err(|error| ProbeFailure::at("vulkan_import_memory", error))
         })();
@@ -186,6 +195,7 @@ impl VulkanRenderer {
                 memory
             }
             Err(error) => {
+                // SAFETY: The failed import leaves this new image unused and unbound.
                 unsafe { self.raw_device.destroy_image(image, None) };
                 return Err(error);
             }
@@ -198,6 +208,8 @@ impl VulkanRenderer {
             #[cfg(all(test, feature = "nested"))]
             bytes: buffer_size,
         };
+        // SAFETY: The imported allocation was dedicated to this unbound image
+        // and offset zero satisfies the same device's alignment requirement.
         unsafe { self.raw_device.bind_image_memory(image, memory, 0) }
             .map_err(|error| ProbeFailure::at("vulkan_import_bind", error))?;
         #[cfg(feature = "native-presentation")]
@@ -243,8 +255,10 @@ impl VulkanRenderer {
         #[cfg(feature = "native-presentation")]
         let started = std::time::Instant::now();
         let destination = {
+            // SAFETY: Only borrow the HAL texture. The wgpu texture stays owned here.
             let destination = unsafe { texture.as_hal::<Vulkan>() }
                 .ok_or_else(|| ProbeFailure::at("vulkan_import_copy", "Vulkan HAL unavailable"))?;
+            // SAFETY: Copy the handle without destroying it. The submission retains the texture.
             unsafe { destination.raw_handle() }
         };
         self.submit_raw("vulkan_import_copy", |command| {
@@ -299,6 +313,8 @@ impl VulkanRenderer {
                 .dst_queue_family_index(vk::QUEUE_FAMILY_IGNORED)
                 .src_access_mask(vk::AccessFlags::TRANSFER_WRITE)
                 .dst_access_mask(vk::AccessFlags::COLOR_ATTACHMENT_WRITE);
+            // SAFETY: The producer is ready and the copy regions are clipped to both
+            // images. The barriers acquire the source and restore both layouts.
             unsafe {
                 self.raw_device.cmd_pipeline_barrier(
                     command,
@@ -504,10 +520,14 @@ impl GpuContext {
         encoder: &mut wgpu::CommandEncoder,
     ) -> Result<()> {
         let source_image = {
+            // SAFETY: Only borrow the HAL texture. The caller owns the wgpu texture.
             let source = unsafe { source.as_hal::<Vulkan>() }
                 .ok_or_else(|| ProbeFailure::at("vulkan_export_copy", "Vulkan HAL unavailable"))?;
+            // SAFETY: The queued copy retains the source texture that owns this handle.
             unsafe { source.raw_handle() }
         };
+        // SAFETY: The raw encoder is only used in the callback. The submission orders
+        // source preparation before the copy and retains both images until completion.
         unsafe {
             encoder.as_hal_mut::<Vulkan, _, _>(|encoder| {
                 let encoder = encoder

@@ -222,7 +222,7 @@ pub(crate) fn entry(
     parent: Entity,
     kind: SandKind,
     existing: Option<(Entity, usize)>,
-) {
+) -> Entity {
     let _entry = nucleus::performance::Span::new("store-entry-preparation");
     use crate::native::edit_mode::{EditAction, control, label};
     world.init_resource::<StoreFont>();
@@ -349,10 +349,11 @@ pub(crate) fn entry(
     let (mut scene, scene_root) = preview::scene(world);
     let source = spawn_sand(&mut scene, scene_root, 1, kind, kind.name(), DVec2::ZERO);
     if kind == SandKind::Operation {
-        let input = scene.get::<StoredSand>(source).unwrap().content.unwrap();
+        let input = scene.get::<StoredSand>(source).and_then(|sand| sand.content)
+            .expect("an operation preview has an input entity");
         scene
             .get_mut::<bevy::text::EditableText>(input)
-            .unwrap()
+            .expect("the operation input is editable text")
             .editor
             .set_text("@record");
     }
@@ -390,7 +391,7 @@ pub(crate) fn entry(
     world.entity_mut(miniature).insert(PreviewKind(style_kind));
     if kind == SandKind::Square {
         let scale = (68.0 / size.x).min(60.0 / size.y).min(1.0);
-        world.get_mut::<Node>(miniature).unwrap().border =
+        world.get_mut::<Node>(miniature).expect("the miniature contains a layout node").border =
             UiRect::all(px(crate::native::sand::BUTTON_BORDER_WIDTH / scale));
         world
             .entity_mut(miniature)
@@ -472,6 +473,7 @@ pub(crate) fn entry(
             &format!("Remove {} {}", kind.name(), index + 1),
         );
     }
+    row
 }
 
 #[derive(Component, Clone)]

@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use serde_json::{Value, json};
 use std::sync::{
     Once,
@@ -241,10 +243,9 @@ async fn measure_work_log_projection() {
             tv_sec: 0,
             tv_nsec: 0,
         };
-        assert_eq!(
-            unsafe { libc::clock_gettime(libc::CLOCK_PROCESS_CPUTIME_ID, &mut time) },
-            0
-        );
+        // SAFETY: `time` is a writable timespec kept alive for the duration of the call.
+        let result = unsafe { libc::clock_gettime(libc::CLOCK_PROCESS_CPUTIME_ID, &mut time) };
+        assert_eq!(result, 0);
         time.tv_sec as u64 * 1_000_000 + time.tv_nsec as u64 / 1000
     }
     let _measurement = MEASUREMENT.lock().await;

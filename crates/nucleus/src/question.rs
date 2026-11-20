@@ -102,7 +102,8 @@ pub fn validate_schema(schema: &Value) -> Result<(), String> {
     let fields = schema["properties"]
         .as_object()
         .ok_or("The question has no fields.")?;
-    if schema.as_object().unwrap().keys().any(|key| {
+    let root = schema.as_object().ok_or("Use a flat question form smaller than 64 KiB.")?;
+    if root.keys().any(|key| {
         ![
             "type",
             "properties",
@@ -174,7 +175,7 @@ pub fn validate_schema(schema: &Value) -> Result<(), String> {
         };
         if field
             .as_object()
-            .unwrap()
+            .ok_or_else(|| format!("Unsupported question field type: {name}"))?
             .keys()
             .any(|key| !allowed.contains(&key.as_str()))
         {
@@ -297,7 +298,7 @@ pub fn validate_answers(schema: &Value, answers: &Value) -> Result<(), String> {
     let answers = answers
         .as_object()
         .ok_or("Answers must name the form fields.")?;
-    let fields = schema["properties"].as_object().unwrap();
+    let fields = schema["properties"].as_object().ok_or("The question has no fields.")?;
     if answers.keys().any(|key| !fields.contains_key(key)) {
         return Err("The answer contains an unknown field.".into());
     }

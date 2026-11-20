@@ -126,7 +126,7 @@ pub fn search(
     for depth in 0..=policy.max_depth {
         let mut next = Vec::new();
         for path in frontier {
-            let last = path.identities.last().unwrap();
+            let last = path.identities.last().expect("each path starts with the subject identity");
             if depth > 0 && !policy.intermediaries.allows(last, &identities[last]) {
                 continue;
             }

@@ -165,7 +165,10 @@ impl Engine {
             Command::SourceOptions { receipt } => {
                 let receipt = self.resolve(&receipt).await?;
                 let saved = self.source_scope(&person, &receipt, actor, now).await?;
-                let scope = saved.document.scope().unwrap();
+                let scope = saved
+                    .document
+                    .scope()
+                    .ok_or_else(|| invalid("The receipt scope is unavailable"))?;
                 let mut needs =
                     store::transfer_evidence::need_options(&self.store.pool, &person, None).await?;
                 {
@@ -232,7 +235,10 @@ impl Engine {
                 let saved = self
                     .source_scope(&person, &request.receipt, actor, now)
                     .await?;
-                let scope = saved.document.scope().unwrap();
+                let scope = saved
+                    .document
+                    .scope()
+                    .ok_or_else(|| invalid("The receipt scope is unavailable"))?;
                 if saved.version != request.expected_version || scope.expires_at <= now.timestamp()
                 {
                     return Err(invalid(

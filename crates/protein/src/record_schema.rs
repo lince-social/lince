@@ -508,7 +508,7 @@ pub(crate) async fn attach<Body>(
                 && let Some(uid) = assertion.object_uid.as_deref()
                 && let Some(head) = assignees.get(uid)
             {
-                row["assignees"].as_array_mut().unwrap().push(json!({
+                row["assignees"].as_array_mut().expect("requested assignees start as an empty array").push(json!({
                     "uid": uid,
                     "head": head,
                     "assertion": assertion.uid,
@@ -522,7 +522,7 @@ pub(crate) async fn attach<Body>(
                     .unwrap_or(assertion.predicate);
                 row["assertions"]
                     .as_array_mut()
-                    .unwrap()
+                    .expect("requested assertions start as an empty array")
                     .push(Value::from_iter([
                         ("uid", Value::from(assertion.uid)),
                         ("role", assertion.role.into()),

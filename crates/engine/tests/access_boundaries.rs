@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use engine::{Engine, actions::Action};
 use nucleus::{RecordKind, component::ComponentState};
 use serde_json::{Value, json};

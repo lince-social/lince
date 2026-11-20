@@ -575,7 +575,7 @@ impl Engine {
                 ..Default::default()
             });
         }
-        if created {
+        if let Some(organ) = organ.as_deref() {
             if expected_revision != 0 {
                 return Err(invalid("A new schema starts at revision zero"));
             }
@@ -589,11 +589,11 @@ impl Engine {
                     body: "Reusable extension schema",
                     quantity: store::exact::zero(),
                 },
-                organ.as_deref().unwrap(),
+                organ,
                 None,
             )
             .await?;
-            store::sqlx::query("INSERT INTO visibility_rule (uid, subject_kind, subject_uid, target_uid, grant_level) VALUES (?, 'organ', ?, ?, 'visible')").bind(nucleus::new_uid("v")).bind(organ.as_deref().unwrap()).bind(&uid).execute(&mut *tx).await?;
+            store::sqlx::query("INSERT INTO visibility_rule (uid, subject_kind, subject_uid, target_uid, grant_level) VALUES (?, 'organ', ?, ?, 'visible')").bind(nucleus::new_uid("v")).bind(organ).bind(&uid).execute(&mut *tx).await?;
         }
         let before = extension_tx(&mut tx, &uid, SCHEMA_NAMESPACE).await?;
         let revision = if before.get("schema").is_some() {
@@ -961,13 +961,11 @@ impl Engine {
                         "An existing assertion has different properties; review it before selecting this option",
                     ));
                 }
+                let all = before
+                    .as_object()
+                    .ok_or_else(|| invalid("Invalid extension storage"))?;
                 let owned = ownership
-                    .get_or_insert_with(|| {
-                        preparation::AssertionOwnership::new(
-                            before.as_object().unwrap(),
-                            &schema_uid,
-                        )
-                    })
+                    .get_or_insert_with(|| preparation::AssertionOwnership::new(all, &schema_uid))
                     .owned(&assertion);
                 (assertion, owned)
             } else {
@@ -999,10 +997,20 @@ impl Engine {
         next.revision = previous_revision
             .checked_add(1)
             .ok_or_else(|| invalid("Field revision overflow"))?;
-        let mut all = current;
+        let mut all = if current.is_null() {
+            json!({})
+        } else {
+            current
+        };
         next.detached = remove;
-        all[&schema_uid] = serde_json::to_value(&next).map_err(EngineError::Json)?;
-        if all.as_object().unwrap().len() > 128
+        let fields = all
+            .as_object_mut()
+            .ok_or_else(|| invalid("Invalid extension storage"))?;
+        fields.insert(
+            schema_uid.clone(),
+            serde_json::to_value(&next).map_err(EngineError::Json)?,
+        );
+        if fields.len() > 128
             || nucleus::json::encoded_len(&all).map_err(EngineError::Json)?
                 > nucleus::record_extension::MAX_BYTES
         {

@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use std::collections::{BTreeMap, BTreeSet};
 
 use nucleus::{DecimalValue, RecordKind};

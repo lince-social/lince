@@ -3633,9 +3633,9 @@ fn learning_edges(publication: &Publication, predicate: &str) -> BTreeSet<(Strin
                         assertion
                             .object_uri
                             .as_ref()
-                            .unwrap()
+                            .expect("a learning edge has a target URI")
                             .rsplit_once('#')
-                            .unwrap()
+                            .expect("the learning edge target URI has a Record UID fragment")
                             .1
                             .to_owned(),
                     )

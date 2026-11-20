@@ -126,13 +126,13 @@ impl crate::native::actions::Action for Change {
             mount(world, target);
             return;
         }
-        let Some(form) = world.get::<Form>(target) else {
+        let Some(mut form) = world.get_mut::<Form>(target) else {
             return;
         };
-        let (status, server, toggle, online) = (form.status, form.server, form.toggle, form.online);
         match self {
             Self::Toggle => {
-                world.get_mut::<Form>(target).unwrap().online = !online;
+                let (online, toggle) = (form.online, form.toggle);
+                form.online = !online;
                 let caption = if online {
                     "External downloads: off"
                 } else {
@@ -150,15 +150,16 @@ impl crate::native::actions::Action for Change {
                 }
             }
             Self::Preset => {
+                let (server, version) = (form.server, form.version);
                 if let Some(mut input) = world.get_mut::<bevy::text::EditableText>(server) {
                     input.editor.set_text(lince_map::source::PUBLIC_SERVER);
                 }
-                let version = world.get::<Form>(target).unwrap().version;
                 if let Some(mut input) = world.get_mut::<bevy::text::EditableText>(version) {
                     input.editor.set_text(&Settings::browsing().dataset_version);
                 }
             }
             Self::Save => {
+                let status = form.status;
                 let result = save_form(world, target);
                 crate::native::sand_panel::status(
                     world,
@@ -403,10 +404,14 @@ pub(super) fn poll(world: &mut World) {
         .iter(world)
         .collect();
     for entity in jobs {
-        let status = world.get::<Form>(entity).unwrap().status;
-        if form_settings(world, entity).ok().as_ref()
-            != Some(&world.get::<SaveJob>(entity).unwrap().original)
-        {
+        let Some(status) = world.get::<Form>(entity).map(|form| form.status) else {
+            world.entity_mut(entity).remove::<SaveJob>();
+            continue;
+        };
+        let Some(job) = world.get::<SaveJob>(entity) else {
+            continue;
+        };
+        if form_settings(world, entity).ok().as_ref() != Some(&job.original) {
             world.entity_mut(entity).remove::<SaveJob>();
             crate::native::sand_panel::status(
                 world,
@@ -415,12 +420,10 @@ pub(super) fn poll(world: &mut World) {
             );
             continue;
         }
-        let result = world
-            .get_mut::<SaveJob>(entity)
-            .unwrap()
-            .receiver
-            .try_recv();
-        match result {
+        let Some(mut job) = world.get_mut::<SaveJob>(entity) else {
+            continue;
+        };
+        match job.receiver.try_recv() {
             Ok(result) => {
                 world.entity_mut(entity).remove::<SaveJob>();
                 let result = result.and_then(|(settings, store)| commit(world, settings, store));
@@ -431,15 +434,12 @@ pub(super) fn poll(world: &mut World) {
                 );
             }
             Err(tokio::sync::oneshot::error::TryRecvError::Empty) => {
-                let job = world.get::<SaveJob>(entity).unwrap();
+                let copied = job.progress.copied.load(Ordering::Relaxed);
+                let total = job.progress.total.load(Ordering::Relaxed);
                 crate::native::sand_panel::status(
                     world,
                     status,
-                    format!(
-                        "Checking map sources · {} / {} bytes",
-                        job.progress.copied.load(Ordering::Relaxed),
-                        job.progress.total.load(Ordering::Relaxed)
-                    ),
+                    format!("Checking map sources · {copied} / {total} bytes"),
                 );
                 if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
                     wake.after(std::time::Duration::from_millis(100));
@@ -491,6 +491,10 @@ fn commit(world: &mut World, settings: Settings, store: Arc<TileStore>) -> Resul
     Ok(())
 }
 
+#[allow(
+    clippy::unwrap_used,
+    reason = "Laboratory map settings fixtures must fail if their staged files, forms, or expected settings are missing"
+)]
 pub(super) mod tests {
     use super::*;
     use crate::native::actions::Action;
@@ -585,6 +589,29 @@ pub(super) mod tests {
         );
         Change::Open.apply(app.world_mut(), parent);
         assert!(app.world().get_entity(body).is_err());
+    }
+
+    #[cfg(test)]
+    #[tokio::test]
+    async fn cancels_source_verification_when_the_form_is_removed() {
+        let mut world = World::new();
+        let (sender, receiver) = tokio::sync::oneshot::channel();
+        let cancelled = Arc::new(AtomicBool::new(false));
+        let entity = world
+            .spawn(SaveJob {
+                original: Settings::default(),
+                cancelled: cancelled.clone(),
+                progress: Arc::default(),
+                receiver,
+                task: tokio::spawn(std::future::pending()),
+            })
+            .id();
+
+        poll(&mut world);
+
+        assert!(cancelled.load(Ordering::Relaxed));
+        assert!(sender.is_closed());
+        assert!(world.get::<SaveJob>(entity).is_none());
     }
 
     crate::native::laboratory_cases! {

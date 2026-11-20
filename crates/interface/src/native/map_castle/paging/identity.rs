@@ -59,16 +59,19 @@ struct Snapshot {
     query_reusable: bool,
 }
 
-fn source(world: &World, owner: Entity) -> (Option<&Config>, Option<FeedVersion<'_>>) {
-    let sand = world.get::<MapSand>(owner).unwrap();
-    let Some(id) = &sand.area else {
+fn source<'w>(
+    world: &'w World,
+    owner: Entity,
+    area_id: Option<&str>,
+) -> (Option<&'w Config>, Option<FeedVersion<'w>>) {
+    let Some(id) = area_id else {
         return (None, None);
     };
     let scope = ui::scope(world, owner);
     let mut stack = scope.map(|(root, _)| root).into_iter().collect::<Vec<_>>();
     while let Some(entity) = stack.pop() {
         if let Some(area) = world.get::<crate::native::area::InfluenceArea>(entity)
-            && area.id == *id
+            && area.id == id
             && ui::scope(world, entity) == scope
         {
             return (
@@ -105,9 +108,9 @@ fn bounds(sand: &MapSand) -> [f64; 4] {
     ]
 }
 
-pub(super) fn prepare(world: &mut World, owner: Entity) -> Arc<Prepared> {
-    let sand = world.get::<MapSand>(owner).unwrap();
-    let (config, version) = source(world, owner);
+pub(super) fn prepare(world: &mut World, owner: Entity) -> Option<Arc<Prepared>> {
+    let sand = world.get::<MapSand>(owner)?;
+    let (config, version) = source(world, owner, sand.area.as_deref());
     let bounds = bounds(sand);
     let previous = world.get::<Snapshot>(owner);
     let same_config = previous.is_some_and(|previous| match (previous.config.as_deref(), config) {
@@ -122,46 +125,50 @@ pub(super) fn prepare(world: &mut World, owner: Entity) -> Arc<Prepared> {
     let same_bounds = previous.is_some_and(|previous| {
         previous.prepared.bounds.map(f64::to_bits) == bounds.map(f64::to_bits)
     });
-    let reusable = same_config && previous.is_some_and(|previous| previous.query_reusable);
-    if reusable && same_scope && same_version && same_bounds {
-        return previous.unwrap().prepared.clone();
+    let reusable = previous.filter(|previous| same_config && previous.query_reusable);
+    let same_snapshot = same_config && same_scope && same_version && same_bounds;
+    if let Some(previous) = reusable.filter(|_| same_snapshot) {
+        return Some(previous.prepared.clone());
     }
     let _prepare = nucleus::performance::Span::new("map-request-preparation");
-    let query = if reusable {
-        previous.unwrap().prepared.query.clone()
+    let (query, query_identity) = if let Some(previous) = reusable {
+        (
+            previous.prepared.query.clone(),
+            previous.prepared.key.context.query.clone(),
+        )
     } else {
-        config
+        let query = config
             .and_then(|config| config.query().ok())
             .and_then(|query| serde_json::to_value(query).ok())
-            .map(Arc::new)
+            .map(Arc::new);
+        let query_identity = query
+            .as_deref()
+            .map(serde_json::to_string)
+            .transpose()
+            .ok()?
+            .map(Arc::<str>::from);
+        (query, query_identity)
     };
     let query_reusable = config.is_none() || query.is_some();
-    let query_identity = if reusable {
-        previous.unwrap().prepared.key.context.query.clone()
-    } else {
-        query
-            .as_deref()
-            .map(|query| Arc::<str>::from(serde_json::to_string(query).unwrap()))
-    };
     let same_query =
         previous.is_some_and(|previous| previous.prepared.key.context.query == query_identity);
-    if same_config && same_scope && same_version && same_bounds && same_query {
-        return previous.unwrap().prepared.clone();
+    if let Some(previous) = previous.filter(|_| same_snapshot && same_query) {
+        return Some(previous.prepared.clone());
     }
-    let context = if same_scope && same_version && same_query {
-        previous.unwrap().prepared.key.context.clone()
-    } else {
-        let scope = if same_scope {
-            previous.unwrap().prepared.key.context.scope.clone()
+    let context =
+        if let Some(previous) = previous.filter(|_| same_scope && same_version && same_query) {
+            previous.prepared.key.context.clone()
         } else {
-            Arc::new(Scope::new(sand))
+            let scope = previous.filter(|_| same_scope).map_or_else(
+                || Arc::new(Scope::new(sand)),
+                |previous| previous.prepared.key.context.scope.clone(),
+            );
+            Arc::new(Context {
+                scope,
+                query: query_identity,
+                version: version.map(FeedVersion::into_owned),
+            })
         };
-        Arc::new(Context {
-            scope,
-            query: query_identity,
-            version: version.map(FeedVersion::into_owned),
-        })
-    };
     let identity_bounds = bounds.map(|value| value.is_finite().then(|| value.to_bits()));
     let key = previous
         .filter(|previous| {
@@ -177,11 +184,10 @@ pub(super) fn prepare(world: &mut World, owner: Entity) -> Arc<Prepared> {
             },
             |previous| previous.prepared.key.clone(),
         );
-    let config = if same_config {
-        previous.unwrap().config.clone()
-    } else {
-        config.cloned().map(Arc::new)
-    };
+    let config = previous.filter(|_| same_config).map_or_else(
+        || config.cloned().map(Arc::new),
+        |previous| previous.config.clone(),
+    );
     let prepared = Arc::new(Prepared { key, query, bounds });
     world.entity_mut(owner).insert(Snapshot {
         config,
@@ -189,5 +195,5 @@ pub(super) fn prepare(world: &mut World, owner: Entity) -> Arc<Prepared> {
         query_reusable,
     });
     nucleus::performance::add("map-request-identities-prepared", 1);
-    prepared
+    Some(prepared)
 }

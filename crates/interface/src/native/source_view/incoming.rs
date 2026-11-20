@@ -58,7 +58,10 @@ impl Maintenance {
                 continue;
             }
             let (reference, source) = (card.reference.clone(), card.source.clone());
-            world.get_mut::<Card>(entity).unwrap().requested = true;
+            let Some(mut card) = world.get_mut::<Card>(entity) else {
+                continue;
+            };
+            card.requested = true;
             request(
                 world,
                 entity,

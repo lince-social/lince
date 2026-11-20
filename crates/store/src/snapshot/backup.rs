@@ -32,12 +32,14 @@ impl Backup {
     fn finish(self) -> i32 {
         let handle = self.0;
         std::mem::forget(self);
+        // SAFETY: `handle` is still live, and forgetting `self` prevents a second finish in Drop.
         unsafe { sqlite3_backup_finish(handle.as_ptr()) }
     }
 }
 
 impl Drop for Backup {
     fn drop(&mut self) {
+        // SAFETY: This is the unfinished handle created by sqlite3_backup_init.
         unsafe {
             sqlite3_backup_finish(self.0.as_ptr());
         }
@@ -55,6 +57,7 @@ fn copy_pages(
 ) -> Result<(), StoreError> {
     let source = source.as_raw_handle();
     let destination = destination.as_raw_handle();
+    // SAFETY: The distinct connections stay locked for the whole copy and both names are C strings.
     let handle = unsafe {
         sqlite3_backup_init(
             destination.as_ptr(),
@@ -63,20 +66,23 @@ fn copy_pages(
             c"main".as_ptr(),
         )
     };
-    let backup = Backup(
-        NonNull::new(handle)
-            .ok_or_else(|| failed(unsafe { sqlite3_errcode(destination.as_ptr()) }))?,
-    );
+    let backup = Backup(NonNull::new(handle).ok_or_else(|| {
+        // SAFETY: The destination remains locked, and the failed init left no live backup.
+        let code = unsafe { sqlite3_errcode(destination.as_ptr()) };
+        failed(code)
+    })?);
     loop {
         if cancelled.load(Ordering::Relaxed) {
             return Err(StoreError::Protocol("database snapshot cancelled".into()));
         }
+        // SAFETY: `backup` owns the live handle and both connections are still locked.
         match unsafe { sqlite3_backup_step(backup.0.as_ptr(), 256) } {
             SQLITE_DONE => break,
             SQLITE_OK => {}
             code => return Err(failed(code)),
         }
     }
+    // SAFETY: The successful step completed the copy without freeing the handle.
     let pages = unsafe { sqlite3_backup_pagecount(backup.0.as_ptr()) };
     let code = backup.finish();
     if code != SQLITE_OK {

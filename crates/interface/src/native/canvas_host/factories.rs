@@ -12,38 +12,36 @@ fn state<T: DeserializeOwned>(
         .unwrap_or_else(|| Ok(fallback()))
 }
 
-fn component(kind: &str, state: &impl Serialize) -> ContentKind {
-    let value = serde_json::to_value(state).unwrap();
-    ContentKind::Native {
+fn component(kind: &str, state: &impl Serialize) -> Result<Option<ContentKind>, String> {
+    let value = serde_json::to_value(state)
+        .map_err(|error| format!("Could not capture {kind} state. {error}"))?;
+    Ok(Some(ContentKind::Native {
         kind: kind.into(),
-        settings: BTreeMap::from([(
-            "state".into(),
-            serde_json::Value::String(serde_json::to_string(&value).unwrap()),
-        )]),
+        settings: BTreeMap::from([("state".into(), snapshot::json_text(kind, &value)?)]),
         bindings: record_references(&value),
-    }
+    }))
 }
 
-pub(super) fn capture(world: &World, entity: Entity) -> Option<ContentKind> {
+pub(super) fn capture(world: &World, entity: Entity) -> Result<Option<ContentKind>, String> {
     if let Some(Content(ContentKind::Native { kind, .. })) = world.get::<Content>(entity)
         && kind == "layout"
     {
         if let Some(layout) = world.get::<crate::native::layout::LayoutBox>(entity) {
-            return Some(ContentKind::Native {
+            return Ok(Some(ContentKind::Native {
                 kind: "layout".into(),
                 settings: BTreeMap::from([(
                     "rules".into(),
-                    serde_json::Value::String(serde_json::to_string(&layout.rules).unwrap()),
+                    snapshot::json_text("layout rules", &layout.rules)?,
                 )]),
                 bindings: Vec::new(),
-            });
+            }));
         }
     }
     if let Some(state) = world.get::<crate::native::simulation_castle::SimulationCastle>(entity) {
-        return Some(component("simulation", state));
+        return component("simulation", state);
     }
     if let Some(state) = world.get::<crate::native::topology::assets::ImportedAsset>(entity) {
-        return Some(component("import", state));
+        return component("import", state);
     }
     if world
         .get::<crate::native::shader_castle::ShaderCastle>(entity)
@@ -55,34 +53,34 @@ pub(super) fn capture(world: &World, entity: Entity) -> Option<ContentKind> {
             .and_then(|area| area.protein.as_ref())
             .and_then(|config| config.draft.query["where"][0]["all"][0]["slug_eq"].as_str())
             .unwrap_or_default();
-        return Some(ContentKind::Native {
+        return Ok(Some(ContentKind::Native {
             kind: "shader".into(),
             settings: BTreeMap::from([("slug".into(), serde_json::json!(slug))]),
             bindings: Vec::new(),
-        });
+        }));
     }
     if let Some(state) = world.get::<crate::native::document_viewer::DocumentViewer>(entity) {
-        return Some(component("document", state));
+        return component("document", state);
     }
     if let Some(state) = world.get::<crate::native::ide::Ide>(entity) {
-        return Some(component("ide", state));
+        return component("ide", state);
     }
     if let Some(state) = world.get::<crate::native::file_explorer::FileExplorer>(entity) {
-        return Some(component("explorer", state));
+        return component("explorer", state);
     }
     if let Some(state) = world.get::<crate::native::recorder_castle::RecorderCastle>(entity) {
-        return Some(component("recorder", state));
+        return component("recorder", state);
     }
     if let Some(state) = world.get::<crate::native::media_sand::MediaSand>(entity) {
-        return Some(component("media", state));
+        return component("media", state);
     }
     if let Some(state) = world.get::<crate::native::drawing::NativeDrawing>(entity) {
-        return Some(component("drawing", &state.0));
+        return component("drawing", &state.0);
     }
     if let Some(state) = world.get::<crate::native::assertion_castle::AssertionCastle>(entity) {
-        return Some(component("assertion", state));
+        return component("assertion", state);
     }
-    None
+    Ok(None)
 }
 
 pub(super) fn descriptors() -> Vec<api::Descriptor> {

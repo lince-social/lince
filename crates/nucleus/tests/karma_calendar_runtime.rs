@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use std::{collections::BTreeMap, num::NonZeroU32};
 
 use nucleus::karma::{

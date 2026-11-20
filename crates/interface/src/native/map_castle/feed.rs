@@ -31,7 +31,10 @@ struct Feed {
 }
 
 pub(super) fn reset(world: &mut World, owner: Entity) {
-    world.entity_mut(owner).remove::<Feed>();
+    let Ok(mut entity) = world.get_entity_mut(owner) else {
+        return;
+    };
+    entity.remove::<Feed>();
     if let Some(mut sand) = world.get_mut::<MapSand>(owner) {
         sand.markers.clear();
     }
@@ -45,20 +48,19 @@ pub(super) fn maintain(world: &mut World) {
         .collect();
     for owner in owners {
         if !visible(world, owner) {
-            world.entity_mut(owner).remove::<Feed>();
-            world.get_mut::<MapSand>(owner).unwrap().markers.clear();
+            reset(world, owner);
             continue;
         }
         let records = paging::records(world, owner);
-        let sand = world.get::<MapSand>(owner).unwrap();
+        let Some(sand) = world.get::<MapSand>(owner) else {
+            continue;
+        };
         if records.clone().next().is_none() {
             drop(records);
             world.entity_mut(owner).remove::<Feed>();
-            world
-                .get_mut::<MapSand>(owner)
-                .unwrap()
-                .markers
-                .retain(|marker| !marker.live);
+            if let Some(mut sand) = world.get_mut::<MapSand>(owner) {
+                sand.markers.retain(|marker| !marker.live);
+            }
             continue;
         }
         let changed = world.get::<Feed>(owner).is_none_or(|feed| {
@@ -79,86 +81,83 @@ pub(super) fn maintain(world: &mut World) {
                 person,
                 authority,
             });
-            world
-                .get_mut::<MapSand>(owner)
-                .unwrap()
-                .markers
-                .retain(|marker| !marker.live);
-            world.get_mut::<MapSand>(owner).unwrap().live_offset = 0;
+            if let Some(mut sand) = world.get_mut::<MapSand>(owner) {
+                sand.markers.retain(|marker| !marker.live);
+                sand.live_offset = 0;
+            }
         } else {
             drop(records);
         }
         let now = Instant::now();
-        let stale: Vec<_> = world
-            .get::<Feed>(owner)
-            .unwrap()
+        let Some(feed) = world.get::<Feed>(owner) else {
+            continue;
+        };
+        let stale: Vec<_> = feed
             .pending
             .iter()
             .filter(|(_, (_, _, sent))| now - *sent > Duration::from_secs(10))
             .map(|(id, (record, kind, _))| (id.clone(), record.clone(), *kind))
             .collect();
         for (id, record, kind) in stale {
-            world.get_mut::<Feed>(owner).unwrap().pending.remove(&id);
-            clear(world, owner, &record, kind);
+            if let Some(mut feed) = world.get_mut::<Feed>(owner) {
+                feed.pending.remove(&id);
+                clear(world, owner, &record, kind);
+            }
         }
-        let feed = world.get::<Feed>(owner).unwrap();
-        if feed.next > now {
+        let (Some(feed), Some(sand)) = (world.get::<Feed>(owner), world.get::<MapSand>(owner))
+        else {
             continue;
-        }
-        if !feed.pending.is_empty() {
+        };
+        if feed.next > now || !feed.pending.is_empty() {
             continue;
         }
         let record_count = feed.records.len();
-        let offset = world
-            .get::<MapSand>(owner)
-            .unwrap()
-            .live_offset
-            .min(record_count);
+        let offset = sand.live_offset.min(record_count);
         let records: Vec<_> = feed.records.iter().skip(offset).take(2).cloned().collect();
         nucleus::performance::add("map-live-records-prepared", records.len() as u64);
         let person = feed.person.clone();
-        let authority = world
-            .get::<MapSand>(owner)
-            .unwrap()
-            .authority_node_id
-            .clone();
+        let authority = sand.authority_node_id.clone();
+        let show_live = sand.show_live;
+        let invitation = sand.invitation.clone();
         let next_offset = (offset + 2).min(record_count);
         let delay = if next_offset == record_count {
             Duration::from_secs(5)
         } else {
             Duration::from_millis(16)
         };
-        world.get_mut::<MapSand>(owner).unwrap().live_offset = if next_offset == record_count {
+        let Some(mut sand) = world.get_mut::<MapSand>(owner) else {
+            continue;
+        };
+        sand.live_offset = if next_offset == record_count {
             0
         } else {
             next_offset
         };
-        world.get_mut::<Feed>(owner).unwrap().next = now + delay;
+        let Some(mut feed) = world.get_mut::<Feed>(owner) else {
+            continue;
+        };
+        feed.next = now + delay;
         if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
             wake.after(delay);
         }
         for record in records {
-            if authority.is_some() && world.get::<MapSand>(owner).unwrap().invitation.is_none() {
+            if let Some(node) = &authority
+                && invitation.is_none()
+            {
                 request(
                     world,
                     owner,
                     &record,
                     Kind::Saved,
                     engine::actions::Action::SavedLocation {
-                        request: if let Some(node) = &authority {
-                            nucleus::vocabulary::SavedLocationCommand::Observe {
-                                record: record.clone(),
-                                node_id: node.clone(),
-                            }
-                        } else {
-                            nucleus::vocabulary::SavedLocationCommand::Inspect {
-                                record: record.clone(),
-                            }
+                        request: nucleus::vocabulary::SavedLocationCommand::Observe {
+                            record: record.clone(),
+                            node_id: node.clone(),
                         },
                     },
                 );
             }
-            if !world.get::<MapSand>(owner).unwrap().show_live {
+            if !show_live {
                 continue;
             }
             if let Some(node) = &authority {
@@ -168,12 +167,10 @@ pub(super) fn maintain(world: &mut World) {
                     &record,
                     Kind::Live,
                     engine::actions::Action::Location {
-                        request: if let Some(invitation) =
-                            world.get::<MapSand>(owner).unwrap().invitation.clone()
-                        {
+                        request: if let Some(invitation) = &invitation {
                             nucleus::location::Command::ObserveInvitation {
                                 person: person.clone(),
-                                invitation,
+                                invitation: invitation.clone(),
                             }
                         } else {
                             nucleus::location::Command::Observe {
@@ -263,17 +260,23 @@ pub(super) fn receive(
             .find(|(_, feed)| feed.pending.contains_key(id))
             .map(|(entity, _)| entity);
         let Some(owner) = owner else { continue };
-        let Some((record, kind, sent)) = world.get_mut::<Feed>(owner).unwrap().pending.remove(id)
+        let Some((record, kind, sent)) = world
+            .get_mut::<Feed>(owner)
+            .and_then(|mut feed| feed.pending.remove(id))
         else {
             continue;
         };
+        if world.get::<MapSand>(owner).is_none() {
+            continue;
+        }
         let _reply = nucleus::performance::Span::new("map-live-reply-application");
         nucleus::performance::add("map-live-replies-accepted", 1);
         clear(world, owner, &record, kind);
         let Ok(data) = result else {
-            if matches!(kind, Kind::Save) {
-                world.get_mut::<MapSand>(owner).unwrap().notice =
-                    "The location could not be saved. Check Record permissions.".into();
+            if matches!(kind, Kind::Save)
+                && let Some(mut sand) = world.get_mut::<MapSand>(owner)
+            {
+                sand.notice = "The location could not be saved. Check Record permissions.".into();
             }
             continue;
         };
@@ -291,19 +294,16 @@ pub(super) fn receive(
                             && selected
                                 .radius_metres
                                 .is_none_or(nucleus::place::valid_area_radius)
+                            && let Some(mut sand) = world.get_mut::<MapSand>(owner)
                         {
-                            world
-                                .get_mut::<MapSand>(owner)
-                                .unwrap()
-                                .markers
-                                .push(Marker {
-                                    record,
-                                    coordinate,
-                                    live: false,
-                                    view: None,
-                                    observed: Instant::now(),
-                                    radius_metres: selected.radius_metres,
-                                });
+                            sand.markers.push(Marker {
+                                record,
+                                coordinate,
+                                live: false,
+                                view: None,
+                                observed: Instant::now(),
+                                radius_metres: selected.radius_metres,
+                            });
                         }
                     }
                 }
@@ -313,7 +313,10 @@ pub(super) fn receive(
                     context
                         .view
                         .elapse(sent.elapsed().as_millis().min(u128::from(u64::MAX)) as u64);
-                    let person = world.get::<MapSand>(owner).unwrap().person.clone();
+                    let Some(sand) = world.get::<MapSand>(owner) else {
+                        continue;
+                    };
+                    let person = sand.person.clone();
                     if !person.is_empty() {
                         add_live(world, owner, &record, context.view);
                     } else {
@@ -340,10 +343,13 @@ pub(super) fn receive(
                 }
             }
             Kind::Save => {
-                let mut sand = world.get_mut::<MapSand>(owner).unwrap();
-                sand.notice = "Record location saved".into();
-                sand.picked = None;
-                world.get_mut::<Feed>(owner).unwrap().next = Instant::now();
+                if let Some(mut sand) = world.get_mut::<MapSand>(owner) {
+                    sand.notice = "Record location saved".into();
+                    sand.picked = None;
+                }
+                if let Some(mut feed) = world.get_mut::<Feed>(owner) {
+                    feed.next = Instant::now();
+                }
             }
         }
     }
@@ -373,22 +379,23 @@ fn add_live(world: &mut World, owner: Entity, record: &str, view: nucleus::locat
         && view
             .radius_metres
             .is_none_or(nucleus::place::valid_area_radius)
+        && let Some(mut sand) = world.get_mut::<MapSand>(owner)
     {
-        world
-            .get_mut::<MapSand>(owner)
-            .unwrap()
-            .markers
-            .push(Marker {
-                record: record.into(),
-                coordinate,
-                live: true,
-                radius_metres: view.radius_metres,
-                view: Some(view),
-                observed: Instant::now(),
-            });
+        sand.markers.push(Marker {
+            record: record.into(),
+            coordinate,
+            live: true,
+            radius_metres: view.radius_metres,
+            view: Some(view),
+            observed: Instant::now(),
+        });
     }
 }
 
+#[allow(
+    clippy::unwrap_used,
+    reason = "Laboratory location fixtures must fail if their maps, feeds, or expected replies are missing"
+)]
 pub(super) mod tests {
     use super::*;
     use crate::native::actions::Action;
@@ -610,7 +617,7 @@ pub(super) mod tests {
                 .markers
                 .is_empty()
         );
-        let saved = snapshot(app.world_mut(), root);
+        let saved = snapshot(app.world_mut(), root).expect("capture the fixture snapshots");
         assert_eq!(saved.len(), 3);
         assert!(saved.iter().all(SavedMap::valid));
         let serialized = serde_json::to_string(&saved).unwrap();
@@ -777,6 +784,36 @@ pub(super) mod tests {
         );
     }
 
+    #[cfg(test)]
+    #[test]
+    fn discards_save_reply_when_map_component_is_removed() {
+        let (mut app, _, owner) = super::super::tests::fixture();
+        let world = app.world_mut();
+        let record = nucleus::new_uid("r");
+        let now = Instant::now();
+        world.entity_mut(owner).insert(Feed {
+            pending: HashMap::from([("late-save".into(), (record.clone(), Kind::Save, now))]),
+            next: now,
+            records: vec![record],
+            person: String::new(),
+            authority: None,
+        });
+        world.entity_mut(owner).remove::<MapSand>();
+        world.write_message(crate::native::cell_bridge::CellMessage::new(
+            cell::ServerMessage::ActionOk {
+                id: "late-save".into(),
+                created: None,
+                facts: 0,
+                warnings: vec![],
+                data: None,
+            },
+        ));
+
+        world.run_system_cached(receive).unwrap();
+
+        assert!(world.get::<Feed>(owner).unwrap().pending.is_empty());
+    }
+
     crate::native::laboratory_cases! {
         scoped_invitation_cannot_be_downgraded_to_an_unrestricted_map_reference,
         changing_shared_authority_discards_pending_location_replies,
@@ -786,19 +823,18 @@ pub(super) mod tests {
 }
 
 pub(super) fn save_point(world: &mut World, owner: Entity) {
-    let Some(sand) = world.get::<MapSand>(owner) else {
+    let Some(mut sand) = world.get_mut::<MapSand>(owner) else {
         return;
     };
     let Some(point) = sand.picked else {
-        world.get_mut::<MapSand>(owner).unwrap().notice = "Click a reference point first".into();
+        sand.notice = "Click a reference point first".into();
         return;
     };
-    if sand.records.len() != 1 {
-        world.get_mut::<MapSand>(owner).unwrap().notice =
-            "Open one Record to save its reference point".into();
+    let [record] = sand.records.as_slice() else {
+        sand.notice = "Open one Record to save its reference point".into();
         return;
-    }
-    let record = sand.records[0].clone();
+    };
+    let record = record.clone();
     if world.get::<Feed>(owner).is_none() {
         world.entity_mut(owner).insert(Feed {
             pending: HashMap::new(),

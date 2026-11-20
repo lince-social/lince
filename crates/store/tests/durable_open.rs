@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use std::str::FromStr;
 use store::Store;
 use store::sqlx::{Connection, SqliteConnection};

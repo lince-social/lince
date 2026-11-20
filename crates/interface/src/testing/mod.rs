@@ -9,6 +9,44 @@ use std::{
 #[cfg(feature = "native-presentation")]
 pub mod ui;
 
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum InterfaceSelection {
+    #[default]
+    All,
+    Protein,
+    Edit,
+    Input,
+}
+
+impl InterfaceSelection {
+    pub const ENV: &str = "LINCE_INTERFACE_SELECTION";
+
+    pub const fn name(self) -> &'static str {
+        match self {
+            Self::All => "all",
+            Self::Protein => "protein",
+            Self::Edit => "edit",
+            Self::Input => "input",
+        }
+    }
+}
+
+impl std::str::FromStr for InterfaceSelection {
+    type Err = String;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        match value {
+            "all" => Ok(Self::All),
+            "protein" => Ok(Self::Protein),
+            "edit" => Ok(Self::Edit),
+            "input" => Ok(Self::Input),
+            _ => Err(format!(
+                "Unknown interface selection {value:?}. Use all, protein, edit or input."
+            )),
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Limits {
     pub timeout: Duration,
@@ -103,16 +141,55 @@ impl Report {
     }
 }
 
+#[derive(Debug, Default)]
+struct CancellationState {
+    cancelled: AtomicBool,
+    #[cfg(feature = "native-presentation")]
+    signal: tokio::sync::Notify,
+}
+
 #[derive(Clone, Debug, Default)]
-pub struct Cancellation(Arc<AtomicBool>);
+pub struct Cancellation(Arc<CancellationState>);
+
+thread_local! {
+    static CASE_CANCELLATION: std::cell::RefCell<Option<Cancellation>> = const {
+        std::cell::RefCell::new(None)
+    };
+}
 
 impl Cancellation {
     pub fn cancel(&self) {
-        self.0.store(true, Ordering::Release);
+        self.0.cancelled.store(true, Ordering::Release);
+        #[cfg(feature = "native-presentation")]
+        self.0.signal.notify_waiters();
     }
 
     pub fn is_cancelled(&self) -> bool {
-        self.0.load(Ordering::Acquire)
+        self.0.cancelled.load(Ordering::Acquire)
+    }
+
+    pub fn current() -> Self {
+        CASE_CANCELLATION.with(|active| active.borrow().clone().unwrap_or_default())
+    }
+
+    #[cfg(feature = "native-presentation")]
+    pub(crate) fn scope<R>(&self, run: impl FnOnce() -> R) -> R {
+        struct Restore(Option<Cancellation>);
+        impl Drop for Restore {
+            fn drop(&mut self) {
+                let _ = CASE_CANCELLATION.with(|active| active.replace(self.0.take()));
+            }
+        }
+        let _restore = Restore(CASE_CANCELLATION.with(|active| active.replace(Some(self.clone()))));
+        run()
+    }
+
+    #[cfg(feature = "native-presentation")]
+    pub async fn cancelled(&self) {
+        let notified = self.0.signal.notified();
+        if !self.is_cancelled() {
+            notified.await;
+        }
     }
 }
 
@@ -190,7 +267,7 @@ impl Runner {
     pub fn new(limits: Limits) -> Self {
         Self {
             limits,
-            cancellation: Cancellation::default(),
+            cancellation: Cancellation::current(),
         }
     }
 

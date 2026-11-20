@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use std::sync::Arc;
 
 fn temp_db() -> (std::path::PathBuf, String) {

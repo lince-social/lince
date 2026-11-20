@@ -101,7 +101,7 @@ fn room_import_follows_its_moved_destination_and_restores_calibration_and_credit
     topology::rooms::synchronize(&mut world);
     let expected = topology::position(&world, entity);
     let expected_rotation = topology::spatial(&world, entity).rotation;
-    let saved = snapshot(&mut world, root);
+    let saved = snapshot(&mut world, root).expect("capture the fixture snapshots");
     let restored: Vec<SavedAsset> =
         serde_json::from_slice(&serde_json::to_vec(&saved).unwrap()).unwrap();
     assert!(restored[0].placement.valid());

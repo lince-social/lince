@@ -248,7 +248,7 @@ impl Timeline<'_> {
                 },
             );
         }
-        let call = state.calls.get_mut(id).unwrap();
+        let call = state.calls.get_mut(id).ok_or("Could not save tool transcript.")?;
         let mut parts = Vec::new();
         if let Some(input) = value.get("rawInput").filter(|v| !v.is_null()) {
             parts.push(format!(

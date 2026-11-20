@@ -2535,12 +2535,22 @@ impl SavedEditor {
     }
 }
 
-pub(crate) fn capture_editor(world: &mut World, owner: Entity) -> Option<SavedEditor> {
-    world.get::<Editor>(owner)?;
+pub(crate) fn capture_editor(
+    world: &mut World,
+    owner: Entity,
+) -> Result<Option<SavedEditor>, String> {
+    if world.get::<Editor>(owner).is_none() {
+        return Ok(None);
+    }
     capture(world, owner);
-    let editor = world.get::<Editor>(owner)?;
+    let Some((editor, workspace)) = world
+        .get::<Editor>(owner)
+        .zip(world.get::<crate::native::workspace::WorkspaceMember>(owner))
+    else {
+        return Ok(None);
+    };
     let Target::Record(binding) = &editor.target else {
-        return None;
+        return Ok(None);
     };
     let item = world
         .get::<crate::native::canvas::CanvasItem>(owner)
@@ -2549,11 +2559,9 @@ pub(crate) fn capture_editor(world: &mut World, owner: Entity) -> Option<SavedEd
             position: DVec2::ZERO,
             size: Vec2::new(700.0, 900.0),
         });
-    Some(SavedEditor {
+    Ok(Some(SavedEditor {
         catalog: editor.catalog.clone(),
-        workspace: world
-            .get::<crate::native::workspace::WorkspaceMember>(owner)?
-            .0,
+        workspace: workspace.0,
         record: binding.uid.clone(),
         source: binding.source.clone(),
         effect: editor.effect.clone(),
@@ -2563,8 +2571,8 @@ pub(crate) fn capture_editor(world: &mut World, owner: Entity) -> Option<SavedEd
         custom_quantity: editor.custom_quantity,
         position: item.position.to_array(),
         size: item.size.to_array(),
-        placement: crate::native::sand_placement::Placement::capture(world, owner),
-    })
+        placement: crate::native::sand_placement::Placement::capture(world, owner)?,
+    }))
 }
 
 pub(crate) fn embed_record(
@@ -2655,7 +2663,7 @@ pub(crate) fn create_example(world: &mut World, owner: Entity) -> bool {
     true
 }
 
-pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedEditor> {
+pub(crate) fn snapshot(world: &mut World, root: Entity) -> Result<Vec<SavedEditor>, String> {
     world
         .query::<(
             Entity,
@@ -2672,20 +2680,24 @@ pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedEditor> {
             let Target::Record(binding) = &editor.target else {
                 return None;
             };
-            Some(SavedEditor {
-                catalog: editor.catalog.clone(),
-                workspace: workspace.0,
-                record: binding.uid.clone(),
-                source: binding.source.clone(),
-                effect: editor.effect.clone(),
-                original: editor.original.clone(),
-                revision: editor.revision,
-                quantity: editor.quantity.clone(),
-                custom_quantity: editor.custom_quantity,
-                position: item.position.to_array(),
-                size: item.size.to_array(),
-                placement: crate::native::sand_placement::Placement::capture(world, entity),
-            })
+            Some(
+                crate::native::sand_placement::Placement::capture(world, entity).map(|placement| {
+                    SavedEditor {
+                        catalog: editor.catalog.clone(),
+                        workspace: workspace.0,
+                        record: binding.uid.clone(),
+                        source: binding.source.clone(),
+                        effect: editor.effect.clone(),
+                        original: editor.original.clone(),
+                        revision: editor.revision,
+                        quantity: editor.quantity.clone(),
+                        custom_quantity: editor.custom_quantity,
+                        position: item.position.to_array(),
+                        size: item.size.to_array(),
+                        placement,
+                    }
+                }),
+            )
         })
         .collect()
 }

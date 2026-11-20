@@ -11,6 +11,8 @@ import sys
 import time
 
 from report import MAX_LOG_BYTES, compare, load_json, readable, save_json, summarize
+from source_inventory import audit as audit_source_inventory
+from workflow_coverage import plan as plan_coverage, report as coverage_report
 
 
 def digest(path):
@@ -64,7 +66,10 @@ def selected_cases(manifest, requested):
     unknown = set(requested or []) - available
     if unknown:
         raise ValueError(f"Unknown cases: {sorted(unknown)}")
-    return [case for case in cases if not requested or case["id"] in requested or case["id"] == "protein-first-interface"]
+    return [case for case in cases if (
+        case["id"] == "protein-first-interface"
+        or (case["id"] in requested if requested else not case.get("coverage_only"))
+    )]
 
 
 def case_identity(manifest, case):
@@ -302,6 +307,8 @@ def execute_case(root, manifest, case, output, prefix, capture):
     environment.update({"RUST_MIN_STACK": "33554432", "LINCE_TRACE_PERFORMANCE": "1" if capture else "0"})
     environment.update(getattr(prefix, "environment", {}))
     environment.update(case.get("environment", {}))
+    if case["id"] == "protein-first-interface":
+        environment["LINCE_INTERFACE_SELECTION"] = "all"
     for key in ("LINCE_PARK_TEST_ORIGINAL_MAIN", "LINCE_PARK_TRACE_SYSTEMS"):
         environment.pop(key, None)
     output.mkdir(parents=True, exist_ok=True)
@@ -368,6 +375,12 @@ def execute_case(root, manifest, case, output, prefix, capture):
         result["edit_observations"] = observation
     if result["passed"] and case.get("observation_files"):
         result["observations"] = {name: load_json(artifact_path(output / "artifacts", name)) for name in case["observation_files"]}
+    if result["passed"] and case["id"] == "held-capture-source-privacy":
+        observations = result["observations"]["appearance-capture-lifetimes.json"]
+        if (len(observations) != 1 or observations[0].get("change") != "SourceThenPrivacy"
+                or observations[0].get("shm_untouched") is not True
+                or observations[0].get("ready_delta") != 0):
+            raise ValueError("The private capture result did not prove the exact held replacement and privacy transition")
     save_json(output / "result.json", result)
     return result
 
@@ -375,7 +388,15 @@ def execute_case(root, manifest, case, output, prefix, capture):
 def run_suite(arguments):
     root = arguments.bundle.resolve()
     manifest = check_bundle(root)
-    cases = selected_cases(manifest, arguments.case)
+    coverage = None
+    requested = arguments.case
+    if getattr(arguments, "workflow_coverage", False):
+        registry = manifest["artifacts"].get("workload-registry")
+        if registry is None:
+            raise ValueError("This bundle has no frozen workflow coverage registry")
+        coverage = plan_coverage(load_json(artifact_path(root, registry["path"])), manifest["cases"])
+        requested = coverage["selected"]
+    cases = selected_cases(manifest, requested)
     prefix = runtime_prefix(arguments.runtime)
     output = arguments.output.resolve()
     if output.exists():
@@ -392,7 +413,15 @@ def run_suite(arguments):
     try:
         for case in cases:
             print(f"Running {case['id']}", flush=True)
-            value = execute_case(root, manifest, case, output / case["id"], prefix, arguments.capture == "on")
+            try:
+                value = execute_case(root, manifest, case, output / case["id"], prefix, arguments.capture == "on")
+            except (ValueError, KeyError, OSError, subprocess.SubprocessError) as failure:
+                if coverage is not None:
+                    result["checks"].append({
+                        "case": case["id"], "selector": case["selector"], "passed": False,
+                        "failure": str(failure),
+                    })
+                raise
             result["checks"].append(value)
             if "performance" in value:
                 for phase, observation in value["phases"].items():
@@ -401,6 +430,8 @@ def run_suite(arguments):
             if case["id"] == "protein-first-interface" and not value["passed"]:
                 raise ValueError("Mandatory first interface gate failed; evidence retained")
     finally:
+        if coverage is not None:
+            result["workflow_coverage"] = coverage_report(coverage, result["checks"])
         save_json(output / "run.json", result)
     result["selected_checks_passed"] = all(value["passed"] for value in result["checks"])
     result["performance_complete"] = bool(result["phases"]) and all(phase["complete"] for phase in result["phases"].values())
@@ -408,6 +439,8 @@ def run_suite(arguments):
     save_json(output / "run.json", result)
     if not result["selected_checks_passed"]:
         raise ValueError("One or more selected checks failed; inspect run.json")
+    if coverage is not None and not result["workflow_coverage"]["complete"]:
+        raise ValueError("Workflow coverage incomplete; inspect the missing, unavailable and failed combinations in run.json")
     if arguments.capture == "on" and any(case.get("performance") for case in cases) and not result["performance_complete"]:
         raise ValueError("Performance observations incomplete; inspect run.json and retained case logs")
     print(output / "run.json")
@@ -429,6 +462,19 @@ def suite_cases():
         {"id": "typing-pixels", "artifact": "park-tests", "selector": "presentation::tests::performance::typing::edit_panel_typing_paints_content_without_invalidating_text_geometry", "scope": "private-production-typing-and-rendered-glyph-oracle", "timeout_seconds": 180, "ignored": True, "performance": True, "phases": ["warmup", "typing", "reopen"]},
         {"id": "3d-capture", "artifact": "park-tests", "selector": "presentation::tests::capture::contributors::imported_glb_and_generated_wgsl_meshes_follow_their_real_sources_in_capture_and_a_replacement_keeps_its_public_pixels", "scope": "private-existing-3d-shader-resource-and-pixel-correctness; not-daily-3d-throughput", "timeout_seconds": 180, "ignored": True},
         {"id": "input-visible", "artifact": "park-tests", "selector": "runtime::latency::tests::visible::controlled_typing_changes_pixels_after_editor_application_and_keeps_its_input_origin", "scope": "private-input-to-verified-pixels", "timeout_seconds": 180, "ignored": True, "performance": True, "phases": ["warmup", "typing"], "observation_files": ["native-input-visible.json"]},
+        {"id": "held-profile-typing", "artifact": "park-tests", "selector": "presentation::records::performance::typing_proceeds_during_a_blocked_save_and_successful_completion_does_not_wake_native_work", "scope": "private-held-profile-json-worker-and-native-typing", "timeout_seconds": 180, "ignored": True, "coverage_only": True},
+        {"id": "record-reply-pressure", "artifact": "interface-tests", "selector": "native::record_binding::tests::durable_local_backlog_drains_after_reply_pressure_without_more_interface_updates", "scope": "private-cell-reply-pressure-and-durable-edit-order", "timeout_seconds": 30, "coverage_only": True},
+        {"id": "recover-unsent-record-edit", "artifact": "interface-tests", "selector": "native::record_binding::tests::reopening_restores_and_delivers_a_saved_unsent_edit", "scope": "private-unsent-record-edit-recovery", "timeout_seconds": 30, "coverage_only": True},
+        {"id": "cancel-held-interface", "artifact": "interface-tests", "selector": "native::laboratory::tests::cancelled_and_failed_interface_checks_close_the_temporary_workspace", "scope": "private-held-laboratory-case-and-workspace-restoration", "timeout_seconds": 30, "coverage_only": True},
+        {"id": "held-first-open-theme", "artifact": "interface-tests", "selector": "native::laboratory::interface::first_protein_result_frame_uses_the_theme_changed_during_held_delivery", "scope": "private-held-cell-reply-and-first-themed-result-frame", "timeout_seconds": 60, "ignored": True, "coverage_only": True},
+        {"id": "first-revealed-input", "artifact": "park-tests", "selector": "presentation::tests::performance::offscreen::first_revealed_frame_has_current_text_style_and_input_mapping", "scope": "private-inactive-owner-data-style-and-current-frame-input", "timeout_seconds": 90, "ignored": True, "coverage_only": True},
+        {"id": "local-edit-preview-fanout", "artifact": "interface-tests", "selector": "native::description::tests::local_record_preview::local_body_edit_updates_pretty_split_and_live_query_views_without_rebuilding_unrelated_content", "scope": "private-durable-local-body-edit-pretty-and-split-query-fanout", "timeout_seconds": 30, "coverage_only": True},
+        {"id": "virtualized-dirty-record", "artifact": "interface-tests", "selector": "native::protein_area::tests::virtualized_edit::dirty_body_survives_virtualized_protein_sort_filter_and_cold_recovery", "scope": "private-live-protein-virtualization-and-durable-draft-recovery", "timeout_seconds": 90, "coverage_only": True},
+        {"id": "typing-timer-command-stream", "artifact": "interface-tests", "selector": "native::command_castle::tests::performance::mixed_stream::typing_and_timer_advance_during_an_ordered_private_command_stream", "scope": "private-native-keyboard-stopwatch-and-ordered-pty-stream", "timeout_seconds": 60, "coverage_only": True},
+        {"id": "explicit-ide-save-crash-reopen", "artifact": "interface-tests", "selector": "native::ide::tests::crash_recovery::explicit_ide_save_and_close_survives_abrupt_process_exit", "scope": "private-ide-save-close-and-draft-recovery-across-child-kill", "timeout_seconds": 60, "coverage_only": True},
+        {"id": "protein-lifecycle", "artifact": "interface-tests", "selector": "native::laboratory::interface::protein_lifecycle::protein_preview_spawn_update_and_remove_preserve_the_private_record", "scope": "private-rendered-protein-preview-and-live-area-lifecycle", "timeout_seconds": 60, "ignored": True, "coverage_only": True},
+        {"id": "held-capture-source-privacy", "artifact": "park-tests", "selector": "server::tests::transfers_tests::dispatch::capture_lifetime::queued_effect_capture_revalidates_privacy_source_revocation_lock_and_deadline_before_writing_shm", "scope": "private-submitted-readback-plus-source-replacement-and-capture-policy", "timeout_seconds": 180, "ignored": True, "coverage_only": True,
+         "environment": {"LINCE_PARK_TEST_CAPTURE_CHANGE": "SourceThenPrivacy"}, "observation_files": ["appearance-capture-lifetimes.json"]},
     ]
     for name, field, size, views, subscriptions in (
         ("title-one-view", "head", 1024, 1, 0),
@@ -519,6 +565,9 @@ def package(arguments):
         raise ValueError("Supply precompiled interface/Park tests or CI Cargo messages")
     if arguments.output.exists():
         raise ValueError("Bundle destination already exists")
+    repository = Path(__file__).resolve().parents[3]
+    cases = suite_cases()
+    source_inventory = audit_source_inventory(repository, cases)
     root = arguments.output.resolve()
     (root / "bin").mkdir(parents=True)
     artifacts = {}
@@ -534,7 +583,6 @@ def package(arguments):
     if build_info.get("revision") != arguments.revision:
         raise ValueError("Application build revision differs from validation source")
     available = {"interface-tests": list_tests(root / "bin/interface-tests"), "park-tests": list_tests(root / "bin/park-tests")}
-    cases = suite_cases()
     optional = []
     for case in cases:
         if case["selector"] not in available[case["artifact"]]:
@@ -553,10 +601,18 @@ def package(arguments):
     attribution = Path(__file__).resolve().parents[3] / "institute/trails/lince/park/measurement-changes.json"
     shutil.copy2(attribution, root / "changes.json")
     source = Path(__file__).parent
-    for filename in ("performance.py", "report.py"):
+    for filename in ("performance.py", "report.py", "source_inventory.py", "workflow_coverage.py"):
         shutil.copy2(source / filename, root / filename)
         artifacts[filename] = {"path": filename, "sha256": digest(root / filename)}
     artifacts["change-attribution"] = {"path": "changes.json", "sha256": digest(root / "changes.json")}
+    workload_registry = attribution.with_name("workloads.json")
+    shutil.copy2(workload_registry, root / "workloads.json")
+    artifacts["workload-registry"] = {"path": "workloads.json", "sha256": digest(root / "workloads.json")}
+    plan_coverage(load_json(root / "workloads.json"), cases)
+    source_inventory["revision"] = arguments.revision
+    source_inventory["unavailable_prepared_cases"] = [case["case"] for case in optional]
+    save_json(root / "source-inventory.json", source_inventory)
+    artifacts["source-inventory"] = {"path": "source-inventory.json", "sha256": digest(root / "source-inventory.json")}
     identity = {"workload": "park-a0-combined-v2", "workload_sha256": fixture_sha256, "quality": "normal", "scope": "private-native-two-output-plus-private-local-edit-and-separate-hardware-cases",
                 "profile": arguments.profile, "target": arguments.target, "toolchain": arguments.toolchain,
                 "features": "park/session,server-tests;interface/native-presentation"}
@@ -573,7 +629,9 @@ def main():
     run = subcommands.add_parser("run")
     run.add_argument("bundle", type=Path)
     run.add_argument("--output", type=Path, required=True)
-    run.add_argument("--case", action="append")
+    selection = run.add_mutually_exclusive_group()
+    selection.add_argument("--case", action="append")
+    selection.add_argument("--workflow-coverage", action="store_true", help="Run exact private cases selected by the bundled workflow registry")
     run.add_argument("--runtime", type=Path)
     run.add_argument("--capture", choices=("on", "off"), default="on", help="Enable measurement or collect whole-process overhead controls; production algorithms remain identical")
     summary = subcommands.add_parser("summarize")
@@ -599,6 +657,8 @@ def main():
         stage.add_argument("--" + name, type=Path, required=True)
     for name in ("revision", "profile", "target", "toolchain"):
         stage.add_argument("--" + name, required=True)
+    inventory = subcommands.add_parser("inventory", help="Audit and stamp the native workflow ownership from source")
+    inventory.add_argument("--output", type=Path, required=True)
     arguments = parser.parse_args()
     try:
         if arguments.command == "run":
@@ -612,6 +672,8 @@ def main():
             print(readable(result), end="")
         elif arguments.command == "stage-tests":
             stage_tests(arguments)
+        elif arguments.command == "inventory":
+            save_json(arguments.output, audit_source_inventory(Path(__file__).resolve().parents[3], suite_cases()))
         else:
             package(arguments)
     except (ValueError, KeyError, OSError, subprocess.SubprocessError) as failure:

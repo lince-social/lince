@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use nucleus::trust_analysis::{Identity, query::Query};
 use store::{Store, trust_queries as queries};
 

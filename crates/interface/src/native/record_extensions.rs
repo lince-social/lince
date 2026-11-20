@@ -270,7 +270,10 @@ fn capture_matching(world: &mut World, includes: impl Fn(Entity) -> bool) {
         .collect();
     nucleus::performance::add("extension-field-values-prepared", inputs.len() as u64);
     for (entity, owner, key, value) in inputs {
-        world.get_mut::<Input>(entity).unwrap().observed = value.clone();
+        let Some(mut input) = world.get_mut::<Input>(entity) else {
+            continue;
+        };
+        input.observed = value.clone();
         let Some(mut view) = world.get_mut::<View>(owner) else {
             continue;
         };
@@ -328,9 +331,10 @@ fn capture_matching(world: &mut World, includes: impl Fn(Entity) -> bool) {
 }
 
 fn draft_values(world: &mut World, owner: Entity, schema: &str) {
-    if world
-        .get::<View>(owner)
-        .unwrap()
+    let Some(view) = world.get::<View>(owner) else {
+        return;
+    };
+    if view
         .values
         .as_ref()
         .is_some_and(|draft| draft.schema == schema)
@@ -344,7 +348,10 @@ fn draft_values(world: &mut World, owner: Entity, schema: &str) {
     let schema_revision = inspection(world, owner)
         .and_then(|data| data.schemas.iter().find(|entry| entry.uid == schema))
         .map_or(0, |entry| entry.revision);
-    world.get_mut::<View>(owner).unwrap().values = Some(ValueDraft {
+    let mut view = world
+        .get_mut::<View>(owner)
+        .expect("the inspected extension view still exists");
+    view.values = Some(ValueDraft {
         schema: schema.into(),
         schema_revision,
         revision: value.revision,
@@ -362,8 +369,13 @@ fn changes(draft: &ValueDraft) -> BTreeMap<String, Value> {
 }
 
 fn search_picker(world: &mut World, owner: Entity) -> Result<(), String> {
-    let settings = world.get::<Settings>(owner).unwrap().clone();
-    let view = world.get::<View>(owner).unwrap();
+    let settings = world
+        .get::<Settings>(owner)
+        .ok_or("Record extension settings are unavailable")?
+        .clone();
+    let view = world
+        .get::<View>(owner)
+        .ok_or("The Record extension view is closed")?;
     let picker = view.picker.as_ref().ok_or("Picker closed")?;
     let concept = matches!(picker.key, InputKey::Preset(_, 0 | 3));
     let query = protein::Protein {
@@ -402,9 +414,11 @@ fn search_picker(world: &mut World, owner: Entity) -> Result<(), String> {
             protein: query,
         })
         .map_err(|error| error.to_string())?;
-    if let Some(picker) = &mut world.get_mut::<View>(owner).unwrap().picker {
+    let mut view = editor_mut(world, owner)?;
+    if let Some(picker) = &mut view.picker {
         picker.request = Some(id.clone());
     }
+    view.message = "Loading choices…".into();
     world.resource_mut::<Runtime>().pending.insert(
         id,
         Pending {
@@ -413,7 +427,6 @@ fn search_picker(world: &mut World, owner: Entity) -> Result<(), String> {
             started: Instant::now(),
         },
     );
-    world.get_mut::<View>(owner).unwrap().message = "Loading choices…".into();
     Ok(())
 }
 
@@ -426,6 +439,7 @@ fn send_change(
     if crate::native::laboratory::blocked(world, owner) {
         return Err("Changes are unavailable in the Laboratory".into());
     }
+    world.get::<View>(owner).ok_or("Editor closed")?;
     let settings = world.get::<Settings>(owner).ok_or("Editor closed")?.clone();
     let source = settings.source;
     let sender = sender(world, &source).ok_or("Connect to the Record's Organ first")?;
@@ -451,12 +465,16 @@ fn send_change(
             started: Instant::now(),
         },
     );
-    let mut view = world.get_mut::<View>(owner).unwrap();
+    let mut view = editor_mut(world, owner)?;
     view.pending = Some(id);
     view.retry = Some((target, request));
     view.message = "Saving…".into();
     view.render = true;
     Ok(())
+}
+
+fn editor_mut(world: &mut World, owner: Entity) -> Result<Mut<'_, View>, &'static str> {
+    world.get_mut::<View>(owner).ok_or("Editor closed")
 }
 
 #[derive(Clone)]
@@ -522,21 +540,22 @@ impl Action for Command {
 fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), String> {
     match command {
         Command::Pick(key) => {
-            world.get_mut::<View>(owner).unwrap().picker = Some(Picker {
+            let mut view = editor_mut(world, owner)?;
+            view.picker = Some(Picker {
                 key: key.clone(),
                 rows: Default::default(),
                 request: None,
             });
-            world.get_mut::<View>(owner).unwrap().search.clear();
+            view.search.clear();
             return search_picker(world, owner);
         }
         Command::ClosePicker => {
-            world.get_mut::<View>(owner).unwrap().picker = None;
+            editor_mut(world, owner)?.picker = None;
         }
         Command::Picked(uid) => {
             let name = world
                 .get::<View>(owner)
-                .unwrap()
+                .ok_or("Editor closed")?
                 .picker
                 .as_ref()
                 .and_then(|picker| {
@@ -548,15 +567,13 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
                 .and_then(|row| row["name"].as_str().or(row["head"].as_str()))
                 .map(|name| name.chars().take(160).collect::<String>());
             if let Some(name) = name {
-                world
-                    .get_mut::<View>(owner)
-                    .unwrap()
+                editor_mut(world, owner)?
                     .reference_labels
                     .insert(uid.clone(), name);
             }
             let key = world
                 .get::<View>(owner)
-                .unwrap()
+                .ok_or("Editor closed")?
                 .picker
                 .as_ref()
                 .ok_or("Picker closed")?
@@ -564,17 +581,20 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
                 .clone();
             match key {
                 InputKey::Record => {
-                    if world.get::<View>(owner).unwrap().dirty() {
+                    if world.get::<View>(owner).ok_or("Editor closed")?.dirty() {
                         return Err("Save or discard your draft first".into());
                     }
-                    world.get_mut::<Settings>(owner).unwrap().record = Some(uid.clone());
-                    let mut view = world.get_mut::<View>(owner).unwrap();
+                    world
+                        .get_mut::<Settings>(owner)
+                        .ok_or("Editor settings are unavailable")?
+                        .record = Some(uid.clone());
+                    let mut view = editor_mut(world, owner)?;
                     view.values = None;
                     view.undo = None;
                     view.record_input = None;
                 }
                 InputKey::Preset(index, part) => {
-                    let mut view = world.get_mut::<View>(owner).unwrap();
+                    let mut view = editor_mut(world, owner)?;
                     if let Some(draft) = &mut view.schema
                         && let Some(choice) = draft.choice
                         && index
@@ -593,28 +613,33 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
                 }
                 _ => {}
             }
-            let mut view = world.get_mut::<View>(owner).unwrap();
+            let mut view = editor_mut(world, owner)?;
             view.picker = None;
             view.search.clear();
             view.message.clear();
         }
         Command::Record => {
-            if world.get::<View>(owner).unwrap().dirty() {
+            let view = world.get::<View>(owner).ok_or("Editor closed")?;
+            if view.dirty() {
                 return Err("Apply or discard your draft before changing Records".into());
             }
-            let value = world
-                .get::<View>(owner)
-                .unwrap()
+            let settings = world
+                .get::<Settings>(owner)
+                .ok_or("Editor settings are unavailable")?;
+            let value = view
                 .record_input
-                .clone()
-                .or_else(|| world.get::<Settings>(owner).unwrap().record.clone())
+                .as_ref()
+                .or(settings.record.as_ref())
+                .cloned()
                 .unwrap_or_default();
             if value.len() > 200 || value.contains('\0') {
                 return Err("Choose a Record from the list or enter its reference".into());
             }
-            world.get_mut::<Settings>(owner).unwrap().record =
-                (!value.trim().is_empty()).then(|| value.trim().into());
-            let mut view = world.get_mut::<View>(owner).unwrap();
+            world
+                .get_mut::<Settings>(owner)
+                .ok_or("Editor settings are unavailable")?
+                .record = (!value.trim().is_empty()).then(|| value.trim().into());
+            let mut view = editor_mut(world, owner)?;
             view.values = None;
             view.undo = None;
             view.schema = None;
@@ -622,14 +647,14 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
             view.message.clear();
         }
         Command::New => {
-            if world.get::<View>(owner).unwrap().dirty() {
+            if world.get::<View>(owner).ok_or("Editor closed")?.dirty() {
                 return Err("Save or discard your draft first".into());
             }
             let schema = Schema {
                 name: "New schema".into(),
                 fields: vec![new_field(FieldKind::Select)],
             };
-            let mut view = world.get_mut::<View>(owner).unwrap();
+            let mut view = editor_mut(world, owner)?;
             view.schema = Some(SchemaDraft {
                 uid: None,
                 revision: 0,
@@ -641,7 +666,7 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
             view.message.clear();
         }
         Command::Edit(uid) => {
-            if world.get::<View>(owner).unwrap().dirty() {
+            if world.get::<View>(owner).ok_or("Editor closed")?.dirty() {
                 return Err("Save or discard your draft first".into());
             }
             let definition = inspection(world, owner)
@@ -654,7 +679,7 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
                 definition.revision,
                 DraftData::new(definition.schema.clone()),
             );
-            let mut view = world.get_mut::<View>(owner).unwrap();
+            let mut view = editor_mut(world, owner)?;
             view.schema = Some(SchemaDraft {
                 uid: Some(uid.clone()),
                 revision,
@@ -666,22 +691,22 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
             view.open = None;
         }
         Command::Discard => {
-            let mut view = world.get_mut::<View>(owner).unwrap();
+            let mut view = editor_mut(world, owner)?;
             view.schema = None;
             view.values = None;
             view.message = "Draft discarded".into();
             view.open = None;
         }
         Command::Done => {
-            if world.get::<View>(owner).unwrap().dirty() {
+            if world.get::<View>(owner).ok_or("Editor closed")?.dirty() {
                 return Err("Save or discard your draft first".into());
             }
-            world.get_mut::<View>(owner).unwrap().schema = None;
+            editor_mut(world, owner)?.schema = None;
         }
         Command::SaveSchema => {
             let draft = world
                 .get::<View>(owner)
-                .unwrap()
+                .ok_or("Editor closed")?
                 .schema
                 .as_ref()
                 .ok_or("Open a schema")?
@@ -706,7 +731,7 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
             return send_change(world, owner, draft.uid, request);
         }
         Command::AddField(kind) => {
-            let mut view = world.get_mut::<View>(owner).unwrap();
+            let mut view = editor_mut(world, owner)?;
             let draft = view.schema.as_mut().ok_or("Open a schema")?;
             if draft.schema.fields.len() >= 64 {
                 return Err("A schema can have at most 64 fields".into());
@@ -716,7 +741,7 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
             draft.choice = None;
         }
         Command::Kind(kind) => {
-            let mut view = world.get_mut::<View>(owner).unwrap();
+            let mut view = editor_mut(world, owner)?;
             let draft = view.schema.as_mut().ok_or("Open a schema")?;
             let field = &draft.schema.fields[draft.field];
             if draft.uid.is_some()
@@ -741,7 +766,7 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
             }
         }
         Command::Field(index) => {
-            let mut view = world.get_mut::<View>(owner).unwrap();
+            let mut view = editor_mut(world, owner)?;
             if let Some(draft) = &mut view.schema
                 && *index < draft.schema.fields.len()
             {
@@ -752,14 +777,14 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
             }
         }
         Command::ArchiveField => {
-            let mut view = world.get_mut::<View>(owner).unwrap();
+            let mut view = editor_mut(world, owner)?;
             if let Some(draft) = &mut view.schema {
                 let field = &mut draft.schema.edit().fields[draft.field];
                 field.archived = !field.archived;
             }
         }
         Command::MoveField(down) => {
-            let mut view = world.get_mut::<View>(owner).unwrap();
+            let mut view = editor_mut(world, owner)?;
             if let Some(draft) = &mut view.schema {
                 let other = if *down {
                     draft.field + 1
@@ -773,7 +798,7 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
             }
         }
         Command::AddChoice => {
-            let mut view = world.get_mut::<View>(owner).unwrap();
+            let mut view = editor_mut(world, owner)?;
             if let Some(draft) = &mut view.schema {
                 if draft.schema.fields[draft.field].choices.len() >= 512 {
                     return Err("A field can have at most 512 choices".into());
@@ -784,7 +809,7 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
             }
         }
         Command::Choice(index) => {
-            let mut view = world.get_mut::<View>(owner).unwrap();
+            let mut view = editor_mut(world, owner)?;
             if let Some(draft) = &mut view.schema
                 && *index < draft.schema.fields[draft.field].choices.len()
             {
@@ -792,7 +817,7 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
             }
         }
         Command::ArchiveChoice => {
-            let mut view = world.get_mut::<View>(owner).unwrap();
+            let mut view = editor_mut(world, owner)?;
             if let Some(draft) = &mut view.schema
                 && let Some(index) = draft.choice
             {
@@ -801,7 +826,7 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
             }
         }
         Command::MoveChoice(down) => {
-            let mut view = world.get_mut::<View>(owner).unwrap();
+            let mut view = editor_mut(world, owner)?;
             if let Some(draft) = &mut view.schema
                 && let Some(index) = draft.choice
             {
@@ -819,7 +844,7 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
             }
         }
         Command::AddPreset => {
-            let mut view = world.get_mut::<View>(owner).unwrap();
+            let mut view = editor_mut(world, owner)?;
             if let Some(draft) = &mut view.schema
                 && let Some(index) = draft.choice
             {
@@ -841,7 +866,7 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
             }
         }
         Command::RemovePreset(index) => {
-            let mut view = world.get_mut::<View>(owner).unwrap();
+            let mut view = editor_mut(world, owner)?;
             if let Some(draft) = &mut view.schema
                 && let Some(choice) = draft.choice
             {
@@ -857,20 +882,23 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
             }
         }
         Command::Schema(uid) => {
-            if world.get::<View>(owner).unwrap().dirty() {
+            if world.get::<View>(owner).ok_or("Editor closed")?.dirty() {
                 return Err("Apply or discard your draft first".into());
             }
-            world.get_mut::<Settings>(owner).unwrap().schema = Some(uid.clone());
-            let mut view = world.get_mut::<View>(owner).unwrap();
+            world
+                .get_mut::<Settings>(owner)
+                .ok_or("Editor settings are unavailable")?
+                .schema = Some(uid.clone());
+            let mut view = editor_mut(world, owner)?;
             view.values = None;
             view.open = None;
             view.page = 0;
         }
         Command::Bind(schema, field) => {
-            if world.get::<View>(owner).unwrap().dirty() {
+            if world.get::<View>(owner).ok_or("Editor closed")?.dirty() {
                 return Err("Apply or discard your draft first".into());
             }
-            let column = world.get::<View>(owner).unwrap().column;
+            let column = world.get::<View>(owner).ok_or("Editor closed")?.column;
             if let Some(area) = column {
                 let mut config =
                     crate::native::protein_area::configuration(world, area).ok_or("Area closed")?;
@@ -892,12 +920,14 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
                 world.despawn(owner);
                 return Ok(());
             }
-            let mut settings = world.get_mut::<Settings>(owner).unwrap();
+            let mut settings = world
+                .get_mut::<Settings>(owner)
+                .ok_or("Editor settings are unavailable")?;
             settings.schema = Some(schema.clone());
             settings.field = Some(field.clone());
         }
         Command::Open(field) => {
-            let mut view = world.get_mut::<View>(owner).unwrap();
+            let mut view = editor_mut(world, owner)?;
             view.open = if view.open.as_ref() == Some(field) {
                 None
             } else {
@@ -907,12 +937,17 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
             view.page = 0;
         }
         Command::Search => {
-            if world.get::<View>(owner).unwrap().picker.is_some() {
+            if world
+                .get::<View>(owner)
+                .ok_or("Editor closed")?
+                .picker
+                .is_some()
+            {
                 return search_picker(world, owner);
             }
         }
         Command::Page(down) => {
-            let mut view = world.get_mut::<View>(owner).unwrap();
+            let mut view = editor_mut(world, owner)?;
             view.page = if *down {
                 view.page.saturating_add(1).min(32)
             } else {
@@ -921,22 +956,18 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
         }
         Command::Set(field, value) => {
             prepare_value(world, owner)?;
-            world
-                .get_mut::<View>(owner)
-                .unwrap()
+            editor_mut(world, owner)?
                 .values
                 .as_mut()
-                .unwrap()
+                .ok_or("The value draft is unavailable")?
                 .set(field, value.clone());
         }
         Command::Clear(field) => {
             prepare_value(world, owner)?;
-            world
-                .get_mut::<View>(owner)
-                .unwrap()
+            editor_mut(world, owner)?
                 .values
                 .as_mut()
-                .unwrap()
+                .ok_or("The value draft is unavailable")?
                 .remove(field);
         }
         Command::Select(field, choice) => {
@@ -946,7 +977,7 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
                 .ok_or("Field unavailable")?;
             let schema = world
                 .get::<Settings>(owner)
-                .unwrap()
+                .ok_or("Editor settings are unavailable")?
                 .schema
                 .as_ref()
                 .ok_or("Choose a schema")?;
@@ -956,8 +987,11 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
                 .find(|entry| &entry.uid == schema)
                 .and_then(|entry| entry.schema.fields.iter().find(|entry| entry.id == *field))
                 .ok_or("Field unavailable")?;
-            let mut view = world.get_mut::<View>(owner).unwrap();
-            let draft = view.values.as_mut().unwrap();
+            let mut view = editor_mut(world, owner)?;
+            let draft = view
+                .values
+                .as_mut()
+                .ok_or("The value draft is unavailable")?;
             let selected = definition.selection(draft.fields.get(field).unwrap_or(&Value::Null))?;
             if definition.kind == FieldKind::Select {
                 draft.set(field, json!(choice));
@@ -976,8 +1010,15 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
         }
         Command::Apply | Command::Detach => {
             prepare_value(world, owner)?;
-            let target = world.get::<Settings>(owner).unwrap().record.clone();
-            let draft = world.get::<View>(owner).unwrap().values.as_ref().unwrap();
+            let target = world
+                .get::<Settings>(owner)
+                .ok_or("Editor settings are unavailable")?
+                .record
+                .clone();
+            let draft = world
+                .get::<View>(owner)
+                .and_then(|view| view.values.as_ref())
+                .ok_or("The value draft is unavailable")?;
             let remove = matches!(command, Command::Detach);
             let values = if remove {
                 BTreeMap::new()
@@ -995,16 +1036,20 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
             return send_change(world, owner, target, request);
         }
         Command::Undo => {
-            if world.get::<View>(owner).unwrap().dirty() {
+            if world.get::<View>(owner).ok_or("Editor closed")?.dirty() {
                 return Err("Apply or discard your draft before undoing".into());
             }
             let undo = world
                 .get::<View>(owner)
-                .unwrap()
+                .ok_or("Editor closed")?
                 .undo
                 .clone()
                 .ok_or("Nothing to undo")?;
-            let target = world.get::<Settings>(owner).unwrap().record.clone();
+            let target = world
+                .get::<Settings>(owner)
+                .ok_or("Editor settings are unavailable")?
+                .record
+                .clone();
             return send_change(
                 world,
                 owner,
@@ -1024,29 +1069,36 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
             );
         }
         Command::Reload => {
-            if world.get::<View>(owner).unwrap().dirty() {
+            if world.get::<View>(owner).ok_or("Editor closed")?.dirty() {
                 return Err("Discard your draft before reloading".into());
             }
-            let feed = world.get::<View>(owner).unwrap().feed.clone();
+            let feed = world
+                .get::<View>(owner)
+                .ok_or("Editor closed")?
+                .feed
+                .clone();
             if let Some(key) = feed
                 && let Some(feed) = world.resource_mut::<Runtime>().feeds.get_mut(&key)
             {
                 feed.next = Instant::now();
             }
-            world.get_mut::<View>(owner).unwrap().values = None;
+            editor_mut(world, owner)?.values = None;
         }
         Command::Retry => {
             let (target, request) = world
                 .get::<View>(owner)
-                .unwrap()
+                .ok_or("Editor closed")?
                 .retry
                 .clone()
                 .ok_or("Nothing to retry")?;
             return send_change(world, owner, target, request);
         }
         Command::Column(area) => {
-            world.get_mut::<View>(owner).unwrap().column = Some(*area);
-            world.get_mut::<Settings>(owner).unwrap().record = None;
+            editor_mut(world, owner)?.column = Some(*area);
+            world
+                .get_mut::<Settings>(owner)
+                .ok_or("Editor settings are unavailable")?
+                .record = None;
         }
     }
     Ok(())
@@ -1055,11 +1107,11 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
 fn prepare_value(world: &mut World, owner: Entity) -> Result<(), String> {
     let schema = world
         .get::<Settings>(owner)
-        .unwrap()
+        .ok_or("Editor settings are unavailable")?
         .schema
         .clone()
         .ok_or("Choose a schema")?;
-    if !world.get::<View>(owner).unwrap().editable
+    if !world.get::<View>(owner).ok_or("Editor closed")?.editable
         || !inspection(world, owner).is_some_and(|data| data.writable.contains(&schema))
     {
         return Err("These fields are read only or unavailable".into());
@@ -1123,7 +1175,9 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
         return;
     }
     let _reply = nucleus::performance::Span::new("extension-reply-preparation");
-    let pending = world.resource_mut::<Runtime>().pending.remove(id).unwrap();
+    let Some(pending) = world.resource_mut::<Runtime>().pending.remove(id) else {
+        return;
+    };
     match pending.kind {
         PendingKind::Picker(owner) => {
             if let Some(sender) = sender(world, source) {
@@ -1194,16 +1248,15 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
             }
         }
         PendingKind::Change(owner) => {
-            if !world.entities().contains(owner) {
+            let Some(mut view) = world.get_mut::<View>(owner) else {
                 return;
-            }
+            };
             let result = match message {
                 ServerMessage::ActionOk { data, .. } => Ok(data.as_ref().unwrap_or(&Value::Null)),
                 ServerMessage::Snapshot { .. } => Ok(&Value::Null),
                 ServerMessage::Error { message, .. } => Err(message),
                 _ => unreachable!(),
             };
-            let mut view = world.get_mut::<View>(owner).unwrap();
             view.pending = None;
             view.render = true;
             match result {
@@ -1219,10 +1272,14 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
                         });
                     if schema_saved {
                         if let Some(uid) = data["schema"].as_str() {
-                            let mut settings = world.get_mut::<Settings>(owner).unwrap();
+                            let Some(mut settings) = world.get_mut::<Settings>(owner) else {
+                                return;
+                            };
                             settings.schema = Some(uid.into());
                         }
-                        let mut view = world.get_mut::<View>(owner).unwrap();
+                        let Some(mut view) = world.get_mut::<View>(owner) else {
+                            return;
+                        };
                         view.schema = None;
                         view.values = None;
                         view.message =
@@ -1292,8 +1349,10 @@ fn update(
     capture_matching(world, |owner| active.contains(&owner));
     feeds::update(world, &owners);
     for owner in owners {
+        let Some(view) = world.get::<View>(owner) else {
+            continue;
+        };
         let state = {
-            let view = world.get::<View>(owner).unwrap();
             feed(world, owner)
                 .filter(|feed| feed.version != view.seen)
                 .map(|feed| {
@@ -1312,12 +1371,16 @@ fn update(
         };
         if let Some((version, record, unavailable, error, refresh_values)) = state {
             if let Some(uid) = record {
-                let mut settings = world.get_mut::<Settings>(owner).unwrap();
+                let Some(mut settings) = world.get_mut::<Settings>(owner) else {
+                    continue;
+                };
                 if settings.record.as_ref() != Some(&uid) {
                     settings.record = Some(uid);
                 }
             }
-            let mut view = world.get_mut::<View>(owner).unwrap();
+            let Some(mut view) = world.get_mut::<View>(owner) else {
+                continue;
+            };
             view.seen = version;
             if unavailable {
                 view.values = None;
@@ -1332,9 +1395,11 @@ fn update(
                 view.render = true;
             }
         }
-        if world.get::<View>(owner).unwrap().render {
+        if world.get::<View>(owner).is_some_and(|view| view.render) {
             ui::render(world, owner);
-            world.get_mut::<View>(owner).unwrap().render = false;
+            if let Some(mut view) = world.get_mut::<View>(owner) {
+                view.render = false;
+            }
         }
     }
 }
@@ -1404,22 +1469,21 @@ pub(crate) fn spawn(
 
 #[derive(Clone)]
 pub(crate) struct Open(pub RecordBinding);
+
+fn workspace_ancestor(world: &World, mut entity: Entity) -> Option<(Entity, u64)> {
+    loop {
+        if let Some(workspaces) = world.get::<crate::native::workspace::Workspaces>(entity) {
+            return Some((entity, workspaces.active));
+        }
+        entity = world.get::<ChildOf>(entity)?.parent();
+    }
+}
+
 impl Action for Open {
     fn apply(&self, world: &mut World, parent: Entity) {
-        let mut root = parent;
-        while world
-            .get::<crate::native::workspace::Workspaces>(root)
-            .is_none()
-        {
-            let Some(parent) = world.get::<ChildOf>(root) else {
-                return;
-            };
-            root = parent.parent();
-        }
-        let workspace = world
-            .get::<crate::native::workspace::Workspaces>(root)
-            .unwrap()
-            .active;
+        let Some((root, workspace)) = workspace_ancestor(world, parent) else {
+            return;
+        };
         let position = world
             .get::<crate::native::canvas::CanvasView>(root)
             .map_or(DVec2::ZERO, |view| view.center);
@@ -1441,23 +1505,12 @@ impl Action for Open {
 pub(crate) struct AddColumn(pub Entity);
 impl Action for AddColumn {
     fn apply(&self, world: &mut World, parent: Entity) {
-        let mut root = parent;
-        while world
-            .get::<crate::native::workspace::Workspaces>(root)
-            .is_none()
-        {
-            let Some(parent) = world.get::<ChildOf>(root) else {
-                return;
-            };
-            root = parent.parent();
-        }
+        let Some((root, workspace)) = workspace_ancestor(world, parent) else {
+            return;
+        };
         let Some(config) = crate::native::protein_area::configuration(world, self.0) else {
             return;
         };
-        let workspace = world
-            .get::<crate::native::workspace::Workspaces>(root)
-            .unwrap()
-            .active;
         let position = world
             .get::<crate::native::canvas::CanvasView>(root)
             .map_or(DVec2::ZERO, |view| view.center);

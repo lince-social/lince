@@ -68,7 +68,7 @@ fn read(settings: &BTreeMap<String, serde_json::Value>) -> Result<Option<Bluepri
     Ok(Some(blueprint))
 }
 
-pub(super) fn capture(world: &World, host: Entity) -> Option<ContentKind> {
+pub(super) fn capture(world: &World, host: Entity) -> Option<Result<ContentKind, String>> {
     let board = world.get::<crate::native::kanban::Kanban>(host)?.clone();
     let origin = crate::native::topology::rooms::world_pose(world, host)?;
     let parent = world.get::<ChildOf>(host)?.parent();
@@ -94,6 +94,10 @@ pub(super) fn capture(world: &World, host: Entity) -> Option<ContentKind> {
             _ => api::room::relative(&origin, &point),
         };
         let spatial = crate::native::topology::spatial(world, entity);
+        let settings = match super::area::settings(area) {
+            Ok(settings) => settings,
+            Err(error) => return Some(Err(error)),
+        };
         areas.push(Region {
             id: id.clone(),
             geometry: api::Geometry {
@@ -106,21 +110,21 @@ pub(super) fn capture(world: &World, host: Entity) -> Option<ContentKind> {
                 depth: spatial.depth,
                 world_pinned: spatial.world_pinned,
             },
-            settings: super::area::settings(area),
+            settings,
             layout: world
                 .get::<crate::native::layout::LayoutBox>(entity)
                 .map(|layout| layout.rules),
         });
     }
-    let value = serde_json::to_value(Blueprint { board, areas }).unwrap();
-    Some(ContentKind::Native {
-        kind: "kanban".into(),
-        settings: BTreeMap::from([(
-            "state".into(),
-            serde_json::json!(serde_json::to_string(&value).unwrap()),
-        )]),
-        bindings: record_references(&value),
-    })
+    let encoded = serde_json::to_value(Blueprint { board, areas })
+        .map_err(|error| format!("Could not capture the Kanban blueprint. {error}"));
+    Some(encoded.and_then(|value| {
+        Ok(ContentKind::Native {
+            kind: "kanban".into(),
+            settings: BTreeMap::from([("state".into(), snapshot::json_text("Kanban", &value)?)]),
+            bindings: record_references(&value),
+        })
+    }))
 }
 
 pub(super) fn spawn(
@@ -136,7 +140,7 @@ pub(super) fn spawn(
             .ok_or("No room for the Kanban's source and columns.")?;
         let board = world
             .get::<crate::native::kanban::Kanban>(host)
-            .unwrap()
+            .expect("the Kanban factory spawned a board")
             .clone();
         let children: Vec<_> = world
             .get::<Children>(root)
@@ -155,7 +159,8 @@ pub(super) fn spawn(
         crate::native::kanban::authoring_activation(world, host, false);
         return Ok(host);
     };
-    if record_references(&serde_json::to_value(&blueprint).unwrap())
+    let value = serde_json::to_value(&blueprint).map_err(|error| error.to_string())?;
+    if record_references(&value)
         .iter()
         .any(|uid| !bindings.contains(uid))
     {

@@ -92,6 +92,26 @@ pub fn update_clipping_system(
     }
 }
 
+#[cfg(test)]
+pub(super) fn reference_clipping_system(
+    mut commands: Commands,
+    root_nodes: UiRootNodes,
+    mut node_query: Query<(
+        &Node,
+        &ComputedNode,
+        &UiGlobalTransform,
+        Option<&mut CalculatedClip>,
+        Has<OverrideClip>,
+        Has<FixedNode>,
+        Option<&mut UiClippingBoundary>,
+    )>,
+    ui_children: UiChildren,
+) {
+    for root_node in root_nodes.iter() {
+        update_clipping(&mut commands, &ui_children, &mut node_query, root_node, None);
+    }
+}
+
 fn update_clipping(
     commands: &mut Commands,
     ui_children: &UiChildren,

@@ -156,7 +156,10 @@ impl Watch {
                     self.wake.clone(),
                 )?);
             }
-            self.polling.as_ref().unwrap().set(self.fallback.clone());
+            self.polling
+                .as_ref()
+                .expect("fallback paths have a polling watcher")
+                .set(self.fallback.clone());
         }
         if limited {
             Err("Polling is limited to 128 directories; collapse unused directories".into())

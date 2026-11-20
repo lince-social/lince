@@ -184,6 +184,15 @@ fn dispatch_key(
         {
             return;
         }
+        if event.key_code == KeyCode::Space
+            && modifiers == crate::native::actions::Modifiers::NONE
+            && event.state.is_pressed()
+            && !event.repeat
+            && crate::native::time_castle::complete_focused_row(world)
+        {
+            state.consumed.insert(identity, None);
+            return;
+        }
         crate::native::keyboard::logical(world, modifiers);
         if event.key_code == KeyCode::Tab && event.state.is_pressed() && !event.repeat {
             crate::native::customization::synchronize_keyboard(world);

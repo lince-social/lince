@@ -21,7 +21,9 @@ impl Server {
         listener
             .set_nonblocking(true)
             .expect("the HTTP test server must poll without blocking");
-        let address = listener.local_addr().expect("read the HTTP test server address");
+        let address = listener
+            .local_addr()
+            .expect("read the HTTP test server address");
         let uri = format!("http://{address}/document");
         let count = Arc::new(AtomicUsize::new(0));
         let stop = Arc::new(AtomicBool::new(false));
@@ -38,7 +40,7 @@ impl Server {
                 };
                 stream
                     .set_read_timeout(Some(std::time::Duration::from_secs(3)))
-                    .unwrap();
+                    .expect("bound the HTTP test server read time");
                 let mut request = Vec::new();
                 while !request.ends_with(b"\r\n\r\n") {
                     let mut byte = [0];
@@ -48,10 +50,8 @@ impl Server {
                     request.push(byte[0]);
                 }
                 let index = requests.fetch_add(1, Ordering::Relaxed);
-                let response = reply(
-                    index,
-                    &String::from_utf8(request).unwrap().to_ascii_lowercase(),
-                );
+                let request = String::from_utf8(request).expect("the HTTP test request is UTF-8");
+                let response = reply(index, &request.to_ascii_lowercase());
                 let _ = stream.write_all(response.as_bytes());
             }
         });
@@ -66,7 +66,11 @@ impl Server {
 impl Drop for Server {
     fn drop(&mut self) {
         self.stop.store(true, Ordering::Relaxed);
-        self.worker.take().unwrap().join().unwrap();
+        self.worker
+            .take()
+            .expect("the HTTP test server owns its worker until drop")
+            .join()
+            .expect("the HTTP test server worker exits without panicking");
     }
 }
 fn response(status: &str, headers: &str, body: &str) -> String {

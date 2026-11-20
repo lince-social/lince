@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use nucleus::script::{Evaluator, Host, Value};
 
 #[derive(Debug, Default)]

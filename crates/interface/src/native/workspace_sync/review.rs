@@ -104,7 +104,9 @@ fn difference(world: &mut World, parent: Entity, before: &Value, after: &Value) 
 }
 
 pub(super) fn preview(world: &mut World, owner: Entity, data: &Value) {
-    let parent = world.get::<WorkspaceSync>(owner).unwrap().history;
+    let Some(parent) = world.get::<WorkspaceSync>(owner).map(|view| view.history) else {
+        return;
+    };
     panel::clear(world, parent);
     label(
         world,
@@ -148,12 +150,16 @@ pub(super) fn preview(world: &mut World, owner: Entity, data: &Value) {
                 }
             } else {
                 label(world, parent, &format!("Add placement {}", element.id));
-                difference(
-                    world,
-                    parent,
-                    &Value::Null,
-                    &serde_json::to_value(element).unwrap(),
-                );
+                match serde_json::to_value(element) {
+                    Ok(value) => difference(world, parent, &Value::Null, &value),
+                    Err(error) => {
+                        label(
+                            world,
+                            parent,
+                            &format!("Could not display placement: {error}"),
+                        );
+                    }
+                }
             }
         }
         difference(

@@ -1252,7 +1252,8 @@ pub(crate) mod tests {
                 screen_bounds(app.world(), root, sand).as_ref(),
                 Some(bounds)
             );
-            let saved = Placement::capture(app.world(), sand);
+            let saved =
+                Placement::capture(app.world(), sand).expect("capture the fixture placement");
             let saved: Placement =
                 serde_json::from_slice(&serde_json::to_vec(&saved).unwrap()).unwrap();
             assert!(saved.pinned.is_some());
@@ -1307,7 +1308,8 @@ pub(crate) mod tests {
         let group = *app.world().get::<SandGroup>(first).unwrap();
         assert_eq!(app.world().get::<SandGroup>(second), Some(&group));
         assert_eq!(options(app.world(), root, first).grouping, (false, true));
-        let saved = crate::native::sand_placement::Placement::capture(app.world(), first);
+        let saved = crate::native::sand_placement::Placement::capture(app.world(), first)
+            .expect("capture the fixture placement");
         let saved: crate::native::sand_placement::Placement =
             serde_json::from_slice(&serde_json::to_vec(&saved).unwrap()).unwrap();
         assert_eq!(saved.group, Some(group));

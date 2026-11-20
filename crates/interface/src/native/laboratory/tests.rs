@@ -327,6 +327,86 @@ fn stop_restores_idle_updates_and_exit_saves_only_the_original_scene() {
 }
 
 #[cfg_attr(test, test)]
+fn cancelled_and_failed_interface_checks_close_the_temporary_workspace() {
+    use std::time::{Duration, Instant};
+
+    for action in [
+        Some(LaboratoryAction::Stop),
+        Some(LaboratoryAction::Close),
+        None,
+    ] {
+        let (mut app, root) = fixture();
+        LaboratoryAction::Open.apply(app.world_mut(), root);
+        let laboratory = app.world().resource::<Laboratory>().root.unwrap();
+        assert!(suspended(app.world(), root));
+        let (send, wake) = std::sync::mpsc::sync_channel(1);
+        let signal = crate::native::wake::WakeSignal::new(move || {
+            let _ = send.try_send(());
+        });
+        let cancelling = action.is_some();
+        let mut run = BehaviorRun::start_cases(
+            vec![Case {
+                name: "temporary Interface test fixture",
+                source: CaseSource {
+                    path: file!(),
+                    registration_line: line!(),
+                },
+                run: if cancelling {
+                    |runtime| runtime.block_on(crate::testing::Cancellation::current().cancelled())
+                } else {
+                    |_| panic!("fixture failure before cleanup")
+                },
+            }],
+            Some(signal),
+            None,
+        )
+        .unwrap();
+        run.selection = Some(InterfaceSelection::All);
+        app.world_mut().resource_mut::<Laboratory>().behavior = Some(run);
+        let deadline = Instant::now() + Duration::from_secs(5);
+        if let Some(action) = action {
+            wake.recv_timeout(deadline.saturating_duration_since(Instant::now()))
+                .unwrap();
+            app.update();
+            assert!(
+                app.world()
+                    .resource::<Laboratory>()
+                    .behavior
+                    .as_ref()
+                    .unwrap()
+                    .current
+                    .is_some()
+            );
+            action.apply(app.world_mut(), laboratory);
+        }
+        while active(app.world()) {
+            wake.recv_timeout(deadline.saturating_duration_since(Instant::now()))
+                .unwrap();
+            app.update();
+        }
+        assert!(app.world().get_entity(laboratory).is_err());
+        assert!(!suspended(app.world(), root));
+        assert_eq!(
+            app.world().get::<Node>(root).unwrap().display,
+            Display::Flex
+        );
+        let lab = app.world().resource::<Laboratory>();
+        let run = lab.behavior.as_ref().unwrap();
+        assert!(run.finished());
+        if cancelling {
+            assert!(run.cancelled && run.results.is_empty());
+            assert_eq!(lab.status, "Behavior cancelled");
+        } else {
+            assert_eq!(run.results.len(), 1);
+            assert_eq!(
+                run.results[0].error.as_deref(),
+                Some("fixture failure before cleanup")
+            );
+        }
+    }
+}
+
+#[cfg_attr(test, test)]
 fn stress_stops_at_a_slow_baseline_and_aborts_severe_slowdowns_during_warmup() {
     for emergency in [false, true] {
         let (mut app, root) = super::headless::stress_app();
@@ -468,6 +548,7 @@ crate::native::laboratory_cases! {
     laboratory_uses_a_temporary_output_workspace_without_suspending_other_views,
     laboratory_stress_is_temporary_bounded_and_never_saved_as_a_user_workspace,
     stop_restores_idle_updates_and_exit_saves_only_the_original_scene,
+    cancelled_and_failed_interface_checks_close_the_temporary_workspace,
     stress_stops_at_a_slow_baseline_and_aborts_severe_slowdowns_during_warmup,
     resource_snapshot_preserves_physics_counts_and_exports_without_draft_contents,
 }

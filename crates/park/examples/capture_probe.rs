@@ -54,8 +54,11 @@ mod client {
             until(&connection, &mut queue, &mut state, |state| state.windows.iter().filter(|(_, app_id, _)| !app_id.is_empty())
                 .map(|(_, app_id, _)| app_id).collect::<std::collections::BTreeSet<_>>().len() >= minimum_applications)?;
         }
-        let source = state.factory.as_ref().unwrap().create_source(state.output.as_ref().unwrap(), &qh, ());
-        let session = state.manager.as_ref().unwrap().create_session(&source, manager::Options::empty(), &qh, ());
+        let factory = state.factory.as_ref().ok_or_else(|| io::Error::other("Capture source factory is unavailable"))?;
+        let output = state.output.as_ref().ok_or_else(|| io::Error::other("Capture output is unavailable"))?;
+        let manager = state.manager.as_ref().ok_or_else(|| io::Error::other("Capture session manager is unavailable"))?;
+        let source = factory.create_source(output, &qh, ());
+        let session = manager.create_session(&source, manager::Options::empty(), &qh, ());
         until(&connection, &mut queue, &mut state, |state| state.constraints)?;
         let size = state.size.filter(|size| size.iter().all(|size| *size > 0)).ok_or_else(|| io::Error::other("Capture size is unavailable"))?;
         if !state.argb { return Err(io::Error::other("The capture provider did not advertise ARGB8888 SHM")); }
@@ -63,7 +66,8 @@ mod client {
             .filter(|bytes| *bytes <= 64 * 1024 * 1024).ok_or_else(|| io::Error::other("Capture exceeds the probe memory budget"))?;
         let mut file = tempfile::tempfile()?;
         file.set_len(length)?;
-        let pool = state.shm.as_ref().unwrap().create_pool(file.as_fd(), length as i32, &qh, ());
+        let shm = state.shm.as_ref().ok_or_else(|| io::Error::other("Capture shared memory is unavailable"))?;
+        let pool = shm.create_pool(file.as_fd(), length as i32, &qh, ());
         let buffer = pool.create_buffer(0, size[0] as i32, size[1] as i32, size[0] as i32 * 4, wl_shm::Format::Argb8888, &qh, ());
         pool.destroy();
         let deadline = Instant::now() + Duration::from_secs(10);

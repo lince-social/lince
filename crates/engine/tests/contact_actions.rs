@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 #[path = "contact_actions/claims.rs"]
 mod claims;
 #[path = "contact_actions/privacy.rs"]

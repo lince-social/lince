@@ -2,6 +2,7 @@ use super::{Document, write_atomic};
 use crate::native::wake::WakeSignal;
 use cell::InterfaceStorage;
 use std::{
+    ffi::OsStr,
     io,
     path::{Path, PathBuf},
     sync::{
@@ -189,12 +190,17 @@ impl Writer {
                             }
                             let saved = timestamp().and_then(|now| storage.save(&document, now));
                             if saved.is_ok() {
-                                *revision.lock().unwrap() = document
+                                *revision
+                                    .lock()
+                                    .expect("the saved revision lock was poisoned") = document
                                     .canvas_id
                                     .take()
                                     .map(|id| (id, saved_canvas_revision));
                             }
-                            *result.lock().unwrap() = Some(saved.clone());
+                            *result
+                                .lock()
+                                .expect("the workspace save result lock was poisoned") =
+                                Some(saved.clone());
                             if let Some(finished) = finished {
                                 let _ = finished.send(saved);
                             }
@@ -229,7 +235,7 @@ impl Writer {
     pub(super) fn saved_revision(&self, canvas: &str) -> u64 {
         self.saved_revision
             .lock()
-            .unwrap()
+            .expect("the saved revision lock was poisoned")
             .as_ref()
             .filter(|(id, _)| id == canvas)
             .map_or(0, |(_, revision)| *revision)
@@ -240,7 +246,10 @@ impl Writer {
     }
 
     pub(super) fn result(&self) -> Option<SaveResult> {
-        self.status.lock().unwrap().take()
+        self.status
+            .lock()
+            .expect("the workspace save result lock was poisoned")
+            .take()
     }
 
     pub(super) fn prepare(&self, flush: bool) -> Result<Option<Capture>, String> {
@@ -341,7 +350,10 @@ impl Storage {
             Err(error) => return Err(error),
         }
         let files = snapshots(&directory)?;
-        let newest = files.last().map(|path| sequence(path)).unwrap_or(0);
+        let newest = files
+            .last()
+            .and_then(|path| sequence(path.file_name()?))
+            .unwrap_or(0);
         let name = now.max(
             newest
                 .checked_add(1)
@@ -358,7 +370,10 @@ impl Storage {
             let mut retained = std::collections::HashSet::new();
             let mut retained_bucket = None;
             for path in files.iter().rev() {
-                let bucket = sequence(path) / (self.settings.history_seconds * 1_000_000);
+                let Some(sequence) = path.file_name().and_then(sequence) else {
+                    continue;
+                };
+                let bucket = sequence / (self.settings.history_seconds * 1_000_000);
                 if retained_bucket == Some(bucket) {
                     continue;
                 }
@@ -398,8 +413,12 @@ fn timestamp() -> Result<u64, String> {
         .map_err(|error| format!("Could not date workspace snapshot: {error}"))
 }
 
-fn sequence(path: &Path) -> u64 {
-    path.file_stem().unwrap().to_str().unwrap().parse().unwrap()
+fn sequence(name: &OsStr) -> Option<u64> {
+    let digits = name.to_str()?.strip_suffix(".json")?;
+    if digits.len() != 20 || !digits.bytes().all(|byte| byte.is_ascii_digit()) {
+        return None;
+    }
+    digits.parse().ok()
 }
 
 pub(super) fn load(path: &Path) -> io::Result<Option<Document>> {
@@ -434,14 +453,7 @@ pub(super) fn snapshots(directory: &Path) -> io::Result<Vec<PathBuf>> {
     let mut files = Vec::new();
     for entry in std::fs::read_dir(directory)? {
         let entry = entry?;
-        let name = entry.file_name();
-        let name = name.to_string_lossy();
-        if name.len() == 25
-            && name.ends_with(".json")
-            && name.as_bytes()[..20].iter().all(u8::is_ascii_digit)
-            && name[..20].parse::<u64>().is_ok()
-            && entry.file_type()?.is_file()
-        {
+        if sequence(&entry.file_name()).is_some() && entry.file_type()?.is_file() {
             files.push(entry.path());
         }
     }
@@ -449,6 +461,10 @@ pub(super) fn snapshots(directory: &Path) -> io::Result<Vec<PathBuf>> {
     Ok(files)
 }
 
+#[allow(
+    clippy::unwrap_used,
+    reason = "Runnable Laboratory fixtures must fail if their temporary snapshots cannot be written or read"
+)]
 pub(crate) mod tests {
     use super::*;
 

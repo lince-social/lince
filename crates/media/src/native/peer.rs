@@ -488,11 +488,11 @@ impl Peer {
                         }
                         self.received[index].push_back(frame);
                     } else if data.data.len() <= MAX_PACKET {
-                        if self.video.is_none() {
-                            self.video = Some(VideoReceiver::new()?);
-                        }
-                        self.video.as_ref().unwrap().input.lock().map_err(error)?[index - 2] =
-                            Some(data.data.to_vec());
+                        let receiver = match &mut self.video {
+                            Some(receiver) => receiver,
+                            slot @ None => slot.insert(VideoReceiver::new()?),
+                        };
+                        receiver.input.lock().map_err(error)?[index - 2] = Some(data.data.to_vec());
                     }
                 }
                 Output::Event(_) => {}

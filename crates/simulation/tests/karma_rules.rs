@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use engine::actions::Action;
 use nucleus::karma::rule_field::RuleFieldInput;
 use nucleus::simulation::{

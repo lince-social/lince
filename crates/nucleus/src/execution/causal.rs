@@ -233,10 +233,11 @@ impl Trace {
         });
         let depth = parent.map_or(0, |index| self.links[index].depth + 1);
         let mut jumps = Vec::new();
-        if let Some(parent) = parent {
-            jumps.push(parent);
+        if let Some(mut ancestor) = parent {
+            jumps.push(ancestor);
             let mut bit = 0;
-            while let Some(ancestor) = self.links[*jumps.last().unwrap()].jumps.get(bit).copied() {
+            while let Some(next) = self.links[ancestor].jumps.get(bit).copied() {
+                ancestor = next;
                 jumps.push(ancestor);
                 bit += 1;
             }

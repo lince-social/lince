@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use engine::sync::Delivery;
 use std::collections::{BTreeMap, BTreeSet};
 use std::num::NonZeroU32;

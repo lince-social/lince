@@ -4,6 +4,7 @@ fn run() -> anyhow::Result<()> {
     use std::time::Duration;
     esp_idf_svc::sys::link_patches();
     esp_idf_svc::log::EspLogger::initialize_default();
+    // SAFETY: The log tag is NUL-terminated and the priority is a valid SDK level.
     unsafe {
         esp_idf_svc::sys::esp_log_level_set(
             c"*".as_ptr(),
@@ -18,7 +19,9 @@ fn run() -> anyhow::Result<()> {
         max_fds: 5,
         ..Default::default()
     };
-    esp_idf_svc::sys::esp!(unsafe { esp_idf_svc::sys::esp_vfs_eventfd_register(&events) })?;
+    // SAFETY: Startup registers eventfd once with a live, initialized config.
+    let registered = unsafe { esp_idf_svc::sys::esp_vfs_eventfd_register(&events) };
+    esp_idf_svc::sys::esp!(registered)?;
     tokio::runtime::Builder::new_current_thread().enable_all().max_blocking_threads(1)
         .event_interval(1).global_queue_interval(1)
         .thread_stack_size(8192).build()?.block_on(async {
@@ -48,6 +51,7 @@ fn run() -> anyhow::Result<()> {
                 device::report(serde_json::json!({"type":"ailuros-camera-disconnected","error":result.err().map(|error|error.to_string())}));
                 device::resources("reconnect");
                 if started.elapsed() >= Duration::from_secs(30) { backoff = 1; }
+                // SAFETY: This SDK call takes no arguments and Wi-Fi is initialized.
                 let jitter = u64::from(unsafe { esp_idf_svc::sys::esp_random() }) % 1000;
                 tokio::time::sleep(Duration::from_millis(backoff * 1000 + jitter)).await;
                 backoff = (backoff * 2).min(30);

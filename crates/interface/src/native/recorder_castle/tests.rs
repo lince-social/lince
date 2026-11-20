@@ -31,7 +31,9 @@ fn recorder_selection_effects_and_placement_restore() {
         settings.distortion,
         crate::native::sound::dsp::Distortion::Fuzz
     );
-    let saved = snapshot(&mut world, root).remove(0);
+    let saved = snapshot(&mut world, root)
+        .expect("capture the fixture snapshots")
+        .remove(0);
     assert!(saved.valid());
     let encoded = serde_json::to_vec(&saved).unwrap();
     world.despawn(owner);

@@ -296,9 +296,11 @@ fn authored_parts_links_behaviors_export_reload_and_guarded_removal() {
     )
     .unwrap();
     assert!(
-        api::authoring::edits(&capture_content(app.world(), host))
-            .links
-            .is_empty()
+        api::authoring::edits(
+            &capture_content(app.world(), host).expect("capture fixture canvas content")
+        )
+        .links
+        .is_empty()
     );
     let revision = capture(app.world_mut(), root).unwrap().revision;
     crate::native::canvas_host::handle(
@@ -314,9 +316,11 @@ fn authored_parts_links_behaviors_export_reload_and_guarded_removal() {
     )
     .unwrap();
     assert!(
-        api::authoring::edits(&capture_content(app.world(), host))
-            .added
-            .contains_key("user/actions")
+        api::authoring::edits(
+            &capture_content(app.world(), host).expect("capture fixture canvas content")
+        )
+        .added
+        .contains_key("user/actions")
     );
 }
 
@@ -707,7 +711,8 @@ fn workspace_reload_restores_reset_baselines_and_token_inheritance() {
         }],
     )
     .unwrap();
-    let saved = crate::native::sand_placement::Placement::capture(app.world(), host);
+    let saved = crate::native::sand_placement::Placement::capture(app.world(), host)
+        .expect("capture the fixture placement");
     let saved: crate::native::sand_placement::Placement =
         serde_json::from_value(serde_json::to_value(saved).unwrap()).unwrap();
     let texts =
@@ -959,7 +964,9 @@ fn native_layout_factory_keeps_its_rules_in_the_export() {
         },
     )
     .unwrap();
-    let ContentKind::Native { kind, settings, .. } = capture_content(app.world(), host) else {
+    let ContentKind::Native { kind, settings, .. } =
+        capture_content(app.world(), host).expect("capture fixture canvas content")
+    else {
         panic!("layout factory");
     };
     assert_eq!(kind, "layout");

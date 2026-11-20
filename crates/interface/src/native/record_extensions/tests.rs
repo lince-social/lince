@@ -344,7 +344,7 @@ async fn forms_create_a_schema_and_dropdown_apply_cancel_undo_and_restore_work()
             .unwrap()
             .is_empty()
     );
-    let saved = snapshot(app.world_mut(), root);
+    let saved = snapshot(app.world_mut(), root).expect("capture the fixture snapshots");
     assert_eq!(saved.len(), 2);
     assert!(saved.iter().all(SavedExtensions::valid));
     let saved: Vec<SavedExtensions> =

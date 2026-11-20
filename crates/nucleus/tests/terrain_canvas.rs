@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use nucleus::{
     canvas::{
         Component, Geometry, Metadata, Mutation, Request, Response, Snapshot, State, Workspace,

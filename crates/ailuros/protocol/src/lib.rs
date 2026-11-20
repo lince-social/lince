@@ -93,11 +93,10 @@ impl Decoder for Codec {
         if source.len() < HEADER_BYTES {
             return Ok(None);
         }
-        let kind = Kind::try_from(source[0])?;
-        let length = usize::try_from(u32::from_be_bytes(
-            source[1..HEADER_BYTES].try_into().unwrap(),
-        ))
-        .map_err(|_| invalid("Ailuros frame length cannot be represented"))?;
+        let mut header = &source[..HEADER_BYTES];
+        let kind = Kind::try_from(header.get_u8())?;
+        let length = usize::try_from(header.get_u32())
+            .map_err(|_| invalid("Ailuros frame length cannot be represented"))?;
         self.validate(kind, length)?;
         let total = HEADER_BYTES
             .checked_add(length)

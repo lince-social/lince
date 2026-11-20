@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use store::Store;
 
 async fn record(store: &Store, kind: nucleus::RecordKind, head: &str) -> String {

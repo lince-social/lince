@@ -181,7 +181,7 @@ impl RuleConsequence {
             [Consequence::ShowComponent { component }] => format!(
                 "@{}: show({})",
                 self.target,
-                serde_json::to_string(component).unwrap()
+                serde_json::to_string(component).expect("the component name is a string")
             ),
             [Consequence::SetQuantity { value: None }] => format!("@{}", self.target),
             [Consequence::SetQuantity { value }] => {
@@ -193,9 +193,9 @@ impl RuleConsequence {
             [Consequence::RunCommand { command }] => format!(
                 "@{}: command({})",
                 self.target,
-                serde_json::to_string(command).unwrap()
+                serde_json::to_string(command).expect("the command text is a string")
             ),
-            _ => serde_json::to_string(self).unwrap(),
+            _ => serde_json::to_string(self).expect("rule fields contain serializable tagged values"),
         }
     }
 }

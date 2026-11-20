@@ -2,7 +2,7 @@ use super::*;
 use axum::{
     Router,
     extract::{Query, State},
-    http::{HeaderMap, StatusCode, Uri, header},
+    http::{HeaderMap, HeaderValue, StatusCode, Uri, header},
     response::{IntoResponse, Response},
     routing::get,
 };
@@ -78,10 +78,10 @@ fn response(content_type: &'static str, result: Result<Vec<u8>>) -> Response {
         Err(error) => (StatusCode::BAD_REQUEST, error).into_response(),
     };
     let headers = response.headers_mut();
-    headers.insert(header::CONTENT_TYPE, content_type.parse().unwrap());
-    headers.insert(header::CACHE_CONTROL, "no-store".parse().unwrap());
-    headers.insert("x-content-type-options", "nosniff".parse().unwrap());
-    headers.insert("content-security-policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'self'".parse().unwrap());
+    headers.insert(header::CONTENT_TYPE, HeaderValue::from_static(content_type));
+    headers.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+    headers.insert("x-content-type-options", HeaderValue::from_static("nosniff"));
+    headers.insert("content-security-policy", HeaderValue::from_static("default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'self'"));
     response
 }
 

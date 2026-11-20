@@ -1840,7 +1840,7 @@ async fn execute_records(
             row["threads"] = Value::Array(threads.for_record(store, &r.uid, settings).await?);
         }
         if let Some(Value::Object(fields)) = availability.remove(&r.uid) {
-            row.as_object_mut().unwrap().extend(fields);
+            row.as_object_mut().expect("record rows are JSON objects").extend(fields);
         }
         record_includes::attach(
             &mut row,
@@ -1850,7 +1850,7 @@ async fn execute_records(
             &mut prepared_includes,
         );
         if let Some(Value::Object(fields)) = projected.remove(&r.uid) {
-            row.as_object_mut().unwrap().extend(fields);
+            row.as_object_mut().expect("record rows are JSON objects").extend(fields);
         }
         if let Some(context) = relation_context.remove(&r.uid) {
             row["relation_context"] = context;
@@ -5623,7 +5623,7 @@ async fn execute_transfers(
                 }
             }
             for dependency in &mut dependency_status {
-                dependency.as_object_mut().unwrap().remove("evidence");
+                dependency.as_object_mut().expect("dependency status entries are JSON objects").remove("evidence");
                 if dependency["upstream"]
                     .as_str()
                     .is_some_and(|uid| hidden_upstreams.contains(uid))
@@ -7862,11 +7862,13 @@ async fn execute_transfers(
             }
         }
         if hidden_parent {
+            let fields = value.as_object_mut().expect("transfer details are a JSON object");
             for key in ["parent", "parent_head", "parent_slug"] {
-                value.as_object_mut().unwrap().remove(key);
+                fields.remove(key);
             }
         }
         if hierarchy_details_hidden {
+            let fields = value.as_object_mut().expect("transfer details are a JSON object");
             for key in [
                 "revision_evidence",
                 "proof",
@@ -7876,7 +7878,7 @@ async fn execute_transfers(
                 "proposal",
                 "counteroffer",
             ] {
-                value.as_object_mut().unwrap().remove(key);
+                fields.remove(key);
             }
             value["children_details_hidden"] = json!(children_details_hidden);
             value["hierarchy_details_hidden"] = json!(true);

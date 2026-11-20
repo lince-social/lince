@@ -225,9 +225,10 @@ pub(super) fn render(
             .zip(summary_counts)
         {
             let card = stack(world, summary);
-            let mut node = world.get_mut::<Node>(card).unwrap();
-            node.width = percent(23);
-            node.padding = UiRect::all(px(10));
+            if let Some(mut node) = world.get_mut::<Node>(card) {
+                node.width = percent(23);
+                node.padding = UiRect::all(px(10));
+            }
             world
                 .entity_mut(card)
                 .insert(crate::native::token_style::background(

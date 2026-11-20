@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use engine::actions::Action;
 use nucleus::karma::{Cadence, Consequence};
 use nucleus::simulation::{Predicate, ReplayStatus, Verdict};

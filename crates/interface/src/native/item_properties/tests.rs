@@ -179,7 +179,8 @@ fn attachment_persistence_is_metadata_and_rejects_invalid_and_foreign_targets() 
     let uid = nucleus::new_uid("r");
     assert!(attach(app.world_mut(), root, item, "not-a-record").is_err());
     attach(app.world_mut(), root, item, &uid).unwrap();
-    let saved = crate::native::sand_placement::Placement::capture(app.world(), item);
+    let saved = crate::native::sand_placement::Placement::capture(app.world(), item)
+        .expect("capture the fixture placement");
     let document = serde_json::to_value(&saved).unwrap();
     let restored: crate::native::sand_placement::Placement =
         serde_json::from_value(document).unwrap();

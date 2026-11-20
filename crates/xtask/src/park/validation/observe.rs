@@ -151,23 +151,32 @@ fn process_environment(process: &Path) -> Result<(BTreeMap<String, String>, Opti
     Ok((environment, directory))
 }
 
-fn configuration(
-    arguments: &[OsString],
-) -> Result<(PathBuf, rustix::process::Pid, u64, Option<OsString>)> {
+struct Configuration {
+    executable: PathBuf,
+    pid: rustix::process::Pid,
+    seconds: u64,
+    unit: Option<OsString>,
+    peers: Vec<rustix::process::Pid>,
+}
+
+fn observed_pid(value: &OsString) -> Result<rustix::process::Pid> {
+    value.to_str().and_then(|value| value.parse().ok())
+        .filter(|value| *value > 0)
+        .and_then(rustix::process::Pid::from_raw)
+        .ok_or_else(|| "Invalid observed PID".into())
+}
+
+fn configuration(arguments: &[OsString]) -> Result<Configuration> {
     if arguments.len() < 2 || !arguments.len().is_multiple_of(2) {
         return Err(
             "observe needs an absolute executable, PID and optional flag/value pairs".into(),
         );
     }
     let executable = PathBuf::from(&arguments[0]);
-    let pid = arguments[1]
-        .to_str()
-        .and_then(|value| value.parse().ok())
-        .filter(|value| *value > 0)
-        .and_then(rustix::process::Pid::from_raw)
-        .ok_or("Invalid observed PID")?;
+    let pid = observed_pid(&arguments[1])?;
     let mut seconds = 5400;
     let mut unit = None;
+    let mut peers = Vec::new();
     for pair in arguments[2..].chunks_exact(2) {
         if pair[0] == "--seconds" {
             seconds = pair[1]
@@ -183,6 +192,12 @@ fn configuration(
                 return Err("Choose a user service or scope name".into());
             }
             unit = Some(pair[1].clone());
+        } else if pair[0] == "--peer-pid" {
+            let peer = observed_pid(&pair[1])?;
+            if peer == pid || peers.contains(&peer) || peers.len() >= 16 {
+                return Err("Select at most 16 distinct PIDs other than the main process".into());
+            }
+            peers.push(peer);
         } else {
             return Err("Unknown observation option".into());
         }
@@ -190,13 +205,13 @@ fn configuration(
     if !executable.is_absolute() || !(5..=21600).contains(&seconds) {
         return Err("Use an absolute executable and 5–21600 observation seconds".into());
     }
-    Ok((executable, pid, seconds, unit))
+    Ok(Configuration { executable, pid, seconds, unit, peers })
 }
 
 pub(super) fn run(arguments: &[OsString]) -> Result<()> {
     if arguments.is_empty() || arguments[0] == "--help" {
         println!(
-            "cargo xtask park validate observe /installed/bin/lince PID [--seconds 5400] [--unit USER_UNIT]"
+            "cargo xtask park validate observe /installed/bin/lince PID [--seconds 5400] [--unit USER_UNIT] [--peer-pid PID ...]"
         );
         println!(
             "Read-only process/resource observation; login, physical behavior and saved logout still require acceptance evidence."
@@ -207,9 +222,14 @@ pub(super) fn run(arguments: &[OsString]) -> Result<()> {
 }
 
 pub(super) fn run_into(arguments: &[OsString], destination: Option<&Path>) -> Result<PathBuf> {
-    let (executable, pid, seconds, unit) = configuration(arguments)?;
+    let Configuration { executable, pid, seconds, unit, peers } = configuration(arguments)?;
     let process = PathBuf::from(format!("/proc/{}", pid.as_raw_nonzero()));
     let expected = identity(&process)?;
+    let mut peers = peers.into_iter().map(|pid| {
+        let path = PathBuf::from(format!("/proc/{}", pid.as_raw_nonzero()));
+        let expected = identity(&path)?;
+        Ok((pid, path, expected, None::<ResourceSample>))
+    }).collect::<Result<Vec<_>>>()?;
     let payload = process_executable(&executable)?;
     let metadata = fs::metadata(&payload).map_err(error)?;
     if (metadata.dev(), metadata.ino()) != (expected.device, expected.inode) {
@@ -289,10 +309,30 @@ pub(super) fn run_into(arguments: &[OsString], destination: Option<&Path>) -> Re
             report["status"] = "target changed during sampling; incomplete sample discarded".into();
             break;
         }
-        serde_json::to_writer(&mut log, &sample).map_err(error)?;
+        let mut row = serde_json::to_value(&sample).map_err(error)?;
+        row["engine_window"] = samples.last().map(|previous| drm_engine_window(previous, &sample))
+            .unwrap_or(serde_json::Value::Null);
+        if !peers.is_empty() {
+            let mut observed = Vec::with_capacity(peers.len());
+            for (pid, path, expected, previous) in &mut peers {
+                let same_process = |path: &Path, expected: &Identity|
+                    identity(path).ok().as_ref() == Some(expected);
+                let resource = same_process(path, expected)
+                    .then(|| resource_sample(*pid, started.elapsed().as_millis()))
+                    .filter(|_| same_process(path, expected));
+                let engine_window = previous.as_ref().zip(resource.as_ref())
+                    .map(|(previous, current)| drm_engine_window(previous, current));
+                observed.push(serde_json::json!({"pid":pid.as_raw_nonzero().get(),
+                    "process_start":expected.start, "resource":resource, "engine_window":engine_window,
+                    "status":if resource.is_some() { "sampled" } else { "identity lost or inaccessible" }}));
+                *previous = resource;
+            }
+            row["peer_resources"] = observed.into();
+        }
+        serde_json::to_writer(&mut log, &row).map_err(error)?;
         log.write_all(b"\n").map_err(error)?;
         log.flush().map_err(error)?;
-        report["latest_resource"] = serde_json::to_value(&sample).map_err(error)?;
+        report["latest_resource"] = row;
         samples.push(sample);
         report["samples"] = samples.len().into();
         report["elapsed_ms"] =

@@ -160,12 +160,11 @@ pub fn mailbox_id(route: &ReplyRoute) -> Result<String, EngineError> {
     let digest = Sha256::digest(bytes);
     let mut time = [0u8; 8];
     time[2..].copy_from_slice(&digest[..6]);
+    let mut entropy = [0; 16];
+    entropy.copy_from_slice(&digest[..16]);
     Ok(format!(
         "mail_{}",
-        nucleus::id::ulid_from(
-            u64::from_be_bytes(time),
-            u128::from_be_bytes(digest[..16].try_into().unwrap())
-        )
+        nucleus::id::ulid_from(u64::from_be_bytes(time), u128::from_be_bytes(entropy))
     ))
 }
 
@@ -265,10 +264,11 @@ pub fn envelope_id(envelope: &PrivateEnvelope) -> Result<String, EngineError> {
     let digest = Sha256::digest(signing_bytes("private-envelope-id", &value)?);
     let mut time = [0u8; 8];
     time[2..].copy_from_slice(&digest[..6]);
-    let entropy = u128::from_be_bytes(digest[..16].try_into().unwrap());
+    let mut entropy = [0; 16];
+    entropy.copy_from_slice(&digest[..16]);
     Ok(format!(
         "env_{}",
-        nucleus::id::ulid_from(u64::from_be_bytes(time), entropy)
+        nucleus::id::ulid_from(u64::from_be_bytes(time), u128::from_be_bytes(entropy))
     ))
 }
 

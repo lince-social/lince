@@ -93,13 +93,17 @@ async fn display_terms(
         if groups.last().is_none_or(|(uid, _)| uid != concept) {
             groups.push((concept.to_owned(), Vec::new()));
         }
-        groups.last_mut().unwrap().1.push(DisplayTerm {
-            uid: row.get("uid"),
-            language: row.get("language"),
-            name: row.get("name"),
-            personal: row.get("personal"),
-            preferred: row.get("preferred"),
-        });
+        groups
+            .last_mut()
+            .expect("the current concept group has been created")
+            .1
+            .push(DisplayTerm {
+                uid: row.get("uid"),
+                language: row.get("language"),
+                name: row.get("name"),
+                personal: row.get("personal"),
+                preferred: row.get("preferred"),
+            });
     }
     Ok(groups.into_iter().collect())
 }

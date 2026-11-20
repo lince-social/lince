@@ -451,6 +451,7 @@ fn stop(handle: &TerminalHandle, pid: Option<u32>) {
     }
     #[cfg(unix)]
     if let Some(pid) = pid.filter(|pid| *pid > 1) {
+        // SAFETY: kill accepts scalar arguments and does not access caller memory.
         unsafe {
             libc::kill(-(pid as i32), libc::SIGKILL);
         }

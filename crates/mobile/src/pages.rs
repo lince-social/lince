@@ -295,15 +295,12 @@ fn record(world: &mut World, parent: Entity, uid: &str) {
         button(world, parent, "Refresh", Intent::Refresh);
         return;
     };
-    if matches!(record["kind"].as_str(), Some("person" | "organ")) {
+    if let Some(kind @ ("person" | "organ")) = record["kind"].as_str() {
         button(
             world,
             parent,
             "Visible transfer experience",
-            Intent::Open(Page::Trust(
-                record["kind"].as_str().unwrap().into(),
-                uid.into(),
-            )),
+            Intent::Open(Page::Trust(kind.into(), uid.into())),
         );
     }
     if record["kind"] == "transfer" {

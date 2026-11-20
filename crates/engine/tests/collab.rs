@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use engine::Engine;
 use engine::actions::Action;
 use engine::sync::Delivery;

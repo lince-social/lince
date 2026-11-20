@@ -241,14 +241,13 @@ fn render_inner(world: &mut World, owner: Entity) {
         };
         let writable = editable && data.writable.contains(&definition.uid);
         draft_values(world, owner, schema);
-        let values = world
+        let Some(draft) = world
             .get::<View>(owner)
-            .unwrap()
-            .values
-            .as_ref()
-            .unwrap()
-            .fields
-            .snapshot();
+            .and_then(|view| view.values.as_ref())
+        else {
+            return;
+        };
+        let values = draft.fields.snapshot();
         value_field(
             world,
             owner,
@@ -341,7 +340,9 @@ fn render_inner(world: &mut World, owner: Entity) {
         }
         return;
     }
-    let schema = settings.schema.as_deref().unwrap();
+    let Some(schema) = settings.schema.as_deref() else {
+        return;
+    };
     let Some(definition) = data.schemas.iter().find(|entry| entry.uid == schema) else {
         label(
             world,
@@ -366,10 +367,13 @@ fn render_inner(world: &mut World, owner: Entity) {
     }
     let writable = settings.record.is_some() && editable && data.writable.contains(&definition.uid);
     draft_values(world, owner, schema);
-    let (fields, attached) = {
-        let draft = world.get::<View>(owner).unwrap().values.as_ref().unwrap();
-        (draft.fields.snapshot(), draft.attached)
+    let Some(draft) = world
+        .get::<View>(owner)
+        .and_then(|view| view.values.as_ref())
+    else {
+        return;
     };
+    let (fields, attached) = (draft.fields.snapshot(), draft.attached);
     if !attached {
         label(
             world,
@@ -435,10 +439,14 @@ impl Action for ChooseSchema {
         {
             return;
         }
-        let mut settings = world.get_mut::<Settings>(owner).unwrap();
+        let Some(mut settings) = world.get_mut::<Settings>(owner) else {
+            return;
+        };
         settings.schema = None;
         settings.field = None;
-        let mut view = world.get_mut::<View>(owner).unwrap();
+        let Ok(mut view) = editor_mut(world, owner) else {
+            return;
+        };
         view.values = None;
         view.render = true;
         view.search.clear();
@@ -471,7 +479,10 @@ fn schema_form(world: &mut World, owner: Entity, draft: &SchemaDraft, search: &s
         ],
     );
     let fields = row(world, owner);
-    world.get_mut::<Node>(fields).unwrap().flex_wrap = FlexWrap::Wrap;
+    world
+        .get_mut::<Node>(fields)
+        .expect("the form row has a layout node")
+        .flex_wrap = FlexWrap::Wrap;
     for (index, field) in draft.schema.fields.iter().enumerate() {
         button(
             world,
@@ -1034,7 +1045,9 @@ pub(super) fn keyboard(world: &mut World) {
                 if let Some(mut view) = world.get_mut::<View>(owner) {
                     view.open = None;
                 }
-                world.get_mut::<Node>(menu).unwrap().display = Display::None;
+                if let Some(mut node) = world.get_mut::<Node>(menu) {
+                    node.display = Display::None;
+                }
                 if let Some(mut node) = world.get_mut::<bevy::a11y::AccessibilityNode>(toggle) {
                     node.set_expanded(false);
                 }

@@ -1050,7 +1050,7 @@ impl SavedSimulation {
     }
 }
 
-pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedSimulation> {
+pub(crate) fn snapshot(world: &mut World, root: Entity) -> Result<Vec<SavedSimulation>, String> {
     world
         .query::<(
             Entity,
@@ -1061,13 +1061,15 @@ pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedSimulation> 
         )>()
         .iter(world)
         .filter(|(_, parent, _, _, _)| parent.parent() == root)
-        .map(|(entity, _, member, item, castle)| SavedSimulation {
-            workspace: member.0,
-            castle: castle.clone(),
-            position: item.position.to_array(),
-            size: item.size.to_array(),
-            placement: crate::native::sand_placement::Placement::capture(world, entity),
-            tokens: crate::native::token_style::overrides(world, entity),
+        .map(|(entity, _, member, item, castle)| {
+            Ok(SavedSimulation {
+                workspace: member.0,
+                castle: castle.clone(),
+                position: item.position.to_array(),
+                size: item.size.to_array(),
+                placement: crate::native::sand_placement::Placement::capture(world, entity)?,
+                tokens: crate::native::token_style::overrides(world, entity),
+            })
         })
         .collect()
 }
@@ -1275,7 +1277,10 @@ mod tests {
         let owner = spawn(app.world_mut(), root, 1, DVec2::ZERO, model);
         app.update();
         assert!(app.world().get::<View>(owner).unwrap().task.is_none());
-        let saved = snapshot(app.world_mut(), root).pop().unwrap();
+        let saved = snapshot(app.world_mut(), root)
+            .expect("capture the fixture snapshots")
+            .pop()
+            .unwrap();
         assert_eq!(saved.castle.scenario, expected);
         app.world_mut().despawn(owner);
         saved.restore(app.world_mut(), root);

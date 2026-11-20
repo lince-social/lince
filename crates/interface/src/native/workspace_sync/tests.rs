@@ -174,19 +174,56 @@ fn acknowledging_a_canvas_change_keeps_the_loaded_drafts_original_host_and_revis
     view.draft_workspace = Some("original".into());
     view.draft_host = Some(Source::Organ("original-host".into()));
     view.pending = Some(("canvas-change".into(), Kind::Change));
-    receive(
-        world,
-        &Source::Local,
-        &ServerMessage::ActionOk {
-            id: "canvas-change".into(),
-            created: None,
-            facts: 0,
-            warnings: vec![],
-            data: Some(json!({"state":"applied","revision":2})),
-        },
+    let reply = |id: &str| ServerMessage::ActionOk {
+        id: id.into(),
+        created: None,
+        facts: 0,
+        warnings: vec![],
+        data: Some(json!({"state":"applied","revision":2})),
+    };
+    receive(world, &Source::Local, &reply("another-request"));
+    assert_eq!(
+        world
+            .get::<WorkspaceSync>(owner)
+            .and_then(|view| view.pending.as_ref())
+            .map(|(id, _)| id.as_str()),
+        Some("canvas-change")
     );
+    receive(world, &Source::Local, &reply("canvas-change"));
     let view = world.get::<WorkspaceSync>(owner).unwrap();
+    assert!(view.pending.is_none());
     assert_eq!(view.draft_base, Some(1));
     assert_eq!(view.draft_workspace.as_deref(), Some("original"));
     assert_eq!(view.draft_host, Some(Source::Organ("original-host".into())));
+}
+
+#[test]
+fn loading_a_draft_with_no_change_editor_keeps_the_current_host_and_draft() {
+    let mut app = crate::native::sand_panel::tests::app();
+    let world = app.world_mut();
+    let (_, owner) = panel_fixture(world, DVec2::ZERO);
+    let mut view = world.get_mut::<WorkspaceSync>(owner).unwrap();
+    view.draft_base = Some(3);
+    view.draft_text = "existing draft".into();
+    let host = view.host;
+    let change = view.change;
+    *world.get_mut::<EditableText>(host).unwrap() = crate::native::sand::editable("old-host");
+    world.entity_mut(change).remove::<EditableText>();
+
+    Control::LoadDraft(json!({
+        "base_revision": 4,
+        "host": "new-host",
+        "workspace": "other",
+        "change": {"operation": "rename", "name": "New name"}
+    }))
+    .apply(world, owner);
+
+    let view = world.get::<WorkspaceSync>(owner).unwrap();
+    assert_eq!(view.draft_base, Some(3));
+    assert_eq!(view.draft_text, "existing draft");
+    assert_eq!(panel::value(world, host).unwrap(), "old-host");
+    assert_eq!(
+        world.get::<Text>(view.status).unwrap().0,
+        "The draft editor is unavailable."
+    );
 }

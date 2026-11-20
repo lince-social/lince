@@ -35,10 +35,12 @@ impl Engine {
                         .await?
                         .into_iter()
                         .collect();
-                        generated = (1..)
+                        generated = (1..=heads.len().saturating_add(1))
                             .map(|number| format!("Thread {number}"))
                             .find(|head| !heads.contains(head))
-                            .unwrap();
+                            .ok_or_else(|| {
+                                EngineError::Consequence("No unused thread title".into())
+                            })?;
                         generated.as_str()
                     } else {
                         head.trim()

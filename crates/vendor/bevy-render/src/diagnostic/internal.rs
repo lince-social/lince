@@ -707,6 +707,12 @@ impl FrameData {
 #[derive(Debug, Default, Clone, Resource)]
 pub struct RenderDiagnostics(Vec<RenderDiagnostic>);
 
+impl RenderDiagnostics {
+    pub(super) fn readings(&self) -> &[RenderDiagnostic] {
+        &self.0
+    }
+}
+
 /// A render diagnostic which has been recorded, but not yet stored in [`DiagnosticsStore`].
 #[derive(Debug, Clone, Resource)]
 pub struct RenderDiagnostic {

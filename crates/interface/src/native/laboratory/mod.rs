@@ -4,6 +4,8 @@ pub mod components;
 pub mod driver;
 mod interface;
 mod isolation;
+mod park_report;
+mod requirements;
 pub mod showoff;
 mod stress;
 mod workspace;
@@ -12,36 +14,46 @@ pub use isolation::{blocked, temporary_owner};
 pub(crate) use isolation::{reserved as reserved_source, source as owner_source};
 
 pub use catalogue::catalogue;
-pub use interface::run_interface_checks;
+pub use interface::{run_interface_checks, run_interface_checks_with_timeout};
+pub use requirements::RuleCoverage;
 pub use stress::{Measurement, StressConfig, StressReport};
 pub use workspace::{
     Laboratory, LaboratoryAction, LaboratoryPlugin, LaboratoryRoot, active, close, normal, scope,
     suspended, temporary,
 };
 
+use crate::testing::{Cancellation, InterfaceSelection};
 use serde::Serialize;
 use std::{
     panic::{AssertUnwindSafe, catch_unwind},
-    sync::{
-        Arc,
-        atomic::{AtomicBool, Ordering},
-        mpsc,
-    },
+    sync::mpsc,
     thread,
     time::Instant,
 };
 pub(crate) use workspace::resources_visible;
 
+#[derive(Clone, Copy)]
 pub struct Case {
     pub name: &'static str,
+    pub source: CaseSource,
     pub run: fn(&tokio::runtime::Runtime),
+}
+
+#[derive(Clone, Copy, Debug, Serialize)]
+pub struct CaseSource {
+    pub path: &'static str,
+    pub registration_line: u32,
 }
 
 #[derive(Clone, Debug, Serialize)]
 pub struct CaseResult {
     pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source: Option<CaseSource>,
     pub milliseconds: f64,
     pub error: Option<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub rules: Vec<RuleCoverage>,
 }
 
 impl Case {
@@ -50,7 +62,9 @@ impl Case {
         let result = catch_unwind(AssertUnwindSafe(|| (self.run)(runtime)));
         CaseResult {
             name: self.name.into(),
+            source: Some(self.source),
             milliseconds: start.elapsed().as_secs_f64() * 1000.0,
+            rules: Vec::new(),
             error: result.err().map(|error| {
                 error
                     .downcast_ref::<String>()
@@ -71,7 +85,8 @@ pub struct BehaviorRun {
     pub results: Vec<CaseResult>,
     pub current: Option<String>,
     pub cancelled: bool,
-    cancel: Arc<AtomicBool>,
+    pub(super) selection: Option<InterfaceSelection>,
+    cancel: Cancellation,
     incoming: std::sync::Mutex<mpsc::Receiver<Progress>>,
     task: Option<thread::JoinHandle<()>>,
 }
@@ -84,59 +99,79 @@ enum Progress {
 
 impl BehaviorRun {
     pub fn start(wake: Option<crate::native::wake::WakeSignal>) -> std::io::Result<Self> {
-        Self::start_cases(catalogue(), wake)
+        Self::start_cases(catalogue(), wake, None)
     }
 
     pub fn start_interface(wake: Option<crate::native::wake::WakeSignal>) -> std::io::Result<Self> {
-        let cases = interface::fast_cases();
-        Self::start_cases(cases, wake)
+        Self::start_interface_selected(wake, InterfaceSelection::All)
+    }
+
+    pub fn start_interface_selected(
+        wake: Option<crate::native::wake::WakeSignal>,
+        selection: InterfaceSelection,
+    ) -> std::io::Result<Self> {
+        Self::start_cases(interface::fast_cases(), wake, Some(selection))
     }
 
     fn start_cases(
         cases: Vec<Case>,
         wake: Option<crate::native::wake::WakeSignal>,
+        selection: Option<InterfaceSelection>,
     ) -> std::io::Result<Self> {
-        let total = cases.len();
-        let cancel = Arc::new(AtomicBool::new(false));
+        let (selected, full_suite) = match selection {
+            Some(selection) => (interface::select_cases(&cases, selection)?, Some(cases)),
+            None => (cases, None),
+        };
+        let total = selected.len();
+        let cancel = Cancellation::default();
         let stopped = cancel.clone();
         let (sender, incoming) = mpsc::channel();
         let task = thread::Builder::new()
             .name("interface-behavior".into())
             .stack_size(32 * 1024 * 1024)
             .spawn(move || {
-                let runtime = tokio::runtime::Builder::new_multi_thread()
-                    .worker_threads(2)
-                    .thread_stack_size(32 * 1024 * 1024)
-                    .enable_all()
-                    .build();
-                match runtime {
-                    Ok(runtime) => {
-                        for case in cases {
-                            if stopped.load(Ordering::Acquire) {
-                                break;
-                            }
-                            if sender.send(Progress::Started(case.name.into())).is_err() {
-                                break;
-                            }
-                            if let Some(wake) = &wake {
-                                wake.ring();
-                            }
-                            let result = case.execute(&runtime);
-                            if sender.send(Progress::Finished(result)).is_err() {
-                                break;
-                            }
-                            if let Some(wake) = &wake {
-                                wake.ring();
-                            }
+                let execution = (|| -> std::io::Result<()> {
+                    let mut rules = if let Some(cases) = full_suite {
+                        requirements::for_cases(&cases)?
+                    } else {
+                        Default::default()
+                    };
+                    let runtime = tokio::runtime::Builder::new_multi_thread()
+                        .worker_threads(2)
+                        .thread_stack_size(32 * 1024 * 1024)
+                        .enable_all()
+                        .build()?;
+                    for case in selected {
+                        if stopped.is_cancelled()
+                            || sender.send(Progress::Started(case.name.into())).is_err()
+                        {
+                            break;
+                        }
+                        if let Some(wake) = &wake {
+                            wake.ring();
+                        }
+                        let mut result = stopped.scope(|| case.execute(&runtime));
+                        if stopped.is_cancelled() {
+                            break;
+                        }
+                        result.rules = rules.remove(case.name).unwrap_or_default();
+                        if sender.send(Progress::Finished(result)).is_err() {
+                            break;
+                        }
+                        if let Some(wake) = &wake {
+                            wake.ring();
                         }
                     }
-                    Err(error) => {
-                        let _ = sender.send(Progress::Finished(CaseResult {
-                            name: "Behavior runner".into(),
-                            milliseconds: 0.0,
-                            error: Some(error.to_string()),
-                        }));
-                    }
+                    Ok(())
+                })();
+                if let Err(error) = execution {
+                    let _ = sender.send(Progress::Finished(CaseResult {
+                        name: "Behavior runner".into(),
+                        source: None,
+                        milliseconds: 0.0,
+                        error: Some(error.to_string()),
+                        rules: Vec::new(),
+                    }));
                 }
                 let _ = sender.send(Progress::Done);
                 if let Some(wake) = &wake {
@@ -148,6 +183,7 @@ impl BehaviorRun {
             results: Vec::new(),
             current: None,
             cancelled: false,
+            selection,
             cancel,
             incoming: std::sync::Mutex::new(incoming),
             task: Some(task),
@@ -179,8 +215,10 @@ impl BehaviorRun {
             if self.task.take().unwrap().join().is_err() {
                 self.results.push(CaseResult {
                     name: "Behavior runner".into(),
+                    source: None,
                     milliseconds: 0.0,
                     error: Some("Runner stopped unexpectedly".into()),
+                    rules: Vec::new(),
                 });
             }
             self.drain();
@@ -194,13 +232,13 @@ impl BehaviorRun {
 
     pub fn cancel(&mut self) {
         self.cancelled = true;
-        self.cancel.store(true, Ordering::Release);
+        self.cancel.cancel();
     }
 }
 
 impl Drop for BehaviorRun {
     fn drop(&mut self) {
-        self.cancel.store(true, Ordering::Release);
+        self.cancel.cancel();
     }
 }
 
@@ -214,13 +252,20 @@ macro_rules! laboratory_cases {
         $(#[$meta])*
         $cases.push($crate::native::laboratory::Case {
             name: concat!(module_path!(), "::", stringify!($name)),
+            source: $crate::native::laboratory::CaseSource { path: file!(), registration_line: line!() },
             run: |_runtime| {
                 #[cfg(test)]
                 $name();
                 #[cfg(not(test))]
                 _runtime.block_on(async {
-                    tokio::time::timeout(std::time::Duration::from_secs($seconds), $name())
-                        .await.expect("behavior check timed out");
+                    let cancellation = $crate::testing::Cancellation::current();
+                    tokio::select! {
+                        biased;
+                        () = cancellation.cancelled() => (),
+                        result = tokio::time::timeout(std::time::Duration::from_secs($seconds), $name()) => {
+                            result.expect("behavior check timed out");
+                        }
+                    }
                 });
             },
         });
@@ -230,6 +275,7 @@ macro_rules! laboratory_cases {
         $(#[$meta])*
         $cases.push($crate::native::laboratory::Case {
             name: concat!(module_path!(), "::", stringify!($name)),
+            source: $crate::native::laboratory::CaseSource { path: file!(), registration_line: line!() },
             run: |_| $name(),
         });
         $crate::native::laboratory_cases!(@add $cases; $($rest)*);

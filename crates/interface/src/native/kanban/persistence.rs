@@ -36,7 +36,10 @@ impl SavedKanban {
             DVec2::from_array(self.position),
             self.board,
         );
-        world.get_mut::<CanvasItem>(entity).unwrap().size = Vec2::from_array(self.size);
+        world
+            .get_mut::<CanvasItem>(entity)
+            .expect("the restored Kanban header has canvas geometry")
+            .size = Vec2::from_array(self.size);
         self.placement.restore(world, entity);
         world.entity_mut(entity).insert((
             self.tokens,
@@ -45,18 +48,20 @@ impl SavedKanban {
     }
 }
 
-pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedKanban> {
+pub(crate) fn snapshot(world: &mut World, root: Entity) -> Result<Vec<SavedKanban>, String> {
     world
         .query::<(Entity, &ChildOf, &WorkspaceMember, &CanvasItem, &Kanban)>()
         .iter(world)
         .filter(|(_, parent, _, _, _)| parent.parent() == root)
-        .map(|(entity, _, member, item, board)| SavedKanban {
-            workspace: member.0,
-            board: board.clone(),
-            position: item.position.to_array(),
-            size: item.size.to_array(),
-            placement: crate::native::sand_placement::Placement::capture(world, entity),
-            tokens: crate::native::token_style::overrides(world, entity),
+        .map(|(entity, _, member, item, board)| {
+            Ok(SavedKanban {
+                workspace: member.0,
+                board: board.clone(),
+                position: item.position.to_array(),
+                size: item.size.to_array(),
+                placement: crate::native::sand_placement::Placement::capture(world, entity)?,
+                tokens: crate::native::token_style::overrides(world, entity),
+            })
         })
         .collect()
 }

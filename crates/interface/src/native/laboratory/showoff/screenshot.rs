@@ -1,25 +1,25 @@
 use crate::native::{self, app::OutputTarget};
 use bevy::{
+    app::PluginGroupBuilder,
     camera::{ImageRenderTarget, RenderTarget},
     prelude::*,
-    render::view::screenshot::{Screenshot, ScreenshotCaptured},
+    render::{
+        render_resource::PollType,
+        renderer::RenderDevice,
+        view::screenshot::{CapturedScreenshots, Screenshot},
+    },
 };
 use std::{
     io,
     path::Path,
+    sync::mpsc::RecvTimeoutError,
     time::{Duration, Instant},
 };
 
 const SIZE: [u32; 2] = [1920, 1080];
 
-#[derive(Resource, Default)]
-struct Captured(Option<Image>);
-
-pub fn capture(output: &Path) -> io::Result<()> {
-    let directory = tempfile::Builder::new()
-        .prefix("lince-showcase-")
-        .tempdir()?;
-    let plugins = DefaultPlugins
+pub(crate) fn offscreen_plugins(size: [u32; 2]) -> PluginGroupBuilder {
+    DefaultPlugins
         .build()
         .disable::<bevy::log::LogPlugin>()
         .disable::<bevy::winit::WinitPlugin>()
@@ -30,14 +30,21 @@ pub fn capture(output: &Path) -> io::Result<()> {
         })
         .set(WindowPlugin {
             primary_window: Some(Window {
-                resolution: SIZE.into(),
+                resolution: size.into(),
                 ..default()
             }),
             close_when_requested: false,
             exit_condition: bevy::window::ExitCondition::DontExit,
             ..default()
-        });
-    let mut app = native::app::presentation_app(directory.path().join("assets"), plugins);
+        })
+}
+
+pub fn capture(output: &Path) -> io::Result<()> {
+    let directory = tempfile::Builder::new()
+        .prefix("lince-showcase-")
+        .tempdir()?;
+    let mut app =
+        native::app::presentation_app(directory.path().join("assets"), offscreen_plugins(SIZE));
     native::laboratory::isolate(app.world_mut());
     let target = app
         .world_mut()
@@ -52,8 +59,7 @@ pub fn capture(output: &Path) -> io::Result<()> {
         handle: target.clone(),
         scale_factor: 1.0,
     })))
-    .insert_resource(crate::host::WakeSignal::new(|| {}))
-    .init_resource::<Captured>();
+    .insert_resource(crate::host::WakeSignal::new(|| {}));
     let root = app.world_mut().spawn(native::container::BoxRoot).id();
     app.finish();
     app.cleanup();
@@ -79,18 +85,77 @@ pub fn capture(output: &Path) -> io::Result<()> {
     for _ in 0..8 {
         advance(&mut app, deadline)?;
     }
-    app.world_mut().spawn(Screenshot::image(target)).observe(
-        |event: On<ScreenshotCaptured>, mut captured: ResMut<Captured>| {
-            captured.0 = Some(event.image.clone());
-        },
-    );
-    let image = loop {
-        advance(&mut app, deadline)?;
-        if let Some(image) = app.world_mut().resource_mut::<Captured>().0.take() {
-            break image;
-        }
-    };
+    let image = capture_target(&mut app, &target, deadline)?;
     write_png(image, output)
+}
+
+pub(crate) fn capture_target(
+    app: &mut App,
+    target: &Handle<Image>,
+    deadline: Instant,
+) -> io::Result<Image> {
+    if crate::testing::Cancellation::current().is_cancelled() {
+        return Err(io::Error::new(
+            io::ErrorKind::Interrupted,
+            "Offscreen capture cancelled",
+        ));
+    }
+    if Instant::now() >= deadline {
+        return Err(io::Error::new(
+            io::ErrorKind::TimedOut,
+            "Offscreen capture timed out",
+        ));
+    }
+    let request = app
+        .world_mut()
+        .spawn(Screenshot::image(target.clone()))
+        .id();
+    app.update();
+    read_capture(app, request, deadline)
+}
+
+pub(crate) fn read_capture(app: &mut App, request: Entity, deadline: Instant) -> io::Result<Image> {
+    let result = readback(app.world(), request, deadline);
+    app.world_mut().despawn(request);
+    result
+}
+
+fn readback(world: &World, request: Entity, deadline: Instant) -> io::Result<Image> {
+    let device = world
+        .get_resource::<RenderDevice>()
+        .ok_or_else(|| io::Error::other("Offscreen capture requires a supported render adapter"))?;
+    let screenshots = world
+        .get_resource::<CapturedScreenshots>()
+        .ok_or_else(|| io::Error::other("Offscreen capture has no screenshot receiver"))?;
+    let cancellation = crate::testing::Cancellation::current();
+    let screenshots = screenshots
+        .lock()
+        .map_err(|_| io::Error::other("Offscreen screenshot receiver was poisoned"))?;
+    loop {
+        if cancellation.is_cancelled() {
+            return Err(io::Error::new(
+                io::ErrorKind::Interrupted,
+                "Offscreen capture cancelled",
+            ));
+        }
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            return Err(io::Error::new(
+                io::ErrorKind::TimedOut,
+                "Offscreen capture timed out",
+            ));
+        }
+        device.poll(PollType::Poll).map_err(io::Error::other)?;
+        match screenshots.recv_timeout(remaining.min(Duration::from_millis(5))) {
+            Ok((entity, image)) if entity == request => return Ok(image),
+            Ok(_) | Err(RecvTimeoutError::Timeout) => {}
+            Err(RecvTimeoutError::Disconnected) => {
+                return Err(io::Error::other(
+                    "Offscreen screenshot receiver disconnected",
+                ));
+            }
+        }
+    }
 }
 
 fn frame_workspace(world: &mut World, root: Entity) -> io::Result<()> {

@@ -336,18 +336,16 @@ impl Engine {
         };
         let pinned: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM organ_contact c JOIN record r ON r.uid=c.record_uid WHERE c.record_uid=? AND c.node_id=? AND c.trust='known' AND c.unreachable_since IS NULL AND r.deleted_at IS NULL)")
             .bind(organ).bind(endpoint).fetch_one(&mut **tx).await?;
-        let choice = settings.peers.into_iter().find(|peer| peer.organ == organ);
-        if !settings.enabled
-            || !pinned
-            || choice
-                .as_ref()
-                .is_none_or(|peer| if outgoing { !peer.ask } else { !peer.answer })
-        {
-            return Err(invalid(
-                "The original query contact or its consent changed; review before retrying",
-            ));
-        }
-        Ok(choice.unwrap())
+        settings
+            .peers
+            .into_iter()
+            .find(|peer| peer.organ == organ)
+            .filter(|peer| {
+                settings.enabled && pinned && if outgoing { peer.ask } else { peer.answer }
+            })
+            .ok_or_else(|| {
+                invalid("The original query contact or its consent changed; review before retrying")
+            })
     }
 
     pub(super) async fn social_ask_eligible(

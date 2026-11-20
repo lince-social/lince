@@ -6,7 +6,7 @@ use crate::native::{
 };
 use bevy::{
     core_pipeline::tonemapping::{DebandDither, Tonemapping},
-    input_focus::tab_navigation::TabNavigationPlugin,
+    input_focus::{pointer_focus::PointerFocusPlugin, tab_navigation::TabNavigationPlugin},
     prelude::*,
 };
 
@@ -97,6 +97,9 @@ pub fn presentation_app(directory: std::path::PathBuf, plugins: impl PluginGroup
         plugins = plugins.disable::<bevy::ui_widgets::MenuPlugin>();
     }
     app.add_plugins(plugins);
+    if !app.is_plugin_added::<PointerFocusPlugin>() {
+        app.add_plugins(PointerFocusPlugin);
+    }
     app.add_plugins(crate::native::topology::splats::SplatPlugin)
         .add_plugins(crate::controls::editing::TextEditingPlugin)
         .add_plugins((

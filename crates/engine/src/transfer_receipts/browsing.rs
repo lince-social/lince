@@ -24,7 +24,10 @@ impl Engine {
         self.verify_transfer_receipt_document(&saved.document, now)
             .await?;
         let mut result = commands::result(&saved)?;
-        let data = result.data.as_mut().unwrap();
+        let data = result
+            .data
+            .as_mut()
+            .ok_or_else(|| invalid("Receipt details are unavailable"))?;
         data["receipt"]["historical"] = json!(true);
         data["receipt"]["version_hash"] = json!(saved.document.hash().map_err(invalid)?);
         data["receipt"]["checked_at"] = json!(now.timestamp());
@@ -68,15 +71,10 @@ impl Engine {
             store::transfer_receipts::versions(&self.store.pool, &uid, position).await?;
         let more = versions.len() > 32;
         versions.truncate(32);
-        let next = if more {
+        let next = if more && let Some(last) = versions.last() {
             Some(
-                self.encode_read_cursor(
-                    &purpose,
-                    &principal,
-                    &versions.last().unwrap().version,
-                    now.timestamp(),
-                )
-                .await?,
+                self.encode_read_cursor(&purpose, &principal, &last.version, now.timestamp())
+                    .await?,
             )
         } else {
             None

@@ -71,7 +71,7 @@ impl Host {
         let installed = self
             .snapshot
             .read()
-            .unwrap()
+            .expect("the plugin package snapshot must be intact")
             .installed
             .get(id)
             .cloned()

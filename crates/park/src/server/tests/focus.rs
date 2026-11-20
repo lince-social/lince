@@ -10,6 +10,7 @@ use std::io::Write;
 
 #[test]
 #[ignore = "requires hardware Vulkan and EGL"]
+#[cfg(feature = "nested")]
 fn overview_renders_inactive_wayland_content_and_advances_only_its_presented_callbacks() {
     use smithay::backend::{
         allocator::Fourcc,
@@ -159,8 +160,10 @@ fn overview_renders_inactive_wayland_content_and_advances_only_its_presented_cal
         .unwrap()
         .find(|device| !device.is_software())
         .unwrap();
+    // SAFETY: Smithay owns this display lifetime and no raw caller terminates it.
     let display = unsafe { EGLDisplay::new(device) }.unwrap();
     let context = EGLContext::new(&display).unwrap();
+    // SAFETY: The context was created here and has never been bound to another thread.
     let mut renderer = unsafe { GlesRenderer::new(context) }.unwrap();
     let mut composition =
         crate::desktop::renderer::Composition::new(lince_interface::host::WakeSignal::new(|| {}))

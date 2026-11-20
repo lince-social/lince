@@ -48,9 +48,17 @@ pub(crate) fn input_point(canvas: &mut Presentation, entity: Entity) -> io::Resu
         .ok_or_else(|| error("Native control is outside presented geometry"))?;
     canvas.focus_output(output).map_err(error)?;
     let frame = completed(canvas)?;
-    let (_, corners) = canvas
+    current_input_point(canvas, entity, &frame)
+}
+
+pub(crate) fn current_input_point(
+    canvas: &mut Presentation,
+    entity: Entity,
+    frame: &Frame,
+) -> io::Result<[f32; 2]> {
+    let (output, corners) = canvas
         .native_test_points(entity)
-        .ok_or_else(|| error("Native control disappeared during output focus"))?;
+        .ok_or_else(|| error("Native control is outside the published frame"))?;
     let center: [f64; 2] =
         std::array::from_fn(|axis| corners.iter().map(|point| point[axis]).sum::<f64>() / 4.0);
     let point = std::iter::once(center)
@@ -187,8 +195,10 @@ fn measurement_coverage(reports: &[Value]) -> Value {
             })
     });
     let mut loss = serde_json::Map::new();
+    let dropped_reports = reports.iter().map(|report| report["dropped_reports"].as_u64())
+        .try_fold(0u64, |largest, current| current.map(|count| largest.max(count)));
+    loss.insert("dropped_reports".into(), json!(dropped_reports));
     for name in [
-        "dropped_reports",
         "dropped_system_samples",
         "dropped_span_trace",
         "dropped_input_trace",
@@ -197,6 +207,11 @@ fn measurement_coverage(reports: &[Value]) -> Value {
             .iter()
             .try_fold(0u64, |sum, report| sum.checked_add(report[name].as_u64()?));
         loss.insert(name.into(), json!(total));
+    }
+    if reports.iter().any(|report| report.get("dropped_park_frames").is_some()) {
+        let total: Option<u64> = reports.iter()
+            .try_fold(0u64, |sum, report| sum.checked_add(report["dropped_park_frames"].as_u64()?));
+        loss.insert("dropped_park_frames".into(), json!(total));
     }
     let final_report = reports
         .last()
@@ -262,33 +277,23 @@ fn cell(engine: Arc<engine::Engine>, directory: &Path) -> CellHandle {
 }
 
 fn interface() -> io::Result<Value> {
-    let mut run = native::laboratory::BehaviorRun::start_interface(None)?;
-    let deadline = Instant::now() + Duration::from_secs(90);
-    while !run.finished() {
-        run.poll();
-        if Instant::now() >= deadline {
-            run.cancel();
-            return Err(error("Mandatory interface correctness suite timed out"));
-        }
-        std::thread::sleep(Duration::from_millis(1));
-    }
-    let passed = !run.results.is_empty()
-        && run.results.len() == run.total
-        && run.results[0]
+    let results = native::laboratory::run_interface_checks_with_timeout(Duration::from_secs(90))?;
+    let passed = !results.is_empty()
+        && results[0]
             .name
             .ends_with("::protein_area_filter_visible_and_selectable")
-        && run.results.iter().all(|result| result.error.is_none());
-    Ok(json!({"case":"protein-first-interface", "passed":passed, "results":run.results}))
+        && results.iter().all(|result| result.error.is_none());
+    Ok(json!({"case":"protein-first-interface", "passed":passed, "results":results}))
 }
 
 fn scene(
     runtime: &tokio::runtime::Runtime,
-    name: &str,
+    name: &'static str,
     hidden: bool,
     mixed: bool,
     reveal: Option<projection::Fixture>,
 ) -> io::Result<Value> {
-    performance::set_phase(Phase::Warmup);
+    performance::set_workload(name, Phase::Warmup);
     let directory = tempfile::tempdir()?;
     let database = directory.path().join("lince.db");
     let engine = Arc::new(
@@ -509,231 +514,244 @@ fn scene(
     if let Some(fixture) = reveal {
         return projection::measure(&mut canvas, root, inactive[0], fixture, cold_ms);
     }
-    performance::set_phase(Phase::OpenReveal);
     let mut samples = Vec::with_capacity(120);
-    for _ in 0..120 {
-        let expected = !canvas
-            .world_mut()
-            .get::<native::edit_mode::EditMode>(root)
-            .is_some_and(|mode| mode.enabled);
-        let start = Instant::now();
-        canvas
-            .desktop_action(DesktopAction::ToggleEdit)
-            .map_err(error)?;
-        let frame = completed(&mut canvas)?;
-        samples.push(start.elapsed().as_secs_f64() * 1000.0);
-        if canvas
-            .world_mut()
-            .get::<native::edit_mode::EditMode>(root)
-            .is_none_or(|mode| mode.enabled != expected)
-            || frame.outputs.len() + usize::from(frame.output.is_some()) != 2
-        {
-            return Err(error("Edit toggle or two-output publication oracle failed"));
-        }
-    }
     let mut typing = Vec::new();
-    if let Some(item) = text_item {
-        let editor = {
-            let world = canvas.world_mut();
-            world
-                .query::<(Entity, &bevy::text::EditableText)>()
-                .iter(world)
-                .find_map(|(entity, _)| {
-                    let mut current = entity;
-                    loop {
-                        if current == item {
-                            return Some(entity);
-                        }
-                        current = world.get::<ChildOf>(current)?.parent();
-                    }
-                })
-                .ok_or_else(|| error("Mixed fixture has no native text editor"))?
-        };
-        canvas.focus(true).map_err(error)?;
-        let center = input_point(&mut canvas, editor)?;
-        canvas.pointer(center).map_err(error)?;
-        completed(&mut canvas)?;
-        canvas
-            .button(bevy::input::mouse::MouseButton::Left, true)
-            .map_err(error)?;
-        completed(&mut canvas)?;
-        canvas
-            .button(bevy::input::mouse::MouseButton::Left, false)
-            .map_err(error)?;
-        completed(&mut canvas)?;
-        if canvas.world_mut().resource::<InputFocus>().get() != Some(editor) {
-            return Err(error(
-                "Pointer click did not focus the presented native editor",
-            ));
-        }
-        performance::set_phase(Phase::Typing);
-        let mut expected = canvas
-            .world_mut()
-            .get::<bevy::text::EditableText>(editor)
-            .unwrap()
-            .value()
-            .to_string();
+    let mut scrolling = Vec::new();
+    let mut dragging = Vec::new();
+    let mut motion = Vec::new();
+    let mut focus_error = None;
+    let observed = (|| -> io::Result<()> {
+        performance::set_phase(Phase::OpenReveal);
         for _ in 0..120 {
+            let expected = !canvas
+                .world_mut()
+                .get::<native::edit_mode::EditMode>(root)
+                .is_some_and(|mode| mode.enabled);
             let start = Instant::now();
             canvas
-                .key(
-                    KeyCode::KeyA,
-                    Key::Character("é".into()),
-                    Some("é".into()),
-                    true,
-                    false,
-                )
+                .desktop_action(DesktopAction::ToggleEdit)
                 .map_err(error)?;
-            canvas
-                .key(
-                    KeyCode::KeyA,
-                    Key::Character("é".into()),
-                    None,
-                    false,
-                    false,
-                )
-                .map_err(error)?;
-            completed(&mut canvas)?;
-            typing.push(start.elapsed().as_secs_f64() * 1000.0);
-            expected.push('é');
+            let frame = completed(&mut canvas)?;
+            samples.push(start.elapsed().as_secs_f64() * 1000.0);
             if canvas
                 .world_mut()
-                .get::<bevy::text::EditableText>(editor)
-                .unwrap()
-                .value()
-                .to_string()
-                != expected
+                .get::<native::edit_mode::EditMode>(root)
+                .is_none_or(|mode| mode.enabled != expected)
+                || frame.outputs.len() + usize::from(frame.output.is_some()) != 2
             {
-                return Err(error(
-                    "Native text input lost, duplicated, or reordered a character",
-                ));
+                return Err(error("Edit toggle or two-output publication oracle failed"));
             }
-            engine.notify_query_changed();
         }
-    }
-    performance::set_phase(Phase::Scroll);
-    let mut scrolling = Vec::new();
-    if let Some(item) = scroll_item {
-        let center = input_point(&mut canvas, item)?;
-        canvas.pointer(center).map_err(error)?;
-        completed(&mut canvas)?;
-        let initial = canvas.world_mut().get::<ScrollPosition>(item).unwrap().0.y;
-        for index in 0..120 {
-            let started = Instant::now();
+        if let Some(item) = text_item {
+            let editor = {
+                let world = canvas.world_mut();
+                world
+                    .query::<(Entity, &bevy::text::EditableText)>()
+                    .iter(world)
+                    .find_map(|(entity, _)| {
+                        let mut current = entity;
+                        loop {
+                            if current == item {
+                                return Some(entity);
+                            }
+                            current = world.get::<ChildOf>(current)?.parent();
+                        }
+                    })
+                    .ok_or_else(|| error("Mixed fixture has no native text editor"))?
+            };
+            canvas.focus(true).map_err(error)?;
+            let center = input_point(&mut canvas, editor)?;
+            canvas.pointer(center).map_err(error)?;
+            completed(&mut canvas)?;
             canvas
-                .scroll(
-                    [0.0, if index % 2 == 0 { -24.0 } else { 24.0 }],
-                    bevy::input::mouse::MouseScrollUnit::Pixel,
-                    bevy::input::touch::TouchPhase::Moved,
-                )
+                .button(bevy::input::mouse::MouseButton::Left, true)
                 .map_err(error)?;
             completed(&mut canvas)?;
-            scrolling.push(started.elapsed().as_secs_f64() * 1000.0);
-            let position = canvas.world_mut().get::<ScrollPosition>(item).unwrap().0.y;
-            if (index % 2 == 0 && position <= initial)
-                || (index % 2 == 1 && (position - initial).abs() > 0.5)
-            {
-                return Err(error(
-                    "Pointer-directed scrolling did not update and restore its native viewport",
-                ));
-            }
-        }
-    }
-    performance::set_phase(Phase::Active);
-    let mut dragging = Vec::new();
-    if let Some(item) = text_item {
-        use crate::presentation::manipulation::{Active, Event, Request};
-        let center = input_point(&mut canvas, item)?;
-        let target =
-            native::layout::desktop::manipulation::pointer::targets(canvas.world_mut(), root)
-                .into_iter()
-                .find(|target| target.entity == item)
-                .ok_or_else(|| error("Native item has no published manipulation target"))?;
-        let original = native::canvas::presented(canvas.world_mut(), item).unwrap();
-        canvas
-            .manipulation(Event::Begin(Request {
-                active: Active { token: 1, target },
-                operation: lince_interface::host::Manipulation::Move,
-                edges: None,
-                start: center,
-                current: center,
-            }))
-            .map_err(error)?;
-        completed(&mut canvas)?;
-        let mut last = original.position;
-        for index in 1..=120 {
-            let started = Instant::now();
             canvas
-                .pointer([center[0] + index as f32 * 0.5, center[1]])
+                .button(bevy::input::mouse::MouseButton::Left, false)
                 .map_err(error)?;
             completed(&mut canvas)?;
-            dragging.push(started.elapsed().as_secs_f64() * 1000.0);
-            let position = native::canvas::presented(canvas.world_mut(), item)
-                .unwrap()
-                .position;
-            if !position.is_finite() || position.distance(last) < 0.01 {
-                return Err(error("Native drag did not produce current geometry"));
+            if canvas.world_mut().resource::<InputFocus>().get() != Some(editor) {
+                focus_error = Some("Pointer click did not focus the presented native editor");
+            } else {
+                performance::set_phase(Phase::Typing);
+                let mut expected = canvas
+                    .world_mut()
+                    .get::<bevy::text::EditableText>(editor)
+                    .unwrap()
+                    .value()
+                    .to_string();
+                for _ in 0..120 {
+                    let start = Instant::now();
+                    canvas
+                        .key(
+                            KeyCode::KeyA,
+                            Key::Character("é".into()),
+                            Some("é".into()),
+                            true,
+                            false,
+                        )
+                        .map_err(error)?;
+                    canvas
+                        .key(
+                            KeyCode::KeyA,
+                            Key::Character("é".into()),
+                            None,
+                            false,
+                            false,
+                        )
+                        .map_err(error)?;
+                    completed(&mut canvas)?;
+                    typing.push(start.elapsed().as_secs_f64() * 1000.0);
+                    expected.push('é');
+                    if canvas
+                        .world_mut()
+                        .get::<bevy::text::EditableText>(editor)
+                        .unwrap()
+                        .value()
+                        .to_string()
+                        != expected
+                    {
+                        return Err(error(
+                            "Native text input lost, duplicated, or reordered a character",
+                        ));
+                    }
+                    engine.notify_query_changed();
+                }
             }
-            last = position;
         }
-        canvas
-            .manipulation(Event::End {
-                token: 1,
-                position: [center[0] + 60.0, center[1]],
-                commit: true,
-            })
-            .map_err(error)?;
-        completed(&mut canvas)?;
-        if canvas
-            .world_mut()
-            .get::<native::canvas::CanvasItem>(item)
-            .unwrap()
-            .position
-            .distance(last)
-            > 0.1
-        {
-            return Err(error("Native drag did not commit its displayed position"));
+        performance::set_phase(Phase::Scroll);
+        if let Some(item) = scroll_item {
+            let center = input_point(&mut canvas, item)?;
+            canvas.pointer(center).map_err(error)?;
+            completed(&mut canvas)?;
+            let initial = canvas.world_mut().get::<ScrollPosition>(item).unwrap().0.y;
+            for index in 0..120 {
+                let started = Instant::now();
+                canvas
+                    .scroll(
+                        [0.0, if index % 2 == 0 { -24.0 } else { 24.0 }],
+                        bevy::input::mouse::MouseScrollUnit::Pixel,
+                        bevy::input::touch::TouchPhase::Moved,
+                    )
+                    .map_err(error)?;
+                completed(&mut canvas)?;
+                scrolling.push(started.elapsed().as_secs_f64() * 1000.0);
+                let position = canvas.world_mut().get::<ScrollPosition>(item).unwrap().0.y;
+                if (index % 2 == 0 && position <= initial)
+                    || (index % 2 == 1 && (position - initial).abs() > 0.5)
+                {
+                    return Err(error(
+                        "Pointer-directed scrolling did not update and restore its native viewport",
+                    ));
+                }
+            }
         }
-    }
-    performance::set_phase(Phase::Pan);
-    let mut motion = Vec::new();
-    if mixed {
-        let original = *canvas
-            .world_mut()
-            .get::<native::canvas::CanvasView>(root)
-            .ok_or_else(|| error("Canvas has no view"))?;
-        for index in 0..120 {
-            let started = Instant::now();
+        performance::set_phase(Phase::Active);
+        if let Some(item) = text_item {
+            use crate::presentation::manipulation::{Active, Event, Request};
+            let center = input_point(&mut canvas, item)?;
+            let target =
+                native::layout::desktop::manipulation::pointer::targets(canvas.world_mut(), root)
+                    .into_iter()
+                    .find(|target| target.entity == item)
+                    .ok_or_else(|| error("Native item has no published manipulation target"))?;
+            let original = native::canvas::presented(canvas.world_mut(), item).unwrap();
             canvas
+                .manipulation(Event::Begin(Request {
+                    active: Active { token: 1, target },
+                    operation: lince_interface::host::Manipulation::Move,
+                    edges: None,
+                    start: center,
+                    current: center,
+                }))
+                .map_err(error)?;
+            completed(&mut canvas)?;
+            let mut last = original.position;
+            for index in 1..=120 {
+                let started = Instant::now();
+                canvas
+                    .pointer([center[0] + index as f32 * 0.5, center[1]])
+                    .map_err(error)?;
+                completed(&mut canvas)?;
+                dragging.push(started.elapsed().as_secs_f64() * 1000.0);
+                let position = native::canvas::presented(canvas.world_mut(), item)
+                    .unwrap()
+                    .position;
+                if !position.is_finite() || position.distance(last) < 0.01 {
+                    return Err(error("Native drag did not produce current geometry"));
+                }
+                last = position;
+            }
+            canvas
+                .manipulation(Event::End {
+                    token: 1,
+                    position: [center[0] + 60.0, center[1]],
+                    commit: true,
+                })
+                .map_err(error)?;
+            completed(&mut canvas)?;
+            if canvas
+                .world_mut()
+                .get::<native::canvas::CanvasItem>(item)
+                .unwrap()
+                .position
+                .distance(last)
+                > 0.1
+            {
+                return Err(error("Native drag did not commit its displayed position"));
+            }
+        }
+        performance::set_phase(Phase::Pan);
+        if mixed {
+            let original = *canvas
+                .world_mut()
+                .get::<native::canvas::CanvasView>(root)
+                .ok_or_else(|| error("Canvas has no view"))?;
+            for index in 0..120 {
+                let started = Instant::now();
+                canvas
+                    .world_mut()
+                    .get_mut::<native::canvas::CanvasView>(root)
+                    .unwrap()
+                    .center = original.center + DVec2::new(index as f64, 0.0);
+                completed(&mut canvas)?;
+                motion.push(started.elapsed().as_secs_f64() * 1000.0);
+            }
+            *canvas
                 .world_mut()
                 .get_mut::<native::canvas::CanvasView>(root)
-                .unwrap()
-                .center = original.center + DVec2::new(index as f64, 0.0);
+                .unwrap() = original;
             completed(&mut canvas)?;
-            motion.push(started.elapsed().as_secs_f64() * 1000.0);
         }
-        *canvas
-            .world_mut()
-            .get_mut::<native::canvas::CanvasView>(root)
-            .unwrap() = original;
-        completed(&mut canvas)?;
-    }
+        Ok(())
+    })();
     let motion_gate = !mixed
         || (passes(&motion)
             && motion.iter().filter(|ms| **ms > 1000.0 / 60.0).count() as f64
                 / motion.len() as f64
                 <= 0.01);
-    let passed = passes(&samples)
+    let passed = observed.is_ok() && focus_error.is_none() && passes(&samples)
         && (!mixed || (passes(&typing) && passes(&scrolling) && passes(&dragging)))
         && motion_gate;
-    let result = json!({"case":name, "passed":passed, "scope":"native-owner-to-completed-GPU-frame; not physical scanout", "cold_ms":cold_ms, "edit":summary(&samples), "typing":(!typing.is_empty()).then(|| summary(&typing)), "scrolling":(!scrolling.is_empty()).then(|| summary(&scrolling)), "dragging":(!dragging.is_empty()).then(|| summary(&dragging)), "motion":(!motion.is_empty()).then(|| summary(&motion)), "motion_scope":"native transform to GPU completion; 60 Hz render budget, not physical presentation", "outputs":[[1366,768],[1920,1080]], "inactive_areas":if hidden {8} else {0}, "native_items":if mixed {30} else {0}});
+    let partial = |samples: &[f64]| (!samples.is_empty()).then(|| summary(samples));
+    let result = json!({
+        "case":name, "passed":passed,
+        "scope":"native-owner-to-completed-GPU-frame; not physical scanout",
+        "cold_ms":cold_ms, "edit":partial(&samples), "typing":partial(&typing),
+        "scrolling":partial(&scrolling), "dragging":partial(&dragging), "motion":partial(&motion),
+        "motion_scope":"native transform to GPU completion; 60 Hz render budget, not physical presentation",
+        "error":observed.err().map(|error| error.to_string()),
+        "typing_error":focus_error,
+        "outputs":[[1366,768],[1920,1080]], "inactive_areas":if hidden {8} else {0}, "native_items":if mixed {30} else {0}
+    });
     drop(canvas);
     Ok(result)
 }
 
 fn worker_idle(runtime: &tokio::runtime::Runtime) -> io::Result<Value> {
     use crate::runtime::{CanvasWorker, Configuration, Input};
-    performance::set_phase(Phase::Warmup);
+    performance::set_workload("worker-idle-and-input", Phase::Warmup);
     let directory = tempfile::tempdir()?;
     let engine = Arc::new(
         runtime
@@ -841,6 +859,7 @@ pub fn run() -> io::Result<()> {
             std::process::exit(124);
         }
     });
+    performance::set_workload("protein-first-interface", Phase::Warmup);
     let mut results = vec![interface().unwrap_or_else(|failure| json!({"case":"protein-first-interface", "passed":false, "error":failure.to_string()}))];
     println!("{}", results[0]);
     for (name, hidden, mixed) in [
@@ -859,7 +878,7 @@ pub fn run() -> io::Result<()> {
     let idle = worker_idle(&runtime).unwrap_or_else(|failure| json!({"case":"worker-idle-and-input", "passed":false, "error":failure.to_string()}));
     println!("{idle}");
     results.push(idle);
-    performance::set_phase(Phase::Warmup);
+    performance::set_workload("native-pixels-resize-and-output-mapping", Phase::Warmup);
     let pixels = match crate::presentation::probe() {
         Ok(()) => json!({"case":"native-pixels-resize-and-output-mapping", "passed":true}),
         Err(failure) => {
@@ -946,6 +965,13 @@ mod tests {
             assert_eq!(measurement_coverage(&reports)["passed"], false);
             reports[0][name] = json!(0);
         }
+        for report in &mut reports {
+            report["dropped_park_frames"] = json!(0);
+        }
+        assert_eq!(measurement_coverage(&reports)["passed"], true);
+        reports[0]["dropped_park_frames"] = json!(1);
+        assert_eq!(measurement_coverage(&reports)["passed"], false);
+        reports[0]["dropped_park_frames"] = json!(0);
         reports[2]["systems"] = json!([]);
         assert_eq!(measurement_coverage(&reports)["passed"], false);
         reports.remove(2);

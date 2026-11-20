@@ -59,6 +59,7 @@ impl Presentation {
         if let Some(time) = self.app.world().get_resource::<bevy::time::TimeReceiver>() {
             let _ = time.0.try_recv();
         }
+        self.trace_render(true);
         self.app.update_sub_app_by_label(RenderApp);
         if let Some(error) = self.app.world().get_resource::<FrameFailure>() {
             return Err(ProbeFailure {

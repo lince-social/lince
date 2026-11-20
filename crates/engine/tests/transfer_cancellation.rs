@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 mod support;
 #[path = "transfer_cancellation/location.rs"]
 mod location;

@@ -678,6 +678,7 @@ impl Engine {
                     head,
                     configuration,
                     host,
+                    unlimited,
                 } => {
                     outcome.created = Some(
                         self.save_command(
@@ -687,6 +688,7 @@ impl Engine {
                             head,
                             configuration,
                             host,
+                            unlimited,
                             actor.as_deref(),
                         )
                         .await?,

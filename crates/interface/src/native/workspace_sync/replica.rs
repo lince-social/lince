@@ -146,19 +146,25 @@ impl<'a> Reconciliation<'a> {
 fn apply(world: &mut World, owner: Entity, layout: Arc<Layout>, snapshot: Snapshot<'_>) {
     let _application = engine::performance::Span::new("native-workspace-replica-application");
     let revision = snapshot.revision;
-    let view = world.get::<WorkspaceSync>(owner).unwrap();
+    let Some(view) = world.get::<WorkspaceSync>(owner) else {
+        return;
+    };
     let root = view.root;
     let sand = view.sand;
     let mut replica_workspace = view.replica_workspace;
     if replica_workspace.is_none() {
+        if world.get_entity(sand).is_err() {
+            return;
+        }
         crate::native::workspace::create(world, root);
         replica_workspace = world
             .get::<crate::native::workspace::Workspaces>(root)
             .map(|spaces| spaces.active);
         if let Some(workspace) = replica_workspace {
-            world
-                .entity_mut(sand)
-                .insert(crate::native::workspace::WorkspaceMember(workspace));
+            let Ok(mut sand) = world.get_entity_mut(sand) else {
+                return;
+            };
+            sand.insert(crate::native::workspace::WorkspaceMember(workspace));
             if let Some(mut spaces) = world.get_mut::<crate::native::workspace::Workspaces>(root)
                 && let Some(space) = spaces
                     .entries
@@ -180,7 +186,10 @@ fn apply(world: &mut World, owner: Entity, layout: Arc<Layout>, snapshot: Snapsh
     let Some(workspace) = replica_workspace else {
         return;
     };
-    let prepared = Reconciliation::new(world.get::<WorkspaceSync>(owner).unwrap(), &layout);
+    let Some(view) = world.get::<WorkspaceSync>(owner) else {
+        return;
+    };
+    let prepared = Reconciliation::new(view, &layout);
     for entity in &prepared.removed {
         if world.get_entity(*entity).is_ok() {
             world.entity_mut(*entity).despawn();
@@ -276,7 +285,14 @@ fn apply(world: &mut World, owner: Entity, layout: Arc<Layout>, snapshot: Snapsh
         }
     }
     let (subscribe, selected) = {
-        let mut view = world.get_mut::<WorkspaceSync>(owner).unwrap();
+        let Some(mut view) = world.get_mut::<WorkspaceSync>(owner) else {
+            for (_, entity) in replacements {
+                if let Ok(entity) = world.get_entity_mut(entity) {
+                    entity.despawn();
+                }
+            }
+            return;
+        };
         view.replicas
             .retain(|id, _| prepared.ids.contains(id.as_str()));
         for (id, entity) in replacements {
@@ -297,7 +313,9 @@ fn apply(world: &mut World, owner: Entity, layout: Arc<Layout>, snapshot: Snapsh
     };
     world.init_resource::<ReplicaFeeds>();
     world.resource_scope(|world, mut feeds: Mut<ReplicaFeeds>| {
-        let view = world.get::<WorkspaceSync>(owner).unwrap();
+        let Some(view) = world.get::<WorkspaceSync>(owner) else {
+            return;
+        };
         let (source, replicas) = feeds
             .0
             .entry(owner)
@@ -309,7 +327,9 @@ fn apply(world: &mut World, owner: Entity, layout: Arc<Layout>, snapshot: Snapsh
         replicas.extend(view.replicas.values().copied());
     });
     if let Some(policy) = snapshot.policy {
-        let view = world.get::<WorkspaceSync>(owner).unwrap();
+        let Some(view) = world.get::<WorkspaceSync>(owner) else {
+            return;
+        };
         let field = view.policy;
         let old = view.policy_snapshot.as_ref();
         let changed = old != Some(policy);
@@ -329,24 +349,26 @@ fn apply(world: &mut World, owner: Entity, layout: Arc<Layout>, snapshot: Snapsh
                         _ => false,
                     }
                 });
-            world
-                .get_mut::<WorkspaceSync>(owner)
-                .unwrap()
-                .policy_snapshot = Some(policy.clone());
-            if replace_draft {
-                *world.get_mut::<EditableText>(field).unwrap() = crate::native::sand::editable(
+            let Some(mut view) = world.get_mut::<WorkspaceSync>(owner) else {
+                return;
+            };
+            view.policy_snapshot = Some(policy.clone());
+            if replace_draft && let Some(mut editor) = world.get_mut::<EditableText>(field) {
+                *editor = crate::native::sand::editable(
                     &serde_json::to_string_pretty(policy).unwrap_or_default(),
                 );
             }
         }
     }
     if snapshot.policy_unavailable {
-        let field = world.get::<WorkspaceSync>(owner).unwrap().policy;
-        *world.get_mut::<EditableText>(field).unwrap() = draft_editor("");
-        world
-            .get_mut::<WorkspaceSync>(owner)
-            .unwrap()
-            .policy_snapshot = None;
+        let Some(mut view) = world.get_mut::<WorkspaceSync>(owner) else {
+            return;
+        };
+        let field = view.policy;
+        view.policy_snapshot = None;
+        if let Some(mut editor) = world.get_mut::<EditableText>(field) {
+            *editor = draft_editor("");
+        }
     }
     if subscribe && let Some(workspace) = selected {
         let message = ClientMessage::WorkspaceSubscribe {
@@ -354,12 +376,18 @@ fn apply(world: &mut World, owner: Entity, layout: Arc<Layout>, snapshot: Snapsh
             workspace,
             client: Client::default(),
         };
-        if send(world, owner, message).is_ok() {
-            world.get_mut::<WorkspaceSync>(owner).unwrap().subscribed = true;
+        if send(world, owner, message).is_ok()
+            && let Some(mut view) = world.get_mut::<WorkspaceSync>(owner)
+        {
+            view.subscribed = true;
         }
     }
+    let Some(view) = world.get::<WorkspaceSync>(owner) else {
+        return;
+    };
+    let workspace_status = view.workspace_status;
     let mut targets = Vec::new();
-    for element in &world.get::<WorkspaceSync>(owner).unwrap().layout.elements {
+    for element in &view.layout.elements {
         let _: ControlFlow<()> = element.component.visit_records(&mut |uid| {
             targets.push(protein::Predicate::UidEq(uid.into()));
             ControlFlow::Continue(())
@@ -389,7 +417,6 @@ fn apply(world: &mut World, owner: Entity, layout: Arc<Layout>, snapshot: Snapsh
             },
         );
     }
-    let workspace_status = world.get::<WorkspaceSync>(owner).unwrap().workspace_status;
     if world.get::<Text>(workspace_status).is_some() {
         panel::status(
             world,

@@ -703,7 +703,9 @@ mod tests {
         app.world_mut()
             .entity_mut(owner)
             .insert(crate::native::workspace::WorkspaceMember(1));
-        let saved = capture_editor(app.world_mut(), owner).unwrap();
+        let saved = capture_editor(app.world_mut(), owner)
+            .expect("capture the fixture shader editor")
+            .expect("the fixture has a shader editor");
         let saved: SavedEditor =
             serde_json::from_value(serde_json::to_value(saved).unwrap()).unwrap();
         assert!(saved.valid());

@@ -1316,7 +1316,10 @@ mod tests {
             matches!(&changes[1].edit, Edit::Work {value} if value["logs"] == expected["logs"] && value["estimate_min"] == 90 && value["due"] == "2030-01-04T11:00:00Z")
         );
         let root = app.world().get::<ChildOf>(owner).unwrap().parent();
-        let saved = super::super::snapshot(app.world_mut(), root).pop().unwrap();
+        let saved = super::super::snapshot(app.world_mut(), root)
+            .expect("capture the fixture snapshots")
+            .pop()
+            .unwrap();
         let saved: super::super::SavedSimulation =
             serde_json::from_slice(&serde_json::to_vec(&saved).unwrap()).unwrap();
         app.world_mut().despawn(owner);
@@ -1662,7 +1665,10 @@ mod tests {
                 node.engine().store.state_hash().await.unwrap()
             );
             let root = app.world().get::<ChildOf>(owner).unwrap().parent();
-            let saved = super::super::snapshot(app.world_mut(), root).pop().unwrap();
+            let saved = super::super::snapshot(app.world_mut(), root)
+                .expect("capture the fixture snapshots")
+                .pop()
+                .unwrap();
             let saved: super::super::SavedSimulation =
                 serde_json::from_slice(&serde_json::to_vec(&saved).unwrap()).unwrap();
             assert!(saved.valid());

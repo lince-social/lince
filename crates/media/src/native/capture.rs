@@ -328,12 +328,14 @@ pub fn screens() -> Result<Vec<(u64, String)>> {
         use windows_sys::Win32::Graphics::Gdi::{EnumDisplayMonitors, HDC, HMONITOR};
         use windows_sys::core::BOOL;
         unsafe extern "system" fn count(_: HMONITOR, _: HDC, _: *mut RECT, data: LPARAM) -> BOOL {
+            // SAFETY: The synchronous enumerator passes back the exclusive pointer to `total`.
             unsafe {
                 *(data as *mut usize) += 1;
             }
             1
         }
         let mut total = 0usize;
+        // SAFETY: Both optional inputs are null, and `total` lives through all callbacks.
         let success = unsafe {
             EnumDisplayMonitors(
                 std::ptr::null_mut(),

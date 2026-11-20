@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 pub mod support;
 
 use engine::{

@@ -52,6 +52,7 @@ impl Server {
                 .xkb()
                 .lock()
                 .unwrap_or_else(|error| error.into_inner());
+            // SAFETY: The state and keymap are queried under the Xkb guard.
             let state = unsafe { state.state() };
             let group = state.serialize_layout(xkb::STATE_LAYOUT_EFFECTIVE);
             if !refresh && group == previous_group {
@@ -201,6 +202,7 @@ impl Server {
                     .xkb()
                     .lock()
                     .unwrap_or_else(|error| error.into_inner());
+                // SAFETY: This serializes the keymap while the Xkb guard is live.
                 unsafe { state.state() }
                     .get_keymap()
                     .get_as_string(xkb::KEYMAP_FORMAT_TEXT_V1)

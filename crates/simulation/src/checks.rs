@@ -178,9 +178,10 @@ impl Checks {
                 world.stop = Some(report::Stop::CheckBudget {});
                 break;
             }
-            if after_state.is_none() {
-                after_state = Some(world.state_hash().await?);
-            }
+            let state_hash = match &mut after_state {
+                Some(hash) => hash,
+                slot @ None => slot.insert(world.state_hash().await?),
+            };
             let started = std::time::Instant::now();
             let mut evaluations = 1;
             let observed_events = runtime.cursor;
@@ -509,7 +510,7 @@ impl Checks {
                     witness,
                     evidence,
                     before_state: self.previous_state.clone(),
-                    after_state: after_state.clone().unwrap(),
+                    after_state: state_hash.clone(),
                 };
                 let remaining = world
                     .scenario

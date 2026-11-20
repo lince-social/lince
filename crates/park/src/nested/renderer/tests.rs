@@ -69,8 +69,10 @@ fn actual_linear_alpha_and_final_hdr_encoding_preserve_precision_and_use_the_dec
     use lince_interface::host::color::{ColorMode, Description, OutputColor};
     use smithay::backend::{egl::{EGLContext, EGLDevice, EGLDisplay}, renderer::ExportMem};
     let device = EGLDevice::enumerate().unwrap().find(|device| !device.is_software()).expect("A hardware EGL device is required");
+    // SAFETY: Smithay owns this display lifetime and no raw caller terminates it.
     let display = unsafe { EGLDisplay::new(device) }.unwrap();
     let context = EGLContext::new(&display).unwrap();
+    // SAFETY: The context was created here and has never been bound to another thread.
     let mut renderer = unsafe { GlesRenderer::new(context) }.unwrap();
     let mut composition = Composition::new(lince_interface::host::WakeSignal::new(|| {})).unwrap();
     composition.prepare_color(&mut renderer).unwrap();
@@ -152,8 +154,10 @@ pub(crate) fn popup_pixels(
         .map_err(error)?
         .find(|device| !device.is_software())
         .ok_or_else(|| io::Error::other("The popup probe requires a hardware EGL device"))?;
+    // SAFETY: Smithay owns this display lifetime and no raw caller terminates it.
     let display = unsafe { EGLDisplay::new(device) }.map_err(error)?;
     let context = EGLContext::new(&display).map_err(error)?;
+    // SAFETY: The context was created here and has never been bound to another thread.
     let mut renderer = unsafe { GlesRenderer::new(context) }.map_err(error)?;
     let mut composition = Composition::new(lince_interface::host::WakeSignal::new(|| {}))?;
     composition.prepare_color(&mut renderer)?;

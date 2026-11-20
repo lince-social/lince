@@ -108,6 +108,7 @@ fn caption(value: &Value) -> (Option<&str>, Option<&str>, &str) {
 
 fn same_result(old: &Value, row: &Value) -> bool {
     caption(old) == caption(row)
+        && old["unlimited"] == row["unlimited"]
         && old["history"]
             .as_array()
             .into_iter()
@@ -142,6 +143,7 @@ fn header(world: &mut World, owner: Entity, panel: Entity) {
 struct Form {
     target: Option<String>,
     shell: bool,
+    unlimited: bool,
     fields: [Entity; 5],
 }
 
@@ -151,6 +153,7 @@ fn editor(world: &mut World, owner: Entity, panel: Entity) {
     if Presentation::matches(world, panel, |old: &Form| {
         old.target == state.target
             && old.shell == state.shell
+            && old.unlimited == state.unlimited
             && old.fields.iter().enumerate().all(|(index, &field)| {
                 world.get::<EditableText>(field).is_some()
                     && world
@@ -178,6 +181,7 @@ fn editor(world: &mut World, owner: Entity, panel: Entity) {
     }
     let target = state.target.clone();
     let shell = state.shell;
+    let unlimited = state.unlimited;
     let values = state.values.clone();
     let mut fields = [Entity::PLACEHOLDER; 5];
     world.entity_mut(panel).despawn_children();
@@ -243,6 +247,17 @@ fn editor(world: &mut World, owner: Entity, panel: Entity) {
             .insert(bevy::a11y::AccessibilityNode(accessible));
     }
     let line = ui::row(world, panel);
+    crate::native::castle_feed::button(
+        world,
+        line,
+        owner,
+        if unlimited {
+            "Time limit: none"
+        } else {
+            "Time limit: 30 seconds"
+        },
+        Command::ToggleUnlimited,
+    );
     crate::native::castle_feed::button(world, line, owner, "Save command", Command::Save);
     crate::native::castle_feed::button(world, line, owner, "Close editor", Command::Close);
     Presentation::remember(
@@ -251,6 +266,7 @@ fn editor(world: &mut World, owner: Entity, panel: Entity) {
         Form {
             target,
             shell,
+            unlimited,
             fields,
         },
     );
@@ -281,7 +297,11 @@ fn result(world: &mut World, owner: Entity, panel: Entity, row: &Value) {
         world,
         line,
         owner,
-        "Run numeric test",
+        if row["unlimited"].as_bool() == Some(true) {
+            "Run command"
+        } else {
+            "Run numeric test"
+        },
         Command::Run(uid.into()),
     );
     if let Some(history) = row["history"].as_array() {

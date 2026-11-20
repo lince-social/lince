@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use nucleus::RecordKind;
 use store::Store;
 use store::record_docs::Qualification;

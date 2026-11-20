@@ -388,7 +388,9 @@ mod tests {
                 .validate()
                 .is_err()
         );
-        let saved = capture_editor(&mut world, owner).unwrap();
+        let saved = capture_editor(&mut world, owner)
+            .expect("capture the fixture shader editor")
+            .expect("the fixture has a shader editor");
         let saved: SavedEditor =
             serde_json::from_value(serde_json::to_value(saved).unwrap()).unwrap();
         assert!(saved.valid());
@@ -429,7 +431,9 @@ mod tests {
                 .validate()
                 .is_ok()
         );
-        let saved = capture_editor(&mut world, owner).unwrap();
+        let saved = capture_editor(&mut world, owner)
+            .expect("capture the fixture shader editor")
+            .expect("the fixture has a shader editor");
         let saved: SavedEditor =
             serde_json::from_value(serde_json::to_value(saved).unwrap()).unwrap();
         assert_eq!(

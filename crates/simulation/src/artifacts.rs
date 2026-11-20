@@ -991,8 +991,8 @@ fn validate_storage(
         } else {
             crate::limits::JSON_BYTES
         };
-        let bytes = if path == "result.json" && result_bytes.is_some() {
-            result_bytes.unwrap()
+        let bytes = if path == "result.json" && let Some(bytes) = result_bytes {
+            bytes
         } else {
             bounded_file(directory, path, limit)?;
             std::fs::metadata(directory.join(path))
@@ -1235,7 +1235,7 @@ pub fn load(directory: &Path) -> std::result::Result<Bundle, ArtifactError> {
                     .cells
                     .iter()
                     .find(|cell| cell.name == event.cell)
-                    .unwrap()
+                    .ok_or_else(|| invalid("Lingua evidence refers to an unknown Cell"))?
                     .lingua
                     .iter()
                     .map(|file| (file.name.clone(), file.hash.clone()))

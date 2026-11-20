@@ -76,9 +76,9 @@ pub(super) async fn run(
     wake: &Arc<dyn Fn() + Send + Sync>,
 ) -> Result<()> {
     let mut process = crate::tooling::launch(&command, &root)?;
-    let output = process.0.stdin.take().unwrap();
-    let input = process.0.stdout.take().unwrap();
-    let mut stderr = process.0.stderr.take().unwrap();
+    let output = process.0.stdin.take().ok_or("Missing LSP stdin")?;
+    let input = process.0.stdout.take().ok_or("Missing LSP stdout")?;
+    let mut stderr = process.0.stderr.take().ok_or("Missing LSP stderr")?;
     let _tasks = Tasks(vec![tokio::spawn(async move {
         let _ = tokio::io::copy(&mut stderr, &mut tokio::io::sink()).await;
     })]);
@@ -232,7 +232,7 @@ async fn serve(
             () = async { if let Some(deadline) = deadline { tokio::time::sleep_until(deadline).await; } else { std::future::pending::<()>().await; } } => {
                 let expired: Vec<_> = pending.iter().filter(|(_, request)| request.deadline <= Instant::now()).map(|(id, _)| *id).collect();
                 for id in expired {
-                    let request = pending.remove(&id).unwrap();
+                    let request = pending.remove(&id).expect("expired IDs came from the pending requests");
                     notify(&mut output, "$/cancelRequest", json!({"id":id})).await?;
                     emit(events, wake, Event::RequestError { token: request.token, message:"Language server request timed out".into() })?;
                 }

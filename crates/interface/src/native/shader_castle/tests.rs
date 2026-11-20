@@ -17,7 +17,12 @@ fn press(world: &mut World, owner: Entity, caption: &str) {
 
 fn editor_draft(world: &mut World, owner: Entity) -> serde_json::Value {
     let editor = world.get::<ShaderCastle>(owner).unwrap().editor.unwrap();
-    serde_json::to_value(shader_effects::capture_editor(world, editor).unwrap()).unwrap()
+    serde_json::to_value(
+        shader_effects::capture_editor(world, editor)
+            .expect("capture the fixture shader editor")
+            .expect("the fixture has a shader editor"),
+    )
+    .unwrap()
 }
 
 async fn until(app: &mut App, condition: impl Fn(&mut World) -> bool) {
@@ -128,7 +133,11 @@ async fn typed_extension_creation_preserves_description_and_restores_the_castle(
             .get::<crate::native::canvas::CanvasItem>(editor)
             .is_none()
     );
-    assert!(shader_effects::snapshot(app.world_mut(), root).is_empty());
+    assert!(
+        shader_effects::snapshot(app.world_mut(), root)
+            .expect("capture the fixture snapshots")
+            .is_empty()
+    );
     engine
         .act(
             engine::actions::Action::SetQuantity {
@@ -155,7 +164,9 @@ async fn typed_extension_creation_preserves_description_and_restores_the_castle(
         .unwrap()
         .editor
         .set_text("12.5");
-    let draft = shader_effects::capture_editor(app.world_mut(), editor).unwrap();
+    let draft = shader_effects::capture_editor(app.world_mut(), editor)
+        .expect("capture the fixture shader editor")
+        .expect("the fixture has a shader editor");
     let draft = serde_json::to_value(draft).unwrap();
     assert_eq!(draft["record"], uid);
     assert!(draft["revision"].as_u64().unwrap() > 0);
@@ -173,7 +184,10 @@ async fn typed_extension_creation_preserves_description_and_restores_the_castle(
         .unwrap()
         .editor
         .set_text("fn shade(");
-    let saved = snapshot(app.world_mut(), root).pop().unwrap();
+    let saved = snapshot(app.world_mut(), root)
+        .expect("capture the fixture snapshots")
+        .pop()
+        .unwrap();
     assert!(saved.valid());
     assert_eq!(saved.drafts.len(), 1);
     let json = serde_json::to_string(&saved).unwrap();
@@ -251,7 +265,9 @@ async fn typed_extension_creation_preserves_description_and_restores_the_castle(
         .unwrap()
         .editor
         .unwrap();
-    let draft = shader_effects::capture_editor(app.world_mut(), editor).unwrap();
+    let draft = shader_effects::capture_editor(app.world_mut(), editor)
+        .expect("capture the fixture shader editor")
+        .expect("the fixture has a shader editor");
     let draft = serde_json::to_value(draft).unwrap();
     assert!(
         draft["effect"]["programs"]
@@ -324,7 +340,10 @@ async fn typed_extension_creation_preserves_description_and_restores_the_castle(
             .is_some_and(|binding| binding.uid == uid)
     })
     .await;
-    let saved = snapshot(app.world_mut(), root).pop().unwrap();
+    let saved = snapshot(app.world_mut(), root)
+        .expect("capture the fixture snapshots")
+        .pop()
+        .unwrap();
     assert_eq!(saved.drafts.len(), 2);
     for (uid, expected) in [(&uid, "fn shade("), (&second, "fn second(")] {
         let draft = saved

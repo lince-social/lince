@@ -39,7 +39,7 @@ fn normalized_decimal(text: &str) -> Result<String, EngineError> {
     let value = nucleus::DecimalValue::parse_inferred(text).map_err(invalid)?;
     Ok((0..=value.scale())
         .find_map(|scale| value.rescale(scale))
-        .unwrap()
+        .unwrap_or(value)
         .to_string())
 }
 
@@ -159,12 +159,16 @@ impl Engine {
         for record in &mut projected.records {
             nucleus::performance::add("file-sync-lingua-validation-records", 1);
             normalize(record)?;
+            let (quantity, _) = record
+                .quantity
+                .as_ref()
+                .ok_or_else(|| invalid("A synchronized Record needs a quantity"))?;
             crate::record_creation::DraftFields {
                 uid: &record.uid,
                 head: &record.head,
                 body: &record.body,
                 slug: record.slug.as_deref(),
-                quantity: &record.quantity.as_ref().unwrap().0,
+                quantity,
                 assertions: record.assertions.iter().map(|assertion| {
                     crate::record_creation::AssertionFields {
                         predicate: &assertion.predicate,
@@ -309,7 +313,10 @@ impl Engine {
             return Ok(false);
         }
         let created = previous.is_none();
-        let (quantity, unit) = record.quantity.as_ref().unwrap();
+        let (quantity, unit) = record
+            .quantity
+            .as_ref()
+            .ok_or_else(|| invalid("A synchronized Record needs a quantity"))?;
         let mut meanings = HashMap::new();
         for name in record
             .assertions
@@ -362,7 +369,9 @@ impl Engine {
             )
             .await?;
         } else {
-            let previous = previous.as_ref().unwrap();
+            let previous = previous
+                .as_ref()
+                .expect("only existing Records reach the update branch");
             if previous.head != record.head || previous.body != record.body {
                 self.act(
                     Action::EditRecordText {
@@ -713,10 +722,10 @@ impl Engine {
                     extension.target_uid=Some(identities.get(&extension.target_slug).cloned().ok_or_else(||invalid("Unknown Extension target"))?);
                     if !document.records.iter().any(|record|Some(&record.uid)==extension.target_uid.as_ref()){return Err(invalid("Declare metadata alongside its Record"));}
                     if extension.namespace==lince_resources::RESOURCE_NAMESPACE {
-                        if resource_base.is_none() {
-                            resource_base = Some(lince_resources::address(&path.to_string_lossy()).map_err(invalid)?.to_string());
-                        }
-                        let base = resource_base.as_ref().unwrap();
+                        let base = match &mut resource_base {
+                            Some(base) => base,
+                            slot @ None => slot.insert(lince_resources::address(&path.to_string_lossy()).map_err(invalid)?.to_string()),
+                        };
                         let mut resource: lince_resources::Resource = serde::Deserialize::deserialize(&extension.fields)?;
                         resource.uri=lince_resources::resolve(base,&resource.uri).map_err(invalid)?;
                         for representation in &mut resource.representations{representation.uri=lince_resources::resolve(base,&representation.uri).map_err(invalid)?;}
@@ -736,11 +745,12 @@ impl Engine {
                     }
                 }
                 for rule in &mut document.automation.rules {
-                    rule.record_uid = Some(identities.get(&rule.record_slug).cloned().ok_or_else(|| invalid(format!("Unknown Rule target @{}", rule.record_slug)))?);
+                    let record_uid = identities.get(&rule.record_slug).ok_or_else(|| invalid(format!("Unknown Rule target @{}", rule.record_slug)))?;
+                    rule.record_uid = Some(record_uid.clone());
                     if !rule.frequency_slug.is_empty() {
                         rule.frequency_uid = Some(identities.get(&rule.frequency_slug).filter(|uid| frequency_uids.contains(*uid)).cloned().ok_or_else(|| invalid("Unknown Rule frequency"))?);
                     }
-                    if let Some(target) = store::records::routing(&self.store.pool, rule.record_uid.as_ref().unwrap()).await? {
+                    if let Some(target) = store::records::routing(&self.store.pool, record_uid).await? {
                         if target.organ_uid.as_deref() != Some(organ) { return Err(invalid("The Rule target belongs to another Organ")); }
                     }
                     if let Some(source) = &rule.condition {
@@ -784,10 +794,11 @@ impl Engine {
                 for record in &mut document.records {
                     for assertion in &mut record.assertions {
                         if let Some(uri) = &mut assertion.object_uri {
-                            if assertion_base.is_none() {
-                                assertion_base = Some(lince_resources::Reference::path(path).map_err(invalid)?.target);
-                            }
-                            *uri = lince_resources::resolve(assertion_base.as_deref().unwrap(), uri).map_err(invalid)?;
+                            let base = match &mut assertion_base {
+                                Some(base) => base,
+                                slot @ None => slot.insert(lince_resources::Reference::path(path).map_err(invalid)?.target),
+                            };
+                            *uri = lince_resources::resolve(base, uri).map_err(invalid)?;
                         }
                         if let Some(slug) = &assertion.object_slug {
                             assertion.object_uid = Some(
@@ -888,7 +899,14 @@ impl Engine {
                                     head: record.head.clone(),
                                     body: record.body.clone(),
                                     slug: record.slug.clone(),
-                                    quantity: record.quantity.as_ref().unwrap().0.clone(),
+                                    quantity: record
+                                        .quantity
+                                        .as_ref()
+                                        .ok_or_else(|| {
+                                            invalid("A synchronized Record needs a quantity")
+                                        })?
+                                        .0
+                                        .clone(),
                                     ..Default::default()
                                 },
                             },
@@ -1090,7 +1108,9 @@ impl Engine {
             .cloned()
             .collect();
         'missing: for path in missing {
-            let document = state.files.get_mut(&path).unwrap();
+            let Some(document) = state.files.get_mut(&path) else {
+                continue;
+            };
             document.missing += 1;
             if document.missing < MISSING_TICKS_BEFORE_DELETE {
                 continue;
@@ -1259,7 +1279,10 @@ fn render_document(
     }
     let mut base = None;
     for record in records {
-        let (quantity, unit) = record.quantity.as_ref().unwrap();
+        let (quantity, unit) = record
+            .quantity
+            .as_ref()
+            .ok_or_else(|| invalid("A synchronized Record needs a quantity"))?;
         let subject = format!(
             "{}{}{}",
             record
@@ -1290,17 +1313,17 @@ fn render_document(
             index
         };
         let mut assertions = Cow::Borrowed(record.assertions.as_slice());
-        if base.is_none() {
-            base = Some(
+        let base = match &mut base {
+            Some(base) => base,
+            slot @ None => slot.insert(
                 lince_resources::address(
                     &lince_resources::Reference::path(path)
                         .map_err(invalid)?
                         .target,
                 )
                 .map_err(invalid)?,
-            );
-        }
-        let base = base.as_ref().unwrap();
+            ),
+        };
         for (index, assertion) in record.assertions.iter().enumerate() {
             if let Some(uri) = &assertion.object_uri
                 && let Ok(target) = lince_resources::address(uri)
@@ -1322,11 +1345,12 @@ fn render_document(
     for extension in extensions {
         let mut fields = Cow::Borrowed(&extension.fields);
         if extension.namespace == lince_resources::RESOURCE_NAMESPACE {
-            if resource_base.is_none() {
-                resource_base =
-                    Some(lince_resources::address(&path.to_string_lossy()).map_err(invalid)?);
-            }
-            let base = resource_base.as_ref().unwrap();
+            let base = match &mut resource_base {
+                Some(base) => base,
+                slot @ None => {
+                    slot.insert(lince_resources::address(&path.to_string_lossy()).map_err(invalid)?)
+                }
+            };
             if let Some(value) = extension.fields["uri"].as_str()
                 && let Ok(uri) = lince_resources::address(value)
                 && let Some(relative) = base.make_relative(&uri)

@@ -150,8 +150,9 @@ pub(crate) fn apply(world: &mut World, root: Entity, action: AreaAction) {
         .filter(|entity| owns(world, root, *entity));
     match action {
         AreaAction::AttractionEnabled | AreaAction::ChangesEnabled | AreaAction::Enabled => {
-            if let Some(entity) = selected {
-                let mut area = world.get_mut::<InfluenceArea>(entity).unwrap();
+            if let Some(entity) = selected
+                && let Some(mut area) = world.get_mut::<InfluenceArea>(entity)
+            {
                 match action {
                     AreaAction::Enabled => area.enabled = !area.enabled,
                     AreaAction::AttractionEnabled => {
@@ -194,13 +195,20 @@ pub(crate) fn apply(world: &mut World, root: Entity, action: AreaAction) {
                 ShapeKind::Drawn => return,
             };
             let area = InfluenceArea::new(shape, view.center, DVec2::splat(320.0));
-            world.get_mut::<AreaEditor>(root).unwrap().cancel();
+            world
+                .get_mut::<AreaEditor>(root)
+                .expect("Area actions initialize their editor state")
+                .cancel();
             insert(world, root, area);
         }
         AreaAction::Redraw => {
             let Some(entity) = selected else { return };
-            let workspace = world.get::<Workspaces>(root).unwrap().active;
-            let mut editor = world.get_mut::<AreaEditor>(root).unwrap();
+            let Some(workspace) = world.get::<Workspaces>(root).map(|spaces| spaces.active) else {
+                return;
+            };
+            let mut editor = world
+                .get_mut::<AreaEditor>(root)
+                .expect("Area actions initialize their editor state");
             editor.cancel();
             editor.tool = Some(ShapeKind::Drawn);
             editor.redraw = Some(entity);
@@ -208,27 +216,42 @@ pub(crate) fn apply(world: &mut World, root: Entity, action: AreaAction) {
             editor.notice.clear();
         }
         AreaAction::Draw(kind) => {
-            let workspace = world.get::<Workspaces>(root).unwrap().active;
-            let mut editor = world.get_mut::<AreaEditor>(root).unwrap();
+            let Some(workspace) = world.get::<Workspaces>(root).map(|spaces| spaces.active) else {
+                return;
+            };
+            let mut editor = world
+                .get_mut::<AreaEditor>(root)
+                .expect("Area actions initialize their editor state");
             editor.cancel();
             editor.tool = Some(kind);
             editor.workspace = workspace;
             editor.notice.clear();
         }
         AreaAction::Select(entity) if owns(world, root, entity) => {
-            let mut editor = world.get_mut::<AreaEditor>(root).unwrap();
+            let mut editor = world
+                .get_mut::<AreaEditor>(root)
+                .expect("Area actions initialize their editor state");
             editor.cancel();
             editor.selected = Some(entity);
             editor.notice.clear();
             crate::native::canvas_item::select(world, root, entity);
         }
-        AreaAction::Cancel => world.get_mut::<AreaEditor>(root).unwrap().cancel(),
+        AreaAction::Cancel => world
+            .get_mut::<AreaEditor>(root)
+            .expect("Area actions initialize their editor state")
+            .cancel(),
         AreaAction::Finish => {
-            let points = &world.get::<AreaEditor>(root).unwrap().points;
+            let points = &world
+                .get::<AreaEditor>(root)
+                .expect("Area actions initialize their editor state")
+                .points;
             if let Some(area) = InfluenceArea::drawn(points) {
                 insert(world, root, area);
             } else {
-                world.get_mut::<AreaEditor>(root).unwrap().notice =
+                world
+                    .get_mut::<AreaEditor>(root)
+                    .expect("Area actions initialize their editor state")
+                    .notice =
                     "Use at least three points. The outline cannot cross or touch itself.".into();
             }
         }
@@ -239,7 +262,9 @@ pub(crate) fn apply(world: &mut World, root: Entity, action: AreaAction) {
         }
         _ => {
             let Some(entity) = selected else { return };
-            let mut area = world.get_mut::<InfluenceArea>(entity).unwrap();
+            let Some(mut area) = world.get_mut::<InfluenceArea>(entity) else {
+                return;
+            };
             match action {
                 AreaAction::Shape(kind) => {
                     area.shape = match kind {
@@ -335,7 +360,9 @@ fn force_status(area: &InfluenceArea) -> &'static str {
 }
 
 fn force_controls(world: &mut World, root: Entity, panel: Entity, entity: Entity) {
-    let area = world.get::<InfluenceArea>(entity).unwrap();
+    let Some(area) = world.get::<InfluenceArea>(entity) else {
+        return;
+    };
     let (direction, strength, message) = (area.direction, area.strength, force_status(area));
     label(world, panel, "Force", 18.0);
     select(
@@ -354,7 +381,7 @@ fn force_controls(world: &mut World, root: Entity, panel: Entity, entity: Entity
         ],
     );
     label(world, panel, "Strength", 14.0);
-    let slider = crate::native::slider::spawn(
+    let Some(slider) = crate::native::slider::spawn(
         world,
         panel,
         "Area force strength",
@@ -366,8 +393,9 @@ fn force_controls(world: &mut World, root: Entity, panel: Entity, entity: Entity
         },
         strength as f32,
         "",
-    )
-    .unwrap();
+    ) else {
+        return;
+    };
     world
         .entity_mut(slider)
         .insert((
@@ -400,7 +428,9 @@ fn force_controls(world: &mut World, root: Entity, panel: Entity, entity: Entity
                         return;
                     };
                     let edit = crate::native::area::editing::Edit::Strength(f64::from(value));
-                    let current = world.get::<InfluenceArea>(area).unwrap();
+                    let Some(current) = world.get::<InfluenceArea>(area) else {
+                        return;
+                    };
                     if !edit.differs(current) || !edit.valid(current) {
                         return;
                     }
@@ -409,7 +439,9 @@ fn force_controls(world: &mut World, root: Entity, panel: Entity, entity: Entity
                         area,
                         "Property changes inactive after an edit. Configured changes resume automatically.",
                     );
-                    edit.apply(&mut world.get_mut::<InfluenceArea>(area).unwrap());
+                    if let Some(mut current) = world.get_mut::<InfluenceArea>(area) {
+                        edit.apply(&mut current);
+                    }
                 });
             },
         );
@@ -460,7 +492,9 @@ fn field(
         },
     ));
     {
-        let mut text = world.get_mut::<EditableText>(input).unwrap();
+        let mut text = world
+            .get_mut::<EditableText>(input)
+            .expect("the Area field is spawned as editable text");
         text.allow_newlines = false;
         text.visible_lines = Some(1.0);
         text.max_characters = Some(if matches!(field, Field::Name) {
@@ -471,7 +505,7 @@ fn field(
     }
     world
         .get_mut::<AccessibilityNode>(input)
-        .unwrap()
+        .expect("the Area field bundle includes an accessibility node")
         .set_label(title);
     let status = label(world, parent, "", 12.0);
     world.entity_mut(status).insert(crate::native::icons::Tooltip("Not saved. Enter a finite number within the property's range, or a valid nonempty name or property value.".into()));
@@ -549,7 +583,7 @@ fn choice(
     let entity = button(world, root, parent, action, title);
     world
         .get_mut::<AccessibilityNode>(entity)
-        .unwrap()
+        .expect("the Area button bundle includes an accessibility node")
         .set_selected(selected);
     if selected {
         world.spawn((
@@ -715,7 +749,12 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
     ] {
         button(world, root, add, action, title);
     }
-    let tool = world.get::<AreaEditor>(root).unwrap().tool;
+    let Some(editor) = world.get::<AreaEditor>(root) else {
+        return;
+    };
+    let tool = editor.tool;
+    let notice = editor.notice.clone();
+    let selected = editor.selected.filter(|entity| owns(world, root, *entity));
     select(
         world,
         root,
@@ -739,18 +778,12 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
         }
         button(world, root, create, AreaAction::Cancel, "Cancel drawing");
     }
-    let notice = world.get::<AreaEditor>(root).unwrap().notice.clone();
     if !notice.is_empty() {
         let status = label(world, panel, "Drawing error", 14.0);
         world
             .entity_mut(status)
             .insert(crate::native::icons::Tooltip(notice));
     }
-    let selected = world
-        .get::<AreaEditor>(root)
-        .unwrap()
-        .selected
-        .filter(|entity| owns(world, root, *entity));
     let mut areas: Vec<_> = world
         .query::<(Entity, &InfluenceArea)>()
         .iter(world)
@@ -774,7 +807,11 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
             .map(|(entity, name, _)| (name, AreaAction::Select(entity)))
             .collect(),
     );
-    let Some(entity) = selected else {
+    let Some((entity, area)) = selected.and_then(|entity| {
+        world
+            .get::<InfluenceArea>(entity)
+            .map(|area| (entity, presentation::Values::from(area)))
+    }) else {
         crate::native::customization::synchronize_keyboard(world);
         return;
     };
@@ -791,7 +828,6 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
             crate::native::actions::ControlOwner(entity),
         ))
         .id();
-    let area = presentation::Values::from(world.get::<InfluenceArea>(entity).unwrap());
     let section = |world: &mut World, key: &str, title: &str| {
         crate::native::customization::section(
             world,
@@ -866,9 +902,10 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
                 {
                     return;
                 }
-                let mut area = world.get_mut::<InfluenceArea>(entity).unwrap();
-                area.color = [rgba[0], rgba[1], rgba[2]];
-                area.opacity = f32::from(rgba[3]) / 255.0;
+                if let Some(mut area) = world.get_mut::<InfluenceArea>(entity) {
+                    area.color = [rgba[0], rgba[1], rgba[2]];
+                    area.opacity = f32::from(rgba[3]) / 255.0;
+                }
             });
         },
     );
@@ -1002,6 +1039,10 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
     crate::native::customization::synchronize_keyboard(world);
 }
 
+#[allow(
+    clippy::unwrap_used,
+    reason = "Area panel Laboratory fixtures rely on every setup entity and expected control being present"
+)]
 pub(crate) mod tests {
     use super::*;
 

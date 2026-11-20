@@ -311,21 +311,24 @@ impl Saved {
             && self.tokens.validate()
     }
 
-    pub fn capture(world: &World, owner: Entity) -> Option<Self> {
+    pub fn capture(world: &World, owner: Entity) -> Option<Result<Self, String>> {
         let frame = world.get::<Frame>(owner)?;
         let config = world.get::<InfluenceArea>(frame.area)?.protein.clone()?;
         let item = world.get::<CanvasItem>(owner)?;
         let view = world.get::<Viewport>(frame.viewport)?;
-        Some(Self {
-            workspace: world.get::<WorkspaceMember>(owner)?.0,
-            config,
-            position: item.position.to_array(),
-            size: item.size.to_array(),
-            center: view.center.to_array(),
-            zoom: view.zoom,
-            placement: crate::native::sand_placement::Placement::capture(world, owner),
-            tokens: crate::native::token_style::overrides(world, owner),
-        })
+        let workspace = world.get::<WorkspaceMember>(owner)?.0;
+        Some(
+            crate::native::sand_placement::Placement::capture(world, owner).map(|placement| Self {
+                workspace,
+                config,
+                position: item.position.to_array(),
+                size: item.size.to_array(),
+                center: view.center.to_array(),
+                zoom: view.zoom,
+                placement,
+                tokens: crate::native::token_style::overrides(world, owner),
+            }),
+        )
     }
 
     pub fn apply(&self, world: &mut World, owner: Entity) {

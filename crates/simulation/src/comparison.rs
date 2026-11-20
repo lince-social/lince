@@ -84,7 +84,7 @@ pub fn without_proposed_changes(scenario: &Scenario) -> Scenario {
             "{}-baseline",
             scenario.name.chars().take(48).collect::<String>()
         );
-        baseline.proposal.as_mut().unwrap().changes.clear();
+        baseline.proposal.as_mut().expect("the cloned scenario retains its proposal").changes.clear();
         baseline
     } else {
         without_transfer_assumptions(scenario)

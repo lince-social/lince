@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use protein::{Include, Predicate, Protein, Source};
 
 fn query(uid: &str) -> Protein {

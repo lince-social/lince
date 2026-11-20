@@ -864,7 +864,8 @@ impl Composition {
         mapping: Mapping,
         native: Option<&GlesTexture>,
         damage: Rect<i32, Physical>,
-    ) -> io::Result<()> {
+    ) -> io::Result<bool> {
+        let mut native_drawn = false;
         let fullscreen = canvas.is_some_and(|canvas| {
             if canvas.output.unwrap_or(OutputId(1)) == id {
                 canvas.fullscreen
@@ -932,6 +933,7 @@ impl Composition {
                     .map_err(error);
                 frame.clear_tex_program_override();
                 result?;
+                native_drawn = true;
             }
         }
         for popup in scene.popups.iter().filter(|popup| {
@@ -957,7 +959,7 @@ impl Composition {
                 self.capture_popup_draw(frame, popup, mapping, damage)?;
             }
         }
-        Ok(())
+        Ok(native_drawn)
     }
 
     pub(super) fn capture_popup_draw(
@@ -1047,6 +1049,7 @@ fn write_buffer(job: &CaptureJob, pixels: &[u8], flipped: bool) -> io::Result<()
         for y in 0..height {
             let from = if flipped { height - y - 1 } else { y } * row;
             let to = data.offset as usize + y * data.stride as usize;
+            // SAFETY: pixel_layout bounds both disjoint buffers for every row of this copy.
             unsafe {
                 std::ptr::copy_nonoverlapping(pixels.as_ptr().add(from), pointer.add(to), row);
             }
@@ -1092,8 +1095,10 @@ pub(crate) fn probe_window(job: CaptureJob, window: WindowSnapshot) -> io::Resul
         .ok_or_else(|| {
             io::Error::other("The capture export probe requires a hardware EGL device")
         })?;
+    // SAFETY: Smithay owns this display lifetime and no raw caller terminates it.
     let display = unsafe { EGLDisplay::new(device) }.map_err(error)?;
     let context = EGLContext::new(&display).map_err(error)?;
+    // SAFETY: The context was created here and has never been bound to another thread.
     let mut renderer = unsafe { GlesRenderer::new(context) }.map_err(error)?;
     let mut composition = Composition::new(lince_interface::host::WakeSignal::new(|| {}))?;
     let bounds = window
@@ -1127,10 +1132,14 @@ pub(crate) fn probe_window(job: CaptureJob, window: WindowSnapshot) -> io::Resul
         &job.frame.buffer(),
         |pointer, length, data| {
             let count = job.size[0] as usize * job.size[1] as usize * 4;
-            if data.offset < 0 || data.offset as usize + count > length {
+            if pointer.is_null()
+                || data.offset < 0
+                || (data.offset as usize).checked_add(count)? > length
+            {
                 return None;
             }
             let mut pixels = vec![0; count];
+            // SAFETY: The range is inside the live pool mapping and the Vec is disjoint.
             unsafe {
                 std::ptr::copy_nonoverlapping(
                     pointer.add(data.offset as usize),

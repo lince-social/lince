@@ -448,7 +448,8 @@ async fn restoring_an_automatic_component_does_not_start_a_call() {
     let ClientMessage::CallContext { .. } = requests.try_recv().unwrap() else {
         panic!()
     };
-    let placement = crate::native::sand_placement::Placement::capture(&world, entity);
+    let placement = crate::native::sand_placement::Placement::capture(&world, entity)
+        .expect("capture the fixture placement");
     let area = world
         .get::<crate::native::area::InfluenceArea>(entity)
         .unwrap()

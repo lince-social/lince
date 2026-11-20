@@ -204,8 +204,13 @@ async fn promises(connection: &mut SqliteConnection) -> Result<Vec<Promise>, Sto
                 .get(&transfer)
                 .and_then(|promises| promises.get(&uid))
                 .copied();
-            if previous.is_some_and(|index| promises[index].as_ref().unwrap().revision >= revision)
-            {
+            if previous.is_some_and(|index| {
+                promises[index]
+                    .as_ref()
+                    .expect("each promise index points to its latest revision")
+                    .revision
+                    >= revision
+            }) {
                 continue;
             }
             if let Some(index) = previous {

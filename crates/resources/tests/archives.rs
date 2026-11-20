@@ -2,11 +2,12 @@ use lince_resources::{Library, Reference};
 use std::{fs, io::Write};
 
 fn archive(path: &std::path::Path, name: &str) {
-    let mut zip = zip::ZipWriter::new(fs::File::create(path).unwrap());
+    let mut zip = zip::ZipWriter::new(fs::File::create(path).expect("create the ZIP fixture"));
     zip.start_file(name, zip::write::SimpleFileOptions::default())
-        .unwrap();
-    zip.write_all(b"Book bytes").unwrap();
-    zip.finish().unwrap();
+        .expect("start the ZIP fixture entry");
+    zip.write_all(b"Book bytes")
+        .expect("write the ZIP fixture entry");
+    zip.finish().expect("finish the ZIP fixture");
 }
 
 #[test]

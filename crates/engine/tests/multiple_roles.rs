@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use engine::{Engine, actions::Action};
 
 async fn fixture() -> (Engine, String, i64, i64) {

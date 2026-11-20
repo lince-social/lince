@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 #[path = "offline_map/packs.rs"]
 mod packs;
 

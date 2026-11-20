@@ -65,33 +65,27 @@ pub(super) async fn apply(
             completed.insert(uid.to_owned());
             continue;
         }
-        if !cursor && !time.as_ref().is_some_and(|time| time.from_ms >= base_ms) {
-            continue;
-        }
-        let duration = if cursor {
-            nucleus::schedule::range(
+        let (release_ms, duration_ms) = if cursor {
+            let duration = nucleus::schedule::range(
                 row["start_date"].as_str(),
                 row["due_date"].as_str(),
                 row["estimate_min"].as_f64(),
                 Some(base_ms),
             )
             .map_err(invalid)?
-            .map_or(0, |time| time.until_ms.unwrap_or(base_ms) - base_ms)
-        } else {
-            let time = time.as_ref().unwrap();
-            time.until_ms.unwrap_or(time.from_ms) - time.from_ms
-        };
-        if cursor {
+            .map_or(0, |time| time.until_ms.unwrap_or(base_ms) - base_ms);
             cursor_ids.insert(uid.to_owned());
-        }
+            (base_ms, duration)
+        } else {
+            let Some(time) = time.filter(|time| time.from_ms >= base_ms) else {
+                continue;
+            };
+            (time.from_ms, time.until_ms.unwrap_or(time.from_ms) - time.from_ms)
+        };
         work.push(Work {
             id: uid.to_owned(),
-            release_ms: if cursor {
-                base_ms
-            } else {
-                time.unwrap().from_ms
-            },
-            duration_ms: duration,
+            release_ms,
+            duration_ms,
             priority: fields
                 .iter()
                 .map(|field| {

@@ -5,7 +5,9 @@ fn prepare(world: &mut World, owners: &[Entity], runtime: &mut Runtime, now: Ins
     let _preparation = nucleus::performance::Span::new("extension-feed-preparation");
     let mut groups: HashMap<Arc<FeedKey>, Vec<Entity>> = HashMap::new();
     for &owner in owners {
-        let settings = world.get::<Settings>(owner).unwrap();
+        let Some(settings) = world.get::<Settings>(owner) else {
+            continue;
+        };
         let key = world
             .get::<View>(owner)
             .and_then(|view| view.feed.as_ref())
@@ -22,8 +24,9 @@ fn prepare(world: &mut World, owners: &[Entity], runtime: &mut Runtime, now: Ins
                 next: now,
                 pending: None,
             });
-            let mut view = world.get_mut::<View>(owner).unwrap();
-            if view.feed.as_ref() != Some(&key) {
+            if let Some(mut view) = world.get_mut::<View>(owner)
+                && view.feed.as_ref() != Some(&key)
+            {
                 view.feed = Some(key);
                 view.seen = 0;
                 view.render = true;

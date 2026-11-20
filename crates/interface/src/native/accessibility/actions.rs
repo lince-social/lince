@@ -29,6 +29,11 @@ pub struct Context {
 impl Context {
     pub fn output(&self) -> Option<crate::host::OutputId> { self.output }
 
+    pub(crate) fn same_input_target(&self, mut current: Self) -> bool {
+        current.text_generation = self.text_generation;
+        self == &current
+    }
+
     pub fn same_owner(&self, other: &Self) -> bool {
         self.root == other.root && self.canvas == other.canvas && self.workspace == other.workspace
             && self.output == other.output && self.modal == other.modal && self.owner == other.owner
@@ -502,4 +507,8 @@ pub fn perform(
     Ok(())
 }
 
+#[allow(
+    clippy::unwrap_used,
+    reason = "Laboratory accessibility fixtures require their expected captured actions and controls"
+)]
 pub(super) mod tests;

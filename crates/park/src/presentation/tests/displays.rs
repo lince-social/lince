@@ -1,6 +1,10 @@
-use super::shortcuts::{capture, click, key, named_button, settle};
+#[cfg(feature = "nested")]
+use super::shortcuts::named_button;
+use super::shortcuts::{capture, click, key, settle};
 use super::*;
+#[cfg(feature = "nested")]
 use crate::server::{Monitor, Server};
+#[cfg(feature = "nested")]
 use lince_interface::{
     host::{
         HostRequest, OutputId,
@@ -8,7 +12,9 @@ use lince_interface::{
     },
     native::actions::Action,
 };
+#[cfg(feature = "nested")]
 use smithay::backend::allocator::Buffer;
+#[cfg(feature = "nested")]
 use std::sync::mpsc::Receiver;
 
 pub(super) fn labelled(canvas: &mut Presentation, caption: &str) -> Entity {
@@ -120,6 +126,7 @@ pub(super) fn write(canvas: &mut Presentation, caption: &str, value: &str, size:
     );
 }
 
+#[cfg(feature = "nested")]
 fn publish(canvas: &mut Presentation, server: &Server) {
     canvas
         .outputs(
@@ -136,6 +143,7 @@ fn publish(canvas: &mut Presentation, server: &Server) {
     settle(canvas);
 }
 
+#[cfg(feature = "nested")]
 fn bridge(
     canvas: &mut Presentation,
     server: &mut Server,
@@ -174,6 +182,7 @@ fn bridge(
     phases
 }
 
+#[cfg(feature = "nested")]
 fn output_pixels(frame: &Frame, id: OutputId) -> Vec<u8> {
     if frame.output == Some(id) {
         return super::probe_pixels(frame.dmabuf().unwrap()).unwrap();
@@ -182,6 +191,7 @@ fn output_pixels(frame: &Frame, id: OutputId) -> Vec<u8> {
     super::probe_pixels(output.dmabuf()).unwrap()
 }
 
+#[cfg(feature = "nested")]
 fn output_capture(frame: &Frame, id: OutputId, name: &str) {
     let Some(directory) = std::env::var_os("LINCE_PARK_TEST_ARTIFACTS") else {
         return;
@@ -211,6 +221,7 @@ fn output_capture(frame: &Frame, id: OutputId, name: &str) {
 
 #[test]
 #[ignore = "requires hardware Vulkan and EGL"]
+#[cfg(feature = "nested")]
 fn monitor_panel_arranges_tests_confirms_reverts_and_identifies_the_named_virtual_output() {
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_all()

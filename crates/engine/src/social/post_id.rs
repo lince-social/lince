@@ -19,9 +19,10 @@ pub(super) fn post_id(
     let hash = Sha256::digest(signing_bytes("post-id", &identity)?);
     let mut time = [0u8; 8];
     time[2..].copy_from_slice(&hash[..6]);
-    let entropy = u128::from_be_bytes(hash[..16].try_into().unwrap());
+    let mut entropy = [0; 16];
+    entropy.copy_from_slice(&hash[..16]);
     Ok(format!(
         "post_{}",
-        nucleus::id::ulid_from(u64::from_be_bytes(time), entropy)
+        nucleus::id::ulid_from(u64::from_be_bytes(time), u128::from_be_bytes(entropy))
     ))
 }

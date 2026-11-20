@@ -106,7 +106,7 @@ pub fn assertion_binding(position: usize) -> &'static str {
 pub fn extension_reading(namespace: &str, property: &str) -> String {
     format!(
         "extension:{}",
-        serde_json::to_string(&(namespace, property)).unwrap()
+        serde_json::to_string(&(namespace, property)).expect("the token key contains only strings")
     )
 }
 

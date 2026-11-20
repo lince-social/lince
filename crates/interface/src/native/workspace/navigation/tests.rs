@@ -193,12 +193,15 @@ fn reordering_preserves_authored_models_content_camera_active_identity_and_edito
         .resource_mut::<InputFocus>()
         .set(editor, bevy::input_focus::FocusCause::Navigated);
     let camera = *app.world().get::<CanvasView>(root).unwrap();
-    let mut expected = super::super::snapshot(app.world_mut(), root);
+    let mut expected = super::super::snapshot(app.world_mut(), root)
+        .expect("capture the workspace before reordering");
     expected.workspaces.swap(0, 1);
     DesktopAction::MoveWorkspaceEarlier.apply(app.world_mut(), root);
     assert_eq!(numbers(app.world(), root), vec![31, 1, 7]);
+    let reordered =
+        super::super::snapshot(app.world_mut(), root).expect("capture the reordered workspace");
     assert_eq!(
-        serde_json::to_value(super::super::snapshot(app.world_mut(), root)).unwrap(),
+        serde_json::to_value(reordered).unwrap(),
         serde_json::to_value(expected).unwrap()
     );
     assert_eq!(app.world().get::<Workspaces>(root).unwrap().active, 31);
@@ -206,12 +209,13 @@ fn reordering_preserves_authored_models_content_camera_active_identity_and_edito
     assert_eq!(app.world().resource::<InputFocus>().get(), Some(editor));
     let current = app.world().get::<CanvasView>(root).unwrap();
     assert_eq!((current.center, current.zoom), (camera.center, camera.zoom));
-    let before = serde_json::to_vec(&super::super::snapshot(app.world_mut(), root)).unwrap();
+    let before = super::super::snapshot(app.world_mut(), root)
+        .expect("capture the workspace before a refused reorder");
+    let before = serde_json::to_vec(&before).unwrap();
     assert!(reorder(app.world_mut(), root, -1).is_err());
-    assert_eq!(
-        serde_json::to_vec(&super::super::snapshot(app.world_mut(), root)).unwrap(),
-        before
-    );
+    let after = super::super::snapshot(app.world_mut(), root)
+        .expect("capture the workspace after a refused reorder");
+    assert_eq!(serde_json::to_vec(&after).unwrap(), before);
     DesktopAction::MoveWorkspaceLater.apply(app.world_mut(), root);
     assert_eq!(numbers(app.world(), root), vec![1, 31, 7]);
 }
@@ -314,11 +318,13 @@ fn reordered_number_mapping_names_notes_and_areas_survive_the_existing_save_and_
     .unwrap();
     reorder(app.world_mut(), root, 1).unwrap();
     assert_eq!(numbers(app.world(), root), vec![1, 7, 31]);
-    let saved = super::super::snapshot(app.world_mut(), root);
+    let saved = super::super::snapshot(app.world_mut(), root)
+        .expect("capture the workspace before reopening");
     super::super::tests::flush(&mut app);
     drop(app);
     let (mut restored, root) = super::super::tests::fixture(Some(path));
-    let after = super::super::snapshot(restored.world_mut(), root);
+    let after =
+        super::super::snapshot(restored.world_mut(), root).expect("capture the reopened workspace");
     assert_eq!(numbers(restored.world(), root), vec![1, 7, 31]);
     assert_eq!(restored.world().get::<Workspaces>(root).unwrap().active, 31);
     assert_eq!(

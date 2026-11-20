@@ -714,10 +714,14 @@ fn present_with(world: &mut World, queries: &mut ReadinessQueries) {
     let images = images
         .as_ref()
         .map(|images| images.0.read().unwrap_or_else(|error| error.into_inner()));
+    let mut members = Vec::new();
+    let mut cameras = Vec::new();
+    let mut pending = Vec::new();
     for root in roots {
-        let mut members = Vec::new();
-        let mut cameras = Vec::new();
-        let mut pending = vec![root];
+        let unpresented = world.get::<Presented>(root).is_none();
+        members.clear();
+        cameras.clear();
+        pending.push(root);
         let mut ready = true;
         let mut layout_pending = false;
         let mut issues = Vec::new();
@@ -728,7 +732,9 @@ fn present_with(world: &mut World, queries: &mut ReadinessQueries) {
             {
                 continue;
             }
-            members.push(entity);
+            if unpresented {
+                members.push(entity);
+            }
             if let Some(surface) = node.surface {
                 cameras.push(surface.camera);
             }
@@ -822,17 +828,18 @@ fn present_with(world: &mut World, queries: &mut ReadinessQueries) {
                     .insert(value);
             }
         }
-        if ready && world.get::<Presented>(root).is_none() {
-            world.entity_mut(root).insert(Presented);
-        }
-        if !ready && world.get::<Presented>(root).is_none() {
-            for entity in members {
-                if let Some(mut visibility) = world.get_mut::<InheritedVisibility>(entity) {
-                    visibility.set_if_neq(InheritedVisibility::HIDDEN);
+        if unpresented {
+            if ready {
+                world.entity_mut(root).insert(Presented);
+            } else {
+                for &entity in &members {
+                    if let Some(mut visibility) = world.get_mut::<InheritedVisibility>(entity) {
+                        visibility.set_if_neq(InheritedVisibility::HIDDEN);
+                    }
                 }
-            }
-            if let Some(mut visibility) = world.get_mut::<Visibility>(root) {
-                visibility.set_changed();
+                if let Some(mut visibility) = world.get_mut::<Visibility>(root) {
+                    visibility.set_changed();
+                }
             }
         }
         if layout_pending && let Some(wake) = world.get_resource::<WakeSignal>() {

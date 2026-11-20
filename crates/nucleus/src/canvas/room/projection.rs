@@ -125,11 +125,8 @@ pub(crate) fn relocalize_move(
     placements
         .iter_mut()
         .find(|item| item.id == id)
-        .unwrap()
-        .metadata
-        .room_member
-        .as_mut()
-        .unwrap()
+        .and_then(|item| item.metadata.room_member.as_mut())
+        .ok_or("The room member is unavailable.")?
         .local = local;
     Ok(())
 }

@@ -1,7 +1,8 @@
 use bevy::{prelude::*, text::EditableText};
-use jni::{
-    JNIEnv, JavaVM,
-    objects::{JByteArray, JClass, JObject, JString, JValue},
+use jni::{Env, JValue, JavaVM, jni_sig, jni_str, objects::JObject, refs::Global};
+use jni_legacy::{
+    JNIEnv,
+    objects::{JByteArray, JClass, JString},
     sys::{jboolean, jdouble, jint, jlong},
 };
 use std::{
@@ -23,10 +24,10 @@ pub fn location(enabled: bool, milliseconds: i64, epoch: u64) -> Result<(), Stri
     with_activity(|env, activity| {
         env.call_method(
             activity,
-            "location",
-            "(ZJJ)V",
+            jni_str!("location"),
+            jni_sig!("(ZJJ)V"),
             &[
-                JValue::Bool(enabled.into()),
+                JValue::Bool(enabled),
                 JValue::Long(milliseconds),
                 JValue::Long(epoch as i64),
             ],
@@ -39,9 +40,9 @@ pub fn locate_once(enabled: bool, epoch: u64) -> Result<(), String> {
     with_activity(|env, activity| {
         env.call_method(
             activity,
-            "locateOnce",
-            "(ZJ)V",
-            &[JValue::Bool(enabled.into()), JValue::Long(epoch as i64)],
+            jni_str!("locateOnce"),
+            jni_sig!("(ZJ)V"),
+            &[JValue::Bool(enabled), JValue::Long(epoch as i64)],
         )
         .map(|_| ())
     })
@@ -51,8 +52,8 @@ pub fn choose_map_pack(epoch: u64, quota: u64) -> Result<(), String> {
     with_activity(|env, activity| {
         env.call_method(
             activity,
-            "chooseMapPack",
-            "(JJ)V",
+            jni_str!("chooseMapPack"),
+            jni_sig!("(JJ)V"),
             &[
                 JValue::Long(epoch as i64),
                 JValue::Long(quota.min(i64::MAX as u64) as i64),
@@ -66,8 +67,8 @@ pub fn cancel_map_pack(epoch: u64) {
     let _ = with_activity(|env, activity| {
         env.call_method(
             activity,
-            "cancelMapPack",
-            "(J)V",
+            jni_str!("cancelMapPack"),
+            jni_sig!("(J)V"),
             &[JValue::Long(epoch as i64)],
         )
         .map(|_| ())
@@ -247,8 +248,8 @@ pub fn accessibility_snapshot(value: &str) -> Result<(), String> {
         let value = env.new_string(value)?;
         env.call_method(
             activity,
-            "accessibilitySnapshot",
-            "(Ljava/lang/String;)V",
+            jni_str!("accessibilitySnapshot"),
+            jni_sig!("(Ljava/lang/String;)V"),
             &[JValue::Object(&value)],
         )
         .map(|_| ())
@@ -260,8 +261,8 @@ pub fn open_link(value: &str) -> Result<(), String> {
         let value = env.new_string(value)?;
         env.call_method(
             activity,
-            "openLink",
-            "(Ljava/lang/String;)V",
+            jni_str!("openLink"),
+            jni_sig!("(Ljava/lang/String;)V"),
             &[JValue::Object(&value)],
         )
         .map(|_| ())
@@ -295,8 +296,13 @@ pub fn choose_file(scope: String, thread: String) -> Result<(), String> {
     }
     *choice = Some((id, scope, thread));
     let result = with_activity(|env, activity| {
-        env.call_method(activity, "chooseFile", "(J)V", &[JValue::Long(id as i64)])
-            .map(|_| ())
+        env.call_method(
+            activity,
+            jni_str!("chooseFile"),
+            jni_sig!("(J)V"),
+            &[JValue::Long(id as i64)],
+        )
+        .map(|_| ())
     });
     if result.is_err() {
         *choice = None;
@@ -311,8 +317,8 @@ pub fn save_file(name: &str, mime_type: &str, bytes: &[u8]) -> Result<(), String
         let bytes = env.byte_array_from_slice(bytes)?;
         env.call_method(
             activity,
-            "saveFile",
-            "(Ljava/lang/String;Ljava/lang/String;[B)V",
+            jni_str!("saveFile"),
+            jni_sig!("(Ljava/lang/String;Ljava/lang/String;[B)V"),
             &[
                 JValue::Object(&name),
                 JValue::Object(&mime),
@@ -424,16 +430,19 @@ pub fn discovery(enabled: bool, milliseconds: i64) -> Result<(), String> {
     with_activity(|env, activity| {
         env.call_method(
             activity,
-            "discovery",
-            "(ZJ)V",
-            &[JValue::Bool(enabled.into()), JValue::Long(milliseconds)],
+            jni_str!("discovery"),
+            jni_sig!("(ZJ)V"),
+            &[JValue::Bool(enabled), JValue::Long(milliseconds)],
         )
         .map(|_| ())
     })
 }
 
 pub fn scan() -> Result<(), String> {
-    with_activity(|env, activity| env.call_method(activity, "scanQr", "()V", &[]).map(|_| ()))
+    with_activity(|env, activity| {
+        env.call_method(activity, jni_str!("scanQr"), jni_sig!("()V"), &[])
+            .map(|_| ())
+    })
 }
 
 #[bevy::prelude::bevy_main]
@@ -451,20 +460,12 @@ fn initialize_tls() -> Result<(), String> {
         let context = env
             .call_method(
                 activity,
-                "getApplicationContext",
-                "()Landroid/content/Context;",
+                jni_str!("getApplicationContext"),
+                jni_sig!("()Landroid/content/Context;"),
                 &[],
             )?
             .l()?;
-        let app = bevy::android::ANDROID_APP.get().unwrap();
-        let vm = unsafe { jni_runtime::JavaVM::from_raw(app.vm_as_ptr().cast()) };
-        vm.attach_current_thread(|env| {
-            let context =
-                unsafe { jni_runtime::objects::JObject::from_raw(env, context.into_raw().cast()) };
-            rustls_platform_verifier::android::init_with_env(env, context)
-        })
-        .map_err(|_| jni::errors::Error::JavaException)?;
-        Ok(())
+        rustls_platform_verifier::android::init_with_env(env, context)
     })
 }
 
@@ -521,18 +522,19 @@ pub extern "system" fn Java_social_lince_mobile_MainActivity_nativeInsets(
 }
 
 fn with_activity<T>(
-    call: impl FnOnce(&mut JNIEnv, &JObject) -> Result<T, jni::errors::Error>,
+    call: impl FnOnce(&mut Env<'_>, &JObject<'_>) -> jni::errors::Result<T>,
 ) -> Result<T, String> {
     let app = bevy::android::ANDROID_APP
         .get()
         .ok_or("Android activity unavailable")?;
-    let vm =
-        unsafe { JavaVM::from_raw(app.vm_as_ptr().cast()) }.map_err(|error| error.to_string())?;
-    let mut env = vm
-        .attach_current_thread()
-        .map_err(|error| error.to_string())?;
-    let activity = unsafe { JObject::from_raw(app.activity_as_ptr().cast()) };
-    call(&mut env, &activity).map_err(|error| error.to_string())
+    let vm = JavaVM::singleton().map_err(|error| error.to_string())?;
+    vm.attach_current_thread(|env| {
+        let raw_activity = app.activity_as_ptr().cast();
+        // SAFETY: AndroidApp keeps this global reference valid through the call.
+        let activity = unsafe { env.as_cast_raw::<Global<JObject>>(&raw_activity)? };
+        call(env, &activity)
+    })
+    .map_err(|error| error.to_string())
 }
 
 pub fn edit(
@@ -590,16 +592,15 @@ pub fn open_editor(input: &crate::app::Input, text: &EditableText, scope: &str) 
         let value = env.new_string(text.value().to_string())?;
         env.call_method(
             activity,
-            "edit",
-            "(JLjava/lang/String;Ljava/lang/String;ZZ)V",
+            jni_str!("edit"),
+            jni_sig!("(JLjava/lang/String;Ljava/lang/String;ZZ)V"),
             &[
                 JValue::Long(id as i64),
                 JValue::Object(&title),
                 JValue::Object(&value),
-                JValue::Bool(text.allow_newlines.into()),
+                JValue::Bool(text.allow_newlines),
                 JValue::Bool(
-                    (input.key == "login/password" || input.key.starts_with("shared-password/"))
-                        .into(),
+                    input.key == "login/password" || input.key.starts_with("shared-password/"),
                 ),
             ],
         )?;
@@ -611,13 +612,15 @@ pub fn open_editor(input: &crate::app::Input, text: &EditableText, scope: &str) 
 }
 
 pub fn finish() {
-    let _ =
-        with_activity(|env, activity| env.call_method(activity, "finish", "()V", &[]).map(|_| ()));
+    let _ = with_activity(|env, activity| {
+        env.call_method(activity, jni_str!("finish"), jni_sig!("()V"), &[])
+            .map(|_| ())
+    });
 }
 
 pub fn restart() -> Result<(), String> {
     with_activity(|env, activity| {
-        env.call_method(activity, "restartProfile", "()V", &[])
+        env.call_method(activity, jni_str!("restartProfile"), jni_sig!("()V"), &[])
             .map(|_| ())
     })
 }
@@ -655,7 +658,7 @@ pub fn receive(world: &mut World) {
             }
             Event::Qr(result) => {
                 let _ = with_activity(|env, activity| {
-                    env.call_method(activity, "closeScanner", "()V", &[])
+                    env.call_method(activity, jni_str!("closeScanner"), jni_sig!("()V"), &[])
                         .map(|_| ())
                 });
                 match result.and_then(|code| {

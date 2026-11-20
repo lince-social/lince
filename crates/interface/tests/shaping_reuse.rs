@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 #![cfg(feature = "ui")]
 
 use fontique::{Blob, Collection, CollectionOptions, FontInfoOverride, SourceCache};

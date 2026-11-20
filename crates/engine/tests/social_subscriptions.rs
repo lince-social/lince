@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use chrono::Timelike;
 use engine::{Engine, EngineError, social::Network};
 use nucleus::social::{

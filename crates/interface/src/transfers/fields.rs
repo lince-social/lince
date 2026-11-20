@@ -161,16 +161,15 @@ pub fn composer_fields(form: &mut Form) {
                     let private_commitment = form.data["agreement"] == "dependency"
                         && form.data["promises"][index]["item"]["exchange"].is_null();
                     let responsible = text(&form.data["promises"][index], "party");
-                    let others = std::iter::once(&form.data["creator"])
+                    let mut others = std::iter::once(&form.data["creator"])
                         .chain(array(&form.data, "invitees"))
                         .filter_map(Value::as_str)
-                        .filter(|person| !person.is_empty() && *person != responsible)
-                        .collect::<std::collections::BTreeSet<_>>();
-                    let counterparty = if others.len() == 1 {
-                        others.into_iter().next().unwrap().to_owned()
-                    } else {
-                        String::new()
-                    };
+                        .filter(|person| !person.is_empty() && *person != responsible);
+                    let counterparty = others
+                        .next()
+                        .filter(|first| others.all(|person| person == *first))
+                        .unwrap_or_default()
+                        .to_owned();
                     let promise = &mut form.data["promises"][index];
                     if !private_commitment
                         && promise.pointer("/disclosed/parties") != Some(&Value::Bool(false))

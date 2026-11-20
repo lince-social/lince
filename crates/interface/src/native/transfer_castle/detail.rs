@@ -10,14 +10,16 @@ fn section(
     label: &str,
     open: bool,
 ) -> Option<Entity> {
+    let expanded = world.get::<View>(owner)?.expanded.contains(key) != open;
     let block = stack(world, parent);
-    world.get_mut::<Node>(block).unwrap().padding = UiRect::all(px(10));
+    if let Some(mut node) = world.get_mut::<Node>(block) {
+        node.padding = UiRect::all(px(10));
+    }
     world
         .entity_mut(block)
         .insert(crate::native::token_style::background(
             crate::native::tokens::Token::CanvasBackground,
         ));
-    let expanded = world.get::<View>(owner).unwrap().expanded.contains(key) != open;
     button(
         world,
         block,
@@ -96,6 +98,9 @@ pub(super) fn party_form(title: &str, action: Value, transfer: &Value) -> Form {
 }
 
 pub(super) fn render(world: &mut World, owner: Entity, parent: Entity, transfer: &Value) {
+    if world.get::<View>(owner).is_none() || world.get::<TransferCastle>(owner).is_none() {
+        return;
+    }
     let heading = row(world, parent);
     button(
         world,
@@ -152,7 +157,10 @@ pub(super) fn render(world: &mut World, owner: Entity, parent: Entity, transfer:
         );
     }
 
-    if capability(&world.get::<View>(owner).unwrap().context, "create") {
+    if world
+        .get::<View>(owner)
+        .is_some_and(|view| capability(&view.context, "create"))
+    {
         button(
             world,
             heading,
@@ -402,7 +410,9 @@ pub(super) fn render(world: &mut World, owner: Entity, parent: Entity, transfer:
         let person = person(world, owner);
         let form = {
             let _span = nucleus::performance::Span::new("transfer-action-input-preparation");
-            let view = world.get::<View>(owner).unwrap();
+            let Some(view) = world.get::<View>(owner) else {
+                return;
+            };
             crate::transfers::matching::form(transfer, &person, &view.rows, &view.context)
         };
         ui::button(
@@ -415,11 +425,11 @@ pub(super) fn render(world: &mut World, owner: Entity, parent: Entity, transfer:
         let results = world
             .get::<SupplierMatches>(owner)
             .filter(|matches| {
-                let view = world.get::<View>(owner).unwrap();
                 matches.person == person
                     && matches.transfer.as_str() == model::display_ref(&transfer["uid"]).as_ref()
-                    && matches.rows == view.rows
-                    && matches.context == view.context
+                    && world.get::<View>(owner).is_some_and(|view| {
+                        matches.rows == view.rows && matches.context == view.context
+                    })
             })
             .map(|matches| {
                 let _span = nucleus::performance::Span::new("transfer-action-input-preparation");
@@ -485,10 +495,7 @@ pub(super) fn render(world: &mut World, owner: Entity, parent: Entity, transfer:
                 let upstream = text(dependency, "upstream");
                 if world
                     .get::<View>(owner)
-                    .unwrap()
-                    .rows
-                    .iter()
-                    .any(|row| row["uid"] == upstream)
+                    .is_some_and(|view| view.rows.iter().any(|row| row["uid"] == upstream))
                 {
                     button(
                         world,
@@ -764,11 +771,10 @@ fn promises(world: &mut World, owner: Entity, parent: Entity, transfer: &Value) 
         }
         let mut action = base(world, owner, transfer, "activate-transfer-occurrence");
         action["promise"] = promise["uid"].clone();
-        let activation = receipts::activation_form(
-            transfer,
-            action,
-            &world.get::<View>(owner).unwrap().receipt_list,
-        );
+        let Some(view) = world.get::<View>(owner) else {
+            return;
+        };
+        let activation = receipts::activation_form(transfer, action, &view.receipt_list);
         offer(world, owner, controls, promise, "activate", activation);
         let mut action = base(world, owner, transfer, "claim-open-transfer-promise");
         action["promise"] = promise["uid"].clone();
@@ -895,7 +901,10 @@ fn occurrences(world: &mut World, owner: Entity, parent: Entity, transfer: &Valu
             action["occurrence"] = json!(uid);
             action["role"] = json!(role);
             action["claimed"] = json!(!claimed);
-            if world.get::<View>(owner).unwrap().context["viewer"]["local"] == true {
+            let Some(view) = world.get::<View>(owner) else {
+                return;
+            };
+            if view.context["viewer"]["local"] == true {
                 action["person"] = occurrence[if role == "delivery" {
                     "giver"
                 } else {
@@ -918,9 +927,7 @@ fn occurrences(world: &mut World, owner: Entity, parent: Entity, transfer: &Valu
         if capability(occurrence, "confirm_delivery") || capability(occurrence, "confirm_receipt") {
             let selected = world
                 .get::<View>(owner)
-                .unwrap()
-                .selected_occurrences
-                .contains(&uid);
+                .is_some_and(|view| view.selected_occurrences.contains(&uid));
             button(
                 world,
                 controls,
@@ -1249,9 +1256,7 @@ fn negotiation(world: &mut World, owner: Entity, parent: Entity, transfer: &Valu
         action["references"] = json!([]);
         if let Some(body) = world
             .get::<TransferCastle>(owner)
-            .unwrap()
-            .shared_simulation
-            .clone()
+            .and_then(|castle| castle.shared_simulation.clone())
         {
             let mut shared_action = action.clone();
             shared_action["body"] = json!(body);
@@ -1310,7 +1315,10 @@ fn hierarchy(world: &mut World, owner: Entity, parent: Entity, transfer: &Value)
     }
     let (parents, children) = {
         let _span = nucleus::performance::Span::new("transfer-action-input-preparation");
-        let rows = model::Hierarchy::new(&world.get::<View>(owner).unwrap().rows);
+        let Some(view) = world.get::<View>(owner) else {
+            return;
+        };
+        let rows = model::Hierarchy::new(&view.rows);
         let parents = ["parent", "source"]
             .map(|key| rows.find(&model::display_ref(&transfer[key])).is_some());
         let children: Vec<_> = array(transfer, "children")
@@ -1395,9 +1403,7 @@ fn hierarchy(world: &mut World, owner: Entity, parent: Entity, transfer: &Value)
         for uid in occurrences {
             let selected = world
                 .get::<View>(owner)
-                .unwrap()
-                .selected_occurrences
-                .contains(&uid);
+                .is_some_and(|view| view.selected_occurrences.contains(&uid));
             button(
                 world,
                 block,

@@ -582,7 +582,7 @@ pub fn render(world: &mut World, parent: Entity) {
     );
     world
         .get_mut::<bevy::text::EditableText>(package)
-        .unwrap()
+        .expect("the package input has an EditableText component")
         .max_characters = None;
     control(world, parent, "Install offline archive", Intent::Install);
     control(world, parent, "Import portable knowledge", Intent::Import);

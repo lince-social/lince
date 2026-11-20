@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use engine::{Engine, actions::Action};
 use nucleus::component::{ComponentState, RecordMode};
 use nucleus::karma::rule_field::RuleFieldInput;

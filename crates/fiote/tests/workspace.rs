@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 #[cfg(unix)]
 use async_trait::async_trait;
 use fiote::tools::Registry;

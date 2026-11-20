@@ -43,7 +43,7 @@ impl SavedExplorer {
     }
 }
 
-pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedExplorer> {
+pub(crate) fn snapshot(world: &mut World, root: Entity) -> Result<Vec<SavedExplorer>, String> {
     world
         .query::<(
             Entity,
@@ -59,13 +59,15 @@ pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedExplorer> {
                     .get::<View>(*entity)
                     .is_some_and(|view| matches!(view.target, Target::Standalone))
         })
-        .map(|(entity, _, member, item, castle)| SavedExplorer {
-            workspace: member.0,
-            castle: castle.clone(),
-            position: item.position.to_array(),
-            size: item.size.to_array(),
-            placement: crate::native::sand_placement::Placement::capture(world, entity),
-            tokens: crate::native::token_style::overrides(world, entity),
+        .map(|(entity, _, member, item, castle)| {
+            Ok(SavedExplorer {
+                workspace: member.0,
+                castle: castle.clone(),
+                position: item.position.to_array(),
+                size: item.size.to_array(),
+                placement: crate::native::sand_placement::Placement::capture(world, entity)?,
+                tokens: crate::native::token_style::overrides(world, entity),
+            })
         })
         .collect()
 }

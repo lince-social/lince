@@ -33,6 +33,7 @@ fn a_real_scratch_snapshot_write_failure_keeps_live_content_and_last_good_files_
     for (name, bytes) in &good { assert_eq!(&std::fs::read(backup.join(name)).unwrap(), bytes); }
     std::fs::remove_file(&snapshots).unwrap(); std::fs::rename(&backup, &snapshots).unwrap();
     super::super::tests::flush(&mut app);
+    app.update();
     assert!(app.world().get::<Workspaces>(root).unwrap().error.is_none());
     drop(app);
     let (mut restored, restored_root) = super::super::tests::fixture(Some(path));
@@ -66,7 +67,8 @@ fn ordinary_native_save_normalizes_scratch_home_and_startup_restores_hidden_cont
         crate::native::workspace::switch_output(app.world_mut(), root, 2);
         desktop::apply_scratch_action(app.world_mut(), root, crate::host::DesktopAction::ShowScratch).unwrap().unwrap();
         let live = app.world().get::<Workspaces>(root).unwrap().entries.clone();
-        let document = snapshot(app.world_mut(), root);
+        let document = snapshot(app.world_mut(), root)
+            .expect("capture the workspace with visible scratch content");
         assert!(document.validate(), "{:?}", document.validation_error());
         assert_eq!(app.world().get::<WorkspaceMember>(entity), Some(&WorkspaceMember(2)));
         assert_eq!(app.world().get::<Workspaces>(root).unwrap().entries.iter().map(|space| &space.desktop).collect::<Vec<_>>(), live.iter().map(|space| &space.desktop).collect::<Vec<_>>());
@@ -95,13 +97,18 @@ fn ordinary_native_save_normalizes_scratch_home_and_startup_restores_hidden_cont
         let child = restored.world_mut().query::<(Entity, &LayoutBox)>().iter(restored.world()).find(|(_, layout)| PlacementId(layout.id) == child_id).map(|(entity, _)| entity).unwrap();
         assert_eq!(restored.world().get::<desktop::TransientParent>(child).map(|parent| parent.0), Some(restored_entity));
         assert!(!desktop::visible_item(restored.world(), restored_root, child));
-        let reopened = snapshot(restored.world_mut(), restored_root);
+        let reopened = snapshot(restored.world_mut(), restored_root)
+            .expect("capture the reopened scratch workspace");
         assert_eq!(serde_json::to_value(&reopened.sands.iter().find(|saved| saved.placement.layout.is_some_and(|layout| layout.id == id.0)).unwrap().texts).unwrap(), saved_texts);
         assert_eq!(serde_json::to_value(&reopened.sands.iter().find(|saved| saved.placement.layout.is_some_and(|layout| layout.id == child_id.0)).unwrap().texts).unwrap(), child_texts);
+        crate::native::workspace::switch_output(restored.world_mut(), restored_root, 1);
+        crate::native::layout::resolve_for_test(restored.world_mut());
         assert!(restored.world_mut().despawn(restored_entity));
+        crate::native::layout::resolve_for_test(restored.world_mut());
         super::super::tests::flush(&mut restored);
         assert!(restored.world().get::<Workspaces>(restored_root).unwrap().error.is_none());
-        let orphaned = snapshot(restored.world_mut(), restored_root);
+        let orphaned = snapshot(restored.world_mut(), restored_root)
+            .expect("capture the workspace after removing the parent");
         let retained = orphaned.sands.iter().find(|saved| saved.placement.layout.is_some_and(|layout| layout.id == child_id.0)).unwrap();
         assert!(retained.placement.transient_parent.is_none());
         assert_eq!(serde_json::to_value(&retained.texts).unwrap(), child_texts);

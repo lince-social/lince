@@ -151,13 +151,16 @@ impl Engine {
                 }
                 ops.truncate((ops.len() / 2).max(1));
             }
+            let Some(hlc) = ops.iter().map(|op| op.hlc).max() else {
+                continue;
+            };
             let wrapper = WireOp {
                 tbl: TABLE.into(),
                 uid: root,
                 field: "lince.own-conversation.1".into(),
                 kind: "snapshot".into(),
                 value: Some(value),
-                hlc: ops.iter().map(|op| op.hlc).max().unwrap(),
+                hlc,
                 actor_cell: actor,
                 organ_uid: organ.into(),
                 fact: None,

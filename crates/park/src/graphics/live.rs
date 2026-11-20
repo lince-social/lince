@@ -65,6 +65,7 @@ fn shm_content(buffer: &wl_buffer::WlBuffer) -> std::result::Result<Content, Str
         }
         let mut pixels = vec![0; row * data.height as usize];
         for y in 0..data.height as usize {
+            // SAFETY: The validated row ends inside the mapped pool and the separate Vec.
             unsafe {
                 std::ptr::copy_nonoverlapping(
                     pointer.add(data.offset as usize + y * data.stride as usize),

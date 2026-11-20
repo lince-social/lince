@@ -8,9 +8,10 @@ use std::{
 };
 
 fn project(path: &Path) -> anicca::ProjectedDocument {
-    let source = fs::read_to_string(path).unwrap();
-    let source = anicca::ensure_uids(&source).unwrap().0;
-    anicca::project(&anicca::parse(&source).unwrap()).unwrap()
+    let source = fs::read_to_string(path).expect("read the trail fixture");
+    let (source, _) = anicca::ensure_uids(&source).expect("ensure the trail fixture has UIDs");
+    let document = anicca::parse(&source).expect("parse the trail fixture");
+    anicca::project(&document).expect("project the trail fixture")
 }
 
 fn visit(

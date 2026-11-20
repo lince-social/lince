@@ -1,9 +1,12 @@
 use super::*;
+#[cfg(feature = "nested")]
 use bevy::prelude::*;
+#[cfg(feature = "nested")]
 use lince_interface::{
     host::{DesktopAction, Rectangle as CanvasRectangle, WorkspaceLayout},
     native,
 };
+#[cfg(feature = "nested")]
 use smithay::backend::{
     allocator::Fourcc,
     egl::{EGLContext, EGLDevice, EGLDisplay},
@@ -15,6 +18,7 @@ use smithay::backend::{
 };
 use std::io::Write;
 
+#[cfg(feature = "nested")]
 fn buffer(harness: &Harness, size: [i32; 2], pattern: bool) -> wl_buffer::WlBuffer {
     let mut bytes = Vec::with_capacity((size[0] * size[1] * 4) as usize);
     for _ in 0..size[1] {
@@ -50,6 +54,7 @@ fn pixel_buffer(harness: &Harness, size: [i32; 2], bytes: &[u8]) -> wl_buffer::W
     buffer
 }
 
+#[cfg(feature = "nested")]
 fn settle(canvas: &mut crate::presentation::Presentation) -> crate::presentation::Frame {
     for _ in 0..5 {
         canvas.probe_frame().unwrap();
@@ -57,6 +62,7 @@ fn settle(canvas: &mut crate::presentation::Presentation) -> crate::presentation
     canvas.probe_frame().unwrap()
 }
 
+#[cfg(feature = "nested")]
 fn publish(canvas: &mut crate::presentation::Presentation, harness: &Harness) {
     canvas
         .outputs(
@@ -70,6 +76,7 @@ fn publish(canvas: &mut crate::presentation::Presentation, harness: &Harness) {
         .unwrap();
 }
 
+#[cfg(feature = "nested")]
 fn pixels(renderer: &mut GlesRenderer, texture: &mut GlesTexture, size: [u32; 2]) -> Vec<u8> {
     let mapping = {
         let target = renderer.bind(texture).unwrap();
@@ -84,6 +91,7 @@ fn pixels(renderer: &mut GlesRenderer, texture: &mut GlesTexture, size: [u32; 2]
     renderer.map_texture(&mapping).unwrap().to_vec()
 }
 
+#[cfg(feature = "nested")]
 fn capture(name: &str, size: [u32; 2], pixels: &[u8]) {
     let Some(directory) = std::env::var_os("LINCE_PARK_TEST_ARTIFACTS") else {
         return;
@@ -143,6 +151,7 @@ fn shared_memory_damage_preserves_untouched_and_retained_frames_then_replaces_re
 
 #[test]
 #[ignore = "requires hardware Vulkan and EGL"]
+#[cfg(feature = "nested")]
 fn scaled_outputs_preserve_native_pixels_client_geometry_and_logical_editor_input_through_final_composition()
  {
     let runtime = tokio::runtime::Builder::new_multi_thread()
@@ -241,8 +250,10 @@ fn scaled_outputs_preserve_native_pixels_client_geometry_and_logical_editor_inpu
         .unwrap()
         .find(|device| !device.is_software())
         .unwrap();
+    // SAFETY: Smithay owns this display lifetime and no raw caller terminates it.
     let display = unsafe { EGLDisplay::new(device) }.unwrap();
     let context = EGLContext::new(&display).unwrap();
+    // SAFETY: The context was created here and has never been bound to another thread.
     let mut renderer = unsafe { GlesRenderer::new(context) }.unwrap();
     let mut composition =
         crate::desktop::renderer::Composition::new(lince_interface::host::WakeSignal::new(|| {}))

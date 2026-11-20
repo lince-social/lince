@@ -93,6 +93,67 @@ fn malformed_native_groups_reject_before_changing_widgets() {
 }
 
 #[test]
+fn missing_workspaces_reject_capture_and_edits_before_changing_canvas_state() {
+    let (mut app, root) = fixture();
+    let before = capture(app.world_mut(), root).expect("capture the valid canvas");
+    let mut after = before.clone();
+    after.workspaces.clear();
+    assert!(apply(app.world_mut(), root, &before, &after).is_err());
+    assert_eq!(
+        capture(app.world_mut(), root).expect("capture the unchanged canvas"),
+        before
+    );
+
+    let world = app.world_mut();
+    world
+        .get_mut::<Workspaces>(root)
+        .expect("the test canvas has workspace state")
+        .entries
+        .clear();
+    let item = world
+        .spawn((
+            CanvasItem {
+                position: DVec2::ZERO,
+                size: Vec2::splat(32.0),
+            },
+            ChildOf(root),
+        ))
+        .id();
+    assert!(capture(world, root).is_err());
+    assert!(world.get::<Identity>(item).is_none());
+}
+
+#[cfg(unix)]
+#[test]
+fn canvas_capture_reports_unencodable_native_state_without_dropping_it() {
+    use std::{ffi::OsString, os::unix::ffi::OsStringExt, path::PathBuf};
+
+    let (mut app, root) = fixture();
+    let path = PathBuf::from(OsString::from_vec(b"/test/\xff".to_vec()));
+    let entity = app
+        .world_mut()
+        .spawn((
+            CanvasItem {
+                position: DVec2::ZERO,
+                size: Vec2::splat(32.0),
+            },
+            crate::native::ide::Ide {
+                paths: vec![path.clone()],
+                ..default()
+            },
+            ChildOf(root),
+        ))
+        .id();
+    let error = capture(app.world_mut(), root).expect_err("JSON cannot encode this path");
+    assert!(error.contains("Could not capture ide state"), "{error}");
+    let editor = app
+        .world()
+        .get::<crate::native::ide::Ide>(entity)
+        .expect("the live editor is retained");
+    assert_eq!(editor.paths, vec![path]);
+}
+
+#[test]
 fn oversized_rendered_compositions_reject_before_committing_native_widgets() {
     let (mut app, root) = fixture();
     let before = capture(app.world_mut(), root).unwrap();
@@ -217,7 +278,9 @@ fn builtin_inspection_tracks_manual_area_changes_after_native_creation() {
         .unwrap();
     area.immunity = crate::native::area_effects::Immunity::Isolation;
     area.strength = 23.0;
-    let ContentKind::Native { kind, settings, .. } = capture_content(app.world(), entity) else {
+    let ContentKind::Native { kind, settings, .. } =
+        capture_content(app.world(), entity).expect("capture fixture canvas content")
+    else {
         panic!("native area");
     };
     assert_eq!(kind, "area");
@@ -238,7 +301,7 @@ fn every_registered_sand_can_spawn_capture_and_recreate_native_state() {
         };
         let entity = spawn(app.world_mut(), root, 1, DVec2::ZERO, &component).unwrap();
         assert_eq!(app.world().get::<StoredSand>(entity).unwrap().kind, kind);
-        let saved = capture_content(app.world(), entity);
+        let saved = capture_content(app.world(), entity).expect("capture fixture canvas content");
         saved.validate(&registry(), false).unwrap();
         let copy = spawn(app.world_mut(), root, 1, DVec2::new(50.0, 50.0), &saved).unwrap();
         assert_eq!(app.world().get::<StoredSand>(copy).unwrap().kind, kind);
@@ -246,7 +309,10 @@ fn every_registered_sand_can_spawn_capture_and_recreate_native_state() {
             app.world().get::<Identity>(entity).unwrap().0,
             app.world().get::<Identity>(copy).unwrap().0
         );
-        assert_eq!(capture_content(app.world(), copy), saved);
+        assert_eq!(
+            capture_content(app.world(), copy).expect("capture fixture canvas content"),
+            saved
+        );
         app.world_mut().despawn(entity);
         app.world_mut().despawn(copy);
     }
@@ -318,7 +384,7 @@ fn video_castle_refreshes_saved_canvas_registry_before_sync_and_requests() {
         state.validate().unwrap();
         assert_eq!(
             state.snapshot.placements[0].component,
-            capture_content(app.world(), entity)
+            capture_content(app.world(), entity).expect("capture fixture canvas content")
         );
         assert!(
             app.world()
@@ -365,7 +431,7 @@ fn canvas_refreshes_saved_layout_schema_without_replacing_the_layout() {
         .unwrap();
     assert_eq!(
         state.snapshot.placements[0].component,
-        capture_content(app.world(), entity)
+        capture_content(app.world(), entity).expect("capture fixture canvas content")
     );
     assert!(
         app.world()
@@ -473,9 +539,12 @@ fn video_castle_keeps_paused_file_position_and_rejects_invalid_state_before_spaw
         bindings: Vec::new(),
     };
     let entity = spawn(app.world_mut(), root, 1, DVec2::ZERO, &component).unwrap();
-    let saved = capture_content(app.world(), entity);
+    let saved = capture_content(app.world(), entity).expect("capture fixture canvas content");
     let copy = spawn(app.world_mut(), root, 1, DVec2::ZERO, &saved).unwrap();
-    assert_eq!(capture_content(app.world(), copy), saved);
+    assert_eq!(
+        capture_content(app.world(), copy).expect("capture fixture canvas content"),
+        saved
+    );
     let before = capture(app.world_mut(), root).unwrap();
     for source in ["x".repeat(4097), "camera\0".into()] {
         let invalid = ContentKind::Native {
@@ -521,7 +590,7 @@ fn visibility_castle_restores_its_record_and_scope_without_policy_contents() {
         &record,
         nucleus::visibility::Data::LiveLocation,
     );
-    let saved = capture_content(app.world(), sand);
+    let saved = capture_content(app.world(), sand).expect("capture fixture canvas content");
     saved.validate(&registry(), false).unwrap();
     let copy = spawn(app.world_mut(), root, 1, DVec2::ZERO, &saved).unwrap();
     let panel = app
@@ -536,7 +605,10 @@ fn visibility_castle_restores_its_record_and_scope_without_policy_contents() {
     let raw = serde_json::to_string(&saved).unwrap();
     assert!(!raw.contains("policy"));
     assert!(!raw.contains("captured_at_ms"));
-    assert_eq!(capture_content(app.world(), copy), saved);
+    assert_eq!(
+        capture_content(app.world(), copy).expect("capture fixture canvas content"),
+        saved
+    );
 }
 
 #[test]
@@ -552,7 +624,8 @@ fn primary_text_survives_empty_default_text_areas_and_reusable_copies() {
             bindings: Vec::new(),
         };
         let original = spawn(app.world_mut(), root, 1, DVec2::ZERO, &component).unwrap();
-        let captured = capture_content(app.world(), original);
+        let captured =
+            capture_content(app.world(), original).expect("capture fixture canvas content");
         let ContentKind::Native { settings, .. } = &captured else {
             panic!("The created native text was not captured");
         };
@@ -560,7 +633,10 @@ fn primary_text_survives_empty_default_text_areas_and_reusable_copies() {
         let texts = crate::native::sand_text::snapshot(app.world(), original);
         assert_eq!(texts[0].text, "Walk daily");
         let copy = spawn(app.world_mut(), root, 1, DVec2::ONE, &captured).unwrap();
-        assert_eq!(capture_content(app.world(), copy), captured);
+        assert_eq!(
+            capture_content(app.world(), copy).expect("capture fixture canvas content"),
+            captured
+        );
         assert_ne!(
             app.world().get::<Identity>(original).unwrap().0,
             app.world().get::<Identity>(copy).unwrap().0
@@ -672,7 +748,12 @@ async fn native_composition_save_and_close_controls_use_ordinary_actions() {
     else {
         panic!("composition")
     };
-    assert_eq!(restored, composition::capture(app.world(), host).unwrap());
+    assert_eq!(
+        restored,
+        composition::capture(app.world(), host)
+            .expect("capture fixture canvas content")
+            .expect("the fixture contains a composition")
+    );
     composition::receive(app.world_mut(), &response);
     let status = app
         .world()
@@ -1021,7 +1102,8 @@ fn placement_capture_restores_identity_and_complete_metadata_and_copy_gets_fresh
         },
         ZIndex(9),
     ));
-    let saved = crate::native::sand_placement::Placement::capture(app.world(), entity);
+    let saved = crate::native::sand_placement::Placement::capture(app.world(), entity)
+        .expect("capture the fixture placement");
     let bytes = serde_json::to_vec(&saved).unwrap();
     let saved: crate::native::sand_placement::Placement = serde_json::from_slice(&bytes).unwrap();
     assert!(saved.valid());
@@ -1104,7 +1186,9 @@ fn native_composition_has_known_balloon_internal_events_and_independent_copies()
         app.world().get::<Identity>(first).unwrap().0,
         app.world().get::<Identity>(second).unwrap().0
     );
-    let captured = composition::capture(app.world(), first).unwrap();
+    let captured = composition::capture(app.world(), first)
+        .expect("capture fixture canvas content")
+        .expect("the fixture contains a composition");
     assert_eq!(captured.origin, composition.origin);
     assert_eq!(captured.name, composition.name);
     assert_eq!(captured.parts[0].geometry, composition.parts[0].geometry);
@@ -1338,7 +1422,10 @@ fn disk_restart_keeps_canvas_identity_placements_protection_and_saved_receipts()
         .unwrap()
         .0;
     assert_eq!(
-        composition::capture(app.world(), restored).unwrap().origin,
+        composition::capture(app.world(), restored)
+            .expect("capture fixture canvas content")
+            .expect("the fixture contains a composition")
+            .origin,
         composition.origin
     );
     assert_eq!(

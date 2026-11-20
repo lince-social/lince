@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use base64::Engine as _;
 use engine::{actions::Action, record_change::Mutation};
 use nucleus::simulation::{ReplayStatus, Verdict};

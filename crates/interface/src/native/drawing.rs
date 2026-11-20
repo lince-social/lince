@@ -945,7 +945,7 @@ impl SavedDrawing {
     }
 }
 
-pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedDrawing> {
+pub(crate) fn snapshot(world: &mut World, root: Entity) -> Result<Vec<SavedDrawing>, String> {
     world
         .query::<(
             Entity,
@@ -956,13 +956,15 @@ pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedDrawing> {
         )>()
         .iter(world)
         .filter(|(_, parent, ..)| parent.parent() == root)
-        .map(|(entity, _, workspace, item, drawing)| SavedDrawing {
-            workspace: workspace.0,
-            drawing: drawing.0.clone(),
-            position: item.position.to_array(),
-            size: item.size.to_array(),
-            placement: crate::native::sand_placement::Placement::capture(world, entity),
-            tokens: crate::native::token_style::overrides(world, entity),
+        .map(|(entity, _, workspace, item, drawing)| {
+            Ok(SavedDrawing {
+                workspace: workspace.0,
+                drawing: drawing.0.clone(),
+                position: item.position.to_array(),
+                size: item.size.to_array(),
+                placement: crate::native::sand_placement::Placement::capture(world, entity)?,
+                tokens: crate::native::token_style::overrides(world, entity),
+            })
         })
         .collect()
 }
@@ -1012,7 +1014,7 @@ mod tests {
         let copy = spawn(&mut world, root, 1, DVec2::ZERO, Drawing::default());
         Control::PasteNative.apply(&mut world, copy);
         assert_eq!(world.get::<NativeDrawing>(copy).unwrap().0, drawing);
-        let saved = snapshot(&mut world, root);
+        let saved = snapshot(&mut world, root).expect("capture the fixture snapshots");
         assert_eq!(saved.len(), 2);
         let bytes = serde_json::to_vec(&saved).unwrap();
         let restored: Vec<SavedDrawing> = serde_json::from_slice(&bytes).unwrap();
@@ -1056,7 +1058,11 @@ mod tests {
         Control::Undo.apply(&mut world, owner);
         Control::Clear.apply(&mut world, owner);
         assert_eq!(world.get::<NativeDrawing>(owner).unwrap().0, drawing);
-        assert!(snapshot(&mut world, root).is_empty());
+        assert!(
+            snapshot(&mut world, root)
+                .expect("capture the fixture snapshots")
+                .is_empty()
+        );
     }
 
     #[test]

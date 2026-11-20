@@ -140,6 +140,7 @@ fn room_wall_mount_preserves_all_kanban_parts_headers_undo_and_serialized_placem
     rooms::mount(world, owner, wall).unwrap();
     let expected = pose(world, owner);
     let board = persistence::snapshot(world, root)
+        .expect("capture the fixture snapshots")
         .into_iter()
         .next()
         .unwrap();
@@ -156,7 +157,8 @@ fn room_wall_mount_preserves_all_kanban_parts_headers_undo_and_serialized_placem
                     *entity,
                     world.get::<InfluenceArea>(*entity)?.clone(),
                 ),
-                placement: crate::native::sand_placement::Placement::capture(world, *entity),
+                placement: crate::native::sand_placement::Placement::capture(world, *entity)
+                    .expect("capture the fixture placement"),
             })
         })
         .collect();

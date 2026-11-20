@@ -70,34 +70,28 @@ pub fn receipts(inputs: &[Receipt<'_>], now: i64) -> Result<Vec<ReceiptGroup>, S
         sources
             .entry((source.origin.clone(), source.occurrence.clone()))
             .or_default()
-            .push(input);
+            .push((input, bundle));
     }
     let mut result = Vec::new();
     for ((origin, occurrence), inputs) in sources {
-        let first = &inputs[0].document.public_bundle().unwrap().publication.scope;
+        let first = &inputs[0].1.publication.scope;
         let giver = first.giver.clone();
         let receiver = first.receiver.clone();
         let mut scopes: BTreeMap<_, Vec<_>> = BTreeMap::new();
-        for input in inputs {
-            let bundle = input.document.public_bundle().unwrap();
+        for (input, bundle) in inputs {
             scopes
                 .entry(bundle.publication.scope.id()?)
                 .or_default()
-                .push(input);
+                .push((input, bundle));
         }
         let mut copies = Vec::new();
         let mut missing = BTreeSet::new();
         let mut pending = Vec::new();
         for (scope_id, inputs) in scopes {
-            let scope = &inputs[0]
-                .document
-                .public_bundle()
-                .unwrap()
-                .publication
-                .scope;
+            let scope = &inputs[0].1.publication.scope;
             let mut events = BTreeMap::new();
-            for input in &inputs {
-                for signed in &input.document.public_bundle().unwrap().publication.events {
+            for (_, bundle) in &inputs {
+                for signed in &bundle.publication.events {
                     let id = signed.event.id()?;
                     if events
                         .get(&id)
@@ -115,8 +109,8 @@ pub fn receipts(inputs: &[Receipt<'_>], now: i64) -> Result<Vec<ReceiptGroup>, S
                 .iter()
                 .map(|projection| (&projection.event, projection))
                 .collect::<BTreeMap<_, _>>();
-            for input in &inputs {
-                for signed in &input.document.public_bundle().unwrap().publication.events {
+            for (input, bundle) in &inputs {
+                for signed in &bundle.publication.events {
                     if let Some(projection) = projections.get(&signed.event.id()?) {
                         copies.push(receipt_history::project_copy(
                             scope,
@@ -200,11 +194,13 @@ pub fn claim_heads(inputs: &[Claim<'_>], now: i64) -> Result<Vec<ClaimHead>, Str
         if !versions.iter().any(|input| input.provenance.is_some()) {
             continue;
         }
-        let revision = versions
+        let Some(revision) = versions
             .iter()
             .map(|input| input.document.statement.revision)
             .max()
-            .unwrap();
+        else {
+            continue;
+        };
         let current = versions
             .into_iter()
             .filter(|input| input.document.statement.revision == revision)

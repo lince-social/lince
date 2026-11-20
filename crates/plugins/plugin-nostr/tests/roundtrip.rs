@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use engine::Engine;
 use futures::{SinkExt, StreamExt};
 use nostr::prelude::{Event, EventBuilder, FinalizeEvent, Keys, Kind, Timestamp};

@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use engine::private_password::{
     MAX_PASSWORD_BYTES, MAX_PHC_BYTES, MAX_WORKERS, PasswordError, PasswordHash, PasswordInput,
     PasswordWork,

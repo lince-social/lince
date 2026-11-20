@@ -591,7 +591,10 @@ impl Runtime {
                 "Observation capacity reached; wait for old observations to expire.".into(),
             );
         }
-        let connection = self.connections.get_mut(&evidence.device).unwrap();
+        let connection = self
+            .connections
+            .get_mut(&evidence.device)
+            .ok_or("Camera is disconnected.")?;
         connection.sequence = evidence.sequence;
         connection.time_ms = evidence.captured_ms;
         self.observations.insert(evidence.id.clone(), evidence);
@@ -655,7 +658,10 @@ impl Runtime {
                 return Err(error);
             }
         };
-        let connection = self.connections.get_mut(&evidence.device).unwrap();
+        let connection = self
+            .connections
+            .get_mut(&evidence.device)
+            .ok_or("Camera is disconnected.")?;
         connection.sequence = evidence.sequence;
         connection.time_ms = evidence.captured_ms;
         self.pointers.remove(&interaction.pointer);
@@ -751,7 +757,10 @@ impl Runtime {
             .collect();
         let mut output = Vec::new();
         for (_, id) in queued {
-            let request = self.requests.get_mut(&id).unwrap();
+            let request = self
+                .requests
+                .get_mut(&id)
+                .expect("the queue was collected from the current requests");
             if !surfaces.contains(&request.surface)
                 || available == 0
                 || targets.contains(&(request.target.organ.clone(), request.target.record.clone()))
@@ -784,7 +793,7 @@ impl Runtime {
         now_ms: u64,
     ) -> Result<(), String> {
         self.advance(now_ms)?;
-        let request = self.requests.get(id).ok_or("Unknown request.")?;
+        let request = self.requests.get_mut(id).ok_or("Unknown request.")?;
         let valid = matches!(request.status, Status::Running | Status::Waiting)
             && &request.target == target
             && request.user == user
@@ -792,7 +801,6 @@ impl Runtime {
             && self.configuration.surfaces.iter().any(|s| {
                 s.id == request.surface && s.calibration_revision == request.calibration_revision
             });
-        let request = self.requests.get_mut(id).unwrap();
         if !valid {
             if !request.terminal() {
                 request.status = Status::Failed;

@@ -32,21 +32,22 @@ pub fn observer_outcomes(replicated: bool) -> Scenario {
             if input.id == "routes"
                 && let Event::Action { invocation } = &input.event
             {
-                Some(serde_json::to_value(&invocation.action).unwrap())
+                Some(serde_json::to_value(&invocation.action).expect("the seeded route action serializes as JSON"))
             } else {
                 None
             }
         })
-        .unwrap();
-    revised.as_object_mut().unwrap().remove("action");
-    revised.as_object_mut().unwrap().remove("request_id");
+        .expect("the dependency scenario starts with a route action");
+    let fields = revised.as_object_mut().expect("the route action serializes as an object");
+    fields.remove("action");
+    fields.remove("request_id");
     revised["head"] = json!("Revised supply plan");
     revised["invitees"] = json!([]);
     let observer = case
         .inputs
         .iter()
         .position(|input| input.id == "blocked-observer-delivery")
-        .unwrap();
+        .expect("the seeded scenario includes the blocked observer delivery");
     let mut observation = case.inputs.split_off(observer);
     observation.retain(|input| input.id != "restart-c");
     for input in &mut observation {
@@ -64,7 +65,7 @@ pub fn observer_outcomes(replicated: bool) -> Scenario {
         .inputs
         .iter()
         .position(|input| input.id == "agree-a-1")
-        .unwrap();
+        .expect("the seeded scenario includes the provider's agreement");
     let work = case.inputs.split_off(agreed);
     case.inputs.extend(observation);
     action(
@@ -181,7 +182,7 @@ pub fn observer_outcomes(replicated: bool) -> Scenario {
     for (index, input) in case.inputs.iter_mut().enumerate() {
         input.at_ms = case.start_ms + index as i64 * 20 + if index >= fresh { 130_000 } else { 0 };
     }
-    case.end_ms = case.inputs.last().unwrap().at_ms + 100;
+    case.end_ms = case.inputs.last().expect("the dependency scenario ends with the revoked observer restart").at_ms + 100;
     for check in &mut case.checks {
         if let nucleus::simulation::Predicate::QuantityEquals {
             cell,
@@ -192,7 +193,7 @@ pub fn observer_outcomes(replicated: bool) -> Scenario {
         {
             *at_ms = case.end_ms;
             if cell == "a" {
-                expected.value = nucleus::DecimalValue::parse_inferred("31").unwrap();
+                expected.value = store::exact::integer(31);
             }
         }
     }

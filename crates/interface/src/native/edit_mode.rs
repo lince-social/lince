@@ -717,7 +717,7 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
             | EditAction::CreateWorkspace
             | EditAction::ConfirmRemoveWorkspace
     ) {
-        world.get_mut::<EditMode>(root).unwrap().areas = false;
+        world.get_mut::<EditMode>(root).expect("the action targets an open Edit panel").areas = false;
         if let Some(mut editor) = world.get_mut::<crate::native::area_panel::AreaEditor>(root) {
             editor.cancel();
         }
@@ -737,19 +737,19 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
             | EditAction::Credits
             | EditAction::EditSand(_)
     ) {
-        world.get_mut::<EditMode>(root).unwrap().general = action == EditAction::General;
-        world.get_mut::<EditMode>(root).unwrap().information = action == EditAction::Information;
-        world.get_mut::<EditMode>(root).unwrap().shortcuts = action == EditAction::Shortcuts;
-        world.get_mut::<EditMode>(root).unwrap().park = action == EditAction::Park;
+        let mut mode = world.get_mut::<EditMode>(root).expect("the action targets an open Edit panel");
+        mode.general = action == EditAction::General;
+        mode.information = action == EditAction::Information;
+        mode.shortcuts = action == EditAction::Shortcuts;
+        mode.park = action == EditAction::Park;
         if action != EditAction::Customization {
-            let mut mode = world.get_mut::<EditMode>(root).unwrap();
             mode.customization = false;
             mode.store = action == EditAction::Store;
             mode.canvas = action == EditAction::Canvas;
             mode.credits = action == EditAction::Credits;
         }
     }
-    let mode = world.get::<EditMode>(root).unwrap();
+    let mode = world.get::<EditMode>(root).expect("the action targets an open Edit panel");
     match action {
         EditAction::ToggleAlwaysShowControls => {
             world.init_resource::<crate::native::canvas_controls::ControlsSettings>();
@@ -758,16 +758,20 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
             settings.always_show = !settings.always_show;
         }
         EditAction::TogglePhysics => {
-            let active = world.get::<Workspaces>(root).unwrap().active;
+            let Some(active) = world.get::<Workspaces>(root).map(|spaces| spaces.active) else {
+                return;
+            };
             let enabled = crate::native::workspace_config::physics_configured(world, root, active);
             crate::native::workspace_config::set_physics(world, root, active, !enabled);
         }
         EditAction::ReloadWorkspaceSettings => {
-            let active = world.get::<Workspaces>(root).unwrap().active;
+            let Some(active) = world.get::<Workspaces>(root).map(|spaces| spaces.active) else {
+                return;
+            };
             crate::native::workspace_config::reload(world, root, active);
         }
         EditAction::Areas | EditAction::Area(_) => {
-            let mut mode = world.get_mut::<EditMode>(root).unwrap();
+            let mut mode = world.get_mut::<EditMode>(root).expect("the action targets an open Edit panel");
             mode.areas = true;
             mode.customization = false;
             mode.canvas = false;
@@ -824,37 +828,41 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
             }
         }
         EditAction::SetTrashRetention(days) => {
-            if (1..=365).contains(&days) {
-                world
-                    .get_mut::<Workspaces>(root)
-                    .unwrap()
-                    .trash_retention_days = days;
+            if (1..=365).contains(&days)
+                && let Some(mut spaces) = world.get_mut::<Workspaces>(root)
+            {
+                spaces.trash_retention_days = days;
             }
         }
         EditAction::RestoreWorkspace(workspace) => {
             workspace::restore_trash(world, root, workspace);
         }
         EditAction::RemoveWorkspace(workspace) => {
-            let spaces = world.get::<Workspaces>(root).unwrap();
-            if spaces.entries.len() > 1 && spaces.entries.iter().any(|entry| entry.id == workspace)
+            if let Some(spaces) = world.get::<Workspaces>(root)
+                && spaces.entries.len() > 1
+                && spaces.entries.iter().any(|entry| entry.id == workspace)
             {
-                world.get_mut::<EditMode>(root).unwrap().confirm_remove = Some(workspace);
+                world.get_mut::<EditMode>(root).expect("the action targets an open Edit panel").confirm_remove = Some(workspace);
             }
         }
         EditAction::ConfirmRemoveWorkspace => {
-            if let Some(workspace) = world.get::<EditMode>(root).unwrap().confirm_remove {
+            if let Some(workspace) = mode.confirm_remove {
                 workspace::remove(world, root, workspace);
             }
-            world.get_mut::<EditMode>(root).unwrap().confirm_remove = None;
+            if let Some(mut mode) = world.get_mut::<EditMode>(root) {
+                mode.confirm_remove = None;
+            }
         }
         EditAction::CancelRemoveWorkspace => {
-            world.get_mut::<EditMode>(root).unwrap().confirm_remove = None;
+            world.get_mut::<EditMode>(root).expect("the action targets an open Edit panel").confirm_remove = None;
         }
         EditAction::AddSand(kind) => {
             place_sand(world, root, kind);
         }
         EditAction::RemoveSand(sand) => {
-            let active = world.get::<Workspaces>(root).unwrap().active;
+            let Some(active) = world.get::<Workspaces>(root).map(|spaces| spaces.active) else {
+                return;
+            };
             if world
                 .get::<ChildOf>(sand)
                 .is_some_and(|parent| parent.parent() == root)
@@ -873,7 +881,7 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
             }
         }
         EditAction::Credits => {
-            let mut mode = world.get_mut::<EditMode>(root).unwrap();
+            let mut mode = world.get_mut::<EditMode>(root).expect("the action targets an open Edit panel");
             mode.credits = true;
             mode.general = false;
             mode.areas = false;
@@ -887,21 +895,21 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
             return;
         }
         EditAction::General | EditAction::Workspaces => {
-            let mut mode = world.get_mut::<EditMode>(root).unwrap();
+            let mut mode = world.get_mut::<EditMode>(root).expect("the action targets an open Edit panel");
             mode.customization = false;
             mode.store = false;
             mode.canvas = false;
             mode.credits = false;
         }
         EditAction::Store => {
-            let mut mode = world.get_mut::<EditMode>(root).unwrap();
+            let mut mode = world.get_mut::<EditMode>(root).expect("the action targets an open Edit panel");
             mode.customization = false;
             mode.store = true;
             mode.canvas = false;
             mode.credits = false;
         }
         EditAction::Canvas => {
-            let mut mode = world.get_mut::<EditMode>(root).unwrap();
+            let mut mode = world.get_mut::<EditMode>(root).expect("the action targets an open Edit panel");
             mode.customization = false;
             mode.canvas = true;
             mode.credits = false;
@@ -923,9 +931,12 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
     if matches!(
         action,
         EditAction::SwitchWorkspace(_) | EditAction::CreateWorkspace
-    ) {
-        world.get_mut::<EditMode>(root).unwrap().confirm_remove = None;
+    ) && let Some(mut mode) = world.get_mut::<EditMode>(root) {
+        mode.confirm_remove = None;
     }
+    let Some(panel) = world.get::<EditMode>(root).map(|mode| mode.panel) else {
+        return;
+    };
     if matches!(
         action,
         EditAction::General
@@ -940,11 +951,8 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
             | EditAction::SwitchWorkspace(_)
             | EditAction::CreateWorkspace
             | EditAction::ConfirmRemoveWorkspace
-    ) {
-        let panel = world.get::<EditMode>(root).unwrap().panel;
-        world
-            .entity_mut(panel)
-            .remove::<crate::native::sand_text_editor::TextPanel>();
+    ) && let Ok(mut panel) = world.get_entity_mut(panel) {
+        panel.remove::<crate::native::sand_text_editor::TextPanel>();
     }
     let scroll = if matches!(
         action,
@@ -953,16 +961,16 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
                 | crate::native::area_panel::AreaAction::TargetPoint
         )
     ) {
-        world
-            .get::<ScrollPosition>(world.get::<EditMode>(root).unwrap().panel)
-            .map(|scroll| scroll.0)
+        world.get::<ScrollPosition>(panel).map(|scroll| scroll.0)
     } else {
         None
     };
     render_panel(world, root);
-    if let Some(scroll) = scroll {
-        let panel = world.get::<EditMode>(root).unwrap().panel;
-        world.entity_mut(panel).insert(ScrollPosition(scroll));
+    if let Some(scroll) = scroll
+        && let Some(panel) = world.get::<EditMode>(root).map(|mode| mode.panel)
+        && let Ok(mut panel) = world.get_entity_mut(panel)
+    {
+        panel.insert(ScrollPosition(scroll));
     }
 }
 
@@ -991,7 +999,9 @@ pub(crate) fn toggle_customization(world: &mut World, root: Entity) {
         return;
     }
     set_open(world, root, true);
-    let mut mode = world.get_mut::<EditMode>(root).unwrap();
+    let Some(mut mode) = world.get_mut::<EditMode>(root) else {
+        return;
+    };
     mode.general = false;
     mode.customization = true;
     mode.store = false;
@@ -1002,9 +1012,9 @@ pub(crate) fn toggle_customization(world: &mut World, root: Entity) {
     mode.canvas = false;
     mode.credits = false;
     let panel = mode.panel;
-    world
-        .entity_mut(panel)
-        .remove::<crate::native::sand_text_editor::TextPanel>();
+    if let Ok(mut panel) = world.get_entity_mut(panel) {
+        panel.remove::<crate::native::sand_text_editor::TextPanel>();
+    }
     render_panel(world, root);
     if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
         wake.ring();
@@ -1049,24 +1059,20 @@ fn set_open(world: &mut World, root: Entity, enabled: bool) {
     {
         editor.cancel();
     }
-    world.get_mut::<Node>(panel).unwrap().display = if enabled {
-        Display::Flex
-    } else {
-        Display::None
-    };
+    if let Some(mut node) = world.get_mut::<Node>(panel) {
+        node.display = if enabled { Display::Flex } else { Display::None };
+    }
     let label = if enabled {
         Tr::DoneEditing.text()
     } else {
         Tr::EditMode.text()
     };
-    world
-        .get_mut::<AccessibilityNode>(toggle)
-        .unwrap()
-        .set_label(label);
-    world
-        .get_mut::<crate::native::icons::IconButton>(toggle)
-        .unwrap()
-        .label = label.into();
+    if let Some(mut button) = world.get_mut::<AccessibilityNode>(toggle) {
+        button.set_label(label);
+    }
+    if let Some(mut icon) = world.get_mut::<crate::native::icons::IconButton>(toggle) {
+        icon.label = label.into();
+    }
     if enabled {
         render_panel(world, root);
         let first = world.query::<(Entity, &EditControl)>().iter(world)
@@ -1135,7 +1141,7 @@ pub(crate) fn control(
         .id();
     world
         .get_mut::<AccessibilityNode>(entity)
-        .unwrap()
+        .expect("the control bundle supplies an accessibility node")
         .set_label(value);
     use crate::native::icons::Icon;
     let icon = match action {
@@ -1248,8 +1254,7 @@ pub(crate) fn builtin_store_entries(
         .into_iter()
         .filter(|kind| !matches!(kind, SandKind::Sync | SandKind::HandCamera))
     {
-        crate::native::sand_store::entry(world, root, sands_group, kind, None);
-        sand_entries.push(*world.get::<Children>(sands_group).unwrap().last().unwrap());
+        sand_entries.push(crate::native::sand_store::entry(world, root, sands_group, kind, None));
     }
     let mut castle_entries = Vec::new();
     let entry = store_group(world, castles_group);
@@ -1331,7 +1336,12 @@ pub(crate) fn reorder_workspaces(world: &mut World, root: Entity) {
 
 pub(crate) fn render_panel(world: &mut World, root: Entity) {
     render_panel_content(world, root);
-    let panel = world.get::<EditMode>(root).unwrap().panel;
+    let Some(panel) = world.get::<EditMode>(root).map(|mode| mode.panel) else {
+        return;
+    };
+    if world.get_entity(panel).is_err() {
+        return;
+    }
     crate::native::scroll_sand::decorate(world, panel);
     world.spawn((
         ChildOf(panel),
@@ -1351,7 +1361,9 @@ pub(crate) fn controls_settings(world: &mut World, root: Entity, panel: Entity) 
 }
 
 fn render_panel_content(world: &mut World, root: Entity) {
-    let mode = world.get::<EditMode>(root).unwrap();
+    let Some(mode) = world.get::<EditMode>(root) else {
+        return;
+    };
     let panel = mode.panel;
     let confirm = mode.confirm_remove;
     let credits = mode.credits;
@@ -1379,20 +1391,28 @@ fn render_panel_content(world: &mut World, root: Entity) {
             world.despawn(child);
         }
     }
-    world.get_mut::<EditMode>(root).unwrap().name = None;
+    let Some(mut mode) = world.get_mut::<EditMode>(root) else {
+        return;
+    };
+    mode.name = None;
     let width = if customization {
         crate::native::tokens::Token::CustomizationWidth
     } else {
         crate::native::tokens::Token::PanelWidth
     };
-    world.get_mut::<Node>(panel).unwrap().width = px(width.default_value(Default::default()).number());
+    let Some(mut node) = world.get_mut::<Node>(panel) else {
+        return;
+    };
+    node.width = px(width.default_value(Default::default()).number());
     world
         .entity_mut(panel)
         .insert(crate::native::token_metrics::WidthToken(
             width,
             false,
         ));
-    world.get_mut::<ScrollPosition>(panel).unwrap().0 = Vec2::ZERO;
+    if let Some(mut scroll) = world.get_mut::<ScrollPosition>(panel) {
+        scroll.0 = Vec2::ZERO;
+    }
     if existing_tabs.is_none() {
         let tabs = world
             .spawn((
@@ -1543,7 +1563,9 @@ fn render_panel_content(world: &mut World, root: Entity) {
         crate::native::credits::render(world, panel);
         return;
     }
-    let active = world.get::<Workspaces>(root).unwrap().active;
+    let Some(active) = world.get::<Workspaces>(root).map(|spaces| spaces.active) else {
+        return;
+    };
     if !store {
         let _presentation = nucleus::performance::Span::new("edit-workspace-presentation");
         let heading = world
@@ -1564,7 +1586,9 @@ fn render_panel_content(world: &mut World, root: Entity) {
             EditAction::CreateWorkspace,
             Tr::NewWorkspace.text(),
         );
-        let spaces = world.get::<Workspaces>(root).unwrap();
+        let Some(spaces) = world.get::<Workspaces>(root) else {
+            return;
+        };
         let active = spaces.active;
         let entries: Vec<_> = spaces
             .entries
@@ -1610,7 +1634,9 @@ fn render_panel_content(world: &mut World, root: Entity) {
                     max_characters: Some(80),
                     ..crate::native::sand::editable(name)
                 });
-                world.get_mut::<EditMode>(root).unwrap().name = Some(editor);
+                if let Some(mut mode) = world.get_mut::<EditMode>(root) {
+                    mode.name = Some(editor);
+                }
                 editor
             } else {
                 control(
@@ -1622,7 +1648,8 @@ fn render_panel_content(world: &mut World, root: Entity) {
                 )
             };
             {
-                let mut node = world.get_mut::<Node>(switch).unwrap();
+                let mut node = world.get_mut::<Node>(switch)
+                    .expect("the workspace name editor and switch are spawned as UI controls");
                 node.flex_grow = 1.0;
                 node.width = px(0);
                 node.min_width = px(0);
@@ -1631,10 +1658,12 @@ fn render_panel_content(world: &mut World, root: Entity) {
                 }
             }
             if *id != active {
-                let labels: Vec<_> = world.get::<Children>(switch).unwrap().iter().collect();
+                let labels: Vec<_> = world.get::<Children>(switch).into_iter()
+                    .flat_map(|children| children.iter()).collect();
                 for label in labels {
-                    if world.get::<Text>(label).is_some() {
-                        let mut node = world.get_mut::<Node>(label).unwrap();
+                    if world.get::<Text>(label).is_some()
+                        && let Some(mut node) = world.get_mut::<Node>(label)
+                    {
                         node.width = percent(100);
                         node.min_width = px(0);
                         world.entity_mut(label).insert(TextLayout::linebreak(
@@ -1653,16 +1682,17 @@ fn render_panel_content(world: &mut World, root: Entity) {
                 );
             }
         }
-        let trash: Vec<_> = world
-            .get::<Workspaces>(root)
-            .unwrap()
+        let Some(spaces) = world.get::<Workspaces>(root) else {
+            return;
+        };
+        let trash: Vec<_> = spaces
             .trash
             .iter()
             .map(|entry| {
                 (entry.workspace.id, entry.workspace.name.clone(), entry.deleted_at)
             })
             .collect();
-        let retention_days = world.get::<Workspaces>(root).unwrap().trash_retention_days;
+        let retention_days = spaces.trash_retention_days;
         label(
             world,
             panel,
@@ -1748,11 +1778,11 @@ fn render_panel_content(world: &mut World, root: Entity) {
                 crate::native::token_style::background(crate::native::tokens::Token::Surface),
             ))
             .id();
-        world
+        let mut input = world
             .get_mut::<EditableText>(filter)
-            .unwrap()
-            .max_characters = Some(200);
-        world.get_mut::<EditableText>(filter).unwrap().visible_lines = Some(1.0);
+            .expect("the filter was spawned as an editable text field");
+        input.max_characters = Some(200);
+        input.visible_lines = Some(1.0);
         world.entity_mut(filter).insert((
             Node {
                 width: percent(100),
@@ -1787,20 +1817,13 @@ fn render_panel_content(world: &mut World, root: Entity) {
         let workspace_group = store_group(world, panel);
         let mut workspace_entries = Vec::new();
         for (index, (entity, kind)) in sands.into_iter().enumerate() {
-            crate::native::sand_store::entry(
+            workspace_entries.push(crate::native::sand_store::entry(
                 world,
                 root,
                 workspace_group,
                 kind,
                 Some((entity, index)),
-            );
-            workspace_entries.push(
-                *world
-                    .get::<Children>(workspace_group)
-                    .unwrap()
-                    .last()
-                    .unwrap(),
-            );
+            ));
         }
         world.entity_mut(panel).insert(StoreFilter {
             input: filter,
@@ -1839,6 +1862,10 @@ fn store_group(world: &mut World, parent: Entity) -> Entity {
         .id()
 }
 
+#[allow(
+    clippy::unwrap_used,
+    reason = "Edit mode Laboratory fixtures fail when required controls, layout, or setup state is missing"
+)]
 pub(crate) mod tests {
     use super::*;
     use crate::native::{

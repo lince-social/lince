@@ -306,8 +306,11 @@ fn effects_save_and_reload_with_stable_anchor_references() {
         ..Default::default()
     }));
     prepare(&mut world);
-    let saved: Vec<Saved> =
-        serde_json::from_str(&serde_json::to_string(&snapshot(&mut world, root)).unwrap()).unwrap();
+    let saved: Vec<Saved> = serde_json::from_str(
+        &serde_json::to_string(&snapshot(&mut world, root).expect("capture the fixture snapshots"))
+            .unwrap(),
+    )
+    .unwrap();
     assert!(saved.iter().all(Saved::valid));
     let (mut restored, restored_root) = fixture();
     for saved in saved {

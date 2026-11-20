@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 fn run(transport: bool) {
     std::thread::Builder::new()
         .stack_size(16 * 1024 * 1024)

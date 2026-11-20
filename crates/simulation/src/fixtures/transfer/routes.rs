@@ -7,7 +7,7 @@ pub(super) fn invocation(id: &str, value: Value) -> Invocation {
     Invocation {
         id: id.into(),
         actor: None,
-        action: serde_json::from_value(value).unwrap(),
+        action: serde_json::from_value(value).expect("the built-in scenario action must match the Engine schema"),
     }
 }
 
@@ -236,7 +236,7 @@ pub fn three_parties() -> Scenario {
                 Event::SettleReviewed {
                     occurrence: format!("${activate}"),
                     person: format!("${giver}"),
-                    quantity: nucleus::DecimalValue::parse_inferred(&quantity.to_string()).unwrap(),
+                    quantity: nucleus::DecimalValue::parse_inferred(&quantity.to_string()).expect("the seeded route quantity is an exact decimal"),
                 },
             );
         } else {
@@ -282,7 +282,7 @@ pub fn three_parties() -> Scenario {
             send(&mut case, receiver_cell, "a", &format!("received-{route}"));
         }
     }
-    for (cell, expected) in [("a", "29"), ("b", "3"), ("c", "3")] {
+    for (cell, expected) in [("a", 29), ("b", 3), ("c", 3)] {
         case.checks.push(Check {
             options: Default::default(),
             id: format!("balance-{cell}"),
@@ -290,7 +290,7 @@ pub fn three_parties() -> Scenario {
                 cell: cell.into(),
                 record: format!("$stock-{cell}"),
                 expected: Quantity {
-                    value: nucleus::DecimalValue::parse_inferred(expected).unwrap(),
+                    value: store::exact::integer(expected),
                     unit: None,
                 },
                 at_ms: case.end_ms,

@@ -2,6 +2,10 @@ use lince_interface::calendar as model;
 mod persistence;
 mod picker;
 mod projection;
+#[allow(
+    clippy::unwrap_used,
+    reason = "Laboratory calendar fixtures must fail when expected dates or controls are unavailable"
+)]
 pub(crate) mod tests;
 mod ui;
 

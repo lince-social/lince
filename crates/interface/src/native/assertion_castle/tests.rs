@@ -269,7 +269,10 @@ async fn protein_selection_renumbers_in_visible_order_and_persists() {
             "77"
         );
     }
-    let saved = snapshot(app.world_mut(), root).pop().unwrap();
+    let saved = snapshot(app.world_mut(), root)
+        .expect("capture the fixture snapshots")
+        .pop()
+        .unwrap();
     assert!(saved.valid());
     let json = serde_json::to_string(&saved).unwrap();
     app.world_mut().despawn(owner);

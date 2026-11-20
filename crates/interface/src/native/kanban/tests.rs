@@ -98,7 +98,7 @@ fn preset_uses_valid_connected_areas_and_editable_task_fields() {
         crate::native::topology::groups::members(app.world(), source).len(),
         15
     );
-    let saved = snapshot(app.world_mut(), root);
+    let saved = snapshot(app.world_mut(), root).expect("capture the fixture snapshots");
     assert_eq!(saved.len(), 1);
     assert!(saved[0].valid());
 }
@@ -316,6 +316,7 @@ fn columns_touch_after_resize_and_source_unlock_preserves_its_connection() {
     );
     assert!(
         crate::native::sand_placement::Placement::capture(app.world(), source)
+            .expect("capture the fixture placement")
             .group
             .is_none()
     );
@@ -346,14 +347,18 @@ fn columns_touch_after_resize_and_source_unlock_preserves_its_connection() {
         crate::native::protein_area::SpawnPlacement::MatchingAreas
     );
     let original_root = app.world().get::<ChildOf>(owner).unwrap().parent();
-    let saved_board = snapshot(app.world_mut(), original_root).pop().unwrap();
+    let saved_board = snapshot(app.world_mut(), original_root)
+        .expect("capture the fixture snapshots")
+        .pop()
+        .unwrap();
     let saved_areas: Vec<_> = board
         .ids()
         .map(|id| {
             let entity = area(app.world(), owner, id).unwrap();
             (
                 app.world().get::<InfluenceArea>(entity).unwrap().clone(),
-                crate::native::sand_placement::Placement::capture(app.world(), entity),
+                crate::native::sand_placement::Placement::capture(app.world(), entity)
+                    .expect("capture the fixture placement"),
             )
         })
         .collect();

@@ -37,6 +37,14 @@ fn invalid(message: impl ToString) -> EngineError {
     }
 }
 
+fn command_runs_without_timeout(payload: &serde_json::Value) -> bool {
+    payload
+        .get("unlimited")
+        .or_else(|| payload["command_snapshot"].get("unlimited"))
+        .and_then(serde_json::Value::as_bool)
+        .unwrap_or(false)
+}
+
 fn numeric_stdout(stdout: &str) -> Result<nucleus::DecimalValue, String> {
     let text = stdout.trim();
     let unsigned = text
@@ -73,6 +81,7 @@ struct Definition {
     revision: i64,
     configuration: Command,
     host: Option<String>,
+    unlimited: bool,
 }
 
 impl Definition {
@@ -130,6 +139,7 @@ impl Engine {
                     .ok_or_else(|| invalid("Invalid command revision"))?,
                 configuration,
                 host: definition["host"].as_str().map(str::to_owned),
+                unlimited: definition["unlimited"].as_bool().unwrap_or(false),
             });
         }
         let row = store::sqlx::query(
@@ -150,6 +160,7 @@ impl Engine {
             host: store::cells::local(&self.store.pool)
                 .await?
                 .map(|cell| cell.uid),
+            unlimited: false,
         })
     }
 
@@ -161,6 +172,7 @@ impl Engine {
         head: String,
         configuration: Command,
         host: Option<String>,
+        unlimited: bool,
         actor: Option<&str>,
     ) -> Result<String, EngineError> {
         let _guard = self.command_authoring.lock().await;
@@ -254,7 +266,7 @@ impl Engine {
                 .await?;
             }
         }
-        COMMAND_AUTHORING.scope(true, Box::pin(self.act(crate::actions::Action::SetExtension { target: uid.clone(), namespace: "lince.command".into(), fds: serde_json::json!({"revision":current.map_or(1, |revision| revision + 1),"configuration":configuration,"host":host}) }, actor.map(str::to_owned)))).await?;
+        COMMAND_AUTHORING.scope(true, Box::pin(self.act(crate::actions::Action::SetExtension { target: uid.clone(), namespace: "lince.command".into(), fds: serde_json::json!({"revision":current.map_or(1, |revision| revision + 1),"configuration":configuration,"host":host,"unlimited":unlimited}) }, actor.map(str::to_owned)))).await?;
         store::sqlx::query("UPDATE signal SET actor_uid = ? WHERE record_uid = ?")
             .bind(actor)
             .bind(&uid)
@@ -275,7 +287,7 @@ impl Engine {
         self.refuse_unreadable_karma_inputs(actor, std::slice::from_ref(&definition.uid))
             .await?;
         Ok(
-            serde_json::json!({"uid":definition.uid,"revision":definition.revision,"configuration":definition.configuration,"host":definition.host}),
+            serde_json::json!({"uid":definition.uid,"revision":definition.revision,"configuration":definition.configuration,"host":definition.host,"unlimited":definition.unlimited}),
         )
     }
 
@@ -304,7 +316,7 @@ impl Engine {
         let mut tx = store::write_tx(&self.store.pool).await?;
         store::sqlx::query("INSERT OR IGNORE INTO karma_command_invocation(uid, command_uid, command_revision, configuration, host_uid, actor_uid, numeric, context, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'queued', ?)")
             .bind(uid).bind(&definition.uid).bind(definition.revision).bind(serde_json::to_string(&definition.configuration)?).bind(&definition.host).bind(actor).bind(numeric).bind(context.map(serde_json::to_string).transpose()?).bind(now.to_rfc3339()).execute(&mut *tx).await?;
-        let payload = serde_json::json!({ "request_id": uid, "actor": actor, "saved_command": definition.uid, "query_context": context, "rule": context.map(|context| &context.rule_uid), "revision": context.map(|context| context.revision) });
+        let payload = serde_json::json!({ "request_id": uid, "actor": actor, "saved_command": definition.uid, "query_context": context, "rule": context.map(|context| &context.rule_uid), "revision": context.map(|context| context.revision), "unlimited": definition.unlimited && !numeric });
         if nucleus::execution::current().is_none() || context.is_none() {
             crate::rule_runtime::queue_effect_tx(
                 &mut tx,
@@ -520,6 +532,7 @@ impl Engine {
                         .ok_or_else(|| invalid("Missing command revision"))?,
                     configuration: Command::deserialize(&snapshot["configuration"])?,
                     host: snapshot["host"].as_str().map(str::to_owned),
+                    unlimited: snapshot["unlimited"].as_bool().unwrap_or(false),
                 }),
                 None => match signal {
                     Some(signal) => Some(self.command_definition(signal).await?),
@@ -573,6 +586,7 @@ impl Engine {
                 .ok_or_else(|| invalid("Rule changed before command dispatch"))?;
             self.require_karma_execution(Some(&rule.record_uid)).await?;
         }
+        let mut unlimited = false;
         if let Some(uid) = &command_uid {
             self.refuse_unreadable_karma_inputs(actor, std::slice::from_ref(uid))
                 .await?;
@@ -580,6 +594,7 @@ impl Engine {
             if !current.matches(&row)? {
                 return Err(invalid("Command was revised before dispatch"));
             }
+            unlimited = !numeric && current.unlimited && command_runs_without_timeout(payload);
         }
         if let Some(host) = row.get::<Option<String>, _>("host_uid")
             && store::cells::local(&self.store.pool)
@@ -603,10 +618,10 @@ impl Engine {
             })?
         } else {
             let directory = self.command_directory.lock().map_err(invalid)?.clone();
-            runner::run(&serde_json::from_str::<Command>(
+            let configuration = serde_json::from_str::<Command>(
                 &row.get::<String, _>("configuration"),
-            )?, directory.as_deref())
-            .await
+            )?;
+            runner::run(&configuration, directory.as_deref(), unlimited).await
         };
         self.access_scope(true, async {
             self.require_permission(actor, "organ:update").await?;
@@ -817,7 +832,7 @@ impl Engine {
                 .await
                 .ok()
                 .map(|value| value.to_string());
-            rows.push(serde_json::json!({"uid":definition.uid,"slug":slug,"head":head,"revision":definition.revision,"configuration":definition.configuration,"host":definition.host,"sample":sample,"history":history}));
+            rows.push(serde_json::json!({"uid":definition.uid,"slug":slug,"head":head,"revision":definition.revision,"configuration":definition.configuration,"host":definition.host,"unlimited":definition.unlimited,"sample":sample,"history":history}));
         }
         Ok(serde_json::json!({"commands":rows}))
     }

@@ -17,7 +17,8 @@ impl Security {
         };
         let uri: Uri = origin.parse().map_err(|_| invalid())?;
         let authority = uri.authority().ok_or_else(invalid)?.as_str();
-        if uri.scheme_str() != Some(if public { "https" } else { "http" })
+        let scheme = if public { "https" } else { "http" };
+        if uri.scheme_str() != Some(scheme)
             || uri.path() != "/"
             || uri.query().is_some()
             || authority.contains('@')
@@ -25,7 +26,7 @@ impl Security {
             return Err(invalid());
         }
         Ok(Self {
-            origin: format!("{}://{authority}", uri.scheme_str().unwrap()),
+            origin: format!("{scheme}://{authority}"),
             authority: authority.into(),
             public,
         })

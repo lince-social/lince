@@ -20,10 +20,17 @@ fn set_display(world: &mut World, entity: Entity, value: Display) {
 }
 
 pub(super) fn render(world: &mut World, owner: Entity) {
-    let view = world.get::<View>(owner).unwrap();
+    let (Some(view), Some(castle)) = (world.get::<View>(owner), world.get::<TransferCastle>(owner))
+    else {
+        return;
+    };
     let (container, transport) = (view.form, view.transport);
-    let body = world.get::<ChildOf>(view.list).unwrap().parent();
-    let castle = world.get::<TransferCastle>(owner).unwrap();
+    let Some(body) = world.get::<ChildOf>(view.list).map(ChildOf::parent) else {
+        return;
+    };
+    if world.get_entity(container).is_err() {
+        return;
+    }
     let has_form = castle.form.is_some();
     let in_transport = castle.workflow.workflow == crate::transfers::workspace::Workflow::Transport;
     if let Some(transport) = transport {
@@ -65,8 +72,12 @@ pub(super) fn render(world: &mut World, owner: Entity) {
         return;
     }
     let error = {
-        let mut castle = world.get_mut::<TransferCastle>(owner).unwrap();
-        let form = castle.form.as_mut().unwrap();
+        let Some(mut castle) = world.get_mut::<TransferCastle>(owner) else {
+            return;
+        };
+        let Some(form) = castle.form.as_mut() else {
+            return;
+        };
         match form.commit_fields() {
             Ok(()) => {
                 if form.step.is_some() {
@@ -88,15 +99,15 @@ pub(super) fn render(world: &mut World, owner: Entity) {
     if let Some(error) = error {
         status(world, owner, error);
     }
-    let prepared = presentation::prepare(
+    let (Some(form), Some(view)) = (
         world
             .get::<TransferCastle>(owner)
-            .unwrap()
-            .form
-            .as_ref()
-            .unwrap(),
-        world.get::<View>(owner).unwrap(),
-    );
+            .and_then(|castle| castle.form.as_ref()),
+        world.get::<View>(owner),
+    ) else {
+        return;
+    };
+    let prepared = presentation::prepare(form, view);
     presentation::render(world, owner, container, prepared);
 }
 
@@ -107,21 +118,20 @@ pub(super) fn disclosure_preview(
     data: &Value,
     draft: bool,
 ) {
-    let prepared = presentation::Disclosure::prepare(
-        data,
-        world
-            .get::<View>(owner)
-            .unwrap()
-            .disclosure_preview
-            .as_ref(),
-        draft,
-    );
+    let Some(view) = world.get::<View>(owner) else {
+        return;
+    };
+    let prepared = presentation::Disclosure::prepare(data, view.disclosure_preview.as_ref(), draft);
     prepared.render(world, owner, parent);
 }
 
 pub(super) fn request_preview(world: &mut World, owner: Entity) {
     ui::capture(world, owner);
-    let Some(mut form) = world.get::<TransferCastle>(owner).unwrap().form.clone() else {
+    let (Some(castle), Some(view)) = (world.get::<TransferCastle>(owner), world.get::<View>(owner))
+    else {
+        return;
+    };
+    let Some(mut form) = castle.form.clone() else {
         return;
     };
     if let Err(error) = form.commit_fields() {
@@ -130,14 +140,7 @@ pub(super) fn request_preview(world: &mut World, owner: Entity) {
     }
     let bulk = form.data["action"] == "complete-transfer-occurrence-claims-bulk";
     let query = if bulk {
-        let castle = world.get::<TransferCastle>(owner).unwrap();
-        let occurrences: Vec<_> = world
-            .get::<View>(owner)
-            .unwrap()
-            .selected_occurrences
-            .iter()
-            .cloned()
-            .collect();
+        let occurrences: Vec<_> = view.selected_occurrences.iter().cloned().collect();
         json!({"source":"transfer_bulk_completion_preview", "where":[{"uid_eq":castle.selected}, {"occurrence_in":occurrences}]})
     } else {
         if !form.data["canonical_quantity"]
@@ -150,11 +153,21 @@ pub(super) fn request_preview(world: &mut World, owner: Entity) {
         json!({"source":"transfer_settlement_preview", "where":[{"uid_eq":form.data["occurrence"]},{"quantity_eq":form.data["canonical_quantity"]}]})
     };
     runtime::cancel(world, owner, "preview");
-    world.get_mut::<View>(owner).unwrap().preview = None;
+    let Some(mut view) = world.get_mut::<View>(owner) else {
+        return;
+    };
+    view.preview = None;
     match runtime::subscribe(world, owner, "preview", query) {
         Ok(id) => {
-            world.get_mut::<View>(owner).unwrap().preview_request = Some(id);
-            world.get_mut::<TransferCastle>(owner).unwrap().form = Some(form);
+            let Ok((mut view, mut castle)) = world
+                .query::<(&mut View, &mut TransferCastle)>()
+                .get_mut(world, owner)
+            else {
+                runtime::cancel(world, owner, "preview");
+                return;
+            };
+            view.preview_request = Some(id);
+            castle.form = Some(form);
             status(world, owner, "Loading exact review from the Cell…");
             render(world, owner);
         }
@@ -168,10 +181,14 @@ struct Preview;
 pub(super) fn render_preview(world: &mut World, owner: Entity) {
     let (container, prepared) = {
         let _span = nucleus::performance::Span::new("transfer-preview-view-preparation");
-        let Some(form) = world.get::<TransferCastle>(owner).unwrap().form.as_ref() else {
+        let (Some(form), Some(view)) = (
+            world
+                .get::<TransferCastle>(owner)
+                .and_then(|castle| castle.form.as_ref()),
+            world.get::<View>(owner),
+        ) else {
             return;
         };
-        let view = world.get::<View>(owner).unwrap();
         let prepared = view.preview.as_ref().map(|raw| {
             let preview = if raw["settlement_preview"].is_object() {
                 &raw["settlement_preview"]
@@ -185,6 +202,9 @@ pub(super) fn render_preview(world: &mut World, owner: Entity) {
         });
         (view.form, prepared)
     };
+    if world.get_entity(container).is_err() {
+        return;
+    }
     let old: Vec<_> = world
         .get::<Children>(container)
         .into_iter()
@@ -263,14 +283,20 @@ pub(super) fn effect_fields(form: &mut Form) {
 
 pub(super) fn accept_review(world: &mut World, owner: Entity) {
     ui::capture(world, owner);
-    let Some(mut form) = world.get::<TransferCastle>(owner).unwrap().form.clone() else {
+    let Some(mut form) = world
+        .get::<TransferCastle>(owner)
+        .and_then(|castle| castle.form.clone())
+    else {
         return;
     };
     if let Err(error) = form.commit_fields() {
         status(world, owner, error);
         return;
     }
-    let Some(raw) = world.get::<View>(owner).unwrap().preview.as_ref() else {
+    let Some(raw) = world
+        .get::<View>(owner)
+        .and_then(|view| view.preview.as_ref())
+    else {
         status(world, owner, "Request a fresh review");
         return;
     };
@@ -284,8 +310,14 @@ pub(super) fn accept_review(world: &mut World, owner: Entity) {
         Ok(payload) => {
             let mut reviewed = Form::action("Confirm reviewed changes", payload);
             reviewed.mode = "reviewed".into();
-            world.get_mut::<TransferCastle>(owner).unwrap().form = Some(reviewed);
-            world.get_mut::<View>(owner).unwrap().preview_request = None;
+            let Ok((mut view, mut castle)) = world
+                .query::<(&mut View, &mut TransferCastle)>()
+                .get_mut(world, owner)
+            else {
+                return;
+            };
+            castle.form = Some(reviewed);
+            view.preview_request = None;
             runtime::cancel(world, owner, "preview");
             render(world, owner);
         }
@@ -294,16 +326,15 @@ pub(super) fn accept_review(world: &mut World, owner: Entity) {
 }
 
 pub(super) fn bulk(world: &mut World, owner: Entity) {
-    if world
-        .get::<View>(owner)
-        .unwrap()
-        .selected_occurrences
-        .is_empty()
-    {
+    let (Some(castle), Some(view)) = (world.get::<TransferCastle>(owner), world.get::<View>(owner))
+    else {
+        return;
+    };
+    if view.selected_occurrences.is_empty() {
         status(world, owner, "Select occurrences in this branch first");
         return;
     }
-    if world.get::<TransferCastle>(owner).unwrap().form.is_some() {
+    if castle.form.is_some() {
         status(world, owner, "Save or cancel the open form first");
         return;
     }
@@ -311,6 +342,31 @@ pub(super) fn bulk(world: &mut World, owner: Entity) {
         "Review selected completion claims",
         json!({"action":"complete-transfer-occurrence-claims-bulk", "person":person(world, owner), "items":[], "review_token":""}),
     );
-    world.get_mut::<TransferCastle>(owner).unwrap().form = Some(form);
+    let Some(mut castle) = world.get_mut::<TransferCastle>(owner) else {
+        return;
+    };
+    castle.form = Some(form);
     request_preview(world, owner);
+}
+
+#[cfg(test)]
+#[test]
+fn open_draft_survives_removal_of_its_view() {
+    let mut world = World::new();
+    let form = model::composer("ana", "Donation");
+    let owner = world
+        .spawn(TransferCastle {
+            form: Some(form.clone()),
+            ..Default::default()
+        })
+        .id();
+
+    render(&mut world, owner);
+    request_preview(&mut world, owner);
+    accept_review(&mut world, owner);
+    bulk(&mut world, owner);
+    runtime::submit(&mut world, owner);
+
+    let castle = world.get::<TransferCastle>(owner).unwrap();
+    assert_eq!(castle.form.as_ref(), Some(&form));
 }

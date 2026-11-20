@@ -335,30 +335,33 @@ impl Form {
                 .pointer(&field.path)
                 .ok_or("This field is no longer available")?;
             if !nucleus::json::same_value_encoding(target, &value) {
-                *data.to_mut().pointer_mut(&field.path).unwrap() = value;
+                *data
+                    .to_mut()
+                    .pointer_mut(&field.path)
+                    .ok_or("This field is no longer available")? = value;
             }
         }
         for path in ["/public_history/audience", "/request/scope/audience"] {
-            if let Some(audience) = data.pointer(path).and_then(Value::as_object) {
-                match audience.get("kind").and_then(Value::as_str) {
-                    Some("public") if audience.contains_key("viewers") => {
-                        data.to_mut()
-                            .pointer_mut(path)
-                            .unwrap()
-                            .as_object_mut()
-                            .unwrap()
-                            .remove("viewers");
-                    }
-                    Some("selected") if !audience.contains_key("viewers") => {
-                        data.to_mut()
-                            .pointer_mut(path)
-                            .unwrap()
-                            .as_object_mut()
-                            .unwrap()
-                            .insert("viewers".into(), json!([]));
-                    }
-                    _ => {}
-                }
+            let Some(audience) = data.pointer(path).and_then(Value::as_object) else {
+                continue;
+            };
+            let add_viewers = match (
+                audience.get("kind").and_then(Value::as_str),
+                audience.contains_key("viewers"),
+            ) {
+                (Some("public"), true) => false,
+                (Some("selected"), false) => true,
+                _ => continue,
+            };
+            let audience = data
+                .to_mut()
+                .pointer_mut(path)
+                .and_then(Value::as_object_mut)
+                .ok_or("This audience is no longer available")?;
+            if add_viewers {
+                audience.insert("viewers".into(), json!([]));
+            } else {
+                audience.remove("viewers");
             }
         }
         if data["public_history"].is_object() {
@@ -468,6 +471,9 @@ impl Form {
             }
             return Ok(data);
         }
+        if !self.data.is_object() {
+            return Err("Transfer draft must be an object".into());
+        }
         let mut data = self.data.clone();
         for promise in data["promises"].as_array_mut().into_iter().flatten() {
             if promise["open"] == true {
@@ -512,23 +518,26 @@ impl Form {
             clean_place(&mut promise["place"])?;
         }
         clean_place(&mut data["default_place"])?;
-        let mut action = json!({"action": self.mode, "request_id": self.request_id});
+        let mut action = serde_json::Map::from_iter([
+            ("action".into(), json!(self.mode)),
+            ("request_id".into(), json!(self.request_id)),
+        ]);
         if let Some(transfer) = &self.transfer {
-            action["transfer"] = json!(transfer);
+            action.insert("transfer".into(), json!(transfer));
             if self.mode != "adopt-transfer-draft" {
-                action["expected_revision"] = json!(self.revision);
+                action.insert("expected_revision".into(), json!(self.revision));
             }
             if self.mode == "counteroffer-transfer" {
-                action["person"] = json!(self.actor);
+                action.insert("person".into(), json!(self.actor));
             }
-            action["draft"] = data;
+            action.insert("draft".into(), data);
         } else {
-            action
-                .as_object_mut()
-                .unwrap()
-                .extend(data.as_object().unwrap().clone());
+            let Value::Object(data) = data else {
+                return Err("Transfer draft must be an object".into());
+            };
+            action.extend(data);
         }
-        Ok(action)
+        Ok(Value::Object(action))
     }
 
     pub fn valid(&self) -> bool {
@@ -684,7 +693,9 @@ pub fn composer(person: &str, preset: &str) -> Form {
             "promises": promises, "dependencies": if preset == "Dependency plan" { vec![dependency()] } else { Vec::new() }
         }),
     );
-    form.data.as_object_mut().unwrap().remove("request_id");
+    if let Some(data) = form.data.as_object_mut() {
+        data.remove("request_id");
+    }
     form.mode = "create-transfer-draft".into();
     form.preset = preset.into();
     form.step = Some(0);
@@ -1049,4 +1060,39 @@ pub fn loan_proposal(transfer: &Value, item: &Value, person: &str, future: bool)
         title(item)
     ));
     form
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn malformed_draft_payload_returns_an_error() {
+        let mut form = composer("ana", "Donation");
+        form.data = json!(["not a draft"]);
+
+        assert_eq!(
+            form.payload(),
+            Err("Transfer draft must be an object".into())
+        );
+    }
+
+    #[test]
+    fn counterparty_prefill_requires_one_distinct_other_person() {
+        for (invitees, receiver) in [
+            (json!(["beto", "beto"]), "beto"),
+            (json!(["beto", "clara"]), ""),
+        ] {
+            let mut form = composer("ana", "Donation");
+            form.step = Some(2);
+            form.data["invitees"] = invitees;
+
+            fields::composer_fields(&mut form);
+
+            assert_eq!(
+                form.data["promises"][0]["item"]["exchange"]["receiver"],
+                receiver
+            );
+        }
+    }
 }

@@ -1,6 +1,10 @@
 #[cfg(target_os = "linux")]
 mod native;
 mod source;
+#[allow(
+    clippy::unwrap_used,
+    reason = "Laboratory drop fixtures must fail when test assets or preview state are missing"
+)]
 pub(crate) mod tests;
 mod ui;
 mod worker;

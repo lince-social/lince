@@ -61,15 +61,15 @@ fn visit(
                 }
             }
             Declaration::Record(record) => {
-                let mut assertions = output.as_ref().map(|_| Vec::new());
+                let mut assertions = Vec::new();
                 let mut identity_count = 0usize;
                 for item in &record.header.rest {
                     if matches!(&item.field, RecordField::Identity(_)) {
                         identity_count += 1;
                     }
-                    let Some(assertions) = assertions.as_mut() else {
+                    if output.is_none() {
                         continue;
-                    };
+                    }
                     match &item.field {
                         RecordField::Identity(value) => {
                             assertions.push(ProjectedAssertion {
@@ -150,7 +150,7 @@ fn visit(
                             quantity.value.0.clone(),
                             quantity.unit.as_ref().map(|unit| unit.name.0.clone()),
                         )),
-                        assertions: assertions.unwrap(),
+                        assertions,
                     });
                 }
             }

@@ -44,11 +44,7 @@ impl Network for Link {
 }
 
 fn node_id(seed: u64, name: &str) -> String {
-    let hex =
-        nucleus::fact::sha256_hex(format!("lince.simulation.v1:{seed}:{name}:node").as_bytes());
-    let secret: [u8; 32] = std::array::from_fn(|index| {
-        u8::from_str_radix(&hex[index * 2..index * 2 + 2], 16).unwrap()
-    });
+    let secret = crate::world::derived_secret(seed, name, "node");
     nucleus::fact::sha256_hex(&secret)
 }
 
@@ -72,8 +68,9 @@ async fn save(
             None,
         )
         .await
-        .unwrap();
-    serde_json::from_value(result.data.unwrap()).unwrap()
+        .expect("the fixture must save the Record visibility policy");
+    serde_json::from_value(result.data.expect("saving a visibility policy returns its context"))
+        .expect("the saved visibility context must decode")
 }
 
 async fn read(
@@ -118,6 +115,7 @@ pub async fn transport_journey_from_draft(draft: Action) -> Evidence {
     run(true, true, Some(draft)).await
 }
 
+#[allow(clippy::unwrap_used, reason = "Acceptance fixture setup must stop if it cannot establish the exact address and visibility policy")]
 async fn address_context(
     engine: &Engine,
     record: &str,
@@ -314,6 +312,7 @@ async fn address_context(
     );
 }
 
+#[allow(clippy::unwrap_used, reason = "Acceptance scenarios require every expected step and response before producing evidence")]
 async fn run(transport: bool, finish: bool, prepared: Option<Action>) -> Evidence {
     let directory = tempfile::tempdir().unwrap();
     let mut case = simulation::fixtures::transfer::sale();

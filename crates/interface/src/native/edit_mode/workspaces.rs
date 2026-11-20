@@ -117,9 +117,25 @@ pub(super) fn reorder(world: &mut World, root: Entity) {
     if ordered.len() != rows.len() {
         return;
     }
+    let mut ordered = ordered.into_iter();
+    let Some(children) = children
+        .into_iter()
+        .map(|entity| {
+            if world.get::<Row>(entity).is_some() {
+                ordered.next()
+            } else {
+                Some(entity)
+            }
+        })
+        .collect::<Option<Vec<_>>>()
+    else {
+        return;
+    };
     let numbers = workspace::numbers(world, root);
     for (id, entity) in &rows {
-        let label = world.get::<Row>(*entity).unwrap().number;
+        let Some(label) = world.get::<Row>(*entity).map(|row| row.number) else {
+            continue;
+        };
         let value = numbers
             .iter()
             .position(|number| number == id)
@@ -128,17 +144,6 @@ pub(super) fn reorder(world: &mut World, root: Entity) {
             text.0 = value;
         }
     }
-    let mut ordered = ordered.into_iter();
-    let children: Vec<_> = children
-        .into_iter()
-        .map(|entity| {
-            if world.get::<Row>(entity).is_some() {
-                ordered.next().unwrap()
-            } else {
-                entity
-            }
-        })
-        .collect();
     world.entity_mut(panel).replace_children(&children);
     let revision = world
         .get::<FocusScrollRevision>(panel)
@@ -151,6 +156,30 @@ pub(super) fn reorder(world: &mut World, root: Entity) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn duplicate_workspace_rows_leave_panel_order_intact() {
+        let (mut app, root) = super::super::tests::fixture();
+        workspace::create(app.world_mut(), root);
+        EditAction::Open.apply(app.world_mut(), root);
+        let world = app.world_mut();
+        let panel = world.get::<EditMode>(root).unwrap().panel;
+        let row = world
+            .get::<Children>(panel)
+            .unwrap()
+            .iter()
+            .find_map(|entity| world.get::<Row>(entity))
+            .unwrap();
+        let duplicate = Row {
+            workspace: row.workspace,
+            number: row.number,
+        };
+        world.spawn((duplicate, ChildOf(panel)));
+        let before: Vec<_> = world.get::<Children>(panel).unwrap().iter().collect();
+        reorder(world, root);
+        let after: Vec<_> = world.get::<Children>(panel).unwrap().iter().collect();
+        assert_eq!(after, before);
+    }
 
     #[test]
     fn reordered_rows_retain_draft_entities_caret_focus_scroll_and_fixed_panel_children() {

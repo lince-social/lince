@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use engine::Engine;
 use protein::Protein;
 use serde_json::{Value, json};

@@ -12,7 +12,7 @@ pub struct Request {
 }
 
 pub fn key(field: &NumericField) -> String {
-    serde_json::to_string(field).unwrap()
+    serde_json::to_string(field).expect("numeric field keys contain only enum tags and strings")
 }
 
 pub fn validate(requests: &[Request]) -> Result<(), crate::ProteinError> {

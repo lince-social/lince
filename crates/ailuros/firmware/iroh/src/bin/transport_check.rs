@@ -11,8 +11,10 @@ mod device {
             atomic::{AtomicU32, Ordering},
         };
         let counter = Arc::new(AtomicU32::new(0));
+        // SAFETY: The Arc owns the allocation while the SDK checks its address.
+        let in_psram = unsafe { sys::esp_ptr_external_ram(Arc::as_ptr(&counter).cast()) };
         ensure!(
-            unsafe { sys::esp_ptr_external_ram(Arc::as_ptr(&counter).cast()) },
+            in_psram,
             "Atomic qualification must exercise PSRAM"
         );
         let mut workers = Vec::new();
@@ -77,7 +79,9 @@ mod device {
             max_fds: 5,
             ..Default::default()
         };
-        esp_idf_svc::sys::esp!(unsafe { esp_idf_svc::sys::esp_vfs_eventfd_register(&events) })?;
+        // SAFETY: Startup registers eventfd once with a live, initialized config.
+        let registered = unsafe { sys::esp_vfs_eventfd_register(&events) };
+        sys::esp!(registered)?;
         let runtime = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .max_blocking_threads(1)

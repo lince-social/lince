@@ -26,6 +26,30 @@ pub(super) fn fixture() -> (App, Entity, Entity) {
 }
 
 #[test]
+fn map_update_waits_for_its_viewport_image() {
+    let (mut app, _, owner) = fixture();
+    let world = app.world_mut();
+    let mut sand = world.get_mut::<MapSand>(owner).unwrap();
+    let viewport = sand.viewport;
+    sand.size = [1, 1];
+    let image = world.entity_mut(viewport).take::<ImageNode>().unwrap();
+    let assets = world.resource::<Assets<Image>>().len();
+
+    ui::update(world);
+
+    assert_eq!(world.get::<MapSand>(owner).unwrap().size, [1, 1]);
+    assert_eq!(world.resource::<Assets<Image>>().len(), assets);
+    assert!(!world.resource::<render::Scenes>().0.contains_key(&owner));
+
+    world.entity_mut(viewport).insert(image);
+    ui::update(world);
+
+    let sand = world.get::<MapSand>(owner).unwrap();
+    assert_ne!(sand.size, [1, 1]);
+    assert_eq!(world.get::<ImageNode>(viewport).unwrap().image, sand.image);
+}
+
+#[test]
 fn pointer_pan_latency_uses_each_gesture_instead_of_the_previous_button() {
     use bevy::picking::{
         events::PointerDrag,
@@ -120,7 +144,7 @@ fn independent_maps_keep_camera_theme_and_record_bindings_in_workspace() {
         latitude: -23.5505,
         longitude: -46.6333,
     };
-    let saved = snapshot(app.world_mut(), root);
+    let saved = snapshot(app.world_mut(), root).expect("capture the fixture snapshots");
     assert_eq!(saved.len(), 2);
     assert!(saved.iter().all(SavedMap::valid));
     let encoded = serde_json::to_string(&saved).unwrap();

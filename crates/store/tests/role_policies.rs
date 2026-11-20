@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use serde_json::json;
 use store::Store;
 

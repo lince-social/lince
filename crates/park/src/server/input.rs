@@ -145,6 +145,7 @@ impl Server {
                 .xkb()
                 .lock()
                 .unwrap_or_else(|error| error.into_inner());
+            // SAFETY: The state is only queried while the Xkb guard is live.
             unsafe { state.state() }
                 .get_keymap()
                 .key_repeats((code + 8).into())
@@ -207,6 +208,7 @@ impl Server {
                 .xkb()
                 .lock()
                 .unwrap_or_else(|error| error.into_inner());
+            // SAFETY: Only the keysym, a value, leaves the guarded state query.
             unsafe { state.state() }.key_get_one_sym((keycode + 8).into())
         });
         Ok(KeyEvent {

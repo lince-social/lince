@@ -6,6 +6,10 @@ mod paging;
 mod persistence;
 mod render;
 mod settings;
+#[allow(
+    clippy::unwrap_used,
+    reason = "Laboratory map fixtures must fail if their prepared maps or expected UI elements are missing"
+)]
 mod tests;
 mod ui;
 
@@ -258,31 +262,34 @@ pub(crate) fn transport_view(
     person: String,
     tools: bool,
 ) {
-    let changed = world
-        .get::<MapSand>(owner)
-        .is_some_and(|sand| sand.person != person || sand.records != records);
-    if changed {
+    let Some(sand) = world.get::<MapSand>(owner) else {
+        return;
+    };
+    let viewport = sand.viewport;
+    if sand.person != person || sand.records != records {
         feed::reset(world, owner);
-        let mut sand = world.get_mut::<MapSand>(owner).unwrap();
+        let Some(mut sand) = world.get_mut::<MapSand>(owner) else {
+            return;
+        };
         sand.person = person;
         sand.records = records;
         sand.auto_center = true;
     }
-    let viewport = world.get::<MapSand>(owner).unwrap().viewport;
-    if world.get::<TransportChrome>(owner).is_none() {
-        world.get_mut::<MapSand>(owner).unwrap().show_public = false;
-        let children: Vec<_> = world.get::<Children>(owner).unwrap().iter().collect();
-        let chrome = children
-            .into_iter()
-            .filter(|entity| *entity != viewport)
-            .filter_map(|entity| world.get::<Node>(entity).map(|node| (entity, node.display)))
-            .collect();
-        world.entity_mut(owner).insert(TransportChrome(chrome));
+    let chrome = world
+        .get::<TransportChrome>(owner)
+        .map(|chrome| chrome.0.clone());
+    if chrome.is_none()
+        && let Some(mut sand) = world.get_mut::<MapSand>(owner)
+    {
+        sand.show_public = false;
     }
-    let mut chrome = world.get::<TransportChrome>(owner).unwrap().0.clone();
+    let mut chrome = chrome.unwrap_or_default();
     chrome.retain(|(entity, _)| world.get::<Node>(*entity).is_some());
-    let children: Vec<_> = world.get::<Children>(owner).unwrap().iter().collect();
-    for entity in children {
+    for entity in world
+        .get::<Children>(owner)
+        .into_iter()
+        .flat_map(|children| children.iter())
+    {
         if entity != viewport
             && !chrome.iter().any(|(known, _)| *known == entity)
             && let Some(node) = world.get::<Node>(entity)
@@ -290,17 +297,20 @@ pub(crate) fn transport_view(
             chrome.push((entity, node.display));
         }
     }
-    world.get_mut::<TransportChrome>(owner).unwrap().0 = chrome.clone();
+    world
+        .entity_mut(owner)
+        .insert(TransportChrome(chrome.clone()));
     for (entity, display) in chrome {
         if let Some(mut node) = world.get_mut::<Node>(entity) {
             node.display = if tools { display } else { Display::None };
         }
     }
-    let mut node = world.get_mut::<Node>(viewport).unwrap();
-    node.height = if tools { px(360) } else { percent(100) };
-    node.min_height = px(0);
-    node.flex_grow = 1.0;
-    node.flex_shrink = 1.0;
+    if let Some(mut node) = world.get_mut::<Node>(viewport) {
+        node.height = if tools { px(360) } else { percent(100) };
+        node.min_height = px(0);
+        node.flex_grow = 1.0;
+        node.flex_shrink = 1.0;
+    }
 }
 
 pub fn observe(
@@ -317,10 +327,13 @@ pub fn observe(
         vec![invitation.record_uid.clone()],
         person,
     );
-    world.get_mut::<MapSand>(owner).unwrap().authority_node_id =
-        Some(invitation.authority_node_id.clone());
+    let Some(mut sand) = world.get_mut::<MapSand>(owner) else {
+        world.despawn(owner);
+        return Err("Could not open the location map".into());
+    };
+    sand.authority_node_id = Some(invitation.authority_node_id.clone());
     if invitation.grant.is_some() {
-        world.get_mut::<MapSand>(owner).unwrap().invitation = Some(invitation);
+        sand.invitation = Some(invitation);
     }
     Ok(owner)
 }
@@ -352,7 +365,10 @@ impl crate::native::actions::Action for PublicTransport {
             Vec::new(),
             String::new(),
         );
-        let mut sand = world.get_mut::<MapSand>(owner).unwrap();
+        let Some(mut sand) = world.get_mut::<MapSand>(owner) else {
+            world.despawn(owner);
+            return;
+        };
         for (label, area) in [
             ("Public origin area", &self.0.origin),
             ("Public destination area", &self.0.destination),

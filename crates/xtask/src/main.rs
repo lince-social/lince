@@ -4,6 +4,8 @@ use std::io::{self, Write};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
+use lince_interface::testing::InterfaceSelection;
+
 mod ailuros;
 mod android;
 mod android_clean;
@@ -270,9 +272,13 @@ fn dispatch() -> Result<()> {
         Some("ship") => ship::dispatch(&root, &extra),
         Some("prune-target") => prune::budget::command(&prune::target_directory(&root), &extra),
         Some("dev") => prune::with_cleanup(&root, || dev(&extra)),
-        Some("check") => {
-            prune::with_cleanup(&root, || checked(cargo_command().arg("check").args(&extra)))
-        }
+        Some("check") => prune::with_cleanup(&root, || {
+            checked(cargo_command().arg("check").args(&extra))?;
+            if extra.is_empty() {
+                test_interface(InterfaceSelection::All)?;
+            }
+            Ok(())
+        }),
         Some("test") => {
             if extra.is_empty() {
                 return Err("usage: cargo xtask test -p <package> <test-name> -- --exact".into());
@@ -280,11 +286,17 @@ fn dispatch() -> Result<()> {
             prune::with_cleanup(&root, || checked(cargo_command().arg("test").args(&extra)))
         }
         Some("test-interface") => {
-            no_extra(&extra)?;
-            checked(cargo_command().args([
-                "test", "--locked", "-p", "lince-interface", "--features", "native-presentation",
-                "--lib", "native::laboratory::interface::fast_interface_rules", "--", "--exact", "--nocapture",
-            ]))
+            let selection = match extra.as_slice() {
+                [] => InterfaceSelection::All,
+                [selection] => selection
+                    .to_str()
+                    .ok_or("Interface selection must be UTF-8")?
+                    .parse()?,
+                _ => {
+                    return Err("usage: cargo xtask test-interface [all|protein|edit|input]".into());
+                }
+            };
+            test_interface(selection)
         }
         Some("release") => {
             no_extra(&extra)?;
@@ -370,10 +382,10 @@ fn dispatch() -> Result<()> {
             );
             println!("design help lists focused HTML studies and native preview commands.");
             println!(
-                "check and test forward arguments to Cargo; test-all runs every workspace target."
+                "check runs the default compile and Interface checks. check with Cargo arguments and test forward those arguments to Cargo."
             );
             println!("One test: cargo xtask test -p <package> <test-name> -- --exact");
-            println!("test-interface runs the ordered fast Laboratory interface rules in the local test executable.");
+            println!("test-interface [all|protein|edit|input] runs the selected fast Laboratory rules with Protein Add filter first.");
             println!("ship tests a snapshot, commits and pushes it, waits for its Linux workflow, and installs its verified Nix release; ship --help lists options.");
             println!("prune-target [--dry-run] enforces the 300 GB compiled-artifact budget without building the application.");
             println!("test-store-transactions runs the four Store transaction targets with the validated SQLite profile.");
@@ -403,6 +415,26 @@ fn checked(command: &mut Command) -> Result<()> {
     } else {
         Err(format!("{:?} exited with {status}", command.get_program()))
     }
+}
+
+fn test_interface(selection: InterfaceSelection) -> Result<()> {
+    checked(
+        cargo_command()
+            .env(InterfaceSelection::ENV, selection.name())
+            .args([
+                "test",
+                "--locked",
+                "-p",
+                "lince-interface",
+                "--features",
+                "native-presentation",
+                "--lib",
+                "native::laboratory::interface::fast_interface_rules",
+                "--",
+                "--exact",
+                "--nocapture",
+            ]),
+    )
 }
 
 fn check_instinct() -> Result<()> {

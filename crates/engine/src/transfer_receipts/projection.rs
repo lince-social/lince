@@ -591,13 +591,21 @@ impl Engine {
         direct
             .validate_fragment(now.timestamp())
             .map_err(proof_shape_error)?;
-        let preview = direct.publication.events.pop().unwrap();
+        let preview = direct
+            .publication
+            .events
+            .pop()
+            .ok_or_else(|| invalid("The proof preview event is unavailable"))?;
         drop(direct);
         let preview = if !fragment {
             bundle.publication.events.push(preview);
             nucleus::performance::add("receipt-full-candidates-validated", 1);
             fragment = bundle.validate(now.timestamp()).is_err();
-            bundle.publication.events.pop().unwrap()
+            bundle
+                .publication
+                .events
+                .pop()
+                .ok_or_else(|| invalid("The proof preview event is unavailable"))?
         } else {
             preview
         };

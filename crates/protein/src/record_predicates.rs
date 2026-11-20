@@ -384,11 +384,14 @@ impl<Body: RecordBody> Candidate<'_, Body> {
         if head.contains(query) {
             return Ok(true);
         }
-        if self.body.is_none() {
-            let body = self.row.body.required()?;
-            nucleus::performance::add("protein-record-match-body-folds", 1);
-            self.body = Some(body.to_lowercase());
-        }
-        Ok(self.body.as_ref().unwrap().contains(query))
+        let body = match &mut self.body {
+            Some(body) => body,
+            slot @ None => {
+                let body = self.row.body.required()?;
+                nucleus::performance::add("protein-record-match-body-folds", 1);
+                slot.insert(body.to_lowercase())
+            }
+        };
+        Ok(body.contains(query))
     }
 }

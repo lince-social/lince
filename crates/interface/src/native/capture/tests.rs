@@ -44,10 +44,20 @@ fn saved_native_placement_retains_identity_and_exclusion_without_a_second_store(
     let mut world = World::new();
     let mut layout = LayoutBox::new(Vec2::splat(100.0));
     layout.capture_excluded = true;
-    let original = world.spawn((layout, crate::native::canvas::CanvasItem { position: bevy::math::DVec2::ZERO, size: Vec2::splat(100.0) })).id();
-    let saved = crate::native::sand_placement::Placement::capture(&world, original);
+    let original = world
+        .spawn((
+            layout,
+            crate::native::canvas::CanvasItem {
+                position: bevy::math::DVec2::ZERO,
+                size: Vec2::splat(100.0),
+            },
+        ))
+        .id();
+    let saved = crate::native::sand_placement::Placement::capture(&world, original)
+        .expect("capture the fixture placement");
     let bytes = serde_json::to_vec(&saved).unwrap();
-    let restored: crate::native::sand_placement::Placement = serde_json::from_slice(&bytes).unwrap();
+    let restored: crate::native::sand_placement::Placement =
+        serde_json::from_slice(&bytes).unwrap();
     world.despawn(original);
     let replacement = world.spawn_empty().id();
     restored.restore(&mut world, replacement);

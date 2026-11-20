@@ -39,18 +39,20 @@ impl SavedInstinct {
     }
 }
 
-pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedInstinct> {
+pub(crate) fn snapshot(world: &mut World, root: Entity) -> Result<Vec<SavedInstinct>, String> {
     world
         .query::<(Entity, &ChildOf, &WorkspaceMember, &CanvasItem, &Instinct)>()
         .iter(world)
         .filter(|(_, parent, _, _, _)| parent.parent() == root)
-        .map(|(entity, _, member, item, instinct)| SavedInstinct {
-            workspace: member.0,
-            instinct: instinct.clone(),
-            position: item.position.to_array(),
-            size: item.size.to_array(),
-            placement: crate::native::sand_placement::Placement::capture(world, entity),
-            tokens: crate::native::token_style::overrides(world, entity),
+        .map(|(entity, _, member, item, instinct)| {
+            Ok(SavedInstinct {
+                workspace: member.0,
+                instinct: instinct.clone(),
+                position: item.position.to_array(),
+                size: item.size.to_array(),
+                placement: crate::native::sand_placement::Placement::capture(world, entity)?,
+                tokens: crate::native::token_style::overrides(world, entity),
+            })
         })
         .collect()
 }

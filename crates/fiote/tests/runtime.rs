@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use async_trait::async_trait;
 use fiote::{
     provider::{Message, Provider, Reply, ToolCall, ToolDefinition},

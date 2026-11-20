@@ -269,7 +269,7 @@ impl Scope {
                         .authority
                         .participation
                         .as_ref()
-                        .unwrap()
+                        .ok_or("Original participation proof has no agreement scope")?
                         .party_commitment
                         && !parties.insert(party)
                     {

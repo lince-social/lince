@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use chrono::Utc;
 use engine::{Engine, actions::Action};
 use nucleus::karma::rule_field::RuleFieldInput;

@@ -21,9 +21,14 @@ fn files(root: &Path, output: &mut Vec<PathBuf>) {
 }
 
 fn main() {
-    let manifest = PathBuf::from(std::env::var_os("CARGO_MANIFEST_DIR").unwrap());
+    let manifest = PathBuf::from(
+        std::env::var_os("CARGO_MANIFEST_DIR").expect("Cargo sets the Engine manifest directory"),
+    );
     sensei::teach(&manifest);
-    let root = manifest.parent().unwrap().parent().unwrap();
+    let root = manifest
+        .parent()
+        .and_then(Path::parent)
+        .expect("the Engine crate lives under the repository's crates directory");
     let mut paths = vec![root.join("Cargo.toml"), root.join("Cargo.lock")];
     for name in ["nucleus", "store", "engine", "protein", "anicca", "utils"] {
         let directory = root.join("crates").join(name);
@@ -37,7 +42,7 @@ fn main() {
         println!("cargo:rerun-if-changed={}", path.display());
         hash.update(
             path.strip_prefix(root)
-                .unwrap()
+                .expect("every hashed Engine input is under the repository root")
                 .to_string_lossy()
                 .as_bytes(),
         );
@@ -66,10 +71,12 @@ fn main() {
         hash.update(value);
         hash.update([0]);
     }
-    let version = std::process::Command::new(std::env::var_os("RUSTC").unwrap())
-        .arg("-vV")
-        .output()
-        .expect("compiler version");
+    let version = std::process::Command::new(
+        std::env::var_os("RUSTC").expect("Cargo supplies the compiler for the Engine identity"),
+    )
+    .arg("-vV")
+    .output()
+    .expect("compiler version");
     assert!(
         version.status.success() && !version.stdout.is_empty(),
         "compiler identity unavailable"

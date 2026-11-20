@@ -12,7 +12,10 @@ use bevy::{
         keyboard::{Key, KeyboardInput},
         mouse::MouseButtonInput,
     },
-    input_focus::{InputFocusSystems, dispatch_focused_input},
+    input_focus::{
+        InputDispatchPlugin, InputFocusPlugin,
+        tab_navigation::{TabGroup, TabIndex, TabNavigationPlugin},
+    },
     picking::{
         InteractionPlugin, PickingPlugin, PickingSystems,
         backend::{HitData, PointerHits},
@@ -100,6 +103,9 @@ fn fixture() -> (App, Entity, Entity, Entity, Entity) {
         PickingPlugin,
         InteractionPlugin,
         bevy::ui_widgets::ButtonPlugin,
+        InputFocusPlugin,
+        InputDispatchPlugin,
+        TabNavigationPlugin,
         ActionsPlugin,
     ))
     .init_resource::<FontCx>()
@@ -114,12 +120,6 @@ fn fixture() -> (App, Entity, Entity, Entity, Entity) {
         bevy::ui_widgets::TextInputPlugin,
         crate::controls::editing::TextEditingPlugin,
     ))
-    .add_systems(
-        PreUpdate,
-        dispatch_focused_input::<KeyboardInput>
-            .in_set(InputFocusSystems::Dispatch)
-            .after(InputSystems),
-    )
     .add_systems(
         PostUpdate,
         bevy::text::apply_text_edits.in_set(bevy::text::EditableTextSystems),
@@ -142,7 +142,7 @@ fn fixture() -> (App, Entity, Entity, Entity, Entity) {
         .unwrap();
     let root = app
         .world_mut()
-        .spawn((Workspaces::default(), Count::default()))
+        .spawn((Workspaces::default(), Count::default(), TabGroup::new(0)))
         .id();
     let window = app
         .world_mut()
@@ -163,6 +163,7 @@ fn fixture() -> (App, Entity, Entity, Entity, Entity) {
             },
             UiGlobalTransform::from_translation(Vec2::splat(50.0)),
             InheritedVisibility::VISIBLE,
+            TabIndex(0),
             ChildOf(root),
             ActionButton::new(root, crate::native::actions![Increment]),
         ))
@@ -176,6 +177,7 @@ fn fixture() -> (App, Entity, Entity, Entity, Entity) {
             AccessibilityNode(label),
             Node::default(),
             InheritedVisibility::VISIBLE,
+            TabIndex(1),
             ChildOf(root),
         ))
         .id();
@@ -196,6 +198,18 @@ fn clicked(world: &World) -> bool {
     world
         .iter_entities()
         .any(|entity| entity.get::<Count>().is_some_and(|count| count.0 == 1))
+}
+
+fn tab_to(app: &mut App, root: Entity, target: Selector) {
+    let step = Step::action(
+        "navigate with Tab",
+        target.clone(),
+        UiAction::Key(KeyCode::Tab, Key::Tab),
+        UiCondition::Focused(target),
+    );
+    let report = runner().run(&mut UiBackend::new(app, root), &step);
+    assert!(report.is_success(), "{report:?}");
+    assert_eq!(report.metrics.dispatches, 1);
 }
 
 #[cfg_attr(test, test)]
@@ -222,7 +236,12 @@ fn virtual_pointer_and_keyboard_activate_the_normal_button_pipeline_once() {
     assert_eq!(app.world().get::<Count>(root).unwrap().0, 1);
     let trace = app.world().resource::<InputTrace>();
     assert_eq!((trace.mouse, trace.ordered_mouse), (2, 2));
-    app.world_mut().get_mut::<Count>(root).unwrap().0 = 0;
+    let (mut app, root, _, _, _) = fixture();
+    tab_to(
+        &mut app,
+        root,
+        Selector::new("Submit draft").with_role("Button"),
+    );
     app.insert_resource(TimeUpdateStrategy::ManualDuration(Duration::from_millis(
         37,
     )));
@@ -241,7 +260,7 @@ fn virtual_pointer_and_keyboard_activate_the_normal_button_pipeline_once() {
     );
     assert_eq!(app.world().get::<Count>(root).unwrap().0, 1);
     let trace = app.world().resource::<InputTrace>();
-    assert_eq!((trace.keyboard, trace.ordered_keyboard), (2, 2));
+    assert_eq!((trace.keyboard, trace.ordered_keyboard), (4, 4));
     assert!(matches!(
         app.world().resource::<TimeUpdateStrategy>(),
         TimeUpdateStrategy::ManualDuration(duration) if *duration == Duration::from_millis(37)
@@ -275,8 +294,17 @@ fn keyboard_replaces_text_through_the_normal_editor_pipeline_without_leaking_pay
         "replace draft title",
         title.clone(),
         UiAction::Text("Café 界".into()),
-        UiCondition::Value(title, "Café 界".into()),
+        UiCondition::Value(title.clone(), "Café 界".into()),
     );
+    let before_focus = runner().run(&mut UiBackend::new(&mut app, root), &step);
+    assert_eq!(before_focus.outcome, crate::testing::Outcome::Rejected);
+    assert_eq!(app.world().resource::<InputTrace>().keyboard, 0);
+    tab_to(
+        &mut app,
+        root,
+        Selector::new("Submit draft").with_role("Button"),
+    );
+    tab_to(&mut app, root, title);
     let report = runner().run(&mut UiBackend::new(&mut app, root), &step);
     assert!(
         report.is_success(),
@@ -436,6 +464,41 @@ fn selectors_reject_hidden_disabled_ambiguous_and_stale_controls_with_bounded_di
 }
 
 #[cfg_attr(test, test)]
+fn a_button_moved_during_pointer_input_cannot_receive_the_stale_click() {
+    let (mut app, root, _, button, _) = fixture();
+    app.add_systems(
+        Update,
+        |mouse: Res<ButtonInput<MouseButton>>,
+         hit: Res<TestHit>,
+         mut transforms: Query<&mut UiGlobalTransform>| {
+            if mouse.just_pressed(MouseButton::Left) {
+                *transforms.get_mut(hit.button).unwrap() =
+                    UiGlobalTransform::from_translation(Vec2::splat(75.0));
+            }
+        },
+    );
+    let step = Step::action(
+        "reject an outdated pointer location",
+        Selector::new("Submit draft").with_role("Button"),
+        UiAction::Click,
+        UiCondition::Check(clicked),
+    );
+    let report = runner().run(&mut UiBackend::new(&mut app, root), &step);
+    assert!(
+        matches!(&report.outcome, crate::testing::Outcome::BackendError(_)),
+        "{report:?}"
+    );
+    app.update();
+    assert_eq!(app.world().get::<Count>(root).unwrap().0, 0);
+    assert!(
+        !app.world()
+            .resource::<ButtonInput<MouseButton>>()
+            .pressed(MouseButton::Left)
+    );
+    assert!(app.world().get::<bevy::ui::Pressed>(button).is_none());
+}
+
+#[cfg_attr(test, test)]
 fn failed_native_step_discards_remaining_text_and_releases_modifiers() {
     use crate::testing::{Backend, Dispatch, Route};
     fn released(world: &World) -> bool {
@@ -445,6 +508,12 @@ fn failed_native_step_discards_remaining_text_and_releases_modifiers() {
     }
     let (mut app, root, _, _, field) = fixture();
     let selector = Selector::new("Draft title").with_role("TextInput");
+    tab_to(
+        &mut app,
+        root,
+        Selector::new("Submit draft").with_role("Button"),
+    );
+    tab_to(&mut app, root, selector.clone());
     let step = Step::action(
         "bounded text input",
         selector.clone(),
@@ -505,4 +574,5 @@ crate::native::laboratory_cases! {
     unavailable_pointer_uses_explicit_accessibility_fallback_and_never_replays_accepted_input,
     selectors_reject_hidden_disabled_ambiguous_and_stale_controls_with_bounded_diagnostics,
     failed_native_step_discards_remaining_text_and_releases_modifiers,
+    a_button_moved_during_pointer_input_cannot_receive_the_stale_click,
 }

@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use nucleus::social::{AuthorMode, Direction, PostState, Search, Snippet};
 use serde_json::Value;
 use store::{Store, social};

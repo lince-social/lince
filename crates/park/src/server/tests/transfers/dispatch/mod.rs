@@ -105,8 +105,10 @@ impl Fixture {
             .unwrap()
             .find(|device| !device.is_software())
             .unwrap();
+        // SAFETY: Smithay owns this display lifetime and no raw caller terminates it.
         let display = unsafe { EGLDisplay::new(device) }.unwrap();
         let context = EGLContext::new(&display).unwrap();
+        // SAFETY: The context was created here and has never been bound to another thread.
         let mut renderer = unsafe { GlesRenderer::new(context) }.unwrap();
         let texture = renderer
             .create_buffer(Fourcc::Argb8888, (size[0] as i32, size[1] as i32).into())

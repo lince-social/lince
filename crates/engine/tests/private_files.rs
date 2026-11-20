@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 #[cfg(target_os = "linux")]
 mod linux {
     use std::fs::{self, DirBuilder, OpenOptions};

@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use engine::{Engine, actions::Action, private_password::PasswordInput};
 use std::sync::Arc;
 use transport::{ClientMessage, LaneHub, ServerMessage, Session};

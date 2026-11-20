@@ -10,7 +10,7 @@ Park — 7. Remove executed bloat and improve the shipping binary (
 
 [Organization and execution order](record:r_0PCR2DTXNGTQGBE6RBWR0ECTXW). Targets are in [benchmarks](record:r_7CWV5KN1695FW2KNPGW5X19PJ7); interaction coverage is in [workflows](record:r_33DFSQHTZFRCM758HHPN3KRWNA).
 
-**Stage assignment:** P86/P89/P92 qualify for Stage A when they remove demonstrated daily runtime work, contention or eager resources. P90/P148 and P96/P97/P98/P100/P99 are Stage B by default: dependency/build cleanup and compiler-profile experiments must not postpone the mixed-workspace responsiveness gate. Promote a specific task only for an evidenced A bottleneck or necessary validation blocker, recording the reason in the global queue. Maintenance-only simplification is not a daily-performance result.
+**Stage assignment.** The owner approved the specific dependency, build and compiler comparisons in the current queue. Their runtime and build effects are measured separately.
 
 Follow [12's session cycle](record:r_7NBQGTF152S58NPT0Z9EM58C1T). For a later authorized execution phase, useful local checks and test compilation may run in Niri; CI normally produces the optimized application. The current source-only phase does not authorize either. Compiler choices describe source/profile-identified artifacts, not extra production algorithm paths. Park timing runs use explicitly prepared matching artifacts without compilation, then evidence/plan updates end the visit.
 
@@ -48,6 +48,17 @@ P86 — Rank actual bloat in active paths. (
 
 
 **Why:** large files and dependency counts alone do not identify wasted work. **Scope:** inspect active feature/dependency reachability, initialization, registered systems, duplicate derivations/adapters and ownership plumbing across interface and the backend paths P66 implicates. **Close with:** a short ranked inventory naming one removable or consolidatable unit per entry, evidence of its current use, and its runtime, startup/build or maintenance cost. Exclude archived/compiled-out code from FPS claims and do not turn this into a rewrite of every crate.
+
+**Source audit, 2026-11-20.** The ranking prioritizes the cost seen in earlier installed builds and the current source owner. It guides the next capture. These observations do not establish costs for the unbuilt source batch.
+
+| Rank | Active unit to inspect | Existing evidence and decision boundary |
+| --- | --- | --- |
+| 1 | One Cell refresh/read-access interval spanning multiple expensive query executions in `transport/src/session.rs::update_subscriptions` and its caller | The November 14 live sample found four SQLite workers using roughly 51–54% of one core, with mostly cache reads. In the private mixed cohort, 42 write-access waits averaged 771 ms and six read-held intervals averaged 914 ms. The current code already scopes Fact invalidation and reuses identical queries. Use the current revision to identify a remaining read scope that spans independent work before selecting P138 or P121. Preserve fresh authority and ordered acknowledgements. |
+| 2 | Castle readiness member collection and per-root traversal buffers in `interface/src/native/castle.rs::present_with` | The November 14 mixed typing case observed 1.164 ms per update of exclusive readiness CPU, within a 28.771 ms main-schedule wall interval. The current pass accumulated members even for an already presented Castle, where initial hiding cannot use them. Source work removes that collection and reuses transient buffers within one pass. The existing readiness and layout oracles still apply. Other remaining UI layout cost was 4.306 ms per update in that older cohort. Root-local P122 or input-path P105 needs fresh attribution. |
+| 3 | A redundant copy or serialized pass across `park/src/presentation.rs::try_frame`, `park/src/graphics/import.rs::submit_exports` and the physical GLES consumer | Older optimized submission took about 3.1 ms elapsed. A subsequent debug trace attributed almost that whole interval to submitting-thread execution in its fixture. Latest private open/reveal traces also contain substantial render and submission stages with incomplete GLES/output linkage. Select one copy, import or wait only after P153/P70/P67 account for the full producer-to-output path. Keep separate hardware, CPU and fence clocks. |
+| 4 | One first-use pipeline or resource initialization in the cold render path | In the November 14 mixed warmup the upscaling and pipeline-queue calls separately reached about 677 ms and 610 ms of exclusive CPU. The Park worker uses an asynchronous pipeline completion waker. The synchronous probe wrappers still block deliberately. P92 needs a shipping cold-use capture that identifies a resource unused until a distinct later action. |
+
+The release feature graph keeps native media and Instinct through the ordinary UI feature and native presentation through Park. Freedoom requires the optional `stuff` feature. Bevy scheduling names and render diagnostics serve the opt-in observer. This audit provides no unused shipping dependency candidate yet. P90 retains the later dependency and feature-graph comparison. P66 retains the current physical ranking.
 } r_394ME6MH9S27PVQDAF9DDC5V16
 
 Extension @park-p86 "lince.controls" {
@@ -163,7 +174,9 @@ P148 — Repair worker-only test feature gates. (
 **Context:** [Source chapter](record:r_42C88G596W9EFZ00JTJDWD766E); [execution queue](record:r_1FMCTGVHF35B6D0T70JEQAMYDW). **Stage:** B.
 
 
-**Why:** the additional P101 check `cargo check --locked --no-default-features -p lince-park --features native-presentation,server-tests --tests` fails on session-only tests/imports while the full Park configuration passes; this prevents cheap worker-only validation and obscures new failures. **Scope:** gate the existing presentation settings/keyboard/display/external-command/overview tests and related imports by the actual required features, using the existing test-module family. The 21 diagnostics' primary locations and crate module gates are unchanged from HEAD; see input-trace/worker-gate-attribution.json. **Verify:** the same worker-only command plus the full supported Park check/test compilation with warnings as errors and exact nonzero relevant selectors. Preserve test coverage in the intended configuration; do not add `allow` attributes, pull session dependencies into every worker test, or fix it by removing tests. Report validation/build simplification separately from runtime performance. **Priority:** below current interaction bottlenecks; this is an independently recorded check failure, not a P101 runtime regression.
+**Source complete, verification pending (2026-11-20).** Tests for command-file persistence, compositor overview and final output composition use the nested feature that provides their dependencies. The worker build retains standalone pointer/keyboard input, overview settings, focus and raster checks that use worker APIs. Shared display helpers and test selector names are retained.
+
+**Verify next:** compile tests with `cargo check --locked --no-default-features -p lince-park --features native-presentation,server-tests --tests` and with `session,server-tests`. Select existing nonzero worker and nested cases, including display settings, overview callbacks and raster composition. Keep the task open until those checks have run.
 } r_2M3HN9VZMK9XYX5HXKC38XPB97
 
 Extension @park-p148 "lince.controls" {

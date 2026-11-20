@@ -563,13 +563,12 @@ fn add_live(world: &mut World, record: String, view: nucleus::location::View) {
         .markers
         .retain(|marker| marker.record != record || marker.layer != 2);
     if view.record_uid == record
-        && view.fix.is_some()
+        && let Some(fix) = &view.fix
         && matches!(
             view.status,
             nucleus::location::Status::Live | nucleus::location::Status::Stale
         )
     {
-        let fix = view.fix.as_ref().unwrap();
         let point = Coordinate {
             latitude: fix.latitude,
             longitude: fix.longitude,
@@ -1053,12 +1052,15 @@ pub fn render(world: &mut World, _parent: Entity) {
         world.entity_mut(owner).insert(modal_marker);
     }
     let controls = lince_interface::controls::row(world, owner);
-    if compact {
-        world.get_mut::<Node>(controls).unwrap().display = Display::None;
+    {
+        let mut node = world.get_mut::<Node>(controls).expect("the row has a Node");
+        if compact {
+            node.display = Display::None;
+        }
+        node.flex_wrap = FlexWrap::Wrap;
+        node.max_height = percent(35);
+        node.overflow = Overflow::scroll_y();
     }
-    world.get_mut::<Node>(controls).unwrap().flex_wrap = FlexWrap::Wrap;
-    world.get_mut::<Node>(controls).unwrap().max_height = percent(35);
-    world.get_mut::<Node>(controls).unwrap().overflow = Overflow::scroll_y();
     app::button(world, controls, "Back", app::Intent::Back);
     for (label, intent) in [
         ("−", Intent::Zoom(-1.0)),
@@ -1216,12 +1218,15 @@ pub fn render(world: &mut World, _parent: Entity) {
         Pickable::IGNORE,
     ));
     let controls = lince_interface::controls::row(world, owner);
-    if compact {
-        world.get_mut::<Node>(controls).unwrap().display = Display::None;
+    {
+        let mut node = world.get_mut::<Node>(controls).expect("the row has a Node");
+        if compact {
+            node.display = Display::None;
+        }
+        node.flex_wrap = FlexWrap::Wrap;
+        node.max_height = percent(25);
+        node.overflow = Overflow::scroll_y();
     }
-    world.get_mut::<Node>(controls).unwrap().flex_wrap = FlexWrap::Wrap;
-    world.get_mut::<Node>(controls).unwrap().max_height = percent(25);
-    world.get_mut::<Node>(controls).unwrap().overflow = Overflow::scroll_y();
     map_button(
         world,
         controls,
@@ -1237,8 +1242,12 @@ pub fn render(world: &mut World, _parent: Entity) {
     let status = app::label(world, owner, "Offline world overview", 14.0);
     let attribution = app::label(world, owner, ATTRIBUTION, 11.0);
     if compact {
-        world.get_mut::<Node>(status).unwrap().display = Display::None;
-        world.get_mut::<Node>(attribution).unwrap().display = Display::None;
+        for label in [status, attribution] {
+            world
+                .get_mut::<Node>(label)
+                .expect("the map label has a Node")
+                .display = Display::None;
+        }
     }
     if world.resource::<State>().credits_open {
         for (name, license) in [
@@ -1414,8 +1423,13 @@ pub fn maintain(world: &mut World) {
                 None,
             ));
         world.resource_mut::<Assets<Image>>().remove(old);
-        world.get_mut::<ImageNode>(viewport).unwrap().image = image.clone();
-        let mut surface = world.get_mut::<Surface>(owner).unwrap();
+        world
+            .get_mut::<ImageNode>(viewport)
+            .expect("the map viewport was created with an image")
+            .image = image.clone();
+        let mut surface = world
+            .get_mut::<Surface>(owner)
+            .expect("the map surface is present during resize");
         surface.image = image;
         surface.size = size;
         surface.rendered_camera = None;
@@ -1428,18 +1442,16 @@ pub fn maintain(world: &mut World) {
         let state = world.resource::<State>();
         (state.store.clone(), state.camera)
     };
-    let changed = world
-        .get::<Surface>(owner)
-        .unwrap()
-        .scene
-        .as_ref()
-        .is_none_or(|scene| {
-            scene
-                .lock()
-                .unwrap_or_else(|error| error.into_inner())
-                .palette
-                != palette
-        });
+    let Some(surface) = world.get::<Surface>(owner) else {
+        return;
+    };
+    let changed = surface.scene.as_ref().is_none_or(|scene| {
+        scene
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .palette
+            != palette
+    });
     if changed && let Some(store) = store {
         let wake = world
             .get_resource::<lince_interface::wake::WakeSignal>()
@@ -1447,20 +1459,30 @@ pub fn maintain(world: &mut World) {
             .map(|wake| Arc::new(move || wake.ring()) as Arc<dyn Fn() + Send + Sync>);
         match Scene::new(store, camera, size, palette, wake) {
             Ok(scene) => {
-                let mut surface = world.get_mut::<Surface>(owner).unwrap();
+                let mut surface = world
+                    .get_mut::<Surface>(owner)
+                    .expect("the map surface is present during scene creation");
                 surface.scene = Some(Arc::new(Mutex::new(scene)));
                 surface.rendered_camera = Some(camera);
             }
             Err(error) => world.resource_mut::<State>().notice = error,
         }
     }
-    if let Some(scene) = world.get::<Surface>(owner).unwrap().scene.clone() {
-        if world.get::<Surface>(owner).unwrap().rendered_camera != Some(camera) {
+    let Some(surface) = world.get::<Surface>(owner) else {
+        return;
+    };
+    let status_entity = surface.status;
+    let image = surface.image.id();
+    if let Some(scene) = surface.scene.clone() {
+        if surface.rendered_camera != Some(camera) {
             scene
                 .lock()
                 .unwrap_or_else(|error| error.into_inner())
                 .set_camera(camera, size);
-            world.get_mut::<Surface>(owner).unwrap().rendered_camera = Some(camera);
+            world
+                .get_mut::<Surface>(owner)
+                .expect("the map surface is present during the camera update")
+                .rendered_camera = Some(camera);
         }
         if let Some(runtime) = runtime(world) {
             let _entered = runtime.enter();
@@ -1469,7 +1491,6 @@ pub fn maintain(world: &mut World) {
                 .unwrap_or_else(|error| error.into_inner())
                 .load();
         }
-        let image = world.get::<Surface>(owner).unwrap().image.id();
         world.resource_mut::<map_view::Scenes>().0.insert(
             owner,
             map_view::Target {
@@ -1482,8 +1503,7 @@ pub fn maintain(world: &mut World) {
         );
     }
     let text = status(world);
-    let status = world.get::<Surface>(owner).unwrap().status;
-    if let Some(mut label) = world.get_mut::<Text>(status) {
+    if let Some(mut label) = world.get_mut::<Text>(status_entity) {
         label.0 = text;
     }
     overlays(world, owner);
@@ -1774,8 +1794,11 @@ fn query(world: &mut World, size: [u32; 2]) {
 }
 
 fn overlays(world: &mut World, owner: Entity) {
-    let overlay = world.get::<Surface>(owner).unwrap().overlay;
-    let size = world.get::<Surface>(owner).unwrap().size.map(f64::from);
+    let Some(surface) = world.get::<Surface>(owner) else {
+        return;
+    };
+    let overlay = surface.overlay;
+    let size = surface.size.map(f64::from);
     let state = world.resource::<State>();
     if !state.changed {
         return;
@@ -1914,12 +1937,9 @@ fn drag(mut event: On<PointerDrag>, mut commands: Commands) {
         };
         state.dragged = true;
         if state.touches.len() == 2 {
-            let other = *state
-                .touches
-                .iter()
-                .find(|(other, _)| **other != id)
-                .unwrap()
-                .1;
+            let Some((_, &other)) = state.touches.iter().find(|(other, _)| **other != id) else {
+                return;
+            };
             let distance =
                 |a: [f64; 2]| ((a[0] - other[0]).powi(2) + (a[1] - other[1]).powi(2)).sqrt();
             let old = distance(previous);

@@ -290,7 +290,10 @@ fn trim_profile_state(state: &mut Value) -> Result<(), EngineError> {
     revisions.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
     let mut ancestors = 0;
     for (key, _) in revisions {
-        if parents.contains(key.strip_prefix("revision_").unwrap()) {
+        if key
+            .strip_prefix("revision_")
+            .is_some_and(|hash| parents.contains(hash))
+        {
             ancestors += 1;
             if ancestors > 64 {
                 object.remove(&key);

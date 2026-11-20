@@ -7,12 +7,11 @@ pub fn scoped_uid(prefix: &str, scope: &impl serde::Serialize) -> Result<String,
     let digest = Sha256::digest(serde_json::to_vec(scope)?);
     let mut time = [0u8; 8];
     time[2..].copy_from_slice(&digest[..6]);
+    let mut entropy = [0; 16];
+    entropy.copy_from_slice(&digest[..16]);
     Ok(format!(
         "{prefix}_{}",
-        nucleus::id::ulid_from(
-            u64::from_be_bytes(time),
-            u128::from_be_bytes(digest[..16].try_into().unwrap())
-        )
+        nucleus::id::ulid_from(u64::from_be_bytes(time), u128::from_be_bytes(entropy))
     ))
 }
 

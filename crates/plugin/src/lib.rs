@@ -307,8 +307,10 @@ impl Host {
                 break;
             }
             for id in ready {
-                host.installed
-                    .insert(id.clone(), remaining.remove(&id).unwrap());
+                let package = remaining
+                    .remove(&id)
+                    .expect("ready packages were selected from remaining packages");
+                host.installed.insert(id, package);
             }
         }
         for (id, package) in remaining {
@@ -326,24 +328,37 @@ impl Host {
     }
 
     pub fn diagnostics(&self) -> Vec<String> {
-        self.snapshot.read().unwrap().diagnostics.clone()
+        self.snapshot
+            .read()
+            .expect("the plugin package snapshot must be intact")
+            .diagnostics
+            .clone()
     }
 
     pub async fn reload(&self) -> Result<(), String> {
         let fresh = Self::discover(self.directory.clone()).await?;
         self.stop_all();
-        *self.snapshot.write().unwrap() = fresh.snapshot.into_inner().unwrap();
+        *self.snapshot.write().expect("the plugin package snapshot must be intact") = fresh
+            .snapshot
+            .into_inner()
+            .expect("the newly discovered package snapshot has no other writer");
         Ok(())
     }
 
     pub fn stop(&self, plugin: &str) {
-        if let Some(session) = self.sessions.lock().unwrap().remove(plugin) {
+        if let Some(session) = self
+            .sessions
+            .lock()
+            .expect("the plugin session registry must be intact")
+            .remove(plugin)
+        {
             session.cancelled.cancel();
         }
     }
 
     pub fn stop_all(&self) {
-        for (_, session) in std::mem::take(&mut *self.sessions.lock().unwrap()) {
+        let mut sessions = self.sessions.lock().expect("the plugin session registry must be intact");
+        for (_, session) in std::mem::take(&mut *sessions) {
             session.cancelled.cancel();
         }
     }
@@ -351,7 +366,7 @@ impl Host {
     pub fn packages(&self) -> Vec<Package> {
         self.snapshot
             .read()
-            .unwrap()
+            .expect("the plugin package snapshot must be intact")
             .installed
             .values()
             .map(|installed| Package {
@@ -366,7 +381,7 @@ impl Host {
         let (id, name) = qualified
             .split_once('/')
             .ok_or("Choose a plugin contribution")?;
-        let snapshot = self.snapshot.read().unwrap();
+        let snapshot = self.snapshot.read().expect("the plugin package snapshot must be intact");
         let installed = snapshot
             .installed
             .get(id)
@@ -391,7 +406,7 @@ impl Host {
         let installed = self
             .snapshot
             .read()
-            .unwrap()
+            .expect("the plugin package snapshot must be intact")
             .installed
             .get(plugin)
             .cloned()
@@ -411,7 +426,7 @@ impl Host {
         let session = self
             .sessions
             .lock()
-            .unwrap()
+            .expect("the plugin session registry must be intact")
             .entry(plugin.into())
             .or_insert_with(|| {
                 Arc::new(Session {
@@ -479,7 +494,8 @@ impl Host {
             }
             *connection = Some(opened);
         }
-            connection.as_mut().unwrap().request(2, contribution, operation, input).await
+            connection.as_mut().ok_or("Plugin initialization did not retain a connection")?
+                .request(2, contribution, operation, input).await
         })
         => result.unwrap_or_else(|_| Err("Plugin operation timed out; inspect delivery before retrying".into())),
         };

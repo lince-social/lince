@@ -328,6 +328,7 @@ fn prepare_inputs(
             .map(|(id, target)| (*id, target.image.clone(), target.origin, target.fullscreen))
             .collect(),
         frame: Frame {
+            traced_render: None,
             client_formats: canvas.client_formats.clone(),
             encoding: canvas.native_encoding(),
             output: canvas.output_state.assignments.focused(),

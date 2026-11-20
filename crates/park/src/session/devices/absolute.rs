@@ -111,6 +111,7 @@ impl Control {
 }
 
 pub(super) fn identity(device: &Device) -> Option<String> {
+    // SAFETY: Libinput returns the associated udev device with its own context.
     let metadata = unsafe { device.udev_device() }?;
     let property = |name| metadata.property_value(name).and_then(|value| value.to_str()).filter(|value| !value.is_empty()).map(str::to_owned);
     let serial = property("ID_SERIAL");

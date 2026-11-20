@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use nucleus::trust_analysis::{
     Identity,
     contacts::{Audience, Document, NAMESPACE, Statement},

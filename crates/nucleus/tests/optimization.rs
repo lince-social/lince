@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use nucleus::optimization::{self, Constraint, Model, Options, Status, Term, Variable, decimal};
 use std::sync::atomic::AtomicBool;
 

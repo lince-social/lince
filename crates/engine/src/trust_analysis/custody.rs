@@ -464,7 +464,9 @@ impl Engine {
             {
                 return Err(invalid("Custody upload is unavailable or expired"));
             }
-            uploads.remove(id).unwrap()
+            uploads
+                .remove(id)
+                .ok_or_else(|| invalid("Custody upload is unavailable or expired"))?
         };
         if upload.bytes.len() != upload.offer.bytes as usize {
             return Err(invalid(

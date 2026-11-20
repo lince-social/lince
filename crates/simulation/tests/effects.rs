@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use engine::actions::Action;
 use nucleus::karma::Consequence;
 use nucleus::projection::{Context, Incomplete, Window};

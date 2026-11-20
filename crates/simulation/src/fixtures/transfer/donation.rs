@@ -19,7 +19,7 @@ pub fn donation_without_private_source(replicated: bool) -> Scenario {
         .inputs
         .iter_mut()
         .find(|input| input.id == "settle")
-        .unwrap();
+        .expect("the seeded donation includes settlement");
     settle.event = Event::Action {
         invocation: invocation(
             "settle",
@@ -49,7 +49,8 @@ pub fn donation_with_lost_acknowledgements(replicated: bool) -> Scenario {
     let mut case = independent_donation(replicated);
     case.name.push_str("-lost-acknowledgements");
     for id in ["agreement-b-1", "application-acknowledgement"] {
-        let input = case.inputs.iter_mut().find(|input| input.id == id).unwrap();
+        let input = case.inputs.iter_mut().find(|input| input.id == id)
+            .expect("the seeded donation includes agreement and acknowledgment steps");
         let at = input.at_ms;
         if let Event::TransferCommand {
             copies,
@@ -234,7 +235,7 @@ pub fn independent_donation(replicated: bool) -> Scenario {
         Event::SettleReviewed {
             occurrence: "$activate".into(),
             person: "$ana".into(),
-            quantity: nucleus::DecimalValue::parse_inferred("10").unwrap(),
+            quantity: store::exact::integer(10),
         },
     );
     publish(&mut case, "b", "settled");
@@ -252,7 +253,7 @@ pub fn independent_donation(replicated: bool) -> Scenario {
     send(&mut case, "b", "a", "application-acknowledgement");
     send(&mut case, "a", "b", "application-confirmed");
     add(&mut case, "b", "restart", Event::Restart {});
-    for (cell, amount) in [("a", "20"), ("b", "10")] {
+    for (cell, amount) in [("a", 20), ("b", 10)] {
         case.checks.push(Check {
             id: format!("balance-{cell}"),
             predicate: Predicate::Quantity {
@@ -260,7 +261,7 @@ pub fn independent_donation(replicated: bool) -> Scenario {
                 record: format!("$stock-{cell}"),
                 comparison: Comparison::Equal,
                 expected: Quantity {
-                    value: nucleus::DecimalValue::parse_inferred(amount).unwrap(),
+                    value: store::exact::integer(amount),
                     unit: None,
                 },
             },
@@ -280,12 +281,12 @@ pub fn partial_cancellation(replicated: bool) -> Scenario {
         .inputs
         .iter()
         .position(|input| input.id == "settle")
-        .unwrap();
+        .expect("the seeded donation includes settlement");
     case.inputs.truncate(settle + 1);
     for input in &mut case.inputs {
         match &mut input.event {
             Event::SettleReviewed { quantity, .. } => {
-                *quantity = nucleus::DecimalValue::parse_inferred("4").unwrap()
+                *quantity = store::exact::integer(4)
             }
             Event::Action { invocation } => {
                 if let engine::actions::Action::CreateTransferDraft {
@@ -353,15 +354,14 @@ pub fn partial_cancellation(replicated: bool) -> Scenario {
     for check in &mut case.checks {
         if let Predicate::Quantity { cell, expected, .. } = &mut check.predicate {
             expected.value =
-                nucleus::DecimalValue::parse_inferred(if cell == "a" { "26" } else { "4" })
-                    .unwrap();
+                store::exact::integer(if cell == "a" { 26 } else { 4 });
         }
     }
     let input = case
         .inputs
         .iter_mut()
         .find(|input| input.id == "cancel-apply")
-        .unwrap();
+        .expect("the fixture inserts the cancellation step before looking it up");
     let at = input.at_ms;
     if let Event::TransferCommand {
         copies,

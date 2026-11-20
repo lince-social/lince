@@ -5,6 +5,10 @@ mod controls;
 mod integration;
 pub(crate) mod mentions;
 pub(crate) mod message_view;
+#[allow(
+    clippy::unwrap_used,
+    reason = "Laboratory thread fixtures require their expected messages and editor state"
+)]
 pub(crate) mod tests;
 pub(crate) mod transcript;
 

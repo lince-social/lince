@@ -183,7 +183,8 @@ fn generated_compositions_are_isolated_saved_and_reopened_as_independent_balloon
             .composition,
         composition
     );
-    let placement = crate::native::sand_placement::Placement::capture(app.world(), first);
+    let placement = crate::native::sand_placement::Placement::capture(app.world(), first)
+        .expect("capture the fixture placement");
     let area = app.world().get::<InfluenceArea>(first).unwrap().clone();
     app.world_mut().despawn(first);
     assert!(app.world().get_entity(inner).is_err());
@@ -530,7 +531,8 @@ fn saved_placement_restores_deduplication_and_closed_components_can_be_shown_aga
         start_call: None,
     });
     let first = present(app.world_mut(), state.clone()).unwrap();
-    let placement = crate::native::sand_placement::Placement::capture(app.world(), first);
+    let placement = crate::native::sand_placement::Placement::capture(app.world(), first)
+        .expect("capture the fixture placement");
     let serialized = serde_json::to_string(&placement).unwrap();
     let saved: crate::native::sand_placement::Placement =
         serde_json::from_str(&serialized).unwrap();

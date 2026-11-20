@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use engine::{Engine, actions::Action};
 use nucleus::projection::{Context, Incomplete, Window};
 use protein::Protein;

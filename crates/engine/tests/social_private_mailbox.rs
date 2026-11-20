@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use base64::{Engine as _, engine::general_purpose::STANDARD as B64};
 use engine::{
     Engine,

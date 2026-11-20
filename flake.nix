@@ -971,7 +971,16 @@
               in
               !(builtins.elem name [ ".git" "target" ".direnv" ".devenv" ])
               && (
-                builtins.elem rel [ "Cargo.toml" "Cargo.lock" "rust-toolchain.toml" "LICENSE" "institute" ]
+                builtins.elem rel [
+                  "Cargo.toml"
+                  "Cargo.lock"
+                  "rust-toolchain.toml"
+                  "LICENSE"
+                  "institute"
+                  "institute/trails"
+                  "institute/trails/lince"
+                  "institute/trails/lince/Lince.lingua"
+                ]
                 || builtins.any (root: rel == root || lib.hasPrefix (root + "/") rel)
                   [ ".cargo" "crates" "institute/assets" "institute/packaging" ]
               );

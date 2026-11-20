@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use nucleus::canvas::{self as api, authoring::*};
 use nucleus::component::ComponentState;
 use std::collections::BTreeMap;

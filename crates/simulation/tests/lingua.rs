@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use nucleus::simulation::{ArtifactError, Observation, ReplayStatus, Verdict};
 use simulation::{artifacts, fixtures, lingua};
 

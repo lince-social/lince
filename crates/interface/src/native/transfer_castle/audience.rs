@@ -9,6 +9,10 @@ use serde::Deserialize;
 use std::borrow::Cow;
 
 #[path = "audience_tests.rs"]
+#[allow(
+    clippy::unwrap_used,
+    reason = "These Laboratory audience fixtures must fail the case on incomplete setup"
+)]
 pub(super) mod tests;
 
 #[derive(Clone, PartialEq, Eq)]
@@ -227,7 +231,13 @@ pub(super) fn capture(world: &mut World, owner: Entity) {
         world.entity_mut(owner).remove::<Panel>();
         return;
     }
-    let mut panel = world.entity_mut(owner).take::<Panel>().unwrap();
+    let Some(mut panel) = world
+        .get_entity_mut(owner)
+        .ok()
+        .and_then(|mut entity| entity.take::<Panel>())
+    else {
+        return;
+    };
     if let Err(error) = collect(world, &mut panel) {
         panel.review = None;
         panel.notice = error;

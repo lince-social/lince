@@ -24,8 +24,10 @@ impl Fixture {
         let mut desktop = Desktop::new(server, worker, [1000, 720], 1, true);
         desktop.commands(path, directory.join("wayland-accessibility-fixture"));
         let device = EGLDevice::enumerate().unwrap().find(|device| !device.is_software()).unwrap();
+        // SAFETY: Smithay owns this display lifetime and no raw caller terminates it.
         let display = unsafe { EGLDisplay::new(device) }.unwrap();
         let context = EGLContext::new(&display).unwrap();
+        // SAFETY: The context was created here and has never been bound to another thread.
         let mut renderer = unsafe { GlesRenderer::new(context) }.unwrap();
         let texture = renderer.create_buffer(Fourcc::Argb8888, (1000, 720).into()).unwrap();
         Self { desktop, renderer, texture, composition: renderer::Composition::new(WakeSignal::new(|| {})).unwrap() }

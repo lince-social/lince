@@ -41,6 +41,7 @@ impl Plugin for TopologyPlugin {
             app.add_plugins(surface_budget::BudgetPlugin);
         }
         app.add_plugins(surface_render::SurfaceRenderPlugin)
+            .add_observer(input::keep_forwarded_focus)
             .init_resource::<terrain::Terrain>()
             .init_resource::<assets::Imports>()
             .init_resource::<physics::Runtime>()

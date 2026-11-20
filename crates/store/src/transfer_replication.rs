@@ -636,10 +636,9 @@ pub async fn require_private_writer(
         None => sqlx::query_scalar("SELECT s.actor_cell FROM sync_op s JOIN record own ON own.uid = s.organ_uid AND own.slug = 'local-organ' WHERE s.tbl = 'record' AND s.uid = ? AND s.kind = 'set' AND s.field = 'kind' ORDER BY s.hlc,s.actor_cell LIMIT 1")
             .bind(person).fetch_optional(&mut *connection).await?,
     };
-    if writer.as_ref().is_some_and(|writer| writer != &local) {
+    if let Some(writer) = writer.filter(|writer| writer != &local) {
         return Err(invalid(format!(
-            "Submit private Transfer changes to the Person's writing Cell {}",
-            writer.unwrap()
+            "Submit private Transfer changes to the Person's writing Cell {writer}"
         )));
     }
     Ok(())

@@ -154,19 +154,16 @@ pub(crate) async fn snapshot(
         "selected": selected, "truncated": truncated, "signedin": user.is_some(), "ready": true,
         "cancreate":permits("record:create"),"canmove":permits("record:update"),"cancarddelete":permits("record:delete"),"candelete":editable && permits("record:delete"),
         "name": user.map_or("", |u| if u.name.trim().is_empty() {u.username.as_str()} else {u.name.as_str()})});
-    snapshot.as_object_mut().unwrap().extend(
-        crate::settings::snapshot(state, user)
-            .await?
-            .as_object()
-            .unwrap()
-            .clone(),
-    );
-    snapshot.as_object_mut().unwrap().extend(
-        crate::users::snapshot(state, user)
-            .await?
-            .as_object()
-            .unwrap()
-            .clone(),
-    );
+    let fields = snapshot
+        .as_object_mut()
+        .expect("the snapshot is a JSON object literal");
+    let Value::Object(settings) = crate::settings::snapshot(state, user).await? else {
+        return Err(internal("Facade settings snapshot must be an object"));
+    };
+    fields.extend(settings);
+    let Value::Object(users) = crate::users::snapshot(state, user).await? else {
+        return Err(internal("Facade users snapshot must be an object"));
+    };
+    fields.extend(users);
     Ok(snapshot)
 }

@@ -251,7 +251,11 @@ mod tests {
         assert!(placement.world_pinned);
         open(&mut world, owner);
         assert_eq!(world.get::<SourceEditors>(owner).unwrap().0, vec![editor]);
-        assert!(crate::native::protein_castle::snapshot(&mut world, root).is_empty());
+        assert!(
+            crate::native::protein_castle::snapshot(&mut world, root)
+                .expect("capture the fixture snapshots")
+                .is_empty()
+        );
         assert!(
             world
                 .query::<&Text>()

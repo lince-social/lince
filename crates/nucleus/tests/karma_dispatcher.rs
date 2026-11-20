@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use std::num::{NonZeroU32, NonZeroUsize};
 
 use nucleus::karma::{

@@ -998,7 +998,7 @@ impl Engine {
         let mut tx = store::write_tx(&self.store.pool).await?;
         store::sqlx::query("INSERT OR IGNORE INTO sync_op (tbl, uid, field, kind, value, hlc, actor_cell, organ_uid, replica_root) VALUES ('fact', ?, '', 'fact', NULL, ?, ?, ?, ?)")
             .bind(&op.uid).bind(op.hlc).bind(&op.actor_cell).bind(&op.organ_uid).bind(root).execute(&mut *tx).await?;
-        if store::facts::exists(&mut tx, news.uid.as_ref().unwrap()).await? {
+        if store::facts::exists(&mut tx, &fact.uid).await? {
             let existing = store::facts::get_in_transaction(&mut tx, &fact.uid).await?;
             if existing.is_some_and(|existing| {
                 existing.cause.kind != CauseKind::Sync && existing.hash != fact.hash
@@ -1254,22 +1254,28 @@ impl Engine {
                 };
                 for batch in outgoing_pages(batch)? {
                     let current = store::organs::contact(pool, &contact_uid).await?;
-                    if current.as_ref().is_none_or(|contact| {
-                        contact.trust == "blocked" || root.is_none() && !contact.sync_out
-                    }) || contact_uid != from_organ
-                        && match root.as_deref() {
-                            Some(root) => {
-                                !store::replica::is_accepted(pool, root, &contact_uid).await?
-                            }
-                            None => false,
+                    let current = match current {
+                        Some(contact)
+                            if contact.trust != "blocked"
+                                && (root.is_some() || contact.sync_out)
+                                && (contact_uid == from_organ
+                                    || match root.as_deref() {
+                                        Some(root) => {
+                                            store::replica::is_accepted(pool, root, &contact_uid)
+                                                .await?
+                                        }
+                                        None => true,
+                                    }) =>
+                        {
+                            contact
                         }
-                    {
-                        outcome = Delivery::Failed(
-                            "The contact or conversation no longer permits delivery"
-                                .into(),
-                        );
-                        break 'roots;
-                    }
+                        _ => {
+                            outcome = Delivery::Failed(
+                                "The contact or conversation no longer permits delivery".into(),
+                            );
+                            break 'roots;
+                        }
+                    };
                     let hidden = self.outgoing_hidden_from_organ(&contact_uid).await?;
                     for op in &batch.ops {
                         if store::visibility::op_hidden_from(pool, &hidden, &op.tbl, &op.uid)
@@ -1289,14 +1295,14 @@ impl Engine {
                     };
                     let count = batch.ops.len();
                     let subjects = batch.ops.iter().map(|op| op.uid.clone()).take(32).collect();
-                    let delivered = self
+                    let Ok(delivered) = self
                         .sync_service
                         .run(
                             &self.store,
                             activity,
                             async {
                                 Ok::<_, std::convert::Infallible>(
-                                    send(current.unwrap(), root.clone(), batch).await,
+                                    send(current, root.clone(), batch).await,
                                 )
                             },
                             |delivery| {
@@ -1318,8 +1324,7 @@ impl Engine {
                                 }
                             },
                         )
-                        .await
-                        .unwrap();
+                        .await;
                     match delivered {
                         Delivery::Sent => {}
                         Delivery::Mailed => {

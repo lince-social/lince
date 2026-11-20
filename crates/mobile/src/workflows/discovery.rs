@@ -8,7 +8,10 @@ fn social(
     fields: &[(&str, &str, FieldKind)],
 ) {
     let mut form = Form::action(caption, json!({"action":"social","request":request}));
-    form.data.as_object_mut().unwrap().remove("request_id");
+    form.data
+        .as_object_mut()
+        .expect("the social action payload is a JSON object")
+        .remove("request_id");
     form.actor = Some(person(world));
     form.mode = "social".into();
     form.review = json!({"Request":request,"Privacy":"Only the displayed public fields and configured endpoints are used. This does not reveal the private Transfer or start location sharing. Network coverage can be incomplete."});

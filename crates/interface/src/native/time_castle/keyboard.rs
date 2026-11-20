@@ -1,6 +1,6 @@
 use super::*;
 use crate::native::actions::{Action, KeyBinding, KeyBindings, Modifiers};
-use bevy::input_focus::{FocusCause, InputFocus};
+use bevy::input_focus::{FocusCause, InputFocus, tab_navigation::TabIndex};
 
 #[derive(Component)]
 struct Marker;
@@ -26,11 +26,11 @@ pub(super) fn attach(world: &mut World, owner: Entity) {
         KeyBinding::new(
             KeyCode::Space,
             Modifiers::NONE,
-            crate::native::actions![Complete],
+            crate::native::actions![Complete(None)],
         )
         .outside_text(),
     );
-    world.entity_mut(owner).insert(bindings);
+    world.entity_mut(owner).insert((bindings, TabIndex(-1)));
 }
 
 fn available(world: &World, owner: Entity) -> bool {
@@ -91,7 +91,7 @@ impl Action for Navigate {
 }
 
 #[derive(Clone)]
-struct Complete;
+struct Complete(Option<String>);
 
 impl Action for Complete {
     fn apply(&self, world: &mut World, owner: Entity) {
@@ -101,10 +101,15 @@ impl Action for Complete {
         let Some(view) = world.get::<View>(owner) else {
             return;
         };
-        let active = view
-            .active_row
-            .as_ref()
-            .or_else(|| view.upcoming_rows.first().map(|(id, _)| id));
+        let shown = |id: &str| view.upcoming_rows.iter().any(|(row, _)| row == id);
+        let active = match self.0.as_ref() {
+            Some(id) => Some(id).filter(|id| shown(id)),
+            None => view
+                .active_row
+                .as_ref()
+                .filter(|id| shown(id))
+                .or_else(|| view.upcoming_rows.first().map(|(id, _)| id)),
+        };
         let Some(entry) =
             active.and_then(|active| view.entries.iter().find(|entry| &entry.id == active))
         else {
@@ -129,6 +134,28 @@ impl Action for Complete {
             Err(error) => status(world, owner, &error),
         }
     }
+}
+
+pub(crate) fn complete_focused_row(world: &mut World) -> bool {
+    let Some(row) = world.get_resource::<InputFocus>().and_then(InputFocus::get) else {
+        return false;
+    };
+    let Some((item, action)) = world
+        .get::<ui::UpcomingRow>(row)
+        .zip(world.get::<crate::native::actions::ActionButton>(row))
+    else {
+        return false;
+    };
+    if world.get::<bevy::ui::InteractionDisabled>(row).is_some()
+        || crate::native::shortcuts::keyboard_owner(world).is_some()
+        || !available(world, action.target)
+    {
+        return false;
+    }
+    let owner = action.target;
+    let completion = Complete(Some(item.0.clone()));
+    crate::native::actions::dispatch(world, owner, crate::native::actions![completion]);
+    true
 }
 
 pub(super) fn marker(world: &mut World, row: Entity) {
@@ -324,7 +351,23 @@ mod tests {
             .unwrap();
         let mut app = App::new();
         app.insert_resource(crate::native::theme::Typography(Handle::default()))
-            .init_resource::<InputFocus>();
+            .add_plugins((
+                bevy::input::InputPlugin,
+                bevy::input_focus::InputFocusPlugin,
+                bevy::input_focus::InputDispatchPlugin,
+                bevy::ui_widgets::ButtonPlugin,
+                crate::native::actions::ActionsPlugin,
+            ));
+        let window = app
+            .world_mut()
+            .spawn((
+                Window {
+                    focused: true,
+                    ..default()
+                },
+                bevy::window::PrimaryWindow,
+            ))
+            .id();
         let owner = app
             .world_mut()
             .spawn((Node::default(), TimeSettings(Settings::default())))
@@ -352,12 +395,37 @@ mod tests {
                 crate::native::cell_bridge::CellBridgePlugin,
                 crate::native::record_binding::RecordBindingPlugin,
             ));
-        {
-            let mut view = app.world_mut().get_mut::<View>(owner).unwrap();
-            view.entries[0].record_uid = uid.clone();
-            view.entries[0].preview = true;
-        }
-        Complete.apply(app.world_mut(), owner);
+        let first_row = app
+            .world_mut()
+            .query_filtered::<Entity, With<ui::UpcomingRow>>()
+            .single(app.world())
+            .unwrap();
+        let space = |app: &mut App| {
+            for state in [
+                bevy::input::ButtonState::Pressed,
+                bevy::input::ButtonState::Released,
+            ] {
+                app.world_mut().write_message(bevy::input::keyboard::KeyboardInput {
+                    window,
+                    key_code: KeyCode::Space,
+                    logical_key: bevy::input::keyboard::Key::Space,
+                    text: None,
+                    repeat: false,
+                    state,
+                });
+            }
+            app.update();
+        };
+        app.update();
+        app.world_mut()
+            .resource_mut::<InputFocus>()
+            .set(first_row, FocusCause::Navigated);
+        space(&mut app);
+        let status = app.world().get::<View>(owner).unwrap().status;
+        assert_eq!(
+            app.world().get::<Text>(status).unwrap().0,
+            "Projection previews are read only"
+        );
         assert_eq!(
             store::records::quantity(&engine.store.pool, &uid)
                 .await
@@ -367,7 +435,7 @@ mod tests {
             "-1"
         );
         app.world_mut().get_mut::<View>(owner).unwrap().entries[0].preview = false;
-        Complete.apply(app.world_mut(), owner);
+        space(&mut app);
         for _ in 0..500 {
             app.update();
             if store::records::quantity(&engine.store.pool, &uid)

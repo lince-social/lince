@@ -52,14 +52,19 @@ impl SavedMap {
             self.records,
             self.person,
         );
-        world.get_mut::<MapSand>(entity).unwrap().area = self.area;
-        world.get_mut::<MapSand>(entity).unwrap().authority_node_id = self.authority_node_id;
-        world.get_mut::<MapSand>(entity).unwrap().auto_center = auto_center;
+        let Some(mut sand) = world.get_mut::<MapSand>(entity) else {
+            world.despawn(entity);
+            return;
+        };
+        sand.area = self.area;
+        sand.authority_node_id = self.authority_node_id;
+        sand.auto_center = auto_center;
         let size = Vec2::from_array(self.size);
-        world
-            .get_mut::<crate::native::canvas::CanvasItem>(entity)
-            .unwrap()
-            .size = size;
+        let Some(mut item) = world.get_mut::<crate::native::canvas::CanvasItem>(entity) else {
+            world.despawn(entity);
+            return;
+        };
+        item.size = size;
         self.placement.restore(world, entity);
         world
             .entity_mut(entity)
@@ -67,7 +72,7 @@ impl SavedMap {
     }
 }
 
-pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedMap> {
+pub(crate) fn snapshot(world: &mut World, root: Entity) -> Result<Vec<SavedMap>, String> {
     world
         .query::<(
             Entity,
@@ -78,33 +83,35 @@ pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedMap> {
         )>()
         .iter(world)
         .filter(|(_, parent, _, _, _)| parent.parent() == root)
-        .map(|(entity, _, member, item, sand)| SavedMap {
-            workspace: member.0,
-            camera: if sand.records.is_empty()
-                && sand.area.is_none()
-                && !sand.device_centered
-                && sand.public_markers.is_empty()
-            {
-                sand.camera
-            } else {
-                Camera::default()
-            },
-            records: if sand.invitation.is_some() {
-                Vec::new()
-            } else {
-                sand.records.clone()
-            },
-            person: sand.person.clone(),
-            area: sand.area.clone(),
-            authority_node_id: if sand.invitation.is_some() {
-                None
-            } else {
-                sand.authority_node_id.clone()
-            },
-            position: item.position.to_array(),
-            size: item.size.to_array(),
-            placement: crate::native::sand_placement::Placement::capture(world, entity),
-            tokens: crate::native::token_style::overrides(world, entity),
+        .map(|(entity, _, member, item, sand)| {
+            Ok(SavedMap {
+                workspace: member.0,
+                camera: if sand.records.is_empty()
+                    && sand.area.is_none()
+                    && !sand.device_centered
+                    && sand.public_markers.is_empty()
+                {
+                    sand.camera
+                } else {
+                    Camera::default()
+                },
+                records: if sand.invitation.is_some() {
+                    Vec::new()
+                } else {
+                    sand.records.clone()
+                },
+                person: sand.person.clone(),
+                area: sand.area.clone(),
+                authority_node_id: if sand.invitation.is_some() {
+                    None
+                } else {
+                    sand.authority_node_id.clone()
+                },
+                position: item.position.to_array(),
+                size: item.size.to_array(),
+                placement: crate::native::sand_placement::Placement::capture(world, entity)?,
+                tokens: crate::native::token_style::overrides(world, entity),
+            })
         })
         .collect()
 }

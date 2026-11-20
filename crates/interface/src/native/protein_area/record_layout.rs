@@ -904,6 +904,10 @@ pub(super) fn restore(world: &mut World, row: Entity) {
     }
 }
 
+#[allow(
+    clippy::unwrap_used,
+    reason = "Record layout Laboratory fixtures treat missing test records and rendered fields as failed cases"
+)]
 pub(crate) mod tests {
     use super::*;
     use serde_json::json;

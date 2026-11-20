@@ -21,7 +21,11 @@ impl Engine {
             .unwrap_or(true);
         let Some(cell) = store::cells::local(&self.store.pool).await? else {
             return Ok(DeviceExecution {
-                runtime_failure: self.karma_runtime_failure.lock().unwrap().clone(),
+                runtime_failure: self
+                    .karma_runtime_failure
+                    .lock()
+                    .expect("Karma runtime failure lock poisoned")
+                    .clone(),
                 permitted: true,
                 local_running,
                 executing: local_running,
@@ -74,7 +78,11 @@ impl Engine {
             reason = Some("Karma is stopped on this Cell".into());
         }
         Ok(DeviceExecution {
-            runtime_failure: self.karma_runtime_failure.lock().unwrap().clone(),
+            runtime_failure: self
+                .karma_runtime_failure
+                .lock()
+                .expect("Karma runtime failure lock poisoned")
+                .clone(),
             permitted,
             local_running,
             executing: permitted && local_running,

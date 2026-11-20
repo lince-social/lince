@@ -11,6 +11,7 @@ fn fixture(spatial: bool, scaled: bool) -> (App, Entity, Entity) {
         influence.rules.clear();
         influence.strength = 0.0;
         influence.scale = 1.5;
+        influence.depth = 2000.0;
         app.world_mut().entity_mut(area).insert(topology::Spatial {
             elevation: 1000.0,
             depth: Some(2000.0),
@@ -41,10 +42,8 @@ fn fixture(spatial: bool, scaled: bool) -> (App, Entity, Entity) {
     if scaled {
         assert_eq!(
             app.world()
-                .get::<crate::native::area_effects::AreaScale>(target)
-                .unwrap()
-                .0,
-            1.5
+                .get::<crate::native::area_effects::AreaScale>(target),
+            Some(&crate::native::area_effects::AreaScale(1.5))
         );
     }
     (app, root, target)

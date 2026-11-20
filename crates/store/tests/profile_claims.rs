@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use nucleus::trust_analysis::{
     Identity,
     claims::{self, Authorship, Comparator, Descriptor, Document, Metric, Statement},

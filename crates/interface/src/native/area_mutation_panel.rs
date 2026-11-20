@@ -67,7 +67,10 @@ fn field_values(
 }
 
 pub(crate) fn render(world: &mut World, root: Entity, panel: Entity, entity: Entity) {
-    let changes = &world.get::<InfluenceArea>(entity).unwrap().changes;
+    let Some(area) = world.get::<InfluenceArea>(entity) else {
+        return;
+    };
+    let changes = &area.changes;
     let groups = [
         (true, field_values(&changes.enter), "On entry"),
         (false, field_values(&changes.leave), "On exit"),
@@ -110,14 +113,16 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity, entity: Ent
                 },
             ));
             {
-                let mut text = world.get_mut::<EditableText>(input).unwrap();
+                let mut text = world
+                    .get_mut::<EditableText>(input)
+                    .expect("the crossing field is spawned as editable text");
                 text.allow_newlines = false;
                 text.visible_lines = Some(1.0);
                 text.max_characters = Some(2048);
             }
             world
                 .get_mut::<AccessibilityNode>(input)
-                .unwrap()
+                .expect("the crossing field bundle includes an accessibility node")
                 .set_label(title);
             let status = label(world, panel, "", 12.0);
             world.entity_mut(status).insert(crate::native::icons::Tooltip("Not saved. Use a decimal quantity and up to 16 Assertion names or people. Do not add and remove the same name on one crossing.".into()));
@@ -212,7 +217,9 @@ pub(crate) fn autosave(world: &mut World, mut preparation: Local<Preparation>) {
             target,
             "Property changes inactive after an edit. Configured changes resume automatically.",
         );
-        let area = world.get::<InfluenceArea>(target).unwrap();
+        let Some(area) = world.get::<InfluenceArea>(target) else {
+            continue;
+        };
         let mut changes = if enter {
             area.changes.enter.clone()
         } else {
@@ -229,17 +236,21 @@ pub(crate) fn autosave(world: &mut World, mut preparation: Local<Preparation>) {
         }
         let edit = crate::native::area::editing::Edit::Crossing { enter, changes };
         let valid = edit.valid(area);
-        if valid && edit.differs(area) {
-            edit.apply(&mut world.get_mut::<InfluenceArea>(target).unwrap());
-        }
-        world.get_mut::<Field>(entity).unwrap().observed = value;
-        world.get_mut::<Field>(entity).unwrap().valid = valid;
-        let message = if valid { "" } else { "Invalid value" };
-        if world
-            .get::<Text>(status)
-            .is_some_and(|text| text.0 != message)
+        if valid
+            && edit.differs(area)
+            && let Some(mut area) = world.get_mut::<InfluenceArea>(target)
         {
-            message.clone_into(&mut world.get_mut::<Text>(status).unwrap().0);
+            edit.apply(&mut area);
+        }
+        if let Some(mut field) = world.get_mut::<Field>(entity) {
+            field.observed = value;
+            field.valid = valid;
+        }
+        let message = if valid { "" } else { "Invalid value" };
+        if let Some(mut text) = world.get_mut::<Text>(status)
+            && text.0 != message
+        {
+            message.clone_into(&mut text.0);
         }
     }
     if fields.iter(world).next().is_none() {
@@ -271,6 +282,10 @@ fn has_invalid_fields(In(area): In<Entity>, fields: Query<&Field>) -> bool {
         .any(|field| field.area == area && !field.valid)
 }
 
+#[allow(
+    clippy::unwrap_used,
+    reason = "Area mutation Laboratory fixtures must fail when an expected control, application, or Record is missing"
+)]
 pub(crate) mod tests {
     use super::*;
     use crate::native::edit_mode::EditAction;

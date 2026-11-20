@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use chrono::{TimeDelta, TimeZone, Utc};
 use engine::Engine;
 use engine::actions::Action;

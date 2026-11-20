@@ -86,7 +86,7 @@ pub struct Placement {
 }
 
 impl Placement {
-    pub(crate) fn capture(world: &World, entity: Entity) -> Self {
+    pub(crate) fn capture(world: &World, entity: Entity) -> Result<Self, String> {
         let mut backend_component = world
             .get::<crate::native::component_push::Placed>(entity)
             .cloned();
@@ -96,7 +96,16 @@ impl Placement {
         {
             component.component = nucleus::component::ComponentState::Composition { composition };
         }
-        Self {
+        let stored_component = world.get::<crate::native::canvas_host::Content>(entity);
+        let canvas_component = match stored_component {
+            Some(content) if matches!(content.0, nucleus::canvas::Component::Authored { .. }) => {
+                Some(content.0.clone())
+            }
+            _ => crate::native::canvas_host::composition::capture(world, entity)?
+                .map(|composition| nucleus::canvas::Component::Composition { composition })
+                .or_else(|| stored_component.map(|content| content.0.clone())),
+        };
+        Ok(Self {
             record_properties: world.get::<crate::native::item_properties::Attachment>(entity).cloned(),
             room: world
                 .get::<crate::native::topology::rooms::Room>(entity)
@@ -125,19 +134,7 @@ impl Placement {
             identity: world
                 .get::<crate::native::canvas_host::Identity>(entity)
                 .map(|id| id.0.clone()),
-            canvas_component: world
-                .get::<crate::native::canvas_host::Content>(entity)
-                .filter(|content| matches!(content.0, nucleus::canvas::Component::Authored { .. }))
-                .map(|content| content.0.clone())
-                .or_else(|| {
-                    crate::native::canvas_host::composition::capture(world, entity)
-                        .map(|composition| nucleus::canvas::Component::Composition { composition })
-                })
-                .or_else(|| {
-                    world
-                        .get::<crate::native::canvas_host::Content>(entity)
-                        .map(|content| content.0.clone())
-                }),
+            canvas_component,
             backend_component,
             layout: world
                 .get::<crate::native::layout::LayoutBox>(entity)
@@ -162,7 +159,7 @@ impl Placement {
                 .get::<crate::native::canvas_selection::SandGroup>(entity)
                 .copied(),
             order: world.get::<ZIndex>(entity).map_or(0, |index| index.0),
-        }
+        })
     }
 
     pub(crate) fn restore(self, world: &mut World, entity: Entity) {
@@ -524,7 +521,7 @@ pub(crate) mod tests {
                 crate::native::topology::appearance::Light(light.clone()),
             ))
             .id();
-        let placement = Placement::capture(&world, entity);
+        let placement = Placement::capture(&world, entity).expect("capture the fixture placement");
         assert!(placement.valid());
         let restored: Placement =
             serde_json::from_str(&serde_json::to_string(&placement).unwrap()).unwrap();

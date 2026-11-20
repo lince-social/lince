@@ -247,7 +247,9 @@ async fn spoken_resume(
 }
 
 async fn verify(spoken: bool, stop_during_playback: bool) {
-    let (mut settings, credential) = native_connection::existing_connection().await;
+    let (mut settings, credential) = native_connection::existing_connection()
+        .await
+        .expect("valid native live-test configuration");
     let started = Instant::now();
     let (mut app, owner, fixture, script, directory, record) =
         super::super::super::super::tests::fixture_named("Voice test").await;

@@ -21,7 +21,10 @@ struct Assets(Mutex<VecDeque<Pending>>);
 
 impl NetProvider for Assets {
     fn fetch(&self, _: usize, request: Request, handler: Box<dyn NetHandler>) {
-        self.0.lock().unwrap().push_back((request, handler));
+        self.0
+            .lock()
+            .expect("the EPUB asset queue lock only guards queue operations")
+            .push_back((request, handler));
     }
 }
 

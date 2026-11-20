@@ -168,9 +168,9 @@ getrandom = { workspace = true, optional = true }
 avian3d = { version = "=0.8.0", default-features = false, features = ["3d", "f64", "parry-f64", "enhanced-determinism", "xpbd_joints"], optional = true }
 toml = { workspace = true, optional = true }
 iroh = { workspace = true, optional = true }
+utils = { workspace = true }
 
 [dev-dependencies]
-utils = { workspace = true }
 tempfile = "=3.27.0"
 tokio = { version = "1.53.1", features = ["macros", "net", "io-util", "rt"] }
 

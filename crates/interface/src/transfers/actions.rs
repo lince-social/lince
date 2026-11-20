@@ -208,7 +208,12 @@ pub fn reviewed_payload(form: &Form, preview: &Value, actor: &str) -> Result<Val
     Ok(action)
 }
 pub fn action_base(transfer: &Value, action: &str, person: &str) -> Value {
-    let mut payload = json!({"action":action,"transfer":transfer["uid"],"expected_revision":transfer["revision"],"person":person});
+    let mut payload = serde_json::Map::from_iter([
+        ("action".into(), json!(action)),
+        ("transfer".into(), transfer["uid"].clone()),
+        ("expected_revision".into(), transfer["revision"].clone()),
+        ("person".into(), json!(person)),
+    ]);
     if matches!(
         action,
         "create-transfer-thread"
@@ -220,7 +225,7 @@ pub fn action_base(transfer: &Value, action: &str, person: &str) -> Value {
             | "settle-transfer-occurrence"
             | "compensate-transfer-occurrence-settlement"
     ) {
-        payload.as_object_mut().unwrap().remove("expected_revision");
+        payload.remove("expected_revision");
     }
     if matches!(
         action,
@@ -232,15 +237,15 @@ pub fn action_base(transfer: &Value, action: &str, person: &str) -> Value {
             | "settle-transfer-occurrence"
             | "compensate-transfer-occurrence-settlement"
     ) {
-        payload.as_object_mut().unwrap().remove("transfer");
+        payload.remove("transfer");
     }
     if matches!(
         action,
         "withdraw-transfer-invitation" | "reopen-transfer-invitation"
     ) {
-        payload.as_object_mut().unwrap().remove("person");
+        payload.remove("person");
     }
-    payload
+    Value::Object(payload)
 }
 
 pub fn agreement(

@@ -224,11 +224,10 @@ impl Engine {
                     .flatten()
                     .filter(|entry| entry["new_terms"].as_u64().unwrap_or(0) > 0)
                 {
-                    store::vocabulary::log_shared_on(
-                        &mut tx,
-                        entry["concept_uid"].as_str().unwrap(),
-                    )
-                    .await?;
+                    let concept = entry["concept_uid"].as_str().ok_or_else(|| {
+                        EngineError::Consequence("A translation entry needs a Concept UID".into())
+                    })?;
+                    store::vocabulary::log_shared_on(&mut tx, concept).await?;
                 }
                 data = Some(json!({"translations_preview":preview}));
             }

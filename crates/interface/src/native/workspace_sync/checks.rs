@@ -5,6 +5,10 @@ use bevy::{
     ui::ContentSize,
 };
 
+#[allow(
+    clippy::unwrap_used,
+    reason = "This Laboratory fixture must fail if the password test's UI state is missing"
+)]
 pub(crate) fn password_retention(app: &mut App, root: Entity) {
     app.add_message::<crate::native::cell_bridge::CellMessage>()
         .add_plugins(WorkspaceSyncPlugin);

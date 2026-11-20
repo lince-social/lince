@@ -241,7 +241,11 @@ impl Runtime {
             });
             connections.insert(key.clone(), Connection { sender, task });
         }
-        let sender = connections.get(&key).unwrap().sender.clone();
+        let sender = connections
+            .get(&key)
+            .ok_or("IRC connection is unavailable")?
+            .sender
+            .clone();
         drop(connections);
         let (reply, result) = oneshot::channel();
         sender
@@ -524,7 +528,11 @@ async fn session(
                         let external_id = message.tags.get("msgid").cloned().unwrap_or_else(|| nucleus::new_uid("r"));
                         let record = ImportedRecord { external_id: format!("{}:{external_id}", settings.key()), head: format!("{author} in {channel}"), body: content.clone(), metadata: json!({"author":author,"channel":channel,"server":settings.server,"published_at":message.tags.get("time").cloned().unwrap_or_default()}) };
                         inbox.records.push_back(Message { sequence, scope: format!("{}/{channel}", settings.key()), record });
-                        while inbox.records.len() > 1024 { let dropped = inbox.records.pop_front().unwrap(); inbox.dropped.insert(dropped.scope, dropped.sequence); }
+                        let Inbox { records, dropped, .. } = &mut *inbox;
+                        let excess = records.len().saturating_sub(1024);
+                        for message in records.drain(..excess) {
+                            dropped.insert(message.scope, message.sequence);
+                        }
                         if inbox.dropped.len() > 256 { return Err("IRC checkpoint scope limit reached".into()); }
                         let bytes = serde_json::to_vec(&*inbox).map_err(|_| "Cannot encode IRC inbox")?;
                         let staging = shared.path.with_extension("new");

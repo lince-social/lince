@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use std::{
     collections::{BTreeMap, BTreeSet},
     num::{NonZeroU32, NonZeroUsize},

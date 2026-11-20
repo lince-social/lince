@@ -277,10 +277,8 @@ pub fn digest<T: Serialize>(value: &T) -> Result<CanonicalHash> {
 }
 
 pub(crate) fn derived_secret(seed: u64, cell: &str, purpose: &str) -> [u8; 32] {
-    let hex = nucleus::fact::sha256_hex(
-        format!("lince.simulation.v1:{seed}:{cell}:{purpose}").as_bytes(),
-    );
-    std::array::from_fn(|index| u8::from_str_radix(&hex[index * 2..index * 2 + 2], 16).unwrap())
+    use sha2::Digest;
+    sha2::Sha256::digest(format!("lince.simulation.v1:{seed}:{cell}:{purpose}")).into()
 }
 
 impl World {
@@ -1032,8 +1030,8 @@ impl World {
             .map(|(key, _)| *key)
             .filter(|key| key.0 == next);
         if let Some(key) = key.filter(|key| key.1 < 2) {
+            let task = self.tasks.remove(&key).ok_or("The scheduled simulation task is missing")?;
             self.steps += 1;
-            let task = self.tasks.remove(&key).unwrap();
             let (cell, input) = match &task {
                 Task::Input(input) => (input.cell.clone(), Some(input.id.clone())),
                 Task::Deliver(message) => (message.to.clone(), None),
@@ -1109,7 +1107,7 @@ impl World {
                         self.assume_loan(&input.cell, timing, cause).await?
                     }
                     Event::Online { online } => {
-                        self.nodes.get_mut(&input.cell).unwrap().online = online;
+                        self.nodes.get_mut(&input.cell).ok_or("The availability event's Cell is missing")?.online = online;
                         self.emit(
                             &input.cell,
                             cause.clone(),
@@ -1523,7 +1521,7 @@ impl World {
                         )?;
                     }
                     Event::Restart {} => {
-                        let node = self.nodes.get_mut(&input.cell).unwrap();
+                        let node = self.nodes.get_mut(&input.cell).ok_or("The restart event's Cell is missing")?;
                         node.set_time(self.now_ms)?;
                         node.cell.runtime().store.pool.close().await;
                         let store = node
@@ -1546,7 +1544,7 @@ impl World {
                         self.tick(&input.cell, cause).await?;
                     }
                     Event::Clock { offset_ms } => {
-                        self.nodes.get_mut(&input.cell).unwrap().offset_ms = offset_ms;
+                        self.nodes.get_mut(&input.cell).ok_or("The clock event's Cell is missing")?.offset_ms = offset_ms;
                         self.emit(
                             &input.cell,
                             cause.clone(),

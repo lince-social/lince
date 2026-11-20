@@ -260,13 +260,11 @@ impl Engine {
             .map(|entry| {
                 entry["record_uid"]
                     .as_str()
-                    .map(str::to_owned)
                     .ok_or_else(|| invalid("Knowledge preview has an invalid Record"))
             })
             .collect::<Result<Vec<_>, _>>()?;
         let mut checkpoints = Vec::new();
-        for entry in entries {
-            let uid = entry["record_uid"].as_str().unwrap();
+        for (entry, &uid) in entries.iter().zip(&ids) {
             let item: Item = serde_json::from_value(entry["item"].clone())?;
             store::knowledge::validate_item(&item)?;
             let current = store::sqlx::query(
@@ -311,8 +309,8 @@ impl Engine {
                     "Saved knowledge changed; review source updates separately",
                 ));
             }
-            if saved.is_some() {
-                if saved.as_ref().unwrap()["item"] != entry["item"] {
+            if let Some(saved) = saved {
+                if saved["item"] != entry["item"] {
                     return Err(invalid(
                         "Review this source update before replacing saved content",
                     ));

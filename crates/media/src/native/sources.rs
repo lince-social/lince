@@ -98,20 +98,20 @@ impl Sources {
         if !track.enabled {
             return Ok(());
         }
-        if track.encoder.is_none() {
-            let mut encoder = OpusEncoder::new(48_000, 1, Application::Audio).map_err(error)?;
-            encoder.bitrate_bps = if source == Source::Microphone {
-                32_000
-            } else {
-                48_000
-            };
-            track.encoder = Some(encoder);
-        }
+        let encoder = match &mut track.encoder {
+            Some(encoder) => encoder,
+            slot @ None => {
+                let mut encoder = OpusEncoder::new(48_000, 1, Application::Audio).map_err(error)?;
+                encoder.bitrate_bps = if source == Source::Microphone {
+                    32_000
+                } else {
+                    48_000
+                };
+                slot.insert(encoder)
+            }
+        };
         let mut data = vec![0; 1275];
-        let len = track
-            .encoder
-            .as_mut()
-            .unwrap()
+        let len = encoder
             .encode_i16(&samples, FRAME_SAMPLES, &mut data)
             .map_err(error)?;
         data.truncate(len);
@@ -200,7 +200,7 @@ impl Sources {
                                 }
                                 encoders[index - 2]
                                     .as_mut()
-                                    .unwrap()
+                                    .expect("an encoder was selected for the current dimensions and track")
                                     .encode(&input, keyframe)
                             })();
                             let mut state = shared.lock().unwrap_or_else(|e| e.into_inner());

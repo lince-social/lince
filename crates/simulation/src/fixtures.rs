@@ -1,6 +1,6 @@
 use crate::scenario::{Cell, Check, Invocation, Limits, Scenario};
 use engine::actions::Action;
-use nucleus::karma::{Cadence, CadenceStep, Consequence, DecimalValue};
+use nucleus::karma::{Cadence, CadenceStep, Consequence};
 use nucleus::simulation::{Predicate, Quantity, Version};
 
 pub mod transfer;
@@ -9,7 +9,8 @@ pub mod frequencies;
 pub fn daily() -> Scenario {
     let start_ms = 1_893_456_000_000;
     let day = 86_400_000;
-    let start = chrono::DateTime::from_timestamp_millis(start_ms).unwrap();
+    let start = chrono::DateTime::from_timestamp_millis(start_ms)
+        .expect("the daily scenario starts at a fixed calendar date");
     let invocation = |id: &str, action| Invocation {
         id: id.into(),
         actor: None,
@@ -58,7 +59,7 @@ pub fn daily() -> Scenario {
                     Action::CreateRecurrence {
                         target: "stock".into(),
                         consequences: vec![Consequence::AddQuantity {
-                            delta: Some(DecimalValue::parse_inferred("-3").unwrap()),
+                            delta: Some(store::exact::integer(-3)),
                         }],
                         condition: Some("freq(@daily)".into()),
                         gate: Some("!=0".into()),
@@ -79,7 +80,7 @@ pub fn daily() -> Scenario {
                     cell: "a".into(),
                     record: "stock".into(),
                     expected: Quantity {
-                        value: DecimalValue::parse_inferred("-2").unwrap(),
+                        value: store::exact::integer(-2),
                         unit: None,
                     },
                     at_ms: start_ms + 4 * day,

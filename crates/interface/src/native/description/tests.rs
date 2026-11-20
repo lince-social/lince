@@ -1,5 +1,8 @@
 use super::*;
 
+#[cfg(test)]
+mod local_record_preview;
+
 #[cfg_attr(test, test)]
 fn rich_text_preserves_code_and_resolves_record_link_targets() {
     let blocks = markup::parse(

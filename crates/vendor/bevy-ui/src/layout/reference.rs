@@ -8,15 +8,18 @@ pub(super) fn ui_layout_system(
     mut node_query: Query<(
         Entity,
         Ref<Node>,
+        Ref<EmSize>,
         &mut ContentSize,
         Ref<ComputedUiRenderTargetInfo>,
     )>,
+    rem_size: Res<RemSize>,
     added_node_query: Query<(), Added<Node>>,
     mut node_update_query: Query<(
         &mut ComputedNode,
         &UiTransform,
         &mut UiGlobalTransform,
         &Node,
+        &EmSize,
         Option<&LayoutConfig>,
         Option<&Outline>,
         Option<&ScrollPosition>,
@@ -33,11 +36,18 @@ pub(super) fn ui_layout_system(
     // Sync Node and ContentSize to Taffy for all nodes
     node_query
         .iter_mut()
-        .for_each(|(entity, node, mut content_size, computed_target)| {
-            if computed_target.is_changed() || node.is_changed() || content_size.is_changed() {
+        .for_each(|(entity, node, em_size, mut content_size, computed_target)| {
+            if computed_target.is_changed()
+                || node.is_changed()
+                || content_size.is_changed()
+                || em_size.is_changed()
+                || rem_size.is_changed()
+            {
                 let layout_context = LayoutContext::new(
                     computed_target.scale_factor,
                     computed_target.physical_size.as_vec2(),
+                    *em_size,
+                    *rem_size,
                 );
                 if content_size.is_changed() && content_size.measure.is_none() {
                     ui_surface.try_remove_node_context(entity);
@@ -131,7 +141,7 @@ pub(super) fn ui_layout_system(
             ui_root_entity,
         );
 
-        let (_, _, _, computed_target) = node_query.get(ui_root_entity).unwrap();
+        let (_, _, _, _, computed_target) = node_query.get(ui_root_entity).unwrap();
 
         ui_surface.compute_layout(
             ui_root_entity,
@@ -151,6 +161,7 @@ pub(super) fn ui_layout_system(
             computed_target.scale_factor.recip(),
             Vec2::ZERO,
             Vec2::ZERO,
+            *rem_size,
         );
     }
 
@@ -166,6 +177,7 @@ pub(super) fn ui_layout_system(
             &UiTransform,
             &mut UiGlobalTransform,
             &Node,
+            &EmSize,
             Option<&LayoutConfig>,
             Option<&Outline>,
             Option<&ScrollPosition>,
@@ -175,12 +187,14 @@ pub(super) fn ui_layout_system(
         inverse_target_scale_factor: f32,
         parent_size: Vec2,
         parent_scroll_position: Vec2,
+        rem_size: RemSize,
     ) {
         if let Ok((
             mut node,
             transform,
             mut global_transform,
             style,
+            em_size,
             maybe_layout_config,
             maybe_outline,
             maybe_scroll_position,
@@ -219,8 +233,13 @@ pub(super) fn ui_layout_system(
                 node.inverse_scale_factor = inverse_target_scale_factor;
             }
 
-            let content_size = Vec2::new(layout.content_size.width, layout.content_size.height);
+            let content_size = Vec2::new(
+                layout.scrollable_overflow_rect.right,
+                layout.scrollable_overflow_rect.bottom,
+            );
             node.bypass_change_detection().content_size = content_size;
+            node.bypass_change_detection().em_size = *em_size;
+            node.bypass_change_detection().rem_size = rem_size;
 
             let taffy_rect_to_border_rect = |rect: taffy::Rect<f32>| BorderRect {
                 min_inset: Vec2::new(rect.left, rect.top),
@@ -235,6 +254,8 @@ pub(super) fn ui_layout_system(
                 inverse_target_scale_factor.recip(),
                 layout_size,
                 target_size,
+                *em_size,
+                rem_size,
             );
             local_transform.translation += local_center;
             inherited_transform *= local_transform;
@@ -248,6 +269,8 @@ pub(super) fn ui_layout_system(
                 inverse_target_scale_factor.recip(),
                 node.size,
                 target_size,
+                *em_size,
+                rem_size,
             );
 
             if let Some(outline) = maybe_outline {
@@ -260,6 +283,8 @@ pub(super) fn ui_layout_system(
                             inverse_target_scale_factor.recip(),
                             node.size().x,
                             target_size,
+                            *em_size,
+                            rem_size,
                         )
                         .unwrap_or(0.)
                         .max(0.)
@@ -273,11 +298,17 @@ pub(super) fn ui_layout_system(
                         inverse_target_scale_factor.recip(),
                         node.size().x,
                         target_size,
+                        *em_size,
+                        rem_size,
                     )
                     .unwrap_or(0.)
                     // Clamp outline offsets to at least the length of the node's shorter side
                     // Negative offset outlines can be useful to create thing like in-set focus indicators
                     .max(-0.5 * node.size.min_element());
+            } else {
+                let node = node.bypass_change_detection();
+                node.outline_width = 0.;
+                node.outline_offset = 0.;
             }
 
             node.bypass_change_detection().scrollbar_size =
@@ -320,6 +351,7 @@ pub(super) fn ui_layout_system(
                     inverse_target_scale_factor,
                     layout_size,
                     physical_scroll_position,
+                    rem_size,
                 );
             }
         }

@@ -389,10 +389,9 @@ fn saved_placement_reconnects_layouts_after_entities_change() {
     attach(&mut world, b, a).unwrap();
     let saved: Vec<_> = [a, b]
         .map(|entity| {
-            serde_json::to_string(&crate::native::sand_placement::Placement::capture(
-                &world, entity,
-            ))
-            .unwrap()
+            let placement = crate::native::sand_placement::Placement::capture(&world, entity)
+                .expect("capture the fixture placement");
+            serde_json::to_string(&placement).unwrap()
         })
         .into();
     world.despawn(a);

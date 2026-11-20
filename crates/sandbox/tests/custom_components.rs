@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 #![cfg(feature = "native-runtime")]
 
 use bevy::{math::DVec2, prelude::*, text::EditableText};

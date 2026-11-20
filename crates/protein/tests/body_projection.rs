@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use nucleus::RecordKind;
 use protein::{Aggregate, AggregateOp, GroupBy, Include, Order, Predicate, Protein, Source};
 use serde_json::{Value, json};

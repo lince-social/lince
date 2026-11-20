@@ -223,11 +223,11 @@ fn decode(bytes: &[u8]) -> Result<Draft> {
     let (bom, detached) = (rest[0] != 0, rest[1] != 0);
     rest = &rest[2..];
     let mut field = |limit| -> Result<String> {
-        if rest.len() < 8 {
+        let Some((length, remaining)) = rest.split_first_chunk::<8>() else {
             return Err("Truncated recovery length".into());
-        }
-        let size = u64::from_le_bytes(rest[..8].try_into().unwrap());
-        rest = &rest[8..];
+        };
+        let size = u64::from_le_bytes(*length);
+        rest = remaining;
         if size > limit as u64 || size > rest.len() as u64 {
             return Err("Invalid recovery length".into());
         }

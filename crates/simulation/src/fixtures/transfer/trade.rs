@@ -1,17 +1,11 @@
-use crate::scenario::{Check, Event, Input, Invocation, Scenario};
+use crate::scenario::{Check, Event, Input, Scenario};
+use super::routes::invocation;
 use nucleus::simulation::{Comparison, Predicate, Quantity};
 use serde_json::{Value, json};
 
-fn invocation(id: &str, payload: Value) -> Invocation {
-    Invocation {
-        id: id.into(),
-        actor: None,
-        action: serde_json::from_value(payload).unwrap(),
-    }
-}
-
 fn add(case: &mut Scenario, cell: &str, id: &str, event: Event) {
-    let at_ms = case.inputs.iter().map(|input| input.at_ms).max().unwrap() + 20;
+    let at_ms = case.inputs.iter().map(|input| input.at_ms).max()
+        .expect("trade appends to a seeded scenario") + 20;
     case.inputs.push(Input {
         id: id.into(),
         cell: cell.into(),
@@ -102,7 +96,7 @@ pub fn trade(replicated: bool) -> Scenario {
             };
         }
         if let Event::SettleReviewed { quantity, .. } = &mut input.event {
-            *quantity = nucleus::DecimalValue::parse_inferred("1").unwrap();
+            *quantity = store::exact::integer(1);
         }
     }
     case.inputs.extend(extra);
@@ -161,10 +155,10 @@ pub fn trade(replicated: bool) -> Scenario {
     publish(&mut case, "completed");
     add(&mut case, "b", "restart-payment", Event::Restart {});
     for (cell, record, expected) in [
-        ("a", "stock-a", "0"),
-        ("b", "stock-b", "1"),
-        ("a", "money-a", "10"),
-        ("b", "money-b", "90"),
+        ("a", "stock-a", 0),
+        ("b", "stock-b", 1),
+        ("a", "money-a", 10),
+        ("b", "money-b", 90),
     ] {
         case.checks.push(Check {
             id: format!("final-{record}"),
@@ -174,7 +168,7 @@ pub fn trade(replicated: bool) -> Scenario {
                 record: format!("${record}"),
                 comparison: Comparison::Equal,
                 expected: Quantity {
-                    value: nucleus::DecimalValue::parse_inferred(expected).unwrap(),
+                    value: store::exact::integer(expected),
                     unit: None,
                 },
             },
@@ -190,7 +184,7 @@ pub fn counteroffer(replicated: bool) -> Scenario {
         .inputs
         .iter()
         .position(|input| input.id == "activate")
-        .unwrap();
+        .expect("trade includes the original activation step");
     let suffix = case.inputs.split_off(split);
     command(
         &mut case,
@@ -280,7 +274,7 @@ pub fn counteroffer(replicated: bool) -> Scenario {
                 }
             }
             Event::SettleReviewed { quantity, .. } => {
-                *quantity = nucleus::DecimalValue::parse_inferred("5").unwrap()
+                *quantity = store::exact::integer(5)
             }
             _ => {}
         }
@@ -289,8 +283,7 @@ pub fn counteroffer(replicated: bool) -> Scenario {
     for check in &mut case.checks {
         if let Predicate::Quantity { cell, expected, .. } = &mut check.predicate {
             expected.value =
-                nucleus::DecimalValue::parse_inferred(if cell == "a" { "25" } else { "5" })
-                    .unwrap();
+                store::exact::integer(if cell == "a" { 25 } else { 5 });
         }
     }
     case
@@ -312,7 +305,7 @@ pub fn open_offer(replicated: bool) -> Scenario {
                 *visibility = engine::actions::TransferVisibility::Public;
                 promises[0].open = true;
                 promises[0].reuse_policy = nucleus::transfer::OpenPromiseReusePolicy::Consume;
-                promises[0].item.as_mut().unwrap().exchange = None;
+                promises[0].item.as_mut().expect("the seeded offer describes an item").exchange = None;
             }
         }
     }
@@ -320,13 +313,13 @@ pub fn open_offer(replicated: bool) -> Scenario {
         .inputs
         .iter()
         .position(|input| input.id == "agreement-a-1")
-        .unwrap();
+        .expect("trade includes the provider's agreement step");
     let suffix = case.inputs.split_off(agreement);
     let accept = case
         .inputs
         .iter()
         .position(|input| input.id == "accept")
-        .unwrap();
+        .expect("trade includes the original acceptance step");
     case.inputs.truncate(accept);
     command(
         &mut case,
@@ -389,7 +382,7 @@ pub fn private_trade(replicated: bool) -> Scenario {
         .inputs
         .iter()
         .find(|input| input.id == "prepare-first")
-        .unwrap()
+        .expect("trade prepares its first settlement")
         .at_ms
         - 5;
     case.inputs.push(Input {
@@ -403,7 +396,7 @@ pub fn private_trade(replicated: bool) -> Scenario {
     for check in &mut case.checks {
         if check.id == "final-money-b" {
             if let Predicate::Quantity { expected, .. } = &mut check.predicate {
-                expected.value = nucleus::DecimalValue::parse_inferred("95").unwrap();
+                expected.value = store::exact::integer(95);
             }
         }
     }

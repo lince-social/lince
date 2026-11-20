@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use std::future::{Future, poll_fn};
 use std::task::Poll;
 use std::time::Duration;

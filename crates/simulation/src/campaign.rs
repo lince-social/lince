@@ -120,8 +120,7 @@ pub fn generate(index: u64) -> Scenario {
         if let nucleus::simulation::Predicate::QuantityEquals { expected, .. } =
             &mut case.checks[0].predicate
         {
-            expected.value =
-                nucleus::DecimalValue::parse_inferred(&(delta - 2).to_string()).unwrap();
+            expected.value = store::exact::integer(i128::from(delta - 2));
         }
     }
     if matches!(family, 1 | 2) {

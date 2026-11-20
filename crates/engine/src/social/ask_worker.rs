@@ -142,7 +142,7 @@ impl Engine {
                     tokio::select! {
                         result = &mut response => break result.map_err(|_| invalid("A contact did not answer within the query deadline"))??,
                         _ = tokio::time::sleep(std::time::Duration::from_millis(250)), if local.is_some() => {
-                            if !self.social_ask_active(local.unwrap()).await? { return Err(invalid("Cancelled or expired query")); }
+                            if let Some(local) = local && !self.social_ask_active(local).await? { return Err(invalid("Cancelled or expired query")); }
                         }
                     }
                 };

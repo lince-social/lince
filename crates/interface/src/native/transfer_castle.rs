@@ -13,6 +13,10 @@ mod receipt_history;
 mod receipt_identity;
 mod receipts;
 mod runtime;
+#[allow(
+    clippy::unwrap_used,
+    reason = "These Laboratory fixture assertions must fail the case when setup is incomplete"
+)]
 pub(crate) mod tests;
 mod transport;
 mod transport_workspace;

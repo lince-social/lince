@@ -1182,9 +1182,9 @@ impl Engine {
             }
             heads.retain(|head| !parents.contains(head));
             if heads.len() == 1
-                && let Ok(doc) = serde_json::from_value::<Profile>(
-                    state[format!("revision_{}", heads.iter().next().unwrap())].clone(),
-                )
+                && let Some(head) = heads.iter().next()
+                && let Ok(doc) =
+                    serde_json::from_value::<Profile>(state[format!("revision_{head}")].clone())
                 && profile::validate_profile(&doc, now).is_ok()
                 && doc
                     .authority

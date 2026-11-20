@@ -41,7 +41,7 @@ pub struct Weights {
 }
 
 fn decimal(value: &str) -> DecimalValue {
-    DecimalValue::parse_inferred(value).unwrap()
+    DecimalValue::parse_inferred(value).expect("trust weights are decimal constants")
 }
 
 impl Default for Weights {

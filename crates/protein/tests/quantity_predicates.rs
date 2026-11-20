@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use nucleus::{DecimalValue, RecordKind};
 use protein::{Include, Predicate, Protein, Source};
 use serde_json::{Map, Value, json};

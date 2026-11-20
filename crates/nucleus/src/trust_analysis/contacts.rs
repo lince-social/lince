@@ -244,10 +244,10 @@ pub fn permitted_edges(
                 .iter()
                 .map(|checked| checked.document.statement.id())
                 .collect::<Result<BTreeSet<_>, _>>()?;
-            if ids.len() != 1 {
+            let Some(id) = ids.first().filter(|_| ids.len() == 1) else {
                 conflict = true;
                 break;
-            }
+            };
             if let Some(checked) = current.iter().find(|checked| {
                 let statement = &checked.document.statement;
                 checked.readable
@@ -258,7 +258,7 @@ pub fn permitted_edges(
                     && !statement.withdrawn
                     && statement.expires_at > now
             }) {
-                active.push((*checked, ids.first().unwrap().clone()));
+                active.push((*checked, id.clone()));
             }
         }
         if conflict {

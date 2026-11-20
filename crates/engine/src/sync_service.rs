@@ -19,7 +19,10 @@ pub struct QueueRegistration {
 
 impl Drop for QueueRegistration {
     fn drop(&mut self) {
-        self.queues.lock().unwrap().remove(&self.id);
+        self.queues
+            .lock()
+            .expect("sync queue registry lock poisoned")
+            .remove(&self.id);
     }
 }
 
@@ -43,7 +46,7 @@ impl Running<'_> {
         self.service
             .running
             .lock()
-            .unwrap()
+            .expect("active sync registry lock poisoned")
             .get(&self.id)
             .expect("running sync activity")
             .clone()
@@ -52,7 +55,11 @@ impl Running<'_> {
 
 impl Drop for Running<'_> {
     fn drop(&mut self) {
-        self.service.running.lock().unwrap().remove(&self.id);
+        self.service
+            .running
+            .lock()
+            .expect("active sync registry lock poisoned")
+            .remove(&self.id);
     }
 }
 
@@ -75,7 +82,7 @@ impl SyncService {
         let id = nucleus::new_uid("sync-queue");
         self.queues
             .lock()
-            .unwrap()
+            .expect("sync queue registry lock poisoned")
             .insert(id.clone(), Box::new(read));
         QueueRegistration {
             queues: self.queues.clone(),
@@ -92,7 +99,10 @@ impl SyncService {
     ) -> Result<T, E> {
         let _service = crate::performance::Span::new("sync-service-await");
         let id = nucleus::new_uid("sync");
-        self.running.lock().unwrap().insert(id.clone(), activity);
+        self.running
+            .lock()
+            .expect("active sync registry lock poisoned")
+            .insert(id.clone(), activity);
         let running = Running { service: self, id };
         let result = {
             let _work = crate::performance::Span::new("sync-work-await");
@@ -130,16 +140,27 @@ impl SyncService {
             .await
             {
                 tracing::warn!(%error, "Could not save sync history");
-                *self.history_error.lock().unwrap() = Some(error.to_string());
+                *self
+                    .history_error
+                    .lock()
+                    .expect("sync history error lock poisoned") = Some(error.to_string());
             } else {
-                *self.history_error.lock().unwrap() = None;
+                *self
+                    .history_error
+                    .lock()
+                    .expect("sync history error lock poisoned") = None;
             }
         }
         result
     }
 
     pub fn active(&self) -> Vec<Activity> {
-        self.running.lock().unwrap().values().cloned().collect()
+        self.running
+            .lock()
+            .expect("active sync registry lock poisoned")
+            .values()
+            .cloned()
+            .collect()
     }
 }
 
@@ -159,7 +180,11 @@ impl Engine {
             .save_history
             .store(policy.enabled, Ordering::Release);
         if !policy.enabled {
-            *self.sync_service.history_error.lock().unwrap() = None;
+            *self
+                .sync_service
+                .history_error
+                .lock()
+                .expect("sync history error lock poisoned") = None;
         }
         Ok(())
     }
@@ -177,16 +202,18 @@ impl Engine {
             .sync_service
             .queues
             .lock()
-            .unwrap()
+            .expect("sync queue registry lock poisoned")
             .values()
             .map(|read| read())
             .collect();
         let incoming = queues.iter().map(|queue| queue.incoming).sum();
-        let outgoing = outgoing
-            + plugin_outgoing
-            + queues.iter().map(|queue| queue.outgoing).sum::<u64>();
+        let outgoing =
+            outgoing + plugin_outgoing + queues.iter().map(|queue| queue.outgoing).sum::<u64>();
         {
-            let conflicts = self.file_sync_conflicts.lock().unwrap();
+            let conflicts = self
+                .file_sync_conflicts
+                .lock()
+                .expect("file sync conflict lock poisoned");
             let mut organs: Vec<_> = conflicts.iter().collect();
             organs.sort_by_key(|(organ, _)| *organ);
             let mut remaining = 100usize;
@@ -221,7 +248,12 @@ impl Engine {
             incoming,
             held,
             retention,
-            history_error: self.sync_service.history_error.lock().unwrap().clone(),
+            history_error: self
+                .sync_service
+                .history_error
+                .lock()
+                .expect("sync history error lock poisoned")
+                .clone(),
         })
     }
 }

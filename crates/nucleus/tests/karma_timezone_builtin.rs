@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use nucleus::karma::{
     BundledTimeZoneProvider, CivilDateTime, LocalTimeResolution, TimeZoneId, TimeZoneProvider,
 };

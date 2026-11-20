@@ -2,6 +2,7 @@ pub mod expression;
 pub mod extension;
 pub mod grammar;
 pub mod instinct;
+pub mod requirements;
 mod projection;
 pub use projection::{project, validate_projection};
 
@@ -111,16 +112,34 @@ impl std::fmt::Display for Diagnostic {
 impl std::error::Error for Diagnostic {}
 
 pub fn parse(source: &str) -> Result<Document, Diagnostic> {
+    parse_with_tree(source).map(|(document, _)| document)
+}
+
+fn parse_with_tree(source: &str) -> Result<(Document, rust_sitter::tree_sitter::Tree), Diagnostic> {
     if source.len() > 16 * 1024 * 1024 {
         return Err(diagnostic("Lingua document exceeds 16 MiB"));
     }
-    let document = parse_syntax(source)?;
+    let tree = syntax_tree(source)?;
+    let document = extract_document(source, &tree);
     validate_record_boundaries(&document)?;
     extension::validate(&document)?;
-    Ok(document)
+    Ok((document, tree))
 }
 
 pub(crate) fn parse_syntax(source: &str) -> Result<Document, Diagnostic> {
+    syntax_tree(source).map(|tree| extract_document(source, &tree))
+}
+
+fn extract_document(source: &str, tree: &rust_sitter::tree_sitter::Tree) -> Document {
+    <Document as rust_sitter::Extract<Document>>::extract(
+        Some(tree.root_node()),
+        source.as_bytes(),
+        0,
+        None,
+    )
+}
+
+fn syntax_tree(source: &str) -> Result<rust_sitter::tree_sitter::Tree, Diagnostic> {
     let mut parser = rust_sitter::tree_sitter::Parser::new();
     parser
         .set_language(&ast::language())
@@ -165,12 +184,8 @@ pub(crate) fn parse_syntax(source: &str) -> Result<Document, Diagnostic> {
                 if root.has_error() {
                     return Err(diagnostic("Invalid or missing syntax"));
                 }
-                return Ok(<Document as rust_sitter::Extract<Document>>::extract(
-                    Some(root),
-                    source.as_bytes(),
-                    0,
-                    None,
-                ));
+                drop(cursor);
+                return Ok(tree);
             }
             depth -= 1;
         }
@@ -237,7 +252,7 @@ pub fn format(document: &Document) -> String {
                         format!("@{}", value.target.value())
                     }
                 )
-                .unwrap();
+                .expect("writing to a String cannot fail");
                 if let Some(locations) = &value.locations {
                     let values = locations
                         .values
@@ -245,7 +260,7 @@ pub fn format(document: &Document) -> String {
                         .map(|value| quoted(&value.value.0))
                         .collect::<Vec<_>>()
                         .join(", ");
-                    write!(output, " from [{values}]").unwrap();
+                    write!(output, " from [{values}]").expect("writing to a String cannot fail");
                 }
                 output.push('\n');
             }
@@ -1266,28 +1281,30 @@ fn format_record(output: &mut String, record: &ast::Record) {
     let opening_uid = record.opening.uid();
     let mut compact = format!("{title} ({subject}");
     for field in &fields {
-        write!(compact, ", {field}").unwrap();
+        compact.push_str(", ");
+        compact.push_str(field);
     }
     compact.push_str(") {");
     if let Some(uid) = opening_uid {
-        write!(compact, " {uid}").unwrap();
+        write!(compact, " {uid}").expect("writing to a String cannot fail");
     }
     if !comments && compact.chars().count() <= 150 {
-        writeln!(output, "{compact}").unwrap();
+        output.push_str(&compact);
+        output.push('\n');
     } else {
-        writeln!(output, "{title} (").unwrap();
-        write!(output, "    {subject}").unwrap();
+        writeln!(output, "{title} (").expect("writing to a String cannot fail");
+        write!(output, "    {subject}").expect("writing to a String cannot fail");
         for (index, item) in record.header.rest.iter().enumerate() {
             output.push(',');
             if let Some(comment) = &item.comment {
-                write!(output, " {}", comment.0).unwrap();
+                write!(output, " {}", comment.0).expect("writing to a String cannot fail");
             }
-            writeln!(output).unwrap();
-            write!(output, "    {}", fields[index]).unwrap();
+            output.push_str("\n    ");
+            output.push_str(&fields[index]);
         }
-        write!(output, "\n) {{").unwrap();
+        output.push_str("\n) {");
         if let Some(uid) = opening_uid {
-            write!(output, " {uid}").unwrap();
+            write!(output, " {uid}").expect("writing to a String cannot fail");
         }
         output.push('\n');
     }
@@ -1301,14 +1318,15 @@ fn format_record(output: &mut String, record: &ast::Record) {
     }
     output.push('}');
     if let Some(uid) = record.closing.uid() {
-        write!(output, " {uid}").unwrap();
+        write!(output, " {uid}").expect("writing to a String cannot fail");
     }
     output.push('\n');
 }
 
 fn format_frequency(output: &mut String, frequency: &ast::Frequency) {
     use ast::FrequencyField::*;
-    writeln!(output, "Frequency {} {{", frequency.opening.0).unwrap();
+    writeln!(output, "Frequency {} {{", frequency.opening.0)
+        .expect("writing to a String cannot fail");
     for field in &frequency.fields {
         match field {
             Title(v) => writeln!(output, "    title {}", quoted(&v.value.0)),
@@ -1318,20 +1336,22 @@ fn format_frequency(output: &mut String, frequency: &ast::Frequency) {
             NextAt(v) => writeln!(output, "    next_at {}", v.value.0),
             Definition(v) => writeln!(output, "    definition {}", quoted(&v.value.0)),
         }
-        .unwrap();
+        .expect("writing to a String cannot fail");
     }
     output.push('}');
     if let Some(uid) = &frequency.uid {
-        write!(output, " ^{}", uid.value()).unwrap();
+        write!(output, " ^{}", uid.value()).expect("writing to a String cannot fail");
     }
     output.push('\n');
 }
 
 fn format_karma(output: &mut String, karma: &ast::Karma) {
     use ast::RuleField::*;
-    writeln!(output, "Karma {} {{\n    Rules {{", karma.opening.0).unwrap();
+    writeln!(output, "Karma {} {{\n    Rules {{", karma.opening.0)
+        .expect("writing to a String cannot fail");
     for rule in &karma.rules.rules {
-        writeln!(output, "        Rule {} {{", rule.name.0).unwrap();
+        writeln!(output, "        Rule {} {{", rule.name.0)
+            .expect("writing to a String cannot fail");
         for field in &rule.fields {
             match field {
                 Quantity(v) => writeln!(output, "            quantity {}", v.value.0),
@@ -1347,11 +1367,11 @@ fn format_karma(output: &mut String, karma: &ast::Karma) {
                 Cadence(v) => writeln!(output, "            cadence {}", quoted(&v.value.0)),
                 AnchorAt(v) => writeln!(output, "            anchor_at {}", v.value.0),
             }
-            .unwrap();
+            .expect("writing to a String cannot fail");
         }
         output.push_str("        }");
         if let Some(uid) = &rule.uid {
-            write!(output, " ^{}", uid.value()).unwrap();
+            write!(output, " ^{}", uid.value()).expect("writing to a String cannot fail");
         }
         output.push('\n');
     }
@@ -1361,7 +1381,7 @@ fn format_karma(output: &mut String, karma: &ast::Karma) {
 pub fn hash(bytes: &[u8]) -> String {
     let mut output = String::with_capacity(64);
     for byte in Sha256::digest(bytes) {
-        write!(output, "{byte:02x}").unwrap();
+        write!(output, "{byte:02x}").expect("writing to a String cannot fail");
     }
     output
 }

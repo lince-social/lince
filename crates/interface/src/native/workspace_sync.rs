@@ -227,7 +227,10 @@ fn act(world: &mut World, owner: Entity, command: Backend, kind: Kind) {
     };
     match send(world, owner, message) {
         Ok(()) => {
-            world.get_mut::<WorkspaceSync>(owner).unwrap().pending = Some((id, kind));
+            let Some(mut view) = world.get_mut::<WorkspaceSync>(owner) else {
+                return;
+            };
+            view.pending = Some((id, kind));
             status(world, owner, "Waiting for the host…");
         }
         Err(error) => status(
@@ -261,7 +264,11 @@ fn local_draft_request(world: &mut World, owner: Entity, command: Backend, kind:
         },
     );
     match result {
-        Ok(()) => world.get_mut::<WorkspaceSync>(owner).unwrap().pending = Some((id, kind)),
+        Ok(()) => {
+            if let Some(mut view) = world.get_mut::<WorkspaceSync>(owner) {
+                view.pending = Some((id, kind));
+            }
+        }
         Err(error) => status(world, owner, &error),
     }
 }
@@ -337,9 +344,21 @@ impl Action for Control {
         match self {
             Self::Revise(change) => {
                 let field = view.change;
-                let raw = serde_json::to_string_pretty(change).unwrap();
-                *world.get_mut::<EditableText>(field).unwrap() = draft_editor(&raw);
-                let mut view = world.get_mut::<WorkspaceSync>(owner).unwrap();
+                let raw = match serde_json::to_string_pretty(change) {
+                    Ok(raw) => raw,
+                    Err(error) => {
+                        status(world, owner, &format!("Could not load proposal: {error}"));
+                        return;
+                    }
+                };
+                let Some(mut editor) = world.get_mut::<EditableText>(field) else {
+                    status(world, owner, "The draft editor is unavailable.");
+                    return;
+                };
+                *editor = draft_editor(&raw);
+                let Some(mut view) = world.get_mut::<WorkspaceSync>(owner) else {
+                    return;
+                };
                 view.draft_base = Some(view.revision);
                 view.draft_workspace = view.selected.clone();
                 view.draft_host = Some(view.source.clone());
@@ -479,8 +498,22 @@ impl Action for Control {
                     }
                     _ => unreachable!(),
                 }
-                *world.get_mut::<EditableText>(field).unwrap() =
-                    draft_editor(&serde_json::to_string_pretty(&policy).unwrap());
+                let raw = match serde_json::to_string_pretty(&policy) {
+                    Ok(raw) => raw,
+                    Err(error) => {
+                        status(
+                            world,
+                            owner,
+                            &format!("Could not write policy draft: {error}"),
+                        );
+                        return;
+                    }
+                };
+                let Some(mut editor) = world.get_mut::<EditableText>(field) else {
+                    status(world, owner, "The policy editor is unavailable.");
+                    return;
+                };
+                *editor = draft_editor(&raw);
                 status(
                     world,
                     owner,
@@ -492,7 +525,6 @@ impl Action for Control {
                     status(world, owner, "Open a workspace before saving its draft.");
                     return;
                 };
-                let view = world.get::<WorkspaceSync>(owner).unwrap();
                 if view.draft_workspace.is_some()
                     && (view.draft_workspace.as_deref() != Some(&workspace)
                         || view.draft_host.as_ref() != Some(&view.source))
@@ -536,14 +568,31 @@ impl Action for Control {
                 Kind::Draft,
             ),
             Self::LoadDraft(draft) => {
-                let view = world.get::<WorkspaceSync>(owner).unwrap();
                 let host = view.host;
                 let field = view.change;
-                let text = serde_json::to_string_pretty(&draft["change"]).unwrap_or_default();
-                *world.get_mut::<EditableText>(host).unwrap() =
-                    crate::native::sand::editable(draft["host"].as_str().unwrap_or(""));
-                *world.get_mut::<EditableText>(field).unwrap() = draft_editor(&text);
-                let mut view = world.get_mut::<WorkspaceSync>(owner).unwrap();
+                let text = match serde_json::to_string_pretty(&draft["change"]) {
+                    Ok(text) => text,
+                    Err(error) => {
+                        status(world, owner, &format!("Could not load draft: {error}"));
+                        return;
+                    }
+                };
+                let Ok([mut host, mut field]) = world.get_entity_mut([host, field]) else {
+                    status(world, owner, "The draft editor is unavailable.");
+                    return;
+                };
+                let (Some(mut host), Some(mut editor)) = (
+                    host.get_mut::<EditableText>(),
+                    field.get_mut::<EditableText>(),
+                ) else {
+                    status(world, owner, "The draft editor is unavailable.");
+                    return;
+                };
+                *host = crate::native::sand::editable(draft["host"].as_str().unwrap_or(""));
+                *editor = draft_editor(&text);
+                let Some(mut view) = world.get_mut::<WorkspaceSync>(owner) else {
+                    return;
+                };
                 view.draft_base = draft["base_revision"].as_i64();
                 view.draft_workspace = draft["workspace"].as_str().map(str::to_owned);
                 view.draft_host = Some(
@@ -563,9 +612,9 @@ impl Action for Control {
                 );
             }
             Self::Connect => {
+                let field = view.host;
                 unsubscribe(world, owner);
-                let view = world.get::<WorkspaceSync>(owner).unwrap();
-                let host = panel::value(world, view.host)
+                let host = panel::value(world, field)
                     .unwrap_or_default()
                     .trim()
                     .to_owned();
@@ -586,7 +635,9 @@ impl Action for Control {
                 if let Source::Organ(organ) = &source {
                     crate::native::protein_area::reconnect_auxiliary(world, organ);
                 }
-                let mut view = world.get_mut::<WorkspaceSync>(owner).unwrap();
+                let Some(mut view) = world.get_mut::<WorkspaceSync>(owner) else {
+                    return;
+                };
                 view.source = source;
                 view.selected = None;
                 view.policy_snapshot = None;
@@ -606,7 +657,9 @@ impl Action for Control {
                 let field = view.password;
                 let result =
                     crate::native::protein_area::auxiliary_login(world, &organ, username, password);
-                *world.get_mut::<EditableText>(field).unwrap() = crate::native::sand::editable("");
+                if let Some(mut editor) = world.get_mut::<EditableText>(field) {
+                    *editor = crate::native::sand::editable("");
+                }
                 status(
                     world,
                     owner,
@@ -619,7 +672,9 @@ impl Action for Control {
                     crate::native::protein_area::logout_organ(world, &organ);
                 }
                 clear_replica(world, owner);
-                let mut view = world.get_mut::<WorkspaceSync>(owner).unwrap();
+                let Some(mut view) = world.get_mut::<WorkspaceSync>(owner) else {
+                    return;
+                };
                 view.subscribed = false;
                 view.editable = false;
                 status(world, owner, "Signed out. Reconnect to sign in again.");
@@ -627,7 +682,9 @@ impl Action for Control {
             Self::Select(uid) => {
                 unsubscribe(world, owner);
                 clear_replica(world, owner);
-                let mut view = world.get_mut::<WorkspaceSync>(owner).unwrap();
+                let Some(mut view) = world.get_mut::<WorkspaceSync>(owner) else {
+                    return;
+                };
                 view.selected = Some(uid.clone());
                 view.policy_snapshot = None;
                 view.delete_confirmation = false;
@@ -646,7 +703,10 @@ impl Action for Control {
             }
             Self::Permitted => {
                 unsubscribe(world, owner);
-                world.get_mut::<WorkspaceSync>(owner).unwrap().permitted = true;
+                let Some(mut view) = world.get_mut::<WorkspaceSync>(owner) else {
+                    return;
+                };
+                view.permitted = true;
                 if let Some((workspace, _)) = selected(world, owner) {
                     act(
                         world,
@@ -728,7 +788,6 @@ impl Action for Control {
                 let text = panel::value(world, view.change).unwrap_or_default();
                 match serde_json::from_str::<Change>(&text) {
                     Ok(change) => {
-                        let view = world.get::<WorkspaceSync>(owner).unwrap();
                         if view.draft_workspace.is_some()
                             && (view.draft_workspace != view.selected
                                 || view.draft_host.as_ref() != Some(&view.source))
@@ -740,7 +799,7 @@ impl Action for Control {
                             );
                             return;
                         }
-                        if !can_propose(&view, &change) {
+                        if !can_propose(view, &change) {
                             status(
                                 world,
                                 owner,
@@ -767,11 +826,11 @@ impl Action for Control {
                 }
             }
             Self::Delete => {
-                if !view.delete_confirmation {
-                    world
-                        .get_mut::<WorkspaceSync>(owner)
-                        .unwrap()
-                        .delete_confirmation = true;
+                let Some(mut view) = world.get_mut::<WorkspaceSync>(owner) else {
+                    return;
+                };
+                view.delete_confirmation = !view.delete_confirmation;
+                if view.delete_confirmation {
                     status(
                         world,
                         owner,
@@ -779,10 +838,6 @@ impl Action for Control {
                     );
                     return;
                 }
-                world
-                    .get_mut::<WorkspaceSync>(owner)
-                    .unwrap()
-                    .delete_confirmation = false;
                 if let Some((workspace, expected_revision)) = selected(world, owner) {
                     act(
                         world,
@@ -835,20 +890,44 @@ impl Action for Control {
                 else {
                     return;
                 };
+                use protein::authority::{MutationGrant, Operation, Property};
                 let properties = match operation {
-                    protein::authority::Operation::Create
-                    | protein::authority::Operation::Restore => {
-                        vec![
-                            "kind", "organ", "head", "body", "quantity", "slug", "unit", "place",
-                        ]
-                    }
-                    protein::authority::Operation::Update => vec!["quantity"],
-                    protein::authority::Operation::Delete => vec!["slug"],
+                    Operation::Create | Operation::Restore => std::collections::BTreeSet::from([
+                        Property::Kind,
+                        Property::Organ,
+                        Property::Head,
+                        Property::Body,
+                        Property::Quantity,
+                        Property::Slug,
+                        Property::Unit,
+                        Property::Place,
+                    ]),
+                    Operation::Update => std::collections::BTreeSet::from([Property::Quantity]),
+                    Operation::Delete => std::collections::BTreeSet::from([Property::Slug]),
                 };
-                let grant = serde_json::from_value(json!({"operation":operation,"selector":{"kind_eq":"plain"},"properties":properties,"assertions_add":[],"assertions_remove":[]})).unwrap();
-                policy.ceiling.grants.push(grant);
-                *world.get_mut::<EditableText>(field).unwrap() =
-                    crate::native::sand::editable(&serde_json::to_string_pretty(&policy).unwrap());
+                policy.ceiling.grants.push(MutationGrant {
+                    operation: *operation,
+                    selector: protein::Predicate::KindEq("plain".into()),
+                    properties,
+                    assertions_add: Vec::new(),
+                    assertions_remove: Vec::new(),
+                });
+                let raw = match serde_json::to_string_pretty(&policy) {
+                    Ok(raw) => raw,
+                    Err(error) => {
+                        status(
+                            world,
+                            owner,
+                            &format!("Could not write policy draft: {error}"),
+                        );
+                        return;
+                    }
+                };
+                let Some(mut editor) = world.get_mut::<EditableText>(field) else {
+                    status(world, owner, "The policy editor is unavailable.");
+                    return;
+                };
+                *editor = crate::native::sand::editable(&raw);
                 status(
                     world,
                     owner,
@@ -1080,15 +1159,12 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
         "Workspace policy",
         &json!({"required_capabilities":[],"ceiling":{"read":{"all":[]},"grants":[]}}).to_string(),
     );
-    world
+    let mut editor = world
         .get_mut::<EditableText>(policy)
-        .unwrap()
-        .allow_newlines = true;
-    world.get_mut::<EditableText>(policy).unwrap().visible_lines = Some(5.0);
-    world
-        .get_mut::<EditableText>(policy)
-        .unwrap()
-        .max_characters = Some(65536);
+        .expect("panel::field attaches an editable policy field");
+    editor.allow_newlines = true;
+    editor.visible_lines = Some(5.0);
+    editor.max_characters = Some(65536);
     panel::button(
         world,
         body,
@@ -1238,15 +1314,12 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
         "Workspace operation / offline draft",
         "{\"operation\":\"rename\",\"name\":\"Workspace\"}",
     );
-    world
+    let mut editor = world
         .get_mut::<EditableText>(change)
-        .unwrap()
-        .allow_newlines = true;
-    world.get_mut::<EditableText>(change).unwrap().visible_lines = Some(5.0);
-    world
-        .get_mut::<EditableText>(change)
-        .unwrap()
-        .max_characters = Some(65536);
+        .expect("panel::field attaches an editable draft field");
+    editor.allow_newlines = true;
+    editor.visible_lines = Some(5.0);
+    editor.max_characters = Some(65536);
     panel::button(
         world,
         body,
@@ -1363,12 +1436,13 @@ pub(crate) fn open_organ(world: &mut World, root: Entity, organ: &str) {
         .query::<(Entity, &WorkspaceSync)>()
         .iter(world)
         .filter(|(_, view)| view.sand == sand)
-        .map(|(owner, _)| owner)
+        .map(|(owner, view)| (owner, view.host))
         .collect();
-    for owner in owners {
-        let field = world.get::<WorkspaceSync>(owner).unwrap().host;
-        *world.get_mut::<EditableText>(field).unwrap() = crate::native::sand::editable(organ);
-        Control::Connect.apply(world, owner);
+    for (owner, field) in owners {
+        if let Some(mut editor) = world.get_mut::<EditableText>(field) {
+            *editor = crate::native::sand::editable(organ);
+            Control::Connect.apply(world, owner);
+        }
     }
 }
 
@@ -1400,7 +1474,9 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
         .map(|(owner, _)| owner)
         .collect();
     for owner in owners {
-        let view = world.get::<WorkspaceSync>(owner).unwrap();
+        let Some(view) = world.get::<WorkspaceSync>(owner) else {
+            continue;
+        };
         match message {
             ServerMessage::Workspace { id, workspace }
                 if id == &subscription(owner)
@@ -1416,14 +1492,18 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
             }
             ServerMessage::ActionOk {
                 id, created, data, ..
-            } if view
-                .pending
-                .as_ref()
-                .is_some_and(|(pending, _)| pending == id) =>
-            {
-                let kind = view.pending.as_ref().unwrap().1;
+            } => {
+                let Some((_, kind)) = view.pending.as_ref().filter(|(pending, _)| pending == id)
+                else {
+                    continue;
+                };
+                let kind = *kind;
                 let catalogue = view.catalogue;
-                world.get_mut::<WorkspaceSync>(owner).unwrap().pending = None;
+                let history_panel = view.history;
+                let Some(mut view) = world.get_mut::<WorkspaceSync>(owner) else {
+                    continue;
+                };
+                view.pending = None;
                 status(world, owner, "Request completed.");
                 match kind {
                     Kind::Preview => {
@@ -1450,7 +1530,7 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
                         },
                     ),
                     Kind::Drafts => {
-                        let parent = world.get::<WorkspaceSync>(owner).unwrap().history;
+                        let parent = history_panel;
                         panel::clear(world, parent);
                         for draft in data
                             .as_ref()
@@ -1513,11 +1593,14 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
                     Kind::History => history(world, owner, data.as_ref().unwrap_or(&Value::Null)),
                     Kind::Delete => {
                         clear_replica(world, owner);
-                        world.get_mut::<WorkspaceSync>(owner).unwrap().selected = None;
+                        if let Some(mut view) = world.get_mut::<WorkspaceSync>(owner) {
+                            view.selected = None;
+                        }
                     }
                     Kind::Change | Kind::DraftChange => {
-                        if matches!(kind, Kind::DraftChange) {
-                            let mut view = world.get_mut::<WorkspaceSync>(owner).unwrap();
+                        if matches!(kind, Kind::DraftChange)
+                            && let Some(mut view) = world.get_mut::<WorkspaceSync>(owner)
+                        {
                             view.draft_base = None;
                             view.draft_workspace = None;
                             view.draft_host = None;
@@ -1544,20 +1627,22 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
             {
                 let clear = id == "connection" || id == &subscription(owner);
                 if clear {
-                    clear_replica(world, owner);
-                    let view = world.get::<WorkspaceSync>(owner).unwrap();
                     let parent = view.history;
                     let policy = view.policy;
                     let password = view.password;
+                    clear_replica(world, owner);
                     panel::clear(world, parent);
-                    *world.get_mut::<EditableText>(policy).unwrap() =
-                        crate::native::sand::editable("");
-                    *world.get_mut::<EditableText>(password).unwrap() =
-                        crate::native::sand::editable("");
+                    for field in [policy, password] {
+                        if let Some(mut editor) = world.get_mut::<EditableText>(field) {
+                            *editor = crate::native::sand::editable("");
+                        }
+                    }
                 } else {
                     restore_positions(world, owner);
                 }
-                let mut view = world.get_mut::<WorkspaceSync>(owner).unwrap();
+                let Some(mut view) = world.get_mut::<WorkspaceSync>(owner) else {
+                    continue;
+                };
                 view.pending = None;
                 if clear {
                     view.subscribed = false;
@@ -1583,11 +1668,9 @@ fn clear_replica(world: &mut World, owner: Entity) {
             world.entity_mut(entity).despawn();
         }
     }
-    world
-        .get_mut::<WorkspaceSync>(owner)
-        .unwrap()
-        .replicas
-        .clear();
+    if let Some(mut view) = world.get_mut::<WorkspaceSync>(owner) {
+        view.replicas.clear();
+    }
 }
 
 fn record_labels(world: &mut World, owner: Entity, rows: &[Value]) {
@@ -1642,7 +1725,9 @@ fn record_labels(world: &mut World, owner: Entity, rows: &[Value]) {
 }
 
 fn history(world: &mut World, owner: Entity, data: &Value) {
-    let view = world.get::<WorkspaceSync>(owner).unwrap();
+    let Some(view) = world.get::<WorkspaceSync>(owner) else {
+        return;
+    };
     let parent = view.history;
     let reviewable = view.reviewable;
     panel::clear(world, parent);
@@ -1728,11 +1813,9 @@ fn maintain(
         .filter(|owner| world.get::<WorkspaceSync>(*owner).is_none())
         .collect();
     for owner in stale {
-        let (source, replicas) = world
-            .resource_mut::<ReplicaFeeds>()
-            .0
-            .remove(&owner)
-            .unwrap();
+        let Some((source, replicas)) = world.resource_mut::<ReplicaFeeds>().0.remove(&owner) else {
+            continue;
+        };
         let mut done = true;
         for id in [subscription(owner), records_subscription(owner)] {
             match &source {
@@ -1770,7 +1853,9 @@ fn maintain(
         .iter(world)
         .collect();
     for owner in owners {
-        let view = world.get::<WorkspaceSync>(owner).unwrap();
+        let Some(view) = world.get::<WorkspaceSync>(owner) else {
+            continue;
+        };
         let password = view.password;
         let mask = view.password_mask;
         let count = world
@@ -1781,7 +1866,9 @@ fn maintain(
         if let Some(field) = world.get_mut::<EditableText>(password) {
             crate::controls::protect_password(field);
         }
-        let view = world.get::<WorkspaceSync>(owner).unwrap();
+        let Some(view) = world.get::<WorkspaceSync>(owner) else {
+            continue;
+        };
         let source = view.source.clone();
         let draft = {
             let value = world
@@ -1796,7 +1883,9 @@ fn maintain(
         };
         if let Some(draft) = draft {
             engine::performance::add("native-workspace-drafts-prepared", 1);
-            let mut view = world.get_mut::<WorkspaceSync>(owner).unwrap();
+            let Some(mut view) = world.get_mut::<WorkspaceSync>(owner) else {
+                continue;
+            };
             view.draft_text = draft;
             if view.draft_base.is_none() && view.revision > 0 {
                 view.draft_base = Some(view.revision);
@@ -1805,7 +1894,9 @@ fn maintain(
             }
         }
         crate::native::protein_area::ensure_auxiliary(world, &source);
-        let view = world.get::<WorkspaceSync>(owner).unwrap();
+        let Some(view) = world.get::<WorkspaceSync>(owner) else {
+            continue;
+        };
         if view.pending.is_some() || view.permitted || !view.subscribed {
             continue;
         }
@@ -1864,7 +1955,13 @@ impl Action for UseSelector {
         else {
             return;
         };
-        let selector = serde_json::to_value(protein::Predicate::All(query.filter.clone())).unwrap();
+        let selector = match serde_json::to_value(protein::Predicate::All(query.filter.clone())) {
+            Ok(selector) => selector,
+            Err(error) => {
+                status(world, self.0, &format!("Could not write selector: {error}"));
+                return;
+            }
+        };
         if let Some(index) = self.1 {
             let Some(grant) = policy["ceiling"]["grants"]
                 .as_array_mut()
@@ -1876,8 +1973,22 @@ impl Action for UseSelector {
         } else {
             policy["ceiling"]["read"] = selector;
         }
-        *world.get_mut::<EditableText>(field).unwrap() =
-            crate::native::sand::editable(&serde_json::to_string_pretty(&policy).unwrap());
+        let raw = match serde_json::to_string_pretty(&policy) {
+            Ok(raw) => raw,
+            Err(error) => {
+                status(
+                    world,
+                    self.0,
+                    &format!("Could not write policy draft: {error}"),
+                );
+                return;
+            }
+        };
+        let Some(mut editor) = world.get_mut::<EditableText>(field) else {
+            status(world, self.0, "The policy editor is unavailable.");
+            return;
+        };
+        *editor = crate::native::sand::editable(&raw);
         status(
             world,
             self.0,
@@ -1887,7 +1998,9 @@ impl Action for UseSelector {
 }
 
 fn open_selector(world: &mut World, owner: Entity, grant: Option<usize>) {
-    let view = world.get::<WorkspaceSync>(owner).unwrap();
+    let Some(view) = world.get::<WorkspaceSync>(owner) else {
+        return;
+    };
     let root = view.root;
     let field = view.policy;
     let Some(policy) = panel::value(world, field)

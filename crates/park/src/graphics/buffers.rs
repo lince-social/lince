@@ -205,6 +205,8 @@ impl VulkanRenderer {
                     let row = region.size.w as usize * 4;
                     let mut pixels = vec![0; row * region.size.h as usize];
                     for y in 0..region.size.h as usize {
+                        // SAFETY: The callback holds the pool mapped. The validated bounds
+                        // cover this clipped row, and the destination is a separate Vec.
                         unsafe {
                             std::ptr::copy_nonoverlapping(
                                 pointer.add(data.offset as usize + (region.loc.y as usize + y) * data.stride as usize + region.loc.x as usize * 4),

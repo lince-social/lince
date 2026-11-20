@@ -5,6 +5,7 @@ mod chrome;
 mod events;
 mod face;
 mod keyboard;
+pub(crate) use keyboard::complete_focused_row;
 mod motion;
 mod palette;
 mod preparation;

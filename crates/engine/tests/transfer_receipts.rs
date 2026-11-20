@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 #[path = "transfer_receipts/browsing.rs"]
 mod browsing;
 #[path = "transfer_receipts/delivery.rs"]

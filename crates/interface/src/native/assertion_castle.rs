@@ -450,16 +450,18 @@ impl SavedAssertion {
     }
 }
 
-pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedAssertion> {
+pub(crate) fn snapshot(world: &mut World, root: Entity) -> Result<Vec<SavedAssertion>, String> {
     world
         .query::<(Entity, &ChildOf, &AssertionCastle)>()
         .iter(world)
         .filter(|(_, parent, _)| parent.parent() == root)
         .filter_map(|(owner, _, castle)| {
-            castle_feed::Saved::capture(world, owner).map(|frame| SavedAssertion {
-                frame,
-                castle: castle.clone(),
-            })
+            Some(
+                castle_feed::Saved::capture(world, owner)?.map(|frame| SavedAssertion {
+                    frame,
+                    castle: castle.clone(),
+                }),
+            )
         })
         .collect()
 }

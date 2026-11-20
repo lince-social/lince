@@ -45,7 +45,7 @@ fn normalized(value: DecimalValue) -> DecimalValue {
         scale -= 1;
         mantissa /= 10;
     }
-    DecimalValue::from_mantissa(scale, mantissa).unwrap()
+    DecimalValue::from_mantissa(scale, mantissa).expect("normalizing only decreases a valid scale")
 }
 
 pub fn amount(value: f64) -> Result<DecimalValue, NucleusError> {
@@ -56,7 +56,7 @@ pub fn amount(value: f64) -> Result<DecimalValue, NucleusError> {
 
 pub fn sum(values: impl IntoIterator<Item = DecimalValue>) -> Result<DecimalValue, NucleusError> {
     values.into_iter().try_fold(
-        DecimalValue::from_mantissa(0, 0).unwrap(),
+        DecimalValue::from_integer(0),
         |total, value| {
             total
                 .aligned_add(value)
@@ -152,7 +152,7 @@ pub fn evaluate(formula: &str, incoming: f64) -> Result<f64, NucleusError> {
 pub fn validate(formula: &str) -> Result<String, NucleusError> {
     let formula = formula.trim();
     for incoming in [-1, 0, 1] {
-        evaluate_exact(formula, DecimalValue::from_mantissa(0, incoming).unwrap())?;
+        evaluate_exact(formula, DecimalValue::from_integer(incoming))?;
     }
     Ok(formula.into())
 }

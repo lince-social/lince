@@ -397,13 +397,15 @@ pub async fn save(
     drop(preparation);
     let _transaction = nucleus::performance::Span::new("record-recovery-save-transaction-await");
     let mut tx = pool.begin_with("BEGIN IMMEDIATE").await?;
-    let current = metadata_on(&mut tx, source, record).await?;
-    if current.as_ref().is_some_and(|current| {
-        current.stamp.generation == write.generation && current.write_hash == hash
-    }) {
-        tx.rollback().await?;
-        return Ok(current.unwrap());
-    }
+    let current = match metadata_on(&mut tx, source, record).await? {
+        Some(current)
+            if current.stamp.generation == write.generation && current.write_hash == hash =>
+        {
+            tx.rollback().await?;
+            return Ok(current);
+        }
+        current => current,
+    };
     let rotating = write
         .expected
         .as_ref()

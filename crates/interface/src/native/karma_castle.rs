@@ -7,6 +7,10 @@ mod incoming;
 mod persistence;
 mod preview_ui;
 mod schedules_ui;
+#[allow(
+    clippy::unwrap_used,
+    reason = "Karma Laboratory fixtures must fail when a Rule action or its expected interface state is missing"
+)]
 pub(crate) mod tests;
 mod ui;
 

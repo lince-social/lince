@@ -109,7 +109,10 @@ pub(super) fn maintain(world: &mut World) {
 
 pub(super) fn submit(world: &mut World, owner: Entity) {
     ui::capture(world, owner);
-    let view = world.get::<View>(owner).unwrap();
+    let (Some(castle), Some(view)) = (world.get::<TransferCastle>(owner), world.get::<View>(owner))
+    else {
+        return;
+    };
     if !view.ready || view.pending.is_some() || crate::native::laboratory::suspended(world, owner) {
         status(
             world,
@@ -118,12 +121,12 @@ pub(super) fn submit(world: &mut World, owner: Entity) {
         );
         return;
     }
-    let Some(mut form) = world.get::<TransferCastle>(owner).unwrap().form.clone() else {
+    let Some(mut form) = castle.form.clone() else {
         return;
     };
     let action = form.commit_fields().and_then(|()| form.payload()).and_then(|payload| {
         if let Some(uid) = &form.transfer {
-            let current = world.get::<View>(owner).unwrap().rows.iter().find(|row| text(row, "uid") == *uid);
+            let current = view.rows.iter().find(|row| text(row, "uid") == *uid);
             if current.is_none_or(|row| row["revision"].as_u64() != form.revision) {
                 return Err("These terms changed. Keep this draft open to copy your changes, or cancel and reopen the current revision".into());
             }
@@ -147,8 +150,14 @@ pub(super) fn submit(world: &mut World, owner: Entity) {
         },
     ) {
         Ok(()) => {
-            world.get_mut::<TransferCastle>(owner).unwrap().form = Some(form.clone());
-            world.get_mut::<View>(owner).unwrap().pending = Some(Pending { id, form });
+            let Ok((mut castle, mut view)) = world
+                .query::<(&mut TransferCastle, &mut View)>()
+                .get_mut(world, owner)
+            else {
+                return;
+            };
+            castle.form = Some(form.clone());
+            view.pending = Some(Pending { id, form });
             status(world, owner, "Submitting…");
         }
         Err(error) => status(world, owner, error),
@@ -156,7 +165,10 @@ pub(super) fn submit(world: &mut World, owner: Entity) {
 }
 
 pub(super) fn stop_location(world: &mut World, owner: Entity, record: String, person: String) {
-    if world.get::<View>(owner).unwrap().pending.is_some() {
+    let Some(view) = world.get::<View>(owner) else {
+        return;
+    };
+    if view.pending.is_some() {
         status(world, owner, "Wait for the current action to finish");
         return;
     }
@@ -178,8 +190,10 @@ pub(super) fn stop_location(world: &mut World, owner: Entity, record: String, pe
         },
     ) {
         Ok(()) => {
-            world.get_mut::<View>(owner).unwrap().pending = Some(Pending { id, form });
-            status(world, owner, "Stopping my location sharing…");
+            if let Some(mut view) = world.get_mut::<View>(owner) {
+                view.pending = Some(Pending { id, form });
+                status(world, owner, "Stopping my location sharing…");
+            }
         }
         Err(error) => status(world, owner, error),
     }
@@ -202,7 +216,9 @@ pub(super) fn receive(
                 let Some((owner, kind)) = world.resource::<Requests>().0.get(id).cloned() else {
                     continue;
                 };
-                if world.get::<View>(owner).is_none() {
+                if world.get::<View>(owner).is_none()
+                    || world.get::<TransferCastle>(owner).is_none()
+                {
                     continue;
                 }
                 ui::capture(world, owner);
@@ -213,7 +229,9 @@ pub(super) fn receive(
                                 nucleus::performance::Span::new("transfer-snapshot-preparation");
                             let context = rows.iter().find(|row| row["kind"] == "transfer_context");
                             let fresh = rows.iter().filter(|row| row["kind"] != "transfer_context");
-                            let view = world.get::<View>(owner).unwrap();
+                            let Some(view) = world.get::<View>(owner) else {
+                                continue;
+                            };
                             if view.ready
                                 && view.rows.iter().eq(fresh.clone())
                                 && context == Some(&view.context)
@@ -229,7 +247,9 @@ pub(super) fn receive(
                             );
                             (context, fresh)
                         };
-                        let mut view = world.get_mut::<View>(owner).unwrap();
+                        let Some(mut view) = world.get_mut::<View>(owner) else {
+                            continue;
+                        };
                         view.ready = context.is_some();
                         let viewer_changed = context.as_ref().map(|context| &context["viewer"])
                             != Some(&view.context["viewer"]);
@@ -268,7 +288,9 @@ pub(super) fn receive(
                         ui::render(world, owner);
                     }
                     "records" | "units" => {
-                        let mut view = world.get_mut::<View>(owner).unwrap();
+                        let Some(mut view) = world.get_mut::<View>(owner) else {
+                            continue;
+                        };
                         if kind == "records" {
                             view.records
                                 .retain(|row| row["transfer_picker_unit"] == true);
@@ -283,10 +305,13 @@ pub(super) fn receive(
                         }
                     }
                     "preview" => {
-                        if world.get::<View>(owner).unwrap().preview_request.as_ref() != Some(&id) {
+                        let Some(mut view) = world.get_mut::<View>(owner) else {
+                            continue;
+                        };
+                        if view.preview_request.as_ref() != Some(&id) {
                             continue;
                         }
-                        world.get_mut::<View>(owner).unwrap().preview = rows.first().cloned();
+                        view.preview = rows.first().cloned();
                         forms::render_preview(world, owner);
                     }
                     _ => {}
@@ -310,19 +335,31 @@ pub(super) fn receive(
                     .map(|(owner, _)| owner);
                 let Some(owner) = owner else { continue };
                 ui::capture(world, owner);
-                let pending = world
-                    .get_mut::<View>(owner)
-                    .unwrap()
+                let Ok((mut view, castle)) = world
+                    .query::<(&mut View, Option<&mut TransferCastle>)>()
+                    .get_mut(world, owner)
+                else {
+                    continue;
+                };
+                if view
                     .pending
-                    .take()
-                    .unwrap();
+                    .as_ref()
+                    .is_none_or(|pending| pending.id != *id)
+                {
+                    continue;
+                }
+                let Some(pending) = view.pending.take() else {
+                    continue;
+                };
+                let Some(mut castle) = castle else {
+                    continue;
+                };
                 let action = if pending.form.step.is_some() {
                     pending.form.mode.as_str()
                 } else {
                     pending.form.data["action"].as_str().unwrap_or_default()
                 };
 
-                let mut castle = world.get_mut::<TransferCastle>(owner).unwrap();
                 if castle.form.as_ref() == Some(&pending.form) {
                     castle.form = None;
                 } else if let Some(form) = &mut castle.form {
@@ -348,7 +385,6 @@ pub(super) fn receive(
                     castle.selected = created.clone();
                 }
                 if action == "transfer-receipt" {
-                    let mut view = world.get_mut::<View>(owner).unwrap();
                     view.receipt_export = data
                         .as_ref()
                         .and_then(|data| data["receipt_export"].as_str())
@@ -364,7 +400,6 @@ pub(super) fn receive(
                 if action == "identity"
                     && let Some(identity) = data.as_ref().and_then(|data| data.get("identity"))
                 {
-                    let mut view = world.get_mut::<View>(owner).unwrap();
                     view.receipt = Some(
                         json!({"state":"identity","document":{"kind":"identity","value":identity}}),
                     );
@@ -373,22 +408,24 @@ pub(super) fn receive(
                 }
                 cancel(world, owner, "preview");
                 refresh(world, owner);
-                if !warnings.is_empty() {
-                    let message = format!("Saved with warnings: {}", warnings.join(" · "));
-                    world.get_mut::<View>(owner).unwrap().notice = Some(message.clone());
-                    status(world, owner, message);
-                } else {
-                    world.get_mut::<View>(owner).unwrap().notice = None;
+                let notice = (!warnings.is_empty())
+                    .then(|| format!("Saved with warnings: {}", warnings.join(" · ")));
+                if let Some(mut view) = world.get_mut::<View>(owner) {
+                    view.notice.clone_from(&notice);
+                }
+                if let Some(notice) = notice {
+                    status(world, owner, notice);
                 }
 
                 if let Some(data) = data.as_ref().map(|data| data.get("trust").unwrap_or(data))
                     && data["kind"] == "supplier_candidates"
+                    && let (Some(castle), Some(view)) =
+                        (world.get::<TransferCastle>(owner), world.get::<View>(owner))
                     && pending.form.actor.as_deref() == Some(person(world, owner).as_str())
                 {
-                    let view = world.get::<View>(owner).unwrap();
                     let matches = SupplierMatches {
                         person: person(world, owner),
-                        transfer: world.get::<TransferCastle>(owner).unwrap().selected.clone(),
+                        transfer: castle.selected.clone(),
                         rows: view.rows.clone(),
                         context: view.context.clone(),
                         data: data.clone(),
@@ -423,7 +460,9 @@ pub(super) fn receive(
                         .0
                         .get(id)
                         .map(|(_, kind)| kind.clone());
-                    let mut view = world.get_mut::<View>(owner).unwrap();
+                    let Some(mut view) = world.get_mut::<View>(owner) else {
+                        continue;
+                    };
                     let receipt_failure = view.pending.as_ref().is_some_and(|pending| {
                         pending.id == *id
                             && matches!(

@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use engine::actions::Action;
 use nucleus::simulation::{
     CheckDefinition, CheckOptions, CheckStatus, Comparison, CoverageKind, Evaluation, FailureMode,

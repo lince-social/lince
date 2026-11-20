@@ -52,6 +52,10 @@ P124 — Complete the source-to-workflow inventory for active interface features
 
 **Implemented, verification pending (2026-11-17):** the former repeated restoration decode finding is closed as coding work. `nucleus/message/restoration` owns exact encoded data and internally derived decoded sizes; the shared final validator reuses only those lengths before the owner is consumed. No global cache, caller-provided trusted size, mutable proof escape or validator bypass is introduced. Integrity checks still precede final metadata/content validation. MESSAGE-RESTORATION-VERIFY in [Overhaul.md](Overhaul.md) owns unrun checks; independent caller protocol validation remains outside this reduction.
 
+**Source inventory complete, 2026-11-20.** [Source ownership](source-ownership.json) assigns seventeen families with a user entry point, data and update owner, workers, persistence, hidden semantics and a prepared selector, source selector or missing oracle. The auditor resolves 74 native startup registrations, 18 Store Sand kinds, 21 Castle Store constructor calls and 90 Laboratory catalogue registrations to those owners. The totals include the conditional registrations documented in the registry. The Park-only host entry points and standard release feature edges are stamped alongside the shared native application.
+
+`performance.py inventory --output PATH` audits the current source. Prepared packaging retains the same ownership report, source-file hashes, checked build revision and any unavailable prepared selectors. The source reconciliation passed. Package and runtime coverage remain unverified. Start the residual attribution with Record/Cell wake and cache reads, main layout/readiness work, and render submission/import ownership. The P86 ranking keeps each earlier observation tied to its own revision and scope.
+
 } r_3XG5M214AQAQKBTADAR44A0MQ0
 
 Extension @park-p124 "lince.controls" {

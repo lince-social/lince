@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use std::sync::atomic::Ordering;
 
 use engine::actions::Action;

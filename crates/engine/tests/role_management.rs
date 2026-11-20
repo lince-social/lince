@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use engine::{Engine, EngineError, actions::Action};
 use serde_json::json;
 

@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use std::collections::BTreeSet;
 
 use engine::access::{self, AccessError, AccessLimits, PreparedChanges, ReadableSets};

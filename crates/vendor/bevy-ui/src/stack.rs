@@ -518,7 +518,7 @@ mod tests {
 
 #[cfg(test)]
 pub(crate) fn reference_ui_stack_system(
-    mut cache: Local<ChildBufferCache>,
+    mut cache: Local<Vec<(Entity, i32)>>,
     mut root_nodes: Local<Vec<(Entity, (i32, i32))>>,
     mut visited_root_nodes: Local<EntityHashSet>,
     mut ui_stack: ResMut<UiStack>,
@@ -536,7 +536,9 @@ pub(crate) fn reference_ui_stack_system(
     ui_stack.uinodes.clear();
     visited_root_nodes.clear();
 
-    for (id, maybe_global_zindex, maybe_zindex) in root_node_query.iter_many(ui_root_nodes.iter()) {
+    for (id, maybe_global_zindex, maybe_zindex) in
+        root_node_query.iter_many(ui_root_nodes.iter()).matched()
+    {
         root_nodes.push((
             id,
             (

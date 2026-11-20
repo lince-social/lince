@@ -60,6 +60,7 @@ use std::{
 
 mod display;
 mod devices;
+mod gles_timing;
 mod power;
 mod pacing;
 mod readiness;
@@ -78,9 +79,23 @@ struct Queued {
     id: OutputId,
     frame: Arc<Completed>,
     scene: Arc<crate::desktop::renderer::Presented>,
+    composition_started: Option<u64>,
     adaptive_sync: Option<bool>,
     color: display::color::Submitted,
     power: power::Frame,
+}
+
+impl Queued {
+    fn trace(&self, event: &str, at: u64, hardware_clock: Option<bool>) {
+        if let (Some(started), Some(render)) = (self.composition_started, self.frame.frame.traced_render) {
+            crate::presentation::frame_trace::record(serde_json::json!({"event":event,
+                "render":render, "output":self.id.0, "composition_started_us":started,
+                "frame":self.frame.sequence,
+                "monotonic_us":at, "hardware_clock":hardware_clock,
+                "sampled_native_render":self.scene.native_render,
+                "native_image_available":self.frame.frame.has_output_image(self.id)}));
+        }
+    }
 }
 
 type Output =
@@ -133,6 +148,7 @@ struct Hardware {
     preview_preferences: display::PreferencePreview,
     outputs: Outputs,
     renderer: GlesRenderer,
+    gles_timing: gles_timing::Timing,
     screens: HashMap<crtc::Handle, Screen>,
     identities: BTreeMap<String, OutputId>,
     next_id: u64,
@@ -208,8 +224,10 @@ pub fn run(
     let fd = DrmDeviceFd::new(DeviceFd::from(fd));
     let (drm, notifier_drm) = DrmDevice::new(fd.clone(), true).map_err(error)?;
     let gbm = GbmDevice::new(fd).map_err(error)?;
+    // SAFETY: Smithay owns this display lifetime and no raw caller terminates it.
     let egl = unsafe { EGLDisplay::new(gbm.clone()) }.map_err(error)?;
     let context = EGLContext::new(&egl).map_err(error)?;
+    // SAFETY: The context was created here and has never been bound to another thread.
     let mut renderer = unsafe { GlesRenderer::new(context) }.map_err(error)?;
     let mut composition = Composition::new(wake.clone())?;
     composition.prepare_color(&mut renderer)?;
@@ -242,6 +260,7 @@ pub fn run(
         preview_preferences: Default::default(),
         outputs,
         renderer,
+        gles_timing: gles_timing::Timing::default(),
         screens: HashMap::new(),
         identities: BTreeMap::new(),
         next_id: 1,
@@ -384,6 +403,7 @@ pub fn run(
                                 let current = queued.power.current(&desktop.server, screen.id, screen.power.epoch)
                                     && queued.scene.locked == desktop.server.locked();
                                 if current {
+                                    queued.trace("presented", crate::presentation::frame_trace::micros(presentation_time), Some(hardware_clock));
                                     display::observe_adaptive_sync(hardware.outputs.device(), crtc, &mut screen.adaptive_sync, queued.adaptive_sync);
                                     desktop.server.output_adaptive_sync(screen.id, screen.adaptive_sync.clone());
                                     if display::color::observe(hardware.outputs.device(), screen, &queued.color) {
@@ -801,11 +821,23 @@ impl Hardware {
                 screen.texture = Some(self.renderer.create_buffer(format, size.into()).map_err(error)?);
             }
             let texture = screen.texture.as_mut().unwrap();
-            let presented = {
+            let composition_started = (completed.frame.traced_render.is_some() && !desktop.server.locked())
+                .then(crate::presentation::frame_trace::timestamp);
+            let gpu_sample = composition_started.zip(completed.frame.traced_render)
+                .and_then(|(started, render)| self.gles_timing.begin(&mut self.renderer, render, screen.id.0, started));
+            let host_started = composition_started.map(|_| crate::presentation::frame_trace::timestamp());
+            let owner_started = composition_started.map(|_| crate::presentation::frame_trace::owner_cpu_timestamp());
+            let rendered_scene = (|| {
                 let mut target = self.renderer.bind(texture).map_err(error)?;
-                composition.render_output(&mut self.renderer, &mut target, viewport, &mut desktop.server, Some(completed.as_ref()), desktop.pointer, screen.color.output())?
+                composition.render_output(&mut self.renderer, &mut target, viewport, &mut desktop.server, Some(completed.as_ref()), desktop.pointer, screen.color.output())
+            })();
+            let presented = match rendered_scene {
+                Ok(presented) => Arc::new(presented),
+                Err(failure) => {
+                    if let Some(sample) = gpu_sample { self.gles_timing.cancel(&mut self.renderer, sample); }
+                    return Err(failure);
+                }
             };
-            let presented = Arc::new(presented);
             let element = crate::desktop::renderer::output_element(&self.renderer, texture.clone(), viewport.raster.scale[0]);
             let elements = [element];
             let frame = screen
@@ -816,7 +848,31 @@ impl Hardware {
                     smithay::backend::renderer::Color32F::BLACK,
                     FrameFlags::empty(),
                 )
-                .map_err(error)?;
+                .map_err(error);
+            let host_returned = host_started.map(|_| crate::presentation::frame_trace::timestamp());
+            let owner_cpu_us = owner_started.map(|started|
+                crate::presentation::frame_trace::owner_cpu_timestamp().saturating_sub(started));
+            let mut hardware_query_queued = false;
+            if let Some(sample) = gpu_sample {
+                if frame.is_ok() {
+                    hardware_query_queued = self.gles_timing.end(&mut self.renderer, sample);
+                } else {
+                    self.gles_timing.cancel(&mut self.renderer, sample);
+                }
+            }
+            let frame = frame?;
+            if let (Some((started, render)), Some((host_started, host_returned))) =
+                (composition_started.zip(completed.frame.traced_render), host_started.zip(host_returned))
+            {
+                crate::presentation::frame_trace::record(serde_json::json!({"event":"gles-host-return",
+                    "render":render, "output":screen.id.0, "composition_started_us":started,
+                    "frame":completed.sequence, "started_us":host_started,
+                    "monotonic_us":host_returned, "damaged":!frame.is_empty,
+                    "owner_cpu_us":owner_cpu_us,
+                    "hardware_query_queued":hardware_query_queued,
+                    "sampled_native_render":presented.native_render,
+                    "native_image_available":completed.frame.has_output_image(screen.id)}));
+            }
             if !frame.is_empty {
                 screen.pacing.cancel();
                 let needs_sync = frame.needs_sync();
@@ -831,6 +887,7 @@ impl Hardware {
                         id: screen.id,
                         frame: completed.clone(),
                         scene: presented.clone(),
+                        composition_started,
                         adaptive_sync: screen.adaptive_sync.prepared,
                         color: screen.color.submitted(),
                         power: power::Frame::capture(&desktop.server, screen.id, screen.power.epoch)
@@ -852,6 +909,9 @@ impl Hardware {
                     let watch = composition.watch(sync.clone())?;
                     screen.prepared = Some(Prepared { frame: queued, sync, _watch: watch });
                 } else {
+                    if queued.composition_started.is_some() {
+                        queued.trace("queue-attempt", crate::presentation::frame_trace::timestamp(), None);
+                    }
                     screen.output.queue_frame(queued).map_err(error)?;
                     presented.submitted(&mut desktop.server, Some(screen.id));
                 }
@@ -864,6 +924,7 @@ impl Hardware {
                 {
                     screen.pacing.defer(Instant::now(), Queued {
                         id: screen.id, frame: completed.clone(), scene: presented,
+                        composition_started: None,
                         adaptive_sync: None, color: screen.color.submitted(), power,
                     });
                     lince_interface::host::performance::count(lince_interface::host::performance::Count::UnchangedFrameDeferred);
@@ -923,6 +984,9 @@ impl Hardware {
             if screen.prepared.as_ref().is_some_and(|prepared| prepared.sync.is_reached()) {
                 let prepared = screen.prepared.take().unwrap();
                 let scene = prepared.frame.scene.clone();
+                if prepared.frame.composition_started.is_some() {
+                    prepared.frame.trace("fence-ready-queue-attempt", crate::presentation::frame_trace::timestamp(), None);
+                }
                 if let Err(failure) = screen.output.queue_frame(prepared.frame) {
                     screen.pending = false;
                     return Err(error(failure));

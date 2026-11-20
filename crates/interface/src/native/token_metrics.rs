@@ -299,6 +299,10 @@ pub(crate) fn layout(
     }
 }
 
+#[allow(
+    clippy::unwrap_used,
+    reason = "Laboratory metric fixtures must fail when expected nodes or layout state are missing"
+)]
 pub(crate) mod tests {
     use super::*;
     use crate::native::tokens::{ThemeSettings, TokenValue};

@@ -45,10 +45,11 @@ impl SavedTransferCastle {
             self.castle,
         );
         let size = Vec2::from_array(self.size);
-        world
-            .get_mut::<crate::native::canvas::CanvasItem>(entity)
-            .unwrap()
-            .size = size;
+        let Some(mut item) = world.get_mut::<crate::native::canvas::CanvasItem>(entity) else {
+            world.despawn(entity);
+            return;
+        };
+        item.size = size;
         self.placement.restore(world, entity);
         world
             .entity_mut(entity)
@@ -56,7 +57,7 @@ impl SavedTransferCastle {
     }
 }
 
-pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedTransferCastle> {
+pub(crate) fn snapshot(world: &mut World, root: Entity) -> Result<Vec<SavedTransferCastle>, String> {
     world
         .query::<(
             Entity,
@@ -67,19 +68,21 @@ pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedTransferCast
         )>()
         .iter(world)
         .filter(|(_, parent, _, _, _)| parent.parent() == root)
-        .map(|(entity, _, member, item, castle)| SavedTransferCastle {
-            workspace: member.0,
-            castle: {
-                let mut saved = castle.clone();
-                if saved.form.as_ref().is_some_and(|form| form.step.is_none()) {
-                    saved.form = None;
-                }
-                saved
-            },
-            position: item.position.to_array(),
-            size: item.size.to_array(),
-            placement: crate::native::sand_placement::Placement::capture(world, entity),
-            tokens: crate::native::token_style::overrides(world, entity),
+        .map(|(entity, _, member, item, castle)| {
+            Ok(SavedTransferCastle {
+                workspace: member.0,
+                castle: {
+                    let mut saved = castle.clone();
+                    if saved.form.as_ref().is_some_and(|form| form.step.is_none()) {
+                        saved.form = None;
+                    }
+                    saved
+                },
+                position: item.position.to_array(),
+                size: item.size.to_array(),
+                placement: crate::native::sand_placement::Placement::capture(world, entity)?,
+                tokens: crate::native::token_style::overrides(world, entity),
+            })
         })
         .collect()
 }

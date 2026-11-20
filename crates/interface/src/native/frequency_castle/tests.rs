@@ -420,7 +420,7 @@ fn drafts_stay_first_survive_live_updates_and_persist() {
     app.world_mut().get_mut::<View>(owner).unwrap().rows = vec![frequency(&draft())].into();
     ui::render_list(app.world_mut(), owner);
     assert!(app.world().get_entity(editor).is_ok());
-    let saved = snapshot(app.world_mut(), root);
+    let saved = snapshot(app.world_mut(), root).expect("capture the fixture snapshots");
     assert_eq!(saved.len(), 1);
     assert!(saved[0].valid());
     let encoded = serde_json::to_string(&saved).unwrap();

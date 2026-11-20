@@ -193,7 +193,11 @@ pub fn highlight(text: &str, language: &str) -> Vec<(Range<usize>, Style)> {
             )
             .then_some(Style::Keyword)
         } else {
-            cursor += rest.chars().next().unwrap().len_utf8();
+            cursor += rest
+                .chars()
+                .next()
+                .expect("the highlight cursor is before the end of the line")
+                .len_utf8();
             None
         };
         if let Some(style) = style {

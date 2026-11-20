@@ -12,6 +12,10 @@ use std::{
     sync::Arc,
 };
 
+#[allow(
+    clippy::unwrap_used,
+    reason = "Area effect Laboratory fixtures must fail when the expected systems, materials, or entities are missing"
+)]
 pub(crate) mod tests;
 pub(crate) mod ui;
 pub(crate) use ui::controls;

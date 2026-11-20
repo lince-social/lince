@@ -23,7 +23,7 @@ impl LaneHub {
     }
 
     pub fn join(&self, room: &str) -> broadcast::Receiver<LaneEvent> {
-        let mut rooms = self.rooms.lock().unwrap();
+        let mut rooms = self.rooms.lock().expect("the Lane room registry must be intact");
         rooms
             .entry(room.to_string())
             .or_insert_with(|| broadcast::channel(256).0)
@@ -31,7 +31,7 @@ impl LaneHub {
     }
 
     pub fn send(&self, event: LaneEvent) -> usize {
-        let rooms = self.rooms.lock().unwrap();
+        let rooms = self.rooms.lock().expect("the Lane room registry must be intact");
         rooms
             .get(&event.room)
             .map(|tx| tx.send(event).unwrap_or(0))
@@ -39,7 +39,7 @@ impl LaneHub {
     }
 
     pub fn prune(&self, room: &str) {
-        let mut rooms = self.rooms.lock().unwrap();
+        let mut rooms = self.rooms.lock().expect("the Lane room registry must be intact");
         if let Some(tx) = rooms.get(room) {
             if tx.receiver_count() == 0 {
                 rooms.remove(room);

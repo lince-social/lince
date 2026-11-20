@@ -10,7 +10,7 @@ use std::{
         atomic::{AtomicBool, AtomicU64, Ordering},
         mpsc::{SyncSender, sync_channel},
     },
-    time::{Duration, Instant},
+    time::{Duration, Instant, SystemTime},
 };
 
 const LIMITS_US: [u64; 32] = [
@@ -1197,6 +1197,14 @@ counts! {
     CanvasExplicitWake => "native-explicit-wake-requests",
     NativeWake => "native-interface-wake-requests",
     NativeInlineWake => "native-worker-issued-interface-wakes",
+    NativeWakeCoalesced => "native-wake-already-pending",
+    SceneWakeCoalesced => "scene-wake-already-pending",
+    NativeUpdateInitial => "native-full-update-initial",
+    NativeUpdateWake => "native-full-update-with-wake",
+    NativeUpdateScene => "native-full-update-with-scene",
+    NativeUpdateInput => "native-full-update-with-input",
+    NativeUpdateImport => "native-full-update-with-import-readiness",
+    NativeUpdateUnavailable => "native-frame-attempt-without-exportable-frame",
     TimerScheduled => "native-timers-scheduled",
     TimerFired => "native-timers-fired",
     CellMessageWake => "cell-message-wake-requests",
@@ -2251,6 +2259,10 @@ pub struct Report {
     pub counter_catalog: Vec<&'static str>,
     pub histogram_limits_us: &'static [u64],
     pub process: u32,
+    pub capture_started_unix_ns: String,
+    pub revision: &'static str,
+    pub optimized: bool,
+    pub workload: Option<&'static str>,
     pub phase: &'static str,
     pub sequence: u64,
     pub window_started_us: u64,
@@ -2271,6 +2283,10 @@ pub struct Report {
     pub counters: Vec<CountReading>,
     pub input_trace: Vec<InputTrace>,
     pub dropped_input_trace: u64,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub park_frames: Vec<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dropped_park_frames: Option<u64>,
 }
 
 #[derive(Clone, Copy, Debug, Serialize)]
@@ -2341,6 +2357,7 @@ pub fn thread_id() -> u64 {
 }
 
 const INPUT_TRACE_LIMIT: usize = 1024;
+const PARK_FRAME_TRACE_LIMIT: usize = 1024;
 
 #[derive(Serialize)]
 pub struct CountReading {
@@ -2360,14 +2377,18 @@ struct Monitor {
     flushing: Mutex<()>,
     finalized: AtomicBool,
     phase: AtomicU64,
+    workload: Mutex<Option<&'static str>>,
     outputs: Mutex<BTreeMap<u64, Output>>,
     started: Instant,
+    capture_started_unix_ns: String,
     reported_at_us: AtomicU64,
     dropped_reports: AtomicU64,
     sender: Option<SyncSender<Report>>,
     counters: Vec<AtomicU64>,
     input_trace: ArrayQueue<InputTrace>,
     dropped_input_trace: AtomicU64,
+    park_frames: Option<ArrayQueue<serde_json::Value>>,
+    dropped_park_frames: AtomicU64,
 }
 
 impl Monitor {
@@ -2424,13 +2445,22 @@ impl Monitor {
             flushing: Mutex::new(()),
             finalized: AtomicBool::new(false),
             phase: AtomicU64::new(0),
+            workload: Mutex::new(None),
             started: Instant::now(),
+            capture_started_unix_ns: SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_nanos()
+                .to_string(),
             reported_at_us: AtomicU64::new(0),
             dropped_reports: AtomicU64::new(0),
             sender,
             counters: Count::ALL.iter().map(|_| AtomicU64::new(0)).collect(),
             input_trace: ArrayQueue::new(INPUT_TRACE_LIMIT),
             dropped_input_trace: AtomicU64::new(0),
+            park_frames: std::env::var_os("LINCE_PARK_TRACE_FRAMES")
+                .map(|_| ArrayQueue::new(PARK_FRAME_TRACE_LIMIT)),
+            dropped_park_frames: AtomicU64::new(0),
         }
     }
 
@@ -2573,6 +2603,10 @@ impl Monitor {
             histogram_limits_us: &LIMITS_US,
             counter_catalog: Count::ALL.iter().map(|counter| counter.label()).collect(),
             process: std::process::id(),
+            capture_started_unix_ns: self.capture_started_unix_ns.clone(),
+            revision: utils::build_info::revision(),
+            optimized: !cfg!(debug_assertions),
+            workload: *self.workload.lock().unwrap_or_else(|error| error.into_inner()),
             phase: Phase::ALL[self.phase.load(Ordering::Relaxed) as usize].label(),
             sequence: self.sequence.fetch_add(1, Ordering::Relaxed) + 1,
             window_started_us: began,
@@ -2605,6 +2639,10 @@ impl Monitor {
                 .take(INPUT_TRACE_LIMIT)
                 .collect(),
             dropped_input_trace: self.dropped_input_trace.swap(0, Ordering::Relaxed),
+            park_frames: self.park_frames.as_ref().map(|queue| {
+                std::iter::from_fn(|| queue.pop()).take(PARK_FRAME_TRACE_LIMIT).collect()
+            }).unwrap_or_default(),
+            dropped_park_frames: self.park_frames.as_ref().map(|_| self.dropped_park_frames.swap(0, Ordering::Relaxed)),
         }
     }
 
@@ -2871,7 +2909,36 @@ pub fn record_system(name: &str, wall: Duration, cpu: Duration, exclusive_cpu: D
     }
 }
 
+pub fn record_park_frame(mut sample: serde_json::Value) -> Result<(), serde_json::Value> {
+    let Some(monitor) = monitor() else {
+        return Err(sample);
+    };
+    let Some(queue) = &monitor.park_frames else {
+        return Err(sample);
+    };
+    if monitor.finalized.load(Ordering::Acquire) {
+        return Ok(());
+    }
+    if sample["event"] == "render-start" {
+        let workload = monitor.workload.lock().unwrap_or_else(|error| error.into_inner());
+        sample["workload"] = serde_json::json!(*workload);
+        sample["phase"] = Phase::ALL[monitor.phase.load(Ordering::Relaxed) as usize].label().into();
+    }
+    if queue.push(sample).is_err() {
+        monitor.dropped_park_frames.fetch_add(1, Ordering::Relaxed);
+    }
+    Ok(())
+}
+
 pub fn set_phase(phase: Phase) {
+    set_context(phase, None);
+}
+
+pub fn set_workload(workload: &'static str, phase: Phase) {
+    set_context(phase, Some(workload));
+}
+
+fn set_context(phase: Phase, workload: Option<&'static str>) {
     if let Some(monitor) = monitor() {
         let _flushing = monitor
             .flushing
@@ -2884,6 +2951,10 @@ pub fn set_phase(phase: Phase) {
             && sender.try_send(monitor.snapshot()).is_err()
         {
             monitor.dropped_reports.fetch_add(1, Ordering::Relaxed);
+        }
+        let mut current_workload = monitor.workload.lock().unwrap_or_else(|error| error.into_inner());
+        if let Some(workload) = workload {
+            *current_workload = Some(workload);
         }
         monitor.phase.store(phase as u64, Ordering::Relaxed);
     }

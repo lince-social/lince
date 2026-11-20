@@ -1308,6 +1308,8 @@ pub enum Action {
         head: String,
         configuration: nucleus::command::Command,
         host: Option<String>,
+        #[serde(default)]
+        unlimited: bool,
     },
     RunKarmaCommand {
         command: String,
@@ -3863,22 +3865,21 @@ impl Engine {
                 if !access.description {
                     revised.description = previous.description;
                 }
-                input.item = Some(revised);
                 if !access.quantity {
                     input.delta = existing.delta;
                     input.unit = existing.unit_uid.clone();
-                    input.party = input
-                        .item
+                    input.party = revised
+                        .exchange
                         .as_ref()
-                        .and_then(|item| item.exchange.as_ref())
                         .map(|exchange| exchange.owner(existing.delta).to_string())
                         .or_else(|| existing.party_uid.clone());
                 }
                 if !access.parties {
-                    input.item.as_mut().unwrap().exchange = previous.exchange;
+                    revised.exchange = previous.exchange;
                     input.party = existing.party_uid.clone();
                     input.open = existing.state == PromiseState::Open;
                 }
+                input.item = Some(revised);
                 if !access.location {
                     input.place = existing.location.as_ref().map(|place| TransferPlaceInput {
                         lat: place.lat,

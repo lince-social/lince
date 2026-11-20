@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use engine::{
     actions::Action as Backend,
     custom_component::{FORMAT, MAX_BYTES},

@@ -294,6 +294,45 @@ pub(super) fn app() -> App {
     app
 }
 
+#[test]
+fn late_action_reply_clears_pending_state_for_a_removed_transfer() {
+    let mut app = app();
+    let world = app.world_mut();
+    let root = world.spawn(crate::native::workspace::Workspaces::default()).id();
+    let owner = spawn(world, root, 1, DVec2::ZERO, TransferCastle::default());
+    world.get_mut::<View>(owner).unwrap().pending = Some(Pending {
+        id: "closing-transfer".into(),
+        form: Form::action("Fixture draft", json!({"action":"create-transfer-draft"})),
+    });
+    world.entity_mut(owner).remove::<TransferCastle>();
+    world.write_message(CellMessage::new(cell::ServerMessage::ActionOk {
+        id: "closing-transfer".into(),
+        created: Some(nucleus::new_uid("r")),
+        facts: 0,
+        warnings: vec![],
+        data: None,
+    }));
+
+    world.run_system_cached(runtime::receive).unwrap();
+
+    assert!(world.get::<View>(owner).unwrap().pending.is_none());
+}
+
+#[test]
+fn record_command_ignores_a_detached_transfer() {
+    let mut app = app();
+    let world = app.world_mut();
+    let root = world
+        .spawn(crate::native::workspace::Workspaces::default())
+        .id();
+    let owner = spawn(world, root, 1, DVec2::ZERO, TransferCastle::default());
+    world.entity_mut(owner).remove::<ChildOf>();
+
+    ui::Command::Record(nucleus::new_uid("r")).apply(world, owner);
+
+    assert!(world.get::<TransferCastle>(owner).is_some());
+}
+
 #[cfg_attr(test, test)]
 fn native_inbox_forms_live_snapshots_and_workspace_roundtrip() {
     let mut app = app();
@@ -363,7 +402,7 @@ fn native_inbox_forms_live_snapshots_and_workspace_roundtrip() {
             .all(|field| !field.path.starts_with("/promises/1/"))
     );
     assert!(form.payload().is_ok());
-    let saved = snapshot(app.world_mut(), root);
+    let saved = snapshot(app.world_mut(), root).expect("capture the fixture snapshots");
     assert_eq!(saved.len(), 1);
     assert!(saved[0].valid());
     let encoded = serde_json::to_string(&saved).unwrap();

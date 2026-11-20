@@ -76,7 +76,9 @@ async fn prepare_isolated_native_release_laboratory_data() {
 
     let destination = PathBuf::from(std::env::var_os("LINCE_FIOTE_RELEASE_DATA").unwrap());
     assert!(destination.is_absolute() && !destination.exists());
-    let (mut settings, credential) = existing_connection().await;
+    let (mut settings, credential) = existing_connection()
+        .await
+        .expect("valid native live-test configuration");
     assert!(fiote::communication::native::has_native_login(&settings));
     let account = fiote::communication::auth::Account::decode(&credential).unwrap();
     assert!(account.refresh_token.0.is_empty());
@@ -159,7 +161,9 @@ async fn completed(host: &Host, id: &str) -> fiote::assistant::EntryReceipt {
 #[tokio::test]
 #[ignore = "Consumes native provider usage; requires explicit owner connection environment variables; frozen public speech classifications use no tools"]
 async fn actual_native_provider_classifies_the_frozen_followup_corpus_without_tools_or_actions() {
-    let (settings, key) = existing_connection().await;
+    let (settings, key) = existing_connection()
+        .await
+        .expect("valid native live-test configuration");
     let provider = fiote::communication::native::provider(&settings, &key, None, None).unwrap();
     let inputs: Vec<fiote::communication::decision::Input> = serde_json::from_str(include_str!(
         "../../../../fiote/tests/fixtures/decision-followup-heldout.json"
@@ -202,7 +206,9 @@ async fn actual_native_provider_classifies_the_frozen_followup_corpus_without_to
 #[tokio::test]
 #[ignore = "Consumes native provider usage; requires explicit owner connection environment variables; two isolated Fiotes delegate a disposable file task"]
 async fn actual_native_parent_discovers_a_coding_child_and_delegates_a_verified_file_action() {
-    let (mut settings, key) = existing_connection().await;
+    let (mut settings, key) = existing_connection()
+        .await
+        .expect("valid native live-test configuration");
     let (host, _, root, _, _) = fixture(false).await;
     let parent = host.intake_selection().await.unwrap().unwrap().record;
     let workspace = root.path().join("workspace");
@@ -324,7 +330,9 @@ async fn actual_native_parent_discovers_a_coding_child_and_delegates_a_verified_
 #[ignore = "Consumes native provider usage; requires explicit LINCE_FIOTE_TEST_DATA, and RECORD; owner database is read-only and refresh credentials are excluded"]
 async fn actual_native_provider_creates_a_file_continues_the_thread_and_classifies_closing_speech_without_actions()
  {
-    let (mut settings, key) = existing_connection().await;
+    let (mut settings, key) = existing_connection()
+        .await
+        .expect("valid native live-test configuration");
     let (host, _script, root, record, _) = fixture(false).await;
     let workspace = root.path().join("workspace");
     std::fs::create_dir(&workspace).unwrap();

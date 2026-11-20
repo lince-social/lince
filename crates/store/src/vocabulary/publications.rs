@@ -361,7 +361,14 @@ pub async fn collection_details(pool: &SqlitePool) -> Result<HashMap<String, Val
         let entry = details
             .entry(row.get("vocabulary_uid"))
             .or_insert_with(|| json!({"publications":[],"organs":[]}));
-        entry["publications"].as_array_mut().unwrap().push(json!({"uid":row.get::<String,_>("uid"),"revision":row.get::<i64,_>("revision"),"withdrawn":row.get::<bool,_>("withdrawn")}));
+        entry["publications"]
+            .as_array_mut()
+            .expect("publication summaries are initialized as an array")
+            .push(json!({
+                "uid": row.get::<String, _>("uid"),
+                "revision": row.get::<i64, _>("revision"),
+                "withdrawn": row.get::<bool, _>("withdrawn"),
+            }));
     }
     for row in sqlx::query("SELECT * FROM organ_vocabulary")
         .fetch_all(pool)
@@ -370,7 +377,13 @@ pub async fn collection_details(pool: &SqlitePool) -> Result<HashMap<String, Val
         let entry = details
             .entry(row.get("vocabulary_uid"))
             .or_insert_with(|| json!({"publications":[],"organs":[]}));
-        entry["organs"].as_array_mut().unwrap().push(json!({"uid":row.get::<String,_>("organ_uid"),"publication":row.get::<Option<String>,_>("publication_uid")}));
+        entry["organs"]
+            .as_array_mut()
+            .expect("organ summaries are initialized as an array")
+            .push(json!({
+                "uid": row.get::<String, _>("organ_uid"),
+                "publication": row.get::<Option<String>, _>("publication_uid"),
+            }));
     }
     Ok(details)
 }

@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use nucleus::simulation::{ReplayStatus, Verdict};
 
 #[test]

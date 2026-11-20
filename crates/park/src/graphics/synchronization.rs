@@ -8,7 +8,10 @@ pub(super) struct Event {
 }
 
 impl Drop for Event {
-    fn drop(&mut self) { unsafe { self.device.destroy_event(self.event, None); } }
+    fn drop(&mut self) {
+        // SAFETY: The last Arc goes away after the signal thread and any queued wait finish.
+        unsafe { self.device.destroy_event(self.event, None); }
+    }
 }
 
 struct Retained(Arc<AtomicBool>);
@@ -23,6 +26,7 @@ pub fn probe() -> Result<()> {
     renderer.clear(warm, wgpu::Color::BLACK)?.wait_for_probe()?;
     let image = renderer.create_shared_image(64, 32)?;
     let event = Arc::new(Event {
+        // SAFETY: The renderer owns the live device and the event keeps it alive.
         event: unsafe { renderer.raw_device.create_event(&vk::EventCreateInfo::default(), None) }
             .map_err(|error| ProbeFailure::at("synchronization_event", error))?,
         device: renderer.raw_device.clone(),
@@ -32,11 +36,16 @@ pub fn probe() -> Result<()> {
     let (release, gate) = std::sync::mpsc::sync_channel(1);
     let signal = std::thread::spawn(move || {
         let _ = gate.recv_timeout(Duration::from_secs(2));
+        // SAFETY: This thread is the only host writer and owns an Arc to the live event.
         unsafe { fence.device.set_event(fence.event) }
     });
     let started = Instant::now();
-    renderer.submit_raw("synchronization_delay", |command| unsafe {
-        renderer.raw_device.cmd_wait_events(command, &[event.event], vk::PipelineStageFlags::HOST, vk::PipelineStageFlags::ALL_COMMANDS, &[], &[], &[]);
+    renderer.submit_raw("synchronization_delay", |command| {
+        // SAFETY: The recording command buffer and host-signaled event share a device.
+        // The queue retains the event until the submission completes.
+        unsafe {
+            renderer.raw_device.cmd_wait_events(command, &[event.event], vk::PipelineStageFlags::HOST, vk::PipelineStageFlags::ALL_COMMANDS, &[], &[], &[]);
+        }
     })?;
     renderer.retain(event);
     let released = Arc::new(AtomicBool::new(false));

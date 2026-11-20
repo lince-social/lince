@@ -21,7 +21,13 @@ enum Navigate {
 impl Action for Navigate {
     fn apply(&self, world: &mut World, owner: Entity) {
         ui::capture(world, owner);
-        if world.get::<TransferCastle>(owner).unwrap().form.is_some() {
+        if world.get::<View>(owner).is_none() {
+            return;
+        }
+        let Some(mut castle) = world.get_mut::<TransferCastle>(owner) else {
+            return;
+        };
+        if castle.form.is_some() {
             status(
                 world,
                 owner,
@@ -31,35 +37,21 @@ impl Action for Navigate {
         }
         match self {
             Self::Back => {
-                if let Some(selection) = world
-                    .get_mut::<TransferCastle>(owner)
-                    .unwrap()
-                    .workflow
-                    .back()
-                {
-                    world.get_mut::<TransferCastle>(owner).unwrap().selected = selection;
+                if let Some(selection) = castle.workflow.back() {
+                    castle.selected = selection;
                 }
             }
-            Self::Panel(panel) => {
-                world
-                    .get_mut::<TransferCastle>(owner)
-                    .unwrap()
-                    .workflow
-                    .panel = *panel
-            }
+            Self::Panel(panel) => castle.workflow.panel = *panel,
             Self::Select(uid) => {
-                let mut castle = world.get_mut::<TransferCastle>(owner).unwrap();
                 castle.workflow.select(uid);
                 castle.selected = uid.clone();
             }
             Self::History => {
-                let mut castle = world.get_mut::<TransferCastle>(owner).unwrap();
                 castle.workflow.history = !castle.workflow.history;
                 castle.workflow.panel = Panel::List;
                 castle.workflow.page = 0;
             }
             Self::Page(delta) => {
-                let mut castle = world.get_mut::<TransferCastle>(owner).unwrap();
                 castle.workflow.page = castle.workflow.page.saturating_add_signed(*delta);
             }
             Self::Stop => {
@@ -78,11 +70,11 @@ fn button(world: &mut World, parent: Entity, owner: Entity, label: &str, action:
     crate::native::sand_panel::button(world, parent, owner, label, action);
 }
 
-pub(super) fn scope(world: &World, owner: Entity) -> String {
+pub(super) fn scope(world: &World, owner: Entity, view: &View) -> String {
     format!(
         "{}:{}:{}",
         crate::native::practice_cells::source(world, owner).unwrap_or_default(),
-        text(&world.get::<View>(owner).unwrap().context, "organ"),
+        text(&view.context, "organ"),
         person(world, owner)
     )
 }
@@ -96,90 +88,97 @@ fn display(world: &mut World, entity: Entity, display: Display) {
 }
 
 pub(super) fn render(world: &mut World, owner: Entity) -> bool {
+    let (Some(castle), Some(view)) = (world.get::<TransferCastle>(owner), world.get::<View>(owner))
+    else {
+        return false;
+    };
     let person = person(world, owner);
-    let scope = scope(world, owner);
-    let previous = world
-        .get::<TransferCastle>(owner)
-        .unwrap()
-        .workflow
-        .workflow;
-    let scoped = world.get::<View>(owner).unwrap().context["viewer"].is_object();
-    if scoped
-        && previous == Workflow::Transport
-        && !world
-            .get::<TransferCastle>(owner)
-            .unwrap()
-            .workflow
-            .matches_scope(&scope)
-    {
-        world.get_mut::<TransferCastle>(owner).unwrap().form = None;
-        runtime::cancel(world, owner, "preview");
-        world.entity_mut(owner).remove::<SupplierMatches>();
-        let mut view = world.get_mut::<View>(owner).unwrap();
-        view.pending = None;
-        view.preview = None;
-        view.preview_request = None;
-        view.disclosure_preview = None;
-        view.notice = None;
-        view.receipt = None;
-        view.receipt_list = Value::Null;
-        view.receipt_export = None;
-        view.receipt_file_job = None;
+    let scope = scope(world, owner, view);
+    let previous = castle.workflow.workflow;
+    if view.context["viewer"].is_object() && !castle.workflow.matches_scope(&scope) {
+        let Ok((mut castle, mut view)) = world
+            .query::<(&mut TransferCastle, &mut View)>()
+            .get_mut(world, owner)
+        else {
+            return false;
+        };
+        castle.workflow.scope(&scope);
+        if previous == Workflow::Transport {
+            castle.form = None;
+            view.pending = None;
+            view.preview = None;
+            view.preview_request = None;
+            view.disclosure_preview = None;
+            view.notice = None;
+            view.receipt = None;
+            view.receipt_list = Value::Null;
+            view.receipt_export = None;
+            view.receipt_file_job = None;
+            runtime::cancel(world, owner, "preview");
+            world.entity_mut(owner).remove::<SupplierMatches>();
+        }
     }
-    if scoped
-        && !world
-            .get::<TransferCastle>(owner)
-            .unwrap()
-            .workflow
-            .matches_scope(&scope)
-    {
-        world
-            .get_mut::<TransferCastle>(owner)
-            .unwrap()
-            .workflow
-            .scope(&scope);
-    }
-    let active = world
-        .get::<TransferCastle>(owner)
-        .unwrap()
-        .workflow
-        .workflow
-        == Workflow::Transport;
-    let view = world.get::<View>(owner).unwrap();
+    let (Some(castle), Some(view)) = (world.get::<TransferCastle>(owner), world.get::<View>(owner))
+    else {
+        return false;
+    };
+    let active = castle.workflow.workflow == Workflow::Transport;
+    let body = world.get::<ChildOf>(view.list).map(ChildOf::parent);
     let (header, controls, summary, body, existing) = (
         view.header,
         view.controls,
         view.summary,
-        world.get::<ChildOf>(view.list).unwrap().parent(),
+        body,
         view.transport,
     );
-    for entity in [header, controls, summary, body] {
+    let active_state = active.then(|| {
+        (
+            castle.workflow.clone(),
+            castle.selected.clone(),
+            castle.form.is_some(),
+        )
+    });
+    for entity in [header, controls, summary].into_iter().chain(body) {
         display(
             world,
             entity,
             if active { Display::None } else { Display::Flex },
         );
     }
-    if !active {
+    let Some((workflow, selected, has_form)) = active_state else {
         if let Some(entity) = existing {
             if previous == Workflow::Transport {
                 world.despawn(entity);
-                world.get_mut::<View>(owner).unwrap().transport = None;
+                if let Some(mut view) = world.get_mut::<View>(owner) {
+                    view.transport = None;
+                }
             } else {
                 display(world, entity, Display::None);
             }
         }
         return false;
-    }
-    let castle = world.get::<TransferCastle>(owner).unwrap();
-    let workflow = castle.workflow.clone();
-    let selected = castle.selected.clone();
-    let has_form = castle.form.is_some();
-    let root = existing.unwrap_or_else(|| {
+    };
+    let retained = existing.filter(|&root| {
+        world.get::<Surface>(root).is_some_and(|surface| {
+            world
+                .get::<crate::native::map_castle::MapSand>(surface.map)
+                .is_some()
+                && world.get::<Node>(surface.controls).is_some()
+                && world.get::<Node>(surface.panel).is_some()
+        })
+    });
+    let root = if let Some(root) = retained {
+        root
+    } else {
+        if let Some(stale) = existing {
+            world.despawn(stale);
+        }
         let root = ui::stack(world, owner);
-        world.get_mut::<Node>(root).unwrap().flex_grow = 1.0;
-        world.get_mut::<Node>(root).unwrap().min_height = px(0);
-        world.get_mut::<Node>(root).unwrap().overflow = Overflow::clip();
+        if let Some(mut node) = world.get_mut::<Node>(root) {
+            node.flex_grow = 1.0;
+            node.min_height = px(0);
+            node.overflow = Overflow::clip();
+        }
         let map = crate::native::map_castle::mount(
             world,
             root,
@@ -223,9 +222,13 @@ pub(super) fn render(world: &mut World, owner: Entity) -> bool {
             controls,
             panel,
         });
-        world.get_mut::<View>(owner).unwrap().transport = Some(root);
+        let Some(mut view) = world.get_mut::<View>(owner) else {
+            world.despawn(root);
+            return true;
+        };
+        view.transport = Some(root);
         root
-    });
+    };
     display(
         world,
         root,
@@ -235,12 +238,17 @@ pub(super) fn render(world: &mut World, owner: Entity) -> bool {
             Display::Flex
         },
     );
-    let surface = world.get::<Surface>(root).unwrap();
+    let Some(surface) = world.get::<Surface>(root) else {
+        return true;
+    };
     let (map, controls, panel) = (surface.map, surface.controls, surface.panel);
     ui::clear(world, panel);
     let (chosen, page, total, titles) = {
         let _span = nucleus::performance::Span::new("transfer-page-preparation");
-        let rows = &world.get::<View>(owner).unwrap().rows;
+        let Some(view) = world.get::<View>(owner) else {
+            return true;
+        };
+        let rows = &view.rows;
         let explicit = rows.iter().find(|row| {
             model::display_ref(&row["uid"]) == selected && model::workspace::is_transport(row)
         });
@@ -272,9 +280,10 @@ pub(super) fn render(world: &mut World, owner: Entity) -> bool {
         nucleus::performance::add("transfer-page-cards-prepared", titles.len() as u64);
         (chosen, page, visible.len(), titles)
     };
-    if let Some(row) = &chosen {
+    if let Some(row) = &chosen
+        && let Some(mut castle) = world.get_mut::<TransferCastle>(owner)
+    {
         let uid = text(row, "uid");
-        let mut castle = world.get_mut::<TransferCastle>(owner).unwrap();
         if castle.selected != uid {
             castle.selected.clone_from(&uid);
         }
@@ -313,7 +322,9 @@ pub(super) fn render(world: &mut World, owner: Entity) -> bool {
         Panel::Details | Panel::List | Panel::Options
     );
     {
-        let mut node = world.get_mut::<Node>(panel).unwrap();
+        let Some(mut node) = world.get_mut::<Node>(panel) else {
+            return true;
+        };
         let height = if expanded { percent(88) } else { percent(35) };
         if node.max_height != height {
             node.max_height = height;
@@ -346,12 +357,10 @@ pub(super) fn render(world: &mut World, owner: Entity) -> bool {
     }
     match workflow.panel {
         Panel::List => {
-            if workflow.page != page {
-                world
-                    .get_mut::<TransferCastle>(owner)
-                    .unwrap()
-                    .workflow
-                    .page = page;
+            if workflow.page != page
+                && let Some(mut castle) = world.get_mut::<TransferCastle>(owner)
+            {
+                castle.workflow.page = page;
             }
             for (title, uid) in titles {
                 button(world, panel, owner, &title, Navigate::Select(uid));
@@ -377,10 +386,10 @@ pub(super) fn render(world: &mut World, owner: Entity) -> bool {
             );
         }
         Panel::Options => {
-            if world.get::<View>(owner).unwrap().context["viewer"]["local"] == true {
-                let people = world
-                    .get::<View>(owner)
-                    .unwrap()
+            if let Some(view) = world.get::<View>(owner)
+                && view.context["viewer"]["local"] == true
+            {
+                let people = view
                     .records
                     .iter()
                     .filter(|row| row["kind"] == "person")
@@ -497,6 +506,10 @@ pub(super) fn render(world: &mut World, owner: Entity) -> bool {
 }
 
 #[cfg_attr(test, test)]
+#[allow(
+    clippy::unwrap_used,
+    reason = "The Laboratory case must fail if any of its mounted views, controls, or draft state is missing"
+)]
 fn map_first_transport_panels_preserve_map_and_guard_an_open_draft() {
     use crate::native::laboratory::driver::{
         Limits, Runner, Selector, Step, UiAction, UiBackend, UiCondition,
@@ -686,6 +699,17 @@ fn map_first_transport_panels_preserve_map_and_guard_an_open_draft() {
             .iter(app.world())
             .any(|text| text.0.contains("Old Organ private result"))
     );
+    click(&mut app, owner, "Transport", "Transport options");
+    let world = app.world_mut();
+    let stale = world.get::<View>(owner).unwrap().transport.unwrap();
+    let stale_map = world.get::<Surface>(stale).unwrap().map;
+    world.entity_mut(stale).remove::<Surface>();
+    ui::render(world, owner);
+
+    let replacement = world.get::<View>(owner).unwrap().transport.unwrap();
+    assert_ne!(replacement, stale);
+    assert!(world.get_entity(stale_map).is_err());
+    assert!(world.get::<Surface>(replacement).is_some());
 }
 
 crate::native::laboratory_cases! {

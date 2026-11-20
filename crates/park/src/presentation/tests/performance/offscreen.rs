@@ -173,6 +173,165 @@ pub(super) fn fixture_with_color(
 }
 
 #[test]
+#[ignore = "private two-output GPU reveal and input coverage"]
+fn first_revealed_frame_has_current_text_style_and_input_mapping() {
+    use crate::responsiveness::current_input_point;
+    use bevy::{
+        input::keyboard::Key,
+        input_focus::InputFocus,
+        math::DVec2,
+        text::{EditableText, TextLayoutInfo},
+    };
+
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    let _entered = runtime.enter();
+    let directory = tempfile::tempdir().unwrap();
+    let (mut canvas, owners) = fixture(directory.path(), "inactive-workspace", 1);
+    let owner = owners.into_iter().find(|(_, visible)| !visible).unwrap().0;
+    let workspace = canvas
+        .app
+        .world()
+        .get::<native::workspace::WorkspaceMember>(owner)
+        .unwrap()
+        .0;
+    assert!(
+        !canvas
+            .app
+            .world()
+            .get::<native::topology::presentation::Surface>(owner)
+            .unwrap()
+            .visible
+    );
+    let input = native::sand::single_line_editor(
+        "Stale",
+        canvas.app.world().resource::<native::theme::Typography>(),
+        0,
+        80,
+    );
+    let editable = canvas
+        .world_mut()
+        .spawn((input, ChildOf(owner), ZIndex(50)))
+        .id();
+    {
+        let mut node = canvas.world_mut().get_mut::<Node>(editable).unwrap();
+        node.width = px(220);
+        node.height = px(42);
+        node.position_type = PositionType::Absolute;
+        node.top = px(3);
+        node.left = px(3);
+    }
+    let mut changed = TokenOverrides::default();
+    let ink = TokenValue::Color([250, 52, 183, 255]);
+    assert!(changed.set(Token::Ink, ink));
+    assert!(changed.set(Token::FontSize, TokenValue::Number(21.0)));
+    canvas.world_mut().entity_mut(owner).insert(changed);
+    {
+        let mut item = canvas
+            .world_mut()
+            .get_mut::<native::canvas::CanvasItem>(owner)
+            .unwrap();
+        item.position = DVec2::ZERO;
+        item.size = Vec2::new(240.0, 100.0);
+    }
+    canvas
+        .world_mut()
+        .get_mut::<native::layout::LayoutBox>(owner)
+        .unwrap()
+        .rules = lince_interface::layout::Rules::fixed([240.0, 100.0]);
+    const CURRENT: &str = "Fresh café title";
+    canvas
+        .world_mut()
+        .get_mut::<EditableText>(editable)
+        .unwrap()
+        .editor
+        .set_text(CURRENT);
+    drop(canvas.probe_frame().unwrap());
+    assert!(
+        !canvas
+            .app
+            .world()
+            .get::<native::topology::presentation::Surface>(owner)
+            .unwrap()
+            .visible
+    );
+
+    let display = OutputId(1);
+    canvas.move_workspace_to_output(workspace, display).unwrap();
+    canvas.focus_output(display).unwrap();
+    let first = canvas.probe_frame().unwrap();
+    assert!(first.ready().unwrap());
+    let pixels = if first.output == Some(display) {
+        probe_pixels(first.dmabuf().unwrap()).unwrap()
+    } else {
+        let output = first
+            .outputs
+            .iter()
+            .find(|image| image.id == display)
+            .unwrap();
+        probe_pixels(output.dmabuf()).unwrap()
+    };
+    assert!(
+        pixels
+            .chunks_exact(4)
+            .filter(|pixel| pixel[0] > 220 && pixel[1] < 85 && pixel[2] > 145)
+            .count()
+            >= 12,
+        "The first revealed frame did not paint the current themed text"
+    );
+    let world = canvas.app.world();
+    assert_eq!(
+        world.get::<EditableText>(editable).unwrap().value(),
+        CURRENT
+    );
+    assert_eq!(
+        world.get::<TextColor>(editable).unwrap().0.to_linear(),
+        ink.linear_color().to_linear()
+    );
+    assert!(
+        !world
+            .get::<TextLayoutInfo>(editable)
+            .unwrap()
+            .glyphs
+            .is_empty()
+    );
+    let point = current_input_point(&mut canvas, editable, &first).unwrap();
+    drop(first);
+    canvas.pointer(point).unwrap();
+    canvas.button(MouseButton::Left, true).unwrap();
+    canvas.button(MouseButton::Left, false).unwrap();
+    drop(canvas.probe_frame().unwrap());
+    assert_eq!(
+        canvas.app.world().resource::<InputFocus>().get(),
+        Some(editable)
+    );
+    for (code, key, text) in [
+        (KeyCode::End, Key::End, None),
+        (
+            KeyCode::Digit1,
+            Key::Character("!".into()),
+            Some("!".into()),
+        ),
+    ] {
+        canvas.key(code, key.clone(), text, true, false).unwrap();
+        canvas.key(code, key, None, false, false).unwrap();
+    }
+    drop(canvas.probe_frame().unwrap());
+    assert_eq!(
+        canvas
+            .app
+            .world()
+            .get::<EditableText>(editable)
+            .unwrap()
+            .value(),
+        "Fresh café title!"
+    );
+    canvas.finish().unwrap();
+}
+
+#[test]
 #[ignore = "hardware Vulkan/EGL full-frame visibility diagnostic; no concurrent compilation"]
 fn invisible_native_items_record_preparation_cost_without_changing_visible_pixels() {
     let runtime = tokio::runtime::Builder::new_multi_thread()

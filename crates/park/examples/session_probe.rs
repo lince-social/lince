@@ -58,9 +58,11 @@ mod client {
         connection.display().get_registry(&qh, ());
         let mut state = State::default();
         until(&connection, &mut queue, &mut state, |state| state.compositor.is_some() && state.shell.is_some() && state.shm.is_some())?;
+        let compositor = state.compositor.as_ref().ok_or_else(|| io::Error::other("The probe compositor is unavailable"))?;
+        let shell = state.shell.as_ref().ok_or_else(|| io::Error::other("The probe window shell is unavailable"))?;
         for index in 0..2 {
-            let surface = state.compositor.as_ref().unwrap().create_surface(&qh, ());
-            let xdg = state.shell.as_ref().unwrap().get_xdg_surface(&surface, &qh, index);
+            let surface = compositor.create_surface(&qh, ());
+            let xdg = shell.get_xdg_surface(&surface, &qh, index);
             let role = xdg.get_toplevel(&qh, index);
             role.set_title(format!("Park validation {}", index + 1));
             role.set_app_id("social.lince.park.validation".into());
@@ -184,7 +186,10 @@ mod client {
                     let window = &mut state.windows[*index];
                     if width > 0 { window.size[0] = width; }
                     if height > 0 { window.size[1] = height; }
-                    window.fullscreen = states.chunks_exact(4).any(|bytes| u32::from_ne_bytes(bytes.try_into().unwrap()) == xdg_toplevel::State::Fullscreen as u32);
+                    let (states, _) = states.as_chunks::<4>();
+                    window.fullscreen = states.iter().any(|&bytes| {
+                        u32::from_ne_bytes(bytes) == xdg_toplevel::State::Fullscreen as u32
+                    });
                 }
                 xdg_toplevel::Event::Close => state.failure = Some("A probe window was unexpectedly closed".into()),
                 _ => {}
@@ -208,7 +213,8 @@ mod client {
                     let pixel = if *index == 0 { [0x40, 0x90, 0xe0, 0xff] } else { [0x90, 0xd0, 0x40, 0xff] };
                     let row = pixel.repeat(width as usize);
                     for _ in 0..height { file.write_all(&row)?; }
-                    let pool = state.shm.as_ref().unwrap().create_pool(file.as_fd(), length, qh, ());
+                    let shm = state.shm.as_ref().ok_or_else(|| io::Error::other("Probe shared memory is unavailable"))?;
+                    let pool = shm.create_pool(file.as_fd(), length, qh, ());
                     let buffer = pool.create_buffer(0, width, height, width * 4, wl_shm::Format::Argb8888, qh, ());
                     pool.destroy();
                     window.surface.attach(Some(&buffer), 0, 0);

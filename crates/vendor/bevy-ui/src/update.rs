@@ -86,7 +86,6 @@ mod tests {
     use crate::OverrideClip;
     use crate::UiScale;
     use crate::UiTargetCamera;
-    use crate::update::propagate_ui_target_cameras;
     use bevy_app::App;
     use bevy_app::HierarchyPropagatePlugin;
     use bevy_app::PostUpdate;
@@ -643,30 +642,5 @@ mod tests {
 
         app.update();
         assert!(app.world().get::<CalculatedClip>(grandchild).is_none());
-    }
-}
-
-#[cfg(test)]
-pub(crate) fn reference_clipping_system(
-    mut commands: Commands,
-    root_nodes: UiRootNodes,
-    mut node_query: Query<(
-        &Node,
-        &ComputedNode,
-        &UiGlobalTransform,
-        Option<&mut CalculatedClip>,
-        Has<OverrideClip>,
-        Option<&mut UiClippingBoundary>,
-    )>,
-    ui_children: UiChildren,
-) {
-    for root_node in root_nodes.iter() {
-        update_clipping(
-            &mut commands,
-            &ui_children,
-            &mut node_query,
-            root_node,
-            None,
-        );
     }
 }

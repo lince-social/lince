@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use chrono::{DateTime, Utc};
 use nucleus::RecordKind;
 use serde_json::json;

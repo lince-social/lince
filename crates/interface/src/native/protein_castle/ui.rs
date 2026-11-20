@@ -409,6 +409,7 @@ fn input(
         ))
         .id();
     world.get_mut::<Node>(entity).unwrap().min_width = px(80);
+    crate::native::accessibility::input(world, entity, help, false);
 }
 
 pub(super) fn inputs(world: &mut World) {
@@ -1130,6 +1131,7 @@ fn properties(world: &mut World, parent: Entity, owner: Entity, path: &str, valu
                 }
                 "value" if path.contains("/work_date/") => "Date: YYYY-MM-DD; ignored for Exists",
                 "kind" if path.contains("/relation/") => "Relation name, such as assigned-to",
+                "kind_eq" => "Record kind",
                 _ => "Property value",
             },
         );

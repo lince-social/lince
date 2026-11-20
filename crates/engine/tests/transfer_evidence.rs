@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 #[path = "transfer_evidence/analysis.rs"]
 mod analysis;
 #[path = "transfer_evidence/ordinary_delivery.rs"]

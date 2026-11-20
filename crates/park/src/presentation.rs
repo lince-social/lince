@@ -40,6 +40,7 @@ mod outputs;
 mod records;
 mod pixels;
 mod pipelines;
+pub(crate) mod frame_trace;
 mod phase_metrics;
 mod system_metrics;
 
@@ -60,6 +61,7 @@ pub use outputs::Output;
 
 pub struct Presentation {
     app: App,
+    traced_render: Option<u64>,
     primary_windows: QueryState<Entity, With<PrimaryWindow>>,
     renderer: Rc<VulkanRenderer>,
     client_formats: Arc<Vec<smithay::backend::allocator::Fourcc>>,
@@ -96,6 +98,7 @@ pub struct Presentation {
 }
 
 pub struct Frame {
+    pub(crate) traced_render: Option<u64>,
     pub client_formats: Arc<Vec<smithay::backend::allocator::Fourcc>>,
     pub encoding: lince_interface::host::color::NativeEncoding,
     pub output: Option<lince_interface::host::OutputId>,
@@ -305,8 +308,10 @@ pub(crate) fn probe_pixels(
         .map_err(|error| stage(&error))?
         .find(|device| !device.is_software())
         .ok_or_else(|| input_failure("no hardware EGL device for the native canvas proof"))?;
+    // SAFETY: Smithay owns this display lifetime and no raw caller terminates it.
     let display = unsafe { EGLDisplay::new(device) }.map_err(|error| stage(&error))?;
     let context = EGLContext::new(&display).map_err(|error| stage(&error))?;
+    // SAFETY: The context was created here and has never been bound to another thread.
     let mut renderer = unsafe { GlesRenderer::new(context) }.map_err(|error| stage(&error))?;
     let texture = renderer
         .import_dmabuf(buffer, None)
@@ -679,6 +684,7 @@ impl Presentation {
             .transpose()
             .map_err(|error| input_failure(&error.to_string()))?;
         if lince_interface::host::performance::enabled()
+            || crate::runtime::tracing_frames()
             || cfg!(test) && std::env::var_os("LINCE_PARK_GPU_DIAGNOSTICS").is_some()
         {
             app.add_plugins(bevy::render::diagnostic::RenderDiagnosticsPlugin);
@@ -692,15 +698,24 @@ impl Presentation {
         app.finish();
         app.cleanup();
         pipelines::install(&mut app);
-        if lince_interface::host::performance::enabled() {
-            use bevy::render::{Render, RenderSystems};
+        if lince_interface::host::performance::enabled() || crate::runtime::tracing_frames() {
             let render = app.sub_app_mut(RenderApp);
             if let Some(mut extract) = render.take_extract() {
                 render.set_extract(move |main, render| {
                     let _timing = lince_interface::host::performance::Span::new(lince_interface::host::performance::Stage::NativeExtraction);
+                    let trace = render.get_resource::<frame_trace::RenderId>()
+                        .map(|id| (id.0, frame_trace::timestamp()));
                     extract(main, render);
+                    if let Some((id, started)) = trace {
+                        frame_trace::record(serde_json::json!({"event":"native-extraction", "render":id,
+                            "started_us":started, "monotonic_us":frame_trace::timestamp()}));
+                    }
                 });
             }
+        }
+        if lince_interface::host::performance::enabled() {
+            use bevy::render::{Render, RenderSystems};
+            let render = app.sub_app_mut(RenderApp);
             render.add_systems(Render, (|world: &mut World| {
                 world.insert_resource(RenderUpdateStart(std::time::Instant::now()));
             }).before(RenderSystems::ExtractCommands));
@@ -742,6 +757,7 @@ impl Presentation {
             magnification_pointer_epoch: None,
             input_activity_revision: None,
             retained: None,
+            traced_render: None,
             manipulation: None,
             records,
         })
@@ -1149,6 +1165,7 @@ impl Presentation {
         let input_view = self.native_input_view(None);
         crate::native_input::projection::prepare(self.app.world_mut(), input_view);
         self.prepare_capture_targets();
+        self.trace_render(false);
         self.app.update();
         self.capture_settings();
         self.publish_capture_policy();
@@ -1166,6 +1183,7 @@ impl Presentation {
             let input = Arc::new(self.finish_input(geometry.as_deref())?);
             self.release_capture_uploads();
             return Ok(Some(Frame {
+                traced_render: None,
                 client_formats: self.client_formats.clone(),
                 encoding: self.native_encoding(),
                 output: None,
@@ -1207,6 +1225,7 @@ impl Presentation {
 
     fn export_frame(&mut self, retained: pixels::Retained) -> Result<Frame, ProbeFailure> {
         let started = std::time::Instant::now();
+        let trace_start = self.traced_render.map(|_| frame_trace::timestamp());
         let texture = self
             .app
             .sub_app(RenderApp)
@@ -1256,6 +1275,7 @@ impl Presentation {
             })
             .collect();
         let mut frame = Frame {
+            traced_render: self.traced_render,
             client_formats: self.client_formats.clone(),
             encoding: self.native_encoding(),
             output: self.output_state.assignments.focused(),
@@ -1273,6 +1293,12 @@ impl Presentation {
         self.release_capture_uploads();
         crate::runtime::trace_frame("frame-image-export", detail);
         crate::runtime::trace_frame("export", started);
+        if let Some((render, started)) = frame.traced_render.zip(trace_start) {
+            let outputs: Vec<_> = frame.output.iter().copied().chain(frame.outputs.iter().map(|output| output.id))
+                .map(|id| id.0).collect();
+            frame_trace::record(serde_json::json!({"event":"native-export", "render":render,
+                "started_us":started, "monotonic_us":frame_trace::timestamp(), "outputs":outputs}));
+        }
         Ok(frame)
     }
 
@@ -1849,7 +1875,9 @@ mod tests {
     mod showoff;
     mod pointer;
     mod pointer_bindings;
+    #[cfg(feature = "nested")]
     mod pointer_settings;
+    #[cfg(feature = "nested")]
     mod external_commands;
     mod shortcuts;
     mod configuration;
@@ -1875,6 +1903,7 @@ mod tests {
     mod recent;
     mod opening;
     mod manipulation;
+    #[cfg(feature = "nested")]
     mod keyboard;
     mod focus_handoff;
     mod ui_lifecycle;

@@ -1209,9 +1209,11 @@ fn receive_message(world: &mut World, message: ServerMessage) {
                 let replacement = created
                     .as_ref()
                     .and_then(|uid| {
-                        prefix
-                            .ends_with("/new/")
-                            .then(|| format!("{}/{uid}/", prefix.split('/').next().unwrap()))
+                        if !prefix.ends_with("/new/") {
+                            return None;
+                        }
+                        let (kind, _) = prefix.split_once('/')?;
+                        Some(format!("{kind}/{uid}/"))
                     })
                     .unwrap_or_else(|| prefix.clone());
                 let remaining: Vec<_> = state
@@ -2298,7 +2300,9 @@ pub fn input(
         ));
     }
     let mut query = world.query::<(&mut EditableText, &mut Node)>();
-    let (mut text, mut node) = query.get_mut(world, entity).unwrap();
+    let (mut text, mut node) = query
+        .get_mut(world, entity)
+        .expect("the input constructor inserts EditableText and Node");
     options.apply(&mut text, &mut node);
     entity
 }

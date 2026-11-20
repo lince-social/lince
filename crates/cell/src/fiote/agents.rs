@@ -102,7 +102,7 @@ impl Agents {
         {
             return Err("This choice does not belong to this thread's permission request.".into());
         }
-        let request = pending.remove(id).unwrap();
+        let request = pending.remove(id).ok_or("This permission request is no longer waiting.")?;
         let _ = request.response.send(option);
         Ok(())
     }

@@ -122,3 +122,21 @@ fn column_labels_follow_late_creation_reparenting_and_removed_roles() {
 crate::native::laboratory_cases! {
     column_labels_follow_late_creation_reparenting_and_removed_roles,
 }
+
+#[test]
+fn columns_with_geometry_keep_their_headers_when_another_column_loses_its_geometry() {
+    let (mut app, _, owner) = fixture();
+    let world = app.world_mut();
+    let column = column_entity(world, owner, 0).expect("the prepared board has its first column");
+    world.entity_mut(column).remove::<CanvasItem>();
+
+    maintain(world, owner);
+
+    assert!(world.get::<CanvasItem>(column).is_none());
+    assert!(
+        world
+            .query::<&Part>()
+            .iter(world)
+            .any(|part| part.owner == owner && part.column == 1)
+    );
+}

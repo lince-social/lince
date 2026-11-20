@@ -1640,7 +1640,7 @@ impl Engine {
                 let readable = self.readable_on(&mut tx, actor, &graph).await?;
                 tx.commit().await?;
                 let rows: Vec<(String,String,i64,Option<i64>,String,String,Option<String>,String)> = store::sqlx::query_as("SELECT uid,actor_uid,base_revision,applied_revision,change,status,reviewed_by,created_at FROM workspace_change WHERE workspace_uid = ? AND (? IS NULL OR uid < ?) ORDER BY uid DESC LIMIT 64").bind(workspace).bind(&before).bind(&before).fetch_all(&self.store.pool).await?;
-                let mut next_cursor = (rows.len() == 64).then(|| rows.last().unwrap().0.clone());
+                let mut next_cursor = rows.get(63).map(|row| row.0.clone());
                 let mut last_scanned = None;
                 let mut bytes = 0;
                 let mut changes = Vec::new();

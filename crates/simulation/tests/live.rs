@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use cell::{ClientMessage, ServerMessage};
 use engine::actions::Action;
 use nucleus::karma::{CadenceStep, rule_field::RuleFieldInput};

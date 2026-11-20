@@ -639,8 +639,20 @@ fn initialize(world: &mut World) {
                     )
                     .is_ok_and(|files| !files.is_empty())
                 {
-                    world.resource_mut::<WorkspaceFile>().last =
-                        Some(serde_json::to_vec_pretty(&document).unwrap());
+                    match serde_json::to_vec_pretty(&document) {
+                        Ok(bytes) => world.resource_mut::<WorkspaceFile>().last = Some(bytes),
+                        Err(error) => {
+                            world.resource_mut::<WorkspaceFile>().blocked = true;
+                            let message =
+                                format!("Could not prepare the saved workspace baseline: {error}");
+                            crate::native::notifications::report(
+                                world,
+                                "interface::workspaces",
+                                &message,
+                            );
+                            spaces.error = Some(message);
+                        }
+                    }
                 }
                 restored = true;
                 if let Some(id) = document.canvas_id {
@@ -766,8 +778,10 @@ fn initialize(world: &mut World) {
                             .entity_mut(entity)
                             .insert(crate::native::topology::assets::CenteredAsset);
                     }
-                    world.get_mut::<CanvasItem>(entity).unwrap().size =
-                        Vec2::from_array(saved.size);
+                    world
+                        .get_mut::<CanvasItem>(entity)
+                        .expect("a spawned topology asset is a canvas item")
+                        .size = Vec2::from_array(saved.size);
                     saved.placement.restore(world, entity);
                 }
                 for sand in document.sands {
@@ -779,7 +793,10 @@ fn initialize(world: &mut World) {
                         "",
                         DVec2::from_array(sand.position),
                     );
-                    world.get_mut::<CanvasItem>(entity).unwrap().size = Vec2::from_array(sand.size);
+                    world
+                        .get_mut::<CanvasItem>(entity)
+                        .expect("a spawned Sand is a canvas item")
+                        .size = Vec2::from_array(sand.size);
                     sand.placement.restore(world, entity);
                     let mut content = None;
                     if sand.kind == SandKind::Video {
@@ -841,7 +858,9 @@ fn initialize(world: &mut World) {
                         let block = sand_text::spawn(world, entity, text);
                         content.get_or_insert(block);
                     }
-                    *world.get_mut::<CanvasItem>(entity).unwrap() = CanvasItem {
+                    *world
+                        .get_mut::<CanvasItem>(entity)
+                        .expect("restoring Sand content keeps its canvas item") = CanvasItem {
                         position: DVec2::from_array(sand.position),
                         size: Vec2::from_array(sand.size),
                     };
@@ -881,9 +900,11 @@ fn initialize(world: &mut World) {
             .entries
             .iter()
             .find(|space| space.id == spaces.active)
-            .unwrap();
+            .expect("default and validated saved workspaces have an active entry");
         if restored {
-            *world.get_mut::<CanvasView>(root).unwrap() = CanvasView {
+            *world
+                .get_mut::<CanvasView>(root)
+                .expect("the workspace root has a canvas view") = CanvasView {
                 center: DVec2::from_array(active.center),
                 zoom: active.zoom,
             };
@@ -978,26 +999,26 @@ fn switch_inner(world: &mut World, root: Entity, target: u64, preserve_laborator
     crate::native::layout::desktop::focus::remember_input(world, root);
     crate::native::layout::desktop::focus::remember(world, root);
     crate::native::canvas_selection::clear(world, root);
-    let camera = *world.get::<CanvasView>(root).unwrap();
+    let Some(camera) = world.get::<CanvasView>(root).copied() else {
+        return false;
+    };
     let topology = world
         .get::<crate::native::topology::view::View>(root)
         .copied()
         .unwrap_or_default();
-    let mut spaces = world.get_mut::<Workspaces>(root).unwrap();
+    let Some(mut spaces) = world.get_mut::<Workspaces>(root) else {
+        return false;
+    };
     let active = spaces.active;
-    let previous = spaces
-        .entries
-        .iter_mut()
-        .find(|entry| entry.id == active)
-        .unwrap();
+    let Some(previous) = spaces.entries.iter_mut().find(|entry| entry.id == active) else {
+        return false;
+    };
     previous.center = camera.center.to_array();
     previous.zoom = camera.zoom;
     previous.topology = topology;
-    let next = spaces
-        .entries
-        .iter()
-        .find(|entry| entry.id == target)
-        .unwrap();
+    let Some(next) = spaces.entries.iter().find(|entry| entry.id == target) else {
+        return false;
+    };
     let camera = CanvasView {
         center: DVec2::from_array(next.center),
         zoom: next.zoom,
@@ -1005,7 +1026,9 @@ fn switch_inner(world: &mut World, root: Entity, target: u64, preserve_laborator
     let topology = next.topology;
     spaces.active = target;
     world.entity_mut(root).insert(topology);
-    *world.get_mut::<CanvasView>(root).unwrap() = camera;
+    *world
+        .get_mut::<CanvasView>(root)
+        .expect("the current workspace has a camera") = camera;
     world.resource_mut::<InputFocus>().clear();
     crate::native::workspace_config::reload(world, root, target);
     crate::native::layout::desktop::focus::restore_input(world, root);
@@ -1061,30 +1084,33 @@ pub(crate) fn rename_id(world: &mut World, root: Entity, id: u64, name: &str) ->
 }
 
 pub fn remove(world: &mut World, root: Entity, removed: u64) -> bool {
-    let spaces = world.get::<Workspaces>(root).unwrap();
+    let Some(spaces) = world.get::<Workspaces>(root) else {
+        return false;
+    };
     if spaces.entries.len() <= 1 || !spaces.entries.iter().any(|entry| entry.id == removed) {
         return false;
     }
-    let next = if spaces.active == removed {
-        spaces
+    if spaces.active == removed {
+        let Some(next) = spaces
             .entries
             .iter()
             .find(|entry| entry.id != removed)
             .map(|entry| entry.id)
-            .unwrap()
-    } else {
-        spaces.active
-    };
-    if spaces.active == removed {
+        else {
+            return false;
+        };
         switch(world, root, next);
     }
     {
-        let mut spaces = world.get_mut::<Workspaces>(root).unwrap();
-        let index = spaces
-            .entries
-            .iter()
-            .position(|entry| entry.id == removed)
-            .unwrap();
+        let Some(mut spaces) = world.get_mut::<Workspaces>(root) else {
+            return false;
+        };
+        if spaces.active == removed {
+            return false;
+        }
+        let Some(index) = spaces.entries.iter().position(|entry| entry.id == removed) else {
+            return false;
+        };
         let workspace = spaces.entries.remove(index);
         spaces.trash.push(TrashedWorkspace {
             workspace,
@@ -1097,7 +1123,9 @@ pub fn remove(world: &mut World, root: Entity, removed: u64) -> bool {
 
 pub(crate) fn restore_trash(world: &mut World, root: Entity, id: u64) -> bool {
     purge_trash(world, root, unix_time());
-    let mut spaces = world.get_mut::<Workspaces>(root).unwrap();
+    let Some(mut spaces) = world.get_mut::<Workspaces>(root) else {
+        return false;
+    };
     let Some(index) = spaces
         .trash
         .iter()
@@ -1112,11 +1140,11 @@ pub(crate) fn restore_trash(world: &mut World, root: Entity, id: u64) -> bool {
 }
 
 fn purge_trash(world: &mut World, root: Entity, now: u64) {
-    let retention =
-        u64::from(world.get::<Workspaces>(root).unwrap().trash_retention_days) * 24 * 60 * 60;
-    let expired: HashSet<_> = world
-        .get::<Workspaces>(root)
-        .unwrap()
+    let Some(spaces) = world.get::<Workspaces>(root) else {
+        return;
+    };
+    let retention = u64::from(spaces.trash_retention_days) * 24 * 60 * 60;
+    let expired: HashSet<_> = spaces
         .trash
         .iter()
         .filter(|entry| now.saturating_sub(entry.deleted_at) >= retention)
@@ -1137,7 +1165,9 @@ fn purge_trash(world: &mut World, root: Entity, now: u64) {
         crate::native::record_view::hide_placement(world, root, entity);
         world.despawn(entity);
     }
-    let mut spaces = world.get_mut::<Workspaces>(root).unwrap();
+    let Some(mut spaces) = world.get_mut::<Workspaces>(root) else {
+        return;
+    };
     spaces
         .trash
         .retain(|entry| !expired.contains(&entry.workspace.id));
@@ -1158,8 +1188,8 @@ fn purge_trash(world: &mut World, root: Entity, now: u64) {
 }
 
 pub fn remove_active(world: &mut World, root: Entity) -> bool {
-    let removed = world.get::<Workspaces>(root).unwrap().active;
-    remove(world, root, removed)
+    let active = world.get::<Workspaces>(root).map(|spaces| spaces.active);
+    active.is_some_and(|active| remove(world, root, active))
 }
 
 pub(crate) fn place_record(world: &mut World, root: Entity, card: Entity, uid: &str) {
@@ -1175,7 +1205,9 @@ pub(crate) fn place_record(world: &mut World, root: Entity, card: Entity, uid: &
             saved.tokens,
             crate::native::token_style::AppliedSize(Vec2::from_array(saved.size)),
         ));
-        *world.get_mut::<CanvasItem>(card).unwrap() = CanvasItem {
+        *world
+            .get_mut::<CanvasItem>(card)
+            .expect("the restored Record card has a canvas item") = CanvasItem {
             position: DVec2::from_array(saved.position),
             size: Vec2::from_array(saved.size),
         };
@@ -1185,11 +1217,13 @@ pub(crate) fn place_record(world: &mut World, root: Entity, card: Entity, uid: &
         .insert((WorkspaceMember(workspace), RecordPlacement(uid.into())));
 }
 
-fn snapshot(world: &mut World, root: Entity) -> Document {
+fn snapshot(world: &mut World, root: Entity) -> Result<Document, String> {
     let _capture = nucleus::performance::Span::new("workspace-snapshot-preparation");
     nucleus::performance::add("workspace-snapshots-prepared", 1);
     let workspace_focus = crate::native::layout::desktop::focus::snapshot(world, root);
-    let spaces = world.get::<Workspaces>(root).unwrap();
+    let spaces = world
+        .get::<Workspaces>(root)
+        .ok_or("The workspace is not initialized.")?;
     let active = spaces.active;
     let canvas_id = spaces.canvas_id.clone();
     let hidden_records = spaces.hidden_records.clone();
@@ -1202,11 +1236,13 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
         .collect();
     let mut workspaces = spaces.entries.clone();
     workspaces.extend(spaces.trash.iter().map(|entry| entry.workspace.clone()));
-    let camera = world.get::<CanvasView>(root).unwrap();
+    let camera = world
+        .get::<CanvasView>(root)
+        .ok_or("The workspace is not initialized.")?;
     let current = workspaces
         .iter_mut()
         .find(|entry| entry.id == active)
-        .unwrap();
+        .ok_or("The active workspace is missing.")?;
     current.center = camera.center.to_array();
     current.zoom = camera.zoom;
     current.topology = world
@@ -1215,7 +1251,7 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
         .unwrap_or_default();
     let mut records = HashMap::new();
     let mut sands = Vec::new();
-    preparation::with(world, |world, queries| {
+    preparation::with(world, |world, queries| -> Result<(), String> {
         let items = preparation::query(world, &mut queries.items);
         for (entity, parent, item, member, sand, record) in items.iter(world) {
             if parent.parent() != root
@@ -1230,7 +1266,9 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
                 records.insert(
                     record.0.clone(),
                     SavedRecord {
-                        placement: crate::native::sand_placement::Placement::capture(world, entity),
+                        placement: crate::native::sand_placement::Placement::capture(
+                            world, entity,
+                        )?,
                         uid: record.0.clone(),
                         tokens: crate::native::token_style::overrides(world, entity),
                         workspace: member.0,
@@ -1241,7 +1279,7 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
             }
             if let Some(sand) = sand {
                 sands.push(SavedSand {
-                    placement: crate::native::sand_placement::Placement::capture(world, entity),
+                    placement: crate::native::sand_placement::Placement::capture(world, entity)?,
                     tokens: crate::native::token_style::overrides(world, entity),
                     properties: world
                         .get::<crate::native::area::RecordProperties>(entity)
@@ -1267,8 +1305,12 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
                 });
             }
         }
-    });
-    for (uid, saved) in &world.get::<Workspaces>(root).unwrap().saved_records {
+        Ok(())
+    })?;
+    let spaces = world
+        .get::<Workspaces>(root)
+        .ok_or("The workspace is not initialized.")?;
+    for (uid, saved) in &spaces.saved_records {
         if !records.contains_key(uid) {
             records.insert(uid.clone(), saved.clone());
         }
@@ -1279,13 +1321,15 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
         preparation::query(world, &mut queries.areas)
             .iter(world)
             .filter(|(_, _, _, parent)| parent.parent() == root)
-            .map(|(entity, area, member, _)| crate::native::area::SavedArea {
-                placement: crate::native::sand_placement::Placement::capture(world, entity),
-                workspace: member.0,
-                area: crate::native::record_presentation::capture(world, entity, area.clone()),
+            .map(|(entity, area, member, _)| {
+                Ok(crate::native::area::SavedArea {
+                    placement: crate::native::sand_placement::Placement::capture(world, entity)?,
+                    workspace: member.0,
+                    area: crate::native::record_presentation::capture(world, entity, area.clone()),
+                })
             })
-            .collect()
-    });
+            .collect::<Result<_, String>>()
+    })?;
     areas.sort_by(|a, b| a.area.id.cmp(&b.area.id));
     let mut document = Document {
         workspace_focus,
@@ -1296,8 +1340,8 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
         recovery: Default::default(),
         snapshot_error: None,
         layouts: crate::native::layout::records::snapshot(world, root),
-        imports: crate::native::topology::assets::snapshot(world, root),
-        terrain_effects: crate::native::topology::terrain::snapshot(world, root),
+        imports: crate::native::topology::assets::snapshot(world, root)?,
+        terrain_effects: crate::native::topology::terrain::snapshot(world, root)?,
         theme: world
             .resource::<crate::native::tokens::ThemeSettings>()
             .clone(),
@@ -1312,31 +1356,31 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
         sands,
         records,
         areas,
-        proteins: crate::native::protein_castle::snapshot(world, root),
-        shaders: crate::native::shader_castle::snapshot(world, root),
-        shader_editors: crate::native::shader_effects::snapshot(world, root),
+        proteins: crate::native::protein_castle::snapshot(world, root)?,
+        shaders: crate::native::shader_castle::snapshot(world, root)?,
+        shader_editors: crate::native::shader_effects::snapshot(world, root)?,
         shader_settings: world
             .get_resource::<crate::native::shader_effects::ShaderSettings>()
             .copied()
             .unwrap_or_default(),
-        assertions: crate::native::assertion_castle::snapshot(world, root),
-        karma_castles: crate::native::karma_castle::snapshot(world, root),
-        simulations: crate::native::simulation_castle::snapshot(world, root),
-        frequency_castles: crate::native::frequency_castle::snapshot(world, root),
-        transfer_castles: crate::native::transfer_castle::snapshot(world, root),
-        recorders: crate::native::recorder_castle::snapshot(world, root),
-        documents: crate::native::document_viewer::snapshot(world, root),
-        source_views: crate::native::source_view::snapshot(world, root),
-        demeters: crate::native::demeter_castle::snapshot(world, root),
-        media: crate::native::media_sand::snapshot(world, root),
-        drawings: crate::native::drawing::snapshot(world, root),
-        extension_sands: crate::native::record_extensions::snapshot(world, root),
-        editors: crate::native::ide::snapshot(world, root),
-        explorers: crate::native::file_explorer::snapshot(world, root),
-        calendars: crate::native::calendar::snapshot(world, root),
-        maps: crate::native::map_castle::snapshot(world, root),
-        kanbans: crate::native::kanban::snapshot(world, root),
-        instincts: crate::native::instinct::snapshot(world, root),
+        assertions: crate::native::assertion_castle::snapshot(world, root)?,
+        karma_castles: crate::native::karma_castle::snapshot(world, root)?,
+        simulations: crate::native::simulation_castle::snapshot(world, root)?,
+        frequency_castles: crate::native::frequency_castle::snapshot(world, root)?,
+        transfer_castles: crate::native::transfer_castle::snapshot(world, root)?,
+        recorders: crate::native::recorder_castle::snapshot(world, root)?,
+        documents: crate::native::document_viewer::snapshot(world, root)?,
+        source_views: crate::native::source_view::snapshot(world, root)?,
+        demeters: crate::native::demeter_castle::snapshot(world, root)?,
+        media: crate::native::media_sand::snapshot(world, root)?,
+        drawings: crate::native::drawing::snapshot(world, root)?,
+        extension_sands: crate::native::record_extensions::snapshot(world, root)?,
+        editors: crate::native::ide::snapshot(world, root)?,
+        explorers: crate::native::file_explorer::snapshot(world, root)?,
+        calendars: crate::native::calendar::snapshot(world, root)?,
+        maps: crate::native::map_castle::snapshot(world, root)?,
+        kanbans: crate::native::kanban::snapshot(world, root)?,
+        instincts: crate::native::instinct::snapshot(world, root)?,
     };
     if let Some((owner, _, temporary, previous)) = crate::native::laboratory::scope(world)
         && owner == root
@@ -1346,14 +1390,13 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
     if let Err(error) = scratch::normalize(world, root, &mut document) {
         document.snapshot_error = Some(error);
     }
-    document
+    Ok(document)
 }
 
 pub fn validate_scene(world: &mut World, root: Entity) -> Result<(), String> {
-    if world.get::<Workspaces>(root).is_none() || world.get::<CanvasView>(root).is_none() {
-        return Err("The workspace is not initialized.".into());
-    }
-    snapshot(world, root).validation_error().map_or(Ok(()), Err)
+    snapshot(world, root)?
+        .validation_error()
+        .map_or(Ok(()), Err)
 }
 
 pub(crate) fn request_save(world: &World) {
@@ -1428,11 +1471,19 @@ pub(crate) fn persist(world: &mut World) {
             }
         }
     }
-    let writer = world.resource::<WorkspaceFile>().writer.as_ref().unwrap();
+    let writer = world
+        .resource::<WorkspaceFile>()
+        .writer
+        .as_ref()
+        .expect("the persistence worker has started successfully");
     if let Some(result) = writer.result() {
         report(world, root, result.err());
     }
-    let writer = world.resource::<WorkspaceFile>().writer.as_ref().unwrap();
+    let writer = world
+        .resource::<WorkspaceFile>()
+        .writer
+        .as_ref()
+        .expect("reporting a save error leaves the persistence worker available");
     if !quitting && !writer.due() {
         return;
     }
@@ -1458,8 +1509,7 @@ pub(crate) fn persist(world: &mut World) {
         }
         return;
     }
-    let document = snapshot(world, root);
-    let result = capture.save(document);
+    let result = snapshot(world, root).and_then(|document| capture.save(document));
     if let Err(error) = result {
         report(world, root, Some(error));
         if quitting {
@@ -1469,7 +1519,9 @@ pub(crate) fn persist(world: &mut World) {
 }
 
 fn report(world: &mut World, root: Entity, error: Option<String>) {
-    let mut spaces = world.get_mut::<Workspaces>(root).unwrap();
+    let Some(mut spaces) = world.get_mut::<Workspaces>(root) else {
+        return;
+    };
     if spaces.error != error {
         spaces.error = error.clone();
         if let Some(error) = error {
@@ -1513,6 +1565,10 @@ fn sync_directory(_path: &std::path::Path) -> io::Result<()> {
     Ok(())
 }
 
+#[allow(
+    clippy::unwrap_used,
+    reason = "Runnable workspace fixtures must report failed setup and missing saved or rendered state"
+)]
 pub(crate) mod tests {
     use super::*;
     use crate::native::theme::Typography;
@@ -1560,7 +1616,7 @@ pub(crate) mod tests {
                 root, temporary, 1,
             ));
         app.world_mut().get_mut::<CanvasView>(root).unwrap().center = DVec2::splat(999.0);
-        let saved = snapshot(app.world_mut(), root);
+        let saved = snapshot(app.world_mut(), root).expect("capture the workspace fixture");
         assert_eq!(saved.active, 1);
         assert!(saved.workspaces.iter().all(|space| space.id != temporary));
         assert!(saved.areas.is_empty());
@@ -1581,7 +1637,7 @@ pub(crate) mod tests {
         );
         switch_output(app.world_mut(), root, 1);
         app.world_mut().get_mut::<CanvasView>(root).unwrap().center = DVec2::splat(123.0);
-        let saved = snapshot(app.world_mut(), root);
+        let saved = snapshot(app.world_mut(), root).expect("capture the workspace fixture");
         assert_eq!(saved.workspaces[0].center, [123.0; 2]);
         assert!(crate::native::laboratory::active(app.world()));
     }
@@ -1607,7 +1663,11 @@ pub(crate) mod tests {
                 .unwrap_err()
                 .contains("Area Room relations")
         );
-        assert!(!snapshot(world, root).validate());
+        assert!(
+            !snapshot(world, root)
+                .expect("capture the workspace fixture")
+                .validate()
+        );
         world
             .get_mut::<crate::native::area::InfluenceArea>(entity)
             .unwrap()
@@ -1615,6 +1675,11 @@ pub(crate) mod tests {
         validate_scene(world, root).unwrap();
         let unavailable = world.spawn_empty().id();
         assert!(validate_scene(world, unavailable).is_err());
+        world.get_mut::<Workspaces>(root).unwrap().active = u64::MAX;
+        assert_eq!(
+            validate_scene(world, root),
+            Err("The active workspace is missing.".into())
+        );
     }
 
     pub(super) fn flush(app: &mut App) {
@@ -1640,7 +1705,7 @@ pub(crate) mod tests {
         flush(&mut app);
         drop(app);
         let (mut app, root) = fixture(Some(path));
-        let document = snapshot(app.world_mut(), root);
+        let document = snapshot(app.world_mut(), root).expect("capture the workspace fixture");
         assert!(document.validate());
         assert_eq!(document.areas[0].area.id, id);
         assert!(document.areas[0].area.hole);
@@ -1671,7 +1736,7 @@ pub(crate) mod tests {
         flush(&mut app);
         drop(app);
         let (mut app, root) = fixture(Some(path));
-        let document = snapshot(app.world_mut(), root);
+        let document = snapshot(app.world_mut(), root).expect("capture the workspace fixture");
         assert_eq!(document.drawings.len(), 1);
         assert_eq!(
             app.world_mut()
@@ -1775,13 +1840,13 @@ pub(crate) mod tests {
         app.world_mut()
             .entity_mut(model)
             .insert(crate::native::topology::assets::CenteredAsset);
-        let before = snapshot(app.world_mut(), root);
+        let before = snapshot(app.world_mut(), root).expect("capture the workspace fixture");
         assert!(before.sands.is_empty() && before.records.is_empty());
         assert_eq!(before.media.len(), 2);
         flush(&mut app);
         drop(app);
         let (mut app, root) = fixture(Some(path));
-        let after = snapshot(app.world_mut(), root);
+        let after = snapshot(app.world_mut(), root).expect("capture the workspace fixture");
         let media = |document: &Document| {
             let mut media: Vec<_> = document
                 .media
@@ -2112,10 +2177,10 @@ pub(crate) mod tests {
             bevy::math::DVec3::new(500.0, 70.0, -300.0),
             bevy::math::DQuat::from_rotation_y(0.7),
         );
-        let before = snapshot(app.world_mut(), root);
+        let before = snapshot(app.world_mut(), root).expect("capture the workspace fixture");
         flush(&mut app);
         let (mut restored, root) = fixture(Some(path));
-        let after = snapshot(restored.world_mut(), root);
+        let after = snapshot(restored.world_mut(), root).expect("capture the workspace fixture");
         assert_eq!(after.imports.len(), 2);
         assert_eq!(after.areas[0].area.depth, 19.0);
         assert_eq!(after.sands[0].placement.spatial.depth, Some(27.0));
@@ -2233,7 +2298,7 @@ pub(crate) mod tests {
             .unwrap();
         assert_eq!(restored, &area);
         assert_eq!(member.0, workspace);
-        let mut document = snapshot(app.world_mut(), root);
+        let mut document = snapshot(app.world_mut(), root).expect("capture the workspace fixture");
         assert!(document.validate());
         document.areas.push(document.areas[0].clone());
         assert!(!document.validate());
@@ -2440,7 +2505,11 @@ pub(crate) mod tests {
                 .contains("trashed-record")
         );
         assert!(world.get::<Workspaces>(root).unwrap().trash.is_empty());
-        assert!(snapshot(world, root).validate());
+        assert!(
+            snapshot(world, root)
+                .expect("capture the workspace fixture")
+                .validate()
+        );
     }
 
     #[cfg_attr(test, test)]
@@ -2493,7 +2562,11 @@ pub(crate) mod tests {
                 .to_string(),
             "trashed draft"
         );
-        assert!(snapshot(world, root).validate());
+        assert!(
+            snapshot(world, root)
+                .expect("capture the workspace fixture")
+                .validate()
+        );
     }
 
     #[test]
@@ -2534,18 +2607,33 @@ pub(crate) mod tests {
                 .resource::<crate::native::shader_effects::ShaderSettings>()
                 .reduced_motion
         );
-        let before = std::fs::read(&path).unwrap();
+        let snapshot_directory = path.with_extension("snapshots");
+        let snapshots =
+            storage::snapshots(&snapshot_directory).expect("list restored workspace snapshots");
+        let latest = snapshots
+            .last()
+            .expect("a valid workspace snapshot was saved");
+        let before = std::fs::read(latest).expect("read the latest good workspace snapshot");
         app.world_mut()
             .resource_mut::<crate::native::shader_effects::ShaderSettings>()
             .compositor
             .blur_radius = 25.0;
         flush(&mut app);
         assert!(app.world().get::<Workspaces>(root).unwrap().error.is_some());
-        assert_eq!(std::fs::read(&path).unwrap(), before);
+        assert_eq!(
+            storage::snapshots(&snapshot_directory)
+                .expect("list workspace snapshots after a rejected save"),
+            snapshots
+        );
+        assert_eq!(
+            std::fs::read(latest).expect("the last good snapshot is still available"),
+            before
+        );
         app.world_mut()
             .resource_mut::<crate::native::shader_effects::ShaderSettings>()
             .compositor = requested;
         flush(&mut app);
+        app.update();
         assert!(app.world().get::<Workspaces>(root).unwrap().error.is_none());
         drop(app);
         let (app, _) = fixture(Some(path));
@@ -2821,7 +2909,7 @@ pub(crate) mod tests {
         let path = directory.path().join("interface.json");
         let (mut source, root) = fixture(None);
         rename(source.world_mut(), root, "Existing workspace");
-        let document = snapshot(source.world_mut(), root);
+        let document = snapshot(source.world_mut(), root).expect("capture the workspace fixture");
         let original = serde_json::to_vec_pretty(&document).unwrap();
         write_atomic(&path, &original).unwrap();
         let (mut app, root) = fixture(Some(path.clone()));
@@ -2964,7 +3052,7 @@ pub(crate) mod tests {
                 index: 0,
                 targets: Default::default(),
             });
-        let saved = snapshot(app.world_mut(), root);
+        let saved = snapshot(app.world_mut(), root).expect("capture the workspace fixture");
         assert_eq!(saved.areas.len(), 1);
         assert_eq!(saved.areas[0].area.protein.as_ref(), Some(&config));
         let restored: Document =

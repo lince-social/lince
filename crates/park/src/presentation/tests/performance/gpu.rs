@@ -204,6 +204,7 @@ fn native_pass_hardware_intervals_belong_to_one_completed_full_or_pixel_frame() 
             "host_frame": summary(&readings), "host_samples": readings}));
         lince_interface::host::performance::flush();
     }
+    performance::set_phase(Phase::Unspecified);
     assert_eq!(frame_pixels(&canvas.probe_frame().unwrap()), reference);
     let report = serde_json::json!({
         "enabled": enabled,

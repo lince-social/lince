@@ -22,6 +22,10 @@ Park was running as PID `3481557`. Running `--build-info` through `/proc/3481557
 
 The installed optimized `e5f68e7b20e811be73f5b4b0ecf7326fcb3b3547` binary ran `--park-performance-check` with private XDG directories. The pointer click focused the intended native editor in the 30-item, two-output scene. The input oracle checked all 120 `é` events against the exact resulting editor text. The scene recorded no focus or correctness error. Typing to GPU completion was 57.87 ms p95, and the full suite exited 1 with timing and separate Interface failures. The mandatory Protein case failed on duplicate `PointerFocusPlugin` registration. Raw results are in `target/park-p65-e5f68e7b.tDb8Qr/results.jsonl`.
 
+### P65 worker publication — 2026-11-21
+
+The same optimized run completed 120 Edit toggles through the worker, waiting for GPU-completed frame publication at or after each input serial. Recomputing the percentiles from the saved samples gave 43.76 ms p50, 55.13 ms p95, 58.91 ms p99, and 61.06 ms worst. The run missed the 33.4 ms p95 budget by 21.73 ms and the 50 ms p99 budget by 8.91 ms. The worker's private idle sample used 0.032% of one CPU core. These timings end at GPU-completed publication. The physical input-to-visible check remains open.
+
 ## Checkout verification — 2026-11-20
 
 On `eb01745e`, all 32 Python runner/report tests and all three Anicca requirements tests passed. The source inventory audit also passed. Evidence is in `target/park-verification-eb01745e.rWMXKI3H/`. Prepared execution for P134 and P124 and native rule coverage for P140 remain open.

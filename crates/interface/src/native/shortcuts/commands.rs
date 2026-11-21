@@ -10,6 +10,8 @@ impl Shortcut {
         Some(match self {
             Self::Overview => "/view/overview",
             Self::TiledView => "/view/tiled",
+            Self::ZoomOut => "/view/zoom-out",
+            Self::ZoomIn => "/view/zoom-in",
             Self::RecentNext => "/focus/recent",
             Self::RecentPrevious => "/focus/recent-previous",
             Self::DesktopEdit => "/edit",

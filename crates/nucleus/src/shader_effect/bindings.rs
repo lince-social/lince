@@ -261,8 +261,10 @@ mod tests {
         let restored: NumericBinding =
             serde_json::from_value(serde_json::to_value(&value).unwrap()).unwrap();
         assert_eq!(restored, value);
-        let mut effect = super::super::Effect::default();
-        effect.bindings = vec![value.clone()];
+        let mut effect = super::super::Effect {
+            bindings: vec![value.clone()],
+            ..Default::default()
+        };
         #[cfg(feature = "shader-compiler")]
         assert!(effect.validate().is_ok());
         let restored: super::super::Effect =

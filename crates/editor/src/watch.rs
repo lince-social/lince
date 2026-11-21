@@ -1,5 +1,5 @@
 // non-lean-yet
-// Scope: mod polling, struct Changes, mod tests, struct Watch.
+// Scope: mod polling, struct Changes, struct Watch, mod tests.
 // BeautifulRust (baseline lines):
 // - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
 //   118, 171.
@@ -35,45 +35,6 @@ pub struct Changes {
     pub paths: BTreeSet<PathBuf>,
     pub rescan: bool,
     pub error: Option<String>,
-}
-
-#[cfg(test)]
-mod tests {
-    use std::time::Duration;
-
-    use super::*;
-
-    #[test]
-    fn polling_fallback_reports_changes_and_releases_unused_paths() {
-        let directory = tempfile::tempdir().unwrap();
-        let path = directory.path().join("file.txt");
-        std::fs::write(&path, "before").unwrap();
-        let mut watch = Watch::new(|| {}).unwrap();
-        watch.watcher = None;
-        watch
-            .set(BTreeSet::from([directory.path().to_path_buf()]))
-            .unwrap();
-        assert_eq!(watch.fallback.len(), 1);
-        let until = std::time::Instant::now() + Duration::from_secs(3);
-        while !watch.drain().rescan {
-            assert!(std::time::Instant::now() < until);
-            std::thread::sleep(Duration::from_millis(5));
-        }
-        std::fs::write(&path, "different size after").unwrap();
-        watch.polling.as_ref().unwrap().set(watch.fallback.clone());
-        let until = std::time::Instant::now() + Duration::from_secs(3);
-        loop {
-            let changes = watch.drain();
-            if changes.rescan || changes.paths.contains(&path) {
-                break;
-            }
-            assert!(std::time::Instant::now() < until);
-            std::thread::sleep(Duration::from_millis(10));
-        }
-        watch.set(BTreeSet::new()).unwrap();
-        assert!(watch.watched.is_empty());
-        assert!(watch.fallback.is_empty());
-    }
 }
 
 pub struct Watch {
@@ -202,5 +163,44 @@ impl Watch {
             changes.error = self.set(wanted).err();
         }
         changes
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::time::Duration;
+
+    use super::*;
+
+    #[test]
+    fn polling_fallback_reports_changes_and_releases_unused_paths() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("file.txt");
+        std::fs::write(&path, "before").unwrap();
+        let mut watch = Watch::new(|| {}).unwrap();
+        watch.watcher = None;
+        watch
+            .set(BTreeSet::from([directory.path().to_path_buf()]))
+            .unwrap();
+        assert_eq!(watch.fallback.len(), 1);
+        let until = std::time::Instant::now() + Duration::from_secs(3);
+        while !watch.drain().rescan {
+            assert!(std::time::Instant::now() < until);
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        std::fs::write(&path, "different size after").unwrap();
+        watch.polling.as_ref().unwrap().set(watch.fallback.clone());
+        let until = std::time::Instant::now() + Duration::from_secs(3);
+        loop {
+            let changes = watch.drain();
+            if changes.rescan || changes.paths.contains(&path) {
+                break;
+            }
+            assert!(std::time::Instant::now() < until);
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        watch.set(BTreeSet::new()).unwrap();
+        assert!(watch.watched.is_empty());
+        assert!(watch.fallback.is_empty());
     }
 }

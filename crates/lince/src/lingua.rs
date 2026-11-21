@@ -11,7 +11,7 @@ mod data;
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
-use anicca::grammar::grammar as ast;
+use lingua::grammar::grammar as ast;
 use nucleus::script::{Evaluator, Host};
 
 const USAGE: &str = "usage: lince lingua FILE [--directory DIR]\n       lince lingua check [FILE_OR_DIR]\n       lince lingua fmt [--write] FILE_OR_DIR\n       lince lingua eval EXPR [--directory DIR]\n\nScripts support dir = \"...\", let, local assignment, if/else, for, print, exact arithmetic, comparisons, and Boolean conditions.\nArrays: let result = []; for value in [1, 2] { if value > 1 { result = push(result, value); } } print(result);\nReads: quantity(@record), record(@record), property(@record, \"head\"), records(#concept), query({source: \"record\", where: [{quantity_lt: 0}], limit: 20}).\nData is opened only when a read executes. No database is created or migrated.";
@@ -58,7 +58,7 @@ pub fn dispatch(arguments: &[String]) -> Result<(), String> {
     }
     if command == "eval" {
         let source = target.ok_or(USAGE)?;
-        let expression = anicca::expression::parse(&source).map_err(|error| error.to_string())?;
+        let expression = lingua::expression::parse(&source).map_err(|error| error.to_string())?;
         let mut host = data::DataHost::new(directory);
         let value = Evaluator::new(&mut host)
             .evaluate(&expression, 0)
@@ -68,10 +68,10 @@ pub fn dispatch(arguments: &[String]) -> Result<(), String> {
     if command == "fmt" && target.is_none() {
         return Err(USAGE.into());
     }
-    let path = PathBuf::from(target.unwrap_or_else(|| "institute/anicca".into()));
+    let path = target.map_or_else(|| PathBuf::from(lingua::LINCE_RECORDS), PathBuf::from);
     if matches!(command, "check" | "fmt") {
         let paths = if command == "check" {
-            anicca::check_project(&path).map_err(|errors| {
+            lingua::check_project(&path).map_err(|errors| {
                 errors
                     .into_iter()
                     .map(|error| error.to_string())
@@ -79,13 +79,13 @@ pub fn dispatch(arguments: &[String]) -> Result<(), String> {
                     .join("\n")
             })?
         } else if path.is_dir() {
-            anicca::lingua_paths(&path).map_err(|error| error.to_string())?
+            lingua::lingua_paths(&path).map_err(|error| error.to_string())?
         } else {
             vec![path]
         };
         for path in &paths {
             let source = read_source(path)?;
-            let document = anicca::parse(&source)
+            let document = lingua::parse(&source)
                 .map_err(|error| diagnostic(path, &source, 0, &error.message))?;
             configuration(&document, path)?;
             if command == "check" {
@@ -93,7 +93,7 @@ pub fn dispatch(arguments: &[String]) -> Result<(), String> {
                     .map_err(|error| diagnostic(path, &source, error.offset, &error.message))?;
             }
             if command == "fmt" {
-                let formatted = anicca::format(&document);
+                let formatted = lingua::format(&document);
                 if write {
                     if source != formatted {
                         write_formatted(path, &formatted)?;
@@ -123,7 +123,7 @@ fn read_source(path: &Path) -> Result<String, String> {
 
 fn run_source(path: &Path, source: &str, directory: Option<PathBuf>) -> Result<(), String> {
     let document =
-        anicca::parse(source).map_err(|error| diagnostic(path, source, 0, &error.message))?;
+        lingua::parse(source).map_err(|error| diagnostic(path, source, 0, &error.message))?;
     let configured = configuration(&document, path)?;
     let mut host = data::DataHost::new(directory.or(configured));
     Evaluator::new(&mut host)

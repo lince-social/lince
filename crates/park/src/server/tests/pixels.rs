@@ -9,7 +9,7 @@ use bevy::{ecs::schedule::Schedules, prelude::*};
 use lince_interface::native;
 
 use super::{Window, *};
-use crate::presentation::Presentation;
+use crate::presentation::{PixelSync, PixelUpdate, Presentation};
 
 #[derive(Resource, Default)]
 struct Updates(u64);
@@ -671,7 +671,10 @@ fn unchanged_native_scene_records_client_pixel_stream_cost_and_visible_colors() 
         let frame = if retained {
             assert_eq!(
                 canvas.sync_pixels(&snapshots).unwrap(),
-                crate::presentation::PixelSync::Ready
+                PixelSync::Compatible {
+                    pending: false,
+                    update: PixelUpdate::Canvas,
+                }
             );
             let frame = canvas.pixel_frame().unwrap();
             frame.wait_for_probe().unwrap();
@@ -720,7 +723,10 @@ fn unchanged_native_scene_records_client_pixel_stream_cost_and_visible_colors() 
         harness.sync();
         assert_eq!(
             canvas.sync_pixels(&harness.server.windows()).unwrap(),
-            crate::presentation::PixelSync::Ready
+            PixelSync::Compatible {
+                pending: false,
+                update: PixelUpdate::None,
+            }
         );
         let frame = canvas.pixel_frame().unwrap();
         frame.wait_for_probe().unwrap();
@@ -739,7 +745,10 @@ fn unchanged_native_scene_records_client_pixel_stream_cost_and_visible_colors() 
         harness.sync();
         assert_eq!(
             canvas.sync_pixels(&harness.server.windows()).unwrap(),
-            crate::presentation::PixelSync::Ready
+            PixelSync::Compatible {
+                pending: false,
+                update: PixelUpdate::Canvas,
+            }
         );
         let frame = canvas.pixel_frame().unwrap();
         frame.wait_for_probe().unwrap();
@@ -775,7 +784,10 @@ fn unchanged_native_scene_records_client_pixel_stream_cost_and_visible_colors() 
         buffers.push(colored(&mut harness, &window, [255, 0, 255]));
         assert_eq!(
             canvas.sync_pixels(&harness.server.windows()).unwrap(),
-            crate::presentation::PixelSync::Ready
+            PixelSync::Compatible {
+                pending: false,
+                update: PixelUpdate::Canvas,
+            }
         );
         let frame = canvas.pixel_frame().unwrap();
         frame.wait_for_probe().unwrap();

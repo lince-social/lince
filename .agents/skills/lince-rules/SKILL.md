@@ -8,7 +8,7 @@ description: Preserve Lince's declared behavior when implementing, fixing, refac
 Read the [lingua skill](../lingua/SKILL.md) before reading Records.
 
 The owner writes hard requirements as prose lines beginning with `|>` in
-`institute/trails/lince/Lince.lingua` and related Lince Records. Spaces and tabs
+`institute/trails/Lince.lingua` and related Lince Records. Spaces and tabs
 before the marker are fine.
 Read each requirement with its surrounding Record for meaning and scope.
 Ordinary prose may explain the subject or discuss unrelated ideas; it need not
@@ -40,10 +40,10 @@ User-facing explanation.
 
 1. Before changing Lince, search the file for the features, concepts, and UI
    surfaces you will touch. Scan
-   `rg -n '^[ \t]*\|>|//[ \t]*\|>' institute/trails/lince -g '*.lingua'`
+   `rg -n '^[ \t]*\|>|//[ \t]*\|>' institute/trails/Lince.lingua institute/trails/lince -g '*.lingua'`
    for applicable rules elsewhere, including shared interface guidelines and
    hidden header requirements. For body requirements alone, use
-   `rg -n '^[ \t]*\|>' institute/trails/lince -g '*.lingua'`.
+   `rg -n '^[ \t]*\|>' institute/trails/Lince.lingua institute/trails/lince -g '*.lingua'`.
    The literal `>` excludes ordinary Markdown table rows and separators such
    as `|---|`, quotations beginning with `|`, and Rust `||` expressions. These
    searches find candidates: exclude fenced code examples and confirm a

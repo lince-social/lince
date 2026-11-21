@@ -109,10 +109,14 @@ fn contract_report(value: &Value) -> Result<Value> {
         let owner = requirement["normative_owner_stage"]
             .as_u64()
             .ok_or("Contract has no owner")?;
+        // The fixture records the original plan location. Only the stage matters here.
         require(
             (1..=21).contains(&owner)
                 && requirement["normative_document"]
-                    == format!("institute/anicca/workspace/{owner:02}-stage.md")
+                    .as_str()
+                    .is_some_and(|document| {
+                        Path::new(document).ends_with(format!("workspace/{owner:02}-stage.md"))
+                    })
                 && requirement["core_application_or_deferred_boundary"]
                     .as_str()
                     .is_some_and(|text| !text.is_empty()),

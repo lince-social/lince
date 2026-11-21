@@ -16,6 +16,34 @@ fn command(config: &std::path::Path) -> Command {
 }
 
 #[test]
+fn check_defaults_to_the_lince_record_in_trails() {
+    let directory = tempfile::tempdir().unwrap();
+    let root = directory.path();
+    let trails = root.join("institute/trails");
+    std::fs::create_dir_all(&trails).unwrap();
+    std::fs::write(trails.join("Lince.lingua"), "print(quantity(@missing));").unwrap();
+    std::fs::write(trails.join("Other.lingua"), "Broken (0) {\n").unwrap();
+
+    let config = root.join("unconfigured");
+    let output = command(&config)
+        .current_dir(root)
+        .arg("check")
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(
+        String::from_utf8(output.stdout).unwrap(),
+        "checked 1 .lingua file(s)\n"
+    );
+    assert!(!root.join("institute/anicca").exists());
+    assert!(!config.exists());
+}
+
+#[test]
 fn lince_runs_pure_lingua_without_initializing_an_instance() {
     let directory = tempfile::tempdir().unwrap();
     let config = directory.path().join("unconfigured");
@@ -104,7 +132,7 @@ fn control_flow_collects_an_array_without_initializing_an_instance() {
         String::from_utf8_lossy(&output.stderr)
     );
     let formatted = String::from_utf8(output.stdout).unwrap();
-    assert_eq!(anicca::canonicalize(&formatted).unwrap(), formatted);
+    assert_eq!(lingua::canonicalize(&formatted).unwrap(), formatted);
     assert_eq!(std::fs::read_to_string(&path).unwrap(), source);
     assert!(!directory.path().join("missing").exists());
     assert!(!config.exists());

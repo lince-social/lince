@@ -419,7 +419,7 @@ fn scaled_outputs_preserve_native_pixels_client_geometry_and_logical_editor_inpu
             let mut completed = crate::runtime::Completed {
                 sequence: 1,
                 scene_revision: 1,
-                frame,
+                frame: Arc::new(frame),
                 windows: Arc::new(canvas.painted_windows()),
                 rejected: Vec::new(),
                 input_serial: 0,
@@ -842,7 +842,7 @@ fn scaled_outputs_preserve_native_pixels_client_geometry_and_logical_editor_inpu
     let completed = crate::runtime::Completed {
         sequence: 1,
         scene_revision: 1,
-        frame: settle(&mut canvas),
+        frame: Arc::new(settle(&mut canvas)),
         windows: Arc::new(canvas.painted_windows()),
         rejected: Vec::new(),
         input_serial: 0,

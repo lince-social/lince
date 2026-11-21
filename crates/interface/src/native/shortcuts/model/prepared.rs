@@ -28,11 +28,19 @@ impl Prepared {
             conflicts: OnceLock::new(),
         };
         for shortcut in Shortcut::ALL {
-            let text = settings.text(shortcut);
+            let text = settings.configured_text(shortcut);
             let parsed = if text.eq_ignore_ascii_case("unbound") {
                 Ok(None)
             } else {
-                settings.parse(shortcut, text).map(Some)
+                settings.parse(shortcut, text).map(|trigger| {
+                    // Existing custom bindings take priority over the new zoom defaults.
+                    let occupied = matches!(shortcut, Shortcut::ZoomOut | Shortcut::ZoomIn)
+                        && !settings.0.overrides.contains_key(&shortcut)
+                        && settings.overrides().any(|(command, value)| {
+                            value.is_some_and(|value| settings.parse(command, value) == Ok(trigger))
+                        });
+                    (!occupied).then_some(trigger)
+                })
             };
             if let Ok(Some(trigger)) = &parsed {
                 match *trigger {
@@ -54,6 +62,22 @@ impl Prepared {
                 }
             }
             result.triggers.insert(shortcut, parsed);
+        }
+        // The unshifted key also zooms in when the default is in use.
+        if !settings.0.overrides.contains_key(&Shortcut::ZoomIn)
+            && let Some(Ok(Some(Trigger::Key(chord)))) = result.triggers.get(&Shortcut::ZoomIn)
+        {
+            let mut chord = *chord;
+            chord.modifiers.shift = false;
+            let alias = Ok(Some(chord.into()));
+            if !result.triggers.values().any(|trigger| trigger == &alias) {
+                result.desktop.push(DesktopBinding {
+                    key: chord.key,
+                    modifiers: chord.modifiers,
+                    action: crate::host::DesktopAction::ZoomIn,
+                    repeat: Shortcut::ZoomIn.repeats(),
+                });
+            }
         }
         engine::performance::add("shortcut-settings-prepared", 1);
         result

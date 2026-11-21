@@ -12,7 +12,7 @@
 
 use super::{holes, presentation::Surface};
 use crate::{
-    host::OutputId,
+    host::{OutputId, OutputViewport},
     native::{
         canvas::CanvasItem,
         output_views::OutputViews,
@@ -20,7 +20,8 @@ use crate::{
     },
 };
 use bevy::{
-    asset::RenderAssetUsages, camera::visibility::RenderLayers, mesh::PrimitiveTopology, prelude::*,
+    asset::RenderAssetUsages, camera::visibility::RenderLayers, math::DVec2,
+    mesh::PrimitiveTopology, prelude::*,
 };
 use std::collections::{HashMap, HashSet};
 
@@ -74,14 +75,20 @@ struct RenderView {
     id: ViewKey,
     root: Entity,
     workspace: u64,
-    physical_size: [u32; 2],
-    logical_size: Vec2,
+    native_size: DVec2,
     scale: f32,
-    offset: Vec2,
+    inset: DVec2,
     canvas: crate::native::canvas::CanvasView,
     center: bevy::math::DVec2,
     image: Handle<Image>,
     layer: usize,
+}
+
+pub(super) fn camera_inset(output: &OutputViewport, native_size: DVec2, zoom: f64) -> DVec2 {
+    let logical_size = DVec2::from_array(output.bounds.size());
+    let raster_offset =
+        DVec2::from_array(output.raster.origin) - DVec2::from_array(output.bounds.origin());
+    ((native_size - logical_size) * 0.5 + raster_offset) / zoom
 }
 
 #[derive(Component)]
@@ -210,14 +217,15 @@ fn synchronize_prepared(world: &mut World, state: &mut preparation::Preparation)
                 continue;
             };
             let canvas = crate::native::output_views::canvas(world, root, output.workspace);
+            let scale = output.raster.scale[0] as f32;
+            let native_size = DVec2::from_array(output.physical_size.map(f64::from)) / f64::from(scale);
             render_views.push(RenderView {
                 id: ViewKey::Output(output.id),
                 root,
                 workspace: output.workspace,
-                physical_size: output.physical_size,
-                logical_size: Vec2::from_array(output.bounds.size().map(|value| value as f32)),
-                scale: output.raster.scale[0] as f32,
-                offset: Vec2::from_array(output.raster.origin.map(|value| value as f32)),
+                native_size,
+                scale,
+                inset: camera_inset(output, native_size, canvas.zoom),
                 canvas,
                 center: canvas.center,
                 image: image.clone(),
@@ -237,10 +245,9 @@ fn synchronize_prepared(world: &mut World, state: &mut preparation::Preparation)
                 id: ViewKey::Preview(preview.id),
                 root: preview.root,
                 workspace: preview.workspace,
-                physical_size: preview.pixels.to_array(),
-                logical_size: preview.pixels.as_vec2(),
+                native_size: preview.pixels.as_dvec2(),
                 scale: 1.0,
-                offset: Vec2::ZERO,
+                inset: DVec2::ZERO,
                 canvas,
                 center: preview.view.center,
                 image: preview.image.clone(),
@@ -292,11 +299,7 @@ fn synchronize_prepared(world: &mut World, state: &mut preparation::Preparation)
         let layer = RenderLayers::none().with(output.layer);
         let root = output.root;
         let canvas = output.canvas;
-        let native_size =
-            Vec2::from_array(output.physical_size.map(|value| value as f32)) / output.scale;
-        let inset =
-            ((native_size - output.logical_size) * 0.5 + output.offset) / canvas.zoom as f32;
-        let delta = (output.center - canvas.center).as_vec2() + inset;
+        let delta = (output.center - canvas.center + output.inset).as_vec2();
         let center = Vec3::new(delta.x, 0.0, delta.y);
         let transform =
             Transform::from_translation(center + Vec3::Y * 10000.0).looking_at(center, -Vec3::Z);
@@ -307,10 +310,10 @@ fn synchronize_prepared(world: &mut World, state: &mut preparation::Preparation)
             world,
             colors.grid,
             crate::native::canvas::CanvasView {
-                center: output.center + inset.as_dvec2(),
+                center: output.center + output.inset,
                 ..canvas
             },
-            native_size,
+            output.native_size.as_vec2(),
         ) {
             if let Some((camera, _, handle)) = backgrounds.get(&output.id) {
                 if world

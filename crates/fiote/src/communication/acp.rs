@@ -358,14 +358,22 @@ impl Connection {
                             )
                             .block_task()
                             .await?;
-                    if let Some(ready) = setup.lock().unwrap().take() {
+                    if let Some(ready) = setup
+                        .lock()
+                        .expect("the agent initialization lock was poisoned")
+                        .take()
+                    {
                         let _ = ready.send(Ok((peer, info)));
                     }
                     let _ = closing.changed().await;
                     Ok(())
                 })
                 .await;
-            if let Some(ready) = ready.lock().unwrap().take() {
+            if let Some(ready) = ready
+                .lock()
+                .expect("the agent initialization lock was poisoned")
+                .take()
+            {
                 let _ = ready
                     .send(Err(result.err().map(failure).unwrap_or_else(|| {
                         "The agent stopped before initialization.".into()

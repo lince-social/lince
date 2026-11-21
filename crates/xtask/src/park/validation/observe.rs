@@ -189,7 +189,7 @@ fn configuration(arguments: &[OsString]) -> Result<Configuration> {
     let mut seconds = 5400;
     let mut unit = None;
     let mut peers = Vec::new();
-    for pair in arguments[2..].chunks_exact(2) {
+    for pair in arguments[2..].as_chunks::<2>().0 {
         if pair[0] == "--seconds" {
             seconds = pair[1]
                 .to_str()

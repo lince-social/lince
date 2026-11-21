@@ -54,6 +54,17 @@ fn idle_inhibition_stops_when_its_presented_output_disappears() {
     harness
         .server
         .presented_outputs(&geometry, Some(OutputId(2)));
+    harness.sync();
+    let membership_changes = harness.client.surface_output_changes;
+    assert!(
+        membership_changes >= 3,
+        "Expected the initial enter and move to the second output"
+    );
+    let _new_buffer = harness.attach(&window, [320, 240]);
+    assert_eq!(
+        harness.client.surface_output_changes, membership_changes,
+        "Replacing pixels re-entered the provisional output",
+    );
     let qh = harness.queue.handle();
     let inhibitor = harness
         .client

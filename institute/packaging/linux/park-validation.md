@@ -1,6 +1,6 @@
 # Park validation handoff
 
-The validation runner is development tooling. This document describes reusable procedures, not a list of unfinished work. Candidate-specific results and remaining acceptance are in [Overhaul.md](../../trails/lince/park/Overhaul.md). No prepared physical-session command exists until preparation succeeds for that run. Keep daily Lince data separate from this disposable profile. The current source-only phase does not run these procedures.
+The validation runner prepares a disposable profile for physical-session checks. Keep daily Lince data separate from that profile. The [Park plan](../../trails/lince/park/Park.lingua) lists the remaining checks and their binary requirements.
 
 ## Preparation in the existing desktop
 

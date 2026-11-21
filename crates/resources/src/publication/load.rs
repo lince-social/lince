@@ -83,11 +83,11 @@ fn read(library: &Library, candidate: &Address, refresh: bool) -> Result<Documen
         return Err("The source does not match its pinned content hash".into());
     }
     let base = library.source_base(&candidate.uri)?;
-    let text = anicca::ensure_uids(&images(&base, &raw)?)
+    let text = lingua::ensure_uids(&images(&base, &raw)?)
         .map_err(|error| error.to_string())?
         .0;
-    let document = anicca::parse(&text).map_err(|error| error.to_string())?;
-    let project = anicca::project(&document).map_err(|error| error.to_string())?;
+    let document = lingua::parse(&text).map_err(|error| error.to_string())?;
+    let project = lingua::project(&document).map_err(|error| error.to_string())?;
     if let Some(uid) = &candidate.uid
         && !project.records.iter().any(|record| record.uid == *uid)
     {
@@ -120,7 +120,7 @@ impl Publication {
                 continue;
             }
             let raw = fs::read_to_string(path).map_err(|error| error.to_string())?;
-            if let Ok(project) = anicca::parse(&raw).and_then(|document| anicca::project(&document))
+            if let Ok(project) = lingua::parse(&raw).and_then(|document| lingua::project(&document))
             {
                 let base = Reference::path(path)?.target;
                 let hash = fingerprint(raw.as_bytes());
@@ -320,7 +320,7 @@ impl Publication {
             return Err("The selection contains no Lingua documents".into());
         }
         for document in &mut documents {
-            anicca::resolve_project_references(&mut document.project, &slugs)
+            lingua::resolve_project_references(&mut document.project, &slugs)
                 .map_err(|error| error.to_string())?;
         }
         for instance in &instances {

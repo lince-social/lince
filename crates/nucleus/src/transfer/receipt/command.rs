@@ -51,6 +51,10 @@ pub struct EventRequest {
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+#[allow(
+    clippy::large_enum_variant,
+    reason = "Keep the public receipt command variants compatible with existing callers"
+)]
 pub enum Command {
     ApprovePerson {
         record: String,

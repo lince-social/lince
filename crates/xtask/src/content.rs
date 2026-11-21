@@ -59,16 +59,14 @@ pub fn package(repository: &Path, caller: &Path, arguments: &[OsString]) -> Resu
         )
         .map_err(|error| error.to_string())?;
     }
-    for (path, name) in [(repository.join("LICENSE"), "LICENSE")] {
-        archive
-            .start_file(name, options)
-            .map_err(|error| error.to_string())?;
-        io::copy(
-            &mut fs::File::open(path).map_err(|error| error.to_string())?,
-            &mut archive,
-        )
+    archive
+        .start_file("LICENSE", options)
         .map_err(|error| error.to_string())?;
-    }
+    io::copy(
+        &mut fs::File::open(repository.join("LICENSE")).map_err(|error| error.to_string())?,
+        &mut archive,
+    )
+    .map_err(|error| error.to_string())?;
     archive.finish().map_err(|error| error.to_string())?;
     println!("{}", destination.display());
     Ok(())

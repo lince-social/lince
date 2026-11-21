@@ -6,9 +6,9 @@ fn round_trip<T>(raw: Value) -> T
 where
     T: DeserializeOwned + Serialize,
 {
-    let value: T = serde_json::from_value(raw).unwrap();
-    let encoded = serde_json::to_value(value).unwrap();
-    serde_json::from_value(encoded).unwrap()
+    let value: T = serde_json::from_value(raw).expect("decode the wire fixture");
+    let encoded = serde_json::to_value(value).expect("encode the wire fixture");
+    serde_json::from_value(encoded).expect("decode the round-tripped fixture")
 }
 
 fn rejects_protein(raw: Value) {

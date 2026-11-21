@@ -129,7 +129,7 @@ pub fn crop(tile: Tile, region: [f32; 4]) -> Result<Tile> {
 enum Content {
     Pdf(pdf::Pdf),
     PdfOnline(pdf_online::Pdf),
-    Epub(epub::Epub),
+    Epub(Box<epub::Epub>),
 }
 
 pub struct Reader {
@@ -156,7 +156,7 @@ impl Reader {
                 is_pdf: false,
             };
             return Ok(Self {
-                content: Content::Epub(epub),
+                content: Content::Epub(Box::new(epub)),
                 info,
             });
         }
@@ -350,7 +350,7 @@ impl Reader {
                 is_pdf: false,
             };
             return Ok(Self {
-                content: Content::Epub(epub),
+                content: Content::Epub(Box::new(epub)),
                 info,
             });
         }
@@ -398,7 +398,7 @@ impl Reader {
                 is_pdf: false,
             };
             Ok(Self {
-                content: Content::Epub(epub),
+                content: Content::Epub(Box::new(epub)),
                 info,
             })
         } else {

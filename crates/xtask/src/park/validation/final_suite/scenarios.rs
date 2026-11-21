@@ -204,7 +204,7 @@ fn cargo_executable(directory: &Path, arguments: &[&str], name: &str) -> Result<
         .filter_map(|line| serde_json::from_str::<Value>(line).ok())
         .filter(|value| value["reason"] == "compiler-artifact" && value["target"]["name"] == name)
         .filter_map(|value| value["executable"].as_str().map(PathBuf::from))
-        .last()
+        .next_back()
         .ok_or_else(|| format!("Cargo did not report executable {name}; {}", log.display()))
 }
 
@@ -615,8 +615,7 @@ fn nix_outputs(log: &Path) -> Result<Vec<PathBuf>> {
         .map_err(error)?
         .lines()
         .filter_map(|line| serde_json::from_str::<Value>(line).ok())
-        .filter(serde_json::Value::is_array)
-        .last()
+        .rfind(serde_json::Value::is_array)
         .ok_or("Nix output has no JSON result")?;
     output
         .as_array()
@@ -1137,7 +1136,7 @@ mod tests {
             assert!(source_input(path), "{path}");
         }
         for path in [
-            "institute/anicca/Park.md",
+            "institute/trails/lince/park/Park.lingua",
             "institute/trails/unrelated.lingua",
             "target/debug/lince",
             ".git/index",

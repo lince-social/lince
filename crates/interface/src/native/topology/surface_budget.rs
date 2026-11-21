@@ -7,7 +7,7 @@ use bevy::{math::DVec3, prelude::*};
 mod allocation;
 pub(crate) mod residency;
 mod ui;
-pub(crate) use allocation::{Entry, Grant, allocate, bytes};
+pub(crate) use allocation::{Entry, Grant, allocate_outputs, bytes};
 pub(crate) use ui::{panel, reduction};
 
 pub const PIXEL_BUDGET: u64 = 32 * 1024 * 1024;
@@ -55,6 +55,7 @@ pub struct Request {
     pub visible: bool,
     pub text: bool,
     pub exact: bool,
+    pub output: Option<crate::host::OutputId>,
 }
 
 pub fn dimensions(size: Vec2, density: f32) -> (UVec2, f32) {
@@ -74,7 +75,7 @@ pub fn plan(requests: &[Request], budget: u64) -> Vec<(UVec2, f32)> {
             bytes_per_pixel: 1,
         })
         .collect();
-    allocate(&entries, budget, 4096)
+    allocation::allocate(&entries, budget, 4096)
         .into_iter()
         .map(|grant| (grant.pixels, grant.density))
         .collect()
@@ -137,6 +138,7 @@ mod tests {
                 visible: index % 3 != 0,
                 text: index % 5 == 0,
                 exact: false,
+                output: None,
             })
             .collect();
         let result = plan(&requests, PIXEL_BUDGET);
@@ -173,6 +175,7 @@ mod tests {
                 visible: true,
                 text: true,
                 exact: false,
+                output: None,
             };
             assert_eq!(plan(&[request], PIXEL_BUDGET)[0], (UVec2::splat(300), 1.0));
         }
@@ -188,6 +191,7 @@ mod tests {
                 visible: true,
                 text: false,
                 exact: true,
+                output: None,
             };
             assert_eq!(
                 plan(&[request], PIXEL_BUDGET)[0],
@@ -207,6 +211,7 @@ mod tests {
             visible: true,
             text: true,
             exact: false,
+            output: None,
         };
         let media = Request {
             size: Vec2::splat(1000.0),

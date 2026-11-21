@@ -401,7 +401,7 @@ impl Artifact {
             || self.chip != "esp32s3"
             || self.idf != SDK
             || ![4, 8, 16, 32].contains(&(self.flash_bytes / (1024 * 1024)))
-            || self.flash_bytes % (1024 * 1024) != 0
+            || !self.flash_bytes.is_multiple_of(1024 * 1024)
             || self.images.len() != 3
             || source_digest(root)? != self.source_sha384
         {
@@ -469,7 +469,7 @@ fn validate_partitions(table: &[u8], app_bytes: usize, flash_bytes: u32) -> Resu
     let mut nvs = false;
     let mut app = false;
     let mut phy = false;
-    for entry in table.chunks_exact(32) {
+    for entry in table.as_chunks::<32>().0 {
         if entry[..2] != 0x50aa_u16.to_le_bytes() {
             break;
         }

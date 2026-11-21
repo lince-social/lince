@@ -167,7 +167,9 @@ impl Connection {
                 })
                 .map(|option| option.id.to_string())
                 .ok_or("A saved agent setting is no longer available. Reset choices in Fiote settings.")?;
-            let value = remaining.remove(&id).unwrap();
+            let value = remaining
+                .remove(&id)
+                .expect("the selected option is in the remaining settings");
             if session.values().get(&id) != Some(&value) {
                 self.set_option(session, &id, &value).await?;
             }

@@ -5,8 +5,9 @@
 //   109, 114, 117, 133, 136, 153, 154, 162, 163, 164, 165.
 
 use super::Request;
+use crate::host::OutputViewport;
 use bevy::prelude::*;
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap};
 
 #[derive(Clone, Copy)]
 pub(crate) struct Entry {
@@ -15,13 +16,69 @@ pub(crate) struct Entry {
     pub bytes_per_pixel: u32,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub(crate) struct Grant {
     pub pixels: UVec2,
     pub density: f32,
     pub requested: UVec2,
     pub device_limited: bool,
     pub budget_limited: bool,
+}
+
+pub(crate) fn allocate_outputs(
+    entries: &[Entry],
+    outputs: &[OutputViewport],
+    budget: u64,
+    maximum: u32,
+) -> Vec<Grant> {
+    if outputs.len() < 2 {
+        return allocate(entries, budget, maximum);
+    }
+
+    // Size each output's share by its physical area. Zoom only spends the share
+    // of the output that needs the capture. Previews and shared effects can use spare bytes.
+    let area = |output: &OutputViewport| {
+        u128::from(output.physical_size[0]) * u128::from(output.physical_size[1])
+    };
+    let total_area: u128 = outputs.iter().map(area).sum();
+    if total_area == 0 {
+        return allocate(entries, budget, maximum);
+    }
+    let mut groups: HashMap<_, _> = outputs
+        .iter()
+        .map(|output| {
+            let share = (area(output) * u128::from(budget) / total_area) as u64;
+            (output.id, (share, Vec::new()))
+        })
+        .collect();
+    let mut shared = Vec::new();
+    for (index, entry) in entries.iter().copied().enumerate() {
+        let group = entry
+            .request
+            .output
+            .and_then(|output| groups.get_mut(&output));
+        group
+            .map_or(&mut shared, |(_, entries)| entries)
+            .push((index, entry));
+    }
+
+    let mut grants = vec![Grant::default(); entries.len()];
+    let mut allocate_group = |group: Vec<(usize, Entry)>, share| {
+        let (indices, entries): (Vec<_>, Vec<_>) = group.into_iter().unzip();
+        let allocation = allocate(&entries, share, maximum);
+        let mut used = 0;
+        for ((index, entry), grant) in indices.into_iter().zip(entries).zip(allocation) {
+            used += bytes(entry, grant.pixels);
+            grants[index] = grant;
+        }
+        used
+    };
+    let used: u64 = groups
+        .into_values()
+        .map(|(share, entries)| allocate_group(entries, share))
+        .sum();
+    allocate_group(shared, budget - used);
+    grants
 }
 
 fn extent(size: Vec2, density: f64, maximum: u32) -> UVec2 {
@@ -187,6 +244,7 @@ mod tests {
                 visible: true,
                 text: false,
                 exact: true,
+                output: None,
             },
             priority,
             bytes_per_pixel,

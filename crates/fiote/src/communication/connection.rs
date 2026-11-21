@@ -181,6 +181,10 @@ impl Profiles {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "operation", rename_all = "kebab-case", deny_unknown_fields)]
+#[allow(
+    clippy::large_enum_variant,
+    reason = "Keep the public connection request variants compatible with existing callers"
+)]
 pub enum Request {
     Inspect,
     Discover { refresh_registry: bool },

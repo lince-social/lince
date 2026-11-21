@@ -39,7 +39,7 @@ use lince_interface::{
 
 use crate::{
     graphics::ProbeFailure,
-    presentation::{Frame, PixelSync, Presentation},
+    presentation::{Frame, PixelSync, PixelUpdate, Presentation},
     server::WindowSnapshot,
 };
 
@@ -213,7 +213,7 @@ pub enum Input {
 pub struct Completed {
     pub sequence: u64,
     pub scene_revision: u64,
-    pub frame: Frame,
+    pub frame: Arc<Frame>,
     pub windows: Arc<Vec<WindowSnapshot>>,
     pub rejected: Vec<SurfaceId>,
     pub input_serial: u64,
@@ -669,13 +669,14 @@ fn run(
     let mut update_reasons = UPDATE_INITIAL;
     let mut input_serial = 0;
     let mut awaiting: Option<Completed> = None;
+    let mut published_frame: Option<Arc<Frame>> = None;
     let mut button_pending = false;
     let mut keyboard_pending = false;
     let mut queued_event = None;
     let mut focus_revision = None;
     let mut timing = latency::Batch::default();
     let mut last_sample = None;
-    let mut pixel_work = false;
+    let mut pixel_work = PixelUpdate::None;
     let mut pixel_imports = false;
     let synchronize_focus = |canvas: &mut Presentation,
                              revision: &mut Option<(u64, u64)>|
@@ -735,12 +736,13 @@ fn run(
                     canvas.pixel_scene(&scene)
                 );
             }
-            if matches!(
-                synchronized,
-                Some(PixelSync::Ready | PixelSync::Partial | PixelSync::Pending)
-            ) {
-                pending = synchronized != Some(PixelSync::Ready);
-                pixel_work |= synchronized != Some(PixelSync::Pending);
+            if let Some(PixelSync::Compatible {
+                pending: waiting,
+                update,
+            }) = synchronized
+            {
+                pending = waiting;
+                pixel_work = pixel_work.max(update);
                 pixel_imports = true;
             } else {
                 if let Some(display) = scene.display {
@@ -756,7 +758,7 @@ fn run(
                 pending = canvas.sync_windows(&scene.windows)?;
                 update = true;
                 update_reasons |= SCENE;
-                pixel_work = false;
+                pixel_work = PixelUpdate::None;
                 pixel_imports = false;
             }
             scene_revision = scene.revision;
@@ -1146,7 +1148,7 @@ fn run(
             if native_changed {
                 update_reasons |= NATIVE;
             }
-            pixel_work = false;
+            pixel_work = PixelUpdate::None;
             pixel_imports = false;
         }
         let retry_pixels = pending && pixel_imports && !pixel_attempted && canvas.imports_ready();
@@ -1164,6 +1166,7 @@ fn run(
             }
             let completed = awaiting.take().unwrap();
             let timing = completed.latency;
+            published_frame = Some(completed.frame.clone());
             if let Some(timing) = timing {
                 timing.ready();
             }
@@ -1188,22 +1191,23 @@ fn run(
                 lince_interface::host::performance::Count::ImportRetry,
             );
             match canvas.sync_pixels(&windows) {
-                Ok(PixelSync::Ready) => {
-                    pending = false;
-                    pixel_work = true;
+                Ok(PixelSync::Compatible {
+                    pending: waiting,
+                    update,
+                }) => {
+                    pending = waiting;
+                    pixel_work = pixel_work.max(update);
                 }
-                Ok(PixelSync::Partial) => pixel_work = true,
-                Ok(PixelSync::Pending) => {}
                 _ => {
                     pixel_imports = false;
-                    pixel_work = false;
+                    pixel_work = PixelUpdate::None;
                     update = true;
                     update_reasons |= UPDATE_IMPORT;
                     pending = canvas.sync_windows(&windows)?;
                 }
             }
         }
-        if !update && !pixel_work {
+        if !update && pixel_work == PixelUpdate::None {
             lince_interface::host::performance::count(
                 lince_interface::host::performance::Count::IdlePark,
             );
@@ -1219,7 +1223,7 @@ fn run(
             );
             pending = canvas.sync_windows(&windows)?;
         }
-        let pixels = pixel_work
+        let pixels = pixel_work != PixelUpdate::None
             && !update
             && canvas.retains_frame()
             && dirty.load(Ordering::Acquire) & NATIVE == 0;
@@ -1229,14 +1233,23 @@ fn run(
             );
         }
         let frame = if pixels {
-            canvas.try_pixel_frame()?
+            if let Some(previous) = published_frame.as_ref().filter(|_| {
+                pixel_work == PixelUpdate::Composition && canvas.can_reuse_canvas_for_composition()
+            }) {
+                Some(previous.clone())
+            } else {
+                canvas
+                    .try_pixel_frame(published_frame.as_deref())?
+                    .map(Arc::new)
+            }
         } else {
             pixel_imports = false;
             record_update(std::mem::take(&mut update_reasons));
-            canvas.try_frame()?
+            canvas.try_frame()?.map(Arc::new)
         };
-        pixel_work = false;
+        pixel_work = PixelUpdate::None;
         let Some(frame) = frame else {
+            published_frame = None;
             lince_interface::host::performance::count(
                 lince_interface::host::performance::Count::NativeUpdateUnavailable,
             );

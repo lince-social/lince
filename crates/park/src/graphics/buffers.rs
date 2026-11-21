@@ -138,12 +138,16 @@ impl VulkanRenderer {
     }
 
     pub(crate) fn retain_imports(&self, windows: &[crate::server::WindowSnapshot]) {
+        let mut waits = self.waits.borrow_mut();
+        if waits.is_empty() {
+            return;
+        }
         let live: std::collections::HashSet<_> = windows
             .iter()
             .flat_map(|window| &window.nodes)
             .map(|node| (node.content.buffer().clone(), node.content.version))
             .collect();
-        self.waits.borrow_mut().retain(|key, _| live.contains(key));
+        waits.retain(|key, _| live.contains(key));
     }
 
     pub(crate) fn import_surface(

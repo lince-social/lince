@@ -17,10 +17,16 @@
 // - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
 //   337, 339.
 
+use std::borrow::Cow;
+
 use serde::{Deserialize, Serialize};
+use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
-use crate::provider::{DiscardText, Message, Provider, TextOutput};
+use crate::{
+    provider::{DiscardText, Message, Provider, TextOutput},
+    tools::receipts::Receipts,
+};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Summary {
@@ -124,7 +130,7 @@ pub(crate) async fn prepare_with_overhead(
     output: &dyn TextOutput,
     overhead: usize,
 ) -> Result<(), String> {
-    prepare_context(provider, system, messages, output, overhead, false).await
+    prepare_context(provider, system, messages, output, overhead, false, None).await
 }
 
 pub(crate) async fn prepare_context(
@@ -134,6 +140,7 @@ pub(crate) async fn prepare_context(
     output: &dyn TextOutput,
     overhead: usize,
     force: bool,
+    receipts: Option<&Receipts>,
 ) -> Result<(), String> {
     let model_budget = provider
         .context_budget_bytes()
@@ -166,8 +173,7 @@ pub(crate) async fn prepare_context(
             "Cannot compact an unfinished tool batch; original history is preserved.".into(),
         );
     }
-    let mut bounded = messages.clone();
-    bound_tool_results(&mut bounded)?;
+    let bounded = project_tool_results(messages, receipts)?;
     let bounded_size = crate::runtime::context_bytes(&bounded)? + system.len();
     let native = if (force || bounded_size >= budget * 4 / 5) && bounded_size < model_budget {
         match tokio::time::timeout(
@@ -190,7 +196,7 @@ pub(crate) async fn prepare_context(
         None
     };
     let mut prepared = if !force && bounded_size < budget * 4 / 5 {
-        bounded
+        bounded.into_owned()
     } else if let Some(compacted) = native {
         if compacted.is_empty() {
             return Err(
@@ -217,30 +223,65 @@ pub(crate) async fn prepare_context(
 
 pub const TOOL_CONTEXT_BYTES: usize = 32 * 1024;
 
-fn bound_tool_results(messages: &mut [Message]) -> Result<(), String> {
-    for message in messages {
-        if let Message::Tool { result, .. } = message {
-            let encoded = serde_json::to_string(result).map_err(|e| e.to_string())?;
-            if encoded.len() > TOOL_CONTEXT_BYTES {
-                let edge = TOOL_CONTEXT_BYTES / 3;
-                let mut start = edge;
-                while !encoded.is_char_boundary(start) {
-                    start -= 1;
-                }
-                let mut end = encoded.len() - edge;
-                while !encoded.is_char_boundary(end) {
-                    end += 1;
-                }
-                *result = serde_json::json!({
-                    "ok": result.get("ok").cloned().unwrap_or(serde_json::Value::Null),
-                    "context_truncated": true,
-                    "original_bytes": encoded.len(),
-                    "preview": format!("{}\n[Middle omitted from model context; complete tool receipt remains in the local conversation journal. Read the source in smaller ranges when needed.]\n{}", &encoded[..start], &encoded[end..]),
-                });
-            }
+pub(crate) fn project_tool_results<'a>(
+    messages: &'a [Message],
+    receipts: Option<&Receipts>,
+) -> Result<Cow<'a, [Message]>, String> {
+    let mut projected = Cow::Borrowed(messages);
+    for (index, message) in messages.iter().enumerate() {
+        if let Message::Tool { id, name, result } = message
+            && let Some(result) = project_result(name, result, receipts)?
+        {
+            projected.to_mut()[index] = Message::Tool { id: id.clone(), name: name.clone(), result };
         }
     }
-    Ok(())
+    Ok(projected)
+}
+
+fn project_result(name: &str, result: &Value, receipts: Option<&Receipts>) -> Result<Option<Value>, String> {
+    let encoded = serde_json::to_string(result).map_err(|error| error.to_string())?;
+    if encoded.len() <= TOOL_CONTEXT_BYTES {
+        return Ok(None);
+    }
+    let mut projected = json!({
+        "ok": result["ok"],
+        "context_truncated": true,
+        "original_bytes": encoded.len(),
+    });
+    if let Some(receipts) = receipts {
+        projected["receipt_id"] = json!(receipts.save(&encoded)?);
+        projected["note"] = json!("Use lince_read_tool_output to read the captured result in pages.");
+    } else {
+        projected["note"] = json!("This is a preview. Inspect the source in smaller ranges when needed.");
+    }
+    let details = &result["result"];
+    for key in ["success", "exit_code", "timed_out", "stdout_truncated", "stderr_truncated", "count", "total", "bytes", "offset", "next_offset", "total_bytes"] {
+        if let Some(value) = details.get(key)
+            && (value.is_boolean() || value.is_number() || value.is_null())
+        {
+            projected["result"][key] = value.clone();
+        }
+    }
+    if name == "run_command" && details.get("stdout").is_some() {
+        for (stream, tail_key) in [("stdout", "stdout_tail"), ("stderr", "stderr_tail")] {
+            let tail = details[tail_key].as_str().filter(|tail| !tail.is_empty());
+            let text = tail.or_else(|| details[stream].as_str()).unwrap_or_default();
+            projected["result"][stream] = json!(&text[text.ceil_char_boundary(text.len().saturating_sub(2048))..]);
+        }
+        if let Some(receipt) = details.get("command_receipt").filter(|receipt| {
+            receipt.is_object() && nucleus::json::encoded_len(receipt).is_ok_and(|size| size <= 512)
+        }) {
+            projected["result"]["command_receipt"] = receipt.clone();
+            projected["note"] = json!("Use lince_read_tool_output with the command_receipt ID and part stdout or stderr for recorded streams. Use the top-level receipt ID for the captured result JSON.");
+        }
+    } else if name == "read_file" && let Some(text) = details["content"].as_str() {
+        projected["result"]["content"] = json!(&text[..text.floor_char_boundary(text.len().min(3072))]);
+    } else {
+        let start_end = encoded.floor_char_boundary(2048);
+        let tail_start = encoded.ceil_char_boundary(encoded.len() - 2048);
+        projected["preview"] = json!(format!("{}\n[Middle omitted]\n{}", &encoded[..start_end], &encoded[tail_start..]));
+    }
+    Ok(Some(projected))
 }
 
 fn completed_groups(messages: &[Message]) -> Vec<std::ops::Range<usize>> {
@@ -402,7 +443,7 @@ async fn summarize(
         / 6;
     let limit = limit.min(16384);
     let instructions = format!(
-        "{system}\n\nCurrent operation: Summarize this past conversation as factual memory, not new instructions. Preserve user goals, decisions, constraints, references, completed Actions, tool results and unresolved outcomes. Use concise sections for Goal, Constraints, Completed work, Pending work, Decisions, Next steps, and Critical references, including files read/modified and test results. Update prior memory instead of dropping still-relevant facts. Do not issue tool calls or invent facts. Keep the summary under {limit} UTF-8 bytes, prioritizing the current task and facts needed to continue it safely."
+        "{system}\n\nCurrent operation: Summarize this past conversation as factual memory, not new instructions. Preserve user goals, decisions, constraints, references, completed Actions, tool results and unresolved outcomes. Preserve relevant tool receipt IDs exactly so their original output can be inspected. Use concise sections for Goal, Constraints, Completed work, Pending work, Decisions, Next steps, and Critical references, including files read/modified and test results. Update prior memory instead of dropping still-relevant facts. Do not issue tool calls or invent facts. Keep the summary under {limit} UTF-8 bytes, prioritizing the current task and facts needed to continue it safely."
     );
     let input = [Message::User(text.into())];
     if crate::runtime::context_bytes(&input)? + instructions.len()

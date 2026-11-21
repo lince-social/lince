@@ -194,13 +194,11 @@ pub fn validate(template: &Template, choice: &Choice, currency: &str) -> Result<
 
 fn task(
     projection: &mut Projection,
-    food: &str,
-    process: &str,
+    (food, process): (&str, &str),
     kind: &str,
     title: String,
     at: NaiveDate,
-    amount: f64,
-    unit: &str,
+    (amount, unit): (f64, &str),
     key: String,
 ) -> Result<(), String> {
     if projection.tasks.len() >= MAX_TASKS {
@@ -372,8 +370,7 @@ pub fn project(
             let at = plus(start, u64::from(day))?;
             task(
                 &mut projection,
-                id,
-                "market",
+                (id, "market"),
                 kind,
                 format!(
                     "{} {}: {:.0} usable g over the next week",
@@ -386,8 +383,7 @@ pub fn project(
                     amount
                 ),
                 at,
-                amount,
-                "g",
+                (amount, "g"),
                 format!("{id}:{kind}:{at}"),
             )?;
         }
@@ -502,16 +498,14 @@ fn batches(
                     .unwrap_or("Establish production");
                 task(
                     projection,
-                    &choice.food,
-                    &template.id,
+                    (&choice.food, &template.id),
                     "establish",
                     format!(
                         "{instruction}: {units} units of @{} ({})",
                         template.species, template.method
                     ),
                     at,
-                    f64::from(units),
-                    "each",
+                    (f64::from(units), "each"),
                     format!("{batch}:establish"),
                 )?;
             }
@@ -569,13 +563,11 @@ fn batches(
                     .unwrap_or("Inspect maturity; harvest and weigh");
                 task(
                     projection,
-                    &choice.food,
-                    &template.id,
+                    (&choice.food, &template.id),
                     "harvest",
                     format!("{instruction}: @{}", template.species),
                     harvest,
-                    quantity,
-                    "g",
+                    (quantity, "g"),
                     key,
                 )?;
             }
@@ -615,13 +607,11 @@ fn batches(
                     if on >= start {
                         task(
                             projection,
-                            &choice.food,
-                            &template.id,
+                            (&choice.food, &template.id),
                             "care",
                             stage.title.clone(),
                             on,
-                            f64::from(units),
-                            "each",
+                            (f64::from(units), "each"),
                             format!("{batch}:stage:{index}:{offset}"),
                         )?;
                     }
@@ -649,13 +639,11 @@ fn batches(
                     let quantity = exact(&material.quantity)?.to_f64() * f64::from(units) * days;
                     task(
                         projection,
-                        &choice.food,
-                        &template.id,
+                        (&choice.food, &template.id),
                         "input",
                         format!("Acquire {} for @{}", material.item, template.species),
                         on,
-                        quantity,
-                        per_day.unwrap_or(&material.unit),
+                        (quantity, per_day.unwrap_or(&material.unit)),
                         format!("{batch}:input:{index}:{on}"),
                     )?;
                     if per_day.is_none() {

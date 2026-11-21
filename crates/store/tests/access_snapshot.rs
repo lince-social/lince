@@ -221,8 +221,10 @@ async fn metadata_does_not_materialize_record_bodies() {
         store::exact::zero(),
     )
     .await;
-    let mut limits = AccessSnapshotLimits::default();
-    limits.row_bytes = 256;
+    let limits = AccessSnapshotLimits {
+        row_bytes: 256,
+        ..Default::default()
+    };
     let mut tx = store.pool.begin().await.unwrap();
     let snapshot = store::access_snapshot::metadata_on(&mut tx, &limits)
         .await
@@ -702,43 +704,56 @@ async fn every_row_count_and_byte_limit_refuses_without_partial_output() {
     .await
     .unwrap();
 
-    let mut cases = Vec::new();
-    let mut limits = AccessSnapshotLimits::default();
-    limits.records = 0;
-    cases.push(limits);
-    let mut limits = AccessSnapshotLimits::default();
-    limits.concepts = 0;
-    cases.push(limits);
-    let mut limits = AccessSnapshotLimits::default();
-    limits.concept_parents = 0;
-    cases.push(limits);
-    let mut limits = AccessSnapshotLimits::default();
-    limits.assertions = 0;
-    cases.push(limits);
-    let mut limits = AccessSnapshotLimits::default();
-    limits.places = 0;
-    cases.push(limits);
-    let mut limits = AccessSnapshotLimits::default();
-    limits.roles = 0;
-    cases.push(limits);
-    let mut limits = AccessSnapshotLimits::default();
-    limits.visibility_rules = 0;
-    cases.push(limits);
-    let mut limits = AccessSnapshotLimits::default();
-    limits.linguas = 0;
-    cases.push(limits);
-    let mut limits = AccessSnapshotLimits::default();
-    limits.lingua_concepts = 0;
-    cases.push(limits);
-    let mut limits = AccessSnapshotLimits::default();
-    limits.message_drafts = 0;
-    cases.push(limits);
-    let mut limits = AccessSnapshotLimits::default();
-    limits.row_bytes = 1;
-    cases.push(limits);
-    let mut limits = AccessSnapshotLimits::default();
-    limits.metadata_bytes = 1;
-    cases.push(limits);
+    let cases = [
+        AccessSnapshotLimits {
+            records: 0,
+            ..Default::default()
+        },
+        AccessSnapshotLimits {
+            concepts: 0,
+            ..Default::default()
+        },
+        AccessSnapshotLimits {
+            concept_parents: 0,
+            ..Default::default()
+        },
+        AccessSnapshotLimits {
+            assertions: 0,
+            ..Default::default()
+        },
+        AccessSnapshotLimits {
+            places: 0,
+            ..Default::default()
+        },
+        AccessSnapshotLimits {
+            roles: 0,
+            ..Default::default()
+        },
+        AccessSnapshotLimits {
+            visibility_rules: 0,
+            ..Default::default()
+        },
+        AccessSnapshotLimits {
+            linguas: 0,
+            ..Default::default()
+        },
+        AccessSnapshotLimits {
+            lingua_concepts: 0,
+            ..Default::default()
+        },
+        AccessSnapshotLimits {
+            message_drafts: 0,
+            ..Default::default()
+        },
+        AccessSnapshotLimits {
+            row_bytes: 1,
+            ..Default::default()
+        },
+        AccessSnapshotLimits {
+            metadata_bytes: 1,
+            ..Default::default()
+        },
+    ];
     for limits in cases {
         let mut tx = store.pool.begin().await.unwrap();
         assert!(
@@ -749,8 +764,10 @@ async fn every_row_count_and_byte_limit_refuses_without_partial_output() {
         tx.rollback().await.unwrap();
     }
 
-    let mut limits = AccessSnapshotLimits::default();
-    limits.targets = 0;
+    let limits = AccessSnapshotLimits {
+        targets: 0,
+        ..Default::default()
+    };
     let mut tx = store.pool.begin().await.unwrap();
     assert!(
         store::access_snapshot::content_on(&mut tx, std::slice::from_ref(&target), &limits)
@@ -758,8 +775,10 @@ async fn every_row_count_and_byte_limit_refuses_without_partial_output() {
             .is_err()
     );
     tx.rollback().await.unwrap();
-    let mut limits = AccessSnapshotLimits::default();
-    limits.extensions = 0;
+    let limits = AccessSnapshotLimits {
+        extensions: 0,
+        ..Default::default()
+    };
     let mut tx = store.pool.begin().await.unwrap();
     assert!(
         store::access_snapshot::content_on(&mut tx, std::slice::from_ref(&target), &limits)
@@ -767,8 +786,10 @@ async fn every_row_count_and_byte_limit_refuses_without_partial_output() {
             .is_err()
     );
     tx.rollback().await.unwrap();
-    let mut limits = AccessSnapshotLimits::default();
-    limits.row_bytes = 1;
+    let limits = AccessSnapshotLimits {
+        row_bytes: 1,
+        ..Default::default()
+    };
     let mut tx = store.pool.begin().await.unwrap();
     assert!(
         store::access_snapshot::content_on(&mut tx, std::slice::from_ref(&target), &limits)
@@ -776,8 +797,10 @@ async fn every_row_count_and_byte_limit_refuses_without_partial_output() {
             .is_err()
     );
     tx.rollback().await.unwrap();
-    let mut limits = AccessSnapshotLimits::default();
-    limits.content_bytes = 1;
+    let limits = AccessSnapshotLimits {
+        content_bytes: 1,
+        ..Default::default()
+    };
     let mut tx = store.pool.begin().await.unwrap();
     assert!(
         store::access_snapshot::content_on(&mut tx, std::slice::from_ref(&target), &limits)

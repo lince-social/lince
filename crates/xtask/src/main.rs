@@ -9,7 +9,7 @@
 use std::{
     env, fs,
     io::{self, Write},
-    path::PathBuf,
+    path::{Path, PathBuf},
     process::{Command, Stdio},
 };
 
@@ -226,56 +226,32 @@ fn dispatch() -> Result<()> {
         Some("android-clean") => android_clean::run(&root, &extra),
         Some("android-smoke") => android_smoke::run(&root, &extra),
         Some("ui-test") => ui_test::run(&caller_directory, &extra),
-        Some("plugin-example") => {
-            if extra.len() != 1 {
-                return Err("usage: cargo xtask plugin-example <Lince-data-directory>".into());
+        Some(task @ ("plugin-example" | "plugin-files" | "plugin-activitypub" | "plugin-irc")) => {
+            let [directory] = extra.as_slice() else {
+                return Err(format!("usage: cargo xtask {task} <Lince-data-directory>"));
+            };
+            let manifest = root.with_file_name("plugins").join("Cargo.toml");
+            if !manifest.is_file() {
+                return Err(format!(
+                    "Missing {}. Clone https://github.com/lince-social/plugins next to the Lince checkout.",
+                    manifest.display()
+                ));
             }
-            checked(
-                cargo_command()
-                    .args([
-                        "run",
-                        "--locked",
-                        "-p",
-                        "lince-plugin-nostr",
-                        "--",
-                        "--install",
-                    ])
-                    .args(&extra),
-            )
-        }
-        Some("plugin-files") => {
-            if extra.len() != 1 {
-                return Err("usage: cargo xtask plugin-files <Lince-data-directory>".into());
-            }
-            checked(
-                cargo_command()
-                    .args([
-                        "run",
-                        "--locked",
-                        "-p",
-                        "lince-plugin-files",
-                        "--",
-                        "--install",
-                    ])
-                    .args(&extra),
-            )
-        }
-        Some("plugin-activitypub" | "plugin-irc") => {
-            if extra.len() != 1 {
-                return Err(
-                    "usage: cargo xtask <plugin-activitypub|plugin-irc> <Lince-data-directory>"
-                        .into(),
-                );
-            }
-            let package = if task == "plugin-irc" {
-                "lince-plugin-irc"
+            let plugin = if task == "plugin-example" {
+                "plugin-nostr"
             } else {
-                "lince-plugin-activitypub"
+                task
             };
             checked(
                 cargo_command()
-                    .args(["run", "--locked", "-p", package, "--", "--install"])
-                    .args(&extra),
+                    .args(["run", "--locked", "--manifest-path"])
+                    .arg(manifest)
+                    .arg("--target-dir")
+                    .arg(root.join("target/plugins"))
+                    .arg("-p")
+                    .arg(format!("lince-{plugin}"))
+                    .args(["--", "--install"])
+                    .arg(directory),
             )
         }
         Some("mobile-preview") => {
@@ -498,7 +474,7 @@ fn check_instinct() -> Result<()> {
             "test",
             "--locked",
             "--package",
-            "anicca",
+            "lingua",
             "--test",
             "instinct",
         ],
@@ -664,7 +640,7 @@ fn cargo_command() -> Command {
     }
 }
 
-fn version(root: &PathBuf) -> Result<()> {
+fn version(root: &Path) -> Result<()> {
     let branch = Command::new("git")
         .args(["rev-parse", "--abbrev-ref", "HEAD"])
         .output()

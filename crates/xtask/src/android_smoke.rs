@@ -300,24 +300,23 @@ impl Runner {
                 for line in logs.lines().rev() {
                     if let Some((_, body)) = line.split_once("LINCE_SMOKE ")
                         && let Ok(reply) = serde_json::from_str::<Value>(body)
+                        && reply["id"] == self.sequence
                     {
-                        if reply["id"] == self.sequence {
-                            fs::write(
-                                self.output.join("snapshot.json"),
-                                serde_json::to_vec_pretty(&reply).map_err(|_| {
-                                    ReplyFailure::Uncertain(
-                                        "Smoke snapshot could not be encoded".into(),
-                                    )
-                                })?,
-                            )
-                            .map_err(|_| {
-                                ReplyFailure::Uncertain("Smoke snapshot could not be saved".into())
-                            })?;
-                            if let Some(error) = reply["error"].as_str() {
-                                return Err(ReplyFailure::Rejected(error.into()));
-                            }
-                            return Ok(reply);
+                        fs::write(
+                            self.output.join("snapshot.json"),
+                            serde_json::to_vec_pretty(&reply).map_err(|_| {
+                                ReplyFailure::Uncertain(
+                                    "Smoke snapshot could not be encoded".into(),
+                                )
+                            })?,
+                        )
+                        .map_err(|_| {
+                            ReplyFailure::Uncertain("Smoke snapshot could not be saved".into())
+                        })?;
+                        if let Some(error) = reply["error"].as_str() {
+                            return Err(ReplyFailure::Rejected(error.into()));
                         }
+                        return Ok(reply);
                     }
                 }
             } else if self.seen_pid.is_some() && !self.allow_restart {

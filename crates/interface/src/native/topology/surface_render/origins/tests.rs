@@ -19,6 +19,32 @@ fn source(entity: Entity) -> CaptureOrigins {
 }
 
 #[test]
+fn output_reuse_requires_complete_provenance_without_changed_sources() {
+    let mut app = app();
+    let mut images = Assets::<Image>::default();
+    let changed = app.world_mut().spawn_empty().id();
+    let unchanged = app.world_mut().spawn_empty().id();
+    let input = images.add(Image::default());
+    let affected = images.add(Image::default());
+    let independent = images.add(Image::default());
+    let missing = images.add(Image::default());
+    let unknown = images.add(Image::default());
+    let completed = app.world().resource::<CompletedCaptures>().clone();
+    let mut sampled = source(unchanged);
+    sampled.images.insert(input.id());
+    completed.queue(input.id(), (-1, 0), true, source(changed));
+    completed.queue(affected.id(), (0, 0), true, sampled);
+    completed.queue(independent.id(), (0, 0), true, source(unchanged));
+    completed.queue(unknown.id(), (0, 0), true, CaptureOrigins::default());
+    app.update();
+    let images = [affected.id(), independent.id(), missing.id(), unknown.id()];
+    assert_eq!(
+        completed.independent_images(images.into_iter(), &BTreeSet::from([changed])),
+        BTreeSet::from([independent.id()]),
+    );
+}
+
+#[test]
 fn completion_records_actual_draw_order_and_keeps_sampled_provenance_after_an_input_changes() {
     let mut app = app();
     let mut images = Assets::<Image>::default();

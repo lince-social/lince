@@ -295,6 +295,8 @@ impl Shortcut {
         Some(match self {
             Self::Overview => A::ToggleOverview,
             Self::TiledView => A::ToggleTiledView,
+            Self::ZoomOut => A::ZoomOut,
+            Self::ZoomIn => A::ZoomIn,
             Self::DesktopEdit => A::ToggleEdit,
             Self::Unfocus => A::ToggleFocus,
             Self::RecentNext => A::RecentNext,

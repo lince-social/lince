@@ -145,7 +145,9 @@ fn renders_pdf_text_vectors_and_reuses_page_pixels() {
     assert!(
         first
             .rgba
-            .chunks_exact(4)
+            .as_chunks::<4>()
+            .0
+            .iter()
             .filter(|p| p[2] > 100 && p[0] < 50)
             .count()
             > 50_000
@@ -173,7 +175,9 @@ fn renders_epub_external_css_imports_images_and_reflow() {
     let tile = reader.tile(0, 720, 0).unwrap();
     assert!(
         tile.rgba
-            .chunks_exact(4)
+            .as_chunks::<4>()
+            .0
+            .iter()
             .filter(|p| p[0] > 240 && p[1] < 10)
             .count()
             > 2000,
@@ -181,7 +185,9 @@ fn renders_epub_external_css_imports_images_and_reflow() {
     );
     assert!(
         tile.rgba
-            .chunks_exact(4)
+            .as_chunks::<4>()
+            .0
+            .iter()
             .filter(|p| p[1] > 240 && p[0] < 10)
             .count()
             > 2000,
@@ -191,7 +197,9 @@ fn renders_epub_external_css_imports_images_and_reflow() {
         let tile = reader.tile(0, 720, index).unwrap();
         assert!(
             tile.rgba
-                .chunks_exact(4)
+                .as_chunks::<4>()
+                .0
+                .iter()
                 .filter(|pixel| pixel[0] < 120)
                 .count()
                 > 500,
@@ -328,8 +336,10 @@ fn chapter_passage_image_and_page_region_references_use_shared_locators() {
     assert!(
         image
             .rgba
-            .chunks_exact(4)
-            .all(|pixel| pixel == [20, 30, 200, 255])
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .all(|pixel| *pixel == [20, 30, 200, 255])
     );
     let mut reader = Reader::from_bytes(pdf(), "test.pdf").unwrap();
     let locator = Locator {
@@ -380,7 +390,9 @@ fn local_pdf_uses_the_seekable_backend_when_pdfium_is_available() {
             .tile(1, 720, 0)
             .unwrap()
             .rgba
-            .chunks_exact(4)
+            .as_chunks::<4>()
+            .0
+            .iter()
             .any(|pixel| pixel[2] > 100 && pixel[0] < 50)
     );
 }

@@ -118,7 +118,7 @@ impl Config {
         let rotary =
             (self.decoder.head_dim as f64 * self.rope_parameters.partial_rotary_factor) as usize;
         if rotary == 0
-            || rotary % 2 != 0
+            || !rotary.is_multiple_of(2)
             || self.encoder_config.sliding_windows.len()
                 != self.encoder_config.attention.num_hidden_layers
             || self
@@ -498,7 +498,7 @@ impl Recognizer {
     fn encode(&self, samples: &[f32], cancelled: &AtomicBool) -> Result<Tensor> {
         let mut framed = samples.to_vec();
         framed.resize(samples.len().div_ceil(80) * 80, 0.0);
-        for frame in framed.chunks_exact_mut(80) {
+        for frame in framed.as_chunks_mut::<80>().0 {
             let mean = frame.iter().sum::<f32>() / 80.0;
             let rms = (frame
                 .iter()

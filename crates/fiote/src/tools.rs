@@ -26,6 +26,7 @@ use crate::provider::ToolDefinition;
 
 mod changes;
 mod command;
+pub(crate) mod receipts;
 mod workspace;
 
 pub use changes::file_diff;
@@ -38,28 +39,55 @@ pub trait Tool: Send + Sync {
 }
 
 #[derive(Default)]
-pub struct Registry(BTreeMap<String, Arc<dyn Tool>>);
+pub struct Registry(BTreeMap<String, Entry>);
+
+enum Entry {
+    Tool(Arc<dyn Tool>),
+    Command(RunCommand),
+}
+
+impl Entry {
+    fn tool(&self) -> &dyn Tool {
+        match self {
+            Self::Tool(tool) => tool.as_ref(),
+            Self::Command(command) => command,
+        }
+    }
+}
 
 impl Registry {
     pub fn register_workspace(&mut self, directory: &Path) -> Result<(), String> {
         self.register(CreateFile::new(directory)?);
         workspace::register(self, directory)?;
-        self.register(RunCommand::new(directory)?);
+        let command = RunCommand::new(directory)?;
+        self.0.insert(command.definition().name, Entry::Command(command));
         Ok(())
     }
 
     pub fn register(&mut self, tool: impl Tool + 'static) {
-        self.0.insert(tool.definition().name, Arc::new(tool));
+        self.0.insert(tool.definition().name, Entry::Tool(Arc::new(tool)));
     }
 
     pub fn definitions(&self) -> Vec<ToolDefinition> {
-        self.0.values().map(|tool| tool.definition()).collect()
+        self.0.values().map(|entry| entry.tool().definition()).collect()
     }
 
     pub async fn run(&self, name: &str, arguments: Value) -> Value {
-        let result = match self.0.get(name) {
-            Some(tool) => tool.run(arguments).await,
-            None => Err(format!("Tool {name} is not available.")),
+        self.run_with_receipts(name, arguments, None).await
+    }
+
+    pub(crate) async fn run_with_receipts(
+        &self,
+        name: &str,
+        arguments: Value,
+        receipts: Option<&receipts::Receipts>,
+    ) -> Value {
+        let result = match (self.0.get(name), receipts) {
+            (Some(Entry::Command(command)), Some(receipts)) => {
+                command.run_captured(arguments, Some(&receipts.command())).await
+            }
+            (Some(entry), _) => entry.tool().run(arguments).await,
+            (None, _) => Err(format!("Tool {name} is not available.")),
         };
         match result {
             Ok(result) => json!({"ok": true, "result": result}),

@@ -202,14 +202,15 @@ async fn follow_up_can_compact_a_large_completed_turn_without_splitting_tool_rec
         serde_json::to_value(&original[4]).unwrap()
     );
     assert_eq!(output.summaries.lock().unwrap()[0].0, 4);
-    let requests = model.requests.lock().unwrap();
-    let Message::User(text) = &requests[0][0] else {
-        panic!("Missing summary input")
-    };
-    assert!(text.contains("completed-call-result"));
-    assert!(text.contains("Prior work finished"));
-    assert!(!text.contains("Follow up:"));
-    drop(requests);
+    {
+        let requests = model.requests.lock().unwrap();
+        let Message::User(text) = &requests[0][0] else {
+            panic!("Missing summary input")
+        };
+        assert!(text.contains("completed-call-result"));
+        assert!(text.contains("Prior work finished"));
+        assert!(!text.contains("Follow up:"));
+    }
     let failed = Model {
         requests: Default::default(),
         fail: true,

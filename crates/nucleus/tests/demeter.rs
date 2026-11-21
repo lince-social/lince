@@ -276,8 +276,8 @@ fn container_capacity_requires_a_measured_density() {
 
 #[test]
 fn adult_selection_changes_with_age_and_applies_personal_overrides() {
-    let publication = anicca::project(
-        &anicca::parse(include_str!(
+    let publication = lingua::project(
+        &lingua::parse(include_str!(
             "../../../institute/trails/ergon/gaia/nutrition/Nutrition-needs.lingua"
         ))
         .unwrap(),
@@ -382,8 +382,8 @@ fn energy_shares_constrain_actual_energy_not_only_a_reference_calorie_number() {
 #[test]
 fn all_463_food_profiles_can_participate_in_a_bounded_weekly_solve() {
     let started = std::time::Instant::now();
-    let publication = anicca::project(
-        &anicca::parse(include_str!(
+    let publication = lingua::project(
+        &lingua::parse(include_str!(
             "../../../institute/trails/ergon/gaia/nutrition/Nutrients.lingua"
         ))
         .unwrap(),

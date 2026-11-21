@@ -272,12 +272,14 @@ struct TileProgress {
     expected: u64,
 }
 
+type TileDownload = Arc<OnceCell<Result<Bytes, String>>>;
+
 pub struct TileStore {
     settings: Settings,
     root: PathBuf,
     client: reqwest::Client,
     slots: Semaphore,
-    in_flight: AsyncMutex<HashMap<Tile, Arc<OnceCell<Result<Bytes, String>>>>>,
+    in_flight: AsyncMutex<HashMap<Tile, TileDownload>>,
     progress: Mutex<BTreeMap<Tile, TileProgress>>,
     quota_root: PathBuf,
     storage: Arc<AsyncMutex<()>>,

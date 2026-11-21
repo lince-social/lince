@@ -198,7 +198,7 @@ async fn deactivated_conversation_drops_out_of_the_list() {
     );
 
     sqlx::query("UPDATE record SET quantity_mantissa = '0', quantity_scale = 0 WHERE uid = ?")
-        .bind(&conv.as_str())
+        .bind(conv.as_str())
         .execute(&store.pool)
         .await
         .unwrap();
@@ -230,9 +230,11 @@ async fn extension_roundtrips_with_defaults() {
             .is_none()
     );
 
-    let mut ext = communication::CommunicationExt::default();
-    ext.room_id = "room-42".to_string();
-    ext.recording_policy = "disabled".to_string();
+    let ext = communication::CommunicationExt {
+        room_id: "room-42".to_string(),
+        recording_policy: "disabled".to_string(),
+        ..Default::default()
+    };
     communication::set_ext(&store.pool, &conv, &ext)
         .await
         .unwrap();

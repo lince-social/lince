@@ -36,6 +36,11 @@ struct View {
     texture: GlesTexture,
 }
 
+struct CanvasTexture {
+    buffer: smithay::backend::allocator::dmabuf::Dmabuf,
+    texture: GlesTexture,
+}
+
 trait RasterRect {
     fn rectangle(self, rectangle: Rectangle) -> Rect<i32, Physical>;
 }
@@ -116,7 +121,7 @@ pub(crate) struct Composition {
     imports: HashMap<WlSurface, smithay::backend::renderer::utils::CommitCounter>,
     submitted: Option<smithay::backend::renderer::sync::SyncPoint>,
     submitted_watch: Option<crate::graphics::wait::Watch>,
-    canvases: HashMap<OutputId, GlesTexture>,
+    canvases: HashMap<OutputId, CanvasTexture>,
     #[cfg(feature = "session")]
     canvas_render: Option<u64>,
     views: HashMap<(WlSurface, u64), View>,
@@ -308,19 +313,29 @@ impl Composition {
         let started = frame
             .traced_render
             .map(|_| crate::presentation::frame_trace::timestamp());
+        let main = frame
+            .dmabuf()
+            .map(|buffer| (frame.output.unwrap_or(OutputId(1)), buffer));
+        let outputs = frame
+            .outputs
+            .iter()
+            .map(|output| (output.id, output.dmabuf()));
         let mut canvases = HashMap::new();
-        if let Some(buffer) = frame.dmabuf() {
+        for (id, buffer) in main.into_iter().chain(outputs) {
+            let texture = match self
+                .canvases
+                .get(&id)
+                .filter(|cached| &cached.buffer == buffer)
+            {
+                Some(cached) => cached.texture.clone(),
+                None => renderer.import_dmabuf(buffer, None).map_err(error)?,
+            };
             canvases.insert(
-                frame.output.unwrap_or(OutputId(1)),
-                renderer.import_dmabuf(buffer, None).map_err(error)?,
-            );
-        }
-        for output in &frame.outputs {
-            canvases.insert(
-                output.id,
-                renderer
-                    .import_dmabuf(output.dmabuf(), None)
-                    .map_err(error)?,
+                id,
+                CanvasTexture {
+                    buffer: buffer.clone(),
+                    texture,
+                },
             );
         }
         self.canvases = canvases;
@@ -659,13 +674,8 @@ impl Composition {
                 renderer, target, size, transform, server, canvas, pointer, view,
             );
         }
-        self.linear_targets.retain(|id, _| {
-            id.is_none()
-                || server
-                    .output_viewports()
-                    .iter()
-                    .any(|(_, output)| Some(output.id) == *id)
-        });
+        self.linear_targets
+            .retain(|id, _| id.is_none_or(|id| server.has_output(id)));
         let key = view.map(|view| view.id);
         let mut linear = self
             .linear_targets
@@ -997,11 +1007,12 @@ impl Composition {
         {
             callbacks.push((Some(layer.output), layer.nodes.clone()));
         }
-        let pointer_output = server
-            .output_viewports()
-            .into_iter()
+        let outputs = server.output_viewports();
+        let pointer_view = outputs
+            .iter()
             .find(|(_, output)| output.bounds.contains(pointer))
-            .map(|(_, output)| output.id);
+            .map(|(_, output)| output);
+        let pointer_output = pointer_view.map(|output| output.id);
         callbacks.push((pointer_output, cursor_nodes.clone()));
         callbacks.extend(tablet_callbacks);
         if drag_ready {
@@ -1075,9 +1086,8 @@ impl Composition {
             frame
                 .clear(self.sdr_solid([0.08, 0.08, 0.08, 1.0]), &[damage])
                 .map_err(error)?;
-            for (_, output) in server
-                .output_viewports()
-                .into_iter()
+            for (_, output) in outputs
+                .iter()
                 .filter(|(_, output)| view.is_none_or(|view| view.id == output.id))
             {
                 let clip = if view.is_some() {
@@ -1097,7 +1107,7 @@ impl Composition {
                         &presented,
                         output.id,
                         output_mapping,
-                        self.canvases.get(&output.id),
+                        self.canvases.get(&output.id).map(|canvas| &canvas.texture),
                         clip,
                     )?;
                     #[cfg(feature = "session")]
@@ -1108,14 +1118,8 @@ impl Composition {
                     let _ = native_drawn;
                 }
             }
-            if let Some(output) = server
-                .output_viewports()
-                .into_iter()
-                .map(|(_, output)| output)
-                .find(|output| {
-                    Some(output.id) == pointer_output
-                        && view.is_none_or(|view| view.id == output.id)
-                })
+            if let Some(output) =
+                pointer_view.filter(|output| view.is_none_or(|view| view.id == output.id))
             {
                 let pointer_mapping =
                     Self::output_raster(canvas.map(|canvas| &canvas.frame), output.id, mapping)?;
@@ -1133,9 +1137,8 @@ impl Composition {
                 }
             }
             if !presented.tablets.is_empty() {
-                for (_, output) in server
-                    .output_viewports()
-                    .into_iter()
+                for (_, output) in outputs
+                    .iter()
                     .filter(|(_, output)| view.is_none_or(|view| view.id == output.id))
                 {
                     let output_mapping = Self::output_raster(

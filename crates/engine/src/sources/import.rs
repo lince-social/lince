@@ -97,7 +97,7 @@ impl Prepared {
     }
 }
 
-fn selected_record(source: &Publication) -> Option<&anicca::ProjectedRecord> {
+fn selected_record(source: &Publication) -> Option<&lingua::ProjectedRecord> {
     source.fragment.as_ref().and_then(|uid| {
         source
             .documents

@@ -40,8 +40,8 @@ fn number(value: &str) -> DecimalValue {
 #[test]
 fn drinking_water_purchase_need_tracks_shortfalls_and_clears_at_the_target() {
     let source = include_str!("../../../institute/trails/lince/habits/simple/Supply.lingua");
-    let (identified, _) = anicca::ensure_uids(source).unwrap();
-    let project = anicca::project(&anicca::parse(&identified).unwrap()).unwrap();
+    let (identified, _) = lingua::ensure_uids(source).unwrap();
+    let project = lingua::project(&lingua::parse(&identified).unwrap()).unwrap();
     let mut stock = Stock(BTreeMap::new());
     for record in &project.records {
         if let Some((quantity, unit)) = &record.quantity

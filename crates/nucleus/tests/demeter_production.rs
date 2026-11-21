@@ -210,7 +210,7 @@ fn supermarket_overrides_and_unconfirmed_inputs_do_not_create_planting_tasks() {
         &input,
         &out,
         &[choice.clone()],
-        &[template.clone()],
+        std::slice::from_ref(&template),
         28,
         true,
     )
@@ -234,7 +234,7 @@ fn resource_capacity_is_explicit_and_replanning_has_stable_task_keys() {
             &input,
             &out,
             &[choice.clone()],
-            &[template.clone()],
+            std::slice::from_ref(&template),
             28,
             false
         )
@@ -247,7 +247,7 @@ fn resource_capacity_is_explicit_and_replanning_has_stable_task_keys() {
         &input,
         &out,
         &[choice.clone()],
-        &[template.clone()],
+        std::slice::from_ref(&template),
         28,
         false,
     )

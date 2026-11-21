@@ -38,6 +38,10 @@ impl SourceKind {
     rename_all = "snake_case",
     deny_unknown_fields
 )]
+#[allow(
+    clippy::large_enum_variant,
+    reason = "Keep the public served artifact variants compatible with existing callers"
+)]
 pub enum Artifact {
     Receipt(Box<receipt::Document>),
     Contact(contacts::Document),

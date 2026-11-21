@@ -209,7 +209,7 @@ impl HandTracker {
             let anchor = anchor(index);
             let values = &outputs[0][index * 18..(index + 1) * 18];
             let mut palm = [[0.0; 2]; 7];
-            for (landmark, pair) in palm.iter_mut().zip(values[4..].chunks_exact(2)) {
+            for (landmark, pair) in palm.iter_mut().zip(values[4..].as_chunks::<2>().0) {
                 *landmark = [
                     (anchor[0] + pair[0] / 192.0 - 0.5) * side + center[0],
                     (anchor[1] + pair[1] / 192.0 - 0.5) * side + center[1],
@@ -239,7 +239,7 @@ impl HandTracker {
                 continue;
             }
             let mut landmarks = [[0.0; 3]; 21];
-            for (landmark, values) in landmarks.iter_mut().zip(outputs[0].chunks_exact(3)) {
+            for (landmark, values) in landmarks.iter_mut().zip(outputs[0].as_chunks::<3>().0) {
                 landmark.copy_from_slice(values);
             }
             let pinched = is_pinched(&landmarks);

@@ -647,8 +647,7 @@ fn add_asset(
     id: &str,
     path: &str,
     kind: &str,
-    license: &str,
-    disclosure: &str,
+    (license, disclosure): (&str, &str),
     bytes: &[u8],
 ) -> Result<()> {
     fs::write(output.join(path), bytes).map_err(|error| error.to_string())?;
@@ -704,8 +703,7 @@ pub(super) fn create(root: &Path, output: &Path) -> Result<Bundle> {
             id,
             path,
             "glb",
-            "MIT",
-            "fixture-public",
+            ("MIT", "fixture-public"),
             &data,
         )?;
     }
@@ -715,8 +713,7 @@ pub(super) fn create(root: &Path, output: &Path) -> Result<Bundle> {
         "restricted-interior",
         "restricted-interior.glb",
         "glb",
-        "MIT",
-        "identified-editor",
+        ("MIT", "identified-editor"),
         &geometry::private_room()?,
     )?;
     let mut feature = geometry::Glb::new();
@@ -728,8 +725,7 @@ pub(super) fn create(root: &Path, output: &Path) -> Result<Bundle> {
         "invented-feature",
         "invented-feature.glb",
         "glb",
-        "MIT",
-        "fixture-public",
+        ("MIT", "fixture-public"),
         &feature.finish(&[node])?,
     )?;
     add_asset(
@@ -738,8 +734,7 @@ pub(super) fn create(root: &Path, output: &Path) -> Result<Bundle> {
         "coastline",
         "coastline.geojson",
         "geojson",
-        "public-domain",
-        "fixture-public",
+        ("public-domain", "fixture-public"),
         &coastline,
     )?;
     for (id,path,data) in [
@@ -784,7 +779,7 @@ pub(super) fn create(root: &Path, output: &Path) -> Result<Bundle> {
         })).map_err(|error|error.to_string())?),
     ] {
         let disclosure = if id == "private-annotation" { "host-private" } else { "fixture-public" };
-        add_asset(output,&mut assets,id,path,"json","MIT",disclosure,&data)?;
+        add_asset(output,&mut assets,id,path,"json",("MIT",disclosure),&data)?;
     }
     add_asset(
         output,
@@ -792,8 +787,7 @@ pub(super) fn create(root: &Path, output: &Path) -> Result<Bundle> {
         "fixture-license",
         "LICENSE",
         "text",
-        "MIT",
-        "fixture-public",
+        ("MIT", "fixture-public"),
         &fs::read(root.join("LICENSE")).map_err(|error| error.to_string())?,
     )?;
     let mut credits = fs::read_to_string(source.join("context/CREDITS.txt"))
@@ -809,8 +803,7 @@ pub(super) fn create(root: &Path, output: &Path) -> Result<Bundle> {
         "credits",
         "CREDITS.txt",
         "text",
-        "MIT-and-public-domain",
-        "fixture-public",
+        ("MIT-and-public-domain", "fixture-public"),
         credits.as_bytes(),
     )?;
     let bundle = Bundle {

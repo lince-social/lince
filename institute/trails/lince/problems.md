@@ -8,37 +8,37 @@ Cargo’s dependency graph identifies packages blocked by Engine’s existing bu
 - `crates/ailuros/src/project.rs:404:16` · `clippy::manual_is_multiple_of` · manual implementation of `.is_multiple_of()`
 - `crates/ailuros/src/project.rs:472:24` · `clippy::chunks_exact_to_as_chunks` · using `chunks_exact` with a constant chunk size
 
-## `crates/anicca/Cargo.toml`
+## `crates/lingua/Cargo.toml`
 
-- `crates/anicca/src/grammar.rs:31:1` · `clippy::module_inception` · module has the same name as its containing module
-- `crates/anicca/src/grammar.rs:174:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
-- `crates/anicca/src/grammar.rs:335:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
-- `crates/anicca/src/grammar.rs:344:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
-- `crates/anicca/src/grammar.rs:454:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
-- `crates/anicca/src/grammar.rs:489:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
-- `crates/anicca/src/grammar.rs:545:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
-- `crates/anicca/src/grammar.rs:709:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
-- `crates/anicca/src/grammar.rs:715:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
-- `crates/anicca/src/grammar.rs:800:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
-- `crates/anicca/src/grammar.rs:817:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
-- `crates/anicca/src/grammar.rs:823:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
-- `crates/anicca/src/grammar.rs:830:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
-- `crates/anicca/src/grammar.rs:852:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
-- `crates/anicca/src/grammar.rs:858:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
-- `crates/anicca/src/grammar.rs:864:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
-- `crates/anicca/src/grammar.rs:871:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
-- `crates/anicca/src/grammar.rs:878:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
-- `crates/anicca/src/grammar.rs:884:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
-- `crates/anicca/src/grammar.rs:891:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
-- `crates/anicca/src/grammar.rs:989:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
-- `crates/anicca/src/grammar.rs:995:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
-- `crates/anicca/src/grammar.rs:1001:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
-- `crates/anicca/src/grammar.rs:1007:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
-- `crates/anicca/src/grammar.rs:1013:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
-- `crates/anicca/src/grammar.rs:1024:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
-- `crates/anicca/src/grammar.rs:1030:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
-- `crates/anicca/src/grammar.rs:1036:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
-- `crates/anicca/src/grammar.rs:1042:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
+- `crates/lingua/src/grammar.rs:31:1` · `clippy::module_inception` · module has the same name as its containing module
+- `crates/lingua/src/grammar.rs:174:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
+- `crates/lingua/src/grammar.rs:335:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
+- `crates/lingua/src/grammar.rs:344:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
+- `crates/lingua/src/grammar.rs:454:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
+- `crates/lingua/src/grammar.rs:489:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
+- `crates/lingua/src/grammar.rs:545:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
+- `crates/lingua/src/grammar.rs:709:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
+- `crates/lingua/src/grammar.rs:715:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
+- `crates/lingua/src/grammar.rs:800:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
+- `crates/lingua/src/grammar.rs:817:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
+- `crates/lingua/src/grammar.rs:823:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
+- `crates/lingua/src/grammar.rs:830:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
+- `crates/lingua/src/grammar.rs:852:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
+- `crates/lingua/src/grammar.rs:858:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
+- `crates/lingua/src/grammar.rs:864:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
+- `crates/lingua/src/grammar.rs:871:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
+- `crates/lingua/src/grammar.rs:878:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
+- `crates/lingua/src/grammar.rs:884:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
+- `crates/lingua/src/grammar.rs:891:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
+- `crates/lingua/src/grammar.rs:989:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
+- `crates/lingua/src/grammar.rs:995:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
+- `crates/lingua/src/grammar.rs:1001:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
+- `crates/lingua/src/grammar.rs:1007:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
+- `crates/lingua/src/grammar.rs:1013:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
+- `crates/lingua/src/grammar.rs:1024:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
+- `crates/lingua/src/grammar.rs:1030:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
+- `crates/lingua/src/grammar.rs:1036:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
+- `crates/lingua/src/grammar.rs:1042:5` · `clippy::manual_non_exhaustive` · this seems like a manual implementation of the non-exhaustive pattern
 
 
 ## `crates/cell/Cargo.toml`

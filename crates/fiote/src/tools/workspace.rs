@@ -63,6 +63,14 @@ struct PathArguments {
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
+struct ReadArguments {
+    path: String,
+    offset: Option<u64>,
+    limit: Option<usize>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct WriteArguments {
     path: String,
     content: String,
@@ -103,7 +111,7 @@ fn read(directory: &cap_std::fs::Dir, path: &Path) -> Result<String, String> {
         .read_to_end(&mut bytes)
         .map_err(|e| e.to_string())?;
     if bytes.len() > MAX_BYTES {
-        return Err("File exceeds the 1 MiB text limit. Read a portion with run_command.".into());
+        return Err("File exceeds the 1 MiB text limit. Read it in pages with read_file offset and limit.".into());
     }
     String::from_utf8(bytes)
         .map_err(|_| "This file is not UTF-8 text. Inspect it with run_command.".into())
@@ -122,8 +130,8 @@ impl Tool for FileTool {
         let (name, description, properties, required) = match self.operation {
             Operation::Read => (
                 "read_file",
-                "Read a UTF-8 file relative to the working directory (up to 1 MiB).",
-                json!({"path":{"type":"string"}}),
+                "Read a UTF-8 file relative to the working directory. For large files, set a byte limit (up to 4096) and use next_offset to continue. An unpaged read is limited to 1 MiB.",
+                json!({"path":{"type":"string"},"offset":{"type":"integer","minimum":0},"limit":{"type":"integer","minimum":1,"maximum":super::receipts::PAGE_BYTES}}),
                 vec!["path"],
             ),
             Operation::Write => (
@@ -158,8 +166,15 @@ impl Tool for FileTool {
         tokio::task::spawn_blocking(move || {
             match operation {
                 Operation::Read => {
-                    let args: PathArguments = serde_json::from_value(arguments).map_err(|e| e.to_string())?;
-                    let content = read(&directory, path(&args.path, false)?)?;
+                    let args: ReadArguments = serde_json::from_value(arguments).map_err(|e| e.to_string())?;
+                    let file = path(&args.path, false)?;
+                    if args.offset.is_some() || args.limit.is_some() {
+                        let file = directory.open(file).map_err(|e| e.to_string())?;
+                        let mut page = super::receipts::read_page(file.into_std(), args.offset.unwrap_or_default(), args.limit)?;
+                        page["path"] = json!(args.path);
+                        return Ok(page);
+                    }
+                    let content = read(&directory, file)?;
                     Ok(json!({"path":args.path,"content":content}))
                 }
                 Operation::Write => {

@@ -37,8 +37,8 @@ impl Publication {
         for path in Self::files(directory)? {
             let reference = Reference::path(&path)?;
             let raw = fs::read_to_string(&path).map_err(|error| error.to_string())?;
-            let project = anicca::parse(&raw)
-                .and_then(|document| anicca::project(&document))
+            let project = lingua::parse(&raw)
+                .and_then(|document| lingua::project(&document))
                 .map_err(|error| error.to_string())?;
             for record in &project.records {
                 if let Some(previous) =
@@ -162,8 +162,8 @@ impl Publication {
                         }) && fs::read_to_string(&target)
                             .ok()
                             .and_then(|text| {
-                                anicca::parse(&text)
-                                    .and_then(|document| anicca::project(&document))
+                                lingua::parse(&text)
+                                    .and_then(|document| lingua::project(&document))
                                     .ok()
                             })
                             .is_some_and(|document| {

@@ -106,7 +106,8 @@ fn authority(grants: &[Capability], action: DesktopAction) -> Result<(), Failure
             need(grants, Capability::OutputControl)?;
         }
         DesktopAction::InspectWindowRecord => need(grants, Capability::WindowList)?,
-        DesktopAction::ToggleEdit | DesktopAction::OpenOperation | DesktopAction::ToggleOverview | DesktopAction::Workspace(_)
+        DesktopAction::ToggleEdit | DesktopAction::OpenOperation | DesktopAction::ToggleOverview
+            | DesktopAction::ZoomOut | DesktopAction::ZoomIn | DesktopAction::Workspace(_)
             | DesktopAction::PreviousWorkspace | DesktopAction::NextWorkspace | DesktopAction::Logout => {}
         _ => need(grants, Capability::WindowControl)?,
     }

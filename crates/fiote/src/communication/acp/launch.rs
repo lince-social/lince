@@ -1,5 +1,5 @@
 // non-lean-yet
-// Scope: mod tests, fn requires_node, fn environment, fn executable.
+// Scope: fn requires_node, fn environment, fn executable, mod tests.
 // BeautifulRust (baseline lines):
 // - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
 //   framework contracts. Sites 9.
@@ -16,66 +16,6 @@
 use std::{io::Read, path::Path};
 
 use super::*;
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn config(command: PathBuf, directory: &Path) -> Config {
-        serde_json::from_value(serde_json::json!({
-            "command":command,"args":[],"directory":directory
-        }))
-        .unwrap()
-    }
-
-    #[test]
-    fn node_launch_commands_are_rejected_before_execution() {
-        let root = tempfile::tempdir().unwrap();
-        for command in [
-            "node",
-            "nodejs",
-            "npm",
-            "npx",
-            "agent.js",
-            "agent.mjs",
-            "agent.cjs",
-        ] {
-            let mut configured = config(command.into(), root.path());
-            let error = configured.validate().unwrap_err();
-            assert!(error.contains("Node.js"), "{command}: {error}");
-        }
-        let mut configured = config("sh".into(), root.path());
-        configured.args = vec!["-c".into(), "exec node /missing/agent.js".into()];
-        assert!(configured.validate().unwrap_err().contains("Node.js"));
-    }
-
-    #[cfg(unix)]
-    #[test]
-    fn node_wrappers_and_path_aliases_are_inspected_without_running_them() {
-        use std::os::unix::fs::PermissionsExt;
-        let root = tempfile::tempdir().unwrap();
-        let wrapper = root.path().join("codex-acp");
-        let marker = root.path().join("must-not-run");
-        for body in [
-            "#!/usr/bin/env node\nrequire('missing');\n".into(),
-            format!(
-                "#!/bin/sh\ntouch {}\nexec node /missing/agent.js\n",
-                marker.display()
-            ),
-        ] {
-            std::fs::write(&wrapper, body).unwrap();
-            std::fs::set_permissions(&wrapper, std::fs::Permissions::from_mode(0o700)).unwrap();
-            let mut configured = config("codex-acp".into(), root.path());
-            configured
-                .environment
-                .insert("PATH".into(), root.path().to_string_lossy().into());
-            assert!(configured.validate().unwrap_err().contains("Node.js"));
-            assert!(!marker.exists());
-        }
-        std::fs::write(&wrapper, "#!/bin/sh\nexit 0\n").unwrap();
-        config(wrapper, root.path()).validate().unwrap();
-    }
-}
 
 pub(super) fn requires_node(config: &Config) -> bool {
     fn node_program(value: &str) -> bool {
@@ -203,4 +143,64 @@ pub(super) fn account() -> String {
         }
     }
     "runtime account unavailable".into()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn config(command: PathBuf, directory: &Path) -> Config {
+        serde_json::from_value(serde_json::json!({
+            "command":command,"args":[],"directory":directory
+        }))
+        .unwrap()
+    }
+
+    #[test]
+    fn node_launch_commands_are_rejected_before_execution() {
+        let root = tempfile::tempdir().unwrap();
+        for command in [
+            "node",
+            "nodejs",
+            "npm",
+            "npx",
+            "agent.js",
+            "agent.mjs",
+            "agent.cjs",
+        ] {
+            let mut configured = config(command.into(), root.path());
+            let error = configured.validate().unwrap_err();
+            assert!(error.contains("Node.js"), "{command}: {error}");
+        }
+        let mut configured = config("sh".into(), root.path());
+        configured.args = vec!["-c".into(), "exec node /missing/agent.js".into()];
+        assert!(configured.validate().unwrap_err().contains("Node.js"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn node_wrappers_and_path_aliases_are_inspected_without_running_them() {
+        use std::os::unix::fs::PermissionsExt;
+        let root = tempfile::tempdir().unwrap();
+        let wrapper = root.path().join("codex-acp");
+        let marker = root.path().join("must-not-run");
+        for body in [
+            "#!/usr/bin/env node\nrequire('missing');\n".into(),
+            format!(
+                "#!/bin/sh\ntouch {}\nexec node /missing/agent.js\n",
+                marker.display()
+            ),
+        ] {
+            std::fs::write(&wrapper, body).unwrap();
+            std::fs::set_permissions(&wrapper, std::fs::Permissions::from_mode(0o700)).unwrap();
+            let mut configured = config("codex-acp".into(), root.path());
+            configured
+                .environment
+                .insert("PATH".into(), root.path().to_string_lossy().into());
+            assert!(configured.validate().unwrap_err().contains("Node.js"));
+            assert!(!marker.exists());
+        }
+        std::fs::write(&wrapper, "#!/bin/sh\nexit 0\n").unwrap();
+        config(wrapper, root.path()).validate().unwrap();
+    }
 }

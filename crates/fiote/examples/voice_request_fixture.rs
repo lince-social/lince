@@ -89,7 +89,7 @@ fn main() -> Result<(), String> {
             .samples
             .iter()
             .rposition(|sample| sample.abs() > 0.001)
-            .unwrap();
+            .unwrap_or(first);
         source.extend_from_slice(
             &audio.samples[first.saturating_sub(4800)..(last + 4801).min(audio.samples.len())],
         );
@@ -98,7 +98,7 @@ fn main() -> Result<(), String> {
         sentences.push(result);
         std::fs::write(
             output.join("sentences.json"),
-            serde_json::to_vec_pretty(&sentences).unwrap(),
+            serde_json::to_vec_pretty(&sentences).map_err(|error| error.to_string())?,
         )
         .map_err(|error| error.to_string())?;
     }
@@ -127,7 +127,7 @@ fn main() -> Result<(), String> {
     });
     std::fs::write(
         output.join("long-request-reference.json"),
-        serde_json::to_vec_pretty(&reference).unwrap(),
+        serde_json::to_vec_pretty(&reference).map_err(|error| error.to_string())?,
     )
     .map_err(|error| error.to_string())?;
     println!("{reference}");

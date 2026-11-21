@@ -66,8 +66,12 @@ mod tests {
     };
 
     fn apply_pending_edits(world: &mut World) {
-        world.run_system_once(normalize).unwrap();
-        world.run_system_once(apply_text_edits).unwrap();
+        world
+            .run_system_once(normalize)
+            .expect("normalize the fixture edits");
+        world
+            .run_system_once(apply_text_edits)
+            .expect("apply the fixture edits");
     }
 
     #[test]

@@ -26,7 +26,7 @@ mod automation;
 mod habits;
 
 use super::*;
-use anicca::{ProjectedAssertion, ProjectedRecord, grammar::grammar as ast};
+use ::lingua::{self, ProjectedAssertion, ProjectedRecord, grammar::grammar as ast};
 use automation::Automation;
 use std::borrow::Cow;
 
@@ -42,7 +42,7 @@ struct Document {
     source: String,
     identified: String,
     records: Vec<ProjectedRecord>,
-    extensions: Vec<anicca::ProjectedExtension>,
+    extensions: Vec<lingua::ProjectedExtension>,
     automation: Automation,
     #[serde(skip)]
     missing: u32,
@@ -138,9 +138,9 @@ impl Engine {
         source: &str,
         known: Option<&Document>,
     ) -> Result<Document, EngineError> {
-        let original = anicca::parse(source).map_err(invalid)?;
-        let (identified, _) = anicca::ensure_uids(source).map_err(invalid)?;
-        let mut document = anicca::parse(&identified).map_err(invalid)?;
+        let original = lingua::parse(source).map_err(invalid)?;
+        let (identified, _) = lingua::ensure_uids(source).map_err(invalid)?;
+        let mut document = lingua::parse(&identified).map_err(invalid)?;
         let original_count = original.declarations.len();
         for (index, declaration) in document.declarations.iter_mut().enumerate() {
             let ast::Declaration::Record(record) = declaration else {
@@ -174,7 +174,7 @@ impl Engine {
                 }
             }
         }
-        let mut projected = anicca::project(&document).map_err(invalid)?;
+        let mut projected = lingua::project(&document).map_err(invalid)?;
         projected.extensions.sort_by(|left, right| {
             (&left.target_slug, &left.namespace).cmp(&(&right.target_slug, &right.namespace))
         });
@@ -217,7 +217,7 @@ impl Engine {
         Ok(Document {
             automation,
             source: source.into(),
-            identified: anicca::format(&document),
+            identified: lingua::format(&document),
             records: projected.records,
             extensions: projected.extensions,
             missing: 0,
@@ -292,7 +292,7 @@ impl Engine {
     async fn lingua_extensions(
         &self,
         records: &[ProjectedRecord],
-    ) -> Result<Vec<anicca::ProjectedExtension>, EngineError> {
+    ) -> Result<Vec<lingua::ProjectedExtension>, EngineError> {
         let mut extensions = Vec::new();
         for record in records {
             let Some(slug) = &record.slug else {
@@ -306,7 +306,7 @@ impl Engine {
             .await?;
             for (namespace, raw) in values {
                 if shared_extension(&namespace) {
-                    extensions.push(anicca::ProjectedExtension {
+                    extensions.push(lingua::ProjectedExtension {
                         target_slug: slug.clone(),
                         target_uid: Some(record.uid.clone()),
                         namespace,
@@ -1291,13 +1291,13 @@ fn render_document(
     source: &str,
     records: &[ProjectedRecord],
     automation: &Automation,
-    extensions: &[anicca::ProjectedExtension],
+    extensions: &[lingua::ProjectedExtension],
     path: &Path,
 ) -> Result<String, EngineError> {
     let _render = nucleus::performance::Span::new("file-sync-lingua-render");
     let preparation = nucleus::performance::Span::new("file-sync-lingua-record-preparation");
     nucleus::performance::add("file-sync-lingua-document-parses", 1);
-    let mut document = anicca::parse(source).map_err(invalid)?;
+    let mut document = lingua::parse(source).map_err(invalid)?;
     let selected: HashSet<_> = records.iter().map(|record| record.uid.as_str()).collect();
     document.declarations.retain(|declaration| {
         matches!(declaration, ast::Declaration::Record(record)
@@ -1328,7 +1328,7 @@ fn render_document(
             unit.as_ref().map(|u| format!(" @{u}")).unwrap_or_default()
         );
         let skeleton = format!("Record ({subject}) {{ {}\n}} {}\n", record.uid, record.uid);
-        let mut parsed = anicca::parse(&skeleton).map_err(invalid)?;
+        let mut parsed = lingua::parse(&skeleton).map_err(invalid)?;
         let ast::Declaration::Record(template) = parsed.declarations.remove(0) else {
             unreachable!()
         };
@@ -1370,7 +1370,7 @@ fn render_document(
         let ast::Declaration::Record(target) = &mut document.declarations[index] else {
             unreachable!()
         };
-        anicca::update_record_runtime(target, &record.head, &record.body, quantity, &assertions);
+        lingua::update_record_runtime(target, &record.head, &record.body, quantity, &assertions);
         nucleus::performance::add("file-sync-lingua-records-rewritten", 1);
     }
     drop(preparation);
@@ -1406,17 +1406,17 @@ fn render_document(
             }
         }
         text.push_str(
-            &anicca::extension::render(&extension.target_slug, &extension.namespace, &fields)
+            &lingua::extension::render(&extension.target_slug, &extension.namespace, &fields)
                 .map_err(invalid)?,
         );
     }
     text.push_str(&automation.render()?);
     let validation = nucleus::performance::Span::new("file-sync-lingua-validation");
     nucleus::performance::add("file-sync-lingua-document-parses", 1);
-    let document = anicca::parse(&text).map_err(invalid)?;
+    let document = lingua::parse(&text).map_err(invalid)?;
     {
         let _projection = nucleus::performance::Span::new("file-sync-lingua-projection-validation");
-        anicca::validate_projection(&document).map_err(invalid)?;
+        lingua::validate_projection(&document).map_err(invalid)?;
     }
     drop(validation);
     Ok(format_document(&document))
@@ -1424,7 +1424,7 @@ fn render_document(
 
 fn format_document(document: &ast::Document) -> String {
     let _format = nucleus::performance::Span::new("file-sync-lingua-format");
-    anicca::format(document)
+    lingua::format(document)
 }
 
 fn shared_extension(namespace: &str) -> bool {

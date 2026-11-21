@@ -25,7 +25,7 @@ tests. Finish that scope before resuming the wider rollout.
    file, trace callers and enabled features, and identify the behavior to
    preserve. Take any unmarked pending file from the inventory straight into
    the same workflow.
-   [Lince Records](Lince.lingua)
+   [Lince Records](../Lince.lingua)
 2. **Restructure and refactor in the same change.** Consider the containing
    crate first, then the file and its neighbors. Make worthwhile splits,
    moves, renames, and merges as you reach them and refactor the affected code
@@ -321,7 +321,7 @@ deny warnings, so use `--force-warn` for the selected lint's nonblocking audit.
 
 1. **Baseline one package.** Record the revision, toolchain, targets, features,
    ordinary compile result, behavior checks, and lint findings. Consult the
-   applicable [Lince Records](Lince.lingua) and coordinate ongoing edits.
+   applicable [Lince Records](../Lince.lingua) and coordinate ongoing edits.
 2. **Audit and fix.** Prioritize reachable panics and bad conversions. Fix
    recoverable failures through propagation, a tested fallback, or a branch.
    Keep proven invariants and narrow exceptions. Surface any behavioral
@@ -453,7 +453,7 @@ Use these references when a change reaches the corresponding boundary.
   [Engine errors](../../../crates/engine/src/error.rs) · [CRDT guard](../../../crates/engine/src/collab_guard.rs) · [Diagnostics](../../../crates/utils/src/diagnostics.rs)
 - Preserve readable and selectable Protein text, the required Protein-first
   Laboratory case, and edit-panel geometry for affected UI changes.
-  [Lince requirements](Lince.lingua)
+  [Lince requirements](../Lince.lingua)
 - Use representative Park workloads when making claims about desktop runtime.
   [Park plan](park/Park.lingua)
 

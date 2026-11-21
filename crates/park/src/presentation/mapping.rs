@@ -237,6 +237,20 @@ impl Frame {
         self.output == Some(output) && self.image.is_some()
             || self.outputs.iter().any(|candidate| candidate.id == output)
     }
+
+    #[cfg(feature = "session")]
+    pub(crate) fn output_dmabuf(
+        &self,
+        id: lince_interface::host::OutputId,
+    ) -> Option<&smithay::backend::allocator::dmabuf::Dmabuf> {
+        if self.output == Some(id) {
+            return self.dmabuf();
+        }
+        self.outputs
+            .iter()
+            .find(|output| output.id == id)
+            .map(super::OutputFrame::dmabuf)
+    }
 }
 
 fn retain(

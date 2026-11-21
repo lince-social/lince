@@ -79,17 +79,18 @@ impl Profile {
                 })
                 .collect();
             let floor = (energies.iter().copied().fold(0.0, f32::max) * 0.12).max(0.003);
-            let first =
-                energies.iter().position(|energy| *energy >= floor).ok_or(
-                    "No clear wake phrase was recorded. Check the microphone and try again.",
-                )? * 160;
+            let first = energies
+                .iter()
+                .position(|energy| *energy >= floor)
+                .ok_or("No clear wake phrase was recorded. Check the microphone and try again.")?;
             let last = ((energies
                 .iter()
                 .rposition(|energy| *energy >= floor)
-                .unwrap()
+                .unwrap_or(first)
                 + 1)
                 * 160)
                 .min(samples.len());
+            let first = first * 160;
             if !(3200..=48_000).contains(&(last - first)) {
                 return Err("Record one clear wake phrase, lasting between a fifth of a second and three seconds.".into());
             }
@@ -196,7 +197,13 @@ pub struct Detection {
 impl Detector {
     pub fn new(profile: Profile) -> Result<Self, String> {
         profile.validate()?;
-        let maximum = profile.references.iter().map(Vec::len).max().unwrap() + 1;
+        let maximum = profile
+            .references
+            .iter()
+            .map(Vec::len)
+            .max()
+            .expect("a validated wake profile has references")
+            + 1;
         Ok(Self {
             profile,
             features: Features::new()?,

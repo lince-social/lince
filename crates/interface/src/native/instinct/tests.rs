@@ -37,7 +37,7 @@ fn click(world: &mut World, owner: Entity, tip: &str) {
 fn load_errors_are_shown_without_panicking() {
     let (mut app, root) = fixture();
     let world = app.world_mut();
-    let error = "institute/anicca/Broken.lingua: malformed Record";
+    let error = "file:///content/instinct/Broken.lingua: malformed Record";
     world.insert_resource(Book(Arc::from([]), Arc::from([]), Some(error.into())));
     spawn(world, root, 1, DVec2::ZERO, Instinct::default());
     world.flush();

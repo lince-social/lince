@@ -95,13 +95,13 @@ pub async fn state(
     root: &str,
     contact: &str,
 ) -> Result<Option<String>, StoreError> {
-    Ok(sqlx::query_scalar(
+    sqlx::query_scalar(
         "SELECT state FROM replica_grant WHERE root_record = ? AND contact_organ = ?",
     )
     .bind(root)
     .bind(contact)
     .fetch_optional(pool)
-    .await?)
+    .await
 }
 
 pub async fn is_accepted(pool: &SqlitePool, root: &str, contact: &str) -> Result<bool, StoreError> {
@@ -112,13 +112,13 @@ pub async fn roots_for_contact(
     pool: &SqlitePool,
     contact: &str,
 ) -> Result<Vec<String>, StoreError> {
-    Ok(sqlx::query_scalar(
+    sqlx::query_scalar(
         "SELECT root_record FROM replica_grant WHERE contact_organ = ? AND state = ?",
     )
     .bind(contact)
     .bind(ACCEPTED)
     .fetch_all(pool)
-    .await?)
+    .await
 }
 
 #[derive(Debug, Clone)]

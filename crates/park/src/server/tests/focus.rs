@@ -162,7 +162,7 @@ fn overview_renders_inactive_wayland_content_and_advances_only_its_presented_cal
     let completed = crate::runtime::Completed {
         sequence: 1,
         scene_revision: 1,
-        frame,
+        frame: Arc::new(frame),
         windows: Arc::new(canvas.painted_windows()),
         rejected: Vec::new(),
         input_serial: 0,

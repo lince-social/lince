@@ -6,7 +6,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use anicca::{ProjectedAssertion, ProjectedRecord};
+use lingua::{ProjectedAssertion, ProjectedRecord};
 use lince_resources::{Library, publication::Publication};
 
 pub(super) type Records<'a> = BTreeMap<&'a str, &'a ProjectedRecord>;

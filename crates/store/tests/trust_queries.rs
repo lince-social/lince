@@ -106,7 +106,7 @@ async fn reader_queries_are_private_zero_quantity_and_idempotent() {
     assert_eq!((before.0, before.1, before.2), (after.0, after.1, after.2));
     assert_eq!(after.3, before.3 + 1);
     let loaded = queries::get_on(
-        &mut *store.pool.acquire().await.unwrap(),
+        &mut store.pool.acquire().await.unwrap(),
         &first.saved.record,
     )
     .await
@@ -200,7 +200,7 @@ async fn original_reader_policies_cannot_be_replaced_through_generic_extensions_
             .is_err()
     );
     assert_eq!(
-        queries::get_on(&mut *store.pool.acquire().await.unwrap(), &saved.record)
+        queries::get_on(&mut store.pool.acquire().await.unwrap(), &saved.record)
             .await
             .unwrap()
             .query,

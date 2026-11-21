@@ -605,9 +605,7 @@ fn resource_sample(pid: rustix::process::Pid, elapsed_ms: u128) -> ResourceSampl
             }) else {
                 continue;
             };
-            let known = drm_clients
-                .entry(format!("{device}:{client}"))
-                .or_insert_with(BTreeMap::new);
+            let known = drm_clients.entry(format!("{device}:{client}")).or_default();
             for (name, value) in fields {
                 known
                     .entry(name.clone())
@@ -1201,7 +1199,7 @@ fn prepare_capture_probe(directory: &Path) -> Result<String> {
             value["reason"] == "compiler-artifact" && value["target"]["name"] == "capture_probe"
         })
         .filter_map(|value| value["executable"].as_str().map(PathBuf::from))
-        .last()
+        .next_back()
         .ok_or("Cargo did not report the capture probe executable")?;
     let target = directory.join("bin/capture-probe");
     fs::copy(binary, &target).map_err(error)?;
@@ -3245,7 +3243,7 @@ fn prepare_into(
                 value["reason"] == "compiler-artifact" && value["target"]["name"] == "lince"
             })
             .filter_map(|value| value["executable"].as_str().map(PathBuf::from))
-            .last()
+            .next_back()
             .ok_or("Cargo did not report the Lince executable")?;
         fs::copy(binary, &target).map_err(error)?;
     }
@@ -3279,7 +3277,7 @@ fn prepare_into(
                 value["reason"] == "compiler-artifact" && value["target"]["name"] == "session_probe"
             })
             .filter_map(|value| value["executable"].as_str().map(PathBuf::from))
-            .last()
+            .next_back()
             .ok_or("Cargo did not report the session probe executable")?
     };
     fs::copy(probe, directory.join("bin/session-probe")).map_err(error)?;

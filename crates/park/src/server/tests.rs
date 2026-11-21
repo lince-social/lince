@@ -187,6 +187,7 @@ struct Client {
     window_configure_sizes:
         std::collections::HashMap<wayland_client::backend::ObjectId, Vec<[i32; 2]>>,
     output: Option<wl_output::WlOutput>,
+    surface_output_changes: usize,
     outputs: Option<zxdg_output_manager_v1::ZxdgOutputManagerV1>,
     output_name: String,
     output_size: [i32; 2],
@@ -2246,7 +2247,23 @@ impl Dispatch<wl_buffer::WlBuffer, ()> for Client {
 delegate_noop!(Client: ignore wl_compositor::WlCompositor);
 delegate_noop!(Client: ignore wl_shm::WlShm);
 delegate_noop!(Client: ignore wl_shm_pool::WlShmPool);
-delegate_noop!(Client: ignore wl_surface::WlSurface);
+impl Dispatch<wl_surface::WlSurface, ()> for Client {
+    fn event(
+        state: &mut Self,
+        _: &wl_surface::WlSurface,
+        event: wl_surface::Event,
+        _: &(),
+        _: &Connection,
+        _: &QueueHandle<Self>,
+    ) {
+        if matches!(
+            event,
+            wl_surface::Event::Enter { .. } | wl_surface::Event::Leave { .. }
+        ) {
+            state.surface_output_changes += 1;
+        }
+    }
+}
 delegate_noop!(Client: ignore wl_subcompositor::WlSubcompositor);
 delegate_noop!(Client: ignore wl_subsurface::WlSubsurface);
 delegate_noop!(Client: ignore wl_seat::WlSeat);

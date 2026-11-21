@@ -215,7 +215,7 @@ mod tests {
         })
         .unwrap();
         let environment: BTreeMap<_, _> = command.get_envs().collect();
-        assert!(environment.get(OsStr::new("LD_LIBRARY_PATH")).is_none());
+        assert!(!environment.contains_key(OsStr::new("LD_LIBRARY_PATH")));
         assert_eq!(
             environment.get(OsStr::new("GBM_BACKENDS_PATH")),
             Some(&Some(OsStr::new("")))

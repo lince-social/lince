@@ -573,7 +573,7 @@ async fn edits_round_trip_through_the_current_grammar_and_reach_queries() {
     assert!(report.conflicts.is_empty(), "{:?}", report.conflicts);
     assert_eq!(report.written_to_disk, [uid.clone()]);
     let source = std::fs::read_to_string(&path).unwrap();
-    let projection = anicca::project(&anicca::parse(&source).unwrap()).unwrap();
+    let projection = lingua::project(&lingua::parse(&source).unwrap()).unwrap();
     assert_eq!(projection.records[0].uid, uid);
     assert_eq!(
         projection.records[0].slug.as_deref(),
@@ -711,7 +711,7 @@ async fn a_record_created_in_lince_exports_with_current_syntax() {
         .find(|path| path.file_name().unwrap() != "test.lingua")
         .unwrap();
     let source = std::fs::read_to_string(&path).unwrap();
-    let records = anicca::project(&anicca::parse(&source).unwrap())
+    let records = lingua::project(&lingua::parse(&source).unwrap())
         .unwrap()
         .records;
     assert_eq!(records[0].uid, uid);
@@ -1076,13 +1076,13 @@ async fn frequencies_and_rules_export_in_their_own_syntax_and_restart_without_ch
     let source = std::fs::read_to_string(directory.join("Daily.lingua")).unwrap();
     assert!(source.starts_with("Frequency daily {"), "{source}");
     assert!(source.contains("every 1 day"));
-    let projected = anicca::project(&anicca::parse(&source).unwrap()).unwrap();
+    let projected = lingua::project(&lingua::parse(&source).unwrap()).unwrap();
     assert!(projected.records.is_empty());
     assert_eq!(projected.frequencies[0].uid, frequency);
     let source = std::fs::read_to_string(directory.join("test.lingua")).unwrap();
     assert!(source.contains("Karma local {"), "{source}");
     assert!(source.contains("gate !=0"));
-    let projected = anicca::project(&anicca::parse(&source).unwrap()).unwrap();
+    let projected = lingua::project(&lingua::parse(&source).unwrap()).unwrap();
     assert_eq!(projected.rules[0].uid, rule);
     assert_eq!(projected.rules[0].record_slug, "hello-my-world");
     for mut state in [state, FileSyncState::new()] {
@@ -1090,7 +1090,7 @@ async fn frequencies_and_rules_export_in_their_own_syntax_and_restart_without_ch
         assert!(report.written_to_disk.is_empty(), "{report:?}");
         assert!(report.updated_from_disk.is_empty(), "{report:?}");
     }
-    anicca::check_project(&directory).unwrap();
+    lingua::check_project(&directory).unwrap();
     std::fs::remove_dir_all(directory).unwrap();
 }
 
@@ -1460,7 +1460,7 @@ async fn shared_resource_metadata_round_trips_relative_files_and_conflicts() {
     let report = tick(&engine, directory, &organ, &mut state).await;
     assert_eq!(report.written_to_disk, [uid]);
     let text = std::fs::read_to_string(&path).unwrap();
-    let project = anicca::project(&anicca::parse(&text).unwrap()).unwrap();
+    let project = lingua::project(&lingua::parse(&text).unwrap()).unwrap();
     assert_eq!(project.extensions[0].fields["uri"], "book.epub");
     assert_eq!(
         project.extensions[0].fields["representations"][0]["uri"],

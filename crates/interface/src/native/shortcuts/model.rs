@@ -27,6 +27,8 @@ use prepared::Prepared;
 pub enum Shortcut {
     Overview,
     TiledView,
+    ZoomOut,
+    ZoomIn,
     PointerMove,
     PointerResize,
     RecentNext,
@@ -185,9 +187,11 @@ impl ModKey {
 }
 
 impl Shortcut {
-    pub const ALL: [Self; 119] = [
+    pub const ALL: [Self; 121] = [
         Self::Overview,
         Self::TiledView,
+        Self::ZoomOut,
+        Self::ZoomIn,
         Self::PointerMove,
         Self::PointerResize,
         Self::RecentNext,
@@ -311,6 +315,8 @@ impl Shortcut {
         match self {
             Self::Overview => "view.overview",
             Self::TiledView => "view.tiled",
+            Self::ZoomOut => "view.zoom-out",
+            Self::ZoomIn => "view.zoom-in",
             Self::PointerMove => "pointer.move",
             Self::PointerResize => "pointer.resize",
             Self::RecentNext => "focus.recent",
@@ -486,6 +492,8 @@ impl Shortcut {
         match self {
             Self::Overview => Token::ShortcutOverview.text(),
             Self::TiledView => Token::ShortcutTiledView.text(),
+            Self::ZoomOut => Token::ZoomOut.text(),
+            Self::ZoomIn => Token::ZoomIn.text(),
             Self::PointerMove => Token::ShortcutPointerMove.text(),
             Self::PointerResize => Token::ShortcutPointerResize.text(),
             Self::RecentNext => Token::ShortcutRecentNext.text(),
@@ -597,6 +605,8 @@ impl Shortcut {
         match self {
             Self::Overview => "Mod+Shift+Space",
             Self::TiledView => "Mod+Space",
+            Self::ZoomOut => "Mod+Minus",
+            Self::ZoomIn => "Mod+Shift+Equal",
             Self::PointerMove => "Mod+MouseLeft",
             Self::PointerResize => "Mod+MouseRight",
             Self::RecentNext => "Alt+Tab",
@@ -950,6 +960,15 @@ impl Settings {
     }
 
     pub fn text(&self, shortcut: Shortcut) -> &str {
+        if matches!(shortcut, Shortcut::ZoomOut | Shortcut::ZoomIn)
+            && matches!(self.prepared().triggers.get(&shortcut), Some(Ok(None)))
+        {
+            return "Unbound";
+        }
+        self.configured_text(shortcut)
+    }
+
+    fn configured_text(&self, shortcut: Shortcut) -> &str {
         match self.0.overrides.get(&shortcut) {
             Some(Some(value)) => value,
             Some(None) => "Unbound",

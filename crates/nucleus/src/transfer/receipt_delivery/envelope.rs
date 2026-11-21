@@ -18,6 +18,10 @@ use crate::{
     rename_all = "snake_case",
     deny_unknown_fields
 )]
+#[allow(
+    clippy::large_enum_variant,
+    reason = "Keep the public receipt delivery variants compatible with existing callers"
+)]
 pub enum Artifact {
     Document(Document),
     Participation(ParticipationRequest),

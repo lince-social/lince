@@ -1,4 +1,4 @@
-use anicca::grammar::grammar::{self as ast, ExpressionKind as E};
+use lingua::grammar::grammar::{self as ast, ExpressionKind as E};
 
 use super::{ASSERTION, BinOp, Expr, UnOp};
 use crate::error::NucleusError;
@@ -11,7 +11,7 @@ impl Expr {
     /// Returns a parse error for invalid syntax, unsupported values, or excessive nesting.
     pub fn parse(src: &str) -> Result<Expr, NucleusError> {
         let expression =
-            anicca::expression::parse(src).map_err(|error| NucleusError::Parse(error.message))?;
+            lingua::expression::parse(src).map_err(|error| NucleusError::Parse(error.message))?;
         Self::from_lingua(expression, 0)
     }
 

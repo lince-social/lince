@@ -210,6 +210,7 @@ impl Drop for Allocation {
     }
 }
 
+#[derive(Clone)]
 pub(crate) struct ExportedImage {
     completion: completion::Completion,
     pub(crate) dmabuf: Dmabuf,

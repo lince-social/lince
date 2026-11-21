@@ -118,6 +118,14 @@ pub trait TextOutput: Send + Sync {
     async fn context(&self, _messages: &[Message]) -> Result<(), String> {
         Ok(())
     }
+    /// Records the bounded messages and tools supplied in an ordinary model request.
+    async fn model_context(&self, _messages: &[Message], _tools: &[ToolDefinition]) -> Result<(), String> {
+        Ok(())
+    }
+    /// Supplies a private directory for captured tool output in this conversation.
+    fn tool_output_directory(&self) -> Option<std::path::PathBuf> {
+        None
+    }
     async fn usage(&self, _usage: nucleus::operation::Usage) -> Result<(), String> {
         Ok(())
     }

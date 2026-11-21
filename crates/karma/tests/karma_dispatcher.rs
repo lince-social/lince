@@ -436,10 +436,11 @@ fn entry(
         digest(digit),
         cursor_revision,
         at,
-        TimerPolicy::new(required_resolution_ms, max_lateness_ms, 0).unwrap(),
+        TimerPolicy::new(required_resolution_ms, max_lateness_ms, 0)
+            .expect("valid fixture timer policy"),
         overload,
     )
-    .unwrap()
+    .expect("valid fixture deadline")
 }
 
 fn armed(entry: DeadlineEntry) -> ArmedDeadline {
@@ -453,9 +454,9 @@ fn armed(entry: DeadlineEntry) -> ArmedDeadline {
 fn host(resolutions: &[u32]) -> HostTimerCapabilities {
     HostTimerCapabilities::new(
         resolutions.iter().copied().map(nonzero),
-        NonZeroUsize::new(100).unwrap(),
+        NonZeroUsize::new(100).expect("fixture timer capacity is nonzero"),
     )
-    .unwrap()
+    .expect("valid fixture host capabilities")
 }
 
 fn grant(
@@ -466,33 +467,34 @@ fn grant(
 ) -> DispatcherResourceGrant {
     DispatcherResourceGrant::new(
         nonzero(finest_resolution_ms),
-        NonZeroUsize::new(maximum_lanes).unwrap(),
-        NonZeroUsize::new(maximum_entries).unwrap(),
+        NonZeroUsize::new(maximum_lanes).expect("fixture lane limit is nonzero"),
+        NonZeroUsize::new(maximum_entries).expect("fixture entry limit is nonzero"),
         allow_bounded_degradation,
     )
 }
 
 fn timestamp(value: &str) -> TimestampMs {
-    TimestampMs::parse_canonical(value).unwrap()
+    TimestampMs::parse_canonical(value).expect("valid fixture timestamp")
 }
 
 fn digest(digit: char) -> CanonicalHash {
-    CanonicalHash::parse(format!("sha256:{}", digit.to_string().repeat(64))).unwrap()
+    CanonicalHash::parse(format!("sha256:{}", digit.to_string().repeat(64)))
+        .expect("valid fixture digest")
 }
 
 fn nonzero(value: u32) -> NonZeroU32 {
-    NonZeroU32::new(value).unwrap()
+    NonZeroU32::new(value).expect("fixture value is nonzero")
 }
 
 fn elapsed(interval_ms: u64) -> ElapsedSchedule {
     ElapsedSchedule::new(
         timestamp("2026-07-22T12:00:00.000Z"),
         interval_ms,
-        TimerPolicy::new(1, 5, 0).unwrap(),
+        TimerPolicy::new(1, 5, 0).expect("valid fixture timer policy"),
         MissedPolicy::Replay { max: nonzero(64) },
         InactiveGapPolicy::SkipToNextAnchor,
         RephasePolicy::PreserveAnchor,
         OverloadPolicy::PauseAndAsk,
     )
-    .unwrap()
+    .expect("valid fixture elapsed schedule")
 }

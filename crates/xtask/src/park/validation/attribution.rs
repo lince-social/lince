@@ -585,7 +585,7 @@ pub(super) fn analyze(arguments: &[OsString]) -> Result<()> {
     }
     let mut pid = None;
     let mut frames = None;
-    for pair in arguments[1..].chunks_exact(2) {
+    for pair in arguments[1..].as_chunks::<2>().0 {
         if pair[0] == "--pid" && pid.is_none() {
             pid = Some(
                 pair[1]

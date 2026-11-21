@@ -19,7 +19,7 @@ ailuros-protocol = { package = "lince-ailuros-protocol", path = "../ailuros/prot
 futures = { workspace = true }
 tokio-tungstenite = { version = "=0.30.0", features = ["rustls-tls-webpki-roots"] }
 schemars = { workspace = true }
-anicca = { workspace = true }
+lingua = { workspace = true }
 argon2 = { workspace = true }
 protein = { workspace = true }
 nucleus = { workspace = true, features = ["optimization-solver", "shader-compiler"] }

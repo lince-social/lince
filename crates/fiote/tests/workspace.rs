@@ -203,6 +203,10 @@ async fn workspace_file_tools_refuse_escape_and_limit_content_before_writing() {
         registry.run("read_file", json!({"path":"large"})).await["ok"],
         false
     );
+    assert_eq!(
+        registry.run("read_file", json!({"path":"large","offset":1_048_575,"limit":1})).await["result"],
+        json!({"path":"large","offset":1_048_575,"next_offset":1_048_576,"total_bytes":1_048_577,"content":"x"})
+    );
     std::fs::write(root.path().join("small"), "x".repeat(1024)).unwrap();
     assert_eq!(registry.run("edit_file", json!({"path":"small","old_text":"x","new_text":"x".repeat(2048),"replace_all":true})).await["ok"], false);
     assert_eq!(
@@ -354,6 +358,50 @@ async fn command_timeout_and_cancellation_stop_descendants() {
 
 #[cfg(unix)]
 struct WaitingCommandProvider;
+
+#[cfg(unix)]
+struct VerboseCommandProvider;
+
+#[cfg(unix)]
+#[async_trait]
+impl Provider for VerboseCommandProvider {
+    async fn complete(&self, _: &str, messages: &[Message], _: &[ToolDefinition]) -> Result<Reply, String> {
+        let (name, arguments) = match messages.last().unwrap() {
+            Message::User(_) => (
+                "run_command",
+                json!({"command":"head -c 40000 /dev/zero | tr '\\000' x; printf 'MIDDLE'; head -c 6000 /dev/zero | tr '\\000' y; printf 'LAST'; printf 'failure' >&2; exit 7"}),
+            ),
+            Message::Tool { name, result, .. } if name == "run_command" => {
+                let command = &result["result"];
+                assert_eq!(command["exit_code"], 7);
+                assert_eq!(command["stderr"], "failure");
+                let preview = command["stdout"].as_str().unwrap();
+                assert!(preview.ends_with("LAST") && !preview.contains("MIDDLE"));
+                assert_eq!(command["command_receipt"]["stdout_saved_bytes"], 46010);
+                assert_eq!(result["context_truncated"], true);
+                ("lince_read_tool_output", json!({"receipt_id":command["command_receipt"]["receipt_id"],"part":"stdout","offset":40000,"limit":6}))
+            }
+            Message::Tool { result, .. } => {
+                assert_eq!(result["result"]["content"], "MIDDLE");
+                assert_eq!(result["result"]["next_offset"], 40006);
+                return Ok(Reply { text: "Read the original command output".into(), ..Default::default() });
+            }
+            other => panic!("Unexpected message: {other:?}"),
+        };
+        Ok(Reply {
+            calls: vec![ToolCall { id: name.into(), name: name.into(), arguments, signatures: None }],
+            ..Default::default()
+        })
+    }
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn command_tail_is_inline_and_omitted_middle_can_be_read_without_rerunning() {
+    let root = tempfile::tempdir().unwrap();
+    let (_stop, receiver) = watch::channel(false);
+    assert_eq!(run(&VerboseCommandProvider, "", vec![Message::User("Run the fixture".into())], &tools(root.path()), receiver).await.unwrap(), "Read the original command output");
+}
 
 #[cfg(unix)]
 #[async_trait]

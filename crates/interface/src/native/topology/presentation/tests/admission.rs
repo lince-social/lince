@@ -5,6 +5,49 @@
 // BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
 
 use super::*;
+use crate::{
+    host::{OutputId, Rectangle, SurfaceId, raster::RasterMapping},
+    native::layout::{LayoutBox, desktop::ApplicationWindow},
+};
+
+fn two_outputs(world: &mut World, root: Entity, scale: f64) -> OutputViewport {
+    let mut spaces = world.get_mut::<Workspaces>(root).unwrap();
+    let mut workspace = spaces.entries[0].clone();
+    workspace.id = 2;
+    spaces.entries.push(workspace);
+    let output = |id, scale: f64| {
+        let bounds = Rectangle::new(
+            [(id - 1) as f64 * 1920.0, 0.0],
+            [1920.0 / scale, 1080.0 / scale],
+        )
+        .unwrap();
+        OutputViewport {
+            id: OutputId(id),
+            workspace: id,
+            bounds,
+            usable: Some(bounds),
+            physical_size: [1920, 1080],
+            rotation: default(),
+            raster: RasterMapping {
+                origin: bounds.origin(),
+                scale: [scale; 2],
+            },
+        }
+    };
+    let secondary = output(2, scale);
+    let mut views = OutputViews::new(vec![output(1, 1.0), secondary.clone()], OutputId(1)).unwrap();
+    views.canvas = Some(root);
+    world.insert_resource(views);
+    world.init_resource::<Assets<crate::native::canvas_background::PatternMaterial>>();
+    let target = world.resource_mut::<Assets<Image>>().add(image(
+        UVec2::from_array(secondary.physical_size),
+        TextureFormat::Rgba8UnormSrgb,
+    ));
+    world.insert_resource(super::super::super::output_views::Targets(HashMap::from([
+        (secondary.id, target),
+    ])));
+    secondary
+}
 
 fn demand(world: &World, root: Entity, entity: Entity) -> Request {
     request(
@@ -69,41 +112,9 @@ fn text_demand_tracks_reentry_and_current_children_without_suspending_their_stat
 fn secondary_outputs_and_overview_previews_keep_their_text_resolution() {
     let (mut world, root, owners) = scene(1);
     let owner = owners[0];
-    let mut workspace = world.get::<Workspaces>(root).unwrap().entries[0].clone();
-    workspace.id = 2;
-    world
-        .get_mut::<Workspaces>(root)
-        .unwrap()
-        .entries
-        .push(workspace);
+    two_outputs(&mut world, root, 2.0);
     world.entity_mut(owner).insert(WorkspaceMember(2));
     world.spawn((Text::new("Secondary output"), ChildOf(owner)));
-    let output = |id, workspace, scale: f64| {
-        let bounds = crate::host::Rectangle::new(
-            [(id - 1) as f64 * 1920.0, 0.0],
-            [1920.0 / scale, 1080.0 / scale],
-        )
-        .unwrap();
-        crate::host::OutputViewport {
-            id: crate::host::OutputId(id),
-            workspace,
-            bounds,
-            usable: Some(bounds),
-            physical_size: [1920, 1080],
-            rotation: default(),
-            raster: crate::host::raster::RasterMapping {
-                origin: bounds.origin(),
-                scale: [scale; 2],
-            },
-        }
-    };
-    let mut views = crate::native::output_views::OutputViews::new(
-        vec![output(1, 1, 1.0), output(2, 2, 2.0)],
-        crate::host::OutputId(1),
-    )
-    .unwrap();
-    views.canvas = Some(root);
-    world.insert_resource(views);
     let secondary = demand(&world, root, owner);
     assert!(secondary.visible && secondary.text);
     assert_eq!(secondary.density, 4.0);
@@ -144,4 +155,112 @@ fn secondary_outputs_and_overview_previews_keep_their_text_resolution() {
     world.remove_resource::<super::super::super::previews::Previews>();
     let retired = demand(&world, root, owner);
     assert!(!retired.visible && !retired.text);
+}
+
+#[cfg_attr(test, test)]
+pub(super) fn zoom_pressure_keeps_other_output_captures_at_their_own_resolution() {
+    let (mut world, root, owners) = scene(6);
+    let output = two_outputs(&mut world, root, 1.25);
+    for owner in &owners[..4] {
+        *world.get_mut::<CanvasItem>(*owner).unwrap() = CanvasItem {
+            position: default(),
+            size: Vec2::new(1000.0, 800.0),
+        };
+        world.spawn((Text::new("Record title"), ChildOf(*owner)));
+    }
+    let (client, record) = (owners[4], owners[5]);
+    for (owner, position, size) in [
+        (client, 100.0, Vec2::new(640.0, 480.0)),
+        (record, -480.0, Vec2::new(240.0, 100.0)),
+    ] {
+        world.entity_mut(owner).insert((
+            WorkspaceMember(2),
+            LayoutBox::new(size),
+            CanvasItem {
+                position: bevy::math::DVec2::new(position, 0.0),
+                size,
+            },
+        ));
+    }
+    world.entity_mut(client).insert(ApplicationWindow {
+        surface: SurfaceId(1),
+        content_size: [640, 480],
+    });
+    world.spawn((Text::new("Relation title"), ChildOf(record)));
+
+    synchronize(&mut world);
+    let captures = [client, record].map(|owner| {
+        let surface = world.get::<Surface>(owner).unwrap();
+        (surface.pixels, surface.image.id())
+    });
+    assert_eq!(captures[0].0, UVec2::new(800, 600));
+    assert!(captures[1].0.x >= 600);
+    for zoom in [1.2, 2.1, 2.99, 2.1, 1.2, 1.0] {
+        world.get_mut::<CanvasView>(root).unwrap().zoom = zoom;
+        synchronize(&mut world);
+        let diagnostics = world.resource::<surface_budget::Diagnostics>();
+        assert!(diagnostics.granted_bytes <= surface_budget::BYTE_BUDGET);
+        if zoom >= 2.1 {
+            assert!(owners[..4].iter().all(|owner| {
+                world
+                    .get::<surface_budget::NativeRaster>(*owner)
+                    .is_some_and(|raster| raster.budget_limited)
+            }));
+        }
+        for (owner, expected) in [client, record].into_iter().zip(captures) {
+            let surface = world.get::<Surface>(owner).unwrap();
+            assert!(surface.visible);
+            assert_eq!((surface.pixels, surface.image.id()), expected);
+            assert!(world.get::<Camera>(surface.camera).unwrap().is_active);
+        }
+        let geometry = super::super::super::output_views::geometry(&mut world, root, &output);
+        assert_eq!(geometry.len(), 2);
+    }
+}
+
+#[cfg_attr(test, test)]
+pub(super) fn focused_3d_camera_turns_leave_secondary_visibility_and_density_stable() {
+    let (mut world, root, owners) = scene(3);
+    let output = two_outputs(&mut world, root, 2.0);
+    let (focused, record, offscreen) = (owners[0], owners[1], owners[2]);
+    let center = [1200.0, 800.0];
+    {
+        let mut spaces = world.get_mut::<Workspaces>(root).unwrap();
+        spaces.entries[1].center = center;
+        spaces.entries[1].zoom = 1.5;
+    }
+    world.entity_mut(record).insert((
+        WorkspaceMember(2),
+        LayoutBox::new(Vec2::splat(100.0)),
+        CanvasItem {
+            position: bevy::math::DVec2::from_array(center),
+            size: Vec2::splat(100.0),
+        },
+    ));
+    world.entity_mut(offscreen).insert(WorkspaceMember(2));
+    world.spawn((Text::new("Relation title"), ChildOf(record)));
+
+    for (yaw, focused_visible) in [(0.0, true), (std::f32::consts::PI, false), (0.0, true)] {
+        *world
+            .get_mut::<super::super::super::view::View>(root)
+            .unwrap() = super::super::super::view::View {
+            spatial: true,
+            position: [0.0, 500.0, 500.0],
+            yaw,
+            pitch: -std::f32::consts::FRAC_PI_4,
+            ..default()
+        };
+        let request = demand(&world, root, record);
+        assert!(request.visible);
+        assert_eq!(request.density, 6.0);
+        synchronize(&mut world);
+        assert_eq!(
+            world.get::<Surface>(focused).unwrap().visible,
+            focused_visible
+        );
+        assert!(world.get::<Surface>(record).unwrap().visible);
+        assert!(!world.get::<Surface>(offscreen).unwrap().visible);
+        let geometry = super::super::super::output_views::geometry(&mut world, root, &output);
+        assert_eq!(geometry.len(), 1);
+    }
 }

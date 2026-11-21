@@ -18,12 +18,12 @@
 
 use std::{collections::HashSet, time::Duration};
 
-use serde_json::Value;
+use serde_json::{Value, json};
 use tokio::sync::watch;
 
 use crate::{
     provider::{DiscardText, Message, Provider, TextOutput},
-    tools::Registry,
+    tools::{Registry, receipts::{self, Receipts}},
 };
 
 pub const MAX_CONTEXT_BYTES: usize = 512 * 1024;
@@ -176,7 +176,10 @@ async fn turn(
     receipts: &mut Vec<String>,
     output: &dyn TextOutput,
 ) -> Result<String, String> {
-    let definitions = tools.definitions();
+    let tool_outputs = Receipts::new(output.tool_output_directory())?;
+    let mut definitions = tools.definitions();
+    definitions.retain(|definition| definition.name != receipts::READ_TOOL_OUTPUT);
+    definitions.push(receipts::definition());
     let tool_bytes =
         nucleus::json::encoded_len(&definitions).map_err(|_| "Cannot encode tool descriptions.")?;
     let mut previous_calls: HashSet<String> = messages
@@ -200,20 +203,23 @@ async fn turn(
         }
         tokio::select! {
             _ = stop.changed() => return Err("Stopped by you.".into()),
-            result = crate::conversation::prepare_context(provider, system, &mut messages, output, tool_bytes, force_compact) => { result?; }
+            result = crate::conversation::prepare_context(provider, system, &mut messages, output, tool_bytes, force_compact, Some(&tool_outputs)) => { result?; }
         }
-        validate_context(system, &messages)?;
         output.context(&messages).await?;
+        let projected = crate::conversation::project_tool_results(&messages, Some(&tool_outputs))?;
+        validate_context(system, &projected)?;
+        output.model_context(&projected, &definitions).await?;
         let progress = Prefix {
             text: &text,
             output,
         };
         let reply = tokio::select! {
             _ = stop.changed() => return Err("Stopped by you.".into()),
-            result = tokio::time::timeout(Duration::from_secs(120), provider.stream(system, &messages, &definitions, &progress)) => {
+            result = tokio::time::timeout(Duration::from_secs(120), provider.stream(system, &projected, &definitions, &progress)) => {
                 result.map_err(|_| "The provider did not reply within two minutes.".to_string())?
             }
         };
+        drop(projected);
         let reply = match reply {
             Ok(reply) => reply,
             Err(error)
@@ -288,10 +294,17 @@ async fn turn(
                 );
             }
             output.tool_pending(&call).await?;
-            let mut result = tokio::select! {
-                biased;
-                _ = stop.changed() => return Err("Stopped by you. Completed Record, file and command operations remain saved.".into()),
-                result = tools.run(&call.name, call.arguments) => result,
+            let mut result = if call.name == receipts::READ_TOOL_OUTPUT {
+                match tool_outputs.read(call.arguments) {
+                    Ok(page) => json!({"ok":true,"result":page}),
+                    Err(error) => json!({"ok":false,"error":error}),
+                }
+            } else {
+                tokio::select! {
+                    biased;
+                    _ = stop.changed() => return Err("Stopped by you. Completed Record, file and command operations remain saved.".into()),
+                    result = tools.run_with_receipts(&call.name, call.arguments, Some(&tool_outputs)) => result,
+                }
             };
             let diff = if matches!(
                 call.name.as_str(),

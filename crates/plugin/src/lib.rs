@@ -452,7 +452,7 @@ impl Host {
         if approved_digest != installed.digest {
             return Err("Plugin changed; review and enable this version".into());
         }
-        if contribution != ""
+        if !contribution.is_empty()
             && !installed
                 .manifest
                 .contributions

@@ -36,11 +36,9 @@ impl SessionState {
                 self.commands = update.available_commands.clone();
             }
             SessionUpdate::Plan(plan) => self.plan = Some(plan.clone()),
-            SessionUpdate::UsageUpdate(usage) => {
-                if self.usage.as_ref() != Some(usage) {
-                    self.usage = Some(usage.clone());
-                    self.usage_updated_ms = nucleus::operation::now_ms();
-                }
+            SessionUpdate::UsageUpdate(usage) if self.usage.as_ref() != Some(usage) => {
+                self.usage = Some(usage.clone());
+                self.usage_updated_ms = nucleus::operation::now_ms();
             }
             _ => {}
         }

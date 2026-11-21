@@ -178,7 +178,7 @@ fn application_target(target: &str) -> bool {
                 | "lince_park"
                 | "lince_interface"
                 | "nucleus"
-                | "anicca"
+                | "lingua"
                 | "cell"
                 | "engine"
                 | "store"

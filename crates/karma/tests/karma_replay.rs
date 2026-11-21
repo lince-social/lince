@@ -134,11 +134,12 @@ fn fixture_capsule() -> SealedEvaluationReplayCapsule {
         )]),
         ..FrozenEvaluationContext::default()
     };
-    capture_evaluation_replay(&program, &context, EvaluationLimits::default()).unwrap()
+    capture_evaluation_replay(&program, &context, EvaluationLimits::default())
+        .expect("capture the fixture replay")
 }
 
 fn replay_program() -> ProgramAst {
-    let template = Slug::new("notify.ready").unwrap();
+    let template = Slug::new("notify.ready").expect("valid fixture template slug");
     let candidate_type = ValueType::Candidate {
         route: CandidateRoute::Recommend,
         template: template.clone(),
@@ -146,7 +147,7 @@ fn replay_program() -> ProgramAst {
     };
     ProgramAst {
         schema: ProgramSchema::V1,
-        slug: Slug::new("replay.control-candidate").unwrap(),
+        slug: Slug::new("replay.control-candidate").expect("valid fixture program slug"),
         purpose: "Replay one temporal transition and inert candidate".to_string(),
         tags: Default::default(),
         parameters: BTreeMap::new(),
@@ -254,7 +255,7 @@ fn output(node: &str, port: &str) -> OutputRef {
 }
 
 fn id(value: &str) -> LocalId {
-    LocalId::new(value).unwrap()
+    LocalId::new(value).expect("valid fixture local ID")
 }
 
 fn boolean(value: bool) -> LiteralValue {
@@ -263,16 +264,16 @@ fn boolean(value: bool) -> LiteralValue {
 
 fn timestamp(offset: i64) -> TimestampMs {
     TimestampMs::parse_canonical("2026-07-22T00:00:00.000Z")
-        .unwrap()
+        .expect("valid fixture timestamp")
         .checked_add(DurationMs::new(offset))
-        .unwrap()
+        .expect("fixture timestamp offset fits")
 }
 
 const RECORD_UID: &str = "r_01ARZ3NDEKTSV4RRFFQ69G5FAV";
 
 fn reference(kind: ReferenceKind, uid_value: &str, slug: &str) -> ResolvedReference {
     ResolvedReference {
-        target: TypedUid::new(kind, uid_value).unwrap(),
-        display_slug: Some(Slug::new(slug).unwrap()),
+        target: TypedUid::new(kind, uid_value).expect("valid fixture UID"),
+        display_slug: Some(Slug::new(slug).expect("valid fixture slug")),
     }
 }

@@ -981,7 +981,7 @@
                   "institute"
                   "institute/trails"
                   "institute/trails/lince"
-                  "institute/trails/lince/Lince.lingua"
+                  "institute/trails/Lince.lingua"
                 ]
                 || builtins.any (root: rel == root || lib.hasPrefix (root + "/") rel)
                   [ ".cargo" "crates" "institute/assets" "institute/packaging" ]

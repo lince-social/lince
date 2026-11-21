@@ -24,7 +24,8 @@ use bevy::{
         extract_component::{ExtractComponent, ExtractComponentPlugin},
         render_asset::{ExtractedAssets, RenderAssets},
         render_phase::{
-            DrawFunctions, SortedRenderPhase, ViewBinnedRenderPhases, ViewSortedRenderPhases,
+            DrawFunctionId, DrawFunctions, SortedRenderPhase, ViewBinnedRenderPhases,
+            ViewSortedRenderPhases,
         },
         render_resource::{
             LoadOp, Operations, PipelineCache, RenderPassColorAttachment, RenderPassDescriptor,
@@ -56,7 +57,20 @@ type Fingerprint = <bevy::platform::hash::FixedHasher as BuildHasher>::Hasher;
 
 mod origins;
 mod order;
+mod retained_draws;
 pub(crate) use origins::{CaptureOrigins, CompletedCaptures};
+pub use retained_draws::{UiMaterialVersions, retain_ui_material};
+use retained_draws::RetainedDraws;
+
+pub fn independent_output_images(
+    world: &World,
+    targets: impl Iterator<Item = AssetId<Image>>,
+    changed: &std::collections::BTreeSet<Entity>,
+) -> std::collections::BTreeSet<AssetId<Image>> {
+    world.get_resource::<CompletedCaptures>().map_or_else(Default::default, |completed| {
+        completed.independent_images(targets, changed)
+    })
+}
 
 #[derive(Resource, Default)]
 struct CaptureCache {
@@ -133,6 +147,7 @@ impl Plugin for SurfaceRenderPlugin {
         render_app
             .insert_resource(completed)
             .init_resource::<CaptureCache>()
+            .init_resource::<RetainedDraws>()
             .init_resource::<origins::UiOrigins>()
             .init_resource::<crate::native::capture::render::aliases::PreparedAliases>()
             .add_systems(ExtractSchedule, origins::extract.after(extract_cameras))
@@ -150,7 +165,7 @@ impl Plugin for SurfaceRenderPlugin {
             )
             .add_systems(
                 Render,
-                (prepare_captures, fingerprint_captures)
+                (prepare_captures, fingerprint_captures, retained_draws::clear)
                     .in_set(RenderSystems::PrepareViews)
                     .before(prepare_view_targets),
             )
@@ -438,12 +453,17 @@ fn capture_hash(
     mut fingerprint: Fingerprint,
     image: &GpuImage,
     phase: &SortedRenderPhase<TransparentUi>,
-) -> u64 {
+    draw_ui: Option<DrawFunctionId>,
+    retained: &RetainedDraws,
+) -> Option<u64> {
     image.texture.id().hash(&mut fingerprint);
     for item in phase.items.values() {
         item.pipeline.hash(&mut fingerprint);
+        if Some(item.draw_function) != draw_ui {
+            retained.hash(item, &mut fingerprint)?;
+        }
     }
-    fingerprint.finish()
+    Some(fingerprint.finish())
 }
 
 fn reuse_captures(
@@ -459,6 +479,7 @@ fn reuse_captures(
     mut cache: ResMut<CaptureCache>,
     draws: Res<DrawFunctions<TransparentUi>>,
     pipelines: Res<PipelineCache>,
+    retained: Res<RetainedDraws>,
 ) {
     cache.skipped.clear();
     let draw_ui = draws.read().get_id::<DrawUi>();
@@ -476,17 +497,26 @@ fn reuse_captures(
         let Some(phase) = phases.get_mut(&view.retained_view_entity) else {
             continue;
         };
-        if !phase.items.values().all(|item| {
-            Some(item.draw_function) == draw_ui
-                && pipelines.get_render_pipeline(item.pipeline).is_some()
-        }) {
+        if !phase
+            .items
+            .values()
+            .all(|item| pipelines.get_render_pipeline(item.pipeline).is_some())
+        {
             continue;
         }
-        let fingerprint = capture_hash(
-            cache.fingerprints.get(&entity).cloned().unwrap_or_else(|| bevy::platform::hash::FixedHasher.build_hasher()),
+        let Some(fingerprint) = capture_hash(
+            cache
+                .fingerprints
+                .get(&entity)
+                .cloned()
+                .unwrap_or_else(|| bevy::platform::hash::FixedHasher.build_hasher()),
             image,
             phase,
-        );
+            draw_ui,
+            &retained,
+        ) else {
+            continue;
+        };
         if cache.rendered.get_mut().unwrap().get(&entity) == Some(&fingerprint) {
             phase.clear();
             cache.skipped.insert(entity);
@@ -511,6 +541,7 @@ fn render_surface(
     cache: Res<CaptureCache>,
     draws: Res<DrawFunctions<TransparentUi>>,
     pipelines: Res<PipelineCache>,
+    retained: Res<RetainedDraws>,
     completed: Res<CompletedCaptures>,
     wake: Option<Res<crate::native::wake::WakeSignal>>,
     mut context: RenderContext,
@@ -572,18 +603,21 @@ fn render_surface(
             }
             continue;
         }
-        let cacheable = phase.items.values().all(|item| {
-            Some(item.draw_function) == draw_ui
-                && pipelines.get_render_pipeline(item.pipeline).is_some()
-        });
         let fingerprint = capture_hash(
-            cache.fingerprints.get(&entity).cloned().unwrap_or_else(|| bevy::platform::hash::FixedHasher.build_hasher()),
+            cache
+                .fingerprints
+                .get(&entity)
+                .cloned()
+                .unwrap_or_else(|| bevy::platform::hash::FixedHasher.build_hasher()),
             image,
             phase,
+            draw_ui,
+            &retained,
         );
-        if cacheable
-            && !cache.dirty.contains(&entity)
-            && cache.rendered.lock().unwrap().get(&entity) == Some(&fingerprint)
+        if !cache.dirty.contains(&entity)
+            && fingerprint.is_some_and(|fingerprint| {
+                cache.rendered.lock().unwrap().get(&entity) == Some(&fingerprint)
+            })
         {
             crate::host::performance::count(
                 crate::host::performance::Count::SurfaceCapturePassesReused,
@@ -655,7 +689,7 @@ fn render_surface(
             let origins = captured_origins.remove(&entity).unwrap_or_else(|| origins::surface(world, entity, phase));
             completed.queue(capture.0.id(), order, true, origins.clone());
             crate::native::capture::render::aliases::copy(world, &mut context, capture.0.id(), &origins, order);
-            if cacheable {
+            if let Some(fingerprint) = fingerprint {
                 cache.rendered.lock().unwrap().insert(entity, fingerprint);
             } else {
                 cache.rendered.lock().unwrap().remove(&entity);

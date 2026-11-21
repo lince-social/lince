@@ -31,7 +31,7 @@ use std::{
     fmt,
 };
 
-use anicca::grammar::grammar as ast;
+use lingua::grammar::grammar as ast;
 
 use crate::{DecimalValue, expr::BinOp};
 
@@ -820,7 +820,7 @@ impl<'a, H: Host> Evaluator<'a, H> {
                 "record" | "frequency" | "karma" | "declaration",
                 [Value::Reference(name) | Value::Text(name)],
             ) if self.declarations.contains_key(name) => {
-                Ok(Value::Declaration(anicca::format(&ast::Document {
+                Ok(Value::Declaration(lingua::format(&ast::Document {
                     declarations: vec![self.declarations[name].clone()],
                 })))
             }
@@ -834,7 +834,7 @@ impl<'a, H: Host> Evaluator<'a, H> {
                 .declarations
                 .contains_key(&format!("extension:{target}:{namespace}")) =>
             {
-                Ok(Value::Declaration(anicca::format(&ast::Document {
+                Ok(Value::Declaration(lingua::format(&ast::Document {
                     declarations: vec![
                         self.declarations[&format!("extension:{target}:{namespace}")].clone(),
                     ],
@@ -843,7 +843,7 @@ impl<'a, H: Host> Evaluator<'a, H> {
             ("rule", [Value::Reference(name) | Value::Text(name)])
                 if self.declarations.contains_key(&format!("rule:{name}")) =>
             {
-                Ok(Value::Declaration(anicca::format(&ast::Document {
+                Ok(Value::Declaration(lingua::format(&ast::Document {
                     declarations: vec![self.declarations[&format!("rule:{name}")].clone()],
                 })))
             }

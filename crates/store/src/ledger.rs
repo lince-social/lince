@@ -110,7 +110,7 @@ pub async fn record_concept_ancestors(
     pool: &SqlitePool,
     record_uid: &str,
 ) -> Result<Vec<String>, StoreError> {
-    Ok(sqlx::query_scalar(
+    sqlx::query_scalar(
         "WITH RECURSIVE memberships(concept_uid) AS (
             SELECT a.predicate_uid FROM record_assertion a
             JOIN record r ON r.uid = a.subject_uid
@@ -122,7 +122,7 @@ pub async fn record_concept_ancestors(
     )
     .bind(record_uid)
     .fetch_all(pool)
-    .await?)
+    .await
 }
 
 pub async fn classify_fact(

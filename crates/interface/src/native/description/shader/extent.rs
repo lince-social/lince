@@ -355,6 +355,7 @@ fn prepare_requests(
                         visible: false,
                         text: false,
                         exact: true,
+                        output: None,
                     },
                     priority: if preview.priority { 4 } else { 1 },
                     bytes_per_pixel,
@@ -370,11 +371,11 @@ fn prepare_requests(
             continue;
         };
         visits += 1;
-        let (scale, present, rank) = if let Some(captured) = consumer.captured {
+        let (scale, present, rank, output) = if let Some(captured) = consumer.captured {
             let Some((request, priority)) = native.get(&captured) else {
                 continue;
             };
-            (request.density, request.visible, *priority)
+            (request.density, request.visible, *priority, request.output)
         } else {
             let scale = consumer
                 .camera
@@ -384,7 +385,7 @@ fn prepare_requests(
                     RenderTarget::Window(_) => window_scale,
                     _ => consumer.scale,
                 });
-            (scale, true, 2)
+            (scale, true, 2, None)
         };
         if present {
             let desired = consumer.size * scale;
@@ -392,6 +393,11 @@ fn prepare_requests(
                 .base
                 .map_or(desired, |base| base * (desired / base).max_element());
             demand.entry.request.size = demand.entry.request.size.max(desired);
+            if !demand.entry.request.visible {
+                demand.entry.request.output = output;
+            } else if demand.entry.request.output != output {
+                demand.entry.request.output = None;
+            }
             demand.entry.request.visible = true;
             demand.entry.priority = demand.entry.priority.max(rank);
         }
@@ -813,6 +819,7 @@ mod tests {
                         visible: true,
                         text: false,
                         exact: true,
+                        output: Some(crate::host::OutputId(1)),
                     },
                     5,
                 ),
@@ -827,6 +834,7 @@ mod tests {
                         visible: true,
                         text: false,
                         exact: true,
+                        output: Some(crate::host::OutputId(2)),
                     },
                     1,
                 ),
@@ -837,12 +845,15 @@ mod tests {
             assert_eq!(effects.len(), 1);
             assert_eq!(effects[0].1.request.size, Vec2::new(1200.0, 600.0));
             assert_eq!(effects[0].1.priority, 5);
+            assert_eq!(effects[0].1.request.output, None);
         }
         world.entity_mut(other).insert(Visibility::Hidden);
+        let effects = requests(&mut world, &native);
         assert_eq!(
-            requests(&mut world, &native)[0].1.request.size,
+            effects[0].1.request.size,
             Vec2::new(600.0, 300.0)
         );
+        assert_eq!(effects[0].1.request.output, Some(crate::host::OutputId(1)));
         native.get_mut(&first).unwrap().0.density = 3.0;
         assert_eq!(
             requests(&mut world, &native)[0].1.request.size,

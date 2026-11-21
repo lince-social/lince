@@ -15,7 +15,7 @@
 // - [rustc probe: unreachable_pub] unreachable `pub` item. Sites 14, 21, 45.
 
 use super::*;
-use anicca::{ProjectedFrequency, ProjectedRule};
+use ::lingua::{ProjectedFrequency, ProjectedRule};
 use chrono::{DateTime, Utc};
 use nucleus::karma::{Cadence, CadenceStep, Carry, Consequences, FrequencyAst, Gate};
 use store::karma::frequencies;

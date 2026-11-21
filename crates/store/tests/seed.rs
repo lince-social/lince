@@ -22,7 +22,7 @@ async fn seed_is_idempotent_and_grants_admin_everything() {
     let config = store::config::get(&store.pool).await.unwrap().unwrap();
     assert_eq!(config.language, "en");
     assert_eq!(config.style, "catppuccin_macchiato");
-    assert_eq!(config.delete_confirmation, true);
+    assert!(config.delete_confirmation);
 
     let mut admin_perms = store::auth::role_permission_keys(&store.pool, "admin")
         .await

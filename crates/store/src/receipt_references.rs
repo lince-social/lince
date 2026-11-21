@@ -44,7 +44,17 @@ pub async fn checked(pool: &SqlitePool, saved: &Saved) -> Result<Vec<Reference>,
         .public_bundle()
         .ok_or_else(|| invalid("Choose an original public proof artifact"))?;
     let expected = receipt_fragment::references(&bundle.publication).map_err(invalid)?;
-    let rows:Vec<(String,String,String,String,String,Option<String>,Option<String>,String)>=sqlx::query_as("SELECT event_id,scope_id,source_key,source_commitment,slot_id,parent_event,need_event,issuer_organ FROM transfer_receipt_event_reference WHERE record_uid=? AND version=? ORDER BY event_id LIMIT 257").bind(&saved.record).bind(saved.version as i64).fetch_all(pool).await?;
+    type ReferenceRow = (
+        String,
+        String,
+        String,
+        String,
+        String,
+        Option<String>,
+        Option<String>,
+        String,
+    );
+    let rows: Vec<ReferenceRow> = sqlx::query_as("SELECT event_id,scope_id,source_key,source_commitment,slot_id,parent_event,need_event,issuer_organ FROM transfer_receipt_event_reference WHERE record_uid=? AND version=? ORDER BY event_id LIMIT 257").bind(&saved.record).bind(saved.version as i64).fetch_all(pool).await?;
     let actual = rows
         .into_iter()
         .map(

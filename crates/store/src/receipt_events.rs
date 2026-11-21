@@ -49,7 +49,18 @@ pub async fn checked(pool: &SqlitePool, saved: &Saved) -> Result<Vec<Projection>
         return Err(invalid("Only public receipt events enter history"));
     };
     let expected = receipt_history::project(&bundle.publication).map_err(invalid)?;
-    let rows:Vec<(String,String,String,String,String,String,Option<String>,Option<String>,String)>=sqlx::query_as("SELECT event_id,source_key,source_binding,slot_id,outcome_id,semantic_hash,parent_outcome,need_outcome,issuer_organ FROM transfer_receipt_event WHERE record_uid=? AND version=? ORDER BY event_id LIMIT 257")
+    type EventRow = (
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+        Option<String>,
+        Option<String>,
+        String,
+    );
+    let rows: Vec<EventRow> = sqlx::query_as("SELECT event_id,source_key,source_binding,slot_id,outcome_id,semantic_hash,parent_outcome,need_outcome,issuer_organ FROM transfer_receipt_event WHERE record_uid=? AND version=? ORDER BY event_id LIMIT 257")
         .bind(&saved.record).bind(saved.version as i64).fetch_all(pool).await?;
     let actual = rows
         .into_iter()

@@ -14,9 +14,13 @@ use super::{
     surface_budget::{self, Request, dimensions},
     surface_render::{SurfaceCapture, SurfacePass},
 };
-use crate::native::{
-    canvas::{CanvasItem, CanvasView},
-    workspace::{WorkspaceMember, Workspaces},
+use crate::{
+    host::OutputViewport,
+    native::{
+        canvas::{CanvasItem, CanvasView},
+        output_views::OutputViews,
+        workspace::{WorkspaceMember, Workspaces},
+    },
 };
 use bevy::{
     asset::RenderAssetUsages,
@@ -140,34 +144,49 @@ fn request(
     let active = world
         .get::<Workspaces>(root)
         .map_or(0, |spaces| spaces.active);
+    let views = world
+        .get_resource::<OutputViews>()
+        .filter(|views| views.applies_to(root));
     let mut result = request_in(
         world,
         root,
-        active,
         entity,
         item,
-        physical_size,
-        scale_factor,
+        CaptureViewport {
+            workspace: active,
+            physical_size,
+            scale_factor,
+            passive: None,
+        },
     );
-    if let Some(views) = world
-        .get_resource::<crate::native::output_views::OutputViews>()
-        .filter(|views| views.applies_to(root))
-    {
+    if let Some(views) = views {
+        let focused = views.focused();
+        if result.visible && focused.workspace == active {
+            result.output = Some(focused.id);
+        }
+        let home = world.get::<WorkspaceMember>(entity).map(|member| member.0);
         for output in views
             .outputs
             .iter()
-            .filter(|output| output.workspace != active)
+            .filter(|output| output.id != views.focused)
         {
             let other = request_in(
                 world,
                 root,
-                output.workspace,
                 entity,
                 item,
-                UVec2::from_array(output.physical_size),
-                output.raster.scale[0] as f32,
+                CaptureViewport {
+                    workspace: output.workspace,
+                    physical_size: UVec2::from_array(output.physical_size),
+                    scale_factor: output.raster.scale[0] as f32,
+                    passive: Some(output),
+                },
             );
             if other.visible {
+                // A surface visible through a hole may serve more than one output.
+                if result.output.is_none() || home == Some(output.workspace) {
+                    result.output = Some(output.id);
+                }
                 result.density = if result.visible {
                     result.density.max(other.density)
                 } else {
@@ -194,18 +213,29 @@ fn request(
     result
 }
 
+struct CaptureViewport<'a> {
+    workspace: u64,
+    physical_size: UVec2,
+    scale_factor: f32,
+    passive: Option<&'a OutputViewport>,
+}
+
 fn request_in(
     world: &World,
     root: Entity,
-    active_workspace: u64,
     entity: Entity,
     item: &CanvasItem,
-    physical_size: UVec2,
-    scale_factor: f32,
+    viewport: CaptureViewport<'_>,
 ) -> Request {
+    let CaptureViewport {
+        workspace,
+        physical_size,
+        scale_factor,
+        passive,
+    } = viewport;
     let active = world
         .get::<WorkspaceMember>(entity)
-        .is_some_and(|member| super::holes::live_in(world, root, active_workspace, member.0))
+        .is_some_and(|member| super::holes::live_in(world, root, workspace, member.0))
         && world.get::<Disabled>(root).is_none()
         && world.get::<Disabled>(entity).is_none()
         && world
@@ -227,28 +257,44 @@ fn request_in(
         exact: world
             .get::<crate::native::layout::desktop::ApplicationWindow>(entity)
             .is_some(),
+        output: None,
     };
     if !active || !item.size.is_finite() || item.size.min_element() <= 0.0 {
         request.visible = false;
         return request;
     }
     let (offset, clip) = crate::native::layout::viewport::clip(world, entity);
-    let exposed = clip.size().min_element() > 0.0
-        && !super::holes::surface_pieces_in(world, root, active_workspace, entity, item)
-            .0
-            .is_empty();
-    if !exposed {
+    if clip.size().min_element() <= 0.0 {
+        request.visible = false;
+        return request;
+    }
+    let (pieces, _, _) = super::holes::surface_pieces_in(world, root, workspace, entity, item);
+    if pieces.is_empty() {
         request.visible = false;
         return request;
     }
     let scale = world
         .get::<crate::native::area_effects::AreaScale>(entity)
         .map_or(1.0, |scale| scale.0);
-    let mut view = world
-        .get::<super::view::View>(root)
-        .copied()
-        .unwrap_or_default();
-    view.spatial = super::view::spatial(world, root);
+    if let Some(output) = passive {
+        // Secondary outputs draw the same planar pieces used for their hit geometry,
+        // even when the focused workspace uses a perspective camera.
+        let canvas = crate::native::output_views::canvas(world, root, workspace);
+        let native_size = physical_size.as_dvec2() / f64::from(scale_factor);
+        let inset = super::output_views::camera_inset(output, native_size, canvas.zoom);
+        let center = canvas.center + inset;
+        let half = native_size / canvas.zoom * 0.5;
+        let min = center - half;
+        let max = center + half;
+        request.visible = pieces.iter().any(|piece| {
+            !piece.iter().all(|point| point.x < min.x)
+                && !piece.iter().all(|point| point.x > max.x)
+                && !piece.iter().all(|point| point.y < min.y)
+                && !piece.iter().all(|point| point.y > max.y)
+        });
+        request.density = canvas.zoom as f32 * scale_factor * scale;
+        return request;
+    }
     let placement = crate::native::canvas::presented_spatial(world, entity);
     let depth = if world
         .get::<crate::native::time_castle::TimeSettings>(entity)
@@ -286,8 +332,8 @@ fn request_in(
                     f64::from(point.y * scale - offset.y),
                 )
     });
-    if !view.spatial {
-        let canvas = crate::native::output_views::canvas(world, root, active_workspace);
+    if !super::view::spatial(world, root) {
+        let canvas = crate::native::output_views::canvas(world, root, workspace);
         let half = physical_size.as_vec2().as_dvec2() / f64::from(scale_factor) / canvas.zoom * 0.5;
         let min = canvas.center - half;
         let max = canvas.center + half;
@@ -298,6 +344,10 @@ fn request_in(
         request.density = canvas.zoom as f32 * scale_factor * scale;
         return request;
     }
+    let view = world
+        .get::<super::view::View>(root)
+        .copied()
+        .unwrap_or_default();
     let rotation = Quat::from_euler(EulerRot::YXZ, view.yaw, view.pitch, 0.0).as_dquat();
     let camera = bevy::math::DVec3::from_array(view.position);
     let points = points.map(|point| rotation.inverse() * (point - camera));
@@ -464,7 +514,11 @@ fn derive(world: &mut World) -> SurfacePlan {
         .get_resource::<bevy::render::renderer::RenderDevice>()
         .map_or(4096, |device| device.limits().max_texture_dimension_2d);
     crate::host::performance::add(crate::host::performance::Count::NativeSurfaceRequests, entries.len() as u64);
-    let grants = surface_budget::allocate(&entries, surface_budget::BYTE_BUDGET, maximum);
+    let outputs = world
+        .get_resource::<OutputViews>()
+        .map_or(&[][..], |views| views.outputs.as_slice());
+    let grants =
+        surface_budget::allocate_outputs(&entries, outputs, surface_budget::BYTE_BUDGET, maximum);
     let diagnostics = surface_budget::Diagnostics {
         granted_bytes: entries
             .iter()
@@ -1081,8 +1135,11 @@ fn content_bounds(world: &World, entity: Entity) -> Option<Rect> {
 pub(crate) mod tests {
     use super::*;
 
-    #[cfg(test)]
     mod admission;
+    use admission::{
+        focused_3d_camera_turns_leave_secondary_visibility_and_density_stable,
+        zoom_pressure_keeps_other_output_captures_at_their_own_resolution,
+    };
 
     fn scene(count: usize) -> (World, Entity, Vec<Entity>) {
         let mut world = World::new();
@@ -1489,5 +1546,7 @@ pub(crate) mod tests {
     crate::native::laboratory_cases! {
         text_surfaces_supersample_and_fade_without_darkening_transparent_edges,
         stationary_surfaces_do_not_invalidate_assets_or_camera_layout,
+        zoom_pressure_keeps_other_output_captures_at_their_own_resolution,
+        focused_3d_camera_turns_leave_secondary_visibility_and_density_stable,
     }
 }

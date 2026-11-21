@@ -315,8 +315,7 @@ where
         tx,
         &frequency_uid,
         crate::exact::zero(),
-        &input.request_id,
-        input.actor_person_uid,
+        (&input.request_id, input.actor_person_uid),
         &evidence,
         now,
         &sign,
@@ -481,8 +480,7 @@ where
         &mut tx,
         &input.frequency_uid,
         crate::exact::zero(),
-        &input.request_id,
-        input.actor_person_uid,
+        (&input.request_id, input.actor_person_uid),
         &evidence,
         now,
         &sign,
@@ -578,11 +576,7 @@ async fn activate_saved_tx(
         tx,
         &activation_hash,
         &epoch,
-        admission.calendar_provider,
-        admission.demand_policy,
-        admission.demand_capacity,
-        admission.host,
-        admission.grant,
+        admission,
         &at,
         starting_cursor,
     )
@@ -883,8 +877,7 @@ where
         &mut tx,
         &input.frequency_uid,
         crate::exact::integer(-1),
-        &input.request_id,
-        input.actor_person_uid,
+        (&input.request_id, input.actor_person_uid),
         &evidence,
         now,
         &sign,
@@ -1072,14 +1065,14 @@ where
         ),
         None => None,
     };
-    if was_active && let Some(previous) = &previous_activation {
-        if previous.epoch.definition_revision_hash() == selected_revision_hash
-            && previous.epoch.compiled() == &compiled
-        {
-            return Err(protocol(
-                "Karma Frequency activation does not change effective configuration",
-            ));
-        }
+    if was_active
+        && let Some(previous) = &previous_activation
+        && previous.epoch.definition_revision_hash() == selected_revision_hash
+        && previous.epoch.compiled() == &compiled
+    {
+        return Err(protocol(
+            "Karma Frequency activation does not change effective configuration",
+        ));
     }
 
     let next_revision = checked_next_revision(current.handle_revision)?;
@@ -1122,11 +1115,7 @@ where
             &mut tx,
             &activation_hash,
             &epoch,
-            admission.calendar_provider,
-            admission.demand_policy,
-            admission.demand_capacity,
-            admission.host,
-            admission.grant,
+            admission,
             &at,
         )
         .await?;
@@ -1158,8 +1147,7 @@ where
         &mut tx,
         frequency_uid,
         delta,
-        request_id,
-        actor_person_uid,
+        (request_id, actor_person_uid),
         &evidence,
         now,
         sign,
@@ -1368,8 +1356,7 @@ async fn append_evidence_fact<F>(
     tx: &mut Transaction<'_, Sqlite>,
     frequency_uid: &str,
     delta: nucleus::DecimalValue,
-    request_id: &str,
-    actor_person_uid: Option<String>,
+    (request_id, actor_person_uid): (&str, Option<String>),
     evidence: &FrequencyMutationEvidence,
     now: DateTime<Utc>,
     sign: &F,

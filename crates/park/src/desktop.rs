@@ -119,6 +119,7 @@ pub(crate) struct Desktop {
     pub(crate) scroll_saturated: bool,
     pub(crate) scene_revision: u64,
     pub(crate) server_revision: u64,
+    presentation_revision: u64,
     pub(crate) viewports: Vec<OutputViewport>,
     display: Option<lince_interface::host::display::DisplaySnapshot>,
     keyboard_snapshot: Option<lince_interface::host::input::KeyboardSnapshot>,
@@ -381,8 +382,8 @@ pub fn run(
                     false
                 }
             });
-            desktop.server.dispatch()?;
             composition.capture(backend.renderer(), &mut desktop, true)?;
+            desktop.server.flush_clients()?;
             let timeout = options
                 .duration
                 .map(|duration| duration.saturating_sub(started.elapsed()));
@@ -486,6 +487,7 @@ impl Desktop {
             scroll_saturated: false,
             scene_revision: 0,
             server_revision: 0,
+            presentation_revision: 0,
             viewports: Vec::new(),
             display: None,
             keyboard_snapshot: None,
@@ -676,7 +678,9 @@ impl Desktop {
                 self.display = Some(display);
             }
             self.server_revision = self.server.revision();
-            self.redraw = true;
+            let revision = self.server.presentation_revision();
+            self.redraw |= self.presentation_revision != revision;
+            self.presentation_revision = revision;
         }
         while let Some(request) = self.worker.request() {
             match request {
@@ -1054,7 +1058,14 @@ impl Desktop {
                     self.server.reject_window(window.surface);
                 }
             }
-            composition.canvas(renderer, &completed.frame)?;
+            if self
+                .pending
+                .as_ref()
+                .or(self.current.as_ref())
+                .is_none_or(|previous| !Arc::ptr_eq(&previous.frame, &completed.frame))
+            {
+                composition.canvas(renderer, &completed.frame)?;
+            }
             lince_interface::host::performance::count(
                 lince_interface::host::performance::Count::FrameAccepted,
             );
@@ -1255,7 +1266,7 @@ impl Desktop {
             || self
                 .current
                 .as_ref()
-                .is_some_and(|current| current.sequence > frame.sequence)
+                .is_some_and(|current| current.sequence >= frame.sequence)
         {
             return;
         }
@@ -1384,6 +1395,7 @@ impl Desktop {
         self.clips.clear();
         self.scene_revision = 0;
         self.server_revision = 0;
+        self.presentation_revision = 0;
         self.viewports.clear();
         let focused = self.focused;
         self.event(WinitEvent::Focus(false))?;

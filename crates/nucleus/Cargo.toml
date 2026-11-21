@@ -13,7 +13,7 @@ optimization-solver = ["dep:microlp"]
 shader-compiler = ["lince-wgsl/compiler"]
 
 [dependencies]
-anicca = { workspace = true }
+lingua = { workspace = true }
 lince-karma.workspace = true
 lince-instrumentation.workspace = true
 lince-wgsl.workspace = true

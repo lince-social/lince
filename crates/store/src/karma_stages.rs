@@ -35,8 +35,8 @@ pub async fn for_rule(pool: &SqlitePool, rule: &str) -> Result<Option<Origin>, S
 }
 
 pub async fn existing(pool: &SqlitePool, origin: &Origin) -> Result<Option<String>, StoreError> {
-    Ok(sqlx::query_scalar("SELECT b.schedule_uid FROM karma_transfer_stage s JOIN karma_schedule_boundary b ON b.uid = s.boundary_uid WHERE s.parent_rule_uid = ? AND s.parent_revision = ? AND s.position = ? AND s.change_uid = ?")
-        .bind(&origin.parent_rule).bind(origin.parent_revision).bind(i64::try_from(origin.position).map_err(|error| invalid(&error.to_string()))?).bind(&origin.change_uid).fetch_optional(pool).await?)
+    sqlx::query_scalar("SELECT b.schedule_uid FROM karma_transfer_stage s JOIN karma_schedule_boundary b ON b.uid = s.boundary_uid WHERE s.parent_rule_uid = ? AND s.parent_revision = ? AND s.position = ? AND s.change_uid = ?")
+        .bind(&origin.parent_rule).bind(origin.parent_revision).bind(i64::try_from(origin.position).map_err(|error| invalid(&error.to_string()))?).bind(&origin.change_uid).fetch_optional(pool).await
 }
 
 pub async fn save_tx(

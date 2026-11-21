@@ -30,10 +30,7 @@ async fn move_refuses_without_partial_changes(extension: bool, invalid_new: bool
     let first = record(&store, "First").await;
     let second = record(&store, "Second").await;
     let marker = record(&store, "Transaction marker").await;
-    let row_query;
-    let move_query;
-    let row_uid;
-    if extension {
+    let (row_uid, row_query, move_query) = if extension {
         store::records::set_extension_raw(
             &store.pool,
             &first,
@@ -42,16 +39,16 @@ async fn move_refuses_without_partial_changes(extension: bool, invalid_new: bool
         )
         .await
         .unwrap();
-        row_uid = first.clone();
-        row_query = "SELECT json_array(record_uid, namespace, version, fds)
+        let row_query = "SELECT json_array(record_uid, namespace, version, fds)
                      FROM record_extension WHERE namespace = 'test.move'";
-        move_query = "UPDATE record_extension SET record_uid = ?, fds = '{}', version = 9
+        let move_query = "UPDATE record_extension SET record_uid = ?, fds = '{}', version = 9
                       WHERE record_uid = ? AND namespace = 'test.move'";
+        (first.clone(), row_query, move_query)
     } else {
         let predicate = store::concepts::ensure(&store.pool, "move-edge")
             .await
             .unwrap();
-        row_uid = store::assertions::assert(
+        let row_uid = store::assertions::assert(
             &store.pool,
             store::assertions::NewAssertion {
                 subject_uid: &first,
@@ -65,13 +62,14 @@ async fn move_refuses_without_partial_changes(extension: bool, invalid_new: bool
         )
         .await
         .unwrap();
-        row_query = "SELECT json_array(uid, subject_uid, predicate_uid, object_uid, role,
+        let row_query = "SELECT json_array(uid, subject_uid, predicate_uid, object_uid, role,
                          quantity_mantissa, quantity_scale, unit_uid, asserted_by,
                          created_at, retracted_at, retracted_by)
                      FROM record_assertion";
-        move_query = "UPDATE record_assertion SET subject_uid = ?, asserted_by = 'changed'
+        let move_query = "UPDATE record_assertion SET subject_uid = ?, asserted_by = 'changed'
                       WHERE uid = ?";
-    }
+        (row_uid, row_query, move_query)
+    };
     let invalid = if invalid_new { &second } else { &first };
     if missing {
         store::sqlx::query("DELETE FROM record_revision WHERE record_uid = ?")

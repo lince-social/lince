@@ -108,6 +108,7 @@ pub(super) fn install(app: &mut App) -> Result<(), ProbeFailure> {
         UiMaterialPlugin::<ClientMaterial>::default(),
         ExtractResourcePlugin::<Textures>::default(),
     ));
+    native::topology::retain_ui_material::<ClientMaterial>(app);
     app.world_mut()
         .resource_mut::<Assets<Shader>>()
         .insert(

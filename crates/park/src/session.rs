@@ -142,6 +142,7 @@ struct Screen {
     origin: [i32; 2],
     logical_size: [i32; 2],
     pending: bool,
+    needs_render: bool,
     pacing: pacing::Pacing<Queued>,
     texture: Option<GlesTexture>,
     adaptive_sync: lince_interface::host::display::AdaptiveSyncStatus,
@@ -504,11 +505,6 @@ pub fn run(
                                     desktop.redraw = true;
                                 }
                                 screen.protected = current && queued.scene.locked;
-                                let stale = desktop
-                                    .pending
-                                    .as_ref()
-                                    .or(desktop.current.as_ref())
-                                    .is_some_and(|latest| !Arc::ptr_eq(latest, &queued.frame));
                                 desktop.output_presented(
                                     queued.id,
                                     queued.frame,
@@ -517,7 +513,6 @@ pub fn run(
                                     started.elapsed().as_millis() as u32,
                                     hardware_clock,
                                 )?;
-                                desktop.redraw |= stale;
                             }
                             screen.pending = false;
                         }
@@ -616,12 +611,19 @@ pub fn run(
                     && hardware.screens.values().any(|screen| !screen.pending)
                     && composition.ready()
                 {
-                    desktop.accept(&mut composition, &mut hardware.renderer)?;
-                    if let Some(completed) = desktop
-                        .pending
-                        .as_ref()
-                        .or(desktop.current.as_ref())
-                        .cloned()
+                    let previous = if desktop.redraw || desktop.server.locked() {
+                        None
+                    } else {
+                        desktop
+                            .pending
+                            .as_ref()
+                            .or(desktop.current.as_ref())
+                            .cloned()
+                    };
+                    let accepted = desktop.accept(&mut composition, &mut hardware.renderer)?;
+                    if accepted
+                        && let Some(completed) =
+                            desktop.pending.as_ref().or(desktop.current.as_ref())
                     {
                         composition.enable_client_formats(
                             &hardware.renderer,
@@ -647,7 +649,37 @@ pub fn run(
                                 }
                             }
                         }
-                        if desktop.redraw && !hardware.screens.is_empty() {
+                        let redraw = std::mem::take(&mut desktop.redraw);
+                        if redraw {
+                            let retained =
+                                previous
+                                    .as_ref()
+                                    .zip(desktop.rendering())
+                                    .filter(|(old, new)| {
+                                        accepted
+                                            && Arc::ptr_eq(&old.frame.input, &new.frame.input)
+                                            && old
+                                                .windows
+                                                .iter()
+                                                .chain(new.windows.iter())
+                                                .all(|window| window.popups.is_empty())
+                                    });
+                            // Keep the change for busy outputs until their own flip retires.
+                            for screen in hardware.screens.values_mut() {
+                                let unchanged = retained.is_some_and(|(old, new)| {
+                                    old.frame.output_dmabuf(screen.id).is_some_and(|buffer| {
+                                        new.frame.output_dmabuf(screen.id) == Some(buffer)
+                                    })
+                                });
+                                screen.needs_render |= !unchanged;
+                            }
+                        }
+                        if hardware.screens.values().any(Screen::renderable)
+                            || redraw
+                                && desktop.server.locked()
+                                && !hardware.screens.is_empty()
+                                && hardware.screens.values().all(|screen| !screen.power.on)
+                        {
                             let submitted = match hardware.render(&mut composition, &mut desktop) {
                                 Ok(submitted) => submitted,
                                 Err(failure) => {
@@ -679,8 +711,8 @@ pub fn run(
             }
             readiness.advance(false)?;
             children.retain_mut(|child| !matches!(child.try_wait(), Ok(Some(_))));
-            desktop.server.dispatch()?;
             composition.capture(&mut hardware.renderer, &mut desktop, hardware.active)?;
+            desktop.server.flush_clients()?;
             lince_interface::host::performance::flush_if_due();
             if desktop.running {
                 let _timing = lince_interface::host::performance::Span::new(
@@ -718,6 +750,12 @@ pub fn run(
     worker?;
     eprintln!("Park orderly logout completed");
     Ok(())
+}
+
+impl Screen {
+    fn renderable(&self) -> bool {
+        self.power.on && !self.pending && self.needs_render
+    }
 }
 
 impl Hardware {
@@ -1112,10 +1150,7 @@ impl Hardware {
         }
         let viewports = desktop.server.output_viewports();
         for screen in self.screens.values_mut() {
-            if !screen.power.on {
-                continue;
-            }
-            if screen.pending {
+            if !screen.renderable() {
                 continue;
             }
             let Some((_, viewport)) = viewports
@@ -1201,6 +1236,7 @@ impl Hardware {
                 }
             }
             let frame = frame?;
+            screen.needs_render = false;
             if let (Some((started, render)), Some((host_started, host_returned))) = (
                 composition_started.zip(completed.frame.traced_render),
                 host_started.zip(host_returned),
@@ -1305,7 +1341,6 @@ impl Hardware {
                 }
             }
         }
-        desktop.redraw = false;
         Ok(true)
     }
 

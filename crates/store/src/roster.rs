@@ -143,12 +143,10 @@ pub async fn public_packet(
     pool: &SqlitePool,
     organ_uid: &str,
 ) -> Result<Option<Vec<u8>>, StoreError> {
-    Ok(
-        sqlx::query_scalar("SELECT packet FROM organ_public_record WHERE organ_uid = ?")
-            .bind(organ_uid)
-            .fetch_optional(pool)
-            .await?,
-    )
+    sqlx::query_scalar("SELECT packet FROM organ_public_record WHERE organ_uid = ?")
+        .bind(organ_uid)
+        .fetch_optional(pool)
+        .await
 }
 
 pub async fn clear_public_packet(pool: &SqlitePool, organ_uid: &str) -> Result<(), StoreError> {

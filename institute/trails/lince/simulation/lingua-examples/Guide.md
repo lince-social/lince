@@ -16,12 +16,12 @@ These files cover the current grammar and built-in script functions. Each file r
 From the repository root:
 
 ```sh
-cargo xtask lingua institute/trails/lingua-examples/01-values.lingua
-cargo xtask lingua institute/trails/lingua-examples/02-control-flow.lingua
-cargo xtask lingua institute/trails/lingua-examples/03-records.lingua
-cargo xtask lingua institute/trails/lingua-examples/04-automation-and-extensions.lingua
-cargo xtask lingua check institute/trails/lingua-examples/
-cargo xtask lingua fmt institute/trails/lingua-examples/02-control-flow.lingua
+cargo xtask lingua institute/trails/lince/simulation/lingua-examples/01-values.lingua
+cargo xtask lingua institute/trails/lince/simulation/lingua-examples/02-control-flow.lingua
+cargo xtask lingua institute/trails/lince/simulation/lingua-examples/03-records.lingua
+cargo xtask lingua institute/trails/lince/simulation/lingua-examples/04-automation-and-extensions.lingua
+cargo xtask lingua check institute/trails/lince/simulation/lingua-examples/
+cargo xtask lingua fmt institute/trails/lince/simulation/lingua-examples/02-control-flow.lingua
 cargo xtask lingua eval '0.1 + 0.2 == 0.3 and !false'
 ```
 
@@ -30,8 +30,8 @@ Passing a file executes it; there is no `run` subcommand. `check` and `fmt` neve
 The database examples require an existing, initialized Lince directory containing `lince.db`:
 
 ```sh
-cargo xtask lingua institute/trails/lingua-examples/05-database-report.lingua --directory /path/to/lince
-cargo xtask lingua institute/trails/lingua-examples/06-database-declarations.lingua --directory /path/to/lince
+cargo xtask lingua institute/trails/lince/simulation/lingua-examples/05-database-report.lingua --directory /path/to/lince
+cargo xtask lingua institute/trails/lince/simulation/lingua-examples/06-database-declarations.lingua --directory /path/to/lince
 cargo xtask lingua eval 'quantity(@my-record) > 0' --directory /path/to/lince
 ```
 
@@ -75,4 +75,4 @@ The saved-declaration example skips rows without a Frequency definition and Reco
 
 Scripts have execution, nesting, output, and database-read limits. Queries default to 100 rows and accept a limit from 1 to 1024. The database examples request small result sets; `records` uses the default. These examples demonstrate reading and local computation, with no database writes or source-file filling.
 
-The syntax authority is [the shared grammar](../../../crates/anicca/src/grammar.rs); the script behavior is in [the evaluator](../../../crates/nucleus/src/script.rs) and [the Lince data host](../../../crates/lince/src/lingua/data.rs).
+The syntax authority is [the shared grammar](../../../../../crates/lingua/src/grammar.rs); the script behavior is in [the evaluator](../../../../../crates/nucleus/src/script.rs) and [the Lince data host](../../../../../crates/lince/src/lingua/data.rs).

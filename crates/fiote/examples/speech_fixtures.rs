@@ -209,7 +209,7 @@ fn trimmed(samples: &[f64]) -> Result<&[f64], String> {
     let first = voiced
         .first()
         .ok_or("The command source has no voiced frames")?;
-    let last = voiced.last().unwrap();
+    let last = voiced.last().unwrap_or(first);
     Ok(&samples[(first * 320).saturating_sub(1600)..((last + 1) * 320 + 1600).min(samples.len())])
 }
 
@@ -281,7 +281,9 @@ async fn command_fixture(client: &reqwest::Client, directory: &Path) -> Result<(
     )?;
     save(
         directory,
-        manifest["license_file"].as_str().unwrap(),
+        manifest["license_file"]
+            .as_str()
+            .ok_or("Missing command license name")?,
         &license,
     )?;
     save(
@@ -411,20 +413,13 @@ async fn main() -> Result<(), String> {
             {
                 return Err("Reference recordings must be bounded mono 16 kHz PCM WAV.".into());
             }
-            save(
-                &directory,
-                case["file"].as_str().ok_or("Missing recording name")?,
-                &bytes,
-            )?;
+            let file = case["file"].as_str().ok_or("Missing recording name")?;
+            save(&directory, file, &bytes)?;
             let reference = case["reference"]
                 .as_str()
                 .ok_or("Missing independent transcript source")?;
             let transcript = download(&client, reference).await?;
-            save(
-                &directory,
-                &format!("{}.reference.txt", case["file"].as_str().unwrap()),
-                &transcript,
-            )?;
+            save(&directory, &format!("{file}.reference.txt"), &transcript)?;
         }
         save(
             &directory,
@@ -474,8 +469,8 @@ async fn main() -> Result<(), String> {
             },
         )
         .map_err(|error| error.to_string())?;
-        for sample in bytes.chunks_exact(2) {
-            wav.write_sample(i16::from_le_bytes([sample[0], sample[1]]))
+        for &sample in bytes.as_chunks::<2>().0 {
+            wav.write_sample(i16::from_le_bytes(sample))
                 .map_err(|error| error.to_string())?;
         }
         wav.finalize().map_err(|error| error.to_string())?;

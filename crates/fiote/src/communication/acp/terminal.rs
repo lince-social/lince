@@ -136,7 +136,9 @@ impl LoginTerminal {
                     match reader.read(&mut bytes) {
                         Ok(0) | Err(_) => break,
                         Ok(count) => {
-                            let mut state = output.lock().unwrap();
+                            let mut state = output
+                                .lock()
+                                .expect("the terminal output state lock was poisoned");
                             state.bytes.extend(&bytes[..count]);
                             state.end += count as u64;
                             let excess = state.bytes.len().saturating_sub(262_144);
@@ -154,7 +156,10 @@ impl LoginTerminal {
                     let result = writer.write_all(&bytes).and_then(|()| writer.flush());
                     bytes.zeroize();
                     if let Err(error) = result {
-                        input_state.lock().unwrap().error = Some(error.to_string());
+                        input_state
+                            .lock()
+                            .expect("the terminal input state lock was poisoned")
+                            .error = Some(error.to_string());
                         break;
                     }
                 }
@@ -163,8 +168,18 @@ impl LoginTerminal {
         std::thread::Builder::new()
             .name("login-wait".into())
             .spawn(move || match child.wait() {
-                Ok(exit) => state.lock().unwrap().exit = Some(exit.exit_code()),
-                Err(error) => state.lock().unwrap().error = Some(error.to_string()),
+                Ok(exit) => {
+                    state
+                        .lock()
+                        .expect("the terminal state lock was poisoned")
+                        .exit = Some(exit.exit_code())
+                }
+                Err(error) => {
+                    state
+                        .lock()
+                        .expect("the terminal state lock was poisoned")
+                        .error = Some(error.to_string())
+                }
             })
             .map_err(|error| error.to_string())?;
         Ok(terminal)
@@ -188,7 +203,7 @@ impl LoginTerminal {
         } else {
             self.master
                 .lock()
-                .unwrap()
+                .expect("the terminal device lock was poisoned")
                 .resize(size)
                 .map_err(|error| error.to_string())?;
             if !bytes.is_empty()
@@ -202,7 +217,10 @@ impl LoginTerminal {
                 return Err("Login input is busy. Try again.".into());
             }
         }
-        let state = self.state.lock().unwrap();
+        let state = self
+            .state
+            .lock()
+            .expect("the terminal state lock was poisoned");
         let start = state.end - state.bytes.len() as u64;
         let offset = request.offset.clamp(start, state.end);
         let bytes: Vec<_> = state
@@ -222,7 +240,10 @@ impl LoginTerminal {
     }
 
     pub fn result(&self) -> Option<Result<(), String>> {
-        let state = self.state.lock().unwrap();
+        let state = self
+            .state
+            .lock()
+            .expect("the terminal state lock was poisoned");
         state.error.clone().map(Err).or_else(|| {
             state.exit.map(|code| {
                 if code == 0 {
@@ -235,7 +256,11 @@ impl LoginTerminal {
     }
 
     pub fn close(&self) {
-        let _ = self.killer.lock().unwrap().kill();
+        let _ = self
+            .killer
+            .lock()
+            .expect("the terminal child lock was poisoned")
+            .kill();
     }
 }
 

@@ -25,7 +25,7 @@ impl Host for MemoryHost {
 }
 
 fn run(source: &str) -> Result<MemoryHost, nucleus::script::Error> {
-    let document = anicca::parse(source).unwrap();
+    let document = lingua::parse(source).unwrap();
     let mut host = MemoryHost::default();
     Evaluator::new(&mut host).run(&document)?;
     Ok(host)
@@ -91,7 +91,7 @@ fn invalid_types_unknown_bindings_and_duplicate_bindings_fail() {
 
 #[test]
 fn offline_validation_finds_binding_errors_before_any_host_effect() {
-    let document = anicca::parse("print(quantity(@apples)); print(undefined);").unwrap();
+    let document = lingua::parse("print(quantity(@apples)); print(undefined);").unwrap();
     let mut host = MemoryHost::default();
     assert!(
         Evaluator::new(&mut host)
@@ -123,7 +123,7 @@ fn output_errors_propagate_and_deep_expressions_fail_cleanly() {
             Err("closed output".into())
         }
     }
-    let document = anicca::parse("print(1);").unwrap();
+    let document = lingua::parse("print(1);").unwrap();
     let mut host = ClosedOutput;
     assert!(
         Evaluator::new(&mut host)
@@ -174,7 +174,7 @@ fn all_block_scopes_are_checked_before_host_effects() {
         "print(quantity(@missing)); for dir in [] {}",
         "print(quantity(@missing)); missing = 1;",
     ] {
-        let document = anicca::parse(source).unwrap();
+        let document = lingua::parse(source).unwrap();
         let mut host = MemoryHost::default();
         assert!(
             Evaluator::new(&mut host).run(&document).is_err(),
@@ -239,7 +239,7 @@ fn cancellation_stops_loop_iterations() {
             self.lines >= 2
         }
     }
-    let document = anicca::parse("for value in [1, 2, 3, 4] { print(value); }").unwrap();
+    let document = lingua::parse("for value in [1, 2, 3, 4] { print(value); }").unwrap();
     let mut host = StoppingHost::default();
     assert!(
         Evaluator::new(&mut host)

@@ -22,7 +22,7 @@ native-presentation = [
     "nucleus/shader-compiler",
     "lince-host/layout-telemetry",
     "lince-host/test-driver-async",
-    "dep:anicca",
+    "dep:lingua",
     "dep:fiote",
     "map-presentation",
     "dep:lince-ailuros",
@@ -121,7 +121,7 @@ native-media = ["native-presentation", "dep:lince-media", "lince-media/native"]
 lince-host = { workspace = true, features = ["layout"] }
 lince-presentation-models = { workspace = true, features = ["tokens"] }
 lince-resources.workspace = true
-anicca = { workspace = true, optional = true }
+lingua = { workspace = true, optional = true }
 lince-i18n = { workspace = true }
 lince-ithkuil = { workspace = true }
 lince-ailuros = { workspace = true, optional = true }
@@ -174,8 +174,9 @@ iroh = { workspace = true, optional = true }
 utils = { workspace = true }
 
 [dev-dependencies]
+bevy = { version = "=0.20.1", default-features = false, features = ["bevy_clipboard"] }
 tempfile = "=3.27.0"
-tokio = { version = "1.53.1", features = ["macros", "net", "io-util", "rt"] }
+tokio = { version = "1.53.1", features = ["macros", "net", "io-util", "rt-multi-thread"] }
 
 [build-dependencies]
 sensei = { workspace = true }

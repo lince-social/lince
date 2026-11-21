@@ -4,14 +4,14 @@
 // - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 45, 96.
 
 use super::Case;
-use anicca::requirements::Requirement;
+use lingua::requirements::Requirement;
 use serde::Serialize;
 use std::{collections::BTreeMap, io, path::Path, sync::OnceLock};
 
-const SOURCE_PATH: &str = "institute/trails/lince/Lince.lingua";
+const SOURCE_PATH: &str = lingua::LINCE_RECORDS;
 const SOURCE: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/../../institute/trails/lince/Lince.lingua"
+    "/../../institute/trails/Lince.lingua"
 ));
 pub(super) const PROTEIN_FILTER_CASE: &str = "protein_area_filter_visible_and_selectable";
 const MAPPINGS: &[(&str, &str, &str)] = &[
@@ -43,7 +43,7 @@ pub(super) fn for_cases(cases: &[Case]) -> io::Result<BTreeMap<&'static str, Vec
     static DECLARED: OnceLock<Result<Vec<Requirement>, String>> = OnceLock::new();
     let declared = DECLARED
         .get_or_init(|| {
-            anicca::requirements::discover(Path::new(SOURCE_PATH), SOURCE)
+            lingua::requirements::discover(Path::new(SOURCE_PATH), SOURCE)
                 .map_err(|error| error.to_string())
         })
         .as_ref()
@@ -148,7 +148,7 @@ mod tests {
     #[test]
     fn stale_mappings_and_new_unmapped_requirements_are_visible() {
         let cases = super::super::interface::fast_cases();
-        let mut declared = anicca::requirements::discover(Path::new(SOURCE_PATH), SOURCE).unwrap();
+        let mut declared = lingua::requirements::discover(Path::new(SOURCE_PATH), SOURCE).unwrap();
         let mut missing = declared.pop().unwrap();
         assert!(
             match_cases(&declared, &cases)

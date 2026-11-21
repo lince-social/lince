@@ -17,7 +17,7 @@
 // - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
 //   64, 68, 78, 101.
 
-use anicca::grammar::grammar::{self as ast, Declaration};
+use lingua::grammar::grammar::{self as ast, Declaration};
 use regex::{Captures, Regex};
 use serde_json::Value;
 
@@ -136,7 +136,7 @@ impl Publication {
         for source in &self.documents {
             let output = &locations[&source.uri];
             let rewrite = |value: &str| relative(&source.base, value, output, &locations);
-            let mut document = anicca::parse(&source.text).map_err(|error| error.to_string())?;
+            let mut document = lingua::parse(&source.text).map_err(|error| error.to_string())?;
             for declaration in &mut document.declarations {
                 match declaration {
                     Declaration::Import(import) => {
@@ -207,7 +207,7 @@ impl Publication {
                         }
                     }
                     Declaration::Extension(extension) => {
-                        let projected = anicca::extension::project(extension)
+                        let projected = lingua::extension::project(extension)
                             .map_err(|error| error.to_string())?;
                         let mut fields = projected.fields;
                         if projected.namespace == RESOURCE_NAMESPACE {
@@ -254,13 +254,13 @@ impl Publication {
                                 }
                             }
                         }
-                        let rendered = anicca::extension::render(
+                        let rendered = lingua::extension::render(
                             &projected.target_slug,
                             &projected.namespace,
                             &fields,
                         )
                         .map_err(|error| error.to_string())?;
-                        *declaration = anicca::parse(&rendered)
+                        *declaration = lingua::parse(&rendered)
                             .map_err(|error| error.to_string())?
                             .declarations
                             .remove(0);
@@ -273,7 +273,7 @@ impl Publication {
                 .map_err(|_| "Invalid export document path")?;
             fs::create_dir_all(path.parent().ok_or("Invalid export document path")?)
                 .map_err(|error| error.to_string())?;
-            let text = anicca::format(&document);
+            let text = lingua::format(&document);
             fs::write(&path, &text).map_err(|error| error.to_string())?;
             fs::write(path.with_extension("lingua.origin.json"), serde_json::to_vec(&serde_json::json!({"origin":Origin { entry:self.entry.clone(),revision:self.revision.clone(),document:source.uri.clone(),base:source.base.clone(),hash:source.hash.clone()},"exported_hash":fingerprint(text.as_bytes())})).map_err(|error| error.to_string())?).map_err(|error| error.to_string())?;
         }

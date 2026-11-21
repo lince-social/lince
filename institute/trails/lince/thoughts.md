@@ -1,0 +1,10 @@
+- And change how tiling is made, i want every window/castle/sand to have the bounds of it, the space it takes individually if let be in space without other things constraining it be noted. Then when in tiling mode the size of the tile is the maximum space that canvas item is allowed to take, this should be tied to resize. There are three things that set a mode of interaction and camera in canvas, 3d, tiling and focus that need to be thought of well in this refactor:
+    - 2d focused tiling
+    - 2d focused untiled
+    - 2d unfocused tiling
+    - 2d unfocused untiled
+    - 3d focused tiling
+    - 3d focused untiled
+    - 3d unfocused tiling
+    - 3d unfocused untiled
+    - 3d unfocused should make 3d mode have mouse movement control camera.

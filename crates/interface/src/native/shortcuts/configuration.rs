@@ -177,12 +177,12 @@ fn decode(bytes: &[u8]) -> Result<(Settings, LayoutSettings), String> {
         return Err("Interface configuration exceeds 256 KiB.".into());
     }
     let source = std::str::from_utf8(bytes).map_err(|error| error.to_string())?;
-    let ast = anicca::parse(source).map_err(|error| error.to_string())?;
+    let ast = lingua::parse(source).map_err(|error| error.to_string())?;
     if ast.declarations.iter().any(|declaration| {
         !matches!(
             declaration,
-            anicca::grammar::grammar::Declaration::Record(_)
-                | anicca::grammar::grammar::Declaration::Extension(_)
+            lingua::grammar::grammar::Declaration::Record(_)
+                | lingua::grammar::grammar::Declaration::Extension(_)
         )
     }) {
         return Err(
@@ -194,7 +194,7 @@ fn decode(bytes: &[u8]) -> Result<(Settings, LayoutSettings), String> {
         .declarations
         .iter()
         .filter_map(|declaration| {
-            if let anicca::grammar::grammar::Declaration::Record(record) = declaration {
+            if let lingua::grammar::grammar::Declaration::Record(record) = declaration {
                 Some(record)
             } else {
                 None
@@ -205,7 +205,7 @@ fn decode(bytes: &[u8]) -> Result<(Settings, LayoutSettings), String> {
         .declarations
         .iter()
         .filter_map(|declaration| {
-            if let anicca::grammar::grammar::Declaration::Extension(extension) = declaration {
+            if let lingua::grammar::grammar::Declaration::Extension(extension) = declaration {
                 Some(extension)
             } else {
                 None
@@ -218,7 +218,7 @@ fn decode(bytes: &[u8]) -> Result<(Settings, LayoutSettings), String> {
     {
         return Err("Use one @interface-config Record and its lince.interface Extension.".into());
     }
-    let extension = anicca::extension::project(extensions[0]).map_err(|error| error.to_string())?;
+    let extension = lingua::extension::project(extensions[0]).map_err(|error| error.to_string())?;
     if extension.target_slug != TARGET || extension.namespace != NAMESPACE {
         return Err("The interface configuration Extension must target @interface-config and lince.interface.".into());
     }
@@ -285,14 +285,14 @@ fn encode(settings: &Settings, layout: &LayoutSettings) -> Result<Vec<u8>, Strin
         gestures: layout.gestures,
         overview: layout.overview,
     };
-    let extension = anicca::extension::render(
+    let extension = lingua::extension::render(
         TARGET,
         NAMESPACE,
         &serde_json::to_value(document).map_err(|error| error.to_string())?,
     )
     .map_err(|error| error.to_string())?;
     let source = format!("Interface configuration (@interface-config: 0) {{\n}}\n{extension}");
-    let canonical = anicca::canonicalize(&source)
+    let canonical = lingua::canonicalize(&source)
         .map_err(|error| error.to_string())?
         .into_bytes();
     decode(&canonical)?;

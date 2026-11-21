@@ -91,7 +91,7 @@ pub async fn release(pool: &SqlitePool, uids: &[String]) -> Result<(), StoreErro
 }
 
 pub async fn count(pool: &SqlitePool) -> Result<i64, StoreError> {
-    Ok(sqlx::query_scalar("SELECT COUNT(*) FROM door_request")
+    sqlx::query_scalar("SELECT COUNT(*) FROM door_request")
         .fetch_one(pool)
-        .await?)
+        .await
 }

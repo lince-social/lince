@@ -221,6 +221,10 @@ impl Entry {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
+#[allow(
+    clippy::large_enum_variant,
+    reason = "Keep the public Sand package response variants compatible with existing callers"
+)]
 pub enum Response {
     Catalogue {
         entries: Vec<Entry>,

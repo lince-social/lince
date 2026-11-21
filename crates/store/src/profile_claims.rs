@@ -41,7 +41,22 @@ pub struct Saved {
 }
 
 pub async fn get_on(connection: &mut SqliteConnection, record: &str) -> Result<Saved, StoreError> {
-    let (owner,series,statement_hash,document_hash,issuer_kind,issuer,claim,subject_kind,subject,revision,payload,fact,generation):(String,String,String,String,String,String,String,String,String,i64,String,String,Option<String>)=sqlx::query_as("SELECT owner_person_uid,series_hash,statement_hash,document_hash,issuer_kind,issuer_uid,claim_uid,subject_kind,subject_uid,revision,document_json,fact_uid,generation_recipe_uid FROM profile_claim_record WHERE record_uid=?")
+    type ClaimRow = (
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+        i64,
+        String,
+        String,
+        Option<String>,
+    );
+    let (owner,series,statement_hash,document_hash,issuer_kind,issuer,claim,subject_kind,subject,revision,payload,fact,generation): ClaimRow = sqlx::query_as("SELECT owner_person_uid,series_hash,statement_hash,document_hash,issuer_kind,issuer_uid,claim_uid,subject_kind,subject_uid,revision,document_json,fact_uid,generation_recipe_uid FROM profile_claim_record WHERE record_uid=?")
         .bind(record).fetch_optional(&mut *connection).await?.ok_or_else(||invalid("Profile claim is unavailable"))?;
     let document = Document::parse(payload.as_bytes()).map_err(invalid)?;
     let fact = crate::facts::get_on(connection, &fact)

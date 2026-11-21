@@ -89,6 +89,17 @@ impl CompletedCaptures {
         self.0.lock().ok().map(|state| state.images.clone())
     }
 
+    pub(super) fn independent_images(
+        &self,
+        targets: impl Iterator<Item = AssetId<Image>>,
+        changed: &BTreeSet<Entity>,
+    ) -> BTreeSet<AssetId<Image>> {
+        let Ok(state) = self.0.lock() else { return BTreeSet::new(); };
+        targets.filter(|target| state.images.get(target).is_some_and(|origins| {
+            origins.complete && origins.contributors.is_disjoint(changed)
+        })).collect()
+    }
+
     pub(crate) fn queue(
         &self,
         image: AssetId<Image>,

@@ -1112,6 +1112,14 @@ fn compact_corners(world: &World, entity: Entity, canvas: Rectangle) -> Option<[
 }
 
 impl crate::native::actions::Action for DesktopAction {
+    fn practice_intent(&self) -> crate::native::actions::PracticeIntent {
+        use crate::native::actions::PracticeIntent;
+        match self {
+            Self::ZoomOut | Self::ZoomIn => PracticeIntent::Navigation,
+            _ => PracticeIntent::Target,
+        }
+    }
+
     fn apply(&self, world: &mut World, target: Entity) {
         let Some(root) = root(world, target) else {
             return;
@@ -1141,6 +1149,16 @@ impl crate::native::actions::Action for DesktopAction {
         }
         if matches!(self, Self::ToggleOverview) {
             overview::toggle(world, root);
+            return;
+        }
+        if matches!(self, Self::ZoomOut | Self::ZoomIn) {
+            use crate::native::canvas_controls::CanvasAction;
+            let action = if *self == Self::ZoomOut {
+                CanvasAction::ZoomOut
+            } else {
+                CanvasAction::ZoomIn
+            };
+            action.apply(world, root);
             return;
         }
         if let Self::SelectPlacement { workspace, item } = *self {

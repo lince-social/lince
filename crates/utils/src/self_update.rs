@@ -181,7 +181,7 @@ pub fn latest_rolling_tag(releases_json: &str) -> Option<String> {
 
 fn decode_hex(text: &str) -> Option<Vec<u8>> {
     let text = text.trim();
-    if !text.is_ascii() || text.len() % 2 != 0 {
+    if !text.is_ascii() || !text.len().is_multiple_of(2) {
         return None;
     }
     (0..text.len())
@@ -318,192 +318,6 @@ fn replaceable_asset(asset: &ManifestAsset) -> bool {
         && asset.sha256.len() == 64
         && asset.sha256.bytes().all(|byte| byte.is_ascii_hexdigit())
         && asset.url.starts_with("https://")
-}
-
-#[cfg(test)]
-mod tests {
-    use ed25519_dalek::{Signer, SigningKey};
-
-    use super::*;
-
-    const MANIFEST: &[u8] = br#"{"version":"0.7.0","revision":"abcdef1234567890","channel":"rolling","assets":[{"name":"Lince_0.7.0_amd64.AppImage","url":"https://example/app.AppImage","sha256":"aa","target":"x86_64-unknown-linux-gnu","kind":"desktop"},{"name":"Lince_0.7.0_x64-setup.exe","url":"https://example/setup.exe","sha256":"bb","target":"x86_64-pc-windows-msvc","kind":"desktop"}]}"#;
-
-    fn manifest() -> UpdateManifest {
-        let mut manifest: UpdateManifest = serde_json::from_slice(MANIFEST).unwrap();
-        for asset in &mut manifest.assets {
-            asset.sha256 = "ab".repeat(32);
-        }
-        manifest
-    }
-
-    fn hex(bytes: &[u8]) -> String {
-        bytes.iter().map(|byte| format!("{byte:02x}")).collect()
-    }
-
-    #[test]
-    fn picks_the_asset_for_the_running_target() {
-        let manifest = manifest();
-        assert_eq!(
-            manifest.asset_for("x86_64-unknown-linux-gnu").unwrap().name,
-            "Lince_0.7.0_amd64.AppImage"
-        );
-        assert!(manifest.asset_for("").is_none());
-        assert!(manifest.asset_for("sparc-unknown-none").is_none());
-    }
-
-    #[test]
-    fn replacement_rejects_installers_missing_checksums_and_wrong_modes() {
-        let mut manifest = manifest();
-        let target = "x86_64-unknown-linux-gnu";
-        let mut package = manifest.assets[0].clone();
-        package.name = "lince.deb".into();
-        manifest.assets.insert(0, package);
-        assert!(
-            manifest
-                .asset_for(target)
-                .unwrap()
-                .name
-                .ends_with(".AppImage")
-        );
-        assert!(manifest.asset_for_kind(target, AssetKind::Server).is_none());
-        manifest
-            .assets
-            .retain(|asset| !asset.name.ends_with(".AppImage"));
-        assert!(!evaluate(&manifest, "old", Some(target), SelfApplyBlock::None).can_self_apply);
-        manifest.assets[0].kind = "server".into();
-        manifest.assets[0].name = "lince-server".into();
-        assert!(
-            evaluate_kind(
-                &manifest,
-                "old",
-                Some(target),
-                SelfApplyBlock::None,
-                AssetKind::Server
-            )
-            .can_self_apply
-        );
-        manifest.assets[0].sha256.clear();
-        assert!(
-            !evaluate_kind(
-                &manifest,
-                "old",
-                Some(target),
-                SelfApplyBlock::None,
-                AssetKind::Server
-            )
-            .can_self_apply
-        );
-        assert!(!verify_manifest_signature(MANIFEST, "aéa"));
-    }
-
-    #[test]
-    fn availability_has_three_states() {
-        assert_eq!(
-            evaluate(
-                &manifest(),
-                "unknown",
-                Some("x86_64-unknown-linux-gnu"),
-                SelfApplyBlock::None
-            )
-            .availability,
-            Availability::Unstamped
-        );
-        assert_eq!(
-            evaluate(
-                &manifest(),
-                "abcdef1234567890",
-                Some("x86_64-unknown-linux-gnu"),
-                SelfApplyBlock::None
-            )
-            .availability,
-            Availability::UpToDate
-        );
-        assert_eq!(
-            evaluate(
-                &manifest(),
-                "0000000000000000",
-                Some("x86_64-unknown-linux-gnu"),
-                SelfApplyBlock::None
-            )
-            .availability,
-            Availability::Available
-        );
-    }
-
-    #[test]
-    fn can_self_apply_needs_available_asset_and_no_block() {
-        let ok = evaluate(
-            &manifest(),
-            "0000000000000000",
-            Some("x86_64-unknown-linux-gnu"),
-            SelfApplyBlock::None,
-        );
-        assert!(ok.can_self_apply);
-        let nix = evaluate(
-            &manifest(),
-            "0000000000000000",
-            Some("x86_64-unknown-linux-gnu"),
-            SelfApplyBlock::NixStore,
-        );
-        assert!(!nix.can_self_apply);
-        assert!(nix.self_apply_note.contains("nixos-rebuild"));
-    }
-
-    #[test]
-    fn latest_rolling_tag_takes_the_first_rolling_entry() {
-        let json = r#"[{"tag_name":"v0.7.0"},{"tag_name":"rolling-41"},{"tag_name":"rolling-40"}]"#;
-        assert_eq!(latest_rolling_tag(json).as_deref(), Some("rolling-41"));
-    }
-
-    #[test]
-    fn sha256_round_trips() {
-        let digest = sha256_hex(b"lince");
-        assert!(verify_sha256(b"lince", &digest));
-        assert!(verify_sha256(b"lince", &digest.to_uppercase()));
-        assert!(!verify_sha256(b"lynx", &digest));
-        assert!(!verify_sha256(b"lince", ""));
-    }
-
-    #[test]
-    fn signature_verifies_only_for_the_matching_key_and_bytes() {
-        let signing_key = SigningKey::from_bytes(&[7u8; 32]);
-        let good_signature = hex(&signing_key.sign(MANIFEST).to_bytes());
-        let public_key_hex = hex(signing_key.verifying_key().as_bytes());
-
-        assert!(super::verify_with_key(
-            &public_key_hex,
-            MANIFEST,
-            &good_signature
-        ));
-        assert!(!super::verify_with_key(
-            &public_key_hex,
-            b"tampered",
-            &good_signature
-        ));
-        let other_key = SigningKey::from_bytes(&[9u8; 32]);
-        let wrong_signature = hex(&other_key.sign(MANIFEST).to_bytes());
-        assert!(!super::verify_with_key(
-            &public_key_hex,
-            MANIFEST,
-            &wrong_signature
-        ));
-    }
-
-    #[test]
-    fn parse_verified_manifest_rejects_missing_and_bad_signatures() {
-        assert_eq!(
-            parse_verified_manifest(MANIFEST, None).unwrap_err(),
-            UpdateError::Unsigned
-        );
-        assert_eq!(
-            parse_verified_manifest(MANIFEST, Some("   ")).unwrap_err(),
-            UpdateError::Unsigned
-        );
-        assert_eq!(
-            parse_verified_manifest(MANIFEST, Some(&"ab".repeat(64))).unwrap_err(),
-            UpdateError::BadSignature
-        );
-    }
 }
 
 #[cfg(test)]
@@ -758,5 +572,191 @@ pub mod net {
             assert_eq!(std::fs::read(&target).unwrap(), b"original");
             assert_eq!(std::fs::read(&other).unwrap(), b"private");
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use ed25519_dalek::{Signer, SigningKey};
+
+    use super::*;
+
+    const MANIFEST: &[u8] = br#"{"version":"0.7.0","revision":"abcdef1234567890","channel":"rolling","assets":[{"name":"Lince_0.7.0_amd64.AppImage","url":"https://example/app.AppImage","sha256":"aa","target":"x86_64-unknown-linux-gnu","kind":"desktop"},{"name":"Lince_0.7.0_x64-setup.exe","url":"https://example/setup.exe","sha256":"bb","target":"x86_64-pc-windows-msvc","kind":"desktop"}]}"#;
+
+    fn manifest() -> UpdateManifest {
+        let mut manifest: UpdateManifest = serde_json::from_slice(MANIFEST).unwrap();
+        for asset in &mut manifest.assets {
+            asset.sha256 = "ab".repeat(32);
+        }
+        manifest
+    }
+
+    fn hex(bytes: &[u8]) -> String {
+        bytes.iter().map(|byte| format!("{byte:02x}")).collect()
+    }
+
+    #[test]
+    fn picks_the_asset_for_the_running_target() {
+        let manifest = manifest();
+        assert_eq!(
+            manifest.asset_for("x86_64-unknown-linux-gnu").unwrap().name,
+            "Lince_0.7.0_amd64.AppImage"
+        );
+        assert!(manifest.asset_for("").is_none());
+        assert!(manifest.asset_for("sparc-unknown-none").is_none());
+    }
+
+    #[test]
+    fn replacement_rejects_installers_missing_checksums_and_wrong_modes() {
+        let mut manifest = manifest();
+        let target = "x86_64-unknown-linux-gnu";
+        let mut package = manifest.assets[0].clone();
+        package.name = "lince.deb".into();
+        manifest.assets.insert(0, package);
+        assert!(
+            manifest
+                .asset_for(target)
+                .unwrap()
+                .name
+                .ends_with(".AppImage")
+        );
+        assert!(manifest.asset_for_kind(target, AssetKind::Server).is_none());
+        manifest
+            .assets
+            .retain(|asset| !asset.name.ends_with(".AppImage"));
+        assert!(!evaluate(&manifest, "old", Some(target), SelfApplyBlock::None).can_self_apply);
+        manifest.assets[0].kind = "server".into();
+        manifest.assets[0].name = "lince-server".into();
+        assert!(
+            evaluate_kind(
+                &manifest,
+                "old",
+                Some(target),
+                SelfApplyBlock::None,
+                AssetKind::Server
+            )
+            .can_self_apply
+        );
+        manifest.assets[0].sha256.clear();
+        assert!(
+            !evaluate_kind(
+                &manifest,
+                "old",
+                Some(target),
+                SelfApplyBlock::None,
+                AssetKind::Server
+            )
+            .can_self_apply
+        );
+        assert!(!verify_manifest_signature(MANIFEST, "aéa"));
+    }
+
+    #[test]
+    fn availability_has_three_states() {
+        assert_eq!(
+            evaluate(
+                &manifest(),
+                "unknown",
+                Some("x86_64-unknown-linux-gnu"),
+                SelfApplyBlock::None
+            )
+            .availability,
+            Availability::Unstamped
+        );
+        assert_eq!(
+            evaluate(
+                &manifest(),
+                "abcdef1234567890",
+                Some("x86_64-unknown-linux-gnu"),
+                SelfApplyBlock::None
+            )
+            .availability,
+            Availability::UpToDate
+        );
+        assert_eq!(
+            evaluate(
+                &manifest(),
+                "0000000000000000",
+                Some("x86_64-unknown-linux-gnu"),
+                SelfApplyBlock::None
+            )
+            .availability,
+            Availability::Available
+        );
+    }
+
+    #[test]
+    fn can_self_apply_needs_available_asset_and_no_block() {
+        let ok = evaluate(
+            &manifest(),
+            "0000000000000000",
+            Some("x86_64-unknown-linux-gnu"),
+            SelfApplyBlock::None,
+        );
+        assert!(ok.can_self_apply);
+        let nix = evaluate(
+            &manifest(),
+            "0000000000000000",
+            Some("x86_64-unknown-linux-gnu"),
+            SelfApplyBlock::NixStore,
+        );
+        assert!(!nix.can_self_apply);
+        assert!(nix.self_apply_note.contains("nixos-rebuild"));
+    }
+
+    #[test]
+    fn latest_rolling_tag_takes_the_first_rolling_entry() {
+        let json = r#"[{"tag_name":"v0.7.0"},{"tag_name":"rolling-41"},{"tag_name":"rolling-40"}]"#;
+        assert_eq!(latest_rolling_tag(json).as_deref(), Some("rolling-41"));
+    }
+
+    #[test]
+    fn sha256_round_trips() {
+        let digest = sha256_hex(b"lince");
+        assert!(verify_sha256(b"lince", &digest));
+        assert!(verify_sha256(b"lince", &digest.to_uppercase()));
+        assert!(!verify_sha256(b"lynx", &digest));
+        assert!(!verify_sha256(b"lince", ""));
+    }
+
+    #[test]
+    fn signature_verifies_only_for_the_matching_key_and_bytes() {
+        let signing_key = SigningKey::from_bytes(&[7u8; 32]);
+        let good_signature = hex(&signing_key.sign(MANIFEST).to_bytes());
+        let public_key_hex = hex(signing_key.verifying_key().as_bytes());
+
+        assert!(super::verify_with_key(
+            &public_key_hex,
+            MANIFEST,
+            &good_signature
+        ));
+        assert!(!super::verify_with_key(
+            &public_key_hex,
+            b"tampered",
+            &good_signature
+        ));
+        let other_key = SigningKey::from_bytes(&[9u8; 32]);
+        let wrong_signature = hex(&other_key.sign(MANIFEST).to_bytes());
+        assert!(!super::verify_with_key(
+            &public_key_hex,
+            MANIFEST,
+            &wrong_signature
+        ));
+    }
+
+    #[test]
+    fn parse_verified_manifest_rejects_missing_and_bad_signatures() {
+        assert_eq!(
+            parse_verified_manifest(MANIFEST, None).unwrap_err(),
+            UpdateError::Unsigned
+        );
+        assert_eq!(
+            parse_verified_manifest(MANIFEST, Some("   ")).unwrap_err(),
+            UpdateError::Unsigned
+        );
+        assert_eq!(
+            parse_verified_manifest(MANIFEST, Some(&"ab".repeat(64))).unwrap_err(),
+            UpdateError::BadSignature
+        );
     }
 }

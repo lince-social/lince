@@ -186,15 +186,18 @@ fn golden_fixture() -> GoldenFixture {
     references.insert(
         "zebra".to_string(),
         ResolvedReference {
-            target: TypedUid::new(ReferenceKind::Fact, FACT_UID).unwrap(),
+            target: TypedUid::new(ReferenceKind::Fact, FACT_UID).expect("valid fixture Fact UID"),
             display_slug: None,
         },
     );
     references.insert(
         "apple".to_string(),
         ResolvedReference {
-            target: TypedUid::new(ReferenceKind::Program, RECORD_UID).unwrap(),
-            display_slug: Some(Slug::new("household.apple-restock").unwrap()),
+            target: TypedUid::new(ReferenceKind::Program, RECORD_UID)
+                .expect("valid fixture Program UID"),
+            display_slug: Some(
+                Slug::new("household.apple-restock").expect("valid fixture display slug"),
+            ),
         },
     );
 
@@ -248,7 +251,8 @@ fn golden_fixture() -> GoldenFixture {
             CapabilityFamily::TransferCommitment,
             CapabilityFamily::IrreversibleSafetyCritical,
         ],
-        confidence: Confidence::from_parts_per_billion(650_000_000).unwrap(),
+        confidence: Confidence::from_parts_per_billion(650_000_000)
+            .expect("valid fixture confidence"),
         datum_states: vec![
             DatumState::Value,
             DatumState::Missing,
@@ -256,7 +260,7 @@ fn golden_fixture() -> GoldenFixture {
             DatumState::Denied,
             DatumState::Invalid,
         ],
-        decimal: "12.3400".parse().unwrap(),
+        decimal: "12.3400".parse().expect("valid fixture decimal"),
         definition_statuses: vec![
             DefinitionStatus::Draft,
             DefinitionStatus::Proven,
@@ -277,7 +281,7 @@ fn golden_fixture() -> GoldenFixture {
         failure: KarmaFailure {
             code: FailureCode::AuthorityDenied,
             message: "actor cannot change transfer agreement".to_string(),
-            path: Some(FailurePath::new("/action/capability").unwrap()),
+            path: Some(FailurePath::new("/action/capability").expect("valid fixture failure path")),
             retry: RetryDisposition::AfterPolicyChange,
         },
         failure_codes: vec![
@@ -300,8 +304,9 @@ fn golden_fixture() -> GoldenFixture {
             FailureCode::InvariantViolation,
             FailureCode::EngineFault,
         ],
-        fixture_hash: CanonicalHash::parse(format!("sha256:{}", "0".repeat(64))).unwrap(),
-        local_id: LocalId::new("min_confidence").unwrap(),
+        fixture_hash: CanonicalHash::parse(format!("sha256:{}", "0".repeat(64)))
+            .expect("valid fixture hash"),
+        local_id: LocalId::new("min_confidence").expect("valid fixture local ID"),
         object_kinds: vec![
             KarmaObjectKind::Program,
             KarmaObjectKind::ProgramRevision,
@@ -321,7 +326,8 @@ fn golden_fixture() -> GoldenFixture {
             KarmaObjectKind::Simulation,
             KarmaObjectKind::EngineHealth,
         ],
-        probability: Probability::from_parts_per_billion(720_000_000).unwrap(),
+        probability: Probability::from_parts_per_billion(720_000_000)
+            .expect("valid fixture probability"),
         references,
         reference_kinds: vec![
             ReferenceKind::Record,
@@ -371,7 +377,8 @@ fn golden_fixture() -> GoldenFixture {
             RunStatus::Cancelled,
             RunStatus::DeadLetter,
         ],
-        timestamp: TimestampMs::parse_canonical("2026-07-21T08:00:00.125Z").unwrap(),
+        timestamp: TimestampMs::parse_canonical("2026-07-21T08:00:00.125Z")
+            .expect("valid fixture timestamp"),
         workflow_statuses: vec![
             WorkflowStatus::Queued,
             WorkflowStatus::Running,

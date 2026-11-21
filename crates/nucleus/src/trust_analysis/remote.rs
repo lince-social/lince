@@ -19,6 +19,10 @@ pub const DEADLINE_SECONDS: u64 = 15;
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+#[allow(
+    clippy::large_enum_variant,
+    reason = "Keep the public remote analysis command variants compatible with existing callers"
+)]
 pub enum Command {
     Preview {
         draft: Draft,

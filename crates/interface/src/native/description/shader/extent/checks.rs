@@ -48,6 +48,7 @@ fn empty_sources_preserve_consumer_expiry_and_first_material_activation() {
                 visible: true,
                 text: false,
                 exact: true,
+                output: None,
             },
             5,
         ),

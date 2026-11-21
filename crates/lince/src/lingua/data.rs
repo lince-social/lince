@@ -234,7 +234,7 @@ impl Host for DataHost {
                     let definition = serde_json::to_string(&serde_json::to_string(&revision.frequency).map_err(|error| error.to_string())?).map_err(|error| error.to_string())?;
                     let active = i32::from(handle.status == nucleus::karma::DefinitionStatus::Active);
                     let source = format!("Frequency {} {{\n title {title}\n quantity {active}\n definition {definition}\n}} ^{}\n", handle.slug, handle.record_uid);
-                    anicca::canonicalize(&source).map(Value::Declaration).map_err(|error| error.to_string())
+                    lingua::canonicalize(&source).map(Value::Declaration).map_err(|error| error.to_string())
                 })
             }
             (
@@ -268,7 +268,7 @@ impl Host for DataHost {
                         .get("extension")
                         .filter(|value| value.is_object())
                         .ok_or("Extension is unavailable")?;
-                    anicca::extension::render(uid, namespace, fields)
+                    lingua::extension::render(uid, namespace, fields)
                         .map(Value::Declaration)
                         .map_err(|error| error.to_string())
                 })
@@ -280,7 +280,7 @@ impl Host for DataHost {
                         .await
                         .map_err(|error| error.to_string())?
                         .ok_or_else(|| format!("No Rule matches {target}"))?;
-                    let projected = anicca::ProjectedRule {
+                    let projected = lingua::ProjectedRule {
                         uid: rule.uid.clone(),
                         slug: rule.uid.to_ascii_lowercase().replace('_', "-"),
                         quantity: i64::from(!rule.is_paused()),
@@ -309,7 +309,7 @@ impl Host for DataHost {
                         anchor_at: Some(rule.anchor_at),
                         note: rule.note,
                     };
-                    anicca::render_rule(&projected)
+                    lingua::render_rule(&projected)
                         .map(Value::Declaration)
                         .map_err(|error| error.to_string())
                 })
@@ -379,7 +379,7 @@ async fn render_record(store: &Store, uid: &str) -> Result<String, String> {
         .await
         .map_err(|error| error.to_string())?
     {
-        assertions.push(anicca::ProjectedAssertion {
+        assertions.push(lingua::ProjectedAssertion {
             object_uri: assertion.object_uri,
             predicate: assertion.predicate,
             identity: row.identity_predicate_uid.as_deref() == Some(&assertion.predicate_uid),
@@ -389,7 +389,7 @@ async fn render_record(store: &Store, uid: &str) -> Result<String, String> {
             unit: assertion.unit_uid,
         });
     }
-    let projected = anicca::ProjectedRecord {
+    let projected = lingua::ProjectedRecord {
         uid: row.uid,
         slug: row.slug,
         head: row.head,
@@ -397,6 +397,6 @@ async fn render_record(store: &Store, uid: &str) -> Result<String, String> {
         quantity: Some((row.quantity.to_string(), row.unit_uid)),
         assertions,
     };
-    anicca::render_record(&projected)
+    lingua::render_record(&projected)
         .map_err(|error| format!("Record cannot be printed as Lingua: {error}"))
 }

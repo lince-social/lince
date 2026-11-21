@@ -200,7 +200,7 @@ impl ChatGpt {
             }
             let retry = attempt < 2
                 && (response.status() == reqwest::StatusCode::TOO_MANY_REQUESTS
-                    || matches!(response.status().as_u16(), 502 | 503 | 504));
+                    || matches!(response.status().as_u16(), 502..=504));
             let deadline = super::retry::deadline(response.headers(), attempt);
             let error = auth::json(response)
                 .await

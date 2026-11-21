@@ -151,15 +151,9 @@ impl Service {
     pub async fn handle(&self, request: Request) -> Result<Status, String> {
         let mut state = self.state.lock().await;
         if let Some(running) = state.as_mut()
-            && running
-                .task
-                .as_ref()
-                .is_some_and(tokio::task::JoinHandle::is_finished)
+            && let Some(task) = running.task.take_if(|task| task.is_finished())
         {
-            let result = running
-                .task
-                .take()
-                .unwrap()
+            let result = task
                 .await
                 .map_err(|error| error.to_string())
                 .and_then(|result| result);
@@ -361,7 +355,7 @@ fn synthesize(
     models::check_cancel(cancelled)?;
     let audio = engine
         .as_ref()
-        .unwrap()
+        .expect("the voice engine was initialized under the same lock")
         .say(text, "af_heart")
         .map_err(|error| error.to_string())?;
     models::check_cancel(cancelled)?;

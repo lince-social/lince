@@ -25,7 +25,7 @@ park = ["dep:lince-park", "lince-park/session"]
 facade = ["dep:lince-facade"]
 
 [dependencies]
-anicca = { workspace = true }
+lingua = { workspace = true }
 nucleus = { workspace = true }
 protein = { workspace = true }
 cell = { workspace = true }

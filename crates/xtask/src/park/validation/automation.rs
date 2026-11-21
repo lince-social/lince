@@ -80,7 +80,7 @@ fn prepare_probe(directory: &Path) -> Result<String> {
                 && value["target"]["name"] == "park_control_probe"
         })
         .filter_map(|value| value["executable"].as_str().map(PathBuf::from))
-        .last()
+        .next_back()
         .ok_or("Cargo did not report the automation probe executable")?;
     let target = directory.join("bin/control-probe");
     fs::copy(binary, &target).map_err(error)?;

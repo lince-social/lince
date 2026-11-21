@@ -26,7 +26,7 @@ impl Rule for NoComments {
     }
 
     fn remedy(&self) -> &'static str {
-        "General reasoning belongs in a Record under institute/anicca/. Preserve required attribution and local safety proofs written with `// SAFETY:`."
+        "General reasoning belongs in a Record under institute/trails/. Preserve required attribution and local safety proofs written with `// SAFETY:`."
     }
 
     fn inspect(&self, source: &str) -> Vec<Finding> {

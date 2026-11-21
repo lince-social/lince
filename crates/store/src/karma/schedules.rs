@@ -34,17 +34,16 @@ use nucleus::karma::{
     CalendarBoundary, CalendarCatchUpPause, CalendarCursor, CalendarCursorResolution,
     CalendarDiscontinuity, CalendarEmission, CalendarScheduleOccurrence, CanonicalHash,
     CompiledSchedule, DeadlineAdmission, DeadlineEntry, DeadlineRejectionReason, DemandedDeadline,
-    DispatcherResourceGrant, DurationMs, ElapsedScheduleOccurrence, FrequencyActivationEpoch,
-    HostTimerCapabilities, OccurrenceBatch, OccurrenceBatchEmission, OverloadPolicy,
-    ScheduleCursor, ScheduleCursorLifecycle, ScheduleDemand, ScheduleDemandCapacity,
-    ScheduleWorkloadUpperBounds, SchedulerCalibration, TimeZoneProvider, TimerPolicy, TimestampMs,
-    advance_calendar_cursor, canonical_json_bytes, plan_demanded_deadlines,
-    resolve_calendar_cursor,
+    DurationMs, ElapsedScheduleOccurrence, FrequencyActivationEpoch, OccurrenceBatch,
+    OccurrenceBatchEmission, OverloadPolicy, ScheduleCursor, ScheduleCursorLifecycle,
+    ScheduleDemand, ScheduleWorkloadUpperBounds, SchedulerCalibration, TimeZoneProvider,
+    TimerPolicy, TimestampMs, advance_calendar_cursor, canonical_json_bytes,
+    plan_demanded_deadlines, resolve_calendar_cursor,
 };
 use serde::{Deserialize, Serialize};
 use sqlx::{Row, Sqlite, SqlitePool, Transaction};
 
-use super::frequencies;
+use super::frequencies::{self, FrequencyRuntimeAdmission};
 use crate::StoreError;
 
 const MAX_WORKER_ID_BYTES: usize = 200;
@@ -146,6 +145,10 @@ pub struct ScheduleLease {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[allow(
+    clippy::large_enum_variant,
+    reason = "Keep the public schedule claim variants compatible with existing callers"
+)]
 pub enum ScheduleClaim {
     Claimed(ScheduleLease),
     Stale { current_cursor_revision: u64 },
@@ -271,6 +274,10 @@ struct OccurrenceProjection {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[allow(
+    clippy::large_enum_variant,
+    reason = "Keep the public cursor completion variants compatible with existing callers"
+)]
 pub enum CursorCompletion {
     Completed {
         cursor: ScheduleCursorRow,
@@ -311,37 +318,24 @@ pub(crate) async fn install_admitted_activation_cursor_tx(
     tx: &mut Transaction<'_, Sqlite>,
     activation_hash: &CanonicalHash,
     epoch: &FrequencyActivationEpoch,
-    calendar_provider: Option<&dyn TimeZoneProvider>,
-    demand_policy: ScheduleDemandPolicy,
-    demand_capacity: ScheduleDemandCapacity,
-    host: &HostTimerCapabilities,
-    grant: &DispatcherResourceGrant,
+    admission: FrequencyRuntimeAdmission<'_>,
     at: &str,
 ) -> Result<(), StoreError> {
-    install_admitted_activation_cursor_from_tx(
-        tx,
-        activation_hash,
-        epoch,
-        calendar_provider,
-        demand_policy,
-        demand_capacity,
-        host,
-        grant,
-        at,
-        None,
-    )
-    .await
+    install_admitted_activation_cursor_from_tx(tx, activation_hash, epoch, admission, at, None)
+        .await
 }
 
 pub(crate) async fn install_admitted_activation_cursor_from_tx(
     tx: &mut Transaction<'_, Sqlite>,
     activation_hash: &CanonicalHash,
     epoch: &FrequencyActivationEpoch,
-    calendar_provider: Option<&dyn TimeZoneProvider>,
-    demand_policy: ScheduleDemandPolicy,
-    demand_capacity: ScheduleDemandCapacity,
-    host: &HostTimerCapabilities,
-    grant: &DispatcherResourceGrant,
+    FrequencyRuntimeAdmission {
+        calendar_provider,
+        demand_policy,
+        demand_capacity,
+        host,
+        grant,
+    }: FrequencyRuntimeAdmission<'_>,
     at: &str,
     starting_cursor: Option<StoredScheduleCursor>,
 ) -> Result<(), StoreError> {

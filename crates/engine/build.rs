@@ -37,7 +37,7 @@ fn main() {
         .and_then(Path::parent)
         .expect("the Engine crate lives under the repository's crates directory");
     let mut paths = vec![root.join("Cargo.toml"), root.join("Cargo.lock")];
-    for name in ["nucleus", "store", "engine", "protein", "anicca", "utils"] {
+    for name in ["nucleus", "store", "engine", "protein", "lingua", "utils"] {
         let directory = root.join("crates").join(name);
         println!("cargo:rerun-if-changed={}", directory.display());
         files(&directory, &mut paths);

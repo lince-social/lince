@@ -21,7 +21,12 @@ fn messages(messages: &[Message]) -> Vec<serde_json::Value> {
     }).collect()
 }
 
-pub(super) fn supplied(path: &Path, input: &[Message], source: Option<&str>) -> Result<(), String> {
+pub(super) fn supplied(
+    path: &Path,
+    input: &[Message],
+    tools: &[fiote::provider::ToolDefinition],
+    source: Option<&str>,
+) -> Result<(), String> {
     let bytes = std::fs::read(path).map_err(|e| e.to_string())?;
     if bytes.len() > 1024 * 1024 {
         return Err("Context inspection exceeds 1 MiB".into());
@@ -31,6 +36,7 @@ pub(super) fn supplied(path: &Path, input: &[Message], source: Option<&str>) -> 
         "Latest model request supplied by Lince, including tool calls/results; provider internal memory is not exposed"
     );
     value["messages"] = serde_json::json!(messages(input));
+    value["tools"] = serde_json::json!(tools.iter().map(|tool| tool.name.as_str()).collect::<Vec<_>>());
     value["source_message"] = serde_json::json!(source);
     value["supplied_at"] = serde_json::json!(nucleus::execution::now().to_rfc3339());
     if serde_json::to_vec(&value).map_err(|e| e.to_string())?.len() > 1024 * 1024 {

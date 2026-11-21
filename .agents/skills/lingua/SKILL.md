@@ -1,13 +1,15 @@
 ---
 name: lingua
-description: How to read `.lingua` Records — the owner-authored files under `anicca/` that hold Lince's documentation, declarations, and task plan. Use before reading or quoting a `.lingua`, when planning from one, when reconciling it against an adjacent `.md`, or when asked to change what a Record says.
+description: How to read `.lingua` Records — the owner-authored files under `institute/trails/` that hold Lince's documentation, declarations, and task plan. Use before reading or quoting a `.lingua`, when planning from one, when reconciling it against an adjacent `.md`, or when asked to change what a Record says.
 ---
 
 # Lingua
 
-`.lingua` files under the repository-root `anicca/` are **Records**: the
-owner's documentation, declarations, and task plan in one format. Instinct
-ingests them, so they are read by people who were not in your conversation.
+`.lingua` files under `institute/trails/` contain **Records**, which hold the
+owner's documentation, declarations, and task plan in one format. Lince's
+main Record is `institute/trails/Lince.lingua`, with related Records under
+`institute/trails/lince/`. Instinct ingests selected Records, so they are read
+by people who were not in your conversation.
 
 ## Read them. The owner writes them.
 
@@ -21,12 +23,12 @@ This holds for prose, a heading, a typo, a checkbox, a `quantity`, everything:
 never write into a `.lingua`. The one exception is the owner asking for that
 exact edit in that exact file.
 
-Your own writing goes in `anicca/<Same-Name>.md`, beside the `.lingua` it
-belongs to. Create them whenever you want one. Nothing ingests them.
+Your own writing goes in `<Same-Name>.md`, beside the `.lingua` it belongs to.
+Create them whenever you want one. Nothing ingests them.
 
 ## Precedence
 
-Where `anicca/<Subject>.lingua` and `anicca/<Subject>.md` both exist, the
+Where `<Subject>.lingua` and `<Subject>.md` both exist, the
 Record is the higher source of truth and the Markdown holds agent reasoning.
 Reconcile the Markdown to the Record. If they conflict, keep the Record's
 decision and say out loud that the Markdown disagrees.
@@ -57,18 +59,19 @@ That is normal, not a defect.
 
 ## Authority
 
-`crates/anicca/src/grammar.rs` is the sole syntax authority — a typed
-`rust-sitter` grammar shared by parser, formatter, and checker. The living
-explanation is `anicca/Lingua.lingua`. Read those rather than trusting a schema
-copied into some other document, including this one.
+`crates/lingua/src/grammar.rs` is the syntax authority. The parser, formatter,
+and checker share this typed `rust-sitter` grammar. See the Lingua Record in
+`institute/trails/Lince.lingua` and the examples in
+`institute/trails/lince/simulation/lingua-examples/Guide.md`.
 
 ## Commands
 
 ```
-cargo run -p anicca --bin lingua -- check anicca
-cargo run -p anicca --bin lingua -- fmt anicca
+cargo run -p lingua -- check
+cargo run -p lingua -- fmt
 ```
 
-`check` parses the tree and counts Records, Frequencies, and Rules; `fmt`
-without `--write` prints and changes nothing. `fmt --write` rewrites the
-owner's files, so leave it to the owner.
+Both commands default to `institute/trails/Lince.lingua` and accept an
+explicit file or directory. `check` parses the input and counts Records,
+Frequencies, and Rules. `fmt` reports files that need formatting.
+`fmt --write` rewrites the owner's files, so leave it to the owner.

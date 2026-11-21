@@ -17,12 +17,12 @@ fn pure_scripts_ignore_unavailable_database_directories() {
 
 #[test]
 fn script_paths_resolve_directory_literals_beside_the_script() {
-    let document = anicca::parse("dir = \"../instance\"; print(1);").unwrap();
+    let document = lingua::parse("dir = \"../instance\"; print(1);").unwrap();
     assert_eq!(
         configuration(&document, Path::new("/data/scripts/report.lingua")).unwrap(),
         Some(PathBuf::from("/data/scripts/../instance"))
     );
-    let duplicate = anicca::parse("dir = \"a\"; dir = \"b\";").unwrap();
+    let duplicate = lingua::parse("dir = \"a\"; dir = \"b\";").unwrap();
     assert!(configuration(&duplicate, Path::new("report.lingua")).is_err());
 }
 
@@ -116,7 +116,7 @@ fn record_readings_and_protein_queries_select_the_requested_instance_exactly() {
         .call("record", std::slice::from_ref(&reference))
         .unwrap()
         .render();
-    let projected = anicca::project(&anicca::parse(&printed).unwrap()).unwrap();
+    let projected = lingua::project(&lingua::parse(&printed).unwrap()).unwrap();
     assert_eq!(projected.records[0].uid, uid);
     assert_eq!(projected.records[0].head, "Apples");
     assert_eq!(
@@ -254,7 +254,7 @@ fn saved_feature_declarations_print_without_running_their_definitions() {
         )
         .unwrap()
         .render();
-    let projected = anicca::project(&anicca::parse(&extension).unwrap()).unwrap();
+    let projected = lingua::project(&lingua::parse(&extension).unwrap()).unwrap();
     assert_eq!(projected.extensions[0].fields["score"], 7);
     let query = Value::from_json(serde_json::json!({"source":"record", "where":[{"slug_eq":"apples"}], "include":{"extension":{"namespace":"sample"}}})).unwrap();
     let Value::List(rows) = host.call("query", &[query]).unwrap() else {
@@ -268,7 +268,7 @@ fn saved_feature_declarations_print_without_running_their_definitions() {
         .call("rule", &[Value::Reference(rule_uid.clone())])
         .unwrap()
         .render();
-    let projected = anicca::project(&anicca::parse(&rule).unwrap()).unwrap();
+    let projected = lingua::project(&lingua::parse(&rule).unwrap()).unwrap();
     assert_eq!(projected.rules[0].uid, rule_uid);
     assert_eq!(projected.rules[0].record_slug, uid);
     assert!(projected.rules[0].cadence.is_some());
@@ -276,7 +276,7 @@ fn saved_feature_declarations_print_without_running_their_definitions() {
         .call("frequency", &[Value::Reference("print-clock".into())])
         .unwrap()
         .render();
-    let projected = anicca::project(&anicca::parse(&frequency).unwrap()).unwrap();
+    let projected = lingua::project(&lingua::parse(&frequency).unwrap()).unwrap();
     let definition: FrequencyAst =
         serde_json::from_str(projected.frequencies[0].definition.as_ref().unwrap()).unwrap();
     assert_eq!(definition.purpose, "Print clock");

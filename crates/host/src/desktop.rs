@@ -128,6 +128,8 @@ pub enum DesktopAction {
     ReapplyOpeningRules,
     Lock,
     Logout,
+    ZoomOut,
+    ZoomIn,
 }
 
 impl DesktopAction {

@@ -16,11 +16,11 @@ use std::{
 
 use lince_resources::{Library, publication::Publication};
 
-fn project(path: &Path) -> anicca::ProjectedDocument {
+fn project(path: &Path) -> lingua::ProjectedDocument {
     let source = fs::read_to_string(path).expect("read the trail fixture");
-    let (source, _) = anicca::ensure_uids(&source).expect("ensure the trail fixture has UIDs");
-    let document = anicca::parse(&source).expect("parse the trail fixture");
-    anicca::project(&document).expect("project the trail fixture")
+    let (source, _) = lingua::ensure_uids(&source).expect("ensure the trail fixture has UIDs");
+    let document = lingua::parse(&source).expect("parse the trail fixture");
+    lingua::project(&document).expect("project the trail fixture")
 }
 
 fn visit(
@@ -62,10 +62,8 @@ fn curriculum_entrances_form_a_connected_skeleton_without_markdown_inventories()
             .map(str::to_owned)
             .collect()
     );
-    assert!(!institute.join("anicca/Ergon.md").exists());
-    assert!(!institute.join("anicca/Trails.md").exists());
     let root = "r_7A4AY51TXG87NVHR9J1XNZTJQ9";
-    let entry = trails.join("lince/Trails.lingua");
+    let entry = trails.join("Trails.lingua");
     let guidance = project(&entry);
     assert_eq!(guidance.records.len(), 1);
     assert!(guidance.records[0].body.contains("breadth first"));

@@ -68,6 +68,54 @@ fn destroying_only_the_popup_role_invalidates_window_snapshots_and_preserves_par
     assert!(harness.server.window_revision() > revision);
 }
 
+#[cfg(feature = "nested")]
+#[test]
+#[ignore = "requires hardware Vulkan and EGL"]
+fn popup_repaint_updates_composition_without_invalidating_the_canvas() {
+    use crate::presentation::{PixelSync, PixelUpdate, Presentation};
+
+    let runtime = tokio::runtime::Runtime::new().unwrap();
+    let _entered = runtime.enter();
+    let directory = tempfile::tempdir().unwrap();
+    let mut canvas = Presentation::new(
+        [640, 480],
+        directory.path().into(),
+        lince_host::WakeSignal::new(|| {}),
+    )
+    .unwrap();
+    canvas.probe_frame().unwrap();
+    let mut harness = Harness::new();
+    let window = harness.window();
+    let _parent = harness.attach(&window, [320, 240]);
+    let (surface, _xdg, _popup) = mapped_popup(&mut harness, &window, None);
+    let first = harness.buffer([128, 64]);
+    surface.attach(Some(&first), 0, 0);
+    surface.commit();
+    harness.sync();
+    let before = harness.server.windows();
+    assert!(!canvas.sync_windows(&before).unwrap());
+    let frame = canvas.probe_frame().unwrap();
+    let second = harness.buffer([128, 64]);
+    surface.attach(Some(&second), 0, 0);
+    surface.damage_buffer(0, 0, 128, 64);
+    surface.commit();
+    harness.sync();
+    let after = harness.server.windows();
+    assert_eq!(
+        canvas.sync_pixels(&after).unwrap(),
+        PixelSync::Compatible {
+            pending: false,
+            update: PixelUpdate::Composition
+        },
+    );
+    assert!(canvas.retains_frame());
+    assert!(frame.dmabuf().is_some());
+    let painted = canvas.painted_windows();
+    let popup_version = |windows: &[WindowSnapshot]| windows[0].popups[0].nodes[0].content.version;
+    assert_ne!(popup_version(&painted), popup_version(&before));
+    assert_eq!(popup_version(&painted), popup_version(&after));
+}
+
 #[test]
 fn the_first_parent_motion_after_a_popup_grab_ends_reaches_the_client_at_its_new_position() {
     let mut harness = Harness::new();

@@ -249,18 +249,20 @@ fn catalog_source_limits_include_geometry_and_deformation() {
         DEFORM_SPHERE, Deformation, GENERATED_TRIANGLE, GeneratedGeometry, MeshSettings, Mode,
     };
 
-    let mut effect = Effect::default();
-    effect.mode = Mode::Mesh(MeshSettings {
-        deformation: Some(Deformation {
-            source: format!("{DEFORM_SPHERE}{}", " ".repeat(60_000)),
-            max_displacement: 0.25,
-        }),
-        geometry: Some(GeneratedGeometry {
-            source: format!("{GENERATED_TRIANGLE}{}", " ".repeat(60_000)),
-            vertices: 3,
+    let effect = Effect {
+        mode: Mode::Mesh(MeshSettings {
+            deformation: Some(Deformation {
+                source: format!("{DEFORM_SPHERE}{}", " ".repeat(60_000)),
+                max_displacement: 0.25,
+            }),
+            geometry: Some(GeneratedGeometry {
+                source: format!("{GENERATED_TRIANGLE}{}", " ".repeat(60_000)),
+                vertices: 3,
+            }),
+            ..Default::default()
         }),
         ..Default::default()
-    });
+    };
     assert!(effect.validate().is_ok());
     let mut catalog = Extension::single(1, effect);
     assert!(catalog.validate().is_ok());

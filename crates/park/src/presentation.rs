@@ -68,7 +68,7 @@ pub(crate) fn observe_work(name: &'static str) -> Option<bevy::log::tracing::spa
     lince_interface::host::performance::enabled()
         .then(|| bevy::log::tracing::info_span!("system", name = name).entered())
 }
-pub(crate) use pixels::Sync as PixelSync;
+pub(crate) use pixels::{Sync as PixelSync, Update as PixelUpdate};
 #[cfg(test)]
 mod color_tests;
 #[cfg(feature = "native-client-gate")]
@@ -111,6 +111,7 @@ pub struct Presentation {
     magnification_pointer_epoch: Option<u64>,
     input_activity_revision: Option<u64>,
     retained: Option<pixels::Retained>,
+    pixel_changed_owners: std::collections::BTreeSet<Entity>,
 }
 
 pub struct Frame {
@@ -546,7 +547,13 @@ impl Presentation {
         if self.output_action(action)? {
             return Ok(());
         }
-        self.application_focus = None;
+        if !matches!(
+            action,
+            lince_interface::host::DesktopAction::ZoomOut
+                | lince_interface::host::DesktopAction::ZoomIn
+        ) {
+            self.application_focus = None;
+        }
         let root = self.canvas_root()?;
         action.apply(self.app.world_mut(), root);
         Ok(())
@@ -846,6 +853,7 @@ impl Presentation {
                 refresh_camera_targets.before(bevy::camera::CameraUpdateSystems),
             );
         clients::install(&mut app)?;
+        pixels::install(&mut app);
         outputs::install_suspension(&mut app);
         crate::native_input::install(&mut app);
         let records = connection
@@ -942,6 +950,7 @@ impl Presentation {
             magnification_pointer_epoch: None,
             input_activity_revision: None,
             retained: None,
+            pixel_changed_owners: Default::default(),
             traced_render: None,
             manipulation: None,
             records,
@@ -1423,6 +1432,7 @@ impl Presentation {
 
     pub(crate) fn try_frame(&mut self) -> Result<Option<Frame>, ProbeFailure> {
         self.retained = None;
+        self.pixel_changed_owners.clear();
         self.synchronize_input_activity()?;
         let hand_focus = self
             .app
@@ -1524,44 +1534,41 @@ impl Presentation {
             .into(),
         };
         self.retained = Some(retained.clone());
-        self.export_frame(retained).map(Some)
+        self.export_frame(retained, Default::default()).map(Some)
     }
 
-    fn export_frame(&mut self, retained: pixels::Retained) -> Result<Frame, ProbeFailure> {
+    fn export_frame(
+        &mut self,
+        retained: pixels::Retained,
+        mut reused: pixels::Exports,
+    ) -> Result<Frame, ProbeFailure> {
         let started = std::time::Instant::now();
         let trace_start = self.traced_render.map(|_| frame_trace::timestamp());
-        let texture = self
-            .app
-            .sub_app(RenderApp)
-            .world()
-            .resource::<RenderAssets<GpuImage>>()
-            .get(self.target.id())
-            .map(|image| wgpu::Texture::clone(&image.texture))
-            .ok_or_else(|| input_failure("the canvas output is not prepared"))?;
         let detail = std::time::Instant::now();
+        let images = self.app.sub_app(RenderApp).world().resource::<RenderAssets<GpuImage>>();
+        let focused = self.output_state.assignments.focused();
         let mut destinations = Vec::new();
         let mut textures = Vec::new();
         for (id, target) in &self.output_state.targets {
-            if Some(*id) == self.output_state.assignments.focused() {
+            if Some(*id) == focused {
                 continue;
             }
-            let Some(texture) = self
-                .app
-                .sub_app(RenderApp)
-                .world()
-                .resource::<RenderAssets<GpuImage>>()
-                .get(target.image.id())
-            else {
-                continue;
-            };
-            textures.push(wgpu::Texture::clone(&texture.texture));
-            destinations.push((*id, target.origin, target.fullscreen));
+            let asset = target.image.id();
+            if !reused.contains_key(&asset) {
+                let Some(texture) = images.get(asset) else { continue; };
+                textures.push(wgpu::Texture::clone(&texture.texture));
+            }
+            destinations.push((*id, target.origin, target.fullscreen, asset));
         }
-        textures.push(texture);
+        let main = self.target.id();
+        if !reused.contains_key(&main) {
+            let texture = images.get(main).ok_or_else(|| input_failure("the canvas output is not prepared"))?;
+            textures.push(wgpu::Texture::clone(&texture.texture));
+        }
         #[cfg(not(all(test, feature = "nested")))]
-        let mut images = self.renderer.export_render_targets(&textures)?;
+        let images = self.renderer.export_render_targets(&textures)?;
         #[cfg(all(test, feature = "nested"))]
-        let mut images = match self
+        let images = match self
             .app
             .sub_app_mut(RenderApp)
             .world_mut()
@@ -1570,19 +1577,14 @@ impl Presentation {
             Some(prepared) => prepared.export(&self.renderer.gpu, &textures)?,
             None => self.renderer.export_render_targets(&textures)?,
         };
-        let image = images
-            .pop()
-            .ok_or_else(|| input_failure("the canvas output export is unavailable"))?;
-        let outputs = destinations
-            .into_iter()
-            .zip(images)
-            .map(|((id, origin, fullscreen), image)| OutputFrame {
-                id,
-                image,
-                origin,
-                fullscreen,
-            })
-            .collect();
+        let mut images = images.into_iter();
+        let mut take = |asset| reused.remove(&asset).or_else(|| images.next())
+            .ok_or_else(|| input_failure("the canvas output export is unavailable"));
+        let mut outputs = Vec::with_capacity(destinations.len());
+        for (id, origin, fullscreen, asset) in destinations {
+            outputs.push(OutputFrame { id, image: take(asset)?, origin, fullscreen });
+        }
+        let image = take(main)?;
         let mut frame = Frame {
             traced_render: self.traced_render,
             client_formats: self.client_formats.clone(),

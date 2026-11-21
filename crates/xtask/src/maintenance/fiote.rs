@@ -262,7 +262,7 @@ fn target(kind: &str, phase: f32, limb: usize) -> Vec3 {
         return target(first, 0.0, limb)
             .lerp(target(last, 0.0, limb), phase * phase * (3.0 - 2.0 * phase));
     }
-    let x = if limb % 2 == 0 { 0.28 } else { -0.28 };
+    let x = if limb.is_multiple_of(2) { 0.28 } else { -0.28 };
     let front = limb < 2;
     let mut y = if front { -0.42 } else { 0.34 };
     let mut z = 0.14;
@@ -568,7 +568,7 @@ fn render(directory: &Path) -> Result<()> {
                 .ok_or("Missing indices")?
                 .into_u32()
                 .collect();
-            for face in indices.chunks_exact(3) {
+            for face in indices.as_chunks::<3>().0 {
                 let ids = [face[0] as usize, face[1] as usize, face[2] as usize];
                 let [a, b, c] = ids.map(|i| points[i]);
                 let area = edge(a.truncate(), b.truncate(), c.truncate());

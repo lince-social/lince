@@ -417,6 +417,8 @@ struct State {
     next_id: u64,
     revision: u64,
     window_revision: u64,
+    #[cfg(feature = "nested")]
+    presentation_revision: u64,
     initial_size: [i32; 2],
     cursor: CursorImageStatus,
     cursor_origin: Option<smithay::reexports::wayland_server::Weak<WlSurface>>,
@@ -600,6 +602,8 @@ impl Server {
             next_id: 1,
             revision: 1,
             window_revision: 1,
+            #[cfg(feature = "nested")]
+            presentation_revision: 1,
             initial_size: size,
             cursor: CursorImageStatus::default_named(),
             cursor_origin: None,
@@ -897,7 +901,7 @@ impl Server {
         for output in self.state.outputs.values() {
             smithay::desktop::layer_map_for_output(&output.output).cleanup();
         }
-        self.display.flush_clients()?;
+        self.flush_clients()?;
         #[cfg(feature = "nested")]
         if let Some(client) = &mut self.native_client {
             client.dispatch()?;
@@ -909,8 +913,17 @@ impl Server {
         self.state.revision
     }
 
+    pub(crate) fn flush_clients(&mut self) -> io::Result<()> {
+        self.display.flush_clients()
+    }
+
     pub fn window_revision(&self) -> u64 {
         self.state.window_revision
+    }
+
+    #[cfg(feature = "nested")]
+    pub(crate) fn presentation_revision(&self) -> u64 {
+        self.state.presentation_revision
     }
 
     pub fn windows(&self) -> Vec<WindowSnapshot> {
@@ -1304,6 +1317,10 @@ impl State {
 
     fn presentation_changed(&mut self) {
         self.revision = self.revision.saturating_add(1);
+        #[cfg(feature = "nested")]
+        {
+            self.presentation_revision = self.revision;
+        }
     }
 
     fn valid_surface(&self, surface: &WlSurface, size: [i32; 2]) -> bool {
@@ -1411,6 +1428,7 @@ impl CompositorHandler for State {
             root = parent;
         }
         let id = self.id(&root);
+        let was_mapped = id.is_some_and(|id| self.windows[&id].mapped);
         self.popups.manager.commit(&root);
         let mut unmapped = false;
         let mut assignments = Vec::new();
@@ -1547,9 +1565,10 @@ impl CompositorHandler for State {
                         && surface == root
                     {
                         let window = self.windows.get_mut(&id).unwrap();
+                        let first_buffer = !window.mapped;
                         window.mapped = true;
                         window.needs_initial = false;
-                        if !self.outputs.is_empty() {
+                        if first_buffer && !self.outputs.is_empty() {
                             self.output.enter(&root);
                         }
                     }
@@ -1598,18 +1617,21 @@ impl CompositorHandler for State {
         for (surface, damage) in damages {
             self.update_damage(&surface, damage);
         }
-        let frame_only = if let Some(id) = id {
+        let (frame_only, pixels_only) = if let Some(id) = id {
             let visual = self.visual(&root);
-            let unchanged = !pixels_changed
-                && self.windows[&id].mapped
-                && self.visuals.get(&root) == Some(&visual);
+            let previous = self.visuals.get(&root);
+            let mapped = self.windows[&id].mapped;
+            let unchanged = mapped && previous == Some(&visual);
+            if unchanged && callbacks.iter().all(|(_, callbacks)| callbacks.is_empty()) {
+                return;
+            }
+            let pixels_only = pixels_changed
+                && !unchanged
+                && was_mapped
+                && mapped
+                && previous.is_some_and(|previous| previous.same_semantics(&visual));
             if lince_host::performance::enabled() {
                 use lince_host::performance::{Count, count};
-                let pixels_only = pixels_changed
-                    && self
-                        .visuals
-                        .get(&root)
-                        .is_some_and(|previous| previous.same_semantics(&visual));
                 count(if unchanged {
                     Count::WindowCallbackCommit
                 } else if pixels_only {
@@ -1619,9 +1641,9 @@ impl CompositorHandler for State {
                 });
             }
             self.visuals.insert(root.clone(), visual);
-            unchanged
+            (unchanged, pixels_only)
         } else {
-            false
+            (false, false)
         };
         for (surface, new) in callbacks {
             self.generations.insert(surface.clone(), self.revision);
@@ -1664,7 +1686,11 @@ impl CompositorHandler for State {
             self.layer_commit(&root, unmapped);
             self.popup_commit(&root);
         }
-        if !frame_only
+        if pixels_only {
+            // The pixels reach the output with the worker's completed frame.
+            self.revision = self.revision.saturating_add(1);
+            self.window_revision = self.revision;
+        } else if !frame_only
             && (id.is_some()
                 || self.popups.surfaces.contains_key(&root)
                 || self

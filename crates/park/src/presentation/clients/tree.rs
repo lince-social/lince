@@ -46,6 +46,9 @@ pub(super) fn remove(world: &mut World, node: SurfaceView) {
     world
         .resource_mut::<Assets<ClientMaterial>>()
         .remove(node.material.id());
+    world
+        .resource_mut::<native::topology::UiMaterialVersions<ClientMaterial>>()
+        .remove(node.material.id());
 }
 
 impl Presentation {
@@ -67,7 +70,7 @@ impl Presentation {
         }
         self.renderer.retain_imports(windows);
         let mut pending = false;
-        let mut changed = false;
+        let mut update = PixelUpdate::None;
         let mut imported = Vec::new();
         for snapshot in windows {
             if !snapshot.mapped {
@@ -114,7 +117,21 @@ impl Presentation {
                 imported.clear();
                 continue;
             }
-            changed |= !imported.is_empty();
+            if !imported.is_empty() {
+                update = PixelUpdate::Canvas;
+                self.pixel_changed_owners.insert(window.entity);
+            } else if update == PixelUpdate::None {
+                // Popup buffers are composed by the host from the published scene.
+                let old = &self.painted_windows[&snapshot.id];
+                if old.popups.iter().zip(&snapshot.popups).any(|(old, next)| {
+                    old.nodes.iter().zip(&next.nodes).any(|(old, next)| {
+                        old.content.version != next.content.version
+                            || old.generation != next.generation
+                    })
+                }) {
+                    update = PixelUpdate::Composition;
+                }
+            }
             for (id, node, texture, opaque) in imported.drain(..) {
                 let view = self
                     .windows
@@ -137,6 +154,10 @@ impl Presentation {
                     view.texture = Some(texture);
                 }
                 view.version = Some(node.content.version);
+                self.app
+                    .world_mut()
+                    .resource_mut::<native::topology::UiMaterialVersions<ClientMaterial>>()
+                    .set(view.material.id(), node.content.version);
                 view.layout = Some(node.layout);
                 view.opaque = opaque;
                 self.uploads.push(node.content.clone());
@@ -149,13 +170,7 @@ impl Presentation {
             }
             self.painted_windows.insert(snapshot.id, snapshot.clone());
         }
-        Ok(if !pending {
-            PixelSync::Ready
-        } else if changed {
-            PixelSync::Partial
-        } else {
-            PixelSync::Pending
-        })
+        Ok(PixelSync::Compatible { pending, update })
     }
 
     pub fn sync_windows(&mut self, windows: &[WindowSnapshot]) -> Result<bool, ProbeFailure> {
@@ -406,6 +421,9 @@ impl Presentation {
                             .content = view.image.clone();
                     }
                     view.version = Some(node.content.version);
+                    world
+                        .resource_mut::<native::topology::UiMaterialVersions<ClientMaterial>>()
+                        .set(view.material.id(), node.content.version);
                     view.layout = Some(node.layout);
                     view.commit = Some(node.damage.current_commit());
                     view.opaque = opaque;

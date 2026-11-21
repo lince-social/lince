@@ -102,13 +102,13 @@ async fn hidden_terms_on(
     owner: &str,
     context: &str,
 ) -> Result<Vec<String>, StoreError> {
-    Ok(sqlx::query_scalar(
+    sqlx::query_scalar(
         "SELECT term_uid FROM terminology_hidden WHERE owner_key=? AND context=? ORDER BY term_uid",
     )
     .bind(owner)
     .bind(context)
     .fetch_all(connection)
-    .await?)
+    .await
 }
 
 pub async fn terminology_state(

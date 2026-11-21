@@ -140,6 +140,7 @@ impl Trace {
         Ok(())
     }
 
+    #[allow(clippy::result_unit_err, reason = "Preserve the causal trace API")]
     pub fn record_transfer_change(
         &mut self,
         cell: &str,
@@ -159,6 +160,7 @@ impl Trace {
         self.transfer_change(index, change, limit)
     }
 
+    #[allow(clippy::result_unit_err, reason = "Preserve the causal trace API")]
     pub fn record_received_transfer_change(
         &mut self,
         command: &str,
@@ -213,6 +215,7 @@ impl Trace {
         }
     }
 
+    #[allow(clippy::result_unit_err, reason = "Preserve the causal trace API")]
     pub fn append(&mut self, step: RuleStep, byte_limit: u64) -> Result<Option<RuleCycle>, ()> {
         let application = (
             step.cell.clone(),

@@ -79,6 +79,9 @@ struct Node {
     version: u64,
     origin: [i32; 2],
     layout: SurfaceLayout,
+    size: [i32; 2],
+    scale: i32,
+    transform: Transform,
     input: Option<Vec<(bool, Rectangle<i32, Logical>)>>,
     opaque: Option<Vec<(bool, Rectangle<i32, Logical>)>>,
     color: lince_host::color::Description,
@@ -94,6 +97,9 @@ impl Visual {
                 left.surface == right.surface
                     && left.origin == right.origin
                     && left.layout == right.layout
+                    && left.size == right.size
+                    && left.scale == right.scale
+                    && left.transform == right.transform
                     && left.input == right.input
                     && left.opaque == right.opaque
                     && left.color == right.color
@@ -131,6 +137,9 @@ impl Visual {
                     version: node.content.version,
                     origin: node.origin,
                     layout: node.layout,
+                    size: node.content.size,
+                    scale: node.scale,
+                    transform: node.transform,
                     input: region(&node.input),
                     opaque: region(&node.opaque),
                     color: node.color,

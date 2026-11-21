@@ -77,7 +77,7 @@ pub struct Document {
     pub raw: String,
     pub cached: bool,
     pub saved: bool,
-    pub project: anicca::ProjectedDocument,
+    pub project: lingua::ProjectedDocument,
 }
 
 #[derive(Clone, Debug)]
@@ -137,7 +137,7 @@ fn images(base: &str, text: &str) -> Result<String> {
     }
     let mut output = body.into_owned();
     for (slug, (uri, title, hash)) in assets {
-        let record = anicca::ProjectedRecord {
+        let record = lingua::ProjectedRecord {
             uid: format!("r_0{}", hash[..25].to_ascii_uppercase()),
             slug: Some(slug.clone()),
             head: if title.is_empty() {
@@ -150,7 +150,7 @@ fn images(base: &str, text: &str) -> Result<String> {
             assertions: Vec::new(),
         };
         output.push('\n');
-        output.push_str(&anicca::render_record(&record).map_err(|error| error.to_string())?);
+        output.push_str(&lingua::render_record(&record).map_err(|error| error.to_string())?);
         let extension = uri
             .split('?')
             .next()
@@ -167,7 +167,7 @@ fn images(base: &str, text: &str) -> Result<String> {
             _ => "image/*",
         };
         output.push_str(
-            &anicca::extension::render(
+            &lingua::extension::render(
                 &slug,
                 RESOURCE_NAMESPACE,
                 &serde_json::to_value(Resource {

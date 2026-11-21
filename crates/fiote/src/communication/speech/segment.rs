@@ -129,7 +129,7 @@ impl Segmenter {
                 });
             }
             if self.silence >= END_SILENCE {
-                let mut samples = self.utterance.take().unwrap();
+                let mut samples = self.utterance.take()?;
                 let valid = self.speech >= MIN_SPEECH;
                 samples.truncate(
                     samples

@@ -181,9 +181,9 @@ impl BundledRecord {
     }
 }
 
-pub fn records() -> Result<Vec<BundledRecord>, anicca::Diagnostic> {
+pub fn records() -> Result<Vec<BundledRecord>, lingua::Diagnostic> {
     let publication =
-        lince_practice::content::publication().map_err(|message| anicca::Diagnostic {
+        lince_practice::content::publication().map_err(|message| lingua::Diagnostic {
             path: None,
             message,
         })?;
@@ -198,7 +198,7 @@ pub fn records() -> Result<Vec<BundledRecord>, anicca::Diagnostic> {
     records_from(&sources)
 }
 
-fn records_from(sources: &[(&str, &str)]) -> Result<Vec<BundledRecord>, anicca::Diagnostic> {
+fn records_from(sources: &[(&str, &str)]) -> Result<Vec<BundledRecord>, lingua::Diagnostic> {
     let mut projected = Vec::new();
     for (name, source) in sources {
         projected.extend(project_source(name, source)?);
@@ -264,8 +264,8 @@ fn records_from(sources: &[(&str, &str)]) -> Result<Vec<BundledRecord>, anicca::
                         .map(|slug| {
                             let uid = identities
                                 .get(slug)
-                                .ok_or_else(|| anicca::Diagnostic {
-                                    path: Some("institute/anicca".into()),
+                                .ok_or_else(|| lingua::Diagnostic {
+                                    path: None,
                                     message: format!("@{slug} does not resolve"),
                                 })?
                                 .clone();
@@ -283,7 +283,7 @@ fn records_from(sources: &[(&str, &str)]) -> Result<Vec<BundledRecord>, anicca::
                         unit: assertion.unit,
                     })
                 })
-                .collect::<Result<_, anicca::Diagnostic>>()?;
+                .collect::<Result<_, lingua::Diagnostic>>()?;
             Ok(BundledRecord {
                 slug: record.slug,
                 head: record.head,
@@ -295,7 +295,7 @@ fn records_from(sources: &[(&str, &str)]) -> Result<Vec<BundledRecord>, anicca::
                 body: record.body,
             })
         })
-        .collect::<Result<_, anicca::Diagnostic>>()?;
+        .collect::<Result<_, lingua::Diagnostic>>()?;
 
     let snapshot = output.clone();
     let paths: HashMap<_, _> = snapshot
@@ -328,14 +328,14 @@ fn records_from(sources: &[(&str, &str)]) -> Result<Vec<BundledRecord>, anicca::
 fn project_source(
     name: &str,
     source: &str,
-) -> Result<Vec<anicca::ProjectedRecord>, anicca::Diagnostic> {
-    let with_path = |mut error: anicca::Diagnostic| {
-        error.path = Some(std::path::Path::new("institute/anicca").join(name));
+) -> Result<Vec<lingua::ProjectedRecord>, lingua::Diagnostic> {
+    let with_path = |mut error: lingua::Diagnostic| {
+        error.path = Some(name.into());
         error
     };
-    let (identified, minted) = anicca::ensure_uids(source).map_err(with_path)?;
-    let document = anicca::parse(&identified).map_err(with_path)?;
-    let mut records = anicca::project(&document).map_err(with_path)?.records;
+    let (identified, minted) = lingua::ensure_uids(source).map_err(with_path)?;
+    let document = lingua::parse(&identified).map_err(with_path)?;
+    let mut records = lingua::project(&document).map_err(with_path)?.records;
     for record in &mut records {
         if let Some(identity) = minted
             .iter()
@@ -357,15 +357,13 @@ mod tests {
 
     #[test]
     fn malformed_sources_return_their_path_without_partial_records() {
+        let broken = "file:///content/instinct/Broken.lingua";
         let error = records_from(&[
             ("Valid.lingua", "Valid (@valid: 0, #instinct) {\nText.\n}\n"),
-            ("Broken.lingua", "Broken (@broken: 0) {\nText.\n"),
+            (broken, "Broken (@broken: 0) {\nText.\n"),
         ])
         .unwrap_err();
-        assert_eq!(
-            error.path.as_deref(),
-            Some(std::path::Path::new("institute/anicca/Broken.lingua"))
-        );
+        assert_eq!(error.path.as_deref(), Some(std::path::Path::new(broken)));
     }
 
     #[test]

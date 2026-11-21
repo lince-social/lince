@@ -169,7 +169,9 @@ impl Connection {
             .get(id)
             .ok_or("This agent interaction is no longer waiting.")?;
         let response = question.request.response(answer)?;
-        let question = pending.remove(id).unwrap();
+        let question = pending
+            .remove(id)
+            .expect("the pending question is still present under the same lock");
         question
             .response
             .send(response)

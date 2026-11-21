@@ -14,6 +14,7 @@
 //   (24).
 
 use std::{
+    io::{self, Write},
     path::{Path, PathBuf},
     process::Stdio,
     time::Duration,
@@ -27,10 +28,15 @@ use tokio::{
     process::Command,
 };
 
-use super::{Tool, changes::GitSnapshot};
+use super::{
+    Tool,
+    changes::GitSnapshot,
+    receipts::{CommandCapture, MAX_STREAM_BYTES, Part},
+};
 use crate::provider::ToolDefinition;
 
 const OUTPUT_LIMIT: usize = 32 * 1024;
+const TAIL_BYTES: usize = 2048;
 const MAX_TIMEOUT_MS: u64 = 21_600_000;
 
 pub struct RunCommand {
@@ -69,17 +75,64 @@ impl Drop for ProcessGroup {
     }
 }
 
-async fn drain(mut reader: impl AsyncRead + Unpin, output: &mut Vec<u8>) -> std::io::Result<bool> {
+#[derive(Default)]
+struct Stream {
+    head: Vec<u8>,
+    tail: Vec<u8>,
+    total: usize,
+    spool: Option<tempfile::NamedTempFile>,
+    saved: usize,
+}
+
+impl Stream {
+    fn push(&mut self, bytes: &[u8], capture: Option<&CommandCapture<'_>>) -> io::Result<()> {
+        if let Some(capture) = capture
+            && self.spool.is_none()
+            && self.total + bytes.len() > OUTPUT_LIMIT
+        {
+            let mut spool = capture.start()?;
+            spool.write_all(&self.head)?;
+            self.saved = self.head.len();
+            self.spool = Some(spool);
+        }
+        if let Some(spool) = &mut self.spool {
+            let retain = bytes.len().min(MAX_STREAM_BYTES.saturating_sub(self.saved));
+            spool.write_all(&bytes[..retain])?;
+            self.saved += retain;
+            self.tail.extend_from_slice(bytes);
+            let excess = self.tail.len().saturating_sub(TAIL_BYTES);
+            self.tail.drain(..excess);
+        }
+        let retained = bytes.len().min(OUTPUT_LIMIT.saturating_sub(self.head.len()));
+        self.head.extend_from_slice(&bytes[..retained]);
+        self.total += bytes.len();
+        Ok(())
+    }
+
+    fn finish(
+        &mut self,
+        capture: Option<&CommandCapture<'_>>,
+        part: Part,
+    ) -> io::Result<()> {
+        if let (Some(file), Some(capture)) = (self.spool.take(), capture) {
+            capture.finish(part, file)?;
+        }
+        Ok(())
+    }
+}
+
+async fn drain(
+    mut reader: impl AsyncRead + Unpin,
+    output: &mut Stream,
+    capture: Option<&CommandCapture<'_>>,
+) -> io::Result<()> {
     let mut buffer = [0; 8192];
-    let mut truncated = false;
     loop {
         let read = reader.read(&mut buffer).await?;
         if read == 0 {
-            return Ok(truncated);
+            return Ok(());
         }
-        let retained = read.min(OUTPUT_LIMIT.saturating_sub(output.len()));
-        output.extend_from_slice(&buffer[..retained]);
-        truncated |= retained < read;
+        output.push(&buffer[..read], capture)?;
     }
 }
 
@@ -88,12 +141,22 @@ impl Tool for RunCommand {
     fn definition(&self) -> ToolDefinition {
         ToolDefinition {
             name: "run_command".into(),
-            description: "Execute a shell command in the configured working directory. Supports pipelines, sed, git, tests and other installed command-line tools. Runs with Lince's operating-system permissions, not a filesystem sandbox. Standard input is closed. Returns exit code, stdout and stderr (up to 32 KiB each). timeout_ms defaults to 120000 and must be between 1 and 21600000. Commands may modify files; use only for the user's requested work.".into(),
+            description: "Execute a shell command in the configured working directory. Supports pipelines, sed, git, tests and other installed command-line tools. Runs with Lince's operating-system permissions, not a filesystem sandbox. Standard input is closed. Returns exit code, stdout and stderr. Large streams have a bounded preview and may be read from a receipt. timeout_ms defaults to 120000 and must be between 1 and 21600000. Commands may modify files; use only for the user's requested work.".into(),
             schema: json!({"type":"object","properties":{"command":{"type":"string"},"timeout_ms":{"type":"integer","minimum":1,"maximum":MAX_TIMEOUT_MS}},"required":["command"],"additionalProperties":false}),
         }
     }
 
     async fn run(&self, arguments: Value) -> Result<Value, String> {
+        self.run_captured(arguments, None).await
+    }
+}
+
+impl RunCommand {
+    pub(crate) async fn run_captured(
+        &self,
+        arguments: Value,
+        capture: Option<&CommandCapture<'_>>,
+    ) -> Result<Value, String> {
         let args: Arguments = serde_json::from_value(arguments).map_err(|e| e.to_string())?;
         if args.command.trim().is_empty()
             || args.command.len() > 65536
@@ -142,35 +205,30 @@ impl Tool for RunCommand {
             .stderr
             .take()
             .ok_or("Command stderr is unavailable.")?;
-        let mut out = Vec::new();
-        let mut err = Vec::new();
+        let mut out = Stream::default();
+        let mut err = Stream::default();
         let result = tokio::time::timeout(Duration::from_millis(args.timeout_ms), async {
             let (status, stdout, stderr) = tokio::join!(
                 child.wait(),
-                drain(stdout, &mut out),
-                drain(stderr, &mut err)
+                drain(stdout, &mut out, capture),
+                drain(stderr, &mut err, capture)
             );
             Ok::<_, std::io::Error>((status?, stdout?, stderr?))
         })
         .await;
-        let (exit_code, timed_out, stdout_truncated, stderr_truncated) = match result {
+        let (exit_code, timed_out) = match result {
             Ok(result) => {
                 #[cfg(unix)]
                 drop(group);
-                let (status, stdout, stderr) = result.map_err(|e| e.to_string())?;
-                (status.code(), false, stdout, stderr)
+                let (status, (), ()) = result.map_err(|e| format!("Cannot capture command output: {e}"))?;
+                (status.code(), false)
             }
             Err(_) => {
                 #[cfg(unix)]
                 drop(group);
                 child.kill().await.map_err(|e| e.to_string())?;
                 child.wait().await.map_err(|e| e.to_string())?;
-                (
-                    None,
-                    true,
-                    out.len() == OUTPUT_LIMIT,
-                    err.len() == OUTPUT_LIMIT,
-                )
+                (None, true)
             }
         };
         let diff = if let Some(before) = before {
@@ -178,8 +236,20 @@ impl Tool for RunCommand {
         } else {
             None
         };
-        Ok(
-            json!({"working_directory":self.directory,"success":exit_code == Some(0) && !timed_out,"exit_code":exit_code,"timed_out":timed_out,"stdout":String::from_utf8_lossy(&out),"stderr":String::from_utf8_lossy(&err),"stdout_truncated":stdout_truncated,"stderr_truncated":stderr_truncated,"diff":diff}),
-        )
+        out.finish(capture, Part::Stdout).map_err(|e| format!("Cannot save command stdout: {e}"))?;
+        err.finish(capture, Part::Stderr).map_err(|e| format!("Cannot save command stderr: {e}"))?;
+        let mut result = json!({"working_directory":self.directory,"success":exit_code == Some(0) && !timed_out,"exit_code":exit_code,"timed_out":timed_out,"stdout":String::from_utf8_lossy(&out.head),"stderr":String::from_utf8_lossy(&err.head),"stdout_truncated":out.total > out.head.len(),"stderr_truncated":err.total > err.head.len(),"diff":diff});
+        if let Some(capture) = capture && (out.saved != 0 || err.saved != 0) {
+            result["command_receipt"] = json!({
+                "receipt_id": capture.id(),
+                "stdout_saved_bytes": out.saved,
+                "stdout_total_bytes": out.total,
+                "stderr_saved_bytes": err.saved,
+                "stderr_total_bytes": err.total,
+            });
+            result["stdout_tail"] = json!(String::from_utf8_lossy(&out.tail));
+            result["stderr_tail"] = json!(String::from_utf8_lossy(&err.tail));
+        }
+        Ok(result)
     }
 }

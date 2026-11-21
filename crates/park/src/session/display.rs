@@ -383,6 +383,7 @@ impl Hardware {
                         .source_size(planned.monitor.size.map(|size| size as u32))
                         .map(|size| (f64::from(size) / planned.scale).round() as i32),
                     pending: false,
+                    needs_render: true,
                     pacing: pacing::Pacing::new(smithay::output::Mode::from(planned.mode).refresh),
                     texture: None,
                     adaptive_sync: Default::default(),

@@ -23,6 +23,9 @@ You can download the latest release binary from the builds, or if you want to co
 cargo run
 ```
 
+Native plugins are developed in the [Lince plugins repository](https://github.com/lince-social/plugins).
+To build and install them from source, clone it as `../plugins` alongside this checkout and follow its setup instructions.
+
 # Disclaimer
 
 Lince is a non-profit project and crowdfunding is the source of development compensation: [Patreon](https://www.patreon.com/lince_social).

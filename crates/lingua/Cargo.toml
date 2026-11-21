@@ -1,0 +1,28 @@
+[package]
+name = "lingua"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "The one parser, formatter, checker, and source-state model for .lingua files."
+
+[dependencies]
+postcard = { workspace = true }
+rust-sitter = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+
+[build-dependencies]
+sensei = { workspace = true }
+rust-sitter-tool = { workspace = true }
+cc = "1.4.5"
+tree-sitter-generate = { version = "0.27.0", default-features = false }
+
+[[bin]]
+name = "lingua"
+path = "src/main.rs"
+
+[lints]
+workspace = true

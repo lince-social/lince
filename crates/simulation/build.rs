@@ -51,7 +51,7 @@ fn main() {
         "protein",
         "utils",
         "transport",
-        "anicca",
+        "lingua",
     ] {
         let directory = root.join("crates").join(name);
         println!("cargo:rerun-if-changed={}", directory.display());

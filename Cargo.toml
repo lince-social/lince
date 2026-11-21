@@ -10,7 +10,7 @@ members = [
     "crates/protein",
     "crates/protein-authority",
     "crates/transport",
-    "crates/anicca",
+    "crates/lingua",
     "crates/sensei",
     "crates/geist",
     "crates/sandbox",
@@ -38,10 +38,6 @@ members = [
     "crates/ailuros",
     "crates/ailuros/protocol",
     "crates/plugin",
-    "crates/plugins/plugin-nostr",
-    "crates/plugins/plugin-activitypub",
-    "crates/plugins/plugin-irc",
-    "crates/plugins/plugin-files",
     "crates/map",
     "crates/hand-input",
     "crates/vendor/laya",
@@ -86,7 +82,7 @@ lince-map = { version = "=0.8.0", path = "crates/map" }
 lince-media = { version = "=0.8.0", path = "crates/media" }
 lince-resources = { version = "=0.8.0", path = "crates/resources" }
 lince-facade = { version = "=0.8.0", path = "crates/facade" }
-anicca = { version = "=0.8.0", path = "crates/anicca" }
+lingua = { version = "=0.8.0", path = "crates/lingua" }
 nucleus = { version = "=0.8.0", path = "crates/nucleus", default-features = false }
 plugins = { version = "=0.8.0", path = "crates/plugin", package = "lince-plugins" }
 store = { version = "=0.8.0", path = "crates/store" }

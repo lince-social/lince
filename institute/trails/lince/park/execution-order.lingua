@@ -12,8 +12,6 @@ Run the smallest relevant case first. A shared run can close several boxes when 
 
 ## Current release and measurement prerequisites
 
-- [ ] **Install the candidate.** Retain the installation receipt for the verified optimized release from the existing NixOS generation.
-
 ### Live release and freeze
 
 - [ ] **Live build identity.** Verify that the running Park executable uses the new optimized revision after installation. Record the full revision and profile.

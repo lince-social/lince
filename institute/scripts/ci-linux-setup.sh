@@ -56,6 +56,28 @@ case "${LINCE_CI_LINKER:-mold}" in
   *) echo 'Unsupported Linux linker' >&2; exit 1 ;;
 esac
 printf 'RUSTFLAGS=%s\n' "$rustflags" >> "$GITHUB_ENV"
+
+# Rust 1.99.1 reports false Send lifetime errors in the Engine's async query paths.
+# Limit the compiler workaround to workspace crates on this pinned toolchain.
+if [[ "$(rustc --version)" == 'rustc 1.99.1 '* ]]; then
+  rustc_wrapper="$RUNNER_TEMP/lince-rustc-1.99.1"
+  cat > "$rustc_wrapper" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+compiler=$1
+shift
+previous=
+for argument; do
+  if [[ "$previous" == --crate-name ]]; then
+    RUSTC_BOOTSTRAP="$argument" exec "$compiler" "$@" -Zhigher-ranked-assumptions=yes
+  fi
+  previous=$argument
+done
+exec "$compiler" "$@"
+EOF
+  chmod +x "$rustc_wrapper"
+  printf 'RUSTC_WORKSPACE_WRAPPER=%s\n' "$rustc_wrapper" >> "$GITHUB_ENV"
+fi
 dpkg-query -W > "$RUNNER_TEMP/lince-native-inputs"
 if [ "${LINCE_CI_LINKER:-mold}" = wild ]; then
   "$HOME/.local/bin/wild" --version >> "$RUNNER_TEMP/lince-native-inputs"

@@ -14,7 +14,6 @@ Run the smallest relevant case first. A shared run can close several boxes when 
 
 ### Live release and freeze
 
-- [ ] **Live build identity.** Verify that the running Park executable uses the new optimized revision after installation. Record the full revision and profile.
 - [ ] **Freeze replay.** Use Ghostty and normal agent activity on the new build. Check that the desktop stays interactive and that the GPU-completion panic is absent during the observed session.
 - [ ] [P156](record:r_675XKW987Z53WQNE9T0F48XBPH) **Installed graphics loader.** Run the mandatory prepared case through automatic discovery. Confirm matching artifact identity, graphics setup and preservation of caller driver choices.
 

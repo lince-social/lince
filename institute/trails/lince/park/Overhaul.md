@@ -6,13 +6,17 @@ The [checkpoint](Development-cycle.lingua) and [execution order](execution-order
 
 ## Application artifact verification — 2026-11-21
 
-The installed Nix launcher and the running Park executable both returned `e5f68e7b20e811be73f5b4b0ecf7326fcb3b3547` from `--build-info`, with `optimized: true`, target `x86_64-unknown-linux-gnu`, and the UI, Instinct and Park features enabled. Git ancestry confirmed that the release contains freeze fix `083dfa95686f71905a5fe7e373262526de085b1d`. The Linux application build and `publish-main` succeeded for that exact revision. [Release run](https://github.com/lince-social/lince/actions/runs/44927273878)
+The installed Nix launcher returned `e5f68e7b20e811be73f5b4b0ecf7326fcb3b3547` from `--build-info`, with `optimized: true`, target `x86_64-unknown-linux-gnu`, and the UI, Instinct and Park features enabled. Git ancestry confirmed that the release contains freeze fix `083dfa95686f71905a5fe7e373262526de085b1d`. The Linux application build and `publish-main` succeeded for that exact revision. [Release run](https://github.com/lince-social/lince/actions/runs/44927273878)
 
 The Park measurement packaging job for the same run verified the probe archive checksum, checked the optimized probe and application identities against the full revision and Linux x86-64 target, and uploaded artifact `14718044666`. GitHub reports SHA-256 `d4df7441da3de18e8751f19cf3e0d5178a63215227c698d733eed5f4736bf1a7` for the uploaded artifact. This receipt establishes the artifact match. Standalone probe execution still needs the local executable. [Packaging job](https://github.com/lince-social/lince/actions/runs/44927273878/job/136937509019)
 
 ### NixOS installation receipt
 
 The active system profile and `/run/current-system` both resolve to NixOS generation `43`, created November 21 at 15:44 BRT. Generation `43` selects the store package `b8hwi0x5libgsynighajkhkzpcncaw0d-lince-0.8.0-e5f68e7b20e8`, whose launcher reports optimized revision `e5f68e7b20e811be73f5b4b0ecf7326fcb3b3547`. The preceding generation `42` still selects `08c087f4`.
+
+### Live Park executable receipt
+
+Park was running as PID `3481557`. Running `--build-info` through `/proc/3481557/exe` identified optimized revision `e5f68e7b20e811be73f5b4b0ecf7326fcb3b3547` with Park enabled. The executable resolved to `.lince-wrapped` in generation `43`'s Lince package, and its build metadata matched the current NixOS launcher.
 
 ## Checkout verification — 2026-11-20
 

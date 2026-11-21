@@ -12,7 +12,6 @@ Run the smallest relevant case first. A shared run can close several boxes when 
 
 ## Current release and measurement prerequisites
 
-- [ ] **Measurement probe artifact.** Verify the packaged optimized probe matches the installed application revision `e5f68e7b`. Use the same-release packaging receipt. Running the standalone probe needs its executable locally.
 - [ ] **Install the candidate.** Retain the installation receipt for the verified optimized release from the existing NixOS generation.
 
 ### Live release and freeze

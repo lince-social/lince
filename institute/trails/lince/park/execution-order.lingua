@@ -12,16 +12,10 @@ Run the smallest relevant case first. A shared run can close several boxes when 
 
 ## Current release and measurement prerequisites
 
-### Live release and freeze
-
-- [ ] **Freeze replay.** Use Ghostty and normal agent activity on the new build. Check that the desktop stays interactive and that the GPU-completion panic is absent during the observed session.
-- [ ] [P156](record:r_675XKW987Z53WQNE9T0F48XBPH) **Installed graphics loader.** Run the mandatory prepared case through automatic discovery. Confirm matching artifact identity, graphics setup and preservation of caller driver choices.
-
 ### Mixed scene and daily acceptance
 
-Use the installed candidate and its matching probe for these measurements.
+Use the installed responsiveness suite for the worker publication case. The physical measurements need the corresponding live capture setup.
 
-- [ ] [P65](record:r_44DT369GKKWNAT9RSK0KX8RTA2) **Editor focus.** Run the mixed scene up to its first editor click. Require the presented editor to receive focus and accept the first character.
 - [ ] [P65](record:r_44DT369GKKWNAT9RSK0KX8RTA2) **Worker publication.** Repeat the 120-input worker fixture and compare p95 with the 33.4 ms budget.
 - [ ] [P65](record:r_44DT369GKKWNAT9RSK0KX8RTA2) **Visible interaction.** Measure event-to-changed-pixel latency for typing, click, scroll and drag in the populated session. Report each distribution against B02.
 - [ ] [P64](record:r_4GVND1GYBP9J233JRJP59BE7GA) **Quiet resources.** Sample the settled daily workspace and record Park CPU, GPU and wake rates against B10.
@@ -70,7 +64,9 @@ Use a nested test executable that includes the current settings fixtures and the
 
 ### Laboratory and prepared cases
 
-Use the feature-enabled Laboratory tests and the matching prepared bundle. The installed baseline predates the required Laboratory rules, workflow cases and report import.
+Use the feature-enabled Laboratory tests and the matching prepared bundle for cases that need their selectors or report format.
+
+The installed `e5f68e7b` suite stops the mandatory Protein case on duplicate `PointerFocusPlugin` registration. The Protein filter, rendered glyphs, and passing common-suite rule report still need a working case on a compatible build.
 
 - [ ] [P140](record:r_0EHDMT2W041ZM1SK253DJVH2C1) **Rule manifests.** Run `native::laboratory::requirements::tests`. Require invalid mappings to fail with a source location.
 - [ ] [P140](record:r_0EHDMT2W041ZM1SK253DJVH2C1) **Rule identity.** Inspect one passing common-suite report for the mapped Protein and Edit rule IDs, Record UIDs and locations.
@@ -208,5 +204,12 @@ Use the optimized build and matched captures to select the next expensive owner.
 - [ ] [P99](record:r_1J322KWM9Y9KHGF3Q9B4ZG5QJG) Compare the PGO candidate and uninstrumented baseline on a held-out workload.
 - [ ] [P57](record:r_1W82JGD8E7MYX2XM60YYXGMM53) Compare direct scanout and composition for one eligible fullscreen SDR client on real hardware.
 - [ ] [P57](record:r_1W82JGD8E7MYX2XM60YYXGMM53) Interrupt direct scanout with a normal transition and verify that composition safely resumes.
+
+### Live confirmation and prepared graphics check
+
+- [ ] **Freeze replay.** Use Ghostty and normal agent activity on the new build. Check that the desktop stays interactive and that the GPU-completion panic is absent during the observed session.
+  Park answered all 24 Wayland callbacks, with no compositor restart or GPU-completion error during the observed session. Ghostty tab, typing and Noctalia click feedback still need visible confirmation.
+- [ ] [P156](record:r_675XKW987Z53WQNE9T0F48XBPH) **Installed graphics loader.** Run the mandatory prepared case through automatic discovery. Confirm matching artifact identity, graphics setup and preservation of caller driver choices.
+  This requires the prepared runner and standalone probe matching the installed release.
 
 } r_1FMCTGVHF35B6D0T70JEQAMYDW

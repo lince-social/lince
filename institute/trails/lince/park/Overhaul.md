@@ -18,6 +18,10 @@ The active system profile and `/run/current-system` both resolve to NixOS genera
 
 Park was running as PID `3481557`. Running `--build-info` through `/proc/3481557/exe` identified optimized revision `e5f68e7b20e811be73f5b4b0ecf7326fcb3b3547` with Park enabled. The executable resolved to `.lince-wrapped` in generation `43`'s Lince package, and its build metadata matched the current NixOS launcher.
 
+### P65 mixed editor focus — 2026-11-21
+
+The installed optimized `e5f68e7b20e811be73f5b4b0ecf7326fcb3b3547` binary ran `--park-performance-check` with private XDG directories. The pointer click focused the intended native editor in the 30-item, two-output scene. The input oracle checked all 120 `é` events against the exact resulting editor text. The scene recorded no focus or correctness error. Typing to GPU completion was 57.87 ms p95, and the full suite exited 1 with timing and separate Interface failures. The mandatory Protein case failed on duplicate `PointerFocusPlugin` registration. Raw results are in `target/park-p65-e5f68e7b.tDb8Qr/results.jsonl`.
+
 ## Checkout verification — 2026-11-20
 
 On `eb01745e`, all 32 Python runner/report tests and all three Anicca requirements tests passed. The source inventory audit also passed. Evidence is in `target/park-verification-eb01745e.rWMXKI3H/`. Prepared execution for P134 and P124 and native rule coverage for P140 remain open.

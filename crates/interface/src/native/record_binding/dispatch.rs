@@ -1,43 +1,6 @@
 // non-lean-yet
-// Scope: struct Ids.
-// BeautifulRust (baseline lines):
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 25, 27, 92, 94.
-// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
-//   53, 54.
-// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
-//   Sites unwrap (29).
 
 use super::*;
-use std::collections::HashSet;
-
-pub(super) struct Ids<'a, I> {
-    values: I,
-    searched: bool,
-    index: Option<HashSet<&'a str>>,
-}
-
-impl<'a, I: Iterator<Item = &'a str> + Clone> Ids<'a, I> {
-    pub(super) fn new(values: I) -> Self {
-        Self {
-            values,
-            searched: false,
-            index: None,
-        }
-    }
-
-    pub(super) fn contains(&mut self, id: &str) -> bool {
-        if let Some(index) = &self.index {
-            return index.contains(id);
-        }
-        if !self.searched || self.values.size_hint().1.is_some_and(|count| count <= 1) {
-            self.searched = true;
-            return self.values.clone().any(|candidate| candidate == id);
-        }
-        self.index = Some(self.values.clone().collect());
-        performance::count(Count::RecordEditPendingIndexes);
-        self.index.as_ref().unwrap().contains(id)
-    }
-}
 
 impl Document {
     pub(super) fn dispatch(
@@ -61,8 +24,8 @@ impl Document {
                 .as_ref()
                 .map_or(&[][..], |metadata| metadata.pending.as_slice());
             let prepared = draft.map_or(&[][..], |draft| draft.pending.as_slice());
-            let mut durable = Ids::new(durable.iter().map(String::as_str));
-            let mut prepared = Ids::new(prepared.iter().map(|request| request.id.as_str()));
+            let mut durable = PendingIds::new(durable.iter().map(String::as_str));
+            let mut prepared = PendingIds::new(prepared.iter().map(|request| request.id.as_str()));
             for request in self.pending.iter().skip(self.inflight) {
                 let gate = if durable.contains(&request.id) {
                     if !sender.try_send_edit(request, &self.sequence, None) {

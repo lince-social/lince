@@ -1,28 +1,16 @@
-// non-lean-yet
-// Scope: mod validation, struct Assertion, struct Draft, fn invalid.
-// BeautifulRust (baseline lines):
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 252, 293, 299,
-//   374, 375.
-// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 359.
-// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 204.
-// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
-//   Sites 359.
-// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
-//   functions. Sites 119.
-// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
-//   15, 16, 17, 18, 19, 24, 25, 26, 27, 28, 29, 30, 31, 33, 119.
+//! A [Draft] supplies the fields for an atomic Record creation. Its UID also
+//! identifies retries. Each [Assertion] is saved with the Record.
 
-use std::collections::{BTreeSet, HashSet};
+mod authority;
+mod persistence;
+mod validation;
 
-use chrono::{DateTime, Utc};
-use nucleus::{Cause, DecimalValue, NewFact, RecordKind};
+pub(crate) use validation::{AssertionFields, DraftFields};
+
+use crate::EngineError;
+use nucleus::{DecimalValue, new_uid};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-
-use crate::{Engine, EngineError, actions::ActionOutcome};
-
-mod validation;
-pub(crate) use validation::{AssertionFields, DraftFields};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -50,7 +38,7 @@ pub struct Draft {
 impl Default for Draft {
     fn default() -> Self {
         Self {
-            uid: nucleus::new_uid("r"),
+            uid: new_uid("r"),
             head: String::new(),
             body: String::new(),
             slug: None,
@@ -67,69 +55,11 @@ fn invalid(message: impl Into<String>) -> EngineError {
 }
 
 impl Draft {
-    pub(crate) fn matches(
-        &self,
-        predicate: &protein::Predicate,
-        family: &HashSet<String>,
-        quantity: DecimalValue,
-    ) -> Option<bool> {
-        self.matches_kind(predicate, family, quantity, RecordKind::Plain)
-    }
-
-    fn matches_kind(
-        &self,
-        predicate: &protein::Predicate,
-        family: &HashSet<String>,
-        quantity: DecimalValue,
-        kind: RecordKind,
-    ) -> Option<bool> {
-        let _evaluation = nucleus::performance::Span::new("record-draft-selector-evaluation");
-        self.evaluate(predicate, family, quantity, kind)
-    }
-
-    fn evaluate(
-        &self,
-        predicate: &protein::Predicate,
-        family: &HashSet<String>,
-        quantity: DecimalValue,
-        kind: RecordKind,
-    ) -> Option<bool> {
-        use protein::Predicate;
-        Some(match predicate {
-            Predicate::All(children) => children.iter().try_fold(true, |matched, child| {
-                self.evaluate(child, family, quantity, kind)
-                    .map(|value| matched && value)
-            })?,
-            Predicate::Any(children) => children.iter().try_fold(false, |matched, child| {
-                self.evaluate(child, family, quantity, kind)
-                    .map(|value| matched || value)
-            })?,
-            Predicate::Not(child) => !self.evaluate(child, family, quantity, kind)?,
-            Predicate::ConceptIn(uid) => family.contains(uid),
-            Predicate::KindEq(value) => value == kind.as_str(),
-            Predicate::UidEq(uid) => uid == &self.uid,
-            Predicate::SlugEq(slug) => self.slug.as_ref() == Some(slug),
-            Predicate::FileOriginEq(origin) => {
-                self.file_origin.as_deref().unwrap_or(nucleus::sync::PERSONAL_FILE_ORIGIN) == origin
-            }
-            Predicate::TextContains(text) => {
-                if text.is_empty() {
-                    true
-                } else {
-                    let query = text.to_lowercase();
-                    self.head.to_lowercase().contains(&query)
-                        || self.body.to_lowercase().contains(&query)
-                }
-            }
-            Predicate::QuantityEq(value) => quantity.exact_numeric_cmp(*value).is_eq(),
-            Predicate::QuantityLt(value) => quantity.exact_numeric_cmp(*value).is_lt(),
-            Predicate::QuantityLte(value) => !quantity.exact_numeric_cmp(*value).is_gt(),
-            Predicate::QuantityGt(value) => quantity.exact_numeric_cmp(*value).is_gt(),
-            Predicate::QuantityGte(value) => !quantity.exact_numeric_cmp(*value).is_lt(),
-            _ => return None,
-        })
-    }
-
+    /// Checks draft fields and returns the exact quantity before any Store writes.
+    ///
+    /// # Errors
+    ///
+    /// Returns a validation error for malformed fields, work metadata, or quantity.
     pub fn validate(&self) -> Result<DecimalValue, EngineError> {
         DraftFields {
             uid: &self.uid,
@@ -146,268 +76,5 @@ impl Draft {
             work: &self.work,
         }
         .validate()
-    }
-}
-
-impl Engine {
-    pub(crate) async fn create_record_draft(
-        &self,
-        draft: Draft,
-        actor: Option<String>,
-        now: DateTime<Utc>,
-    ) -> Result<ActionOutcome, EngineError> {
-        self.create_record_draft_kind(draft, RecordKind::Plain, actor, now)
-            .await
-    }
-
-    pub(crate) async fn create_record_draft_kind(
-        &self,
-        mut draft: Draft,
-        kind: RecordKind,
-        actor: Option<String>,
-        now: DateTime<Utc>,
-    ) -> Result<ActionOutcome, EngineError> {
-        self.require_permission(actor.as_deref(), "record:create")
-            .await?;
-        let quantity = draft.validate()?;
-        let payload = serde_json::to_string(&(kind, &draft)).map_err(EngineError::Json)?;
-        let mut family = HashSet::new();
-        for assertion in &mut draft.assertions {
-            assertion.predicate = store::vocabulary::resolve(
-                &self.store.pool,
-                &assertion.predicate,
-                actor.as_deref(),
-            )
-            .await?
-            .ok_or_else(|| invalid("Choose an existing assertion"))?;
-            if assertion.object.is_none() {
-                family.extend(
-                    store::concepts::ancestors_including(&self.store.pool, &assertion.predicate)
-                        .await?,
-                );
-            }
-            if let Some(object) = &mut assertion.object {
-                if lince_resources::reference::is_address(object) {
-                    if !lince_resources::reference::is_uri(object)
-                        && !std::path::Path::new(object).is_absolute()
-                    {
-                        return Err(invalid("A relative reference needs a declaring document"));
-                    }
-                    *object = lince_resources::address(object)
-                        .map_err(invalid)?
-                        .to_string();
-                } else {
-                    *object = self.resolve(object).await?;
-                    if !self.may_read_record(actor.as_deref(), object).await? {
-                        return Err(EngineError::Forbidden(
-                            "The related Record is not visible".into(),
-                        ));
-                    }
-                }
-            }
-            if let Some(unit) = &mut assertion.unit {
-                *unit = store::vocabulary::resolve(&self.store.pool, unit, actor.as_deref())
-                    .await?
-                    .ok_or_else(|| invalid("Choose an existing unit"))?;
-            }
-        }
-        if let Some(actor) = actor.as_deref() {
-            let matches = |predicate: &protein::Predicate| {
-                draft.matches_kind(predicate, &family, quantity, kind) == Some(true)
-            };
-            if let Some(filter) =
-                protein::read_rules::effective_predicate(&self.store, actor).await?
-            {
-                if !matches(&filter) {
-                    return Err(EngineError::Forbidden(
-                        "Choose assertions that satisfy your access rules".into(),
-                    ));
-                }
-            }
-            if let Some(policy) = protein::role_authority::policy_for(
-                &self.store,
-                actor,
-                Some(protein::authority::Operation::Create),
-            )
-            .await?
-            {
-                {
-                    use protein::authority::{
-                        AssertionProperty, AssertionRole, AssertionTarget, ExtensionProperty,
-                        Operation, Property,
-                    };
-                    let grants: Vec<_> = policy
-                        .grants
-                        .iter()
-                        .filter(|grant| {
-                            grant.operation == Operation::Create && matches(&grant.selector)
-                        })
-                        .collect();
-                    let _properties =
-                        nucleus::performance::Span::new("record-draft-role-properties");
-                    let allowed: BTreeSet<_> =
-                        grants.iter().flat_map(|grant| &grant.properties).collect();
-                    let mut required = BTreeSet::from([
-                        Property::Kind,
-                        Property::Head,
-                        Property::Body,
-                        Property::Quantity,
-                    ]);
-                    if draft.slug.is_some() {
-                        required.insert(Property::Slug);
-                    }
-                    let work = draft
-                        .work
-                        .as_object()
-                        .ok_or_else(|| invalid("Record work must be an object"))?;
-                    required.extend(work.keys().map(|field| {
-                        Property::Extension(ExtensionProperty {
-                            namespace: "work".into(),
-                            field: field.clone(),
-                        })
-                    }));
-                    if required.iter().any(|property| !allowed.contains(property))
-                        || draft.assertions.iter().any(|assertion| {
-                            !grants
-                                .iter()
-                                .flat_map(|grant| &grant.assertions_add)
-                                .any(|grant| {
-                                    grant.predicate_uid == assertion.predicate
-                                        && grant.role == AssertionRole::Ordinary
-                                        && match (&grant.target, &assertion.object) {
-                                            (AssertionTarget::Unary, None) => true,
-                                            (AssertionTarget::Uri(expected), Some(actual)) => {
-                                                expected == actual
-                                            }
-                                            (AssertionTarget::AnyReadableRecord, Some(actual)) => {
-                                                !lince_resources::reference::is_uri(actual)
-                                            }
-                                            (AssertionTarget::Record(a), Some(b)) => a == b,
-                                            _ => false,
-                                        }
-                                        && (assertion.quantity.is_none()
-                                            || grant
-                                                .properties
-                                                .contains(&AssertionProperty::Quantity))
-                                        && (assertion.unit.is_none()
-                                            || grant.properties.contains(&AssertionProperty::Unit))
-                                })
-                        })
-                    {
-                        return Err(EngineError::Forbidden(
-                            "Your role cannot create this Record with these properties".into(),
-                        ));
-                    }
-                }
-            }
-        }
-        let organ = store::organs::local(&self.store.pool)
-            .await?
-            .ok_or_else(|| invalid("The local Organ is unavailable"))?;
-        let signer = self.signer.lock().await.clone();
-        let mut tx = store::write_tx(&self.store.pool).await?;
-        let checkpoint = self
-            .record_checkpoint_on(
-                &mut tx,
-                actor.as_deref(),
-                vec![draft.uid.clone()],
-                protein::authority::Operation::Create,
-            )
-            .await?;
-        let previous: Option<(String, String)> = store::sqlx::query_as("SELECT payload, record_uid FROM record_change_receipt WHERE actor = ? AND change_uid = ?")
-            .bind(actor.as_deref().unwrap_or("")).bind(&draft.uid).fetch_optional(&mut *tx).await?;
-        if let Some((previous, uid)) = previous {
-            if previous != payload {
-                return Err(invalid(
-                    "This creation was already saved with different fields",
-                ));
-            }
-            return Ok(ActionOutcome {
-                created: Some(uid),
-                ..Default::default()
-            });
-        }
-        store::records::create_with_uid_on(
-            &mut tx,
-            &draft.uid,
-            store::records::NewRecord {
-                slug: draft.slug.as_deref(),
-                kind,
-                head: &draft.head,
-                body: &draft.body,
-                quantity: store::exact::zero(),
-            },
-            &organ.uid,
-            None,
-        )
-        .await?;
-        if let Some(origin) = draft.file_origin.as_deref() {
-            if actor.is_some() {
-                return Err(EngineError::Forbidden(
-                    "Only the local owner can assign a file sync origin".into(),
-                ));
-            }
-            if origin != nucleus::sync::PERSONAL_FILE_ORIGIN {
-                crate::file_sync::require_origin(&mut tx, origin).await?;
-                store::records::set_file_origin_on(&mut tx, &draft.uid, origin).await?;
-            }
-        }
-        for assertion in draft.assertions {
-            let uri = assertion
-                .object
-                .as_deref()
-                .filter(|value| lince_resources::reference::is_uri(value));
-            let new = store::assertions::NewAssertion {
-                subject_uid: &draft.uid,
-                predicate_uid: &assertion.predicate,
-                object_uid: assertion
-                    .object
-                    .as_deref()
-                    .filter(|value| !lince_resources::reference::is_uri(value)),
-                role: store::assertions::AssertionRole::Ordinary,
-                quantity: assertion
-                    .quantity
-                    .as_deref()
-                    .map(DecimalValue::parse_inferred)
-                    .transpose()
-                    .map_err(|_| invalid("Enter an exact assertion quantity"))?,
-                unit_uid: assertion.unit.as_deref(),
-                asserted_by: actor.as_deref(),
-            };
-            let uid = nucleus::new_uid("a");
-            if let Some(uri) = uri {
-                store::assertions::insert_uri_tx(&mut tx, &uid, new, uri).await?;
-            } else {
-                store::assertions::insert_tx(&mut tx, &uid, new).await?;
-            }
-        }
-        store::records::set_extension_on(&mut tx, &draft.uid, "work", &draft.work).await?;
-        let fact = crate::append::append_one_in_transaction(
-            &mut tx,
-            NewFact {
-                actor_uid: actor.clone(),
-                ..NewFact::quantity(draft.uid.clone(), quantity, Cause::user_edit())
-            },
-            now,
-            signer.as_ref(),
-        )
-        .await?;
-        store::sqlx::query("INSERT INTO record_change_receipt (actor, change_uid, record_uid, payload, result) VALUES (?, ?, ?, ?, ?)")
-            .bind(actor.as_deref().unwrap_or("")).bind(&draft.uid).bind(&draft.uid).bind(payload).bind(json!({"created":draft.uid}).to_string()).execute(&mut *tx).await?;
-        if let Some(checkpoint) = checkpoint {
-            checkpoint.finish(&mut tx, Default::default()).await?;
-        }
-        tx.commit().await?;
-        let facts = if let Some(fact) = fact {
-            self.observe_committed_fact(fact, now).await?
-        } else {
-            vec![]
-        };
-        self.notify_query_changed();
-        Ok(ActionOutcome {
-            created: Some(draft.uid),
-            facts,
-            ..Default::default()
-        })
     }
 }

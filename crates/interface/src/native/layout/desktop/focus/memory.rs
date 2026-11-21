@@ -1,8 +1,5 @@
-// non-lean-yet
-// Scope: struct Saved, struct Owner, fn native_target, fn native_targets.
-// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
-
 use super::*;
+use crate::native::sand_placement::scratch::Homes;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -16,21 +13,18 @@ pub(crate) struct Saved {
 }
 
 impl Saved {
-    pub(crate) fn normalize_scratch(
-        &mut self,
-        homes: &crate::native::sand_placement::scratch::Homes,
-    ) {
+    pub(crate) fn normalize_scratch(&mut self, homes: &Homes) {
         self.last = self.last.filter(|id| !homes.contains_key(&id.0));
         self.active = self.active.filter(|id| !homes.contains_key(&id.0));
-        if self.active.is_none() {
-            self.following = false;
-        }
+        self.following &= self.active.is_some();
     }
 
     pub(crate) fn valid(&self) -> bool {
         self.workspace != 0
-            && (!self.following || self.active.is_some())
-            && (!self.unfocused || self.active.is_none() && !self.following)
+            && match self.active {
+                Some(_) => !self.unfocused,
+                None => !self.following,
+            }
     }
 }
 
@@ -67,43 +61,35 @@ pub(crate) fn snapshot(world: &World, root: Entity) -> Vec<Saved> {
             .get::<Owner>(root)
             .is_none_or(|owner| owner.0 == spaces.canvas_id)
     });
-    let mut saved = Vec::new();
-    for space in spaces
+    spaces
         .entries
         .iter()
         .chain(spaces.trash.iter().map(|entry| &entry.workspace))
-    {
-        let Some(state) = states.and_then(|states| states.0.get(&(root, space.id))) else {
-            if let Some(pending) = spaces
-                .saved_focus
-                .iter()
-                .find(|saved| saved.workspace == space.id)
-            {
-                saved.push(*pending);
-            }
-            continue;
-        };
-        let last = state.last.or(space.desktop.focused());
-        let active = state
-            .active
-            .filter(|id| space.desktop.focused() == Some(*id));
-        let (last_target, active_target) = native_targets(world, root, space.id, last, active);
-        let last = last.filter(|_| last_target.is_some());
-        let active = active.filter(|_| active_target.is_some());
-        saved.push(Saved {
-            workspace: space.id,
-            last,
-            active,
-            following: active.is_some_and(|id| {
-                state
+        .filter_map(|space| {
+            let Some(state) = states.and_then(|states| states.0.get(&(root, space.id))) else {
+                return spaces
+                    .saved_focus
+                    .iter()
+                    .find(|saved| saved.workspace == space.id)
+                    .copied();
+            };
+            let focused = space.desktop.focused();
+            let last = state.last.or(focused);
+            let active = state.active.filter(|id| focused == Some(*id));
+            let (last_target, active_target) = native_targets(world, root, space.id, last, active);
+            let active = active.filter(|_| active_target.is_some());
+            Some(Saved {
+                workspace: space.id,
+                last: last.filter(|_| last_target.is_some()),
+                active,
+                following: state
                     .follow
                     .as_ref()
-                    .is_some_and(|follow| follow.target == id)
-            }),
-            unfocused: state.pointer_suspended,
-        });
-    }
-    saved
+                    .is_some_and(|follow| active == Some(follow.target)),
+                unfocused: state.pointer_suspended,
+            })
+        })
+        .collect()
 }
 
 pub(crate) fn remember(world: &mut World, root: Entity) {

@@ -171,7 +171,7 @@ fn request(harness: &mut Harness, session: &Session, size: [i32; 2]) -> Frame {
 fn privacy_publication_retires_an_actual_queued_frame_without_stopping_the_output_session() {
     let mut harness = harness();
     let gate = harness.server.capture_policy_gate();
-    gate.publish(lince_interface::host::capture::Policy::default());
+    gate.publish(lince_host::capture::Policy::default());
     let (_source, session) = output_session(&mut harness);
     let frame = request(&mut harness, &session, [640, 480]);
     let job = harness.server.capture_jobs().pop().unwrap();
@@ -227,7 +227,7 @@ fn a_private_native_window_source_stops_without_redirecting_to_a_public_window()
     harness.sync();
     let surface = harness.server.windows()[0].id;
     let gate = harness.server.capture_policy_gate();
-    gate.publish(lince_interface::host::capture::Policy {
+    gate.publish(lince_host::capture::Policy {
         windows: BTreeMap::from([(surface, false)]),
         excluded: BTreeSet::new(),
         ..Default::default()
@@ -250,7 +250,7 @@ fn a_private_native_window_source_stops_without_redirecting_to_a_public_window()
     harness.sync();
     let frame = request(&mut harness, &session, [320, 240]);
     let job = harness.server.capture_jobs().pop().unwrap();
-    gate.publish(lince_interface::host::capture::Policy {
+    gate.publish(lince_host::capture::Policy {
         windows: BTreeMap::from([(surface, true)]),
         excluded: BTreeSet::new(),
         ..Default::default()
@@ -271,7 +271,7 @@ fn a_private_native_window_source_stops_without_redirecting_to_a_public_window()
 fn output_capture_waits_for_authoritative_policy_for_a_newly_mapped_window() {
     let mut harness = harness();
     let gate = harness.server.capture_policy_gate();
-    gate.publish(lince_interface::host::capture::Policy::default());
+    gate.publish(lince_host::capture::Policy::default());
     let (_source, session) = output_session(&mut harness);
     let session_id = harness.server.capture_status().sessions[0].id;
     let window = harness.window();
@@ -281,7 +281,7 @@ fn output_capture_waits_for_authoritative_policy_for_a_newly_mapped_window() {
     assert!(harness.server.capture_status().sessions[0].paused);
     assert_eq!(harness.server.capture_status().sessions[0].id, session_id);
     let surface = harness.server.windows()[0].id;
-    gate.publish(lince_interface::host::capture::Policy {
+    gate.publish(lince_host::capture::Policy {
         windows: BTreeMap::from([(surface, false)]),
         excluded: BTreeSet::new(),
         ..Default::default()
@@ -301,7 +301,7 @@ fn output_capture_waits_for_authoritative_policy_for_a_newly_mapped_window() {
 fn output_capture_demand_tracks_retained_jobs_and_private_output_uses_a_filtered_frame() {
     let mut harness = harness();
     let gate = harness.server.capture_policy_gate();
-    gate.publish(lince_interface::host::capture::Policy {
+    gate.publish(lince_host::capture::Policy {
         windows: BTreeMap::new(),
         excluded: BTreeSet::from([[11; 16]]),
         ..Default::default()
@@ -351,7 +351,7 @@ fn changing_output_mapping_retires_a_queued_frame_without_changing_its_buffer_si
 #[test]
 fn changing_only_color_generation_retires_queued_capture_without_stopping_the_session_or_changing_mapping()
  {
-    use lince_interface::host::{
+    use lince_host::{
         color::{ColorMode, OutputColor},
         display::ColorStatus,
     };
@@ -408,7 +408,7 @@ fn backend_power_off_retires_output_capture_and_wake_reuses_the_same_session_and
     harness
         .server
         .capture_policy_gate()
-        .publish(lince_interface::host::capture::Policy::default());
+        .publish(lince_host::capture::Policy::default());
     let before = harness.server.display_snapshot();
     let (_source, session) = output_session(&mut harness);
     let frame = request(&mut harness, &session, [640, 480]);

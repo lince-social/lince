@@ -27,7 +27,7 @@ use tokio::{
     process::Command,
 };
 
-use super::Tool;
+use super::{Tool, changes::GitSnapshot};
 use crate::provider::ToolDefinition;
 
 const OUTPUT_LIMIT: usize = 32 * 1024;
@@ -104,6 +104,7 @@ impl Tool for RunCommand {
         if !(1..=MAX_TIMEOUT_MS).contains(&args.timeout_ms) {
             return Err("timeout_ms must be between 1 and 21600000.".into());
         }
+        let before = GitSnapshot::capture(&self.directory).await;
         let mut command = if cfg!(windows) {
             let mut command = Command::new("cmd.exe");
             command.args(["/D", "/S", "/C", &args.command]);
@@ -154,6 +155,8 @@ impl Tool for RunCommand {
         .await;
         let (exit_code, timed_out, stdout_truncated, stderr_truncated) = match result {
             Ok(result) => {
+                #[cfg(unix)]
+                drop(group);
                 let (status, stdout, stderr) = result.map_err(|e| e.to_string())?;
                 (status.code(), false, stdout, stderr)
             }
@@ -170,8 +173,13 @@ impl Tool for RunCommand {
                 )
             }
         };
+        let diff = if let Some(before) = before {
+            before.changes(&self.directory).await
+        } else {
+            None
+        };
         Ok(
-            json!({"working_directory":self.directory,"success":exit_code == Some(0) && !timed_out,"exit_code":exit_code,"timed_out":timed_out,"stdout":String::from_utf8_lossy(&out),"stderr":String::from_utf8_lossy(&err),"stdout_truncated":stdout_truncated,"stderr_truncated":stderr_truncated}),
+            json!({"working_directory":self.directory,"success":exit_code == Some(0) && !timed_out,"exit_code":exit_code,"timed_out":timed_out,"stdout":String::from_utf8_lossy(&out),"stderr":String::from_utf8_lossy(&err),"stdout_truncated":stdout_truncated,"stderr_truncated":stderr_truncated,"diff":diff}),
         )
     }
 }

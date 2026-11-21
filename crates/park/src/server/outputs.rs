@@ -6,7 +6,7 @@
 // - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
 //   152, 166.
 
-use lince_interface::host::mapping::QuarterTurn;
+use lince_host::mapping::QuarterTurn;
 use smithay::reexports::wayland_server::backend::GlobalId;
 
 use super::*;
@@ -178,7 +178,7 @@ impl Server {
                 self.state.remove_layer(&surface);
             }
             if let Some(removed) = self.state.outputs.remove(&id) {
-                lince_interface::host::performance::retire_output(id);
+                lince_host::performance::retire_output(id);
                 for window in self.state.windows.values() {
                     removed.output.leave(window.role.wl_surface());
                 }
@@ -253,13 +253,13 @@ impl Server {
         self.state.outputs.contains_key(&id)
     }
 
-    pub fn output_viewports(&self) -> Vec<(String, lince_interface::host::OutputViewport)> {
+    pub fn output_viewports(&self) -> Vec<(String, lince_host::OutputViewport)> {
         self.state.output_viewports()
     }
 
     pub fn presented_outputs(
         &mut self,
-        geometry: &lince_interface::host::GeometrySnapshot,
+        geometry: &lince_host::GeometrySnapshot,
         focused: Option<OutputId>,
     ) {
         self.state.presented_geometry = Some(geometry.clone());
@@ -274,7 +274,7 @@ impl Server {
             for (output, registered) in &self.state.outputs {
                 if window.mapped
                     && geometry.items.iter().any(|item| {
-                        item.id == lince_interface::host::ItemId::Application(*id)
+                        item.id == lince_host::ItemId::Application(*id)
                             && item.output == *output
                     })
                 {
@@ -292,7 +292,7 @@ impl Server {
     pub(crate) fn presented_output_mapping(
         &mut self,
         output: OutputId,
-        mapping: Option<&lince_interface::host::mapping::Mapping>,
+        mapping: Option<&lince_host::mapping::Mapping>,
     ) {
         if let Some(mapping) = mapping.filter(|mapping| mapping.output() == output) {
             self.state
@@ -308,7 +308,7 @@ impl State {
     pub(super) fn visible_output_rectangle(
         &self,
         id: OutputId,
-    ) -> Option<lince_interface::host::Rectangle> {
+    ) -> Option<lince_host::Rectangle> {
         let output = self
             .output_viewports()
             .into_iter()
@@ -317,7 +317,7 @@ impl State {
         let Some(mapping) = self.presented_mappings.get(&id) else {
             return Some(output.bounds);
         };
-        let physical = lince_interface::host::Rectangle::new(
+        let physical = lince_host::Rectangle::new(
             [0.0; 2],
             mapping.physical_size().map(f64::from),
         )?;
@@ -336,7 +336,7 @@ impl State {
         )
     }
 
-    pub(super) fn output_viewports(&self) -> Vec<(String, lince_interface::host::OutputViewport)> {
+    pub(super) fn output_viewports(&self) -> Vec<(String, lince_host::OutputViewport)> {
         self.outputs
             .iter()
             .filter_map(|(id, registered)| {
@@ -344,12 +344,12 @@ impl State {
                 let origin = output.current_location();
                 let size = output.current_mode()?.size;
                 let logical = logical_size(output)?;
-                let bounds = lince_interface::host::Rectangle::new(
+                let bounds = lince_host::Rectangle::new(
                     [f64::from(origin.x), f64::from(origin.y)],
                     [f64::from(logical.w), f64::from(logical.h)],
                 )?;
                 let usable = self.usable_output(*id)?;
-                let usable = lince_interface::host::Rectangle::new(
+                let usable = lince_host::Rectangle::new(
                     [
                         f64::from(origin.x + usable.loc.x),
                         f64::from(origin.y + usable.loc.y),
@@ -358,13 +358,13 @@ impl State {
                 );
                 Some((
                     output.name(),
-                    lince_interface::host::OutputViewport {
+                    lince_host::OutputViewport {
                         rotation: output_rotation(output.current_transform())?,
                         id: *id,
                         bounds,
                         usable,
                         physical_size: [size.w as u32, size.h as u32],
-                        raster: lince_interface::host::raster::RasterMapping {
+                        raster: lince_host::raster::RasterMapping {
                             origin: (bounds).origin(),
                             scale: [output.current_scale().fractional_scale(); 2],
                         },

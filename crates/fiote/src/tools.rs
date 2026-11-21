@@ -24,9 +24,11 @@ use serde_json::{Value, json};
 
 use crate::provider::ToolDefinition;
 
+mod changes;
 mod command;
 mod workspace;
 
+pub use changes::file_diff;
 pub use command::RunCommand;
 
 #[async_trait]
@@ -120,7 +122,11 @@ impl Tool for CreateFile {
             {
                 return Err(format!("File may be incomplete: {error}"));
             }
-            Ok(json!({"path": args.path, "bytes": args.content.len()}))
+            Ok(json!({
+                "path": args.path,
+                "bytes": args.content.len(),
+                "diff": file_diff(&args.path, None, Some(&args.content)),
+            }))
         })
         .await
         .map_err(|e| e.to_string())?

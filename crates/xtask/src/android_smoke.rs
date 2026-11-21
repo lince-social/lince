@@ -15,9 +15,7 @@ use std::{
 };
 
 use base64::{Engine as _, engine::general_purpose::STANDARD};
-use lince_interface::testing::{
-    Backend, Dispatch, Limits, Route, Runner as Driver, Selector, Step,
-};
+use lince_host::testing::{Backend, Dispatch, Limits, Route, Runner as Driver, Selector, Step};
 use serde_json::{Value, json};
 
 use crate::{Result, ui_process};

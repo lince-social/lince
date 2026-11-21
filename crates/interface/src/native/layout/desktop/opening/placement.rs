@@ -102,7 +102,7 @@ pub struct Prepared {
 
 impl Prepared {
     pub fn commit(self, world: &mut World) -> Result<Option<transfers::Selection>, String> {
-        if !self.stamp.valid(world)
+        if !stamp_is_current(world, &self.stamp)
             || world.get::<Workspaces>(self.root).is_none_or(|spaces| spaces.canvas_id != self.canvas)
             || world.get::<ApplicationWindow>(self.target).map(|window| (window.surface, window.content_size)) != Some((self.application.surface, self.application.content_size))
             || world.get_resource::<crate::native::output_views::OutputViews>() != self.views.as_ref()
@@ -113,7 +113,12 @@ impl Prepared {
 }
 
 pub fn prepare_reapply(world: &mut World, root: Entity, source: u64, placement: PlacementId, destination: u64, decision: &Decision) -> Result<Prepared, String> {
-    let stamp = decision.stamp.clone().filter(|stamp| stamp.valid(world)).ok_or("Opening rules changed or are unavailable; review and Reapply again.")?;
+    let stamp = decision
+        .stamp
+        .as_ref()
+        .filter(|stamp| stamp_is_current(world, stamp))
+        .cloned()
+        .ok_or("Opening rules changed or are unavailable; review and Reapply again.")?;
     let target = world.get::<Children>(root).and_then(|children| children.iter().find(|entity| {
         world.get::<LayoutBox>(*entity).is_some_and(|layout| layout.id == placement.0)
             && world.get::<WorkspaceMember>(*entity).is_some_and(|member| member.0 == source)

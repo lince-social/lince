@@ -11,7 +11,7 @@
 //   Sites unwrap (101, 136, 243, 244, 250, 266, 305, 450, 479, 503, 577, 631, 661).
 
 use bevy::{prelude::*, text::EditableText};
-use engine::record_creation::{Assertion, Draft};
+use engine::record_creation::Draft;
 use serde_json::json;
 
 use crate::native::{
@@ -19,7 +19,9 @@ use crate::native::{
     protein_area::Source,
 };
 
+mod draft;
 mod search;
+use draft::{collect, editors, value};
 
 #[derive(EntityEvent)]
 pub struct CreateRecord {
@@ -333,115 +335,6 @@ pub fn open(world: &mut World, target: Entity) -> Option<Entity> {
     Some(form)
 }
 
-fn value(world: &World, entity: Entity) -> String {
-    world
-        .get::<EditableText>(entity)
-        .map(|text| text.value().to_string())
-        .unwrap_or_default()
-}
-
-fn optional(value: String) -> Option<String> {
-    let value = value.trim();
-    (!value.is_empty()).then(|| value.to_string())
-}
-
-fn collect(world: &World, form: &Form) -> Result<Draft, String> {
-    let editors = form
-        .fields
-        .iter()
-        .map(|(_, entity)| *entity)
-        .chain(crate::native::assertion_editor::input(
-            world,
-            form.assertions,
-        ))
-        .chain(
-            form.relations
-                .iter()
-                .flat_map(|(_, _, fields)| fields.iter().copied()),
-        )
-        .chain(form.logs.iter().flat_map(|(_, start, end)| [*start, *end]));
-    if editors.into_iter().any(|entity| {
-        world.get::<EditableText>(entity).is_some_and(|text| {
-            text.is_composing() || text.pending_paste.is_some() || !text.pending_edits.is_empty()
-        })
-    }) {
-        return Err("Finish editing before creating the Record".into());
-    }
-    let mut draft = form.draft.clone();
-    draft.work = json!({});
-    for (property, entity) in &form.fields {
-        let value = value(world, *entity);
-        match *property {
-            "head" => draft.head = value,
-            "body" => draft.body = value,
-            "slug" => draft.slug = optional(value),
-            "quantity" => {
-                draft.quantity = if value.trim().is_empty() {
-                    "0".into()
-                } else {
-                    value.trim().into()
-                }
-            }
-            "start_date" | "due_date" => {
-                if let Some(value) = optional(value) {
-                    draft.work[if *property == "start_date" {
-                        "start"
-                    } else {
-                        "due"
-                    }] = json!(value);
-                }
-            }
-            "estimate_min" => {
-                if let Some(value) = optional(value) {
-                    draft.work["estimate_min"] = json!(
-                        value
-                            .parse::<f64>()
-                            .map_err(|_| "Enter an estimate in minutes")?
-                    );
-                }
-            }
-            _ => {}
-        }
-    }
-    draft.assertions = crate::native::assertion_editor::draft(world, form.assertions)?;
-    for (_, assignee, fields) in &form.relations {
-        let values: Vec<_> = fields.iter().map(|field| value(world, *field)).collect();
-        if values.iter().all(|value| value.trim().is_empty()) {
-            continue;
-        }
-        draft.assertions.push(if *assignee {
-            Assertion {
-                predicate: "feature:assignment".into(),
-                object: optional(values[0].clone()),
-                quantity: None,
-                unit: None,
-            }
-        } else {
-            Assertion {
-                predicate: values[0].trim().trim_start_matches('#').into(),
-                object: optional(values[1].clone()),
-                quantity: optional(values[2].clone()),
-                unit: optional(values[3].clone()),
-            }
-        });
-    }
-    let logs: Vec<_> = form
-        .logs
-        .iter()
-        .filter_map(|(_, start, end)| {
-            let start = value(world, *start);
-            let end = optional(value(world, *end));
-            (!start.trim().is_empty() || end.is_some())
-                .then(|| json!({"start":start.trim(), "end":end}))
-        })
-        .collect();
-    if !logs.is_empty() {
-        draft.work["logs"] = json!(logs);
-    }
-    draft.validate().map_err(|error| error.to_string())?;
-    Ok(draft)
-}
-
 #[derive(Clone)]
 struct AddAssignee;
 impl Action for AddAssignee {
@@ -520,21 +413,7 @@ fn freeze(world: &mut World, entity: Entity, frozen: bool) {
     let Some(form) = world.get::<Form>(entity) else {
         return;
     };
-    let fields: Vec<_> = form
-        .fields
-        .iter()
-        .map(|(_, entity)| *entity)
-        .chain(crate::native::assertion_editor::input(
-            world,
-            form.assertions,
-        ))
-        .chain(
-            form.relations
-                .iter()
-                .flat_map(|(_, _, fields)| fields.iter().copied()),
-        )
-        .chain(form.logs.iter().flat_map(|(_, start, end)| [*start, *end]))
-        .collect();
+    let fields: Vec<_> = editors(world, form).collect();
     for field in fields {
         if frozen {
             world

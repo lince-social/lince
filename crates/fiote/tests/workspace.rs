@@ -58,6 +58,9 @@ async fn workspace_tools_read_write_edit_list_and_refuse_ambiguous_edits() {
         )
         .await;
     assert_eq!(edited["result"]["replacements"], 2);
+    let diff = edited["result"]["diff"].as_str().unwrap();
+    assert!(diff.contains("--- a/code.rs"));
+    assert!(diff.contains("-one one") && diff.contains("+two two"));
     assert_eq!(
         registry.run("read_file", json!({"path":"code.rs"})).await["result"]["content"],
         "two two"
@@ -81,6 +84,52 @@ async fn workspace_tools_read_write_edit_list_and_refuse_ambiguous_edits() {
             .await["ok"],
         false
     );
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn command_diff_starts_from_existing_workspace_contents() {
+    let root = tempfile::tempdir().unwrap();
+    let git = |args: &[&str]| {
+        assert!(
+            std::process::Command::new("git")
+                .current_dir(root.path())
+                .args(args)
+                .status()
+                .unwrap()
+                .success()
+        );
+    };
+    git(&["init", "--quiet"]);
+    std::fs::write(root.path().join("source"), "original\n").unwrap();
+    std::fs::write(root.path().join("untouched"), "original\n").unwrap();
+    git(&["add", "source", "untouched"]);
+    git(&[
+        "-c",
+        "user.name=Fixture",
+        "-c",
+        "user.email=fixture@example.test",
+        "-c",
+        "commit.gpgSign=false",
+        "commit",
+        "--quiet",
+        "-m",
+        "fixture",
+    ]);
+    std::fs::write(root.path().join("source"), "previous edit\n").unwrap();
+    std::fs::write(root.path().join("untouched"), "unrelated edit\n").unwrap();
+    let output = tools(root.path())
+        .run(
+            "run_command",
+            json!({
+                "command": "printf 'current edit\\n' > source; printf 'new file\\n' > new-file"
+            }),
+        )
+        .await;
+    let diff = output["result"]["diff"].as_str().unwrap();
+    assert!(diff.contains("-previous edit") && diff.contains("+current edit"));
+    assert!(diff.contains("+++ b/new-file") && diff.contains("+new file"));
+    assert!(!diff.contains("original") && !diff.contains("untouched"));
 }
 
 #[tokio::test]

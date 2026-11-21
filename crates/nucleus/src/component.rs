@@ -1,22 +1,17 @@
-// non-lean-yet
-// Scope: mod composition, enum RecordMode, enum CallMedia, struct CallStart.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
-//   Sites 11, 22, 39.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 108, 164.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 11,
-//   13, 14, 15, 22, 24, 25, 30, 31, 32, 34, 39, 40, 42, 44, 46, 48, 49, 51, 53, 55, 57, 59, 61, 63,
-//   64, 66, 68, 70, 71, 72, 74, 75, 80, 94, 101, 108, 164, 177, 202, 211, 237, 238, 239.
-// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites validate:
-//   String (108), visit: String (164).
-
-use std::ops::ControlFlow;
+//! Presentation states and composition models shared by the Canvas and Karma.
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 pub mod composition;
+mod references;
+
 pub use composition::{Composition, Document, EventBinding, Immunity, Part};
+
+const MAX_REFERENCE_BYTES: usize = 256;
+const MAX_SEARCH_BYTES: usize = 256;
+const MAX_TEXT_CHARACTERS: usize = 4096;
+const MAX_LABEL_CHARACTERS: usize = 80;
 
 #[derive(
     Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema,
@@ -83,7 +78,7 @@ pub enum ComponentState {
     },
     Button {
         label: String,
-        action: serde_json::Value,
+        action: Value,
     },
     Composition {
         composition: Composition,
@@ -91,6 +86,7 @@ pub enum ComponentState {
 }
 
 impl ComponentState {
+    /// Returns the stable wire discriminator.
     pub fn kind(&self) -> &'static str {
         match self {
             Self::Record { .. } => "record",
@@ -105,27 +101,14 @@ impl ComponentState {
         }
     }
 
-    pub fn record(&self) -> Option<&str> {
-        match self {
-            Self::Record { record, .. } => Some(record),
-            _ => None,
-        }
-    }
-
-    pub fn record_mut(&mut self) -> Option<&mut String> {
-        match self {
-            Self::Record { record, .. } => Some(record),
-            _ => None,
-        }
-    }
-
+    /// Checks the limits and required fields of this presentation.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error for an invalid reference, unsupported setting, or invalid composition.
     pub fn validate(&self) -> Result<(), String> {
         match self {
-            Self::Record { record, .. }
-                if record.trim().is_empty()
-                    || record.len() > 256
-                    || record.chars().any(char::is_control) =>
-            {
+            Self::Record { record, .. } if !valid_record_reference(record) => {
                 Err("Choose a Record for the component".into())
             }
             Self::Record {
@@ -136,32 +119,28 @@ impl ComponentState {
                 if *mode != RecordMode::Call {
                     return Err("Automatic calling requires Record mode call".into());
                 }
-                if [&start.thread, &start.person].into_iter().any(|reference| {
-                    reference.trim().is_empty()
-                        || reference.len() > 256
-                        || reference.chars().any(char::is_control)
-                }) {
+                if [&start.thread, &start.person]
+                    .into_iter()
+                    .any(|reference| !valid_record_reference(reference))
+                {
                     return Err("Choose a thread and Person for the automatic call".into());
                 }
                 Ok(())
             }
-            Self::Text { text } if text.chars().count() > 4096 => {
+            Self::Text { text } if text.chars().nth(MAX_TEXT_CHARACTERS).is_some() => {
                 Err("Component text exceeds 4096 characters".into())
             }
             Self::Karma { search } | Self::Frequency { search } | Self::Transfer { search }
-                if search.len() > 256 || search.chars().any(char::is_control) =>
+                if search.len() > MAX_SEARCH_BYTES || search.chars().any(char::is_control) =>
             {
                 Err("Component search exceeds 256 bytes or contains control characters".into())
             }
             Self::Button { label, action } => {
                 if label.trim().is_empty()
-                    || label.chars().count() > 80
-                    || label.chars().any(char::is_control)
-                    || !action.is_object()
-                    || action
-                        .get("action")
-                        .and_then(serde_json::Value::as_str)
-                        .is_none()
+                    || label.chars().enumerate().any(|(index, character)| {
+                        index >= MAX_LABEL_CHARACTERS || character.is_control()
+                    })
+                    || !action.get("action").is_some_and(Value::is_string)
                 {
                     return Err("A button needs a label and an ordinary Action".into());
                 }
@@ -175,6 +154,11 @@ impl ComponentState {
         }
     }
 
+    /// Visits this state and then its nested parts in depth-first order.
+    ///
+    /// # Errors
+    ///
+    /// Stops at the first error returned by the visitor and propagates it unchanged.
     pub fn visit<'a>(
         &'a self,
         visitor: &mut impl FnMut(&'a Self) -> Result<(), String>,
@@ -187,66 +171,15 @@ impl ComponentState {
         }
         Ok(())
     }
-
-    pub fn records_mut(&mut self) -> Vec<&mut String> {
-        let mut records = Vec::new();
-        self.append_records_mut(&mut records);
-        records
-    }
-
-    fn append_records_mut<'a>(&'a mut self, records: &mut Vec<&'a mut String>) {
-        match self {
-            Self::Record {
-                record, start_call, ..
-            } => {
-                records.push(record);
-                if let Some(start) = start_call {
-                    records.extend([&mut start.thread, &mut start.person]);
-                }
-            }
-            Self::Composition { composition } => {
-                for part in &mut composition.parts {
-                    part.component.append_records_mut(records);
-                }
-            }
-            _ => {}
-        }
-    }
-
-    pub fn records(&self) -> Vec<&str> {
-        let mut records = Vec::new();
-        let _: ControlFlow<()> = self.visit_records(&mut |record| {
-            records.push(record);
-            ControlFlow::Continue(())
-        });
-        records
-    }
-
-    pub fn visit_records<'a, B>(
-        &'a self,
-        visit: &mut impl FnMut(&'a str) -> ControlFlow<B>,
-    ) -> ControlFlow<B> {
-        match self {
-            Self::Record {
-                record, start_call, ..
-            } => {
-                visit(record)?;
-                if let Some(start) = start_call {
-                    visit(&start.thread)?;
-                    visit(&start.person)?;
-                }
-            }
-            Self::Composition { composition } => {
-                for part in &composition.parts {
-                    part.component.visit_records(visit)?;
-                }
-            }
-            _ => {}
-        }
-        ControlFlow::Continue(())
-    }
 }
 
+fn valid_record_reference(reference: &str) -> bool {
+    reference.len() <= MAX_REFERENCE_BYTES
+        && !reference.trim().is_empty()
+        && !reference.chars().any(char::is_control)
+}
+
+/// Identifies the slot and state of a presented component.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Presentation {
     pub slot: String,

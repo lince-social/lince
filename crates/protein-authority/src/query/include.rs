@@ -89,6 +89,9 @@ pub enum LinkDirection {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ThreadsInclude {
+    /// Include task and chat threads whose pinned Fiote owns this local Record.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub fiote_sessions: bool,
     #[serde(default = "default_messages_limit")]
     pub messages_limit: usize,
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
@@ -107,6 +110,7 @@ pub struct MessageCursor {
 impl Default for ThreadsInclude {
     fn default() -> Self {
         Self {
+            fiote_sessions: false,
             messages_limit: default_messages_limit(),
             message_limits: BTreeMap::new(),
             message_before: BTreeMap::new(),

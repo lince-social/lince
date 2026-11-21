@@ -2,7 +2,7 @@
 // Scope: mod lifetimes, enum Sample, struct Capture, fn bind.
 // BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
 
-use lince_interface::host::input::TabletAxes;
+use lince_host::input::TabletAxes;
 use smithay::{
     backend::input::{TabletToolCapabilities as Caps, TabletToolDescriptor, TabletToolType},
     input::pointer::CursorImageStatus,

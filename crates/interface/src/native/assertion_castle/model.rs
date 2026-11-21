@@ -1,12 +1,12 @@
-// non-lean-yet
-// Scope: struct Selection, struct Item, fn choices, fn ordered.
-// BeautifulRust (baseline lines):
-// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 94.
+//! Assertion choices and ordered Record quantities for numbering.
 
-use nucleus::DecimalValue;
+use nucleus::{DecimalValue, valid_uid};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::{cmp::Ordering, collections::BTreeMap};
+use std::{
+    cmp::Ordering,
+    collections::{BTreeSet, HashMap, HashSet},
+};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Selection {
@@ -16,8 +16,12 @@ pub struct Selection {
 
 impl Selection {
     pub(crate) fn valid(&self) -> bool {
-        nucleus::valid_uid(&self.predicate, "c") && self.name.len() <= 1024
+        valid_selection(&self.predicate, &self.name)
     }
+}
+
+fn valid_selection(predicate: &str, name: &str) -> bool {
+    valid_uid(predicate, "c") && name.len() <= 1024
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -28,7 +32,7 @@ pub(super) struct Item {
 }
 
 pub(super) fn choices(rows: &[Value]) -> Vec<Selection> {
-    let mut choices = BTreeMap::new();
+    let mut choices = BTreeSet::new();
     for assertion in rows
         .iter()
         .flat_map(|row| row["assertions"].as_array().into_iter().flatten())
@@ -42,26 +46,27 @@ pub(super) fn choices(rows: &[Value]) -> Vec<Selection> {
         if let (Some(predicate), Some(name)) = (
             assertion["predicate_uid"].as_str(),
             assertion["predicate"].as_str(),
-        ) {
-            let selection = Selection {
-                predicate: predicate.into(),
-                name: name.into(),
-            };
-            if selection.valid() {
-                choices.insert((name.to_owned(), predicate.to_owned()), selection);
-            }
+        ) && valid_selection(predicate, name)
+        {
+            choices.insert((name, predicate));
         }
     }
-    choices.into_values().collect()
+    choices
+        .into_iter()
+        .map(|(name, predicate)| Selection {
+            predicate: predicate.into(),
+            name: name.into(),
+        })
+        .collect()
 }
 
 pub(super) fn ordered(rows: &[Value], selection: Option<&Selection>) -> Result<Vec<Item>, String> {
     let mut items = Vec::with_capacity(rows.len());
-    let mut seen = std::collections::HashSet::new();
+    let mut seen = HashSet::new();
     for row in rows {
         let uid = row["uid"]
             .as_str()
-            .filter(|uid| nucleus::valid_uid(uid, "r"))
+            .filter(|uid| valid_uid(uid, "r"))
             .ok_or("Invalid Record in Protein results")?;
         if !seen.insert(uid) {
             return Err("Protein returned the same Record more than once".into());
@@ -121,7 +126,7 @@ pub(super) fn apply_order(rows: &mut [Item], order: &[String]) {
     if order.is_empty() {
         return;
     }
-    let positions: std::collections::HashMap<_, _> = order
+    let positions: HashMap<_, _> = order
         .iter()
         .enumerate()
         .map(|(index, uid)| (uid.as_str(), index))
@@ -132,4 +137,51 @@ pub(super) fn apply_order(rows: &mut [Item], order: &[String]) {
             .copied()
             .unwrap_or(usize::MAX)
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn choices_are_unique_by_label_and_id_in_display_order() {
+        let first = "c_00000000000000000000000001";
+        let next = "c_00000000000000000000000002";
+        let data = json!({"assertions": [
+            {"predicate_uid": next, "predicate": "Repeated"},
+            {"predicate_uid": first, "predicate": "Repeated"},
+            {"predicate_uid": first, "predicate": "Repeated"},
+            {"predicate_uid": first, "predicate": "Alternate"},
+            {"predicate_uid": first, "predicate": "Identity", "role": "identity"},
+            {"predicate_uid": first, "predicate": "Object", "object": "value"},
+            {"predicate_uid": first, "predicate": "Unit", "unit": "kg"},
+            {"predicate_uid": first, "predicate": "é".repeat(513)},
+            {"predicate_uid": "invalid", "predicate": "Invalid"},
+        ]});
+        let prepared = choices(&[data]);
+        assert!(prepared.iter().all(Selection::valid));
+        assert_eq!(
+            prepared
+                .iter()
+                .map(|choice| (choice.name.as_str(), choice.predicate.as_str()))
+                .collect::<Vec<_>>(),
+            [
+                ("Alternate", first),
+                ("Repeated", first),
+                ("Repeated", next)
+            ],
+        );
+    }
+
+    #[test]
+    fn manual_order_keeps_the_order_of_unlisted_records() {
+        let mut items = ["a", "b", "c", "d"].map(|uid| Item {
+            uid: uid.into(),
+            head: uid.into(),
+            quantity: None,
+        });
+        apply_order(&mut items, &["c".into(), "a".into(), "c".into()]);
+        assert_eq!(items.map(|item| item.uid), ["a", "c", "b", "d"]);
+    }
 }

@@ -39,16 +39,24 @@ pub struct Decision {
     stamp: Option<Stamp>,
 }
 
-impl Stamp {
-    fn current(world: &World) -> Option<Self> {
-        let generation = world.get_resource::<Catalog>()?.generation;
-        (generation != u64::MAX).then(|| Self { generation, order: world.get_resource::<LayoutSettings>().map(|settings| settings.opening_rules.clone()).unwrap_or_default() })
-    }
+fn current_stamp(world: &World) -> Option<Stamp> {
+    let generation = world.get_resource::<Catalog>()?.generation;
+    (generation != u64::MAX).then(|| Stamp {
+        generation,
+        order: world
+            .get_resource::<LayoutSettings>()
+            .map(|settings| settings.opening_rules.clone())
+            .unwrap_or_default(),
+    })
+}
 
-    fn valid(&self, world: &World) -> bool {
-        world.get_resource::<Catalog>().is_some_and(|catalog| catalog.generation != u64::MAX && catalog.generation == self.generation)
-            && world.get_resource::<LayoutSettings>().map_or(&[][..], |settings| settings.opening_rules.as_slice()) == self.order
-    }
+fn stamp_is_current(world: &World, stamp: &Stamp) -> bool {
+    world.get_resource::<Catalog>().is_some_and(|catalog| {
+        catalog.generation != u64::MAX && catalog.generation == stamp.generation
+    }) && world
+        .get_resource::<LayoutSettings>()
+        .map_or(&[][..], |settings| settings.opening_rules.as_slice())
+        == stamp.order
 }
 
 fn request_view(world: &World, root: Entity) -> Option<crate::host::OpeningView> {
@@ -60,7 +68,7 @@ fn request_view(world: &World, root: Entity) -> Option<crate::host::OpeningView>
 
 pub fn request(world: &World, root: Entity, target: crate::host::WindowInspection) -> Result<crate::host::OpeningRequest, String> {
     if !target.valid() || target.owner != root.to_bits() { return Err("The captured application context is invalid.".into()); }
-    let revision = Stamp::current(world).ok_or("Opening preferences are unavailable.")?;
+    let revision = current_stamp(world).ok_or("Opening preferences are unavailable.")?;
     let view = request_view(world, root).ok_or("The captured canvas is unavailable.")?;
     Ok(crate::host::OpeningRequest { target, revision, view })
 }
@@ -69,7 +77,7 @@ pub fn request_current(world: &World, root: Entity, request: &crate::host::Openi
     let _validation = engine::performance::Span::new("opening-request-validation");
     if !request.target.valid()
         || request.target.owner != root.to_bits()
-        || !request.revision.valid(world)
+        || !stamp_is_current(world, &request.revision)
     {
         return false;
     }
@@ -214,7 +222,7 @@ pub fn capture(world: &World, metadata: &Value, window: Option<&str>) -> Decisio
     let Some(catalog) = world.get_resource::<Catalog>() else {
         return Decision { warning: (!configured.is_empty()).then(|| "Opening rules are not loaded; normal opening preferences were used.".into()), ..Default::default() };
     };
-    let mut decision = Decision { stamp: Stamp::current(world), ..Default::default() };
+    let mut decision = Decision { stamp: current_stamp(world), ..Default::default() };
     for uid in configured {
         let Some(entry) = catalog.rules.entries.get(uid) else {
             decision.warning = Some(catalog.rules.error.clone().unwrap_or_else(|| "Opening rules are loading or unavailable; normal opening preferences were used.".into()));

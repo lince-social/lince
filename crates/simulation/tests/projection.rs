@@ -9,6 +9,7 @@
 use std::sync::{Arc, atomic::Ordering};
 
 use engine::actions::Action;
+use lince_presentation_models::{sound, time_castle};
 use nucleus::projection::{Context, Status, Window};
 
 async fn clock_task(engine: &engine::Engine, head: &str, work: serde_json::Value) -> String {
@@ -212,7 +213,7 @@ fn estimate_edits_refresh_existing_and_future_occurrences_without_replaying_effe
     });
 }
 
-fn clock_entries(messages: Vec<cell::ServerMessage>) -> Vec<lince_interface::time_castle::Entry> {
+fn clock_entries(messages: Vec<cell::ServerMessage>) -> Vec<time_castle::Entry> {
     for message in messages {
         match message {
             cell::ServerMessage::Error { message, .. } => panic!("{message}"),
@@ -230,12 +231,12 @@ fn clock_entries(messages: Vec<cell::ServerMessage>) -> Vec<lince_interface::tim
 }
 
 fn clock_alerts(
-    queue: &mut lince_interface::sound::Queue,
-    entries: &[lince_interface::time_castle::Entry],
+    queue: &mut sound::Queue,
+    entries: &[time_castle::Entry],
     now: i64,
 ) {
-    let settings = lince_interface::sound::Settings {
-        mode: lince_interface::sound::Mode::Title,
+    let settings = sound::Settings {
+        mode: sound::Mode::Title,
         ..Default::default()
     };
     for scope in [0, 1] {
@@ -302,7 +303,7 @@ fn real_recurrence_subscription_and_clock_alerts_keep_scheduled_work_first_class
             let future = recurring.iter().find(|entry| entry.time.as_ref().unwrap().from_ms == base+2*day).unwrap();
             let future_key = future.cue_key("").unwrap();
             let cause:nucleus::simulation::Cause = serde_json::from_value(future.origin["cause"].clone()).unwrap();
-            let mut alerts = lince_interface::sound::Queue::default();
+            let mut alerts = sound::Queue::default();
             clock_alerts(&mut alerts, &entries, base);
             assert!(alerts.due(base).is_empty());
             let heard = alerts.due(base+600_000);
@@ -322,7 +323,7 @@ fn real_recurrence_subscription_and_clock_alerts_keep_scheduled_work_first_class
             assert!(current.is_some(), "Admitted recurrence must remain visible throughout its estimated interval: {first_key}; {admitted:?}; {applications:?}");
             let current = current.unwrap();
             assert_eq!(current.origin["kind"], "manual");
-            let summary = lince_interface::time_castle::summaries(&admitted, base+day+1, base+4*day);
+            let summary = time_castle::summaries(&admitted, base+day+1, base+4*day);
             assert_eq!(admitted[summary[0].0].record_uid, stock);
             assert_eq!(summary[0].1, 599_999);
             clock_alerts(&mut alerts, &admitted, base+day+1);
@@ -1042,14 +1043,14 @@ fn priority_ranges_compact_into_the_clock_aperture_and_estimate_crud_refreshes_t
                     .await;
                 clock_ready(&engine, &context, base).await;
                 let entries = clock_entries(session.refresh().await);
-                let settings = lince_interface::time_castle::Settings {
+                let settings = time_castle::Settings {
                     aperture_ms: 15 * 60_000,
                     horizon_ms: 15 * 60_000,
                     timezone: "UTC".into(),
                     ..Default::default()
                 };
-                let visible = |entries: &[lince_interface::time_castle::Entry], now| {
-                    lince_interface::time_castle::clock_occurrences(
+                let visible = |entries: &[time_castle::Entry], now| {
+                    time_castle::clock_occurrences(
                         &settings,
                         entries,
                         now,

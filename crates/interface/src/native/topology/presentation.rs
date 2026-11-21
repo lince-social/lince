@@ -250,20 +250,17 @@ fn request_in(
         .unwrap_or_default();
     view.spatial = super::view::spatial(world, root);
     let placement = crate::native::canvas::presented_spatial(world, entity);
-    let depth =
-        if let Some(settings) = world.get::<crate::native::time_castle::TimeSettings>(entity) {
-            (f64::from(item.size.min_element()) * 0.18 * settings.0.horizon_ms as f64
-                / settings.0.aperture_ms.max(1000) as f64)
-                .min(100_000.0)
-                * f64::from(scale)
-        } else if world
+    let depth = if world
+        .get::<crate::native::time_castle::TimeSettings>(entity)
+        .is_some()
+        || world
             .get::<crate::native::area::InfluenceArea>(entity)
             .is_some()
-        {
-            0.0
-        } else {
-            placement.depth(item.size) * f64::from(scale)
-        };
+    {
+        0.0
+    } else {
+        placement.depth(item.size) * f64::from(scale)
+    };
     let points: [bevy::math::DVec3; 8] = std::array::from_fn(|index| {
         let point = Vec2::new(
             if index & 1 == 0 {
@@ -826,12 +823,7 @@ fn apply(world: &mut World, plan: SurfacePlan) {
         let clipped_size = clip.size();
         let clipped_center = clip.center() - item.size * 0.5;
         let uv = Rect::from_corners(clip.min / item.size, clip.max / item.size);
-        if world.get::<Surface>(entity).unwrap().uv != uv
-            && !super::holes::clipped(world, face)
-            && world
-                .get::<crate::native::time_castle::TimeSettings>(entity)
-                .is_none()
-        {
+        if world.get::<Surface>(entity).unwrap().uv != uv && !super::holes::clipped(world, face) {
             let handle = world.get::<Mesh3d>(face).unwrap().0.clone();
             if let Some(mut mesh) = world.resource_mut::<Assets<Mesh>>().get_mut(&handle) {
                 mesh.insert_attribute(

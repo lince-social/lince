@@ -31,6 +31,57 @@ pub(super) fn fixture() -> (World, Entity, Value) {
 }
 
 #[test]
+fn dashboard_opens_live_work_and_retains_a_selected_history_composer() {
+    let (mut world, existing, data) = fixture();
+    let binding = world.get::<ThreadCastle>(existing).unwrap().binding.clone();
+    let dashboard = world.spawn(Node::default()).id();
+    populate_dashboard(&mut world, dashboard, binding, &data);
+    dashboard_activity(&mut world, dashboard, &["thread-b".into()]);
+    assert_eq!(
+        world
+            .get::<ThreadCastle>(dashboard)
+            .unwrap()
+            .active
+            .as_deref(),
+        Some("thread-b")
+    );
+    Switch("thread-a".into()).apply(&mut world, dashboard);
+    let historical = world.get::<ThreadCastle>(dashboard).unwrap().pages["thread-a"];
+    let input = world
+        .query::<&ThreadForm>()
+        .iter(&world)
+        .find(|form| {
+            form.thread.as_deref() == Some("thread-a")
+                && world
+                    .get::<ChildOf>(form.input)
+                    .and_then(|composer| world.get::<ChildOf>(composer.parent()))
+                    .and_then(|form| world.get::<ChildOf>(form.parent()))
+                    .is_some_and(|parent| parent.parent() == historical)
+        })
+        .unwrap()
+        .input;
+    world
+        .get_mut::<EditableText>(input)
+        .unwrap()
+        .editor
+        .set_text("Question about earlier work");
+    refresh(&mut world, dashboard, &data);
+    dashboard_activity(&mut world, dashboard, &["thread-b".into()]);
+    assert_eq!(
+        world
+            .get::<ThreadCastle>(dashboard)
+            .unwrap()
+            .active
+            .as_deref(),
+        Some("thread-a")
+    );
+    assert_eq!(
+        world.get::<EditableText>(input).unwrap().value(),
+        "Question about earlier work"
+    );
+}
+
+#[test]
 fn message_tools_overlay_the_history_and_keep_the_composer_clear() {
     let (mut world, _, _) = fixture();
     let forms: Vec<_> = world

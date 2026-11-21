@@ -1,31 +1,35 @@
-// non-lean-yet
-// Scope: fn invalid, fn request_json, struct Saved, struct Stored.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
-//   framework contracts. Sites 9.
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 286, 289, 291.
-// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
-//   Sites 68, 310.
-// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
-//   conversion. Sites 68.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 52, 90, 94, 115, 129, 140, 147, 171.
-// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
-//   adding `#[derive(Debug)]` or a manual implementation. Sites 156, 166.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 27, 28,
-//   29, 30, 31, 52, 90, 94, 115, 129, 140, 147, 156, 157, 158, 159, 160, 161, 162, 163, 166, 167,
-//   168, 171.
+//! Private storage and exact replay for signed contact disclosures.
+
+use std::fmt::{self, Debug, Formatter};
 
 use chrono::{DateTime, Utc};
 use nucleus::{
     Cause, Fact, NewFact, RecordKind,
-    trust_analysis::contacts::{Document, NAMESPACE},
+    fact::{seal, verify_chain_step},
+    karma::canonical_json_bytes,
+    trust_analysis::contacts::{Document, MAX_DOCUMENT_BYTES, NAMESPACE, Statement},
+    valid_uid,
+    visibility::Data,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use sqlx::{SqliteConnection, SqlitePool};
+use serde_json::{Value, to_string, to_value};
+use sqlx::{
+    FromRow, Sqlite, SqliteConnection, SqlitePool, Transaction, query, query_as, query_scalar,
+};
 
-use crate::StoreError;
+use crate::{
+    StoreError,
+    action_intents::link_pending_fact,
+    data_visibility::ensure_private_for_person_on,
+    exact::zero,
+    facts,
+    organs::LOCAL_ORGAN_SLUG,
+    people::is_active_on,
+    records::{NewRecord, create_with_uid_on, set_extension_on},
+    sync_ops::{OpKind, log_local_tx},
+};
+
+const MAX_REQUEST_BYTES: usize = 64 * 1024;
 
 fn invalid(message: impl ToString) -> StoreError {
     StoreError::Protocol(message.to_string())
@@ -36,23 +40,27 @@ fn request_json(
     request: &Value,
     expected: Option<u64>,
 ) -> Result<String, StoreError> {
-    let bytes =
-        nucleus::karma::canonical_json_bytes(&(person, request, expected)).map_err(invalid)?;
-    if bytes.len() > 65536 {
+    let bytes = canonical_json_bytes(&(person, request, expected)).map_err(invalid)?;
+    if bytes.len() > MAX_REQUEST_BYTES {
         return Err(invalid("Contact disclosure request exceeds 64 KiB"));
     }
     String::from_utf8(bytes).map_err(invalid)
 }
 
+/// Immutable disclosure and the Fact that records its approval.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Saved {
+    /// Record containing the disclosure.
     pub record: String,
+    /// Person who stored the disclosure.
     pub owner: String,
+    /// Original signed contact document.
     pub document: Document,
+    /// Original zero-quantity Fact bound to the document.
     pub fact: Fact,
 }
 
-#[derive(sqlx::FromRow)]
+#[derive(FromRow)]
 struct Stored {
     owner: String,
     relation: String,
@@ -70,12 +78,19 @@ struct Stored {
     fact: String,
 }
 
+/// Reads a disclosure and checks it against its original signed evidence.
+/// # Errors
+/// Returns an error if the disclosure or original Fact is absent, unreadable, or inconsistent.
 pub async fn get_on(connection: &mut SqliteConnection, record: &str) -> Result<Saved, StoreError> {
-    let row: Stored = sqlx::query_as(
+    let row: Stored = query_as(
         "SELECT owner_person_uid AS owner,relation_hash AS relation,statement_hash AS statement,document_hash AS hash,issuer_kind,issuer_uid AS issuer,contact_kind,contact_uid AS contact,revision,issued_at,expires_at,withdrawn,document_json AS payload,fact_uid AS fact FROM contact_disclosure_record WHERE record_uid=?",
-    ).bind(record).fetch_optional(&mut *connection).await?.ok_or_else(|| invalid("Contact disclosure is unavailable"))?;
+    )
+        .bind(record)
+        .fetch_optional(&mut *connection)
+        .await?
+        .ok_or_else(|| invalid("Contact disclosure is unavailable"))?;
     let document = Document::parse(row.payload.as_bytes()).map_err(invalid)?;
-    let fact = crate::facts::get_on(connection, &row.fact)
+    let fact = facts::get_on(connection, &row.fact)
         .await?
         .ok_or_else(|| invalid("Original contact disclosure Fact is unavailable"))?;
     let statement = &document.statement;
@@ -86,7 +101,7 @@ pub async fn get_on(connection: &mut SqliteConnection, record: &str) -> Result<S
         || statement.issuer.uid() != row.issuer
         || statement.contact.kind() != row.contact_kind
         || statement.contact.uid() != row.contact
-        || statement.revision != row.revision as u64
+        || i64::try_from(statement.revision).ok() != Some(row.revision)
         || statement.issued_at != row.issued_at
         || statement.expires_at != row.expires_at
         || statement.withdrawn != row.withdrawn
@@ -94,7 +109,7 @@ pub async fn get_on(connection: &mut SqliteConnection, record: &str) -> Result<S
         || fact.actor_uid.as_deref() != Some(&row.owner)
         || fact.payload.as_deref() != Some(&row.payload)
         || !fact.delta.is_zero()
-        || !nucleus::fact::verify_chain_step(&fact)
+        || !verify_chain_step(&fact)
     {
         return Err(invalid(
             "Contact disclosure differs from its original signed evidence",
@@ -108,10 +123,16 @@ pub async fn get_on(connection: &mut SqliteConnection, record: &str) -> Result<S
     })
 }
 
+/// Reads a verified disclosure using a connection from the pool.
+/// # Errors
+/// Returns an error if a connection cannot be acquired or the disclosure cannot be verified.
 pub async fn get(pool: &SqlitePool, record: &str) -> Result<Saved, StoreError> {
     get_on(&mut *pool.acquire().await?, record).await
 }
 
+/// Replays an identical request by the original Person.
+/// # Errors
+/// Returns an error if the request ID conflicts or its original disclosure cannot be verified.
 pub async fn replay_on(
     connection: &mut SqliteConnection,
     person: &str,
@@ -119,11 +140,26 @@ pub async fn replay_on(
     request: &Value,
     expected_revision: Option<u64>,
 ) -> Result<Option<Saved>, StoreError> {
-    let previous: Option<(String, String, String)> = sqlx::query_as(
+    replay_request(connection, person, id, || {
+        request_json(person, request, expected_revision)
+    })
+    .await
+}
+
+async fn replay_request<T: AsRef<str>>(
+    connection: &mut SqliteConnection,
+    person: &str,
+    id: &str,
+    encode_request: impl FnOnce() -> Result<T, StoreError>,
+) -> Result<Option<Saved>, StoreError> {
+    let previous: Option<(String, String, String)> = query_as(
         "SELECT owner_person_uid,request_json,record_uid FROM contact_disclosure_request WHERE request_id=?",
-    ).bind(id).fetch_optional(&mut *connection).await?;
+    )
+        .bind(id)
+        .fetch_optional(&mut *connection)
+        .await?;
     if let Some((owner, previous, record)) = previous {
-        if owner != person || previous != request_json(person, request, expected_revision)? {
+        if owner != person || previous != encode_request()?.as_ref() {
             return Err(invalid(
                 "Contact request ID was used with different contents or author",
             ));
@@ -133,31 +169,50 @@ pub async fn replay_on(
     Ok(None)
 }
 
+/// Finds the Person’s original copy of the exact signed document.
+/// # Errors
+/// Returns an error if the document or stored disclosure cannot be verified.
 pub async fn find_on(
     connection: &mut SqliteConnection,
     person: &str,
     document: &Document,
 ) -> Result<Option<Saved>, StoreError> {
-    let record: Option<String> = sqlx::query_scalar(
+    let record: Option<String> = query_scalar(
         "SELECT record_uid FROM contact_disclosure_record WHERE owner_person_uid=? AND document_hash=?",
-    ).bind(person).bind(document.id().map_err(invalid)?.as_str()).fetch_optional(&mut *connection).await?;
+    )
+        .bind(person)
+        .bind(document.id().map_err(invalid)?.as_str())
+        .fetch_optional(&mut *connection)
+        .await?;
     match record {
         Some(record) => get_on(connection, &record).await.map(Some),
         None => Ok(None),
     }
 }
 
+/// Reads the highest revision for the owner, relation, and issuer.
+/// # Errors
+/// Returns an error if the relation or stored revision cannot be read.
 pub async fn latest_revision_on(
     connection: &mut SqliteConnection,
     person: &str,
-    statement: &nucleus::trust_analysis::contacts::Statement,
+    statement: &Statement,
 ) -> Result<u64, StoreError> {
-    let revision: i64 = sqlx::query_scalar(
+    let revision: i64 = query_scalar(
         "SELECT COALESCE(MAX(revision),0) FROM contact_disclosure_record WHERE owner_person_uid=? AND relation_hash=? AND issuer_kind=? AND issuer_uid=?",
-    ).bind(person).bind(statement.relation().map_err(invalid)?.as_str()).bind(statement.issuer.kind()).bind(statement.issuer.uid()).fetch_one(connection).await?;
+    )
+        .bind(person)
+        .bind(statement.relation().map_err(invalid)?.as_str())
+        .bind(statement.issuer.kind())
+        .bind(statement.issuer.uid())
+        .fetch_one(connection)
+        .await?;
     u64::try_from(revision).map_err(invalid)
 }
 
+/// Lists current disclosure identities using a connection from the pool.
+/// # Errors
+/// Returns an error if the connection or disclosure index cannot be read.
 pub async fn current_candidates(
     pool: &SqlitePool,
     person: &str,
@@ -165,40 +220,80 @@ pub async fn current_candidates(
     current_candidates_on(&mut *pool.acquire().await?, person).await
 }
 
+/// Lists the latest candidates per relation and issuer in stable index order.
+/// # Errors
+/// Returns an error if the disclosure index cannot be read.
 pub async fn current_candidates_on(
     connection: &mut SqliteConnection,
     person: &str,
 ) -> Result<Vec<String>, StoreError> {
-    sqlx::query_scalar(
+    query_scalar(
         "SELECT c.record_uid FROM contact_disclosure_record c WHERE c.owner_person_uid=? AND c.revision=(SELECT MAX(n.revision) FROM contact_disclosure_record n WHERE n.owner_person_uid=c.owner_person_uid AND n.relation_hash=c.relation_hash AND n.issuer_kind=c.issuer_kind AND n.issuer_uid=c.issuer_uid) ORDER BY c.relation_hash,c.issuer_kind,c.issuer_uid,c.document_hash LIMIT 5001",
-    ).bind(person).fetch_all(connection).await
+    )
+        .bind(person)
+        .fetch_all(connection)
+        .await
 }
 
+/// Data needed to store an original contact disclosure.
 pub struct Input {
+    /// Identity of the proposed disclosure Record.
     pub record: String,
+    /// Person authorizing the disclosure.
     pub person: String,
+    /// Identity used for exact request replay.
     pub request_id: String,
+    /// Original request bound into replay validation.
     pub request: Value,
+    /// Signed contact document to store.
     pub document: Document,
+    /// Observed revision if the change requires a revision check.
     pub expected_revision: Option<u64>,
+    /// Verified pending Action intent when supplied by the client.
     pub authorization_intent: Option<String>,
 }
 
+/// Outcome of a disclosure write or replay.
 pub struct Commit {
+    /// Original disclosure and its approval Fact.
     pub saved: Saved,
+    /// Whether this operation created the disclosure.
     pub created: bool,
 }
 
+impl Debug for Input {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("Input")
+            .field("record", &self.record)
+            .field("expected_revision", &self.expected_revision)
+            .finish_non_exhaustive()
+    }
+}
+
+impl Debug for Commit {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("Commit")
+            .field("record", &self.saved.record)
+            .field("created", &self.created)
+            .finish_non_exhaustive()
+    }
+}
+
+/// Stores authorized disclosure evidence or replays the original result.
+/// # Errors
+/// Returns an error if authority, revision, term, request, or a required write fails validation.
 pub async fn save<F>(
-    mut tx: sqlx::Transaction<'static, sqlx::Sqlite>,
+    mut tx: Transaction<'static, Sqlite>,
     input: Input,
     now: DateTime<Utc>,
     sign: F,
-) -> Result<(Commit, sqlx::Transaction<'static, sqlx::Sqlite>), StoreError>
+) -> Result<(Commit, Transaction<'static, Sqlite>), StoreError>
 where
     F: Fn(&str) -> Option<String> + Send + Sync,
 {
-    if !nucleus::valid_uid(&input.record, "r")
+    if !valid_uid(&input.record, "r")
         || input.request_id.is_empty()
         || input.request_id.len() > 256
         || input.request_id.chars().any(char::is_control)
@@ -207,14 +302,8 @@ where
     }
     input.document.validate().map_err(invalid)?;
     let request = request_json(&input.person, &input.request, input.expected_revision)?;
-    if let Some(saved) = replay_on(
-        &mut tx,
-        &input.person,
-        &input.request_id,
-        &input.request,
-        input.expected_revision,
-    )
-    .await?
+    if let Some(saved) =
+        replay_request(&mut tx, &input.person, &input.request_id, || Ok(&request)).await?
     {
         if saved.document != input.document {
             return Err(invalid(
@@ -229,14 +318,20 @@ where
             tx,
         ));
     }
-    if !crate::people::is_active_on(&mut tx, &input.person).await? {
+    if !is_active_on(&mut tx, &input.person).await? {
         return Err(invalid(
             "Contact disclosure storage requires an active Person",
         ));
     }
     if let Some(saved) = find_on(&mut tx, &input.person, &input.document).await? {
-        sqlx::query("INSERT INTO contact_disclosure_request(request_id,owner_person_uid,request_json,record_uid) VALUES(?,?,?,?)")
-            .bind(&input.request_id).bind(&input.person).bind(request).bind(&saved.record).execute(&mut *tx).await?;
+        register_request(
+            &mut tx,
+            &input.request_id,
+            &input.person,
+            &request,
+            &saved.record,
+        )
+        .await?;
         return Ok((
             Commit {
                 saved,
@@ -260,58 +355,53 @@ where
             ));
         }
     }
-    let payload = serde_json::to_string(&input.document).map_err(invalid)?;
-    if payload.len() > nucleus::trust_analysis::contacts::MAX_DOCUMENT_BYTES {
+    let payload = to_string(&input.document).map_err(invalid)?;
+    if payload.len() > MAX_DOCUMENT_BYTES {
         return Err(invalid("Contact disclosure exceeds 32 KiB"));
     }
-    let organ: String = sqlx::query_scalar(
-        "SELECT uid FROM record WHERE kind='organ' AND slug=? AND deleted_at IS NULL",
-    )
-    .bind(crate::organs::LOCAL_ORGAN_SLUG)
-    .fetch_one(&mut *tx)
-    .await?;
-    crate::records::create_with_uid_on(
+    let organ: String =
+        query_scalar("SELECT uid FROM record WHERE kind='organ' AND slug=? AND deleted_at IS NULL")
+            .bind(LOCAL_ORGAN_SLUG)
+            .fetch_one(&mut *tx)
+            .await?;
+    create_with_uid_on(
         &mut tx,
         &input.record,
-        crate::records::NewRecord {
+        NewRecord {
             slug: None,
             kind: RecordKind::Plain,
             head: if statement.withdrawn { "Contact disclosure withdrawal" } else { "Signed contact disclosure" },
             body: "Signed relationship evidence. Identity, visibility and reliability remain separate.",
-            quantity: crate::exact::zero(),
+            quantity: zero(),
         },
         &organ,
         None,
     ).await?;
-    if let Some(policy) = crate::data_visibility::ensure_private_for_person_on(
-        &mut tx,
-        &input.record,
-        nucleus::visibility::Data::Record,
-        Some(&input.person),
-    )
-    .await?
+    if let Some(policy) =
+        ensure_private_for_person_on(&mut tx, &input.record, Data::Record, Some(&input.person))
+            .await?
     {
-        crate::sync_ops::log_local_tx(
+        log_local_tx(
             &mut tx,
             "data_visibility",
             &input.record,
             "record",
-            crate::sync_ops::OpKind::Set,
-            Some(serde_json::to_string(&policy).map_err(invalid)?),
+            OpKind::Set,
+            Some(to_string(&policy).map_err(invalid)?),
         )
         .await?;
     }
-    let mut fact = nucleus::fact::seal(
+    let mut fact = seal(
         NewFact {
             uid: None,
             record_uid: input.record.clone(),
-            delta: crate::exact::zero(),
+            delta: zero(),
             at: None,
             actor_uid: Some(input.person.clone()),
             cause: Cause::user_edit(),
-            payload: Some(payload.clone()),
+            payload: Some(payload),
         },
-        &crate::facts::last_hash(&mut tx).await?,
+        &facts::last_hash(&mut tx).await?,
         now,
     );
     fact.signature = sign(&fact.hash);
@@ -320,25 +410,47 @@ where
             "Contact evidence needs its owner's signing key or verified Action intent",
         ));
     }
-    crate::facts::insert(&mut tx, &fact).await?;
+    facts::insert(&mut tx, &fact).await?;
     if let Some(intent) = &input.authorization_intent {
-        crate::action_intents::link_pending_fact(&mut tx, intent, &fact).await?;
+        link_pending_fact(&mut tx, intent, &fact).await?;
     }
-    sqlx::query("INSERT INTO contact_disclosure_record(record_uid,owner_person_uid,relation_hash,statement_hash,document_hash,issuer_kind,issuer_uid,contact_kind,contact_uid,revision,issued_at,expires_at,withdrawn,document_json,fact_uid,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
-        .bind(&input.record).bind(&input.person)
-        .bind(statement.relation().map_err(invalid)?.as_str()).bind(statement.id().map_err(invalid)?.as_str()).bind(input.document.id().map_err(invalid)?.as_str())
-        .bind(statement.issuer.kind()).bind(statement.issuer.uid()).bind(statement.contact.kind()).bind(statement.contact.uid())
-        .bind(statement.revision as i64).bind(statement.issued_at).bind(statement.expires_at).bind(statement.withdrawn).bind(&payload).bind(&fact.uid).bind(now.to_rfc3339())
+    query("INSERT INTO contact_disclosure_record(record_uid,owner_person_uid,relation_hash,statement_hash,document_hash,issuer_kind,issuer_uid,contact_kind,contact_uid,revision,issued_at,expires_at,withdrawn,document_json,fact_uid,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+
+        .bind(&input.record)
+        .bind(&input.person)
+
+        .bind(statement.relation().map_err(invalid)?.as_str())
+        .bind(statement.id().map_err(invalid)?.as_str())
+        .bind(input.document.id().map_err(invalid)?.as_str())
+
+        .bind(statement.issuer.kind())
+        .bind(statement.issuer.uid())
+        .bind(statement.contact.kind())
+        .bind(statement.contact.uid())
+
+        .bind(i64::try_from(statement.revision).map_err(invalid)?)
+        .bind(statement.issued_at)
+        .bind(statement.expires_at)
+        .bind(statement.withdrawn)
+        .bind(fact.payload.as_deref())
+        .bind(&fact.uid)
+        .bind(now.to_rfc3339())
         .execute(&mut *tx).await?;
-    crate::records::set_extension_on(
+    set_extension_on(
         &mut tx,
         &input.record,
         NAMESPACE,
-        &serde_json::to_value(&input.document).map_err(invalid)?,
+        &to_value(&input.document).map_err(invalid)?,
     )
     .await?;
-    sqlx::query("INSERT INTO contact_disclosure_request(request_id,owner_person_uid,request_json,record_uid) VALUES(?,?,?,?)")
-        .bind(&input.request_id).bind(&input.person).bind(request).bind(&input.record).execute(&mut *tx).await?;
+    register_request(
+        &mut tx,
+        &input.request_id,
+        &input.person,
+        &request,
+        &input.record,
+    )
+    .await?;
     Ok((
         Commit {
             saved: Saved {
@@ -351,4 +463,21 @@ where
         },
         tx,
     ))
+}
+
+async fn register_request(
+    connection: &mut SqliteConnection,
+    id: &str,
+    person: &str,
+    request: &str,
+    record: &str,
+) -> Result<(), StoreError> {
+    query("INSERT INTO contact_disclosure_request(request_id,owner_person_uid,request_json,record_uid) VALUES(?,?,?,?)")
+        .bind(id)
+        .bind(person)
+        .bind(request)
+        .bind(record)
+        .execute(connection)
+        .await?;
+    Ok(())
 }

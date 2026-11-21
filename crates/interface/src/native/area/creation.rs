@@ -1,8 +1,3 @@
-// non-lean-yet
-// Scope: struct Defaults, struct Save, fn controls, fn apply.
-// BeautifulRust (baseline lines):
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 80, 167, 171.
-
 use super::InfluenceArea;
 use crate::native::{
     actions::Action,
@@ -80,22 +75,10 @@ impl Action for Save {
 }
 
 pub(crate) fn controls(world: &mut World, parent: Entity, area: Entity) {
-    let Some(defaults) = world
-        .get::<InfluenceArea>(area)
-        .map(|area| area.creation.clone())
-    else {
+    let Some(defaults) = world.get::<InfluenceArea>(area).map(|area| &area.creation) else {
         return;
     };
-    let origin = panel::field(
-        world,
-        parent,
-        "File origin for new Records",
-        defaults.file_origin.as_deref().unwrap_or(""),
-    );
-    world.entity_mut(origin).insert(crate::native::icons::Tooltip(
-        "Enter the origin shown in Sync Castle. Use personal for the personal folder, or leave blank to inherit from another Area.".to_owned(),
-    ));
-    let assertions = panel::column(world, parent);
+    let origin_text = defaults.file_origin.clone().unwrap_or_default();
     let values: Vec<_> = defaults
         .assertions
         .iter()
@@ -104,6 +87,11 @@ pub(crate) fn controls(world: &mut World, parent: Entity, area: Entity) {
             "object": assertion.object, "quantity": assertion.quantity, "unit": assertion.unit})
         })
         .collect();
+    let origin = panel::field(world, parent, "File origin for new Records", &origin_text);
+    world.entity_mut(origin).insert(crate::native::icons::Tooltip(
+        "Enter the origin shown in Sync Castle. Use personal for the personal folder, or leave blank to inherit from another Area.".to_owned(),
+    ));
+    let assertions = panel::column(world, parent);
     assertion_editor::spawn(
         world,
         assertions,
@@ -130,46 +118,35 @@ pub(crate) fn controls(world: &mut World, parent: Entity, area: Entity) {
 }
 
 pub(crate) fn apply(world: &mut World, form: Entity, draft: &mut Draft) -> Result<(), String> {
-    let Some((root, workspace, point)) = world
-        .get::<ChildOf>(form)
-        .zip(world.get::<WorkspaceMember>(form))
-        .zip(topology::position(world, form))
-        .map(|((parent, member), point)| (parent.parent(), member.0, point))
-    else {
+    let (Some(parent), Some(member), Some(point)) = (
+        world.get::<ChildOf>(form),
+        world.get::<WorkspaceMember>(form),
+        topology::position(world, form),
+    ) else {
         return Ok(());
     };
-    let mut areas = world.query::<(
-        Entity,
-        &InfluenceArea,
-        &ChildOf,
-        &WorkspaceMember,
-        &CanvasItem,
-    )>();
+    let (root, workspace) = (parent.parent(), member.0);
+    let mut areas = world
+        .query_filtered::<(Entity, &InfluenceArea, &ChildOf, &WorkspaceMember), With<CanvasItem>>();
     let mut matching: Vec<_> = areas
         .iter(world)
-        .filter(|(_, area, parent, member, _)| {
-            parent.parent() == root
+        .filter_map(|(entity, area, parent, member)| {
+            (parent.parent() == root
                 && member.0 == workspace
                 && area.enabled
                 && !area.paused
                 && !area.creation.is_empty()
+                && topology::influence::contains(area, topology::spatial(world, entity), point))
+            .then_some(area)
         })
-        .filter(|(entity, area, _, _, _)| {
-            topology::influence::contains(area, topology::spatial(world, *entity), point)
-        })
-        .map(|(_, area, _, _, _)| area)
         .collect();
     matching.sort_unstable_by(|left, right| left.id.cmp(&right.id));
     for area in matching {
         if let Some(origin) = &area.creation.file_origin {
-            if draft
-                .file_origin
-                .as_ref()
-                .is_some_and(|current| current != origin)
-            {
+            let current = draft.file_origin.get_or_insert_with(|| origin.clone());
+            if current != origin {
                 return Err("This Record is inside Areas with different file origins. Move it into one of those Areas to create it.".into());
             }
-            draft.file_origin = Some(origin.clone());
         }
         for assertion in &area.creation.assertions {
             if !draft.assertions.contains(assertion) {

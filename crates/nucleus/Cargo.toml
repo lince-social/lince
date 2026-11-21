@@ -7,10 +7,17 @@ repository.workspace = true
 homepage.workspace = true
 description = "Lince pure core: primitives, expression engine, graphs, frequency math. No IO, no SQL, DST-testable alone."
 
+[features]
+default = ["optimization-solver", "shader-compiler"]
+optimization-solver = ["dep:microlp"]
+shader-compiler = ["lince-wgsl/compiler"]
+
 [dependencies]
 anicca = { workspace = true }
-microlp = "=0.6.0"
-naga = { version = "=30.0.2", features = ["wgsl-in"] }
+lince-karma.workspace = true
+lince-instrumentation.workspace = true
+lince-wgsl.workspace = true
+microlp = { version = "=0.6.0", optional = true }
 base64 = { workspace = true }
 regex = { workspace = true }
 url = "2.5.8"
@@ -25,6 +32,14 @@ uuid = { workspace = true }
 
 [build-dependencies]
 sensei = { workspace = true }
+
+[[test]]
+name = "demeter"
+required-features = ["optimization-solver"]
+
+[[test]]
+name = "demeter_production"
+required-features = ["optimization-solver"]
 
 [lints]
 workspace = true

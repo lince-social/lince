@@ -1,9 +1,11 @@
-// non-lean-yet
-// Scope: struct AssertionInput, struct Inputs, fn matches_text, struct PreparedFilter.
-// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
-
-use super::*;
+use super::{Filter, Form, text, value};
 use crate::native::assertion_editor::{self, DraftInput};
+use bevy::{prelude::*, text::EditableText};
+use nucleus::performance::{Span, add};
+use serde_json::Value;
+use std::{collections::HashMap, sync::Arc};
+
+pub(super) const MAX_RESULTS: usize = 100;
 
 struct AssertionInput {
     values: Arc<Vec<Value>>,
@@ -138,17 +140,18 @@ pub(super) struct PreparedFilter {
 
 impl PreparedFilter {
     pub(super) fn changed(world: &World, form: &Form, previous: Option<&Self>) -> Option<Self> {
-        let _preparation = nucleus::performance::Span::new("record-creation-filter-preparation");
+        let _preparation = Span::new("record-creation-filter-preparation");
         let assertions = assertion_editor::draft_input(world, form.assertions).ok();
         if previous.is_some_and(|old| old.inputs.matches(world, form, assertions.as_ref())) {
             return None;
         }
         let inputs = Inputs::capture(world, form, assertions.as_ref());
         let filter = inputs.filter(assertions.as_ref());
-        let value = previous
-            .filter(|old| old.value.as_ref() == &filter)
-            .map_or_else(|| Arc::new(filter), |old| Arc::clone(&old.value));
-        nucleus::performance::add("record-creation-filters-prepared", 1);
+        let value = match previous {
+            Some(old) if old.value.as_ref() == &filter => Arc::clone(&old.value),
+            _ => Arc::new(filter),
+        };
+        add("record-creation-filters-prepared", 1);
         Some(Self { inputs, value })
     }
 }
@@ -165,7 +168,7 @@ impl References {
     }
 
     pub(super) fn capture(rows: &Arc<Vec<Value>>, concepts: &Arc<Vec<Value>>) -> Self {
-        let _preparation = nucleus::performance::Span::new("record-creation-reference-preparation");
+        let _preparation = Span::new("record-creation-reference-preparation");
         let mut values: HashMap<_, _> = rows
             .iter()
             .filter_map(|row| {
@@ -181,7 +184,7 @@ impl References {
                 text(&row["name"]).to_lowercase(),
             ))
         }));
-        nucleus::performance::add(
+        add(
             "record-creation-reference-labels-prepared",
             values.len() as u64,
         );
@@ -198,7 +201,7 @@ pub(super) fn options(
     rows: &[Value],
     references: Option<&References>,
 ) -> (usize, Vec<(String, String)>) {
-    let _matching = nucleus::performance::Span::new("record-creation-search-matching");
+    let _matching = Span::new("record-creation-search-matching");
     let empty;
     let references = if let Some(references) = references {
         &references.values
@@ -206,15 +209,14 @@ pub(super) fn options(
         empty = HashMap::<String, String>::new();
         &empty
     };
-    let mut total = 0;
-    let mut options = Vec::new();
-    for row in rows {
-        if !filter.matches(row, references) {
-            continue;
-        }
-        if total < 100
-            && let Some(uid) = row["uid"].as_str()
-        {
+    let mut matches = rows.iter().filter(|row| filter.matches(row, references));
+    let mut slots = 0;
+    let options = matches
+        .by_ref()
+        .take(MAX_RESULTS)
+        .filter_map(|row| {
+            slots += 1;
+            let uid = row["uid"].as_str()?;
             let head = row["head"]
                 .as_str()
                 .filter(|head| !head.is_empty())
@@ -222,10 +224,10 @@ pub(super) fn options(
             let label = row["slug"]
                 .as_str()
                 .map_or_else(|| head.to_string(), |slug| format!("{head}  @{slug}"));
-            options.push((uid.to_owned(), label));
-        }
-        total += 1;
-    }
-    nucleus::performance::add("record-creation-search-rows-inspected", rows.len() as u64);
+            Some((uid.to_owned(), label))
+        })
+        .collect();
+    let total = slots + matches.count();
+    add("record-creation-search-rows-inspected", rows.len() as u64);
     (total, options)
 }

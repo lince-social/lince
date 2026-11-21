@@ -1,20 +1,17 @@
-// non-lean-yet
-// Scope: fn identity, fn context, fn disclosure, fn mutual.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
-//   Sites 75, 111, 143, 196, 244, 259, 290.
-// - [Clippy: clippy::redundant_clone] Move or borrow at the marked sites and check later uses.
-//   Sites 191.
-
 use std::collections::BTreeMap;
 
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 
 use super::{
-    contacts::{Audience, CheckedDisclosure, Document, RelationKind, Statement, permitted_edges},
+    Condition, Identity, IdentityContext, MAX_BYTES, MAX_DISCLOSURES,
+    contacts::{
+        Audience, CheckedDisclosure, Document, MAX_DOCUMENT_BYTES, RelationKind, Statement,
+        permitted_edges,
+    },
     paths::{Policy, search},
-    *,
 };
+
+use crate::visibility::Bound;
 
 fn identity(seed: u128) -> Identity {
     Identity::Organ(format!("r_{}", crate::ulid_from(1, seed)))
@@ -84,7 +81,7 @@ fn contact_documents_bind_identity_kind_audience_revision_and_signing_purpose() 
     let mut value = serde_json::to_value(&document).unwrap();
     value["instruction"] = serde_json::json!({"action":"settle-transfer"});
     assert!(Document::parse(&serde_json::to_vec(&value).unwrap()).is_err());
-    assert!(Document::parse(&vec![b' '; contacts::MAX_DOCUMENT_BYTES + 1]).is_err());
+    assert!(Document::parse(&vec![b' '; MAX_DOCUMENT_BYTES + 1]).is_err());
     changed.signature = "x".repeat(88);
     assert!(changed.validate().is_err());
     changed.statement.contact = Identity::Organ(a.uid().into());

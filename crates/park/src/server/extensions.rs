@@ -47,7 +47,7 @@ impl State {
                         .as_ref()?
                         .items
                         .iter()
-                        .find(|item| item.id == lince_interface::host::ItemId::Application(id))
+                        .find(|item| item.id == lince_host::ItemId::Application(id))
                         .map(|item| item.output)
                 })
             })

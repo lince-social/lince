@@ -1,39 +1,19 @@
-// non-lean-yet
-// Scope: enum BorrowedValue, fn encode.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
-//   90.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 26.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 26.
-
-use std::{collections::BTreeMap, fmt::Write};
+use std::{collections::BTreeMap, fmt::from_fn};
 
 use nucleus::karma::CanonicalHash;
-use serde::Serialize;
 use sha2::{Digest, Sha256};
-use sqlx::{Column, Row, TypeInfo, ValueRef};
+use sqlx::query_as;
 
+use super::{decode_values, encode, table_rows};
 use crate::{Store, StoreError};
 
-#[derive(Serialize)]
-#[serde(tag = "kind", content = "value", rename_all = "kebab-case")]
-enum BorrowedValue<'a> {
-    Null,
-    Integer(i64),
-    RealBits(u64),
-    Text(&'a str),
-    Blob(&'a [u8]),
-}
-
-fn encode(value: &impl Serialize) -> Result<Vec<u8>, StoreError> {
-    serde_json::to_vec(value).map_err(|error| StoreError::Protocol(error.to_string()))
-}
-
 impl Store {
+    /// Hashes the logical Store state in its canonical snapshot format.
+    /// # Errors
+    /// Returns an error if the snapshot cannot be read or encoded.
     pub async fn state_hash(&self) -> Result<CanonicalHash, StoreError> {
         let mut tx = self.pool.begin().await?;
-        let metadata: Vec<(String, String)> = sqlx::query_as("SELECT t.name, c.name FROM sqlite_schema AS t JOIN pragma_table_info(t.name) AS c WHERE t.type = 'table' AND (substr(t.name, 1, 7) <> 'sqlite_' OR t.name = 'sqlite_sequence') AND substr(t.name, 1, 5) <> '_sqlx' AND substr(t.name, 1, 11) <> 'projection_' ORDER BY t.name, c.cid")
+        let metadata: Vec<(String, String)> = query_as("SELECT t.name, c.name FROM sqlite_schema AS t JOIN pragma_table_info(t.name) AS c WHERE t.type = 'table' AND (substr(t.name, 1, 7) <> 'sqlite_' OR t.name = 'sqlite_sequence') AND substr(t.name, 1, 5) <> '_sqlx' AND substr(t.name, 1, 11) <> 'projection_' ORDER BY t.name, c.cid")
             .fetch_all(&mut *tx).await?;
         let mut tables: BTreeMap<String, Vec<String>> = BTreeMap::new();
         for (name, column) in metadata {
@@ -50,35 +30,10 @@ impl Store {
             hash.update(b",\"name\":");
             hash.update(encode(&name)?);
             hash.update(b",\"rows\":[");
-            let quoted = name.replace('"', "\"\"");
-            let rows = sqlx::query(sqlx::AssertSqlSafe(format!("SELECT * FROM \"{quoted}\"")))
-                .fetch_all(&mut *tx)
-                .await?;
+            let rows = table_rows(&mut tx, &name).await?;
             let mut encoded_rows = Vec::with_capacity(rows.len());
             for row in &rows {
-                let mut values = Vec::with_capacity(row.columns().len());
-                for column in row.columns() {
-                    let index = column.ordinal();
-                    let raw = row.try_get_raw(index)?;
-                    let value = if raw.is_null() {
-                        BorrowedValue::Null
-                    } else {
-                        match raw.type_info().name() {
-                            "INTEGER" => BorrowedValue::Integer(row.try_get(index)?),
-                            "REAL" => {
-                                BorrowedValue::RealBits(row.try_get::<f64, _>(index)?.to_bits())
-                            }
-                            "TEXT" => BorrowedValue::Text(row.try_get(index)?),
-                            "BLOB" => BorrowedValue::Blob(row.try_get(index)?),
-                            kind => {
-                                return Err(StoreError::Protocol(format!(
-                                    "unsupported snapshot value {kind}"
-                                )));
-                            }
-                        }
-                    };
-                    values.push(value);
-                }
+                let values = decode_values(row).collect::<Result<Vec<_>, _>>()?;
                 encoded_rows.push(encode(&values)?);
             }
             drop(rows);
@@ -93,10 +48,14 @@ impl Store {
         }
         hash.update(b"]");
         tx.rollback().await?;
-        let mut encoded = String::from("sha256:");
-        for byte in hash.finalize() {
-            write!(&mut encoded, "{byte:02x}").expect("writing to String cannot fail");
-        }
-        CanonicalHash::parse(encoded).map_err(|error| StoreError::Protocol(error.to_string()))
+        let digest = hash.finalize();
+        let hex = from_fn(|formatter| {
+            for byte in &digest {
+                write!(formatter, "{byte:02x}")?;
+            }
+            Ok(())
+        });
+        CanonicalHash::parse(format!("sha256:{hex}"))
+            .map_err(|error| StoreError::Protocol(error.to_string()))
     }
 }

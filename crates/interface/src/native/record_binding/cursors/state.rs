@@ -1,12 +1,7 @@
-// non-lean-yet
-// Scope: struct Cursors, struct Snapshot, struct Prepared.
-// BeautifulRust (baseline lines):
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 86.
-// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
-//   46, 49, 94.
-
-use super::*;
-use std::sync::OnceLock;
+use super::{B64, Count, Cursor, LoroDoc, Map, performance};
+use base64::Engine as _;
+use cell::CollabCursor;
+use std::sync::{Arc, OnceLock};
 
 #[derive(Default)]
 pub(in super::super) struct Cursors {
@@ -15,7 +10,7 @@ pub(in super::super) struct Cursors {
 }
 
 pub(super) struct Snapshot {
-    pub(super) wire: Vec<cell::CollabCursor>,
+    pub(super) wire: Vec<CollabCursor>,
     prepared: OnceLock<Prepared>,
 }
 
@@ -27,7 +22,7 @@ struct Prepared {
 impl Snapshot {
     fn prepared(&self) -> &Prepared {
         self.prepared.get_or_init(|| {
-            let mut properties: Map<String, Vec<usize>> = Map::default();
+            let mut properties = Map::<_, Vec<_>>::default();
             for (index, cursor) in self.wire.iter().enumerate() {
                 properties
                     .entry_ref(cursor.property.as_str())
@@ -50,19 +45,19 @@ impl Snapshot {
     }
 
     fn focus(&self, index: usize) -> Option<&Cursor> {
-        self.prepared().focus[index]
+        let encoded = &self.wire.get(index)?.focus;
+        let focus = self.prepared().focus.get(index)?;
+        focus
             .get_or_init(|| {
                 performance::count(Count::RemoteCursorDecodes);
-                B64.decode(&self.wire[index].focus)
-                    .ok()
-                    .and_then(|bytes| Cursor::decode(&bytes).ok())
+                Cursor::decode(&B64.decode(encoded).ok()?).ok()
             })
             .as_ref()
     }
 }
 
 impl Cursors {
-    pub(in super::super) fn replace(&mut self, wire: Vec<cell::CollabCursor>) {
+    pub(in super::super) fn replace(&mut self, wire: Vec<CollabCursor>) {
         if wire.is_empty() {
             self.clear();
         } else if self
@@ -80,8 +75,7 @@ impl Cursors {
 
     pub(in super::super) fn clear(&mut self) {
         self.snapshot = None;
-        self.positions.clear();
-        self.positions.shrink_to_fit();
+        self.positions = Vec::new();
     }
 
     pub(super) fn begin_paint(&mut self) -> bool {
@@ -98,7 +92,7 @@ impl Cursors {
         if self.positions.is_empty() {
             self.positions.resize(snapshot.wire.len(), None);
         }
-        *self.positions[index].get_or_insert_with(|| {
+        *self.positions.get_mut(index)?.get_or_insert_with(|| {
             let focus = snapshot.focus(index)?;
             performance::count(Count::RemoteCursorPositions);
             doc.get_cursor_pos(focus)

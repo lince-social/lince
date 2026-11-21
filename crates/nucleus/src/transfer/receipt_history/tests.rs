@@ -1,17 +1,14 @@
-// non-lean-yet
-// Scope: fn id, fn publication, fn copies, fn republish.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
-//   Sites 53, 121, 127, 138, 156, 159, 161, 162, 163, 164, 188, 189, 190, 198, 221, 222, 253, 263,
-//   274, 276, 284, 285, 299, 300, 309, 314, 317, 318, 319, 321, 325, 334, 343, 344, 356, 370, 371,
-//   379, 396, 403, 412, 419, 423, 427, 433, 436, 440, 451, 454, 455, 457, 464, 465, 469, 497, 498,
-//   499, 501, 511, 525, 538, 554, 567.
-// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 308.
+mod fragments;
 
-use super::*;
+use std::collections::BTreeMap;
+
+use super::{projection::hash, *};
 use crate::{
     DecimalValue,
+    karma::CanonicalHash,
+    new_uid,
     transfer::{outcome::Role, receipt::*},
+    trust_analysis::contacts::Audience,
     vocabulary::reference::MeaningReference,
 };
 
@@ -21,11 +18,11 @@ fn id(value: &str) -> CanonicalHash {
 
 fn publication() -> Publication {
     let scope = Scope {
-        audience: crate::trust_analysis::contacts::Audience::Public,
+        audience: Audience::Public,
         upfront_terms: None,
         public_persons: Vec::new(),
         source: Source {
-            origin: crate::new_uid("r"),
+            origin: new_uid("r"),
             occurrence: id("occurrence"),
             activated_at: 900,
             agreement_revision: 1,
@@ -34,12 +31,12 @@ fn publication() -> Publication {
         },
         party_attribution: PartyAttribution::LaterOrganEndorsement,
         original_authorities: vec![],
-        giver: crate::new_uid("r"),
-        receiver: crate::new_uid("r"),
+        giver: new_uid("r"),
+        receiver: new_uid("r"),
         measurements: vec![Measurement {
             meaning: MeaningReference {
-                vocabulary_uid: crate::new_uid("g"),
-                concept_uid: crate::new_uid("c"),
+                vocabulary_uid: new_uid("g"),
+                concept_uid: new_uid("c"),
                 revision: 1,
                 definition_hash: "a".repeat(64),
             },
@@ -101,20 +98,16 @@ fn copies(publication: &Publication, record: &str) -> Vec<Copy> {
                 .find(|signed| signed.event.id().unwrap() == projection.event)
                 .unwrap()
                 .event;
-            Copy {
-                persons: publication.scope.public_persons.clone(),
-                provenance: super::Provenance::Record {
+            project_copy(
+                &publication.scope,
+                event,
+                &projection,
+                Provenance::Record {
                     record: record.into(),
                     version: 1,
                 },
-                scope: publication.scope.id().unwrap(),
-                attribution: publication.scope.party_attribution,
-                projection,
-                content: event.content.clone(),
-                recorded_at: event.recorded_at,
-                canonical_unit: publication.scope.canonical_unit.clone(),
-                agreed_quantity: publication.scope.agreed_quantity.clone(),
-            }
+            )
+            .unwrap()
         })
         .collect()
 }
@@ -122,10 +115,11 @@ fn copies(publication: &Publication, record: &str) -> Vec<Copy> {
 fn republish(publication: &Publication) -> Publication {
     let mut next = publication.clone();
     next.scope.expires_at += 1000;
-    let mut ids: BTreeMap<CanonicalHash, CanonicalHash> = BTreeMap::new();
+    let mut ids = BTreeMap::<CanonicalHash, CanonicalHash>::new();
+    let scope_id = next.scope.id().unwrap();
     for signed in &mut next.events {
         let before = signed.event.id().unwrap();
-        signed.event.scope = next.scope.id().unwrap();
+        signed.event.scope = scope_id.clone();
         signed.event.issued_at += 1;
         if let Some(parent) = &mut signed.event.supersedes {
             *parent = ids[parent].clone();
@@ -254,7 +248,7 @@ fn personal_attribution_is_per_copy_and_conflicting_identities_withhold_the_sour
     };
     named.persons = vec![PublicPerson {
         role: ApprovalRole::Receiver,
-        person: crate::new_uid("r"),
+        person: new_uid("r"),
     }];
     let view = merge(vec![original.clone(), named.clone()]);
     assert!(!view.source_conflict);
@@ -270,7 +264,7 @@ fn personal_attribution_is_per_copy_and_conflicting_identities_withhold_the_sour
         record: "contradictory-attribution".into(),
         version: 1,
     };
-    other.persons[0].person = crate::new_uid("r");
+    other.persons[0].person = new_uid("r");
     let view = merge(vec![original, named, other]);
     assert!(view.source_conflict);
     assert_eq!(view.person_conflicts.len(), 2);
@@ -510,106 +504,4 @@ fn full_event_budget_handles_long_histories_and_cycles_without_recursive_travers
     let view = merge(chain);
     assert_eq!(view.slots[0].heads.len(), 5000);
     assert!(view.outcomes.iter().all(|outcome| outcome.conflicted));
-}
-
-#[test]
-fn fragment_resolution_handles_the_full_budget_without_recursive_ancestry() {
-    let publication = publication();
-    let mut events = BTreeMap::new();
-    let mut parent = None;
-    for index in 0..5000 {
-        let mut event = publication.events[0].event.clone();
-        event.source_commitment = id(&format!("fragment-source-{index}"));
-        event.supersedes = parent;
-        let key = event.id().unwrap();
-        parent = Some(key.clone());
-        events.insert(key, event);
-    }
-    let selected = events.keys().cloned().collect();
-    let result =
-        crate::transfer::receipt_fragment::resolve(&publication.scope, &events, &selected, 1100)
-            .unwrap();
-    assert_eq!(result.projections.len(), 5000);
-    assert!(result.unresolved.is_empty());
-    assert!(result.missing.is_empty());
-    let mut extra = publication.events[0].event.clone();
-    extra.source_commitment = id("over-budget");
-    events.insert(extra.id().unwrap(), extra);
-    assert!(
-        crate::transfer::receipt_fragment::resolve(&publication.scope, &events, &selected, 1100)
-            .is_err()
-    );
-}
-
-#[test]
-fn fragments_propagate_missing_history_and_ignore_unrelated_dangling_events() {
-    use crate::transfer::receipt_fragment::{State, resolve};
-    let publication = publication();
-    let root = publication.events[0].event.clone();
-    let mut child = root.clone();
-    child.supersedes = Some(root.id().unwrap());
-    child.source_commitment = id("child");
-    let mut dangling = root.clone();
-    dangling.supersedes = Some(id("unavailable"));
-    dangling.source_commitment = id("unrelated");
-    let mut events = [
-        (child.id().unwrap(), child.clone()),
-        (dangling.id().unwrap(), dangling),
-    ]
-    .into_iter()
-    .collect::<BTreeMap<_, _>>();
-    let selected = [child.id().unwrap()].into_iter().collect();
-    let result = resolve(&publication.scope, &events, &selected, 1100).unwrap();
-    assert!(result.projections.is_empty());
-    assert_eq!(result.unresolved[0].state, State::Incomplete);
-    assert_eq!(result.missing, vec![root.id().unwrap()]);
-    events.insert(root.id().unwrap(), root);
-    let result = resolve(&publication.scope, &events, &selected, 1100).unwrap();
-    assert_eq!(result.projections.len(), 1);
-    assert!(result.unresolved.is_empty());
-    assert!(result.missing.is_empty());
-}
-
-#[test]
-fn fragment_dependencies_cannot_change_role_need_type_or_publication_order() {
-    use crate::transfer::receipt_fragment::{State, resolve};
-    let publication = publication();
-    let root = publication.events[0].event.clone();
-    for mode in 0..3 {
-        let mut invalid = root.clone();
-        invalid.source_commitment = id(&format!("invalid-link-{mode}"));
-        if mode == 0 {
-            invalid.content = Content::Dispute {
-                role: Role::Giver,
-                active: true,
-            };
-            invalid.supersedes = Some(root.id().unwrap());
-        } else if mode == 1 {
-            if let Content::Statement { need, .. } = &mut invalid.content {
-                *need = Some(root.id().unwrap());
-            }
-        } else {
-            invalid.issued_at -= 1;
-            invalid.supersedes = Some(root.id().unwrap());
-        }
-        let mut child = invalid.clone();
-        child.supersedes = Some(invalid.id().unwrap());
-        child.source_commitment = id(&format!("invalid-descendant-{mode}"));
-        let selected = [invalid.id().unwrap(), child.id().unwrap()]
-            .into_iter()
-            .collect();
-        let events = [root.clone(), invalid, child]
-            .into_iter()
-            .map(|event| (event.id().unwrap(), event))
-            .collect();
-        let result = resolve(&publication.scope, &events, &selected, 1100).unwrap();
-        assert!(result.projections.is_empty());
-        assert_eq!(result.unresolved.len(), 2);
-        assert!(
-            result
-                .unresolved
-                .iter()
-                .all(|issue| issue.state == State::Invalid)
-        );
-    }
 }

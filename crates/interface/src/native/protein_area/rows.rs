@@ -218,7 +218,7 @@ pub(super) fn content(
     }
     if config.fiote {
         if let Some(binding) = binding {
-            crate::native::fiote::session::populate(world, row, binding);
+            crate::native::fiote::session::populate_dashboard(world, row, binding, data);
         }
         return;
     }
@@ -883,7 +883,7 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
                 index: 0,
             },
         ));
-        if config.viewport_height.is_some() || config.max_height.is_some() {
+        if !config.fiote && (config.viewport_height.is_some() || config.max_height.is_some()) {
             crate::native::scroll_sand::attach(world, entity);
         }
         super::availability::populate(world, entity, &config, Some(&binding));
@@ -985,7 +985,9 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
                         world.despawn(child);
                     }
                 }
-                if config.viewport_height.is_some() || config.max_height.is_some() {
+                if !config.fiote
+                    && (config.viewport_height.is_some() || config.max_height.is_some())
+                {
                     crate::native::scroll_sand::attach(world, entity);
                 }
                 content(world, entity, &config, data, Some(binding));
@@ -1084,6 +1086,9 @@ pub(super) fn drafts(world: &World, row: Entity) -> Vec<super::presentation::Dra
 }
 
 fn refresh(world: &mut World, row: Entity, data: &Value) {
+    if crate::native::fiote::session::refresh_dashboard(world, row, data) {
+        return;
+    }
     crate::native::shader_effects::refresh_record(world, row, data);
     for (container, property) in property_containers(world, row) {
         if world

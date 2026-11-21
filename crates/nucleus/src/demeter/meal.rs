@@ -1,39 +1,16 @@
+//! Compiles Demeter meals and their supply constraints into a model.
 // non-lean-yet
-// Scope: enum SourceKind, struct Allocation, struct Compiled, struct MissingMeasurement.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
-//   Sites 372, 397, 423, 513.
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 138, 163, 185,
-//   204, 470, 514, 517, 520, 533, 552, 553.
-// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
-//   Sites 554.
-// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
-//   554.
-// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
-//   conversion. Sites 554.
-// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 172.
-// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
-//   Sites 12.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 69, 115, 231, 479.
-// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
-//   conventions. Sites 1.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 12, 13,
-//   14, 15, 19, 20, 21, 22, 23, 27, 28, 29, 33, 34, 35, 36, 40, 41, 42, 43, 47, 48, 49, 50, 51, 52,
-//   53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 69, 115, 231, 449, 479.
-// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites compile: String
-//   (231), fingerprint: String (69), solve: String (479), validate: String (115).
 
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    sync::atomic::AtomicBool,
-};
+use std::collections::{BTreeMap, BTreeSet};
 
 use chrono::Days;
 use serde::{Deserialize, Serialize};
 
 use super::*;
-use crate::optimization::{self, Constraint, Model, Options, Status, Term, Variable, decimal};
+use crate::optimization::{self, Constraint, Model, Term, Variable, decimal};
+
+#[cfg(feature = "optimization-solver")]
+mod solution;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -494,102 +471,18 @@ impl Input {
             .iter()
             .flat_map(|food| {
                 fields.iter().filter_map(|field| {
-                    food.coefficient(field, Unit::for_field(field).ok()?)
-                        .ok()?
-                        .1
-                        .then(|| MissingMeasurement {
-                            food: food.choice.food.clone(),
-                            nutrient: (*field).into(),
-                            original: food.nutrients.get(*field).cloned(),
-                        })
+                    let (_, true) = food.coefficient(field, Unit::for_field(field).ok()?).ok()?
+                    else {
+                        return None;
+                    };
+                    Some(MissingMeasurement {
+                        food: food.choice.food.clone(),
+                        nutrient: (*field).into(),
+                        original: food.nutrients.get(*field).cloned(),
+                    })
                 })
             })
             .collect()
-    }
-
-    pub fn solve(&self, options: Options, cancelled: &AtomicBool) -> Result<Outcome, String> {
-        let compiled = self.compile()?;
-        let solution = optimization::solve(&compiled.model, options, cancelled);
-        let mut outcome = Outcome {
-            solution,
-            days: Vec::new(),
-            totals_g: BTreeMap::new(),
-            shopping: Vec::new(),
-            rounded_bill: 0.0,
-            forecast_cost: 0.0,
-            missing: self.missing(),
-            input_hash: fingerprint(self)?,
-        };
-        if !matches!(outcome.solution.status, Status::Optimal | Status::Feasible) {
-            return Ok(outcome);
-        }
-        let start = date(&self.start)?;
-        let mut acquired = BTreeMap::<String, f64>::new();
-        for day in 0..self.days {
-            let mut summary = DaySummary {
-                date: start
-                    .checked_add_days(Days::new(u64::from(day)))
-                    .ok_or("Plan date is out of range")?
-                    .to_string(),
-                foods_g: BTreeMap::new(),
-                nutrients: BTreeMap::new(),
-            };
-            for (a, amount) in compiled
-                .allocations
-                .iter()
-                .zip(&outcome.solution.values)
-                .filter(|(a, _)| a.day == day)
-            {
-                let amount = amount.max(0.0);
-                let food = &self.foods[a.food];
-                *summary.foods_g.entry(food.choice.food.clone()).or_default() += amount;
-                *outcome
-                    .totals_g
-                    .entry(food.choice.food.clone())
-                    .or_default() += amount;
-                if a.kind == SourceKind::Offer {
-                    *acquired.entry(a.source.clone()).or_default() += amount;
-                }
-                if a.kind == SourceKind::Forecast {
-                    outcome.forecast_cost += amount
-                        * self
-                            .forecasts
-                            .iter()
-                            .find(|f| f.stock.id == a.source)
-                            .ok_or("Forecast allocation has no matching source")?
-                            .cost_per_usable_g
-                            .to_f64();
-                }
-                for bound in &self.requirements.bounds {
-                    *summary.nutrients.entry(bound.nutrient.clone()).or_default() +=
-                        amount * food.coefficient(&bound.nutrient, bound.unit)?.0;
-                }
-            }
-            outcome.days.push(summary);
-        }
-        for offer in &self.offers {
-            let needed = acquired.get(&offer.id).copied().unwrap_or(0.0);
-            if needed <= 1e-8 {
-                continue;
-            }
-            let usable = offer.package_g.to_f64() * offer.usable_yield.to_f64();
-            let packages = (needed / usable - 1e-9).ceil().max(1.0);
-            if !packages.is_finite() || packages > 1e12 {
-                return Err("Rounded package count exceeds its limits".into());
-            }
-            let bill = packages * offer.price.to_f64();
-            outcome.rounded_bill += bill;
-            outcome.shopping.push(Shopping {
-                offer: offer.id.clone(),
-                food: offer.food.clone(),
-                packages: packages as u64,
-                used_usable_g: needed,
-                bought_g: packages * offer.package_g.to_f64(),
-                leftover_usable_g: (packages * usable - needed).max(0.0),
-                bill,
-            });
-        }
-        Ok(outcome)
     }
 }
 

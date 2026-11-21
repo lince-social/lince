@@ -1,48 +1,51 @@
-// non-lean-yet
-// Scope: struct Score, fn words.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
-//   Sites 21, 22, 23, 30.
-// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
-//   Sites 44.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 5,
-//   6, 7, 8, 12, 36, 43, 48.
+//! Word normalization and edit-distance scoring for speech transcripts.
 
 use serde::{Deserialize, Serialize};
+use std::{iter::from_fn, mem::replace};
 
+/// Aggregate word errors and exact matches across evaluated utterances.
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct Score {
+    /// Number of normalized words in the reference transcripts.
     pub reference_words: usize,
+    /// Insertions, deletions, and substitutions needed to match the references.
     pub edits: usize,
+    /// Number of transcript pairs compared.
     pub utterances: usize,
+    /// Number of transcript pairs with identical normalized words.
     pub exact_utterances: usize,
 }
 
 impl Score {
+    /// Scores one reference and hypothesis after word normalization.
     pub fn compare(reference: &str, hypothesis: &str) -> Self {
-        let expected = words(reference);
-        let actual = words(hypothesis);
-        let mut previous: Vec<usize> = (0..=actual.len()).collect();
-        for (row, expected) in expected.iter().enumerate() {
-            let mut next = Vec::with_capacity(actual.len() + 1);
-            next.push(row + 1);
-            for (column, actual) in actual.iter().enumerate() {
-                next.push(
-                    (previous[column] + usize::from(expected != actual))
-                        .min(previous[column + 1] + 1)
-                        .min(next[column] + 1),
-                );
+        let reference = reference.to_lowercase();
+        let hypothesis = hypothesis.to_lowercase();
+        let actual: Vec<_> = normalized_words(&hypothesis).collect();
+        let mut distances: Vec<_> = (1..=actual.len()).collect();
+        let mut reference_words = 0;
+        let mut edits = actual.len();
+        for expected in normalized_words(&reference) {
+            let mut diagonal = reference_words;
+            reference_words += 1;
+            edits = reference_words;
+            for (above, &actual) in distances.iter_mut().zip(&actual) {
+                // Keep the previous row's value for the next diagonal.
+                edits = (diagonal + usize::from(expected != actual))
+                    .min(*above + 1)
+                    .min(edits + 1);
+                diagonal = replace(above, edits);
             }
-            previous = next;
         }
         Self {
-            reference_words: expected.len(),
-            edits: previous[actual.len()],
+            reference_words,
+            edits,
             utterances: 1,
-            exact_utterances: usize::from(expected == actual),
+            exact_utterances: usize::from(edits == 0),
         }
     }
 
+    /// Accumulates another score.
     pub fn merge(&mut self, other: &Self) {
         self.reference_words += other.reference_words;
         self.edits += other.edits;
@@ -50,20 +53,31 @@ impl Score {
         self.exact_utterances += other.exact_utterances;
     }
 
+    /// Returns the word error rate, using a denominator of one for empty references.
     pub fn wer(&self) -> f64 {
         self.edits as f64 / self.reference_words.max(1) as f64
     }
 }
 
+/// Lowercases text, splits punctuation and ASCII digit runs, and normalizes spoken numbers.
 pub fn words(text: &str) -> Vec<String> {
-    let mut words = Vec::new();
-    let mut word = String::new();
-    let mut numeric = None;
-    let finish = |word: &mut String, words: &mut Vec<String>| {
-        if word.is_empty() {
-            return;
-        }
-        let normalized = match word.as_str() {
+    normalized_words(&text.to_lowercase())
+        .map(str::to_owned)
+        .collect()
+}
+
+fn normalized_words(text: &str) -> impl Iterator<Item = &str> {
+    let mut chars = text.char_indices().peekable();
+    from_fn(move || {
+        let (start, first) = chars.find(|&(_, ch)| ch.is_alphanumeric())?;
+        let digit = first.is_ascii_digit();
+        while chars
+            .next_if(|&(_, ch)| ch.is_alphanumeric() && ch.is_ascii_digit() == digit)
+            .is_some()
+        {}
+        // Both bounds come from char_indices or the end of the string.
+        let end = chars.peek().map_or(text.len(), |&(end, _)| end);
+        Some(match &text[start..end] {
             "zero" => "0",
             "one" => "1",
             "two" => "2",
@@ -77,23 +91,6 @@ pub fn words(text: &str) -> Vec<String> {
             "ten" => "10",
             "mister" => "mr",
             other => other,
-        };
-        words.push(normalized.to_owned());
-        word.clear();
-    };
-    for character in text.to_lowercase().chars() {
-        if !character.is_alphanumeric() {
-            finish(&mut word, &mut words);
-            numeric = None;
-            continue;
-        }
-        let digit = character.is_ascii_digit();
-        if numeric.is_some_and(|previous| previous != digit) {
-            finish(&mut word, &mut words);
-        }
-        numeric = Some(digit);
-        word.push(character);
-    }
-    finish(&mut word, &mut words);
-    words
+        })
+    })
 }

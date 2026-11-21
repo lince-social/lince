@@ -2457,7 +2457,7 @@ impl Engine {
                     | Action::ActivateTransferOccurrence { .. }
             );
             let mut outcome = match self
-                .dispatch_action_parts(action, actor, now, verified_authorship)
+                .dispatch_action(action, actor, now, verified_authorship)
                 .await?
             {
                 std::ops::ControlFlow::Break(outcome) => return Ok(outcome),

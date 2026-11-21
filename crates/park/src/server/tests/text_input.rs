@@ -181,7 +181,7 @@ fn layer_caret_popups_snapshot_without_reentering_the_layer_map_and_follow_caret
 #[cfg(feature = "nested")]
 #[test]
 fn native_client_caret_is_committed_owned_and_retired_without_an_ime_provider_or_popup() {
-    use lince_interface::host::{Rectangle, magnification::Caret};
+    use lince_host::{Rectangle, magnification::Caret};
     let mut harness = Harness::new();
     let first = harness.window();
     let _first = harness.attach(&first, [320, 240]);

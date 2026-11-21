@@ -1,9 +1,8 @@
-// non-lean-yet
-// Scope: struct Cooling, struct Spring, mod tests.
-// BeautifulRust (baseline lines):
-// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
-//   64, 65, 66, 69.
+//! Time-based cooling and damped spring motion for UI controls.
 
+use std::iter::zip;
+
+/// A cooling timer that restarts on interaction.
 #[derive(Clone, Copy, Debug)]
 pub struct Cooling {
     remaining: f32,
@@ -11,18 +10,28 @@ pub struct Cooling {
 }
 
 impl Cooling {
+    /// Creates a cool timer with the given duration in seconds.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the duration is non-finite or non-positive.
     pub fn new(duration: f32) -> Self {
-        assert!(duration.is_finite() && duration > 0.0);
+        assert!(
+            duration.is_finite() && duration > 0.0,
+            "invalid duration: {duration}"
+        );
         Self {
             remaining: 0.0,
             duration,
         }
     }
 
+    /// Restarts the countdown.
     pub fn wake(&mut self) {
         self.remaining = self.duration;
     }
 
+    /// Subtracts elapsed time, or cools immediately after a non-finite step.
     pub fn advance(&mut self, seconds: f32) {
         self.remaining = if seconds.is_finite() {
             (self.remaining - seconds.max(0.0)).max(0.0)
@@ -31,11 +40,20 @@ impl Cooling {
         };
     }
 
+    /// Returns the fraction of the cooling duration still remaining.
     pub fn heat(self) -> f32 {
         self.remaining / self.duration
     }
 }
 
+const DEFAULT_FREQUENCY: f32 = 18.0;
+const DAMPING: f32 = 0.86;
+const MAX_STEP_SECONDS: f32 = 0.1;
+const RESUME_WINDOW_SECONDS: f32 = 1.0;
+const POSITION_TOLERANCE: f32 = 0.05;
+const VELOCITY_TOLERANCE: f32 = 0.25;
+
+/// An underdamped spring with independent coordinates.
 #[derive(Clone, Debug)]
 pub struct Spring<const N: usize> {
     pub position: [f32; N],
@@ -43,6 +61,7 @@ pub struct Spring<const N: usize> {
 }
 
 impl<const N: usize> Spring<N> {
+    /// Creates a spring at rest at the given position.
     pub fn new(position: [f32; N]) -> Self {
         Self {
             position,
@@ -50,38 +69,43 @@ impl<const N: usize> Spring<N> {
         }
     }
 
+    /// Advances toward the target at the default frequency and reports whether motion continues.
     pub fn advance(&mut self, target: [f32; N], seconds: f32) -> bool {
-        self.advance_with_frequency(target, seconds, 18.0)
+        self.advance_with_frequency(target, seconds, DEFAULT_FREQUENCY)
     }
 
+    /// Advances with a custom angular frequency. Long or non-finite steps settle immediately.
     pub fn advance_with_frequency(&mut self, target: [f32; N], seconds: f32, omega: f32) -> bool {
-        if !seconds.is_finite() || seconds > 1.0 {
+        if !seconds.is_finite() || seconds > RESUME_WINDOW_SECONDS {
             self.position = target;
             self.velocity = [0.0; N];
             return false;
         }
-        let time = seconds.clamp(0.0, 0.1);
+        let time = seconds.clamp(0.0, MAX_STEP_SECONDS);
         let omega = omega.clamp(1.0, 30.0);
-        let damping = 0.86_f32;
-        let frequency = omega * (1.0 - damping * damping).sqrt();
-        let decay = (-damping * omega * time).exp();
+        let frequency = omega * (1.0 - DAMPING * DAMPING).sqrt();
+        let decay = (-DAMPING * omega * time).exp();
         let (sine, cosine) = (frequency * time).sin_cos();
-        for (index, target) in target.iter().enumerate() {
-            let offset = self.position[index] - target;
-            let velocity = self.velocity[index];
-            self.position[index] = target
+        for ((position, speed), target) in zip(zip(&mut self.position, &mut self.velocity), target)
+        {
+            let offset = *position - target;
+            let velocity = *speed;
+            *position = target
                 + decay
-                    * (offset * cosine + (velocity + damping * omega * offset) / frequency * sine);
-            self.velocity[index] = decay
+                    * (offset * cosine + (velocity + DAMPING * omega * offset) / frequency * sine);
+            *speed = decay
                 * (velocity * cosine
-                    - (damping * omega * velocity + omega * omega * offset) / frequency * sine);
+                    - (DAMPING * omega * velocity + omega * omega * offset) / frequency * sine);
         }
         let active = self
             .position
             .iter()
             .zip(target)
-            .any(|(position, target)| (position - target).abs() > 0.05)
-            || self.velocity.iter().any(|velocity| velocity.abs() > 0.25);
+            .any(|(position, target)| (position - target).abs() > POSITION_TOLERANCE)
+            || self
+                .velocity
+                .iter()
+                .any(|speed| speed.abs() > VELOCITY_TOLERANCE);
         if !active {
             self.position = target;
             self.velocity = [0.0; N];

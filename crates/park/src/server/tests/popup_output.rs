@@ -5,7 +5,7 @@
 //   a_replacement_management_grab_survives_pointer_motion_after_the_popup_grab_ended.
 // BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
 
-use lince_interface::host::{
+use lince_host::{
     ContentMapping, GeometrySnapshot, ItemGeometry, ItemId, Rectangle as CanvasRectangle,
 };
 
@@ -313,7 +313,7 @@ fn changing_client_buffers_rebinds_materials_without_changing_window_geometry() 
     let mut canvas = crate::presentation::Presentation::new(
         [640, 480],
         directory.path().into(),
-        lince_interface::host::WakeSignal::new(|| {}),
+        lince_host::WakeSignal::new(|| {}),
     )
     .unwrap();
     for _ in 0..8 {

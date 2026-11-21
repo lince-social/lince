@@ -1,26 +1,17 @@
-// non-lean-yet
-// Scope: fn app, fn native_labels_share_font_bytes_and_keep_text_storage_unchanged_between_frames,
-//   fn ordinary_labels_and_editable_buffers_keep_their_original_text_and_font, fn
-//   labels_follow_updated_script_and_keep_external_font_size_changes.
-// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
-
 use super::*;
-use bevy::text::{FontCx, LayoutCx};
+use bevy::text::{FontCx, LayoutCx, load_font_assets_into_font_collection};
+use fontique::{Collection, CollectionOptions};
 
 fn app() -> App {
     let mut app = App::new();
     app.init_resource::<Assets<Font>>()
         .init_resource::<FontCx>()
         .add_plugins(IthkuilPlugin)
-        .add_systems(
-            PostUpdate,
-            bevy::text::load_font_assets_into_font_collection,
-        );
-    app.world_mut().resource_mut::<FontCx>().collection =
-        fontique::Collection::new(fontique::CollectionOptions {
-            shared: false,
-            system_fonts: false,
-        });
+        .add_systems(PostUpdate, load_font_assets_into_font_collection);
+    app.world_mut().resource_mut::<FontCx>().collection = Collection::new(CollectionOptions {
+        shared: false,
+        system_fonts: false,
+    });
     app
 }
 
@@ -145,6 +136,41 @@ fn labels_follow_updated_script_and_keep_external_font_size_changes() {
         "amäla"
     );
     assert_eq!(app.world().resource::<Assets<Font>>().len(), 1);
+}
+
+#[test]
+fn replacing_a_native_label_restores_its_text_style_and_preserves_its_label() {
+    let mut app = app();
+    let original = TextFont {
+        font_features: FontFeatures::from([FontFeatureTag::TABULAR_FIGURES]),
+        ..default()
+    };
+    let entity = app
+        .world_mut()
+        .spawn((
+            Text::default(),
+            original.clone(),
+            ScriptText::parse("adnila").unwrap(),
+            AccessibleLabel::new("Author's label"),
+        ))
+        .id();
+    app.update();
+    app.world_mut().entity_mut(entity).remove::<ScriptText>();
+    app.world_mut().get_mut::<Text>(entity).unwrap().0 = "Ordinary text".into();
+    app.world_mut()
+        .get_mut::<TextFont>(entity)
+        .unwrap()
+        .font_size = FontSize::Px(36.0);
+    app.update();
+
+    let restored = app.world().get::<TextFont>(entity).unwrap();
+    assert_eq!(restored.font, original.font);
+    assert_eq!(restored.font_features, original.font_features);
+    assert_eq!(restored.font_size, FontSize::Px(36.0));
+    assert_eq!(
+        app.world().get::<AccessibleLabel>(entity).unwrap().0,
+        "Author's label"
+    );
 }
 
 #[test]

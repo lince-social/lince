@@ -1,17 +1,15 @@
 //! Projects requested numeric fields from readable Records for shader inputs.
 
-use crate::ProteinError;
-use nucleus::{
-    performance::{Span, add},
-    shader_effect::bindings::{NumericField, validate_record_field},
-};
+use crate::{ProteinError, validation::protocol};
+use nucleus::shader_effect::bindings::NumericField;
+use protein_authority::query::shader_inputs;
 pub use protein_authority::query::shader_inputs::Request;
 use serde_json::{Map, Value, to_string};
 use std::collections::{BTreeSet, HashMap};
 use store::{
     Store,
     records::{ExtensionNumbers, RecordRow},
-    sqlx::{Error::Protocol, QueryBuilder},
+    sqlx::QueryBuilder,
 };
 
 /// Returns the JSON key used to identify a numeric field in a query result.
@@ -24,17 +22,7 @@ pub fn key(field: &NumericField) -> String {
 /// # Errors
 /// Returns a protocol error for an oversized batch or malformed request.
 pub fn validate(requests: &[Request]) -> Result<(), ProteinError> {
-    let _validation = Span::new("numeric-projection-validation");
-    if requests.len() > 128 {
-        return Err(Protocol(
-            "Numeric projections support at most 128 requested fields.".into(),
-        ));
-    }
-    for request in requests {
-        add("numeric-projection-validation-attempts", 1);
-        validate_record_field(&request.record, &request.field).map_err(Protocol)?;
-    }
-    Ok(())
+    shader_inputs::validate(requests).map_err(protocol)
 }
 
 pub(crate) async fn attach<Body>(

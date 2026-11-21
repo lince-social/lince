@@ -1,22 +1,16 @@
-// non-lean-yet
-// Scope: enum Consequence, fn public_subject, struct Consequences, mod tests.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
-//   Sites 343.
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 242.
-// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
-//   Sites 9.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 333.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 9, 10,
-//   11, 13, 15, 17, 19, 20, 22, 24, 26, 28, 29, 31, 32, 34, 35, 38, 40, 42, 44, 46, 48, 50, 52, 54,
-//   56, 57, 59, 60, 62, 63, 65, 66, 67, 69, 71, 72, 74, 76, 78, 80, 81, 82, 84, 85, 86, 87, 89, 90,
-//   91, 92, 94, 95, 96, 98, 100, 102, 103, 104, 106, 107, 108, 109, 110, 119, 147, 166, 173, 184,
-//   195, 214, 222, 330, 333, 353, 357, 361, 365, 369, 373, 377, 381, 388.
+//! Consequence values, their ordered list, and the operations that inspect them.
+
+use std::slice::Iter;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{DecimalValue, error::NucleusError};
+use crate::{
+    DecimalValue, component::ComponentState, error::NucleusError, transfer::karma::AutomationStage,
+};
+
+use super::DurationMs;
+
+mod validation;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
@@ -75,7 +69,7 @@ pub enum Consequence {
         command: String,
     },
     ShowComponent {
-        component: crate::component::ComponentState,
+        component: ComponentState,
     },
     ActivateFiote,
     RunQuery {
@@ -99,7 +93,7 @@ pub enum Consequence {
     RepeatTransfer {
         transfer: String,
         person: String,
-        stage: crate::transfer::karma::AutomationStage,
+        stage: AutomationStage,
     },
     ReopenTransferNeed {
         transfer: String,
@@ -112,7 +106,7 @@ pub enum Consequence {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         level: Option<DecimalValue>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        after_ms: Option<super::DurationMs>,
+        after_ms: Option<DurationMs>,
     },
     PublishTransfer {
         transfer: String,
@@ -127,10 +121,11 @@ pub enum Consequence {
 }
 
 fn public_subject() -> String {
-    "public".to_string()
+    "public".into()
 }
 
 impl Consequence {
+    /// Returns the stable kebab-case wire tag.
     pub fn kind(&self) -> &'static str {
         match self {
             Self::CaptureEntry { .. } => "capture-entry",
@@ -159,6 +154,7 @@ impl Consequence {
         }
     }
 
+    /// Reports whether the effect uses Karma’s outward execution path.
     pub fn is_outward(&self) -> bool {
         matches!(
             self,
@@ -178,6 +174,7 @@ impl Consequence {
         )
     }
 
+    /// Reports whether a capture, assignment, or addition moves a quantity.
     pub fn moves_quantity(&self) -> bool {
         matches!(
             self,
@@ -185,28 +182,36 @@ impl Consequence {
         )
     }
 
+    /// Borrows the target for a Transfer consequence.
     pub fn transfer_target(&self) -> Option<&str> {
-        match self {
-            Self::RepeatTransfer { transfer, .. }
-            | Self::ReopenTransferNeed { transfer, .. }
-            | Self::SetTransferAgreement { transfer, .. }
-            | Self::PublishTransfer { transfer, .. }
-            | Self::ActivateTransferFulfillment { transfer, .. } => Some(transfer),
-            _ => None,
-        }
+        self.transfer_references().map(|(transfer, _)| transfer)
     }
 
+    /// Borrows the acting Person for a Transfer consequence.
     pub fn transfer_person(&self) -> Option<&str> {
+        self.transfer_references().map(|(_, person)| person)
+    }
+
+    fn transfer_references(&self) -> Option<(&str, &str)> {
         match self {
-            Self::RepeatTransfer { person, .. }
-            | Self::ReopenTransferNeed { person, .. }
-            | Self::SetTransferAgreement { person, .. }
-            | Self::PublishTransfer { person, .. }
-            | Self::ActivateTransferFulfillment { person, .. } => Some(person),
+            Self::RepeatTransfer {
+                transfer, person, ..
+            }
+            | Self::ReopenTransferNeed {
+                transfer, person, ..
+            }
+            | Self::SetTransferAgreement {
+                transfer, person, ..
+            }
+            | Self::PublishTransfer { transfer, person }
+            | Self::ActivateTransferFulfillment {
+                transfer, person, ..
+            } => Some((transfer, person)),
             _ => None,
         }
     }
 
+    /// Mutably borrows the Transfer and acting Person, in that order.
     pub fn transfer_references_mut(&mut self) -> Option<(&mut String, &mut String)> {
         match self {
             Self::RepeatTransfer {
@@ -226,6 +231,7 @@ impl Consequence {
         }
     }
 
+    /// Borrows the declared capture amount or additive delta.
     pub fn delta(&self) -> Option<&DecimalValue> {
         match self {
             Self::CaptureEntry { amount, .. } => Some(amount),
@@ -234,165 +240,67 @@ impl Consequence {
         }
     }
 
+    /// Borrows the capture amount, if present.
     pub fn capture_amount(&self) -> Option<&DecimalValue> {
         match self {
             Self::CaptureEntry { amount, .. } => Some(amount),
             _ => None,
         }
     }
-
-    fn validate(&self) -> Result<(), NucleusError> {
-        if let Self::ReopenTransferNeed {
-            target: Some(target),
-            ..
-        } = self
-            && (target.is_negative() || target.is_zero())
-        {
-            return Err(NucleusError::Parse(
-                "Choose a positive target quantity".into(),
-            ));
-        }
-        if let Self::AdvanceAudience { plan, commitment } = self
-            && (!crate::valid_uid(plan, "r")
-                || super::CanonicalHash::parse(commitment.clone()).is_err())
-        {
-            return Err(NucleusError::Parse(
-                "Choose a reviewed audience plan".into(),
-            ));
-        }
-        if let Self::ShowComponent { component } = self {
-            component.validate().map_err(NucleusError::Parse)?;
-        }
-        if let Some(target) = self.transfer_target() {
-            if target.trim().is_empty()
-                || self
-                    .transfer_person()
-                    .is_none_or(|person| person.trim().is_empty())
-            {
-                return Err(NucleusError::Parse(
-                    "Choose a Transfer and acting Person".into(),
-                ));
-            }
-            if let Self::SetTransferAgreement {
-                level, after_ms, ..
-            } = self
-            {
-                if let Some(value) = level {
-                    super::transfer_consequence::level(*value).map_err(NucleusError::Parse)?;
-                }
-                if after_ms.is_some_and(|value| value.get() <= 0) {
-                    return Err(NucleusError::Parse(
-                        "Agreement delay must be positive".into(),
-                    ));
-                }
-            }
-            if let Self::ActivateTransferFulfillment {
-                promise,
-                fulfillment,
-                ..
-            } = self
-                && (promise.trim().is_empty()
-                    || fulfillment.trim().is_empty()
-                    || fulfillment.len() > 200
-                    || fulfillment.chars().any(char::is_control))
-            {
-                return Err(NucleusError::Parse("Choose a promise and fulfillment key of 1–200 bytes without control characters".into()));
-            }
-        }
-        let concept = match self {
-            Self::SetConcept { concept }
-            | Self::AddConcept { concept }
-            | Self::RemoveConcept { concept } => Some(concept),
-            Self::SetQuantityWhere { assertion, .. } => Some(assertion),
-            Self::CaptureEntry { concept, .. } => concept.as_ref(),
-            _ => None,
-        };
-        if let Some(concept) = concept
-            && concept.trim().is_empty()
-        {
-            return Err(NucleusError::Parse(format!(
-                "`{}` needs a concept, and an empty one is not a concept",
-                self.kind()
-            )));
-        }
-        let named = match self {
-            Self::InvokeCommand { command } | Self::RunCommand { command } => Some(command),
-            Self::RunQuery { query, .. } => Some(query),
-            Self::RunAction { action } => Some(action),
-            _ => None,
-        };
-        if let Some(named) = named
-            && named.trim().is_empty()
-        {
-            return Err(NucleusError::Parse(format!(
-                "`{}` needs something to run",
-                self.kind()
-            )));
-        }
-        if let Self::Ask { options, .. } = self
-            && options.iter().any(|option| option.trim().is_empty())
-        {
-            return Err(NucleusError::Parse(
-                "a question cannot offer a blank answer".into(),
-            ));
-        }
-        Ok(())
-    }
 }
 
+/// An ordered list of consequences. Use [Self::new] to validate a newly authored list.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct Consequences(Vec<Consequence>);
 
 impl Consequences {
+    /// Takes ownership of an ordered, nonempty list of distinct consequences.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error for an invalid consequence, an empty list, or a duplicate.
     pub fn new(items: Vec<Consequence>) -> Result<Self, NucleusError> {
-        if items.is_empty() {
-            return Err(NucleusError::Parse(
-                "a rule needs at least one consequence".into(),
-            ));
-        }
-        for item in &items {
-            item.validate()?;
-        }
-        for (index, item) in items.iter().enumerate() {
-            if items[..index].contains(item) {
-                return Err(NucleusError::Parse(format!(
-                    "`{}` appears twice in one rule",
-                    item.kind()
-                )));
-            }
-        }
+        Self::validate(&items)?;
         Ok(Self(items))
     }
 
+    /// Creates a rule that captures one entry.
     pub fn capture(amount: DecimalValue, concept: Option<String>) -> Self {
         Self(vec![Consequence::CaptureEntry { amount, concept }])
     }
 
+    /// Borrows consequences in their execution order.
     pub fn as_slice(&self) -> &[Consequence] {
         &self.0
     }
 
-    pub fn iter(&self) -> std::slice::Iter<'_, Consequence> {
+    /// Iterates through consequences in their execution order.
+    pub fn iter(&self) -> Iter<'_, Consequence> {
         self.0.iter()
     }
 
+    /// Returns the number of stored consequences.
     pub fn len(&self) -> usize {
         self.0.len()
     }
 
+    /// Reports whether the stored list has no consequences.
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
 
+    /// Borrows the first declared capture amount or additive delta.
     pub fn declared_delta(&self) -> Option<&DecimalValue> {
         self.0.iter().find_map(Consequence::delta)
     }
 
+    /// Borrows the first capture amount, if present.
     pub fn capture_amount(&self) -> Option<&DecimalValue> {
         self.0.iter().find_map(Consequence::capture_amount)
     }
 
+    /// Borrows the first declared capture concept.
     pub fn capture_concept(&self) -> Option<&str> {
         self.0.iter().find_map(|item| match item {
             Consequence::CaptureEntry { concept, .. } => concept.as_deref(),
@@ -400,6 +308,7 @@ impl Consequences {
         })
     }
 
+    /// Reports whether any consequence moves a quantity.
     pub fn moves_quantity(&self) -> bool {
         self.0.iter().any(Consequence::moves_quantity)
     }
@@ -407,10 +316,10 @@ impl Consequences {
 
 impl<'a> IntoIterator for &'a Consequences {
     type Item = &'a Consequence;
-    type IntoIter = std::slice::Iter<'a, Consequence>;
+    type IntoIter = Iter<'a, Consequence>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.0.iter()
+        self.iter()
     }
 }
 

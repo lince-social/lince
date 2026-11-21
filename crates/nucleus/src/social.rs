@@ -1,45 +1,12 @@
-// non-lean-yet
-// Scope: mod ask, mod gossip, mod reports, mod requests.
-// BeautifulRust (baseline lines):
-// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
-//   text:empty (139).
-// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
-//   Sites 31, 39, 47, 310, 586, 602, 659.
-// - [Clippy: clippy::large_enum_variant] large size difference between variants. Sites 310, 659.
-// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
-//   124.
-// - [Clippy: clippy::match_same_arms] these match arms have identical bodies. Sites 521, 529, 530,
-//   531, 532, 533, 534, 535, 539.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 87, 139.
-// - [Clippy: clippy::struct_excessive_bools] more than 3 bools in a struct. Sites 611.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 5,
-//   6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 31, 33, 34, 39, 41, 42, 47, 49, 50, 51, 52,
-//   57, 59, 60, 61, 62, 63, 65, 67, 69, 71, 73, 75, 77, 79, 81, 83, 87, 139, 156, 157, 158, 159,
-//   160, 161, 162, 163, 164, 169, 170, 171, 172, 173, 178, 179, 180, 185, 186, 187, 188, 189, 190,
-//   191, 196, 197, 198, 203, 204, 205, 207, 209, 211, 213, 215, 220, 221, 222, 223, 224, 225, 226,
-//   227, 228, 229, 230, 235, 236, 237, 238, 239, 240, 241, 246, 247, 248, 249, 254, 256, 257, 258,
-//   259, 260, 261, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 278,
-//   279, 280, 281, 282, 283, 284, 285, 290, 292, 293, 295, 297, 299, 301, 303, 305, 310, 311, 312,
-//   313, 314, 315, 317, 318, 319, 321, 322, 323, 325, 327, 329, 330, 332, 333, 335, 336, 338, 339,
-//   341, 342, 344, 345, 346, 348, 349, 350, 351, 353, 354, 356, 357, 359, 360, 361, 362, 364, 365,
-//   367, 368, 370, 371, 373, 374, 376, 377, 378, 379, 381, 382, 384, 385, 387, 388, 389, 390, 392,
-//   393, 395, 396, 398, 399, 401, 402, 404, 405, 407, 408, 410, 411, 412, 414, 415, 417, 418, 419,
-//   420, 422, 423, 424, 426, 427, 429, 430, 432, 434, 436, 437, 439, 440, 442, 443, 444, 445, 447,
-//   448, 449, 451, 452, 453, 455, 457, 458, 460, 461, 462, 464, 465, 467, 469, 471, 472, 473, 475,
-//   476, 478, 480, 482, 483, 485, 486, 487, 488, 490, 491, 492, 494, 495, 496, 497, 499, 500, 501,
-//   502, 504, 505, 506, 508, 509, 510, 512, 513, 515, 519, 571, 572, 573, 574, 575, 576, 577, 579,
-//   581, 586, 587, 591, 602, 603, 604, 605, 606, 611, 612, 613, 614, 615, 616, 617, 618, 619, 620,
-//   621, 622, 645, 646, 647, 648, 649, 650, 651, 652, 653, 654, 659, 660, 661, 663, 664, 665, 666,
-//   668, 669, 671, 672, 674, 675, 677, 678, 679, 681, 682, 683, 685, 686, 688, 689, 691, 692, 694,
-//   695, 697, 698, 699, 701, 702, 704, 705, 706, 708, 709, 711, 712, 714, 715, 717, 718, 720, 721,
-//   722, 724, 725, 726, 728, 729, 731, 732, 734, 735, 737, 738, 739, 741, 742, 744, 745, 747, 748,
-//   750, 752, 753, 758.
-// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites text: String
-//   (139), validate: String (87).
+//! Social drafts, publication and private messaging wire contracts.
+//!
+//! [Command] classifies host permissions, [PublicRequest] defines relayed messages,
+//! and [PostDraft] carries announcement editor input.
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
+use crate::visibility::plan::PRIVATE_NAMESPACE as AUDIENCE_PRIVATE_NAMESPACE;
 
 pub mod ask;
 pub mod gossip;
@@ -47,23 +14,42 @@ pub mod reports;
 pub mod requests;
 pub mod subscriptions;
 pub mod transport;
+mod validation;
 
+pub use validation::text;
+
+/// The owner-local namespace for private social data.
 pub const PRIVATE_NAMESPACE: &str = "lince.social.private";
+/// The namespace for announcement publication state.
 pub const PUBLICATION_NAMESPACE: &str = "lince.social.publication";
+/// The namespace for profile state.
 pub const PROFILE_NAMESPACE: &str = "lince.social.profile";
+/// The maximum serialized announcement size in bytes.
 pub const MAX_SNIPPET_BYTES: usize = 6 * 1024;
+/// The maximum serialized profile size in bytes.
 pub const MAX_PROFILE_BYTES: usize = 16 * 1024;
+/// The ordinary relay frame limit in bytes.
 pub const MAX_FRAME_BYTES: usize = 256 * 1024;
+/// The relay frame limit when carrying private attachment envelopes.
 pub const MAX_PRIVATE_FRAME_BYTES: usize = requests::MAX_ATTACHMENT_ENVELOPE_BYTES + 64 * 1024;
-pub const MAX_LIFETIME: i64 = 7 * 86400;
+/// The maximum announcement lifetime in seconds.
+pub const MAX_LIFETIME: i64 = 7 * 86_400;
+/// The synchronization vector prefix for the owner’s conversations.
 pub const CONVERSATION_VECTOR_PREFIX: &str = "lince.own-conversation/";
 
+/// Marks fields that belong in the owner’s private synchronization stream.
 pub fn private_sync_field(table: &str, field: &str) -> bool {
-    table == "data_visibility"
-        || table == "record_extension" && field.starts_with("lince.stock-policy.private")
-        || table == "record_extension"
-            && field.starts_with(crate::visibility::plan::PRIVATE_NAMESPACE)
-        || (table == "record_extension" && field.starts_with("lince.social."))
+    match table {
+        "data_visibility" => true,
+        "record_extension" => [
+            "lince.stock-policy.private",
+            AUDIENCE_PRIVATE_NAMESPACE,
+            "lince.social.",
+        ]
+        .iter()
+        .any(|prefix| field.starts_with(prefix)),
+        _ => false,
+    }
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
@@ -121,74 +107,6 @@ pub struct PostDraft {
     pub destinations: Vec<String>,
     #[serde(default)]
     pub lifetime_days: Option<u32>,
-}
-
-impl PostDraft {
-    pub fn validate(&self) -> Result<(), String> {
-        if let Some(transport) = &self.transport {
-            transport.validate()?;
-        }
-        if self
-            .lifetime_days
-            .is_some_and(|days| !(1..=7).contains(&days))
-        {
-            return Err("Choose an announcement lifetime from one to seven days".into());
-        }
-        text(&self.title, 160, false)?;
-        text(&self.text, 1200, true)?;
-        text(&self.alias, 80, true)?;
-        text(&self.language, 32, true)?;
-        text(&self.area, 160, true)?;
-        text(&self.availability, 160, true)?;
-        if self.destinations.len() > 8
-            || self
-                .destinations
-                .iter()
-                .any(|s| s.is_empty() || s.len() > 128)
-        {
-            return Err("Choose at most eight valid publication services".into());
-        }
-        for value in [&self.unit, &self.concept].into_iter().flatten() {
-            text(value, 160, false)?;
-            if ["r_", "c_", "p_", "pl_"]
-                .iter()
-                .any(|prefix| value.starts_with(prefix))
-            {
-                return Err(
-                    "Use a public concept/unit label rather than a private Record UID".into(),
-                );
-            }
-        }
-        if let Some(amount) = &self.quantity {
-            let number = crate::DecimalValue::parse_inferred(amount)
-                .map_err(|_| "Enter an exact decimal quantity")?;
-            if number.is_zero()
-                || number.is_negative()
-                || self.unit.as_ref().is_none_or(String::is_empty)
-            {
-                return Err("An optional quantity must be positive and have a unit; direction is selected separately".into());
-            }
-        }
-        if self.mode == AuthorMode::Identified && !self.alias.is_empty() {
-            return Err("An anonymous alias belongs to anonymous publication".into());
-        }
-        Ok(())
-    }
-}
-
-pub fn text(value: &str, max: usize, empty: bool) -> Result<(), String> {
-    if (!empty && value.trim().is_empty())
-        || value.chars().count() > max
-        || value
-            .chars()
-            .any(|c| c.is_control() && c != '\n' && c != '\t')
-    {
-        Err(format!(
-            "Use at most {max} characters and remove unsupported control characters"
-        ))
-    } else {
-        Ok(())
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
@@ -347,6 +265,10 @@ pub struct Search {
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "command", rename_all = "kebab-case", deny_unknown_fields)]
+#[expect(
+    clippy::large_enum_variant,
+    reason = "Publish retains its public inline Snippet payload"
+)]
 pub enum Command {
     OpenRequest {
         post: Box<Snippet>,
@@ -556,27 +478,41 @@ pub enum Command {
 }
 
 impl Command {
+    /// Returns the host permission required for this social command.
     pub fn permission(&self) -> &'static str {
         match self {
-            Self::Overview
-            | Self::Requests { .. }
+            Self::Requests { .. }
             | Self::PrivateDeliveryStatus { .. }
             | Self::ReplyKeyStatus { .. }
+            | Self::FetchProfileImage { .. }
+            | Self::ServiceHealth
+            | Self::InspectService { .. }
+            | Self::AskStatus
+            | Self::AskResults { .. }
+            | Self::Overview
+            | Self::Subscriptions { .. }
+            | Self::SubscriptionResults { .. }
+            | Self::Reports
+            | Self::ReceivedReports { .. }
+            | Self::Mutes { .. }
+            | Self::RemovedListings { .. }
             | Self::PostPage { .. }
             | Self::Search { .. }
-            | Self::FetchProfile { .. }
-            | Self::FetchProfileImage { .. } => "view:stream",
-            Self::InspectService { .. } => "view:stream",
-            Self::ServiceHealth => "view:stream",
-            Self::Mutes { .. } | Self::RemovedListings { .. } => "view:stream",
-            Self::Reports | Self::ReceivedReports { .. } => "view:stream",
-            Self::Subscriptions { .. } | Self::SubscriptionResults { .. } => "view:stream",
-            Self::AskStatus | Self::AskResults { .. } => "view:stream",
-            Self::SaveProfile { .. }
-            | Self::ResetPrivateSessions
-            | Self::WithdrawProfile { .. }
-            | Self::RotateProfileAuthority => "organ:update",
-            Self::ConfigureServices { .. }
+            | Self::FetchProfile { .. } => "view:stream",
+            Self::ResetPrivateSessions
+            | Self::ImportProfileImage { .. }
+            | Self::ImportProfileImageData { .. }
+            | Self::ConfigureServices { .. }
+            | Self::RebuildPublicIndex
+            | Self::SaveServer { .. }
+            | Self::RemoveServer { .. }
+            | Self::ConfigureGossip { .. }
+            | Self::SetGossipContact { .. }
+            | Self::ConfigureAsk { .. }
+            | Self::SetAskContact { .. }
+            | Self::StartAsk { .. }
+            | Self::CancelAsk { .. }
+            | Self::ClearAsks
             | Self::SaveSubscription { .. }
             | Self::RemoveSubscription { .. }
             | Self::ConfigureSubscriptions { .. }
@@ -589,19 +525,26 @@ impl Command {
             | Self::Unmute { .. }
             | Self::RemoveListing { .. }
             | Self::RestoreListing { .. }
-            | Self::RebuildPublicIndex
-            | Self::SaveServer { .. }
-            | Self::RemoveServer { .. }
-            | Self::ConfigureGossip { .. }
-            | Self::SetGossipContact { .. }
-            | Self::ConfigureAsk { .. }
-            | Self::SetAskContact { .. }
-            | Self::StartAsk { .. }
-            | Self::CancelAsk { .. }
-            | Self::ClearAsks
-            | Self::ImportProfileImage { .. }
-            | Self::ImportProfileImageData { .. } => "organ:update",
-            _ => "record:update",
+            | Self::SaveProfile { .. }
+            | Self::WithdrawProfile { .. }
+            | Self::RotateProfileAuthority => "organ:update",
+            Self::OpenRequest { .. }
+            | Self::SendPrivate { .. }
+            | Self::DecideRequest { .. }
+            | Self::ResumePrivate { .. }
+            | Self::ResendExpiredPrivate { .. }
+            | Self::ResumeRequest { .. }
+            | Self::ArchiveRequest { .. }
+            | Self::UnblockParticipant { .. }
+            | Self::DiscardPrivate { .. }
+            | Self::RevealProfile { .. }
+            | Self::ConnectParticipant { .. }
+            | Self::PrepareReplyKeys { .. }
+            | Self::ArchivePost { .. }
+            | Self::PrepareFromRecord { .. }
+            | Self::SaveDraft { .. }
+            | Self::Preview { .. }
+            | Self::Publish { .. } => "record:update",
         }
     }
 }
@@ -628,6 +571,7 @@ pub enum ServerPreset {
 }
 
 impl ServerChoice {
+    /// Builds the optional Institute discovery preset.
     pub fn institute_helper() -> Self {
         Self {
             label: "Optional Institute discovery helper".into(),
@@ -696,6 +640,10 @@ pub struct ServiceDescriptor {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "request", rename_all = "kebab-case", deny_unknown_fields)]
+#[expect(
+    clippy::large_enum_variant,
+    reason = "PublishSnippet retains its public inline Snippet payload"
+)]
 pub enum PublicRequest {
     CustodyBegin {
         offer: Box<crate::trust_analysis::custody::Offer>,
@@ -795,6 +743,7 @@ pub enum PublicRequest {
 }
 
 impl PublicRequest {
+    /// Returns the maximum serialized request size in bytes.
     pub fn frame_limit(&self) -> usize {
         match self {
             Self::DeliverPrivate { .. }
@@ -802,5 +751,33 @@ impl PublicRequest {
             | Self::CollectPrivate { .. } => MAX_PRIVATE_FRAME_BYTES,
             _ => MAX_FRAME_BYTES,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{AUDIENCE_PRIVATE_NAMESPACE, private_sync_field, text};
+
+    #[test]
+    fn private_sync_matches_only_the_owner_tables_and_prefixes() {
+        assert!(private_sync_field("data_visibility", "any-field"));
+        for field in [
+            "lince.stock-policy.private.policy",
+            AUDIENCE_PRIVATE_NAMESPACE,
+            "lince.social.profile",
+        ] {
+            assert!(private_sync_field("record_extension", field));
+            assert!(!private_sync_field("record", field));
+        }
+        assert!(!private_sync_field("record_extension", "lince.social"));
+    }
+
+    #[test]
+    fn draft_text_limits_apply_to_unicode_characters_and_allowed_controls() {
+        assert!(text("é🙂\t\n", 4, false).is_ok());
+        assert!(text("é🙂\t\n", 3, false).is_err());
+        assert!(text("é🙂\r", 4, true).is_err());
+        assert!(text(" \t", 2, true).is_ok());
+        assert!(text(" \t", 2, false).is_err());
     }
 }

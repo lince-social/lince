@@ -491,14 +491,11 @@ pub(super) fn update(world: &mut World, mut deadline: Local<crate::host::WakeDea
             view.unwind,
         );
         let size = size(world, viewport);
-        let spatial = world
-            .get::<crate::native::topology::view::View>(root)
-            .is_some_and(|view| view.spatial)
-            && world
-                .get::<crate::native::topology::presentation::Surface>(owner)
-                .is_some();
-        chrome::presentation(world, owner, !spatial && settings.mode == Mode::Coiled);
-        ui::upcoming(world, owner, now, !spatial && unwind < 0.001, &palette);
+        let raster_geometry = world
+            .get::<crate::native::topology::presentation::Surface>(owner)
+            .is_none();
+        chrome::presentation(world, owner, settings.mode == Mode::Coiled);
+        ui::upcoming(world, owner, now, unwind < 0.001, &palette);
         keyboard::update(world, owner, &palette);
         let source = settings
             .source
@@ -553,60 +550,50 @@ pub(super) fn update(world: &mut World, mut deadline: Local<crate::host::WakeDea
                 size.y.to_bits(),
             ],
             unwind.to_bits(),
-            spatial,
+            raster_geometry,
             face::Face::rows(&settings, &world.get::<View>(owner).unwrap().entries, now),
         );
         let changed = world.get::<View>(owner).unwrap().rendered.as_ref() != Some(&stamp);
         let tick_changed = world
             .get::<motion::Motion>(owner)
             .is_none_or(|motion| motion.tick != now / 1000);
-        let duration = if spatial {
-            settings.horizon_ms
-        } else {
-            (settings.aperture_ms as f64
-                + (settings.horizon_ms - settings.aperture_ms) as f64 * f64::from(unwind))
-                as i64
-        };
+        let duration = (settings.aperture_ms as f64
+            + (settings.horizon_ms - settings.aperture_ms) as f64 * f64::from(unwind))
+            as i64;
         let moving = motion::update(world, owner, now, duration, changed);
         animated |= moving;
         if changed {
-            if spatial {
-                world.entity_mut(viewport).remove::<ImageNode>();
-            } else {
-                let view = world.get::<View>(owner).unwrap();
-                let svg = svg(
-                    &settings,
-                    view,
-                    now,
-                    size,
-                    density,
-                    &palette,
-                    world
-                        .get::<crate::native::topology::presentation::Surface>(owner)
-                        .is_none(),
-                );
-                if let Some(image) = rasterize(&svg, size, density) {
-                    world.init_resource::<Assets<Image>>();
-                    let previous = world.get::<View>(owner).unwrap().image.clone();
-                    let handle = if let Some(handle) = previous {
-                        let _ = world
-                            .resource_mut::<Assets<Image>>()
-                            .insert(handle.id(), image);
-                        handle
-                    } else {
-                        world.resource_mut::<Assets<Image>>().add(image)
-                    };
-                    world
-                        .entity_mut(viewport)
-                        .insert(ImageNode::new(handle.clone()));
-                    world.get_mut::<View>(owner).unwrap().image = Some(handle);
-                }
+            let view = world.get::<View>(owner).unwrap();
+            let svg = svg(
+                &settings,
+                view,
+                now,
+                size,
+                density,
+                &palette,
+                raster_geometry,
+            );
+            if let Some(image) = rasterize(&svg, size, density) {
+                world.init_resource::<Assets<Image>>();
+                let previous = world.get::<View>(owner).unwrap().image.clone();
+                let handle = if let Some(handle) = previous {
+                    let _ = world
+                        .resource_mut::<Assets<Image>>()
+                        .insert(handle.id(), image);
+                    handle
+                } else {
+                    world.resource_mut::<Assets<Image>>().add(image)
+                };
+                world
+                    .entity_mut(viewport)
+                    .insert(ImageNode::new(handle.clone()));
+                world.get_mut::<View>(owner).unwrap().image = Some(handle);
             }
             let mut view = world.get_mut::<View>(owner).unwrap();
             view.rendered = Some(stamp);
             view.detail_revision = u64::MAX;
         }
-        let round = !spatial && settings.mode == Mode::Coiled && unwind < 0.001;
+        let round = settings.mode == Mode::Coiled && unwind < 0.001;
         let labels = annotations::update(
             world,
             owner,
@@ -621,7 +608,7 @@ pub(super) fn update(world: &mut World, mut deadline: Local<crate::host::WakeDea
             .is_some_and(|motion| motion.active);
         animated |= following;
         if changed || moving || tick_changed {
-            scene::update(world, owner, &settings, now, size, spatial);
+            scene::update(world, owner, &settings, now, size, duration);
         }
         scene::annotations(world, owner, &labels, &palette);
         let hand = round && !chrome::controls_open(world, owner);
@@ -640,7 +627,7 @@ pub(super) fn update(world: &mut World, mut deadline: Local<crate::host::WakeDea
             };
             delay = delay.min(hand_delay);
         }
-        scene::placement(world, owner, viewport, spatial);
+        scene::placement(world, owner, viewport);
     }
     if animated {
         delay = std::time::Duration::from_millis(16);

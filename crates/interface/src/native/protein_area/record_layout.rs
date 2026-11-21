@@ -970,7 +970,7 @@ pub(crate) mod tests {
     crate::native::laboratory_cases! {
         relation_records_keep_every_non_title_property_in_a_saved_accordion,
         title_only_records_hide_properties_and_controls_until_opened,
-        fiote_castle_contains_management_without_conversation,
+        fiote_castle_starts_in_conversations,
         empty_fields_collapse_and_dates_share_a_row_without_replacing_editors,
         new_controls_follow_disclosure_and_title_never_has_an_inner_box,
     }
@@ -1310,7 +1310,7 @@ pub(crate) mod tests {
     }
 
     #[cfg_attr(test, test)]
-    fn fiote_castle_contains_management_without_conversation() {
+    fn fiote_castle_starts_in_conversations() {
         let (mut app, _, owner) = super::super::tests::fixture();
         let mut config = Config::records();
         config.fiote = true;
@@ -1335,7 +1335,7 @@ pub(crate) mod tests {
                 .query::<&crate::native::thread_castle::ThreadCastle>()
                 .iter(app.world())
                 .count(),
-            0
+            1
         );
         assert_eq!(
             app.world_mut()
@@ -1349,6 +1349,18 @@ pub(crate) mod tests {
                 .query::<&Text>()
                 .iter(app.world())
                 .any(|text| text.0 == "Manage Fiote")
+        );
+        assert!(
+            app.world_mut()
+                .query::<&Text>()
+                .iter(app.world())
+                .any(|text| text.0 == "New thread")
+        );
+        assert!(
+            app.world_mut()
+                .query::<&Text>()
+                .iter(app.world())
+                .all(|text| text.0 != "Working directory override · blank inherits")
         );
     }
 

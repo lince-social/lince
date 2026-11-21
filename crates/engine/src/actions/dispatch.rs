@@ -1,42 +1,52 @@
 // non-lean-yet
-// Scope: mod part_0, mod part_1, mod part_2, mod part_3.
-// BeautifulRust (baseline lines):
-// - [Clippy probe: clippy::match_same_arms] these match arms have identical bodies. Sites 245, 264.
-// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
-//   test conventions. Sites 1.
 
 use super::*;
-use std::ops::ControlFlow;
+use std::{future::Future, ops::ControlFlow, pin::Pin};
 
-mod part_0;
-mod part_1;
-mod part_2;
-mod part_3;
-mod part_4;
-mod part_5;
-mod part_6;
-mod part_7;
-mod part_8;
+mod access;
+mod contacts;
+mod conversations;
+mod file_sync;
+mod fiote;
+mod karma;
+mod mailboxes;
+mod messaging;
+mod organ_management;
+mod promises;
+mod record_extensions;
+mod record_moves;
+mod record_mutations;
+mod records;
+mod saved_proteins;
+mod signals;
+mod social;
+mod transfers;
+mod vocabulary;
+mod workspace_components;
 
 type DispatchOutcome = Result<ControlFlow<ActionOutcome, ActionOutcome>, EngineError>;
+type DispatchFuture<'engine> = Pin<Box<dyn Future<Output = DispatchOutcome> + Send + 'engine>>;
+
+fn invalid_dispatch() -> EngineError {
+    EngineError::Consequence("Invalid internal action dispatch".into())
+}
 
 impl Engine {
-    pub(super) fn dispatch_action_parts(
+    pub(super) fn dispatch_action(
         &self,
         action: Action,
         actor: Option<String>,
         now: DateTime<Utc>,
         verified_authorship: Option<VerifiedActionAuthorship>,
-    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = DispatchOutcome> + Send + '_>> {
-        if let Action::RecordJourneyProgress {
-            transfer,
-            expected_revision,
-            person,
-            request_id,
-            step,
-        } = action
-        {
-            return Box::pin(async move {
+    ) -> DispatchFuture<'_> {
+        match action {
+            Action::RecordJourneyProgress {
+                transfer,
+                expected_revision,
+                person,
+                request_id,
+                step,
+            } => Box::pin(async move {
                 self.record_journey_progress(
                     transfer,
                     expected_revision,
@@ -49,17 +59,13 @@ impl Engine {
                 )
                 .await
                 .map(ControlFlow::Continue)
-            });
-        }
-        if let Action::Audience { request } = action {
-            return Box::pin(async move {
+            }),
+            Action::Audience { request } => Box::pin(async move {
                 self.audience_command(request, actor.as_deref(), now)
                     .await
                     .map(ControlFlow::Continue)
-            });
-        }
-        if let Action::Identity { request } = action {
-            return Box::pin(async move {
+            }),
+            Action::Identity { request } => Box::pin(async move {
                 self.identity_command_with_authorship(
                     request,
                     actor.as_deref(),
@@ -68,15 +74,12 @@ impl Engine {
                 )
                 .await
                 .map(ControlFlow::Continue)
-            });
-        }
-        if let Action::TrustAnalysis {
-            person,
-            request_id,
-            request,
-        } = action
-        {
-            return Box::pin(async move {
+            }),
+            Action::TrustAnalysis {
+                person,
+                request_id,
+                request,
+            } => Box::pin(async move {
                 self.trust_analysis_command(
                     person.as_deref(),
                     request_id,
@@ -87,15 +90,12 @@ impl Engine {
                 )
                 .await
                 .map(ControlFlow::Continue)
-            });
-        }
-        if let Action::TransferReceipt {
-            person,
-            request_id,
-            request,
-        } = action
-        {
-            return Box::pin(async move {
+            }),
+            Action::TransferReceipt {
+                person,
+                request_id,
+                request,
+            } => Box::pin(async move {
                 self.transfer_receipt_command(
                     person.as_deref(),
                     request_id,
@@ -106,10 +106,8 @@ impl Engine {
                 )
                 .await
                 .map(ControlFlow::Continue)
-            });
-        }
-        if matches!(action, Action::RecordTransferOutcome { .. }) {
-            return Box::pin(async move {
+            }),
+            Action::RecordTransferOutcome { .. } => Box::pin(async move {
                 self.record_transfer_outcome(
                     action,
                     actor.as_deref(),
@@ -118,125 +116,91 @@ impl Engine {
                 )
                 .await
                 .map(ControlFlow::Continue)
-            });
-        }
-        if let Action::Vocabulary { request } = action {
-            return Box::pin(async move {
+            }),
+            Action::Vocabulary { request } => Box::pin(async move {
                 self.vocabulary_command(request, actor.as_deref())
                     .await
                     .map(ControlFlow::Continue)
-            });
-        }
-        if let Action::Knowledge { request } = action {
-            return Box::pin(async move {
+            }),
+            Action::Knowledge { request } => Box::pin(async move {
                 self.knowledge_command(request, actor.as_deref())
                     .await
                     .map(ControlFlow::Continue)
-            });
-        }
-        if let Action::Demeter { request } = action {
-            return Box::pin(async move {
+            }),
+            Action::Demeter { request } => Box::pin(async move {
                 self.demeter_command(request, actor.as_deref(), now)
                     .await
                     .map(ControlFlow::Continue)
-            });
-        }
-        if let Action::Optimize { request } = action {
-            return Box::pin(async move {
+            }),
+            Action::Optimize { request } => Box::pin(async move {
                 self.optimization_command(request, actor.as_deref(), now)
                     .await
                     .map(ControlFlow::Continue)
-            });
-        }
-        if let Action::Sources { request } = action {
-            return Box::pin(async move {
+            }),
+            Action::Sources { request } => Box::pin(async move {
                 self.source_command(request, actor.as_deref())
                     .await
                     .map(ControlFlow::Continue)
-            });
-        }
-        if let Action::SavedLocation { request } = action {
-            return Box::pin(async move {
+            }),
+            Action::SavedLocation { request } => Box::pin(async move {
                 self.saved_location_command(request, actor.as_deref(), now)
                     .await
                     .map(ControlFlow::Continue)
-            });
-        }
-        if let Action::Location { request } = action {
-            return Box::pin(async move {
+            }),
+            Action::Location { request } => Box::pin(async move {
                 self.location_request(request, actor.as_deref())
                     .await
                     .map(ControlFlow::Continue)
-            });
-        }
-        if let Action::Plugins { request } = action {
-            return Box::pin(async move {
+            }),
+            Action::Plugins { request } => Box::pin(async move {
                 self.plugin_command(request, actor.as_deref())
                     .await
                     .map(ControlFlow::Continue)
-            });
-        }
-        if let Action::Visibility { request } = action {
-            return Box::pin(async move {
+            }),
+            Action::Visibility { request } => Box::pin(async move {
                 self.visibility_request(request, actor.as_deref())
                     .await
                     .map(ControlFlow::Continue)
-            });
-        }
-        if let Action::InspectRecordAuthority { person, record_uid } = action {
-            return Box::pin(async move {
+            }),
+            Action::InspectRecordAuthority { person, record_uid } => Box::pin(async move {
                 self.inspect_record_authority(actor.as_deref(), &person, &record_uid)
                     .await
                     .map(ControlFlow::Continue)
-            });
-        }
-        if let Action::Workspace { request } = action {
-            return Box::pin(async move {
+            }),
+            Action::Workspace { request } => Box::pin(async move {
                 self.workspace_request(request, actor.as_deref())
                     .await
                     .map(ControlFlow::Continue)
-            });
-        }
-        if let Action::SetRolePolicy {
-            role,
-            policy,
-            expected_revision,
-        } = action
-        {
-            return Box::pin(async move {
+            }),
+            Action::SetRolePolicy {
+                role,
+                policy,
+                expected_revision,
+            } => Box::pin(async move {
                 self.set_role_policy(actor.as_deref(), &role, policy, expected_revision)
                     .await
                     .map(ControlFlow::Continue)
-            });
-        }
-        if let Action::AssignRoles {
-            person,
-            roles,
-            expected_revision,
-        } = action
-        {
-            return Box::pin(async move {
+            }),
+            Action::AssignRoles {
+                person,
+                roles,
+                expected_revision,
+            } => Box::pin(async move {
                 self.assign_roles(actor.as_deref(), &person, &roles, expected_revision)
                     .await
                     .map(ControlFlow::Continue)
-            });
-        }
-        if let Action::RecordExtensions { target, request } = action {
-            return Box::pin(async move {
+            }),
+            Action::RecordExtensions { target, request } => Box::pin(async move {
                 self.record_extensions(target, request, actor.as_deref(), now)
                     .await
                     .map(ControlFlow::Continue)
-            });
-        }
-        if let Action::Canvas { canvas, request } = action {
-            return Box::pin(async move {
+            }),
+            Action::Canvas { canvas, request } => Box::pin(async move {
                 self.canvas_action(canvas, request, actor.as_deref())
                     .await
                     .map(ControlFlow::Continue)
-            });
-        }
-        if matches!(action, Action::InspectCanvases) {
-            return Box::pin(async move {
+            }),
+            Action::InspectCanvases => Box::pin(async move {
                 if actor.is_some() {
                     return Err(EngineError::Forbidden(
                         "Canvas inspection currently requires the local interface session.".into(),
@@ -246,154 +210,228 @@ impl Engine {
                     data: Some(serde_json::json!({"canvases":self.connected_canvases()})),
                     ..Default::default()
                 }))
-            });
-        }
-        match &action {
-            Action::Identity { .. }
-            | Action::Vocabulary { .. }
-            | Action::Knowledge { .. }
-            | Action::Sources { .. }
-            | Action::Demeter { .. }
-            | Action::Optimize { .. }
-            | Action::SavedLocation { .. }
-            | Action::Plugins { .. }
-            | Action::Visibility { .. }
-            | Action::Audience { .. }
-            | Action::RecordJourneyProgress { .. }
-            | Action::Location { .. }
-            | Action::Workspace { .. }
-            | Action::InspectRecordAuthority { .. }
-            | Action::SetRolePolicy { .. }
-            | Action::AssignRoles { .. }
-            | Action::RecordExtensions { .. }
-            | Action::InspectCanvases
-            | Action::Canvas { .. } => unreachable!(),
-            Action::RecordTransferOutcome { .. }
-            | Action::TransferReceipt { .. }
-            | Action::TrustAnalysis { .. } => unreachable!(),
-            Action::Social { .. }
-            | Action::SandPackage { .. }
-            | Action::ChangeRecord { .. }
-            | Action::CreateRecordWithTags { .. }
+            }),
+            Action::ChangeRecord { request } => Box::pin(async move {
+                let outcome = self.change_record(request, actor.as_deref()).await?;
+                Ok(ControlFlow::Continue(outcome))
+            }),
+            Action::CreateRecordWithTags { .. }
             | Action::CreateRecordDraft { .. }
-            | Action::CreateCustomComponent { .. }
-            | Action::CreateRecord { .. }
-            | Action::PreviewAreaTransition { .. }
-            | Action::ApplyAreaTransition { .. }
-            | Action::SetQuantityExact { .. }
-            | Action::PresentComponent { .. }
-            | Action::ActivateFiote { .. }
-            | Action::InspectFioteActivations { .. }
-            | Action::ReportFioteChild { .. }
-            | Action::DiscardTransferDraft { .. }
-            | Action::SetQuantity { .. }
-            | Action::TransitionRecord { .. }
-            | Action::CaptureEntry { .. }
-            | Action::CreateFrequency { .. }
-            | Action::DeleteFrequency { .. }
-            | Action::PreviewKarmaReading { .. }
-            | Action::PreviewKarmaProposal { .. }
-            | Action::InspectKarmaRuleHistory { .. }
-            | Action::InspectTransferKarma { .. }
-            | Action::PreviewKarmaHabit { .. }
-            | Action::ImportKarmaHabit { .. }
-            | Action::SaveKarmaSchedule { .. }
-            | Action::InspectKarmaSchedules { .. }
-            | Action::PreviewKarmaScheduleDates { .. }
-            | Action::CancelKarmaSchedule { .. }
-            | Action::RetryKarmaSchedule { .. }
-            | Action::SaveKarmaRule { .. }
-            | Action::ReviseKarmaField { .. }
-            | Action::CreateRecurrence { .. }
-            | Action::ReviseRecurrence { .. }
-            | Action::DeleteRecurrence { .. }
-            | Action::SetRecurrencePaused { .. }
-            | Action::ApplyRecurrenceOccurrence { .. }
-            | Action::SkipRecurrenceOccurrence { .. }
-            | Action::UnskipRecurrenceOccurrence { .. }
-            | Action::ReviseEntry { .. }
-            | Action::VoidEntry { .. }
-            | Action::ClassifyFact { .. }
-            | Action::AddQuantityGroupExact { .. }
-            | Action::AddQuantityExact { .. }
-            | Action::AddQuantity { .. }
+            | Action::CreateRecord { .. } => {
+                Box::pin(self.dispatch_records_creation(action, actor, now))
+            }
+            Action::TransitionRecord { .. }
             | Action::Activate { .. }
             | Action::Deactivate { .. }
             | Action::DeleteRecord { .. }
             | Action::EditRecordText { .. }
             | Action::SetSlug { .. }
-            | Action::SetUnit { .. } => {
-                self.dispatch_part_0(action, actor, now, verified_authorship)
+            | Action::SetUnit { .. }
+            | Action::SetAssertionOrder { .. }
+            | Action::SetPlace { .. }
+            | Action::GrantVisibility { .. } => {
+                Box::pin(self.dispatch_records_editing(action, actor, now))
             }
-            Action::SetExtension { .. }
-            | Action::RenameOrganContact { .. }
-            | Action::SetSyncPolicy { .. }
-            | Action::SetContactDelivery { .. }
-            | Action::ReconnectContact { .. }
-            | Action::SetContactAcceptScope { .. }
-            | Action::DeleteConversation { .. }
-            | Action::SendRecordCopy { .. }
-            | Action::HideRecordFromContact { .. }
-            | Action::SetContactScope { .. }
-            | Action::SetContactShare { .. }
-            | Action::PreviewRecordMove { .. }
-            | Action::CancelReplicaOffer { .. }
-            | Action::PendingOffers
-            | Action::AnswerRecordMove { .. }
-            | Action::MoveRecordTo { .. }
-            | Action::CancelRecordMove { .. }
-            | Action::ForgetOrganContact { .. }
-            | Action::AddKnownOrgan { .. }
-            | Action::ProposeGroup { .. }
-            | Action::SetGroupPerson { .. }
-            | Action::RemoveGroupOrgan { .. }
-            | Action::StartConversation { .. }
-            | Action::OpenThread { .. }
-            | Action::GrantOrganLogin { .. }
-            | Action::RevokeOrganLogin { .. }
-            | Action::AcceptThreadInvite { .. }
-            | Action::DeclineThreadInvite { .. }
-            | Action::ShareMyKey { .. }
-            | Action::RosterCreateOrgan
-            | Action::RosterSetKarmaExecution { .. }
-            | Action::RosterRenameCell { .. }
-            | Action::RosterEnrolToken
-            | Action::MailboxSavedStatus
-            | Action::MailboxSetCopies { .. }
-            | Action::MailboxRetrySaved { .. }
-            | Action::MailboxStatus
-            | Action::MailboxCarryFor { .. }
-            | Action::MailboxStopCarrying { .. }
-            | Action::MailboxPickupPoints
-            | Action::MailboxAddPickup { .. }
-            | Action::MailboxRemovePickup { .. }
-            | Action::MailboxCollectNow
-            | Action::MailboxRequests => {
-                self.dispatch_part_1(action, actor, now, verified_authorship)
+            Action::SetQuantityExact { .. }
+            | Action::SetQuantity { .. }
+            | Action::AddQuantityGroupExact { .. }
+            | Action::AddQuantityExact { .. }
+            | Action::AddQuantity { .. } => {
+                Box::pin(self.dispatch_records_quantities(action, actor, now))
             }
-            Action::MailboxAnswerRequest { .. }
-            | Action::MailboxIssueInvite { .. }
-            | Action::MailboxAskCarry { .. }
-            | Action::MailboxUseInvite { .. }
-            | Action::SetFileSyncEnabled { .. }
-            | Action::ConfigureFileSync { .. }
-            | Action::DirectorySync { .. }
-            | Action::FileSyncStatus { .. }
-            | Action::MailboxOutbound
-            | Action::MailboxMailNow { .. }
-            | Action::ReadMessageAttachment { .. }
-            | Action::SyncNow
-            | Action::RosterStatus
-            | Action::SetCellConfig { .. }
-            | Action::AuditContact { .. }
-            | Action::RosterJoinOrgan { .. }
-            | Action::RosterRevokeCell { .. }
-            | Action::RootKeyExport { .. }
-            | Action::RootKeyDetach { .. }
-            | Action::SetContactTrust { .. }
-            | Action::SetContactProximity { .. }
-            | Action::Compensate { .. }
-            | Action::CreateLingua { .. }
+            Action::SandPackage { .. }
+            | Action::CreateCustomComponent { .. }
+            | Action::PresentComponent { .. }
+            | Action::PreviewAreaTransition { .. }
+            | Action::ApplyAreaTransition { .. } => {
+                Box::pin(self.dispatch_workspace_components(action, actor, now))
+            }
+            Action::Social { .. } => Box::pin(self.dispatch_social(action, actor, now)),
+            Action::ConfigureFiote { .. }
+            | Action::CreateAgent { .. }
+            | Action::ActivateFiote { .. }
+            | Action::InspectFioteActivations { .. }
+            | Action::ReportFioteChild { .. } => Box::pin(self.dispatch_fiote(action, actor, now)),
+            Action::CaptureEntry { .. }
+            | Action::CreateFrequency { .. }
+            | Action::DeleteFrequency { .. }
+            | Action::ReviseEntry { .. }
+            | Action::VoidEntry { .. }
+            | Action::ClassifyFact { .. } => {
+                Box::pin(self.dispatch_karma_entries(action, actor, now))
+            }
+            Action::PreviewKarmaReading { .. }
+            | Action::PreviewKarmaProposal { .. }
+            | Action::InspectKarmaRuleHistory { .. }
+            | Action::SaveKarmaRule { .. }
+            | Action::ReviseKarmaField { .. } => {
+                Box::pin(self.dispatch_karma_rules(action, actor, now))
+            }
+            Action::PreviewKarmaHabit { .. } | Action::ImportKarmaHabit { .. } => {
+                Box::pin(self.dispatch_karma_habits(action, actor, now))
+            }
+            Action::SaveKarmaSchedule { .. }
+            | Action::InspectKarmaSchedules { .. }
+            | Action::PreviewKarmaScheduleDates { .. }
+            | Action::CancelKarmaSchedule { .. }
+            | Action::RetryKarmaSchedule { .. } => {
+                Box::pin(self.dispatch_karma_schedules(action, actor, now))
+            }
+            Action::CreateRecurrence { .. }
+            | Action::ReviseRecurrence { .. }
+            | Action::DeleteRecurrence { .. }
+            | Action::SetRecurrencePaused { .. }
+            | Action::ApplyRecurrenceOccurrence { .. }
+            | Action::SkipRecurrenceOccurrence { .. }
+            | Action::UnskipRecurrenceOccurrence { .. } => {
+                Box::pin(self.dispatch_karma_recurrences(action, actor, now))
+            }
+            Action::CreateKarmaProgram { .. }
+            | Action::ReviseKarmaProgram { .. }
+            | Action::ActivateKarmaProgram { .. }
+            | Action::PauseKarmaProgram { .. }
+            | Action::SetKarmaExecution { .. }
+            | Action::DesignateKarmaExecutor { .. }
+            | Action::RespondKarmaCandidate { .. } => {
+                Box::pin(self.dispatch_karma_programs(action, actor, now))
+            }
+            Action::SaveKarmaFrequency { .. }
+            | Action::CreateKarmaFrequency { .. }
+            | Action::ReviseKarmaFrequency { .. }
+            | Action::ActivateKarmaFrequency { .. }
+            | Action::SetKarmaFrequencyParameters { .. }
+            | Action::ResetKarmaFrequencyParameters { .. }
+            | Action::PauseKarmaFrequency { .. } => {
+                Box::pin(self.dispatch_karma_frequencies(action, actor, now))
+            }
+            Action::Decide { .. }
+            | Action::SaveKarmaCommand { .. }
+            | Action::RunKarmaCommand { .. }
+            | Action::InspectKarmaCommands => {
+                Box::pin(self.dispatch_karma_commands(action, actor, now))
+            }
+            Action::DiscardTransferDraft { .. }
+            | Action::CreateTransferDraft { .. }
+            | Action::ReviseTransferPromise { .. }
+            | Action::ReviseTransferDraft { .. }
+            | Action::AdoptTransferDraft { .. } => {
+                Box::pin(self.dispatch_transfers_drafts(action, actor, now, verified_authorship))
+            }
+            Action::CreateTransferRemainderDraft { .. }
+            | Action::CreateReversingTransferDraft { .. } => Box::pin(
+                self.dispatch_transfers_correction_drafts(action, actor, now, verified_authorship),
+            ),
+            Action::AddressTransferInvitation { .. }
+            | Action::AcceptTransferInvitation { .. }
+            | Action::RejectTransferInvitation { .. }
+            | Action::WithdrawTransferInvitation { .. }
+            | Action::ReopenTransferInvitation { .. }
+            | Action::CounterofferTransfer { .. } => Box::pin(self.dispatch_transfers_invitations(
+                action,
+                actor,
+                now,
+                verified_authorship,
+            )),
+            Action::CreateTransfer { .. }
+            | Action::AddParty { .. }
+            | Action::AddPromiseToTransfer { .. }
+            | Action::AgreeTransfer { .. }
+            | Action::SetTransferAgreementLevel { .. }
+            | Action::AssignTransferAgreementLevel { .. }
+            | Action::PublishTransfer { .. }
+            | Action::ConfirmTransfer { .. }
+            | Action::SetRecordStockLimit { .. } => Box::pin(self.dispatch_transfers_agreements(
+                action,
+                actor,
+                now,
+                verified_authorship,
+            )),
+            Action::ActivateTransfer { .. }
+            | Action::ActivateTransferFulfillment { .. }
+            | Action::ActivateTransferOccurrence { .. }
+            | Action::SetTransferChildRequirement { .. }
+            | Action::DesignateTransferExecutor { .. }
+            | Action::InspectTransferKarma { .. } => Box::pin(self.dispatch_transfers_fulfillment(
+                action,
+                actor,
+                now,
+                verified_authorship,
+            )),
+            Action::ClaimOpenTransferPromise { .. }
+            | Action::SetTransferOccurrenceClaim { .. }
+            | Action::CompleteTransferOccurrenceClaimsBulk { .. }
+            | Action::SetTransferOccurrenceDispute { .. } => {
+                Box::pin(self.dispatch_transfers_claims(action, actor, now, verified_authorship))
+            }
+            Action::SettleTransfer { .. }
+            | Action::SettleTransferOccurrence { .. }
+            | Action::BeginTransferSettlement { .. }
+            | Action::CompensateTransferOccurrenceSettlement { .. } => Box::pin(
+                self.dispatch_transfers_settlement(action, actor, now, verified_authorship),
+            ),
+            Action::CompensateTransferApplication { .. }
+            | Action::SetTransferPrivateApplicationPolicy { .. }
+            | Action::SetTransferOccurrenceApplicationFormula { .. }
+            | Action::ApplyTransferApplication { .. } => Box::pin(
+                self.dispatch_transfers_applications(action, actor, now, verified_authorship),
+            ),
+            Action::ConfigureTransferDelivery { .. }
+            | Action::SetTransferDeliveryMode { .. }
+            | Action::RevokeTransferDelivery { .. }
+            | Action::EnqueueTransferDelivery { .. }
+            | Action::RetryTransferDelivery { .. }
+            | Action::RefreshTransferDelivery { .. } => {
+                Box::pin(self.dispatch_transfers_delivery(action, actor, now, verified_authorship))
+            }
+            Action::ProposeTransferLoanExtension { .. }
+            | Action::ProposeTransferCancellation { .. }
+            | Action::ApplyTransferCancellation { .. }
+            | Action::ReopenTransferPromise { .. } => Box::pin(self.dispatch_transfers_amendments(
+                action,
+                actor,
+                now,
+                verified_authorship,
+            )),
+            Action::CreateThread { .. } | Action::CreateTransferThread { .. } => {
+                Box::pin(self.dispatch_messaging_threads(action, actor, now, verified_authorship))
+            }
+            Action::CreateMessage { .. }
+            | Action::ReviseMessage { .. }
+            | Action::CreateTransferMessage { .. } => {
+                Box::pin(self.dispatch_messaging_messages(action, actor, now, verified_authorship))
+            }
+            Action::CreateMessageDraft { .. }
+            | Action::ReviseMessageDraft { .. }
+            | Action::DeleteMessageDraft { .. }
+            | Action::SendMessageDraft { .. } => {
+                Box::pin(self.dispatch_messaging_drafts(action, actor, now, verified_authorship))
+            }
+            Action::CreatePromise { .. }
+            | Action::PromiseTransition { .. }
+            | Action::EditPromiseDelta { .. } => {
+                Box::pin(self.dispatch_promises(action, actor, now))
+            }
+            Action::RenameRole { .. }
+            | Action::DeleteRole { .. }
+            | Action::CreateRole { .. }
+            | Action::AssignRole { .. }
+            | Action::GrantPermission { .. }
+            | Action::RevokePermission { .. } => {
+                Box::pin(self.dispatch_access_roles(action, actor))
+            }
+            Action::CreateUser { .. }
+            | Action::UpdateUser { .. }
+            | Action::DeleteUser { .. }
+            | Action::SetPersonStanding { .. } => {
+                Box::pin(self.dispatch_access_accounts(action, actor, now))
+            }
+            Action::SetPersonReadFilter { .. } | Action::SetRoleReadRules { .. } => {
+                Box::pin(self.dispatch_access_read_rules(action, actor))
+            }
+            Action::SignalEndpoints { .. } | Action::CreateSignal { .. } => {
+                Box::pin(self.dispatch_signals(action, actor, now))
+            }
+            Action::CreateLingua { .. }
             | Action::RenameLingua { .. }
             | Action::DeleteLingua { .. }
             | Action::CreateConcept { .. }
@@ -403,128 +441,87 @@ impl Engine {
             | Action::RemoveConceptFromLingua { .. }
             | Action::AddConceptParent { .. }
             | Action::RemoveConceptParent { .. }
-            | Action::AssertRecord { .. }
             | Action::PreviewInstinct
             | Action::ImportInstinct { .. }
-            | Action::ConfigureFiote { .. }
-            | Action::CreateAgent { .. }
+            | Action::CreateMatchRule { .. }
+            | Action::AdoptConcepts { .. }
+            | Action::DeclareEquivalence { .. } => {
+                Box::pin(self.dispatch_vocabulary(action, actor, now))
+            }
+            Action::SaveProtein { .. } => Box::pin(self.dispatch_saved_proteins(action, actor)),
+            Action::SetContactDelivery { .. }
+            | Action::ReconnectContact { .. }
+            | Action::RenameOrganContact { .. }
+            | Action::SetSyncPolicy { .. }
+            | Action::SetContactAcceptScope { .. }
+            | Action::HideRecordFromContact { .. }
+            | Action::SetContactScope { .. }
+            | Action::SetContactShare { .. }
+            | Action::ForgetOrganContact { .. }
+            | Action::AddKnownOrgan { .. }
+            | Action::AuditContact { .. }
+            | Action::SetContactTrust { .. }
+            | Action::SetContactProximity { .. } => self.dispatch_contacts(action, actor, now),
+            Action::SetExtension { .. } => self.dispatch_record_extensions(action, actor, now),
+            Action::DeleteConversation { .. }
+            | Action::SendRecordCopy { .. }
+            | Action::StartConversation { .. }
+            | Action::OpenThread { .. }
+            | Action::AcceptThreadInvite { .. }
+            | Action::DeclineThreadInvite { .. }
+            | Action::ShareMyKey { .. }
+            | Action::ReadMessageAttachment { .. } => {
+                self.dispatch_conversations(action, actor, now)
+            }
+            Action::PreviewRecordMove { .. }
+            | Action::CancelReplicaOffer { .. }
+            | Action::PendingOffers
+            | Action::AnswerRecordMove { .. }
+            | Action::MoveRecordTo { .. }
+            | Action::CancelRecordMove { .. } => self.dispatch_record_moves(action, actor),
+            Action::ProposeGroup { .. }
+            | Action::SetGroupPerson { .. }
+            | Action::RemoveGroupOrgan { .. }
+            | Action::GrantOrganLogin { .. }
+            | Action::RevokeOrganLogin { .. }
+            | Action::RosterCreateOrgan
+            | Action::RosterSetKarmaExecution { .. }
+            | Action::RosterRenameCell { .. }
+            | Action::RosterEnrolToken
+            | Action::SyncNow
+            | Action::RosterStatus
+            | Action::SetCellConfig { .. }
+            | Action::RosterJoinOrgan { .. }
+            | Action::RosterRevokeCell { .. }
+            | Action::RootKeyExport { .. }
+            | Action::RootKeyDetach { .. } => self.dispatch_organ_management(action, actor),
+            Action::MailboxSavedStatus
+            | Action::MailboxSetCopies { .. }
+            | Action::MailboxRetrySaved { .. }
+            | Action::MailboxStatus
+            | Action::MailboxCarryFor { .. }
+            | Action::MailboxStopCarrying { .. }
+            | Action::MailboxPickupPoints
+            | Action::MailboxAddPickup { .. }
+            | Action::MailboxRemovePickup { .. }
+            | Action::MailboxCollectNow
+            | Action::MailboxRequests
+            | Action::MailboxAnswerRequest { .. }
+            | Action::MailboxIssueInvite { .. }
+            | Action::MailboxAskCarry { .. }
+            | Action::MailboxUseInvite { .. }
+            | Action::MailboxOutbound
+            | Action::MailboxMailNow { .. } => self.dispatch_mailboxes(action),
+            Action::SetFileSyncEnabled { .. }
+            | Action::ConfigureFileSync { .. }
+            | Action::DirectorySync { .. }
+            | Action::FileSyncStatus { .. } => self.dispatch_file_sync(action, actor, now),
+            Action::Compensate { .. }
+            | Action::AssertRecord { .. }
             | Action::RetractAssertion { .. }
             | Action::RefineAssertion { .. }
             | Action::RetractRecord { .. }
-            | Action::SetIdentity { .. } => {
-                self.dispatch_part_2(action, actor, now, verified_authorship)
-            }
-            Action::SetAssertionOrder { .. }
-            | Action::CreateThread { .. }
-            | Action::CreateMessage { .. }
-            | Action::ReviseMessage { .. }
-            | Action::CreateMessageDraft { .. }
-            | Action::ReviseMessageDraft { .. }
-            | Action::DeleteMessageDraft { .. }
-            | Action::SendMessageDraft { .. }
-            | Action::CreateTransferThread { .. }
-            | Action::CreateTransferMessage { .. }
-            | Action::CreatePromise { .. }
-            | Action::PromiseTransition { .. }
-            | Action::EditPromiseDelta { .. }
-            | Action::CreateTransfer { .. } => {
-                self.dispatch_part_3(action, actor, now, verified_authorship)
-            }
-            Action::CreateTransferDraft { .. }
-            | Action::ReviseTransferPromise { .. }
-            | Action::ReviseTransferDraft { .. }
-            | Action::AdoptTransferDraft { .. }
-            | Action::AddressTransferInvitation { .. }
-            | Action::AcceptTransferInvitation { .. }
-            | Action::RejectTransferInvitation { .. }
-            | Action::WithdrawTransferInvitation { .. } => {
-                self.dispatch_part_4(action, actor, now, verified_authorship)
-            }
-            Action::ReopenTransferInvitation { .. }
-            | Action::CounterofferTransfer { .. }
-            | Action::ClaimOpenTransferPromise { .. }
-            | Action::SetTransferAgreementLevel { .. }
-            | Action::AssignTransferAgreementLevel { .. }
-            | Action::PublishTransfer { .. }
-            | Action::ActivateTransferFulfillment { .. }
-            | Action::ActivateTransferOccurrence { .. }
-            | Action::SetTransferOccurrenceClaim { .. }
-            | Action::CompleteTransferOccurrenceClaimsBulk { .. }
-            | Action::SetTransferOccurrenceDispute { .. }
-            | Action::SetTransferChildRequirement { .. }
-            | Action::ProposeTransferLoanExtension { .. }
-            | Action::ProposeTransferCancellation { .. }
-            | Action::ApplyTransferCancellation { .. }
-            | Action::SetRecordStockLimit { .. } => {
-                self.dispatch_part_5(action, actor, now, verified_authorship)
-            }
-            Action::CompensateTransferApplication { .. }
-            | Action::SetTransferPrivateApplicationPolicy { .. }
-            | Action::SetTransferOccurrenceApplicationFormula { .. }
-            | Action::SettleTransferOccurrence { .. }
-            | Action::ConfigureTransferDelivery { .. }
-            | Action::SetTransferDeliveryMode { .. }
-            | Action::RevokeTransferDelivery { .. }
-            | Action::EnqueueTransferDelivery { .. }
-            | Action::RetryTransferDelivery { .. }
-            | Action::RefreshTransferDelivery { .. }
-            | Action::BeginTransferSettlement { .. }
-            | Action::ApplyTransferApplication { .. }
-            | Action::ConfirmTransfer { .. } => {
-                self.dispatch_part_6(action, actor, now, verified_authorship)
-            }
-            Action::AddParty { .. }
-            | Action::AddPromiseToTransfer { .. }
-            | Action::AgreeTransfer { .. }
-            | Action::ActivateTransfer { .. }
-            | Action::SettleTransfer { .. }
-            | Action::SetPlace { .. }
-            | Action::GrantVisibility { .. }
-            | Action::SaveProtein { .. }
-            | Action::CreateKarmaProgram { .. }
-            | Action::ReviseKarmaProgram { .. }
-            | Action::ActivateKarmaProgram { .. }
-            | Action::PauseKarmaProgram { .. }
-            | Action::SetKarmaExecution { .. }
-            | Action::DesignateKarmaExecutor { .. }
-            | Action::DesignateTransferExecutor { .. }
-            | Action::RespondKarmaCandidate { .. }
-            | Action::SaveKarmaFrequency { .. }
-            | Action::CreateKarmaFrequency { .. }
-            | Action::ReviseKarmaFrequency { .. }
-            | Action::ActivateKarmaFrequency { .. }
-            | Action::SetKarmaFrequencyParameters { .. }
-            | Action::ResetKarmaFrequencyParameters { .. }
-            | Action::PauseKarmaFrequency { .. }
-            | Action::Decide { .. }
-            | Action::SaveKarmaCommand { .. }
-            | Action::RunKarmaCommand { .. }
-            | Action::InspectKarmaCommands
-            | Action::SignalEndpoints { .. }
-            | Action::CreateSignal { .. }
-            | Action::CreateMatchRule { .. }
-            | Action::AdoptConcepts { .. } => {
-                self.dispatch_part_7(action, actor, now, verified_authorship)
-            }
-            Action::CreateTransferRemainderDraft { .. }
-            | Action::CreateReversingTransferDraft { .. }
-            | Action::ReopenTransferPromise { .. }
-            | Action::CompensateTransferOccurrenceSettlement { .. }
-            | Action::DeclareEquivalence { .. }
-            | Action::RenameRole { .. }
-            | Action::DeleteRole { .. }
-            | Action::CreateRole { .. }
-            | Action::CreateUser { .. }
-            | Action::UpdateUser { .. }
-            | Action::DeleteUser { .. }
-            | Action::AssignRole { .. }
-            | Action::SetPersonReadFilter { .. }
-            | Action::SetRoleReadRules { .. }
-            | Action::SetPersonStanding { .. }
-            | Action::GrantPermission { .. }
-            | Action::RevokePermission { .. } => {
-                self.dispatch_part_8(action, actor, now, verified_authorship)
-            }
+            | Action::SetIdentity { .. } => self.dispatch_record_mutations(action, actor, now),
         }
     }
 }

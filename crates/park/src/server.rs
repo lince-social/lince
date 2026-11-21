@@ -25,7 +25,7 @@ use std::{
     time::Instant,
 };
 
-use lince_interface::host::{OutputId, SurfaceId, WindowRequest, WindowState};
+use lince_host::{OutputId, SurfaceId, WindowRequest, WindowState};
 use smithay::{
     delegate_compositor, delegate_data_device, delegate_output, delegate_seat, delegate_shm,
     delegate_viewporter,
@@ -189,7 +189,7 @@ pub struct SurfaceNode {
     pub input: Option<RegionAttributes>,
     pub layout: SurfaceLayout,
     pub generation: u64,
-    pub color: lince_interface::host::color::Description,
+    pub color: lince_host::color::Description,
 }
 
 impl SurfaceNode {
@@ -433,8 +433,8 @@ struct State {
     popups: popups::Popups,
     authority: VecDeque<input::Authority>,
     modifiers_pending: bool,
-    presented_geometry: Option<lince_interface::host::GeometrySnapshot>,
-    presented_mappings: BTreeMap<OutputId, lince_interface::host::mapping::Mapping>,
+    presented_geometry: Option<lince_host::GeometrySnapshot>,
+    presented_mappings: BTreeMap<OutputId, lince_host::mapping::Mapping>,
     presented_focus: Option<OutputId>,
     activation: smithay::wayland::xdg_activation::XdgActivationState,
     activations: VecDeque<(SurfaceId, Instant, u64, bool)>,
@@ -1603,8 +1603,8 @@ impl CompositorHandler for State {
             let unchanged = !pixels_changed
                 && self.windows[&id].mapped
                 && self.visuals.get(&root) == Some(&visual);
-            if lince_interface::host::performance::enabled() {
-                use lince_interface::host::performance::{Count, count};
+            if lince_host::performance::enabled() {
+                use lince_host::performance::{Count, count};
                 let pixels_only = pixels_changed
                     && self
                         .visuals
@@ -1792,14 +1792,14 @@ impl XdgShellHandler for State {
     }
 
     fn app_id_changed(&mut self, _: ToplevelSurface) {
-        lince_interface::host::performance::count(
-            lince_interface::host::performance::Count::WindowMetadataChange,
+        lince_host::performance::count(
+            lince_host::performance::Count::WindowMetadataChange,
         );
         self.changed();
     }
     fn title_changed(&mut self, _: ToplevelSurface) {
-        lince_interface::host::performance::count(
-            lince_interface::host::performance::Count::WindowMetadataChange,
+        lince_host::performance::count(
+            lince_host::performance::Count::WindowMetadataChange,
         );
         self.changed();
     }

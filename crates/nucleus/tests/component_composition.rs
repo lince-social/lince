@@ -1,12 +1,8 @@
-// non-lean-yet
-// Scope: fn composition, fn shared_contract_checks_ids_actions_geometry_depth_and_document_size, fn
-//   activation_has_an_explicit_roundtrip_and_is_an_outward_effect, fn
-//   part_settings_roundtrip_and_reject_unbounded_or_structured_values.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
-//   Sites 29, 32, 43, 71, 72, 73, 79, 82, 97.
-
-use nucleus::component::{ComponentState, Composition, Document, Part};
+use nucleus::{
+    component::{ComponentState, Composition, Document, EventBinding, Part},
+    karma::rule_field::RuleConsequence,
+};
+use serde_json::{Value, json};
 
 fn composition() -> Composition {
     Composition {
@@ -25,19 +21,25 @@ fn composition() -> Composition {
     }
 }
 
+fn only_part(draft: &mut Composition) -> Result<&mut Part, String> {
+    let [part] = draft.parts.as_mut_slice() else {
+        return Err("Expected one part in the fixture".into());
+    };
+    Ok(part)
+}
+
 #[test]
-fn shared_contract_checks_ids_actions_geometry_depth_and_document_size() {
+fn shared_contract_checks_ids_actions_geometry_depth_and_document_size() -> Result<(), String> {
     let mut draft = composition();
     assert_eq!(
-        Document::decode(&Document::encode(draft.clone()).unwrap())
-            .unwrap()
-            .composition,
+        Document::decode(&Document::encode(draft.clone())?)?.composition,
         draft
     );
-    draft.parts.push(draft.parts[0].clone());
+    let duplicate = only_part(&mut draft)?.clone();
+    draft.parts.push(duplicate);
     assert!(draft.validate().is_err());
     draft = composition();
-    draft.parts[0].size = [0, 480];
+    only_part(&mut draft)?.size = [0, 480];
     assert!(draft.validate().is_err());
     assert!(
         ComponentState::Area {
@@ -48,11 +50,17 @@ fn shared_contract_checks_ids_actions_geometry_depth_and_document_size() {
         .is_err()
     );
     draft = composition();
-    draft.parts[0].component = ComponentState::Button {
+    only_part(&mut draft)?.component = ComponentState::Button {
         label: "Add a Fact".into(),
-        action: serde_json::json!({"action":"capture-entry","target":"r_example","amount":"42"}),
+        action: json!({"action":"capture-entry","target":"r_example","amount":"42"}),
     };
-    assert!(draft.validate().is_ok());
+    draft.validate()?;
+    only_part(&mut draft)?.events.push(EventBinding {
+        event: "click".into(),
+        action: json!({"action": false}),
+    });
+    assert!(draft.validate().is_err());
+    only_part(&mut draft)?.events.clear();
     for _ in 0..8 {
         draft = Composition {
             name: "Nested".into(),
@@ -69,40 +77,41 @@ fn shared_contract_checks_ids_actions_geometry_depth_and_document_size() {
     }
     assert!(draft.validate().is_err());
     assert!(Document::decode(&" ".repeat(256 * 1024 + 1)).is_err());
+    Ok(())
 }
 
 #[test]
-fn activation_has_an_explicit_roundtrip_and_is_an_outward_effect() {
-    let parsed =
-        nucleus::karma::rule_field::RuleConsequence::parse("@reviewer: activate-fiote").unwrap();
+fn activation_has_an_explicit_roundtrip_and_is_an_outward_effect() -> Result<(), String> {
+    let parsed = RuleConsequence::parse("@reviewer: activate-fiote")?;
     assert_eq!(parsed.as_text(), "@reviewer: activate-fiote");
-    assert_eq!(parsed.consequences[0].kind(), "activate-fiote");
-    assert!(parsed.consequences[0].is_outward());
-    assert!(!parsed.consequences[0].moves_quantity());
+    let [consequence] = parsed.consequences.as_slice() else {
+        return Err("Expected one activation consequence".into());
+    };
+    assert_eq!(consequence.kind(), "activate-fiote");
+    assert!(consequence.is_outward());
+    assert!(!consequence.moves_quantity());
+    Ok(())
 }
 
 #[test]
-fn part_settings_roundtrip_and_reject_unbounded_or_structured_values() {
+fn part_settings_roundtrip_and_reject_unbounded_or_structured_values() -> Result<(), String> {
     let mut draft = composition();
-    draft.parts[0]
-        .settings
-        .insert("wrap".into(), serde_json::json!(false));
-    draft.parts[0]
-        .settings
-        .insert("overflow".into(), serde_json::json!("Grow"));
+    only_part(&mut draft)?.settings.extend([
+        ("wrap".into(), json!(false)),
+        ("overflow".into(), json!("Grow")),
+    ]);
     assert_eq!(
-        Document::decode(&Document::encode(draft.clone()).unwrap())
-            .unwrap()
-            .composition,
+        Document::decode(&Document::encode(draft.clone())?)?.composition,
         draft
     );
     for value in [
-        serde_json::Value::Null,
-        serde_json::json!({"action":"delete-record"}),
-        serde_json::json!([]),
-        serde_json::json!("x".repeat(4097)),
+        Value::Null,
+        json!({"action":"delete-record"}),
+        json!([]),
+        json!("x".repeat(4097)),
     ] {
-        draft.parts[0].settings.insert("bad".into(), value);
+        only_part(&mut draft)?.settings.insert("bad".into(), value);
         assert!(draft.validate().is_err());
     }
+    Ok(())
 }

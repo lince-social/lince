@@ -1,10 +1,11 @@
-// non-lean-yet
-// Scope: struct ElapsedClock, fn standard, struct Stamp.
-// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+use std::{
+    sync::OnceLock,
+    time::{Duration, Instant},
+};
 
 use bevy::prelude::*;
-use std::time::Duration;
 
+/// Reads elapsed milliseconds from the UI's monotonic clock.
 #[derive(Resource, Clone, Copy)]
 pub struct ElapsedClock(pub fn() -> u64);
 
@@ -15,11 +16,8 @@ impl Default for ElapsedClock {
 }
 
 fn standard() -> u64 {
-    static START: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();
-    START
-        .get_or_init(std::time::Instant::now)
-        .elapsed()
-        .as_millis() as u64
+    static START: OnceLock<Instant> = OnceLock::new();
+    u64::try_from(START.get_or_init(Instant::now).elapsed().as_millis()).unwrap_or(u64::MAX)
 }
 
 #[derive(Clone, Copy)]
@@ -51,9 +49,12 @@ impl Stamp {
     }
 
     pub(super) fn elapsed(self) -> Duration {
-        Duration::from_millis(
-            (i128::from((self.read)()) - self.at).clamp(0, i128::from(u64::MAX)) as u64,
-        )
+        Duration::from_millis(self.elapsed_millis())
+    }
+
+    pub(super) fn elapsed_millis(self) -> u64 {
+        let elapsed = (i128::from((self.read)()) - self.at).max(0);
+        u64::try_from(elapsed).unwrap_or(u64::MAX)
     }
 }
 

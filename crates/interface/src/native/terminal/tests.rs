@@ -32,7 +32,8 @@ async fn native_terminal_opens_renders_output_and_closes_after_removal() {
         .get_mut::<TerminalSand>(owner)
         .unwrap()
         .input
-        .push_back(b"printf '__native_terminal__\\n'\r".to_vec());
+        .push_back(b"printf '__native_terminal__\\n'\r".to_vec())
+        .expect("terminal fixture input fits the queue");
     settle(&mut app, |world| {
         world
             .get::<TerminalSand>(owner)

@@ -1,54 +1,67 @@
-// non-lean-yet
-// Scope: const MAX_FRAME_BYTES, struct LiveHost, fn write_frame, fn authenticate.
-// BeautifulRust (baseline lines):
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 38, 42, 45, 46,
-//   199, 210, 211, 212, 213, 341.
-// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 76, 90, 95,
-//   103, 190.
-// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
-//   contract. Sites 64, 68, 152, 206.
-// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
-//   Sites 68.
-// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
-//   Sites 38, 45, 46, 210, 211, 270.
-// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 224.
-// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
-//   Sites 76, 90, 95, 103, 190.
-// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
-//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 14.
-// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
-//   14, 21.
+use std::{
+    collections::{HashMap, VecDeque},
+    fmt,
+    pin::pin,
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
-use std::sync::Arc;
+use async_trait::async_trait;
+use engine::{
+    Engine, EngineError, login::LoginSession, private_password::PasswordInput, wire::LiveSessions,
+};
+use iroh::endpoint::{Connection, RecvStream, SendStream};
+use nucleus::{
+    description_asset, new_uid,
+    sync::{Instance, Queue},
+};
+use serde_json::{from_slice, to_vec};
+use tokio::{
+    sync::{Semaphore, broadcast, mpsc},
+    task::JoinSet,
+    time::{sleep_until, timeout},
+};
 
-use engine::Engine;
-use engine::wire::LiveSessions;
-use iroh::endpoint::Connection;
-use tokio::sync::mpsc;
-
-use crate::lane::LaneHub;
-use crate::protocol::{ClientMessage, ServerMessage};
-use crate::session::Session;
+use crate::{
+    ClientMessage, LaneEvent, LaneHub, ServerMessage, Session, SyncEvents,
+    connection_task::ConnectionTask,
+};
 
 const MAX_FRAME_BYTES: u32 = 8 * 1024 * 1024;
+const MAX_LOGIN_BYTES: u32 = 8192;
+const MAX_SESSIONS: usize = 128;
+const OUTGOING_CAPACITY: usize = 32;
+const MAX_WAITING_CALLS: usize = 64;
+const RATE_WINDOW: Duration = Duration::from_secs(10);
+const MAX_MESSAGES_PER_WINDOW: u32 = 120;
+const WRITE_TIMEOUT: Duration = Duration::from_secs(10);
+const LOGIN_TIMEOUT: Duration = Duration::from_secs(30);
 
+/// Hosts authenticated live sessions on a Cell's Iroh connection handler.
 pub struct LiveHost {
     engine: Arc<Engine>,
     hub: Arc<LaneHub>,
-    sessions: Arc<tokio::sync::Semaphore>,
+    sessions: Arc<Semaphore>,
 }
 
 impl LiveHost {
-    pub fn new(engine: Arc<Engine>, hub: Arc<LaneHub>) -> Arc<LiveHost> {
-        Arc::new(LiveHost {
+    /// Creates a live host with its own limit on active sessions.
+    pub fn new(engine: Arc<Engine>, hub: Arc<LaneHub>) -> Arc<Self> {
+        Arc::new(Self {
             engine,
             hub,
-            sessions: Arc::new(tokio::sync::Semaphore::new(128)),
+            sessions: Arc::new(Semaphore::new(MAX_SESSIONS)),
         })
     }
 }
 
-#[async_trait::async_trait]
+impl fmt::Debug for LiveHost {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("LiveHost").finish_non_exhaustive()
+    }
+}
+
+#[async_trait]
 impl LiveSessions for LiveHost {
     async fn serve(
         &self,
@@ -56,15 +69,15 @@ impl LiveSessions for LiveHost {
         granted_person: Option<String>,
         connection: Connection,
     ) {
-        let Ok(_permit) = self.sessions.clone().try_acquire_owned() else {
+        let Ok(_permit) = Arc::clone(&self.sessions).try_acquire_owned() else {
             connection.close(0u32.into(), b"live sessions busy");
             return;
         };
         let closing = connection.clone();
-        let connection_id = nucleus::new_uid("live");
+        let connection_id = new_uid("live");
         if let Err(error) = drive(
-            self.engine.clone(),
-            self.hub.clone(),
+            Arc::clone(&self.engine),
+            Arc::clone(&self.hub),
             connection_id,
             granted_person,
             connection,
@@ -77,16 +90,14 @@ impl LiveSessions for LiveHost {
     }
 }
 
-async fn write_frame(
-    send: &mut iroh::endpoint::SendStream,
-    value: &ServerMessage,
-) -> Result<(), String> {
-    let body = serde_json::to_vec(value).map_err(|error| error.to_string())?;
-    if body.len() > MAX_FRAME_BYTES as usize {
-        return Err("Reply exceeds the frame limit".into());
-    }
-    tokio::time::timeout(std::time::Duration::from_secs(10), async {
-        send.write_all(&(body.len() as u32).to_be_bytes())
+async fn write_frame(send: &mut SendStream, value: &ServerMessage) -> Result<(), String> {
+    let body = to_vec(value).map_err(|error| error.to_string())?;
+    let size = u32::try_from(body.len())
+        .ok()
+        .filter(|&size| size <= MAX_FRAME_BYTES)
+        .ok_or("Reply exceeds the frame limit")?;
+    timeout(WRITE_TIMEOUT, async {
+        send.write_all(&size.to_be_bytes())
             .await
             .map_err(|error| format!("login write: {error}"))?;
         send.write_all(&body)
@@ -98,22 +109,22 @@ async fn write_frame(
 }
 
 async fn authenticate(
-    engine: &Arc<Engine>,
+    engine: &Engine,
     connection: &Connection,
-    send: &mut iroh::endpoint::SendStream,
-    recv: &mut iroh::endpoint::RecvStream,
-) -> Result<engine::login::LoginSession, String> {
+    send: &mut SendStream,
+    recv: &mut RecvStream,
+) -> Result<LoginSession, String> {
+    // Keep JSON, password, and login-provider details out of connection diagnostics.
     let result = async {
-        let bytes = read_frame_with_limit(recv, 8192)
+        let bytes = read_frame_with_limit(recv, MAX_LOGIN_BYTES)
             .await?
             .ok_or("Login required")?;
         let ClientMessage::LiveLogin { username, password } =
-            serde_json::from_slice(&bytes).map_err(|_| "Invalid login")?
+            from_slice(&bytes).map_err(|_| "Invalid login")?
         else {
             return Err("Login required".to_string());
         };
-        let password = engine::private_password::PasswordInput::new(password.into_bytes())
-            .map_err(|_| "Invalid login")?;
+        let password = PasswordInput::new(password.into_bytes()).map_err(|_| "Invalid login")?;
         engine
             .login_password(
                 &username,
@@ -145,32 +156,32 @@ async fn authenticate(
             )
             .await;
             if send.finish().is_ok() {
-                let _ =
-                    tokio::time::timeout(std::time::Duration::from_secs(2), send.stopped()).await;
+                let _ = timeout(Duration::from_secs(2), send.stopped()).await;
             }
             Err(error)
         }
     }
 }
 
-async fn read_frame(recv: &mut iroh::endpoint::RecvStream) -> Result<Option<Vec<u8>>, String> {
-    read_frame_with_limit(recv, MAX_FRAME_BYTES).await
+async fn read_frame(mut recv: RecvStream) -> Result<(RecvStream, Option<Vec<u8>>), String> {
+    let bytes = read_frame_with_limit(&mut recv, MAX_FRAME_BYTES).await?;
+    Ok((recv, bytes))
 }
 
 async fn read_frame_with_limit(
-    recv: &mut iroh::endpoint::RecvStream,
+    recv: &mut RecvStream,
     limit: u32,
 ) -> Result<Option<Vec<u8>>, String> {
     let mut len = [0u8; 4];
-    match recv.read_exact(&mut len).await {
-        Ok(()) => {}
-        Err(_) => return Ok(None),
+    if recv.read_exact(&mut len).await.is_err() {
+        return Ok(None);
     }
     let len = u32::from_be_bytes(len);
     if len > limit {
         return Err(format!("frame of {len} bytes is over the cap"));
     }
-    let mut buf = vec![0u8; len as usize];
+    let size = usize::try_from(len).map_err(|_| format!("frame of {len} bytes is over the cap"))?;
+    let mut buf = vec![0; size];
     recv.read_exact(&mut buf)
         .await
         .map_err(|error| format!("short frame: {error}"))?;
@@ -203,92 +214,112 @@ async fn drive(
             }
             login
         }
-        None => tokio::time::timeout(
-            std::time::Duration::from_secs(30),
+        None => timeout(
+            LOGIN_TIMEOUT,
             authenticate(&engine, &connection, &mut send, &mut recv),
         )
         .await
         .map_err(|_| "Login timed out")??,
     };
     let mut revoked = login.watch_revocation();
-    let mut relays = tokio::task::JoinSet::new();
-    let mut calls = tokio::task::JoinSet::new();
-    let mut call_queue = std::collections::VecDeque::new();
+    let mut relays = HashMap::<String, ConnectionTask>::new();
+    let mut calls = JoinSet::new();
+    let mut call_queue = VecDeque::new();
 
-    let (out_tx, mut out_rx) = mpsc::channel::<ServerMessage>(32);
+    let (out_tx, mut out_rx) = mpsc::channel::<ServerMessage>(OUTGOING_CAPACITY);
     let queued = out_tx.downgrade();
-    let queue_connection = connection_id.clone();
-    let _sync_queue = engine
-        .sync_service
-        .observe_queue(move || nucleus::sync::Queue {
-            instance: nucleus::sync::Instance::interface(&queue_connection, "live-events"),
-            incoming: 0,
-            outgoing: queued.upgrade().map_or(0, |sender| {
-                (sender.max_capacity() - sender.capacity()) as u64
-            }),
-        });
+    let relay_connection = Arc::<str>::from(connection_id.as_str());
+    let queue_connection = Arc::clone(&relay_connection);
+    let _sync_queue = engine.sync_service.observe_queue(move || Queue {
+        instance: Instance::interface(&queue_connection, "live-events"),
+        incoming: 0,
+        outgoing: queued.upgrade().map_or(0, |sender| {
+            u64::try_from(sender.max_capacity() - sender.capacity()).unwrap_or_default()
+        }),
+    });
     let mut session = Session::authenticated(
-        engine.clone(),
-        hub.clone(),
-        connection_id.clone(),
+        Arc::clone(&engine),
+        Arc::clone(&hub),
+        connection_id,
         login.clone(),
     );
     let challenge = session.initialize_action_intent().await;
     write_frame(&mut send, &challenge).await?;
 
-    let mut sync_events = crate::SyncEvents::new(&engine).with_presence(session.presence_changes());
-    let mut next_frame = Box::pin(read_frame(&mut recv));
-    let mut rate_window = std::time::Instant::now();
+    let mut sync_events = SyncEvents::new(&engine).with_presence(session.presence_changes());
+    // Keep partial frames alive while other connection events are handled.
+    let mut next_frame = pin!(read_frame(recv));
+    let mut rate_window = Instant::now();
     let mut message_count = 0;
 
     loop {
-        if calls.is_empty() {
-            if let Some(message) = call_queue.pop_front() {
-                let mut call = session.fork_call();
-                calls.spawn(async move { call.handle(message).await });
-            }
+        if calls.is_empty()
+            && let Some(message) = call_queue.pop_front()
+        {
+            let mut call = session.fork_call();
+            calls.spawn(async move { call.handle(message).await });
         }
         tokio::select! {
             _ = revoked.changed() => break,
-            _ = tokio::time::sleep_until(tokio::time::Instant::from_std(login.expires())) => break,
+            _ = sleep_until(tokio::time::Instant::from_std(login.expires())) => break,
             frame = &mut next_frame => {
-                drop(next_frame);
-                next_frame = Box::pin(read_frame(&mut recv));
-                let Some(bytes) = frame? else { break };
-                if rate_window.elapsed() >= std::time::Duration::from_secs(10) { rate_window = std::time::Instant::now(); message_count = 0; }
+                let (recv, Some(bytes)) = frame? else { break };
+                next_frame.set(read_frame(recv));
+                if rate_window.elapsed() >= RATE_WINDOW {
+                    rate_window = Instant::now();
+                    message_count = 0;
+                }
                 message_count += 1;
-                if message_count > 120 { break; }
+                if message_count > MAX_MESSAGES_PER_WINDOW { break; }
                 if !session.subject_may_act().await { break; }
-                match serde_json::from_slice::<ClientMessage>(&bytes) {
+                match from_slice::<ClientMessage>(&bytes) {
                     Ok(message) => {
                         if let ClientMessage::Call { id, .. } | ClientMessage::CallContext { id, .. } = &message {
-                            if call_queue.len() >= 64 {
+                            if call_queue.len() >= MAX_WAITING_CALLS {
                                 write_frame(&mut send, &ServerMessage::Error { id: id.clone(), message: "Call controls are busy; try again".into(), code: Some("call_busy".into()) }).await?;
                             } else {
                                 call_queue.push_back(message);
                             }
                             continue;
                         }
-                        let joined = match &message {
-                            ClientMessage::LaneJoin { room } => Some(room.clone()),
+                        let membership = match &message {
+                            ClientMessage::LaneJoin { room } => Some(Membership::Join(room.clone())),
+                            ClientMessage::LaneLeave { room } => Some(Membership::Leave(room.clone())),
                             _ => None,
                         };
-                        let write = matches!(message, ClientMessage::Act { .. } | ClientMessage::SignedAct { .. } | ClientMessage::CollabUpdate { .. } | ClientMessage::SessionAuthenticate { .. } | ClientMessage::DescriptionAsset { request: nucleus::description_asset::Request::Put { .. }, .. });
+                        let write = matches!(message, ClientMessage::Act { .. } | ClientMessage::SignedAct { .. } | ClientMessage::CollabUpdate { .. } | ClientMessage::SessionAuthenticate { .. } | ClientMessage::DescriptionAsset { request: description_asset::Request::Put { .. }, .. });
                         let preview = message.runs_karma_preview();
                         let operation = async {
-                            for reply in session.handle(message).await {
-                                write_frame(&mut send, &reply).await.map_err(engine::EngineError::Consequence)?;
-                            }
-                            Ok(())
+                            let replies = session.handle(message).await;
+                            let admitted = replies.is_empty();
+                            write_replies(&mut send, replies).await?;
+                            Ok(admitted)
                         };
-                        if preview {
+                        let admitted = if preview {
                             login.run_unlocked(&engine, operation).await
                         } else {
                             login.run(&engine, write, operation).await
                         }.map_err(|error| error.to_string())?;
-                        if let Some(room) = joined
-                            && session.joined_rooms().contains(&room) && relays.len() < 64 {
-                            relays.spawn(lane_relay(hub.clone(), room, connection_id.clone(), out_tx.clone(), engine.clone(), login.clone()));
+                        if admitted {
+                            match membership {
+                                Some(Membership::Join(room))
+                                    if session.joined_rooms().contains(&room)
+                                        && relays.get(&room).is_none_or(ConnectionTask::is_finished) =>
+                                {
+                                    let receiver = hub.join(&room);
+                                    relays.insert(room, ConnectionTask::spawn(lane_relay(
+                                        receiver, Arc::clone(&relay_connection), out_tx.clone(),
+                                        Arc::clone(&engine), login.clone(),
+                                    )));
+                                }
+                                Some(Membership::Leave(room)) => {
+                                    if let Some(relay) = relays.remove(&room) {
+                                        relay.cancel().await;
+                                        hub.prune(&room);
+                                    }
+                                }
+                                _ => {}
+                            }
                         }
                     }
                     Err(error) => {
@@ -304,10 +335,7 @@ async fn drive(
                 let Some(event) = event else { break };
                 if !session.subject_may_act().await { break; }
                 login.run(&engine, false, async {
-                    for update in session.on_sync_event(event).await {
-                        write_frame(&mut send, &update).await.map_err(engine::EngineError::Consequence)?;
-                    }
-                    Ok(())
+                    write_replies(&mut send, session.on_sync_event(event).await).await
                 }).await.map_err(|error| error.to_string())?;
             }
             outgoing = out_rx.recv() => {
@@ -316,7 +344,7 @@ async fn drive(
                 login.run(&engine, false, async {
                     if let ServerMessage::LaneEvent { room, .. } = &message
                         && (!session.joined_rooms().contains(room) || !session.may_use_lane().await) { return Ok(()); }
-                    write_frame(&mut send, &message).await.map_err(engine::EngineError::Consequence)
+                    write_frame(&mut send, &message).await.map_err(EngineError::Consequence)
                 }).await.map_err(|error| error.to_string())?;
             }
             Some(result) = calls.join_next(), if !calls.is_empty() => {
@@ -325,18 +353,37 @@ async fn drive(
             }
         }
     }
+    for (room, relay) in relays {
+        relay.cancel().await;
+        hub.prune(&room);
+    }
+    Ok(())
+}
+
+enum Membership {
+    Join(String),
+    Leave(String),
+}
+
+async fn write_replies(
+    send: &mut SendStream,
+    replies: Vec<ServerMessage>,
+) -> Result<(), EngineError> {
+    for reply in replies {
+        write_frame(send, &reply)
+            .await
+            .map_err(EngineError::Consequence)?;
+    }
     Ok(())
 }
 
 async fn lane_relay(
-    hub: Arc<LaneHub>,
-    room: String,
-    connection_id: String,
+    mut rx: broadcast::Receiver<LaneEvent>,
+    connection_id: Arc<str>,
     out_tx: mpsc::Sender<ServerMessage>,
     engine: Arc<Engine>,
-    login: engine::login::LoginSession,
+    login: LoginSession,
 ) {
-    let mut rx = hub.join(&room);
     while let Ok(event) = rx.recv().await {
         if login.require(&engine).await.is_err()
             || engine
@@ -346,20 +393,23 @@ async fn lane_relay(
         {
             break;
         }
-        if event.from == connection_id {
+        if event.from == connection_id.as_ref() {
             continue;
         }
-        let from = match event.from_subject.as_deref() {
-            Some(subject) => engine
-                .may_read_record(Some(login.person_uid()), subject)
-                .await
-                .unwrap_or(false)
-                .then(|| subject.to_string()),
-            None => None,
+        let from = if let Some(subject) = event.from_subject
+            && matches!(
+                engine
+                    .may_read_record(Some(login.person_uid()), &subject)
+                    .await,
+                Ok(true)
+            ) {
+            Some(subject)
+        } else {
+            None
         };
         if out_tx
             .send(ServerMessage::LaneEvent {
-                room: room.clone(),
+                room: event.room,
                 from: event.from,
                 payload: event.payload,
                 identity: from,

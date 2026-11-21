@@ -1,36 +1,27 @@
-// non-lean-yet
-// Scope: const DEFAULT_DURATION_SECONDS, const MAX_DURATION_SECONDS, const MAX_RECIPIENTS, const
-//   MAX_SESSIONS.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
-//   Sites 140, 153, 293.
-// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 60.
-// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
-//   Sites 71, 162, 258, 327.
-// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
-//   34, 45.
-// - [Clippy: clippy::match_same_arms] these match arms have identical bodies. Sites 235, 244.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 30, 37, 50, 90, 139.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 5,
-//   6, 7, 8, 12, 13, 14, 16, 21, 22, 23, 24, 25, 26, 30, 37, 50, 71, 72, 73, 78, 79, 80, 81, 82,
-//   83, 84, 85, 86, 90, 129, 130, 131, 132, 133, 134, 135, 139, 162, 163, 164, 165, 167, 168, 170,
-//   171, 172, 174, 175, 176, 177, 178, 179, 181, 182, 183, 185, 186, 187, 189, 190, 191, 192, 194,
-//   195, 196, 198, 199, 200, 201, 203, 204, 205, 207, 208, 209, 210, 212, 213, 214, 216, 217, 219,
-//   220, 221, 223, 224, 225, 226, 227, 232, 250, 251, 252, 253, 258, 259, 260, 261, 262, 263, 264,
-//   268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 279, 283, 303, 304, 305, 306, 307, 308, 309,
-//   310, 315, 316, 317, 318, 319, 320, 321, 322, 327, 328, 329, 330, 332, 333, 334, 336, 337, 338,
-//   339, 341, 342, 344, 345, 347, 348, 349, 350, 352, 353, 354, 356, 357, 358, 360, 361, 362, 363,
-//   364, 366, 367, 368.
+//! Location invitations, source settings, and the public location session view.
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-pub const DEFAULT_DURATION_SECONDS: u32 = 3600;
-pub const MAX_DURATION_SECONDS: u32 = 86400;
+use crate::visibility::{Command as VisibilityCommand, Data};
+
+mod validation;
+
+#[cfg(test)]
+mod tests;
+
+/// Default duration of a location session, in seconds.
+pub const DEFAULT_DURATION_SECONDS: u32 = 3_600;
+/// Maximum duration of a location session, in seconds.
+pub const MAX_DURATION_SECONDS: u32 = 86_400;
+/// Maximum number of explicit recipients for a location source.
 pub const MAX_RECIPIENTS: usize = 32;
+/// Maximum number of simultaneous location sessions.
 pub const MAX_SESSIONS: usize = 64;
+/// Age at which a location fix becomes unavailable, in milliseconds.
 pub const MAX_FIX_AGE_MS: i64 = 60_000;
+
+const STALE_AFTER_MS: u64 = 15_000;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -49,52 +40,6 @@ pub struct InvitationGrant {
     pub recipient: String,
     pub expires_at_ms: i64,
     pub radius_metres: Option<u32>,
-}
-
-impl Invitation {
-    pub fn reference(&self) -> Result<String, &'static str> {
-        self.validate()?;
-        serde_json::to_string(self)
-            .map(|value| format!("lince-location:1:{value}"))
-            .map_err(|_| "Cannot encode the location reference")
-    }
-
-    pub fn parse(reference: &str) -> Result<Self, &'static str> {
-        if reference.len() > 1024 {
-            return Err("Location reference exceeds its limit");
-        }
-        let raw = reference
-            .trim()
-            .strip_prefix("lince-location:1:")
-            .ok_or("Use a Lince location reference")?;
-        let value: Self = serde_json::from_str(raw).map_err(|_| "Invalid location reference")?;
-        value.validate()?;
-        Ok(value)
-    }
-
-    pub fn validate(&self) -> Result<(), &'static str> {
-        if !crate::valid_uid(&self.record_uid, "r")
-            || self.authority_node_id.len() != 64
-            || !self
-                .authority_node_id
-                .bytes()
-                .all(|byte| byte.is_ascii_hexdigit())
-        {
-            return Err("Invalid location Record or authority endpoint");
-        }
-        if let Some(grant) = &self.grant
-            && (!crate::valid_uid(&grant.uid, "li")
-                || !crate::valid_uid(&grant.issuer, "r")
-                || !crate::valid_uid(&grant.recipient, "r")
-                || chrono::DateTime::from_timestamp_millis(grant.expires_at_ms).is_none()
-                || grant
-                    .radius_metres
-                    .is_some_and(|radius| !crate::place::valid_area_radius(radius)))
-        {
-            return Err("Invalid private location invitation scope");
-        }
-        Ok(())
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
@@ -117,44 +62,6 @@ pub struct Settings {
     pub transfer_uid: Option<String>,
 }
 
-impl Settings {
-    pub fn validate(&self) -> Result<(), &'static str> {
-        if !crate::valid_uid(&self.record_uid, "r")
-            || !crate::valid_uid(&self.controller_uid, "r")
-            || !crate::valid_uid(&self.source_cell_uid, "r")
-            || self
-                .transfer_uid
-                .as_deref()
-                .is_some_and(|uid| !crate::valid_uid(uid, "r"))
-        {
-            return Err("Choose valid Record, Person, device, and Transfer identities");
-        }
-        if self.source_node_id.len() != 64
-            || !self
-                .source_node_id
-                .bytes()
-                .all(|byte| byte.is_ascii_hexdigit())
-        {
-            return Err("Choose an authenticated device endpoint");
-        }
-        if !(60..=MAX_DURATION_SECONDS).contains(&self.duration_seconds) {
-            return Err("Location duration must be between one minute and one day");
-        }
-        if self.recipients.len() > MAX_RECIPIENTS {
-            return Err("Choose at most 32 location recipients");
-        }
-        let mut seen = std::collections::HashSet::new();
-        if self
-            .recipients
-            .iter()
-            .any(|uid| !crate::valid_uid(uid, "r") || !seen.insert(uid))
-        {
-            return Err("Choose distinct, valid location recipients");
-        }
-        Ok(())
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Fix {
@@ -164,28 +71,6 @@ pub struct Fix {
     pub accuracy_metres: Option<f64>,
     pub captured_at_ms: i64,
     pub capture_age_ms: u64,
-}
-
-impl Fix {
-    pub fn validate(&self) -> Result<(), &'static str> {
-        if self.sequence == 0 || self.sequence > i64::MAX as u64 {
-            return Err("Invalid location sequence");
-        }
-        if !self.latitude.is_finite()
-            || !(-90.0..=90.0).contains(&self.latitude)
-            || !self.longitude.is_finite()
-            || !(-180.0..=180.0).contains(&self.longitude)
-            || self
-                .accuracy_metres
-                .is_some_and(|value| !value.is_finite() || !(0.0..=100_000.0).contains(&value))
-        {
-            return Err("Invalid location coordinates or accuracy");
-        }
-        if self.capture_age_ms >= MAX_FIX_AGE_MS as u64 {
-            return Err("Location capture age exceeds the freshness limit");
-        }
-        Ok(())
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -260,6 +145,7 @@ pub enum Command {
 }
 
 impl Command {
+    /// Borrows the Person whose authority this command uses.
     pub fn person(&self) -> &str {
         match self {
             Self::Configure { settings } | Self::Handover { settings, .. } => {
@@ -273,8 +159,8 @@ impl Command {
             | Self::Stop { person, .. }
             | Self::StopAll { person }
             | Self::StopTransfer { person, .. }
-            | Self::Publish { person, .. } => person,
-            Self::PrepareInvitation { person, .. }
+            | Self::Publish { person, .. }
+            | Self::PrepareInvitation { person, .. }
             | Self::ObserveInvitation { person, .. }
             | Self::ReadInvitation { person, .. }
             | Self::SendInvitation { person, .. } => person,
@@ -316,6 +202,7 @@ pub struct View {
 }
 
 impl View {
+    /// Advances the displayed lease and fix ages, applying expiry before freshness.
     pub fn elapse(&mut self, millis: u64) {
         if let Some(remaining) = &mut self.remaining_millis {
             *remaining = remaining.saturating_sub(millis);
@@ -330,12 +217,16 @@ impl View {
             self.fix = None;
             self.age_ms = None;
             self.radius_metres = None;
-        } else if self.age_ms.is_some_and(|age| age >= MAX_FIX_AGE_MS as u64) {
+        } else if self
+            .age_ms
+            .is_some_and(|age| age >= MAX_FIX_AGE_MS.unsigned_abs())
+        {
             self.status = Status::Unavailable;
             self.fix = None;
             self.age_ms = None;
             self.radius_metres = None;
-        } else if self.age_ms.is_some_and(|age| age > 15_000) && self.status == Status::Live {
+        } else if self.age_ms.is_some_and(|age| age > STALE_AFTER_MS) && self.status == Status::Live
+        {
             self.status = Status::Stale;
         }
     }
@@ -368,16 +259,16 @@ pub struct SourceLease {
 #[serde(tag = "operation", rename_all = "snake_case", deny_unknown_fields)]
 pub enum PeerRequest {
     Visibility {
-        command: crate::visibility::Command,
+        command: VisibilityCommand,
         person: Option<String>,
     },
     Read {
         record_uid: String,
-        data: crate::visibility::Data,
+        data: Data,
     },
     ReadPerson {
         record_uid: String,
-        data: crate::visibility::Data,
+        data: Data,
         person: String,
     },
     Control {

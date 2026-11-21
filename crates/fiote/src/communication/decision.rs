@@ -64,9 +64,7 @@ pub struct Input {
 
 impl Input {
     pub fn validate(&self) -> Result<(), String> {
-        if let Ok(context) = serde_json::from_str::<Context>(&self.context) {
-            context.encode()?;
-        }
+        Context::decode(&self.context)?;
         if self.request_id.is_empty()
             || self.request_id.len() > 128
             || self.text.trim().is_empty()

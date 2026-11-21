@@ -1,9 +1,8 @@
-// non-lean-yet
-// Scope: mod sealed, trait Source, struct Snapshot, struct Values.
-// BeautifulRust (baseline lines):
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 64, 69, 110.
+//! Typed, shared JSON snapshots of settings under review.
 
-use super::*;
+use super::{LayoutSettings, Settings};
+use serde::Serialize;
+use serde_json::Value;
 use std::{any::Any, sync::Arc};
 
 mod sealed {
@@ -49,9 +48,7 @@ impl<T: Source> ValueSource for TypedValue<T> {
         &self.encoded
     }
     fn matches(&self, source: &dyn Any) -> bool {
-        source
-            .downcast_ref::<T>()
-            .is_some_and(|source| *source == self.source)
+        source.downcast_ref::<T>() == Some(&self.source)
     }
 }
 
@@ -62,11 +59,13 @@ impl PartialEq for Part {
 }
 
 impl Part {
-    fn new<T: Source>(source: &T, previous: Option<&Self>) -> Result<Self, String> {
-        if let Some(previous) = previous
-            && previous.0.matches(source)
-        {
-            return Ok(previous.clone());
+    fn matching(&self, source: &dyn Any) -> Option<&Self> {
+        self.0.matches(source).then_some(self)
+    }
+
+    fn prepare<T: Source>(source: &T, cached: Option<&Self>) -> Result<Self, String> {
+        if let Some(cached) = cached {
+            return Ok(cached.clone());
         }
         let encoded = serde_json::to_value(source).map_err(|error| error.to_string())?;
         engine::performance::add("configuration-review-values-prepared", 1);
@@ -107,22 +106,74 @@ impl Snapshot {
         active: &T,
         previous: Option<&Self>,
     ) -> Result<Self, String> {
+        let cached = previous.map_or([None; 3], |snapshot| {
+            [
+                snapshot.0.base.matching(base),
+                snapshot.0.local.matching(local),
+                snapshot.0.active.matching(active),
+            ]
+        });
         if let Some(previous) = previous
-            && previous.0.base.0.matches(base)
-            && previous.0.local.0.matches(local)
-            && previous.0.active.0.matches(active)
+            && cached.iter().all(Option::is_some)
         {
             return Ok(previous.clone());
         }
         let _preparation = engine::performance::Span::new("configuration-review-snapshot");
-        let base = Part::new(base, previous.map(|snapshot| &snapshot.0.base))?;
-        let local = Part::new(local, previous.map(|snapshot| &snapshot.0.local))?;
-        let active = Part::new(active, previous.map(|snapshot| &snapshot.0.active))?;
+        let [cached_base, cached_local, cached_active] = cached;
+        let base = Part::prepare(base, cached_base)?;
+        let local = Part::prepare(local, cached_local)?;
+        let active = Part::prepare(active, cached_active)?;
         engine::performance::add("configuration-review-snapshots-prepared", 1);
         Ok(Self(Arc::new(Values {
             base,
             local,
             active,
         })))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{host::input::FocusPolicy, layout::desktop::OverviewSettings};
+
+    #[test]
+    fn unchanged_snapshots_and_unchanged_parts_retain_their_owners() {
+        let base = vec![String::from("base")];
+        let local = vec![String::from("local")];
+        let active = vec![String::from("active")];
+        let previous = Snapshot::new(&base, &local, &active, None).expect("initial snapshot");
+        let same = Snapshot::new(&base, &local, &active, Some(&previous)).expect("same values");
+        assert!(previous.same(&same));
+
+        let changed_local = vec![String::from("edited")];
+        let changed = Snapshot::new(&base, &changed_local, &active, Some(&previous))
+            .expect("changed local draft");
+        assert!(!previous.same(&changed));
+        assert!(std::ptr::eq(previous.base(), changed.base()));
+        assert!(!std::ptr::eq(previous.local(), changed.local()));
+        assert!(std::ptr::eq(previous.active(), changed.active()));
+        assert_eq!(previous.local(), &serde_json::json!(["local"]));
+        assert_eq!(changed.local(), &serde_json::json!(["edited"]));
+
+        let separate = Snapshot::new(&base, &local, &active, None).expect("independent snapshot");
+        assert!(previous == separate);
+        assert!(!previous.same(&separate));
+    }
+
+    #[test]
+    fn changing_the_settings_type_rebuilds_all_parts() {
+        let overview = OverviewSettings::default();
+        let previous = Snapshot::new(&overview, &overview, &overview, None).expect("overview");
+        let focus = FocusPolicy::default();
+        let updated = Snapshot::new(&focus, &focus, &focus, Some(&previous)).expect("focus");
+        assert!(!previous.same(&updated));
+        assert!(!std::ptr::eq(previous.base(), updated.base()));
+        assert!(!std::ptr::eq(previous.local(), updated.local()));
+        assert!(!std::ptr::eq(previous.active(), updated.active()));
+        assert_eq!(
+            updated.base(),
+            &serde_json::to_value(focus).expect("focus JSON")
+        );
     }
 }

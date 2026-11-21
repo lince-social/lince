@@ -1,15 +1,10 @@
-// non-lean-yet
-// Scope: struct Wave, fn message, trait Pending, struct Owners.
-// BeautifulRust (baseline lines):
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 130, 171.
-// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (45).
-// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
-//   180, 241.
-
 use super::{CONNECTION, CellMessage};
-use bevy::ecs::message::{MessageCursor, Messages};
-use bevy::prelude::{Component, Entity, FromWorld, QueryState, World};
+use bevy::{
+    ecs::message::{MessageCursor, Messages},
+    prelude::{Component, Entity, FromWorld, QueryState, World},
+};
 use cell::ServerMessage;
+use nucleus::performance::{Span, add};
 use std::{collections::HashMap, sync::Arc};
 
 #[derive(Default)]
@@ -24,16 +19,16 @@ impl Wave {
         messages: &Messages<CellMessage>,
         mut accepts: impl FnMut(&ServerMessage) -> bool,
     ) {
-        let _capture = nucleus::performance::Span::new("cell-reply-wave-capture");
-        nucleus::performance::add("cell-reply-wave-messages", cursor.len(messages) as u64);
+        let _capture = Span::new("cell-reply-wave-capture");
+        add("cell-reply-wave-messages", cursor.len(messages) as u64);
         self.sequences.clear();
         self.sequences.extend(
             cursor
                 .read_with_id(messages)
                 .filter_map(|(message, sequence)| accepts(&message.0).then_some(sequence.id)),
         );
-        nucleus::performance::add("cell-reply-wave-sequences", self.len() as u64);
-        if self.sequences.is_empty() {
+        add("cell-reply-wave-sequences", self.len() as u64);
+        if self.is_empty() {
             self.sequences = Vec::new();
         }
     }
@@ -42,17 +37,21 @@ impl Wave {
         self.sequences.len()
     }
 
+    pub(crate) fn is_empty(&self) -> bool {
+        self.sequences.is_empty()
+    }
+
     pub(crate) fn drain(&mut self) -> impl Iterator<Item = usize> + '_ {
         self.sequences.drain(..)
     }
 }
 
+/// Resolves a captured sequence before the receiver's message buffer advances.
 pub(crate) fn message(messages: &Messages<CellMessage>, sequence: usize) -> &Arc<ServerMessage> {
-    &messages
+    let (message, _) = messages
         .get_message(sequence)
-        .expect("reply from the current immutable CellMessage wave")
-        .0
-        .0
+        .expect("reply from the current immutable CellMessage wave");
+    &message.0
 }
 
 pub(crate) trait Pending: Component {
@@ -78,7 +77,7 @@ impl<T: Pending> Owners<T> {
             examined += 1;
             (view.pending_id() == Some(id)).then_some(owner)
         });
-        nucleus::performance::add("cell-reply-owners-examined", examined);
+        add("cell-reply-owners-examined", examined);
         owner
     }
 
@@ -96,7 +95,7 @@ impl<T: Pending> Owners<T> {
             examined += 1;
             (all || subscription == Some(owner) || view.pending_id() == Some(id)).then_some(owner)
         }));
-        nucleus::performance::add("cell-reply-owners-examined", examined);
+        add("cell-reply-owners-examined", examined);
     }
 }
 
@@ -180,10 +179,11 @@ impl<'a> Batch<'a> {
                     _ => None,
                 }
             });
-        nucleus::performance::add("cell-reply-linear-messages", examined);
+        add("cell-reply-linear-messages", examined);
         next
     }
 
+    /// Resolves an index into the same immutable slice used to select replies.
     pub(crate) fn message(&self, index: usize) -> &'a ServerMessage {
         self.messages[index].as_ref()
     }
@@ -200,7 +200,7 @@ impl<'a> Index<'a> {
         messages: &'a [Arc<ServerMessage>],
         mut target: impl FnMut(&'a ServerMessage) -> Option<Target<'a>>,
     ) -> Self {
-        let _prepare = nucleus::performance::Span::new("cell-reply-index-preparation");
+        let _prepare = Span::new("cell-reply-index-preparation");
         let mut batch = Self {
             messages,
             ids: HashMap::new(),
@@ -215,8 +215,8 @@ impl<'a> Index<'a> {
             }
             entries += 1;
         }
-        nucleus::performance::add("cell-reply-indexed-entries", entries);
-        nucleus::performance::add("cell-reply-indexed-ids", batch.ids.len() as u64);
+        add("cell-reply-indexed-entries", entries);
+        add("cell-reply-indexed-ids", batch.ids.len() as u64);
         batch
     }
 
@@ -229,22 +229,17 @@ impl<'a> Index<'a> {
         after: usize,
         ids: impl IntoIterator<Item = &'i str>,
     ) -> Option<usize> {
-        let mut next = first_after(&self.all, after);
         let mut lookups = 0;
-        for id in ids {
+        let matches = ids.into_iter().filter_map(|id| {
             lookups += 1;
-            if let Some(index) = self
-                .ids
-                .get(id)
-                .and_then(|indices| first_after(indices, after))
-            {
-                next = Some(next.map_or(index, |next| next.min(index)));
-            }
-        }
-        nucleus::performance::add("cell-reply-id-lookups", lookups);
+            first_after(self.ids.get(id)?, after)
+        });
+        let next = matches.chain(first_after(&self.all, after)).min();
+        add("cell-reply-id-lookups", lookups);
         next
     }
 
+    /// Resolves an index into the same immutable slice used to build this index.
     pub(crate) fn message(&self, index: usize) -> &'a ServerMessage {
         self.messages[index].as_ref()
     }

@@ -164,8 +164,17 @@ impl Tool for FileTool {
                 }
                 Operation::Write => {
                     let args: WriteArguments = serde_json::from_value(arguments).map_err(|e| e.to_string())?;
-                    write(&directory, path(&args.path, false)?, &args.content)?;
-                    Ok(json!({"path":args.path,"bytes":args.content.len()}))
+                    let file = path(&args.path, false)?;
+                    let before = if directory.symlink_metadata(file).is_err_and(|error| {
+                        error.kind() == std::io::ErrorKind::NotFound
+                    }) {
+                        Some(None)
+                    } else {
+                        read(&directory, file).ok().map(Some)
+                    };
+                    write(&directory, file, &args.content)?;
+                    let diff = before.and_then(|text| super::file_diff(&args.path, text.as_deref(), Some(&args.content)));
+                    Ok(json!({"path":args.path,"bytes":args.content.len(),"diff":diff}))
                 }
                 Operation::Edit => {
                     let args: EditArguments = serde_json::from_value(arguments).map_err(|e| e.to_string())?;
@@ -184,7 +193,7 @@ impl Tool for FileTool {
                     }
                     let edited = content.replace(&args.old_text, &args.new_text);
                     write(&directory, file, &edited)?;
-                    Ok(json!({"path":args.path,"replacements":matches,"bytes":edited.len()}))
+                    Ok(json!({"path":args.path,"replacements":matches,"bytes":edited.len(),"diff":super::file_diff(&args.path, Some(&content), Some(&edited))}))
                 }
                 Operation::List => {
                     let args: PathArguments = serde_json::from_value(arguments).map_err(|e| e.to_string())?;

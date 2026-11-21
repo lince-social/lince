@@ -1,51 +1,34 @@
-// non-lean-yet
-// Scope: mod replay, const MAX_DEVICES, const MAX_SURFACES, const MAX_OBSERVATIONS.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
-//   Sites 86.
-// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
-//   730.
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 388, 395, 402,
-//   482, 501, 600, 673, 674, 675, 685, 726, 742, 748, 756, 766, 780, 782.
-// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
-//   blank:blanked (692), capture:enabled (458), map:inverse (117).
-// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
-//   Sites 43, 259, 301.
-// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
-//   763.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 23, 77, 117, 170, 204, 359, 368, 434, 458, 511, 519, 573, 604, 699, 730, 787, 816, 832.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 8,
-//   9, 10, 11, 12, 13, 15, 23, 43, 44, 45, 50, 51, 52, 53, 54, 58, 68, 77, 117, 140, 141, 142, 143,
-//   144, 145, 146, 147, 148, 149, 150, 154, 170, 198, 199, 200, 204, 235, 236, 237, 244, 245, 246,
-//   247, 248, 249, 250, 251, 252, 253, 254, 259, 260, 261, 262, 263, 268, 269, 270, 271, 272, 276,
-//   277, 278, 279, 280, 281, 282, 287, 288, 289, 290, 294, 301, 302, 303, 304, 305, 306, 307, 312,
-//   313, 314, 315, 316, 317, 318, 319, 320, 321, 322, 323, 327, 328, 329, 330, 334, 335, 336, 337,
-//   338, 339, 340, 359, 368, 434, 458, 493, 511, 519, 573, 604, 692, 699, 730, 787, 816, 824, 832,
-//   842.
-// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites advance: String
-//   (519), cancel: String (816), capture: String (458), configure: String (368), connect: String
-//   (434), dismiss: String (832), dispatch: String (730), enqueue: String (699), finish: String
-//   (787), interact: String (604), map: String (117), matrix: String (77), new: String (359),
-//   observe: String (573), physical_point: String (170), revision: String (23), surface: String
-//   (511), validate: String (204).
-
 use std::collections::{BTreeMap, BTreeSet};
 
-use glam::{DMat3, DVec2, DVec3};
 use serde::{Deserialize, Serialize};
+use serde_json::{Value, to_vec};
+use sha2::{Digest, Sha256};
 
-use crate::canvas::{Pose, room};
+use crate::{canvas::Pose, json::lowercase_hex};
 
+mod devices;
+mod geometry;
+mod observations;
+/// Deterministic execution of recorded workspace events.
 pub mod replay;
+mod requests;
 
+/// Maximum devices in an installation.
 pub const MAX_DEVICES: usize = 16;
+/// Maximum calibrated surfaces in an installation.
 pub const MAX_SURFACES: usize = 32;
+/// Maximum retained camera observations.
 pub const MAX_OBSERVATIONS: usize = 64;
+/// Maximum retained requests, including finished requests.
 pub const MAX_REQUESTS: usize = 32;
+/// Maximum concurrent requests, including ones waiting for a result.
 pub const MAX_RUNNING: usize = 4;
+/// Maximum age of camera evidence in milliseconds.
 pub const MAX_AGE_MS: u64 = 5_000;
+const MAX_SNAPSHOT_BYTES: usize = 64 * 1024;
+const MIN_SELECTION_CONFIDENCE: f64 = 0.8;
 
+/// Checks the length and character set for installation and runtime identifiers.
 pub fn valid_id(id: &str) -> bool {
     !id.is_empty()
         && id.len() <= 96
@@ -54,16 +37,17 @@ pub fn valid_id(id: &str) -> bool {
             .all(|c| c.is_ascii_alphanumeric() || b"-_.:".contains(&c))
 }
 
-pub fn revision(value: &serde_json::Value) -> Result<String, String> {
-    use sha2::{Digest, Sha256};
-    let bytes = serde_json::to_vec(value).map_err(|e| e.to_string())?;
-    if bytes.len() > 65_536 {
+/// Returns the lowercase SHA-256 revision of the encoded source snapshot.
+///
+/// # Errors
+///
+/// Returns a diagnostic if the value cannot be encoded or exceeds 64 KiB.
+pub fn revision(value: &Value) -> Result<String, String> {
+    let bytes = to_vec(value).map_err(|error| error.to_string())?;
+    if bytes.len() > MAX_SNAPSHOT_BYTES {
         return Err("The source snapshot exceeds 64 KiB.".into());
     }
-    Ok(Sha256::digest(bytes)
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect())
+    Ok(lowercase_hex(&Sha256::digest(bytes)))
 }
 
 fn text(value: &str, limit: usize) -> bool {
@@ -72,176 +56,102 @@ fn text(value: &str, limit: usize) -> bool {
         && !value.chars().any(|c| c.is_control() && c != '\n')
 }
 
+/// Hardware role in a calibrated installation.
+#[expect(
+    clippy::exhaustive_enums,
+    reason = "callers match the published variants"
+)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum DeviceKind {
+    /// Captures evidence.
     Camera,
+    /// Presents workspace output.
     Projector,
 }
 
+/// Camera or projector registered in an installation.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Device {
+    /// Installation-local identifier.
     pub id: String,
+    /// Display name.
     pub name: String,
+    /// Role of the hardware.
     pub kind: DeviceKind,
+    /// Pixel width and height.
     pub resolution: [u32; 2],
 }
 
 impl Device {
+    /// Checks hardware identity, display name, and resolution bounds.
     pub fn valid(&self) -> bool {
+        let [width, height] = self.resolution;
         valid_id(&self.id)
             && text(&self.name, 128)
             && self.resolution.iter().all(|v| (1..=8192).contains(v))
-            && u64::from(self.resolution[0]) * u64::from(self.resolution[1]) <= 16_777_216
+            && u64::from(width) * u64::from(height) <= 16_777_216
     }
 }
 
+/// Projective calibration in normalized coordinates.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct Quad(pub [[f64; 2]; 4]);
+pub struct Quad(
+    /// Corners in top-left, top-right, bottom-right, bottom-left order.
+    pub [[f64; 2]; 4],
+);
 
-impl Default for Quad {
-    fn default() -> Self {
-        Self([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]])
-    }
-}
-
-impl Quad {
-    pub fn matrix(&self) -> Result<DMat3, String> {
-        let points = self.0.map(DVec2::from_array);
-        if points
-            .iter()
-            .any(|p| !p.is_finite() || p.min_element() < 0.0 || p.max_element() > 1.0)
-        {
-            return Err("Calibration corners must be finite normalized coordinates.".into());
-        }
-        let crosses = std::array::from_fn::<_, 4, _>(|i| {
-            (points[(i + 1) % 4] - points[i]).perp_dot(points[(i + 2) % 4] - points[(i + 1) % 4])
-        });
-        if crosses.iter().any(|v| *v <= 1e-6) {
-            return Err("Use four distinct convex corners in top-left, top-right, bottom-right, bottom-left order.".into());
-        }
-        let [a, b, c, d] = points;
-        let delta = a - b + c - d;
-        let u = b - c;
-        let v = d - c;
-        let denominator = u.perp_dot(v);
-        if denominator.abs() < 1e-10 {
-            return Err("The calibration is degenerate.".into());
-        }
-        let g = delta.perp_dot(v) / denominator;
-        let h = u.perp_dot(delta) / denominator;
-        let matrix = DMat3::from_cols(
-            (b - a + g * b).extend(g),
-            (d - a + h * d).extend(h),
-            a.extend(1.0),
-        );
-        if !matrix.is_finite()
-            || matrix.determinant().abs() < 1e-10
-            || [1.0, 1.0 + g, 1.0 + h, 1.0 + g + h]
-                .iter()
-                .any(|w| *w < 1e-6)
-        {
-            return Err("The calibration crosses a projective singularity.".into());
-        }
-        Ok(matrix)
-    }
-
-    pub fn map(&self, point: [f64; 2], inverse: bool) -> Result<[f64; 2], String> {
-        if point
-            .iter()
-            .any(|v| !v.is_finite() || !(0.0..=1.0).contains(v))
-        {
-            return Err("The point must be finite.".into());
-        }
-        let matrix = self.matrix()?;
-        let value =
-            if inverse { matrix.inverse() } else { matrix } * DVec3::new(point[0], point[1], 1.0);
-        if !value.is_finite() || value.z <= 1e-8 {
-            return Err("The point is outside the calibrated plane.".into());
-        }
-        let output = (value.truncate() / value.z).to_array();
-        if output.iter().any(|v| *v < -1e-8 || *v > 1.0 + 1e-8) {
-            return Err("The point is outside the calibrated surface.".into());
-        }
-        Ok(output.map(|v| v.clamp(0.0, 1.0)))
-    }
-}
-
+/// One calibrated physical surface associated with a workspace.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Surface {
+    /// Installation-local surface identifier.
     pub id: String,
+    /// Display name.
     pub name: String,
+    /// Workspace that owns the surface.
     pub workspace: u64,
+    /// Identifier of the output device.
     pub projector: String,
+    /// Identifier of the optional capture device.
     pub camera: Option<String>,
+    /// Physical pose, with position expressed in meters.
     pub physical_pose_meters: Pose,
+    /// Physical width and height in meters.
     pub size_meters: [f64; 2],
+    /// Positive revision of the calibration.
     pub calibration_revision: u64,
+    /// Projector-space calibration.
     pub projector_quad: Quad,
+    /// Camera-space calibration.
     pub camera_quad: Quad,
 }
 
-impl Surface {
-    pub fn valid(&self) -> bool {
-        valid_id(&self.id)
-            && text(&self.name, 128)
-            && self.workspace > 0
-            && valid_id(&self.projector)
-            && self.camera.as_ref().is_none_or(|id| valid_id(id))
-            && room::valid_pose(&self.physical_pose_meters)
-            && self
-                .size_meters
-                .iter()
-                .all(|v| v.is_finite() && *v >= 0.01 && *v <= 100.0)
-            && self.calibration_revision > 0
-            && self.projector_quad.matrix().is_ok()
-            && self.camera_quad.matrix().is_ok()
-    }
-
-    pub fn physical_point(&self, local: [f64; 2]) -> Result<[f64; 3], String> {
-        if !self.valid()
-            || local
-                .iter()
-                .any(|v| !v.is_finite() || !(0.0..=1.0).contains(v))
-        {
-            return Err("Invalid surface or local coordinate.".into());
-        }
-        let point = room::compose(
-            &self.physical_pose_meters,
-            &Pose {
-                position: [
-                    local[0] * self.size_meters[0],
-                    local[1] * self.size_meters[1],
-                    0.0,
-                ],
-                rotation: [0.0, 0.0, 0.0, 1.0],
-            },
-        );
-        if !room::valid_pose(&point) {
-            return Err("The physical point exceeds finite bounds.".into());
-        }
-        Ok(point.position)
-    }
-}
-
+/// Devices and calibrated surfaces in one installation.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Configuration {
+    /// Registered cameras and projectors.
     pub devices: Vec<Device>,
+    /// Surfaces using the registered devices.
     pub surfaces: Vec<Surface>,
 }
 
 impl Configuration {
+    /// Checks installation limits and required links between devices and surfaces.
+    ///
+    /// # Errors
+    ///
+    /// Returns the first device, surface, or relationship diagnostic.
     pub fn validate(&self) -> Result<(), String> {
         if self.devices.len() > MAX_DEVICES || self.surfaces.len() > MAX_SURFACES {
             return Err("An installation supports sixteen devices and thirty-two surfaces.".into());
         }
         let mut devices = BTreeMap::new();
         for device in &self.devices {
-            if !device.valid() || devices.insert(&device.id, device).is_some() {
+            if !device.valid() || devices.insert(device.id.as_str(), device.kind).is_some() {
                 return Err("Invalid or duplicate device.".into());
             }
         }
@@ -249,14 +159,11 @@ impl Configuration {
         for surface in &self.surfaces {
             if !surface.valid()
                 || !ids.insert(&surface.id)
-                || !devices
-                    .get(&surface.projector)
-                    .is_some_and(|d| d.kind == DeviceKind::Projector)
-                || surface.camera.as_ref().is_some_and(|id| {
-                    !devices
-                        .get(id)
-                        .is_some_and(|d| d.kind == DeviceKind::Camera)
-                })
+                || devices.get(surface.projector.as_str()) != Some(&DeviceKind::Projector)
+                || surface
+                    .camera
+                    .as_deref()
+                    .is_some_and(|id| devices.get(id) != Some(&DeviceKind::Camera))
             {
                 return Err("Invalid surface, duplicate ID or mismatched device.".into());
             }
@@ -265,620 +172,188 @@ impl Configuration {
     }
 }
 
+/// The current session and capture status of a device.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Connection {
+    /// Session identity.
     pub session: String,
+    /// Whether capture is currently permitted.
     pub capture_enabled: bool,
     sequence: u64,
     time_ms: u64,
 }
 
+/// One timestamped capture from a calibrated camera.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Evidence {
+    /// Observation identifier.
     pub id: String,
+    /// Camera identifier.
     pub device: String,
+    /// Session that captured the evidence.
     pub session: String,
+    /// Increasing sequence in that session.
     pub sequence: u64,
+    /// Logical capture time in milliseconds.
     pub captured_ms: u64,
+    /// Calibrated surface identifier.
     pub surface: String,
+    /// Revision used for the capture.
     pub calibration_revision: u64,
+    /// Confidence on the normalized zero-to-one scale.
     pub confidence: f64,
+    /// Optional media identifier.
     pub media: Option<String>,
+    /// Whether the capture includes projected content.
     pub projected_content: bool,
 }
 
+/// Phase of a deliberate pointer interaction.
+#[expect(
+    clippy::exhaustive_enums,
+    reason = "callers match the published variants"
+)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Phase {
+    /// Starts selection.
     Begin,
+    /// Moves an existing selection.
     Update,
+    /// Commits an existing selection.
     End,
+    /// Drops selection without a commit.
     Cancel,
 }
 
+/// A pointer action supported by camera evidence.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Interaction {
+    /// Capture supporting the pointer action.
     pub evidence: Evidence,
+    /// Pointer identifier.
     pub pointer: String,
+    /// Action in the selection lifecycle.
     pub phase: Phase,
+    /// Point in normalized camera coordinates.
     pub camera_normalized: [f64; 2],
 }
 
+/// Active selection state projected into local surface coordinates.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Pointer {
+    /// Surface being selected.
     pub surface: String,
+    /// Camera supplying the selection.
     pub device: String,
+    /// Active capture session.
     pub session: String,
+    /// Revision used to locate the pointer.
     pub calibration_revision: u64,
+    /// Normalized surface-local position.
     pub local: [f64; 2],
+    /// Time of the last update in milliseconds.
     pub updated_ms: u64,
 }
 
+/// Exact source selected for a workspace request.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Target {
+    /// Organ holding the source Record.
     pub organ: String,
+    /// Selected Record identifier.
     pub record: String,
+    /// Source snapshot revision.
     pub revision: String,
 }
 
 impl Target {
+    /// Checks the Organ, Record and source revision identifiers.
     pub fn valid(&self) -> bool {
         valid_id(&self.organ) && valid_id(&self.record) && valid_id(&self.revision)
     }
 }
 
+/// State of a workspace request.
+#[expect(
+    clippy::exhaustive_enums,
+    reason = "callers match the published variants"
+)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Status {
+    /// Eligible to be considered for dispatch.
     Queued,
+    /// Dispatched and active.
     Running,
+    /// Active with a result pending.
     Waiting,
+    /// Finished with a stored result.
     Completed,
+    /// Canceled before completion.
     Canceled,
+    /// Terminated after an invalid result.
     Failed,
 }
 
+/// One scoped request and its lifecycle state.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Request {
+    /// Request identifier.
     pub id: String,
+    /// Source surface.
     pub surface: String,
+    /// User authorized to complete the request.
     pub user: String,
+    /// Record and revision selected as the source.
     pub target: Target,
+    /// Evidence identifiers needed by the request.
     pub observations: Vec<String>,
+    /// Request text.
     pub prompt: String,
+    /// Current lifecycle state.
     pub status: Status,
+    /// Calibration revision used to create the request.
     pub calibration_revision: u64,
+    /// Result text when completed.
     pub result: Option<String>,
+    /// Creation time in milliseconds.
     pub created_ms: u64,
+    /// Last update time in milliseconds.
     pub updated_ms: u64,
 }
 
+/// Selection committed on a physical surface.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Commit {
+    /// Pointer that committed.
     pub pointer: String,
+    /// Surface selected.
     pub surface: String,
+    /// Normalized location on the surface.
     pub local: [f64; 2],
 }
 
+/// Live installation state on a monotonic adapter clock.
 #[derive(Clone, Debug)]
 pub struct Runtime {
+    /// Current installation configuration.
     pub configuration: Configuration,
+    /// Active device connections by identifier.
     pub connections: BTreeMap<String, Connection>,
+    /// Retained evidence by observation identifier.
     pub observations: BTreeMap<String, Evidence>,
+    /// Active selections by pointer identifier.
     pub pointers: BTreeMap<String, Pointer>,
+    /// Retained requests keyed by their corresponding `Request::id`.
     pub requests: BTreeMap<String, Request>,
+    /// Whether projection is blanked.
     pub blanked: bool,
     clock_ms: u64,
-}
-
-impl Default for Runtime {
-    fn default() -> Self {
-        Self {
-            configuration: Configuration::default(),
-            connections: BTreeMap::new(),
-            observations: BTreeMap::new(),
-            pointers: BTreeMap::new(),
-            requests: BTreeMap::new(),
-            blanked: true,
-            clock_ms: 0,
-        }
-    }
-}
-
-impl Runtime {
-    pub fn new(configuration: Configuration) -> Result<Self, String> {
-        configuration.validate()?;
-        Ok(Self {
-            configuration,
-            blanked: true,
-            ..Self::default()
-        })
-    }
-
-    pub fn configure(&mut self, configuration: Configuration) -> Result<(), String> {
-        configuration.validate()?;
-        for surface in &configuration.surfaces {
-            if let Some(old) = self
-                .configuration
-                .surfaces
-                .iter()
-                .find(|s| s.id == surface.id)
-                && surface != old
-                && surface.calibration_revision <= old.calibration_revision
-            {
-                return Err("Changed surfaces require a newer calibration revision.".into());
-            }
-        }
-        if configuration != self.configuration {
-            let changed: BTreeSet<_> = self
-                .configuration
-                .surfaces
-                .iter()
-                .filter(|old| !configuration.surfaces.contains(old))
-                .map(|s| s.id.clone())
-                .collect();
-            let unchanged_devices: BTreeSet<_> = self
-                .configuration
-                .devices
-                .iter()
-                .filter(|old| configuration.devices.contains(old))
-                .map(|d| d.id.clone())
-                .collect();
-            let preserved_devices: BTreeSet<_> = self
-                .configuration
-                .surfaces
-                .iter()
-                .filter(|s| !changed.contains(&s.id))
-                .flat_map(|s| std::iter::once(s.projector.clone()).chain(s.camera.clone()))
-                .collect();
-            let removed_devices: Vec<_> = self
-                .connections
-                .keys()
-                .filter(|id| !unchanged_devices.contains(*id) || !preserved_devices.contains(*id))
-                .cloned()
-                .collect();
-            for device in removed_devices {
-                self.disconnect(&device);
-            }
-            self.pointers.retain(|_, p| !changed.contains(&p.surface));
-            self.observations
-                .retain(|_, e| !changed.contains(&e.surface));
-            for request in self.requests.values_mut() {
-                if changed.contains(&request.surface) && !request.terminal() {
-                    request.status = Status::Canceled;
-                }
-            }
-            if self
-                .configuration
-                .surfaces
-                .iter()
-                .all(|s| changed.contains(&s.id))
-            {
-                self.blanked = true;
-            }
-        }
-        self.configuration = configuration;
-        Ok(())
-    }
-
-    pub fn connect(&mut self, device: &str, session: &str) -> Result<(), String> {
-        if !valid_id(session) || !self.configuration.devices.iter().any(|d| d.id == device) {
-            return Err("Unknown device or invalid session.".into());
-        }
-        if self
-            .connections
-            .get(device)
-            .is_some_and(|c| c.session == session)
-        {
-            return Err("A reconnect requires a new session identity.".into());
-        }
-        self.disconnect(device);
-        self.connections.insert(
-            device.into(),
-            Connection {
-                session: session.into(),
-                capture_enabled: false,
-                sequence: 0,
-                time_ms: 0,
-            },
-        );
-        Ok(())
-    }
-
-    pub fn capture(&mut self, device: &str, enabled: bool) -> Result<(), String> {
-        if !self
-            .configuration
-            .devices
-            .iter()
-            .any(|d| d.id == device && d.kind == DeviceKind::Camera)
-        {
-            return Err("Select a camera.".into());
-        }
-        self.connections
-            .get_mut(device)
-            .ok_or("Camera is disconnected.")?
-            .capture_enabled = enabled;
-        if !enabled {
-            self.release_device(device);
-        }
-        Ok(())
-    }
-
-    fn release_device(&mut self, device: &str) {
-        let removed: BTreeSet<_> = self
-            .observations
-            .values()
-            .filter(|e| e.device == device)
-            .map(|e| e.id.clone())
-            .collect();
-        self.observations.retain(|_, e| e.device != device);
-        self.pointers.retain(|_, p| p.device != device);
-        for request in self.requests.values_mut() {
-            if request.observations.iter().any(|id| removed.contains(id)) && !request.terminal() {
-                request.status = Status::Canceled;
-            }
-        }
-    }
-
-    pub fn disconnect(&mut self, device: &str) {
-        self.connections.remove(device);
-        self.release_device(device);
-        let affected: BTreeSet<_> = self
-            .configuration
-            .surfaces
-            .iter()
-            .filter(|s| s.projector == device || s.camera.as_deref() == Some(device))
-            .map(|s| s.id.clone())
-            .collect();
-        self.pointers.retain(|_, p| !affected.contains(&p.surface));
-        for request in self.requests.values_mut() {
-            if affected.contains(&request.surface) && !request.terminal() {
-                request.status = Status::Canceled;
-            }
-        }
-    }
-
-    pub fn surface(&self, id: &str, workspace: u64) -> Result<&Surface, String> {
-        self.configuration
-            .surfaces
-            .iter()
-            .find(|s| s.id == id && s.workspace == workspace)
-            .ok_or("The surface is unavailable in this workspace.".into())
-    }
-
-    pub fn advance(&mut self, now_ms: u64) -> Result<(), String> {
-        if now_ms < self.clock_ms {
-            return Err("The adapter clock moved backwards.".into());
-        }
-        self.clock_ms = now_ms;
-        self.pointers
-            .retain(|_, p| now_ms.saturating_sub(p.updated_ms) <= 500);
-        self.observations
-            .retain(|_, e| now_ms.saturating_sub(e.captured_ms) <= MAX_AGE_MS);
-        for request in self.requests.values_mut() {
-            if !request.terminal()
-                && (now_ms.saturating_sub(request.created_ms) > 120_000
-                    || request.status == Status::Queued
-                        && request
-                            .observations
-                            .iter()
-                            .any(|id| !self.observations.contains_key(id)))
-            {
-                request.status = Status::Canceled;
-            }
-        }
-        Ok(())
-    }
-
-    fn validate_evidence(
-        &self,
-        workspace: u64,
-        evidence: &Evidence,
-        now_ms: u64,
-    ) -> Result<(), String> {
-        let surface = self.surface(&evidence.surface, workspace)?;
-        let connection = self
-            .connections
-            .get(&evidence.device)
-            .ok_or("Camera is disconnected.")?;
-        if !valid_id(&evidence.id)
-            || !evidence.confidence.is_finite()
-            || !(0.0..=1.0).contains(&evidence.confidence)
-            || evidence.media.as_ref().is_some_and(|id| !valid_id(id))
-            || surface.camera.as_deref() != Some(&evidence.device)
-            || surface.calibration_revision != evidence.calibration_revision
-            || connection.session != evidence.session
-            || !connection.capture_enabled
-            || evidence.sequence <= connection.sequence
-            || evidence.captured_ms < connection.time_ms
-            || evidence.captured_ms > now_ms
-            || now_ms.saturating_sub(evidence.captured_ms) > MAX_AGE_MS
-            || self.observations.contains_key(&evidence.id)
-        {
-            return Err("Invalid, stale, duplicate or unapproved camera evidence.".into());
-        }
-        Ok(())
-    }
-
-    pub fn observe(
-        &mut self,
-        workspace: u64,
-        evidence: Evidence,
-        now_ms: u64,
-    ) -> Result<(), String> {
-        self.advance(now_ms)?;
-        self.validate_evidence(workspace, &evidence, now_ms)?;
-        if self.observations.contains_key(&evidence.id)
-            || self
-                .requests
-                .values()
-                .any(|request| request.observations.contains(&evidence.id))
-        {
-            return Err("Observation identity is already in use.".into());
-        }
-        if self.observations.len() == MAX_OBSERVATIONS {
-            return Err(
-                "Observation capacity reached; wait for old observations to expire.".into(),
-            );
-        }
-        let connection = self
-            .connections
-            .get_mut(&evidence.device)
-            .ok_or("Camera is disconnected.")?;
-        connection.sequence = evidence.sequence;
-        connection.time_ms = evidence.captured_ms;
-        self.observations.insert(evidence.id.clone(), evidence);
-        Ok(())
-    }
-
-    pub fn interact(
-        &mut self,
-        workspace: u64,
-        interaction: Interaction,
-        now_ms: u64,
-    ) -> Result<Option<Commit>, String> {
-        self.advance(now_ms)?;
-        if !valid_id(&interaction.pointer) {
-            return Err("Invalid pointer identity.".into());
-        }
-        let evidence = &interaction.evidence;
-        let existing = self.pointers.get(&interaction.pointer).cloned();
-        let result = (|| {
-            self.validate_evidence(workspace, evidence, now_ms)?;
-            if self.blanked
-                || !self
-                    .connections
-                    .contains_key(&self.surface(&evidence.surface, workspace)?.projector)
-            {
-                return Err("Projection is blanked or disconnected.".into());
-            }
-            if let Some(pointer) = &existing {
-                if pointer.surface != evidence.surface
-                    || pointer.device != evidence.device
-                    || pointer.session != evidence.session
-                {
-                    return Err("The pointer belongs to another device or surface.".into());
-                }
-            } else if interaction.phase != Phase::Begin {
-                return Err("Begin a deliberate selection first.".into());
-            }
-            if interaction.phase == Phase::Begin
-                && (existing.is_some() || self.pointers.len() >= 16)
-            {
-                return Err("Pointer already selected or capacity reached.".into());
-            }
-            if evidence.confidence < 0.8 || evidence.projected_content {
-                return Err(
-                    "Selection requires confident input independent of projected content.".into(),
-                );
-            }
-            self.surface(&evidence.surface, workspace)?
-                .camera_quad
-                .map(interaction.camera_normalized, true)
-        })();
-        let local = match result {
-            Ok(local) => local,
-            Err(error) => {
-                if existing
-                    .as_ref()
-                    .is_some_and(|p| p.device == evidence.device && p.session == evidence.session)
-                {
-                    self.pointers.remove(&interaction.pointer);
-                }
-                return Err(error);
-            }
-        };
-        let connection = self
-            .connections
-            .get_mut(&evidence.device)
-            .ok_or("Camera is disconnected.")?;
-        connection.sequence = evidence.sequence;
-        connection.time_ms = evidence.captured_ms;
-        self.pointers.remove(&interaction.pointer);
-        match interaction.phase {
-            Phase::Begin | Phase::Update => {
-                self.pointers.insert(
-                    interaction.pointer,
-                    Pointer {
-                        surface: evidence.surface.clone(),
-                        device: evidence.device.clone(),
-                        session: evidence.session.clone(),
-                        calibration_revision: evidence.calibration_revision,
-                        local,
-                        updated_ms: now_ms,
-                    },
-                );
-                Ok(None)
-            }
-            Phase::End => Ok(Some(Commit {
-                pointer: interaction.pointer,
-                surface: evidence.surface.clone(),
-                local,
-            })),
-            Phase::Cancel => Ok(None),
-        }
-    }
-
-    pub fn blank(&mut self, blanked: bool) {
-        self.blanked = blanked;
-        if blanked {
-            self.pointers.clear();
-        }
-    }
-
-    pub fn enqueue(&mut self, request: Request, workspace: u64, now_ms: u64) -> Result<(), String> {
-        self.advance(now_ms)?;
-        let surface = self.surface(&request.surface, workspace)?;
-        if !valid_id(&request.id)
-            || !valid_id(&request.user)
-            || !request.target.valid()
-            || !text(&request.prompt, 4096)
-            || request.status != Status::Queued
-            || request.created_ms != now_ms
-            || request.updated_ms != now_ms
-            || request.result.is_some()
-            || request.calibration_revision != surface.calibration_revision
-            || request.observations.len() > 8
-            || self.requests.contains_key(&request.id)
-            || request.observations.iter().collect::<BTreeSet<_>>().len()
-                != request.observations.len()
-            || request.observations.iter().any(|id| {
-                !self.observations.get(id).is_some_and(|e| {
-                    e.surface == request.surface && !e.projected_content && e.confidence >= 0.8
-                })
-            })
-        {
-            return Err("Invalid request, target or observation scope.".into());
-        }
-        if self.requests.len() >= MAX_REQUESTS {
-            return Err("Request capacity reached; dismiss finished work first.".into());
-        }
-        self.requests.insert(request.id.clone(), request);
-        Ok(())
-    }
-
-    pub fn dispatch(&mut self, workspace: u64, now_ms: u64) -> Result<Vec<Request>, String> {
-        self.advance(now_ms)?;
-        let mut available = MAX_RUNNING.saturating_sub(
-            self.requests
-                .values()
-                .filter(|r| matches!(r.status, Status::Running | Status::Waiting))
-                .count(),
-        );
-        let mut targets: BTreeSet<_> = self
-            .requests
-            .values()
-            .filter(|r| matches!(r.status, Status::Running | Status::Waiting))
-            .map(|r| (r.target.organ.clone(), r.target.record.clone()))
-            .collect();
-        let mut queued: Vec<_> = self
-            .requests
-            .values()
-            .filter(|r| r.status == Status::Queued)
-            .map(|r| (r.created_ms, r.id.clone()))
-            .collect();
-        queued.sort();
-        let surfaces: BTreeSet<_> = self
-            .configuration
-            .surfaces
-            .iter()
-            .filter(|s| s.workspace == workspace)
-            .map(|s| s.id.clone())
-            .collect();
-        let mut output = Vec::new();
-        for (_, id) in queued {
-            let request = self
-                .requests
-                .get_mut(&id)
-                .expect("the queue was collected from the current requests");
-            if !surfaces.contains(&request.surface)
-                || available == 0
-                || targets.contains(&(request.target.organ.clone(), request.target.record.clone()))
-            {
-                continue;
-            }
-            if request
-                .observations
-                .iter()
-                .any(|id| !self.observations.contains_key(id))
-            {
-                request.status = Status::Canceled;
-                continue;
-            }
-            request.status = Status::Running;
-            request.updated_ms = now_ms;
-            targets.insert((request.target.organ.clone(), request.target.record.clone()));
-            available -= 1;
-            output.push(request.clone());
-        }
-        Ok(output)
-    }
-
-    pub fn finish(
-        &mut self,
-        id: &str,
-        target: &Target,
-        user: &str,
-        result: String,
-        now_ms: u64,
-    ) -> Result<(), String> {
-        self.advance(now_ms)?;
-        let request = self.requests.get_mut(id).ok_or("Unknown request.")?;
-        let valid = matches!(request.status, Status::Running | Status::Waiting)
-            && &request.target == target
-            && request.user == user
-            && text(&result, 8192)
-            && self.configuration.surfaces.iter().any(|s| {
-                s.id == request.surface && s.calibration_revision == request.calibration_revision
-            });
-        if !valid {
-            if !request.terminal() {
-                request.status = Status::Failed;
-            }
-            return Err("Result was canceled, stale, unauthorized or invalid.".into());
-        }
-        request.status = Status::Completed;
-        request.updated_ms = now_ms;
-        request.result = Some(result);
-        Ok(())
-    }
-
-    pub fn cancel(&mut self, id: &str) -> Result<(), String> {
-        let request = self.requests.get_mut(id).ok_or("Unknown request.")?;
-        if !request.terminal() {
-            request.status = Status::Canceled;
-        }
-        Ok(())
-    }
-
-    pub fn cancel_all(&mut self) {
-        for request in self.requests.values_mut() {
-            if !request.terminal() {
-                request.status = Status::Canceled;
-            }
-        }
-    }
-
-    pub fn dismiss(&mut self, id: &str) -> Result<(), String> {
-        if !self.requests.get(id).is_some_and(Request::terminal) {
-            return Err("Only finished work can be dismissed.".into());
-        }
-        self.requests.remove(id);
-        Ok(())
-    }
-}
-
-impl Request {
-    pub fn terminal(&self) -> bool {
-        matches!(
-            self.status,
-            Status::Completed | Status::Canceled | Status::Failed
-        )
-    }
 }
 
 #[cfg(test)]

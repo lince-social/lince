@@ -8,7 +8,7 @@
 // - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
 //   Sites unwrap (124).
 
-use lince_interface::host::input::TabletAxes;
+use lince_host::input::TabletAxes;
 use smithay::{
     backend::input::{ButtonState, TabletToolCapabilities as Caps, TabletToolDescriptor},
     delegate_tablet_manager,

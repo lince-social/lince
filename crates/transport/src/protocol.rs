@@ -1,57 +1,76 @@
-// non-lean-yet
-// Scope: enum ClientMessage, enum ServerMessage.
-// BeautifulRust (baseline lines):
-// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
-//   non_exhaustive. Sites 21, 144.
-// - [Clippy probe: clippy::large_enum_variant] large size difference between variants. Sites 21,
-//   144.
-// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
-//   10, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 34, 35, 36, 38, 39, 40, 42, 43, 44, 46, 47,
-//   49, 50, 51, 53, 54, 55, 57, 58, 60, 61, 62, 64, 65, 66, 67, 68, 69, 70, 71, 73, 74, 75, 76, 77,
-//   78, 79, 81, 82, 84, 85, 87, 88, 89, 91, 93, 94, 95, 97, 98, 100, 101, 102, 103, 104, 106, 107,
-//   108, 109, 111, 112, 113, 114, 116, 118, 120, 121, 122, 124, 125, 126, 127, 129, 131, 133, 134,
-//   136, 137, 138, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 157, 158, 159, 161,
-//   162, 163, 164, 165, 166, 168, 169, 170, 171, 172, 174, 175, 176, 178, 179, 180, 182, 183, 184,
-//   185, 187, 189, 191, 192, 193, 195, 197, 198, 199, 200, 201, 202, 204, 205, 206, 207, 209, 210,
-//   211, 213, 214, 215, 217, 218, 219, 220, 222, 224, 226, 227, 229, 230, 232, 234, 235, 237, 238,
-//   240, 241, 242, 243, 245, 246, 247, 249, 250, 251.
+//! Wire frames shared by local and remote Transport sessions.
 
-use engine::actions::Action;
+use std::{fmt, sync::Arc};
+
+use engine::{
+    action_intent::payload_requests_karma_preview, actions::Action, calls, workspace_sync,
+};
+use fiote::{acp::terminal, config};
+use nucleus::{component::Presentation, description_asset, sync};
 use protein::Protein;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::sync::Arc;
+
+use crate::{command, speech};
 
 pub use engine::presence::Cursor as CollabCursor;
 
 impl ClientMessage {
+    /// Checks whether the request names a Karma preview for scheduling purposes.
+    /// Signed payload classification precedes signature verification.
     pub fn runs_karma_preview(&self) -> bool {
         match self {
-            Self::Act { action: Action::PreviewKarmaProposal { .. }, .. } => true,
-            Self::SignedAct { action_base64, .. } => engine::action_intent::payload_requests_karma_preview(action_base64),
+            Self::Act {
+                action: Action::PreviewKarmaProposal { .. },
+                ..
+            } => true,
+            Self::SignedAct { action_base64, .. } => payload_requests_karma_preview(action_base64),
             _ => false,
         }
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// Requests use a snake-case `type` and carry an `id` when the reply is correlated.
+/// Terminal frames accept omitted pixel dimensions as zero. Lane sends without
+/// an Organ are scoped to the Cell hosting the lane.
+/// Debug output identifies the frame variant and omits its payload.
+#[derive(Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ClientMessage {
-    WorkspaceSubscribe { id: String, workspace: String, client: engine::workspace_sync::Client },
-    DescriptionAsset { id: String, request: nucleus::description_asset::Request },
-    Speech { id: String, request: crate::speech::Request },
-    FioteTerminal { id: String, request: fiote::acp::terminal::TerminalRequest },
-    Command { id: String, request: crate::command::Request },
-    CallContext { id: String, thread: String },
+    WorkspaceSubscribe {
+        id: String,
+        workspace: String,
+        client: workspace_sync::Client,
+    },
+    DescriptionAsset {
+        id: String,
+        request: description_asset::Request,
+    },
+    Speech {
+        id: String,
+        request: speech::Request,
+    },
+    FioteTerminal {
+        id: String,
+        request: terminal::TerminalRequest,
+    },
+    Command {
+        id: String,
+        request: command::Request,
+    },
+    CallContext {
+        id: String,
+        thread: String,
+    },
     Call {
         id: String,
         thread: String,
         person: Option<String>,
-        operation: engine::calls::Operation,
+        operation: calls::Operation,
     },
     Fiote {
         id: String,
-        request: fiote::config::Request,
+        request: config::Request,
     },
     SyncInspect {
         id: String,
@@ -59,7 +78,7 @@ pub enum ClientMessage {
     },
     SyncHistoryPolicy {
         id: String,
-        retention: nucleus::sync::Retention,
+        retention: sync::Retention,
     },
     SyncForgetHistory {
         id: String,
@@ -157,24 +176,88 @@ pub enum ClientMessage {
     },
 }
 
+impl fmt::Debug for ClientMessage {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let variant = match self {
+            Self::WorkspaceSubscribe { .. } => "WorkspaceSubscribe",
+            Self::DescriptionAsset { .. } => "DescriptionAsset",
+            Self::Speech { .. } => "Speech",
+            Self::FioteTerminal { .. } => "FioteTerminal",
+            Self::Command { .. } => "Command",
+            Self::CallContext { .. } => "CallContext",
+            Self::Call { .. } => "Call",
+            Self::Fiote { .. } => "Fiote",
+            Self::SyncInspect { .. } => "SyncInspect",
+            Self::SyncHistoryPolicy { .. } => "SyncHistoryPolicy",
+            Self::SyncForgetHistory { .. } => "SyncForgetHistory",
+            Self::Subscribe { .. } => "Subscribe",
+            Self::SubscribeSaved { .. } => "SubscribeSaved",
+            Self::Unsubscribe { .. } => "Unsubscribe",
+            Self::Act { .. } => "Act",
+            Self::SessionAuthenticate { .. } => "SessionAuthenticate",
+            Self::SignedAct { .. } => "SignedAct",
+            Self::LaneJoin { .. } => "LaneJoin",
+            Self::LaneLeave { .. } => "LaneLeave",
+            Self::LaneSend { .. } => "LaneSend",
+            Self::CollabJoin { .. } => "CollabJoin",
+            Self::CollabLeave { .. } => "CollabLeave",
+            Self::CollabPresence { .. } => "CollabPresence",
+            Self::CollabUpdate { .. } => "CollabUpdate",
+            Self::TerminalOpen { .. } => "TerminalOpen",
+            Self::TerminalInput { .. } => "TerminalInput",
+            Self::TerminalResize { .. } => "TerminalResize",
+            Self::TerminalClose { .. } => "TerminalClose",
+            Self::LiveLogin { .. } => "LiveLogin",
+        };
+        f.debug_struct(variant).finish_non_exhaustive()
+    }
+}
+
+/// Correlated replies and unsolicited updates, tagged by a snake-case `type`.
+/// Snapshot and update rows share ownership across consumers.
+/// Optional routing metadata and machine-readable errors may be omitted.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ServerMessage {
-    Workspace { id: String, workspace: Value },
-    DescriptionAsset { id: String, response: nucleus::description_asset::Response },
-    PresentComponent { presentation: nucleus::component::Presentation },
-    Speech { id: String, status: crate::speech::Status },
-    FioteTerminal { id: String, frame: fiote::acp::terminal::TerminalFrame },
-    Command { id: String, response: crate::command::Response },
-    CallContext { id: String, context: engine::calls::Context },
-    Call { id: String, device: String, snapshot: engine::calls::Snapshot },
+    Workspace {
+        id: String,
+        workspace: Value,
+    },
+    DescriptionAsset {
+        id: String,
+        response: description_asset::Response,
+    },
+    PresentComponent {
+        presentation: Presentation,
+    },
+    Speech {
+        id: String,
+        status: speech::Status,
+    },
+    FioteTerminal {
+        id: String,
+        frame: terminal::TerminalFrame,
+    },
+    Command {
+        id: String,
+        response: command::Response,
+    },
+    CallContext {
+        id: String,
+        context: calls::Context,
+    },
+    Call {
+        id: String,
+        device: String,
+        snapshot: calls::Snapshot,
+    },
     Fiote {
         id: String,
-        status: fiote::config::Status,
+        status: config::Status,
     },
     SyncStatus {
         id: String,
-        overview: nucleus::sync::Overview,
+        overview: sync::Overview,
     },
     SessionChallenge {
         session_id: String,
@@ -204,7 +287,7 @@ pub enum ServerMessage {
         #[serde(default)]
         warnings: Vec<String>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        data: Option<serde_json::Value>,
+        data: Option<Value>,
     },
     Error {
         id: String,
@@ -268,4 +351,49 @@ pub enum ServerMessage {
         id: String,
         exit_code: Option<u32>,
     },
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn client_debug_omits_credentials_and_signed_payloads() {
+        const SECRET: &str = "synthetic-test-credential";
+        for (message, variant) in [
+            (
+                ClientMessage::LiveLogin {
+                    username: "user".into(),
+                    password: SECRET.into(),
+                },
+                "LiveLogin",
+            ),
+            (
+                ClientMessage::Act {
+                    id: "create-user".into(),
+                    action: Action::CreateUser {
+                        username: "user".into(),
+                        name: "User".into(),
+                        password: SECRET.into(),
+                        role: "reader".into(),
+                    },
+                },
+                "Act",
+            ),
+            (
+                ClientMessage::SignedAct {
+                    id: "sign-action".into(),
+                    session_id: "session".into(),
+                    session_challenge: "challenge".into(),
+                    sequence: 1,
+                    action_base64: SECRET.into(),
+                    signature: "signature".into(),
+                },
+                "SignedAct",
+            ),
+        ] {
+            assert_eq!(format!("{message:?}"), format!("{variant} {{ .. }}"));
+            assert_eq!(format!("{message:#?}"), format!("{variant} {{ .. }}"));
+        }
+    }
 }

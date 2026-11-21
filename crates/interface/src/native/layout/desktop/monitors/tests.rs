@@ -511,7 +511,7 @@ fn already_queued_controls_cannot_change_a_pending_draft_or_enqueue_a_second_sav
         Change::Mode(1),
         Change::Apply,
         Change::Keep,
-        Change::Align(1),
+        Change::Align(Direction::Right),
     ] {
         action.apply(app.world_mut(), root);
     }

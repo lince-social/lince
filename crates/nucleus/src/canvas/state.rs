@@ -1,34 +1,26 @@
-// non-lean-yet
-// Scope: struct SavedReceipt, struct State, fn undo_field, fn authored_binding.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
-//   Sites 238, 341, 856, 870, 921, 941, 961, 1053, 1108.
-// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 861, 931, 1101,
-//   1125.
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 184, 192, 193,
-//   197, 205, 212, 218, 230, 286, 311, 320, 331, 348, 353, 365, 367, 390, 400, 403, 424, 426, 427,
-//   431, 435, 450, 451, 462, 467, 492, 507, 511, 520, 570, 589, 602, 610, 667, 786.
-// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
-//   Sites 1036.
-// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites 88,
-//   221, 222, 233, 282, 1049.
-// - [Clippy: clippy::if_not_else] unnecessary `!=` operation. Sites 557.
-// - [Clippy: clippy::if_not_else] unnecessary boolean `not` operation. Sites 692, 727.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 44, 76, 93, 106, 134, 145, 180, 255.
-// - [Clippy: clippy::rc_buffer] Check whether a shared slice or str suffices. Sites 39.
-// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
-//   conventions. Sites 1.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 36, 37,
-//   44, 76, 93, 106, 134, 141, 145, 180, 247, 255.
-// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites handle: String
-//   (180), mark_saved: String (255), new: String (44), normalize_applied_snapshot: String (76),
-//   refresh_registry: String (93), reserve_workspace_id: String (134), synchronize: String (106),
-//   validate: String (145).
+use std::{collections::BTreeSet, sync::Arc};
 
-use std::sync::Arc;
+use serde::{Deserialize, Serialize};
 
-use super::*;
+use super::{
+    Descriptor, MAX_PLACEMENTS, Mutation, Persistence, Receipt, Request, Response, Snapshot,
+    request_identifier, room, validate_registry,
+};
+use crate::{
+    json::{encoded_len, sha256},
+    performance::{self, Span},
+};
+
+mod mutation;
+mod query;
+mod undo;
+
+#[cfg(test)]
+mod tests;
+
+const MAX_UNDO_RECEIPTS: usize = 16;
+const MAX_UNDO_BYTES: usize = 16 * 1024 * 1024;
+const MAX_RECOVERY_BYTES: usize = 33 * 1024 * 1024;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -45,11 +37,10 @@ struct SavedReceipt {
 impl SavedReceipt {
     fn encoded_bytes(&mut self) -> Result<usize, String> {
         if let Some(bytes) = self.encoded_bytes {
-            crate::performance::add("canvas-history-size-reuses", 1);
+            performance::add("canvas-history-size-reuses", 1);
             return Ok(bytes);
         }
-        let bytes = crate::json::encoded_len(&(&self.before, &self.after))
-            .map_err(|error| error.to_string())?;
+        let bytes = encoded_len(&(&self.before, &self.after)).map_err(|error| error.to_string())?;
         self.encoded_bytes = Some(bytes);
         Ok(bytes)
     }
@@ -60,9 +51,11 @@ impl SavedReceipt {
     }
 }
 
+/// Current canvas, component registry, and bounded history of mutation receipts.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct State {
+    /// Current complete snapshot shared with readers and retained receipts.
     pub snapshot: Arc<Snapshot>,
     next_workspace_id: u64,
     registry: Arc<Vec<Descriptor>>,
@@ -70,6 +63,11 @@ pub struct State {
 }
 
 impl State {
+    /// Creates state from a complete snapshot and a compatible component registry.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error for an incomplete or invalid snapshot, an invalid registry, or exhausted workspace IDs.
     pub fn new(
         mut snapshot: Snapshot,
         registry: impl Into<Arc<Vec<Descriptor>>>,
@@ -83,17 +81,8 @@ impl State {
         snapshot.validate_full()?;
         room::project(&mut snapshot.placements)?;
         validate_registry(&registry)?;
-        for placement in &snapshot.placements {
-            placement.component.validate_snapshot(&registry)?;
-        }
-        let next_workspace_id = snapshot
-            .workspaces
-            .iter()
-            .map(|w| w.id)
-            .max()
-            .unwrap_or_default()
-            .checked_add(1)
-            .ok_or("Workspace identity overflow.")?;
+        validate_components(&snapshot, &registry)?;
+        let next_workspace_id = next_workspace_after(&snapshot)?;
         Ok(Self {
             next_workspace_id,
             snapshot: Arc::new(snapshot),
@@ -102,64 +91,61 @@ impl State {
         })
     }
 
+    /// Adopts a normalized snapshot at the current revision and updates its retained receipt.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the normalized snapshot or its components fail validation.
     pub fn normalize_applied_snapshot(&mut self, mut snapshot: Snapshot) -> Result<(), String> {
-        snapshot.revision = self.snapshot.revision;
-        snapshot.next_offset = None;
-        snapshot.validate_full()?;
-        room::project(&mut snapshot.placements)?;
-        for placement in &snapshot.placements {
-            placement.component.validate_snapshot(&self.registry)?;
-        }
+        self.prepare_snapshot(&mut snapshot)?;
         self.snapshot = Arc::new(snapshot);
         if let Some(receipt) = self.receipts.last_mut()
             && receipt.receipt.revision == self.snapshot.revision
         {
-            receipt.replace_after(self.snapshot.clone());
+            receipt.replace_after(Arc::clone(&self.snapshot));
         }
         Ok(())
     }
 
+    /// Replaces the registry after checking every existing component against it.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the registry or a component in the current snapshot fails validation.
     pub fn refresh_registry(
         &mut self,
         registry: impl Into<Arc<Vec<Descriptor>>>,
     ) -> Result<(), String> {
         let registry = registry.into();
         validate_registry(&registry)?;
-        for placement in &self.snapshot.placements {
-            placement.component.validate_snapshot(&registry)?;
-        }
+        validate_components(&self.snapshot, &registry)?;
         self.registry = registry;
         Ok(())
     }
 
+    /// Adopts a validated snapshot and advances the revision only if its content changed.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error for invalid snapshot data or exhausted revision or workspace counters.
     pub fn synchronize(&mut self, mut snapshot: Snapshot) -> Result<(), String> {
-        snapshot.revision = self.snapshot.revision;
-        snapshot.next_offset = None;
-        snapshot.validate_full()?;
-        room::project(&mut snapshot.placements)?;
-        for placement in &snapshot.placements {
-            placement.component.validate_snapshot(&self.registry)?;
-        }
+        self.prepare_snapshot(&mut snapshot)?;
         if snapshot != *self.snapshot {
             snapshot.revision = snapshot
                 .revision
                 .checked_add(1)
                 .ok_or("Canvas revision overflow.")?;
-            self.next_workspace_id = self.next_workspace_id.max(
-                snapshot
-                    .workspaces
-                    .iter()
-                    .map(|w| w.id)
-                    .max()
-                    .unwrap_or(0)
-                    .checked_add(1)
-                    .ok_or("Workspace identity overflow.")?,
-            );
+            self.next_workspace_id = self.next_workspace_id.max(next_workspace_after(&snapshot)?);
             self.snapshot = Arc::new(snapshot);
         }
         Ok(())
     }
 
+    /// Advances workspace allocation past an identifier from another snapshot.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the supplied identifier has no successor.
     pub fn reserve_workspace_id(&mut self, id: u64) -> Result<(), String> {
         self.next_workspace_id = self
             .next_workspace_id
@@ -167,10 +153,16 @@ impl State {
         Ok(())
     }
 
+    /// Returns the next workspace identifier this state will allocate.
     pub fn next_workspace_id(&self) -> u64 {
         self.next_workspace_id
     }
 
+    /// Checks recovery data, including the registry, counters, and retained history.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error for invalid data, inconsistent history, or exceeded recovery limits.
     pub fn validate(&self) -> Result<(), String> {
         self.snapshot.validate_full()?;
         if self
@@ -182,13 +174,11 @@ impl State {
             return Err("The workspace identity counter is invalid.".into());
         }
         validate_registry(&self.registry)?;
-        for placement in &self.snapshot.placements {
-            placement.component.validate_snapshot(&self.registry)?;
-        }
-        if crate::json::encoded_len(self).map_err(|e| e.to_string())? > 33 * 1024 * 1024 {
+        validate_components(&self.snapshot, &self.registry)?;
+        if encoded_len(self).map_err(|error| error.to_string())? > MAX_RECOVERY_BYTES {
             return Err("Canvas recovery exceeds 33 MiB.".into());
         }
-        if self.receipts.len() > 16 {
+        if self.receipts.len() > MAX_UNDO_RECEIPTS {
             return Err("Canvas recovery has too many undo receipts.".into());
         }
         let mut ids = BTreeSet::new();
@@ -206,73 +196,150 @@ impl State {
         Ok(())
     }
 
+    /// Handles an inspection, export, receipt lookup, or revision-checked mutation.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if validation fails, an identifier is unavailable, or the request
+    /// conflicts with retained history or the current revision.
     pub fn handle(&mut self, request: &Request) -> Result<Response, String> {
         request.validate()?;
         match request {
-            Request::InspectElement { placement, .. } => {
-                let placement = self.snapshot.placements.iter().find(|item| &item.id == placement).ok_or("The placement no longer exists.")?.clone();
-                Ok(Response::Element { element: authoring::Element { revision: self.snapshot.revision, placement, parts: Vec::new(), total_parts: 0, next_offset: None, capabilities: vec!["placement-crud".into(), "authored-parts".into(), "tokens".into(), "event-links".into(), "event-action-behaviors".into(), "groups".into(), "export".into()] } })
+            Request::InspectElement { placement, .. } => self.inspect_element(placement),
+            Request::Export { placement, name } => self.export(placement, name),
+            Request::Registry => Ok(Response::Registry {
+                components: self.registry.as_ref().clone(),
+            }),
+            Request::Inspect {
+                workspace,
+                selected_only,
+                offset,
+                limit,
+            } => self.inspect(*workspace, *selected_only, *offset, *limit),
+            Request::Receipt { request_id } => {
+                let saved = self.retained_receipt(request_id).ok_or(
+                    "This request has no retained receipt. Inspect actual canvas state before retrying.",
+                )?;
+                Ok(Response::Receipt {
+                    receipt: saved.receipt.clone(),
+                })
             }
-            Request::Export { placement, name } => {
-                let placement = self.snapshot.placements.iter().find(|item| &item.id == placement).ok_or("The placement no longer exists.")?;
-                let mut edits = authoring::edits(&placement.component);
-                edits.size = Some(placement.geometry.size);
-                if let Some(root) = edits.parts.get_mut("root") { root.geometry = None; }
-                let component = Component::Authored { base: Box::new(authoring::base(&placement.component).clone()), edits };
-                let document = Document { format: Document::FORMAT.into(), name: name.clone(), component };
-                let hash = authoring::hash(&document)?;
-                Ok(Response::Export { document, hash, revision: self.snapshot.revision })
-            }
-            Request::Registry => Ok(Response::Registry { components: self.registry.as_ref().clone() }),
-            Request::Inspect { workspace, selected_only, offset, limit } => {
-                if workspace.is_some_and(|id| !self.snapshot.workspaces.iter().any(|w| w.id == id)) { return Err("The workspace no longer exists.".into()); }
-                let mut placements = self.snapshot.placements.iter().filter(|p| workspace.is_none_or(|id| p.workspace == id) && (!selected_only || p.selected)).skip(*offset);
-                let page = placements.by_ref().take(*limit).cloned().collect();
-                let snapshot = Snapshot {
-                    revision: self.snapshot.revision,
-                    active_workspace: self.snapshot.active_workspace,
-                    workspaces: self.snapshot.workspaces.clone(),
-                    placements: page,
-                    next_offset: placements.next().map(|_| offset + limit),
-                };
-                snapshot.validate()?;
-                Ok(Response::Snapshot { snapshot })
-            }
-            Request::Receipt { request_id } => Ok(Response::Receipt { receipt: self.receipts.iter().find(|r| &r.id == request_id).ok_or("This request has no retained receipt. Inspect actual canvas state before retrying.")?.receipt.clone() }),
-            Request::Mutate { request_id, expected_revision, mutation } => {
-                let _mutation = crate::performance::Span::new("canvas-mutation");
-                let hash = crate::json::sha256(request).map_err(|e| e.to_string())?;
-                if let Some(receipt) = self.receipts.iter().find(|r| &r.id == request_id) {
-                    if receipt.hash != hash { return Err("This request ID already belongs to another canvas operation.".into()); }
-                    return Ok(Response::Receipt { receipt: receipt.receipt.clone() });
-                }
-                if *expected_revision != self.snapshot.revision { return Err(format!("Canvas changed: expected revision {expected_revision}, current {}. Inspect before editing again.", self.snapshot.revision)); }
-                let before = self.snapshot.clone();
-                let mut next = before.clone();
-                let (mut affected_placements, workspace) = self.apply(&mut next, mutation)?;
-                let affected_count = if let Mutation::Undo { receipt } | Mutation::UndoChanges { receipt } = mutation { self.receipts.iter().find(|r| &r.id == receipt).ok_or("The undo receipt is no longer retained.")?.receipt.affected_count } else { affected_placements.len() };
-                affected_placements.truncate(MAX_PLACEMENTS);
-                let snapshot = Arc::make_mut(&mut next);
-                snapshot.revision = snapshot.revision.checked_add(1).ok_or("Canvas revision overflow.")?;
-                snapshot.validate_full()?;
-                room::project(&mut snapshot.placements)?;
-                let receipt = Receipt { request_id: request_id.clone(), revision: next.revision, persistence: Persistence::Applied, affected_placements, affected_count, workspace };
-                if matches!(mutation, Mutation::CreateWorkspace { .. }) { self.next_workspace_id = self.next_workspace_id.checked_add(1).ok_or("Workspace identity overflow.")?; }
-                self.snapshot = next;
-                self.receipts.push(SavedReceipt { id: request_id.clone(), hash, receipt: receipt.clone(), before, after: self.snapshot.clone(), encoded_bytes: None });
-                let sizes = self.receipts.iter_mut().map(SavedReceipt::encoded_bytes).collect::<Result<Vec<_>, _>>()?;
-                let mut bytes = sizes.iter().sum::<usize>();
-                let mut remove = 0;
-                while self.receipts.len() - remove > 1 && (self.receipts.len() - remove > 16 || bytes > 16 * 1024 * 1024) {
-                    bytes -= sizes[remove];
-                    remove += 1;
-                }
-                if remove != 0 { drop(self.receipts.drain(..remove)); }
+            Request::Mutate {
+                request_id,
+                expected_revision,
+                mutation,
+            } => {
+                let receipt = self.mutate(request, request_id, *expected_revision, mutation)?;
                 Ok(Response::Receipt { receipt })
             }
         }
     }
 
+    fn mutate(
+        &mut self,
+        request: &Request,
+        request_id: &str,
+        expected_revision: u64,
+        mutation: &Mutation,
+    ) -> Result<Receipt, String> {
+        let _mutation = Span::new("canvas-mutation");
+        let hash = sha256(request).map_err(|error| error.to_string())?;
+        if let Some(saved) = self.retained_receipt(request_id) {
+            if saved.hash != hash {
+                return Err("This request ID already belongs to another canvas operation.".into());
+            }
+            return Ok(saved.receipt.clone());
+        }
+        if expected_revision != self.snapshot.revision {
+            return Err(format!(
+                "Canvas changed: expected revision {expected_revision}, current {}. Inspect before editing again.",
+                self.snapshot.revision
+            ));
+        }
+        let before = Arc::clone(&self.snapshot);
+        let mut next = Arc::clone(&before);
+        let (mut affected_placements, workspace) = self.apply(&mut next, mutation)?;
+        let affected_count = match mutation {
+            Mutation::Undo { receipt } | Mutation::UndoChanges { receipt } => {
+                self.retained_receipt(receipt)
+                    .ok_or("The undo receipt is no longer retained.")?
+                    .receipt
+                    .affected_count
+            }
+            _ => affected_placements.len(),
+        };
+        affected_placements.truncate(MAX_PLACEMENTS);
+        let snapshot = Arc::make_mut(&mut next);
+        snapshot.revision = snapshot
+            .revision
+            .checked_add(1)
+            .ok_or("Canvas revision overflow.")?;
+        snapshot.validate_full()?;
+        room::project(&mut snapshot.placements)?;
+
+        let request_id = request_id.to_owned();
+        let receipt = Receipt {
+            request_id: request_id.clone(),
+            revision: next.revision,
+            persistence: Persistence::Applied,
+            affected_placements,
+            affected_count,
+            workspace,
+        };
+        if matches!(mutation, Mutation::CreateWorkspace { .. }) {
+            self.next_workspace_id = self
+                .next_workspace_id
+                .checked_add(1)
+                .ok_or("Workspace identity overflow.")?;
+        }
+        self.snapshot = next;
+        self.receipts.push(SavedReceipt {
+            id: request_id,
+            hash,
+            receipt: receipt.clone(),
+            before,
+            after: Arc::clone(&self.snapshot),
+            encoded_bytes: None,
+        });
+        self.prune_receipts()?;
+        Ok(receipt)
+    }
+
+    fn prune_receipts(&mut self) -> Result<(), String> {
+        let sizes = self
+            .receipts
+            .iter_mut()
+            .map(SavedReceipt::encoded_bytes)
+            .collect::<Result<Vec<_>, _>>()?;
+        let mut bytes = sizes.iter().sum::<usize>();
+        let mut remaining = sizes.len();
+
+        for size in sizes {
+            if remaining <= 1 || (remaining <= MAX_UNDO_RECEIPTS && bytes <= MAX_UNDO_BYTES) {
+                break;
+            }
+            bytes -= size;
+            remaining -= 1;
+        }
+        if remaining < self.receipts.len() {
+            drop(self.receipts.drain(..self.receipts.len() - remaining));
+        }
+        Ok(())
+    }
+
+    fn retained_receipt(&self, id: &str) -> Option<&SavedReceipt> {
+        self.receipts.iter().find(|receipt| receipt.id == id)
+    }
+
+    fn prepare_snapshot(&self, snapshot: &mut Snapshot) -> Result<(), String> {
+        snapshot.revision = self.snapshot.revision;
+        snapshot.next_offset = None;
+        snapshot.validate_full()?;
+        room::project(&mut snapshot.placements)?;
+        validate_components(snapshot, &self.registry)
+    }
+
+    /// Marks every retained receipt through the given revision as durable.
     pub fn mark_saved_through(&mut self, revision: u64) {
         for receipt in &mut self.receipts {
             if receipt.receipt.revision <= revision {
@@ -281,6 +348,11 @@ impl State {
         }
     }
 
+    /// Marks one retained receipt as durable.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the request has no retained receipt.
     pub fn mark_saved(&mut self, request_id: &str) -> Result<(), String> {
         let receipt = self
             .receipts
@@ -290,902 +362,22 @@ impl State {
         receipt.receipt.persistence = Persistence::Saved;
         Ok(())
     }
-
-    fn apply(
-        &self,
-        next: &mut Arc<Snapshot>,
-        mutation: &Mutation,
-    ) -> Result<(Vec<String>, Option<u64>), String> {
-        if let Mutation::Undo { receipt } = mutation {
-            let previous = self
-                .receipts
-                .iter()
-                .find(|r| &r.id == receipt)
-                .ok_or("The undo receipt is no longer retained.")?;
-            if previous.receipt.revision != next.revision {
-                return Err(
-                    "Undo would overwrite later changes; inspect the current canvas first.".into(),
-                );
-            }
-            let revision = next.revision;
-            *next = previous.before.clone();
-            Arc::make_mut(next).revision = revision;
-            crate::performance::add("canvas-mutation-snapshots-copied", 1);
-            return Ok((
-                previous.receipt.affected_placements.clone(),
-                Some(next.active_workspace),
-            ));
-        }
-        let next = Arc::make_mut(next);
-        crate::performance::add("canvas-mutation-snapshots-copied", 1);
-        let require_workspace = |id| {
-            if next.workspaces.iter().any(|w| w.id == id) {
-                Ok(())
-            } else {
-                Err("The workspace no longer exists.")
-            }
-        };
-        match mutation {
-            Mutation::SetRoomMembers { members } => {
-                if members.is_empty() || members.len() > MAX_PLACEMENTS {
-                    return Err("Assign between one and 256 room members at a time.".into());
-                }
-                let mut workspace = None;
-                for (id, member) in members {
-                    let selected = find(next, id)?;
-                    if workspace.is_some_and(|workspace| workspace != selected.workspace) {
-                        return Err("A room assignment stays within one workspace.".into());
-                    }
-                    workspace = Some(selected.workspace);
-                    selected.metadata.room_member = member.clone();
-                }
-                Ok((members.keys().cloned().collect(), workspace))
-            }
-            Mutation::Rebind { placement, records } => {
-                let selected = find(next, placement)?;
-                let component = authoring::rebind(&selected.component, records)?;
-                component.validate(&self.registry, true)?;
-                selected.component = component;
-                Ok((vec![placement.clone()], Some(selected.workspace)))
-            }
-            Mutation::Patch { placement, changes } => {
-                let selected = find(next, placement)?;
-                let mut edits = authoring::edits(&selected.component);
-                for change in changes {
-                    edits.apply(change)?;
-                }
-                if let Some(geometry) = edits
-                    .parts
-                    .get("root")
-                    .and_then(|part| part.geometry.clone())
-                {
-                    selected.geometry = geometry;
-                }
-                for (axis, token) in ["Width", "Height"].into_iter().enumerate() {
-                    if let Some(authoring::TokenValue::Number(value)) = edits
-                        .parts
-                        .get("root")
-                        .and_then(|part| part.tokens.get(token))
-                    {
-                        selected.geometry.size[axis] = f64::from(*value);
-                    }
-                }
-                if edits.size.is_some() {
-                    edits.size = Some(selected.geometry.size);
-                }
-                let component = Component::Authored {
-                    base: Box::new(authoring::base(&selected.component).clone()),
-                    edits,
-                };
-                component.validate_snapshot(&self.registry)?;
-                selected.component = component;
-                Ok((vec![placement.clone()], Some(selected.workspace)))
-            }
-            Mutation::Duplicate {
-                placement,
-                copy,
-                workspace,
-                position,
-            } => {
-                require_workspace(*workspace)?;
-                if next.placements.iter().any(|item| &item.id == copy) {
-                    return Err("The copy identity is already used.".into());
-                }
-                let mut duplicate = find(next, placement)?.clone();
-                let old_position = duplicate.geometry.position;
-                duplicate.id = copy.clone();
-                duplicate.workspace = *workspace;
-                duplicate.geometry.position = *position;
-                if let Some(binding) = &mut duplicate.metadata.binding {
-                    binding.translate([
-                        position[0] - old_position[0],
-                        0.0,
-                        position[1] - old_position[1],
-                    ]);
-                }
-                duplicate.group = None;
-                duplicate.selected = false;
-                duplicate.metadata.attachment = None;
-                duplicate.metadata.group_pose = None;
-                duplicate.metadata.room_member = None;
-                if let Some(room) = &mut duplicate.metadata.room {
-                    room.home.position = [
-                        position[0],
-                        duplicate.metadata.spatial.elevation,
-                        position[1],
-                    ];
-                }
-                next.placements.push(duplicate);
-                Ok((vec![copy.clone()], Some(*workspace)))
-            }
-            Mutation::Group { placements, group } => {
-                let mut workspace = None;
-                for id in placements {
-                    let selected = find(next, id)?;
-                    if workspace.is_some_and(|workspace| workspace != selected.workspace) {
-                        return Err("A transform group stays within one workspace.".into());
-                    }
-                    workspace = Some(selected.workspace);
-                    selected.group = group.clone();
-                    selected.metadata.group_pose = None;
-                }
-                Ok((placements.clone(), workspace))
-            }
-            Mutation::Add {
-                placement,
-                workspace,
-                component,
-                geometry,
-            }
-            | Mutation::AddWithMetadata {
-                placement,
-                workspace,
-                component,
-                geometry,
-                ..
-            } => {
-                require_workspace(*workspace)?;
-                component.validate(&self.registry, false)?;
-                if next.placements.iter().any(|p| &p.id == placement) {
-                    return Err("The placement ID is already used.".into());
-                }
-                next.placements.push(Placement {
-                    id: placement.clone(),
-                    workspace: *workspace,
-                    component: component.clone(),
-                    geometry: geometry.clone(),
-                    selected: false,
-                    group: None,
-                    metadata: match mutation {
-                        Mutation::AddWithMetadata { metadata, .. } => metadata.clone(),
-                        _ => Default::default(),
-                    },
-                });
-                Ok((vec![placement.clone()], Some(*workspace)))
-            }
-            Mutation::Configure {
-                placement,
-                component,
-            } => {
-                component.validate(&self.registry, true)?;
-                let selected = find(next, placement)?;
-                if selected.component.origin().is_some()
-                    && selected.component.origin() != component.origin()
-                {
-                    return Err(
-                        "A Fiote composition must retain its protected host and origin.".into(),
-                    );
-                }
-                selected.component = component.clone();
-                Ok((vec![placement.clone()], Some(selected.workspace)))
-            }
-            Mutation::SetMetadata {
-                placement,
-                metadata,
-            } => {
-                let selected = find(next, placement)?;
-                let projected_pose = (
-                    selected.metadata.spatial.elevation,
-                    selected.metadata.spatial.rotation,
-                );
-                selected.metadata = metadata.clone();
-                if selected.metadata.room_member.is_some() {
-                    selected.metadata.spatial.elevation = projected_pose.0;
-                    selected.metadata.spatial.rotation = projected_pose.1;
-                }
-                Ok((vec![placement.clone()], Some(selected.workspace)))
-            }
-            Mutation::Move {
-                placement,
-                workspace,
-                position,
-            } => {
-                require_workspace(*workspace)?;
-                room::relocalize_move(&mut next.placements, placement, *position)?;
-                let selected = find(next, placement)?;
-                if let Some(binding) = &mut selected.metadata.binding {
-                    binding.translate([
-                        position[0] - selected.geometry.position[0],
-                        0.0,
-                        position[1] - selected.geometry.position[1],
-                    ]);
-                }
-                selected.workspace = *workspace;
-                selected.geometry.position = *position;
-                if let Component::Authored { edits, .. } = &mut selected.component
-                    && let Some(root) = edits.parts.get_mut("root")
-                    && let Some(geometry) = &mut root.geometry
-                {
-                    geometry.position = *position;
-                }
-                Ok((vec![placement.clone()], Some(*workspace)))
-            }
-            Mutation::Resize { placement, size } => {
-                let selected = find(next, placement)?;
-                selected.geometry.size = *size;
-                if let Component::Authored { edits, .. } = &mut selected.component {
-                    edits.size = Some(*size);
-                    if let Some(root) = edits.parts.get_mut("root") {
-                        root.tokens.remove("Width");
-                        root.tokens.remove("Height");
-                        if let Some(geometry) = &mut root.geometry {
-                            geometry.size = *size;
-                        }
-                    }
-                }
-                Ok((vec![placement.clone()], Some(selected.workspace)))
-            }
-            Mutation::Remove { placement } => {
-                let workspace = find(next, placement)?.workspace;
-                let mut affected = vec![placement.clone()];
-                affected.extend(room::detach_descendants(&mut next.placements, placement));
-                next.placements.retain(|p| &p.id != placement);
-                for item in &mut next.placements {
-                    if let Some(binding) = &mut item.metadata.binding
-                        && matches!(&binding.anchor, crate::terrain::Anchor::Item(id) if id == placement)
-                    {
-                        binding.anchor = crate::terrain::Anchor::Fixed;
-                        binding.offset = [0.0; 3];
-                        affected.push(item.id.clone());
-                    }
-                }
-                Ok((affected, Some(workspace)))
-            }
-            Mutation::CreateWorkspace { name } => {
-                let id = self.next_workspace_id;
-                id.checked_add(1).ok_or("Workspace identity overflow.")?;
-                next.workspaces.push(Workspace {
-                    id,
-                    name: name.trim().into(),
-                    center: [0.0, 0.0],
-                    zoom: 1.0,
-                    view: None,
-                });
-                next.active_workspace = id;
-                Ok((vec![], Some(id)))
-            }
-            Mutation::RenameWorkspace { workspace, name } => {
-                let selected = next
-                    .workspaces
-                    .iter_mut()
-                    .find(|w| w.id == *workspace)
-                    .ok_or("The workspace no longer exists.")?;
-                selected.name = name.trim().into();
-                Ok((vec![], Some(*workspace)))
-            }
-            Mutation::SwitchWorkspace { workspace } => {
-                require_workspace(*workspace)?;
-                next.active_workspace = *workspace;
-                Ok((vec![], Some(*workspace)))
-            }
-            Mutation::RemoveWorkspace { workspace } => {
-                require_workspace(*workspace)?;
-                if next.workspaces.len() <= 1 {
-                    return Err("Keep at least one workspace.".into());
-                }
-                let destination = if next.active_workspace != *workspace {
-                    next.active_workspace
-                } else {
-                    next.workspaces
-                        .iter()
-                        .find(|w| w.id != *workspace)
-                        .ok_or("Keep at least one workspace.")?
-                        .id
-                };
-                let affected = next
-                    .placements
-                    .iter()
-                    .filter(|placement| placement.workspace == *workspace)
-                    .map(|placement| placement.id.clone())
-                    .collect();
-                next.placements
-                    .retain(|placement| placement.workspace != *workspace);
-                next.workspaces.retain(|w| w.id != *workspace);
-                next.active_workspace = destination;
-                Ok((affected, Some(destination)))
-            }
-            Mutation::Undo { .. } => {
-                unreachable!("Full undo is handled before copying the canvas.")
-            }
-            Mutation::UndoChanges { receipt } => {
-                let previous = self
-                    .receipts
-                    .iter()
-                    .find(|r| &r.id == receipt)
-                    .ok_or("The undo receipt is no longer retained.")?;
-                undo_placements(next, &previous.before, &previous.after)?;
-                Ok((
-                    previous.receipt.affected_placements.clone(),
-                    Some(next.active_workspace),
-                ))
-            }
-        }
-    }
 }
 
-fn undo_field<T: Clone + PartialEq>(before: &T, after: &T, current: &mut T) -> Result<(), String> {
-    if before != after {
-        if current != after {
-            return Err("Undo conflicts with a later edit to the same field.".into());
-        }
-        *current = before.clone();
-    }
-    Ok(())
+fn next_workspace_after(snapshot: &Snapshot) -> Result<u64, String> {
+    snapshot
+        .workspaces
+        .iter()
+        .map(|workspace| workspace.id)
+        .max()
+        .unwrap_or_default()
+        .checked_add(1)
+        .ok_or_else(|| "Workspace identity overflow.".into())
 }
 
-fn authored_binding(
-    binding: &Option<crate::terrain::SpatialBinding>,
-) -> Option<crate::terrain::SpatialBinding> {
-    binding.clone().map(|mut b| {
-        if b.anchor != crate::terrain::Anchor::Fixed {
-            b.position = [0.0; 3];
-        }
-        if b.follow_orientation {
-            b.rotation = [0.0, 0.0, 0.0, 1.0];
-        }
-        b
-    })
-}
-
-fn room_world_pose(item: &Placement) -> Pose {
-    Pose {
-        position: [
-            item.geometry.position[0],
-            item.metadata.spatial.elevation,
-            item.geometry.position[1],
-        ],
-        rotation: item.metadata.spatial.rotation,
-    }
-}
-
-fn undo_placements(
-    current: &mut Snapshot,
-    before: &Snapshot,
-    after: &Snapshot,
-) -> Result<(), String> {
-    if before.workspaces != after.workspaces || before.active_workspace != after.active_workspace {
-        return Err("Use ordinary canvas undo for workspace changes.".into());
-    }
-    let old: BTreeMap<_, _> = before.placements.iter().map(|p| (&p.id, p)).collect();
-    let new: BTreeMap<_, _> = after.placements.iter().map(|p| (&p.id, p)).collect();
-    for (id, added) in &new {
-        if !old.contains_key(id) {
-            let found = current
-                .placements
-                .iter()
-                .find(|p| &p.id == *id)
-                .ok_or("The added placement was already removed.")?;
-            if found.component != added.component
-                || found.metadata.room != added.metadata.room
-                || found.metadata.room_member != added.metadata.room_member
-                || found.metadata.material != added.metadata.material
-                || found.metadata.light != added.metadata.light
-                || authored_binding(&found.metadata.binding)
-                    != authored_binding(&added.metadata.binding)
-            {
-                return Err("Undo would remove a placement with later authored changes.".into());
-            }
-            current.placements.retain(|p| &p.id != *id);
-        }
-    }
-    for (id, before) in old {
-        let Some(after) = new.get(id) else {
-            if current.placements.iter().any(|p| &p.id == id) {
-                return Err("The removed identity is already used.".into());
-            }
-            current.placements.push(before.clone());
-            continue;
-        };
-        if before == *after {
-            continue;
-        }
-        let found = current
-            .placements
-            .iter_mut()
-            .find(|p| &p.id == id)
-            .ok_or("The edited placement was removed.")?;
-        undo_field(&before.component, &after.component, &mut found.component)?;
-        undo_field(&before.workspace, &after.workspace, &mut found.workspace)?;
-        let projected =
-            before.metadata.room_member.is_some() || after.metadata.room_member.is_some();
-        if before.metadata.room_member.is_some()
-            && after.metadata.room_member.is_none()
-            && (found.geometry != after.geometry
-                || found.metadata.spatial != after.metadata.spatial)
-        {
-            return Err(
-                "Undo conflicts with a world placement edit made after detaching from the room."
-                    .into(),
-            );
-        }
-        if !projected {
-            undo_field(&before.geometry, &after.geometry, &mut found.geometry)?;
-        } else {
-            undo_field(
-                &before.geometry.size,
-                &after.geometry.size,
-                &mut found.geometry.size,
-            )?;
-        }
-        undo_field(
-            &before.metadata.room,
-            &after.metadata.room,
-            &mut found.metadata.room,
-        )?;
-        undo_field(
-            &before.metadata.room_member,
-            &after.metadata.room_member,
-            &mut found.metadata.room_member,
-        )?;
-        undo_field(&before.group, &after.group, &mut found.group)?;
-        undo_field(
-            &before.metadata.order,
-            &after.metadata.order,
-            &mut found.metadata.order,
-        )?;
-        undo_field(
-            &before.metadata.pinned,
-            &after.metadata.pinned,
-            &mut found.metadata.pinned,
-        )?;
-        undo_field(
-            &before.metadata.event_boundary,
-            &after.metadata.event_boundary,
-            &mut found.metadata.event_boundary,
-        )?;
-        if !projected {
-            undo_field(
-                &before.metadata.spatial,
-                &after.metadata.spatial,
-                &mut found.metadata.spatial,
-            )?;
-        } else {
-            undo_field(
-                &before.metadata.spatial.depth,
-                &after.metadata.spatial.depth,
-                &mut found.metadata.spatial.depth,
-            )?;
-            undo_field(
-                &before.metadata.spatial.world_pinned,
-                &after.metadata.spatial.world_pinned,
-                &mut found.metadata.spatial.world_pinned,
-            )?;
-        }
-        undo_field(
-            &before.metadata.attachment,
-            &after.metadata.attachment,
-            &mut found.metadata.attachment,
-        )?;
-        if !projected {
-            undo_field(
-                &before.metadata.group_pose,
-                &after.metadata.group_pose,
-                &mut found.metadata.group_pose,
-            )?;
-        } else if before.group != after.group {
-            found.metadata.group_pose = before.metadata.group_pose.as_ref().map(|group| {
-                let old = room_world_pose(before);
-                let current = room_world_pose(found);
-                room::compose(&current, &room::relative(&old, group))
-            });
-        }
-        if before.metadata.room_member.is_none() && after.metadata.room_member.is_some() {
-            let current = room_world_pose(found);
-            let original = room_world_pose(before);
-            found.metadata.group_pose = found
-                .metadata
-                .group_pose
-                .as_ref()
-                .map(|group| room::compose(&original, &room::relative(&current, group)));
-            found.geometry.position = before.geometry.position;
-            found.metadata.spatial.elevation = before.metadata.spatial.elevation;
-            found.metadata.spatial.rotation = before.metadata.spatial.rotation;
-        }
-        undo_field(
-            &before.metadata.follow_slope,
-            &after.metadata.follow_slope,
-            &mut found.metadata.follow_slope,
-        )?;
-        if authored_binding(&before.metadata.binding) != authored_binding(&after.metadata.binding) {
-            if authored_binding(&found.metadata.binding)
-                != authored_binding(&after.metadata.binding)
-            {
-                return Err("Undo conflicts with a later spatial binding edit.".into());
-            }
-            found.metadata.binding = before.metadata.binding.clone();
-        }
-    }
-    Ok(())
-}
-
-fn find<'a>(snapshot: &'a mut Snapshot, id: &str) -> Result<&'a mut Placement, String> {
+fn validate_components(snapshot: &Snapshot, registry: &[Descriptor]) -> Result<(), String> {
     snapshot
         .placements
-        .iter_mut()
-        .find(|p| p.id == id)
-        .ok_or_else(|| "The placement no longer exists.".into())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    fn state() -> State {
-        State::new(
-            Snapshot {
-                revision: 0,
-                active_workspace: 1,
-                workspaces: vec![Workspace {
-                    id: 1,
-                    name: "Main".into(),
-                    center: [0.0, 0.0],
-                    zoom: 1.0,
-                    view: None,
-                }],
-                placements: vec![],
-                next_offset: None,
-            },
-            vec![],
-        )
-        .unwrap()
-    }
-    fn mutate(state: &State, mutation: Mutation) -> Request {
-        Request::Mutate {
-            request_id: crate::new_uid("request"),
-            expected_revision: state.snapshot.revision,
-            mutation,
-        }
-    }
-    #[test]
-    fn registry_refresh_preserves_receipts_and_rejects_invalid_replacements_atomically() {
-        let mut state = state();
-        let request = mutate(
-            &state,
-            Mutation::RenameWorkspace {
-                workspace: 1,
-                name: "Camera".into(),
-            },
-        );
-        let receipt = state.handle(&request).unwrap();
-        let registry = vec![Descriptor {
-            kind: "video".into(),
-            name: "Video Castle".into(),
-            description: String::new(),
-            settings: BTreeMap::new(),
-            max_bindings: 0,
-            placeable: true,
-            configurable: true,
-            composable: true,
-            unavailable_reason: None,
-        }];
-        state.refresh_registry(registry.clone()).unwrap();
-        assert_eq!(state.handle(&request).unwrap(), receipt);
-        let before = serde_json::to_value(&state).unwrap();
-        assert!(
-            state
-                .refresh_registry(vec![registry[0].clone(), registry[0].clone()])
-                .is_err()
-        );
-        assert_eq!(serde_json::to_value(&state).unwrap(), before);
-        let Response::Receipt { receipt } = receipt else {
-            panic!()
-        };
-        let undo = mutate(
-            &state,
-            Mutation::Undo {
-                receipt: receipt.request_id,
-            },
-        );
-        state.handle(&undo).unwrap();
-        assert_eq!(state.snapshot.workspaces[0].name, "Main");
-    }
-
-    #[test]
-    fn crud_persists_receipts_rejects_stale_edits_and_preserves_binding() {
-        let mut state = state();
-        let placement = crate::new_uid("placement");
-        let record = crate::new_uid("r");
-        let add = mutate(
-            &state,
-            Mutation::Add {
-                placement: placement.clone(),
-                workspace: 1,
-                component: Component::Builtin {
-                    state: ComponentState::Record {
-                        record: record.clone(),
-                        mode: Default::default(),
-                        start_call: None,
-                    },
-                },
-                geometry: Geometry {
-                    position: [1.0, 2.0],
-                    size: [100.0, 100.0],
-                },
-            },
-        );
-        let first = state.handle(&add).unwrap();
-        assert_eq!(state.handle(&add).unwrap(), first);
-        assert_eq!(state.snapshot.placements.len(), 1);
-        let mut restored: State =
-            serde_json::from_slice(&serde_json::to_vec(&state).unwrap()).unwrap();
-        restored.validate().unwrap();
-        assert_eq!(restored.handle(&add).unwrap(), first);
-        let stale = Request::Mutate {
-            request_id: crate::new_uid("request"),
-            expected_revision: 0,
-            mutation: Mutation::Remove {
-                placement: placement.clone(),
-            },
-        };
-        assert!(restored.handle(&stale).is_err());
-        let request = mutate(
-            &restored,
-            Mutation::Move {
-                placement: placement.clone(),
-                workspace: 1,
-                position: [9.0, 9.0],
-            },
-        );
-        restored.handle(&request).unwrap();
-        assert_eq!(
-            restored.snapshot.placements[0].component.records(),
-            vec![record.as_str()]
-        );
-        let request = mutate(
-            &restored,
-            Mutation::Remove {
-                placement: placement.clone(),
-            },
-        );
-        let Response::Receipt { receipt } = restored.handle(&request).unwrap() else {
-            panic!("receipt");
-        };
-        assert!(restored.snapshot.placements.is_empty());
-        let undo = mutate(
-            &restored,
-            Mutation::Undo {
-                receipt: receipt.request_id,
-            },
-        );
-        restored.handle(&undo).unwrap();
-        assert_eq!(restored.snapshot.placements[0].id, placement);
-    }
-    #[test]
-    fn removing_a_workspace_removes_contents_and_keeps_last_workspace() {
-        let mut state = state();
-        let create = mutate(
-            &state,
-            Mutation::CreateWorkspace {
-                name: "Second".into(),
-            },
-        );
-        state.handle(&create).unwrap();
-        let rename = mutate(
-            &state,
-            Mutation::RenameWorkspace {
-                workspace: 1,
-                name: "Renamed inactive".into(),
-            },
-        );
-        state.handle(&rename).unwrap();
-        assert_eq!(state.snapshot.workspaces[0].name, "Renamed inactive");
-        let remove = mutate(&state, Mutation::RemoveWorkspace { workspace: 2 });
-        state.handle(&remove).unwrap();
-        assert_eq!(state.snapshot.active_workspace, 1);
-        let remove = mutate(&state, Mutation::RemoveWorkspace { workspace: 1 });
-        assert!(state.handle(&remove).is_err());
-    }
-    #[test]
-    fn generated_compositions_cannot_be_reconfigured_to_drop_protection() {
-        let mut state = state();
-        let id = crate::new_uid("placement");
-        let component = Component::Builtin {
-            state: ComponentState::Composition {
-                composition: crate::component::Composition {
-                    name: "Protected".into(),
-                    origin: Some(crate::component::composition::Origin {
-                        agent: crate::new_uid("r"),
-                        thread: crate::new_uid("r"),
-                    }),
-                    parts: vec![crate::component::Part {
-                        settings: Default::default(),
-                        id: "text".into(),
-                        position: [0, 0],
-                        size: [100, 100],
-                        component: ComponentState::Text {
-                            text: "Inside".into(),
-                        },
-                        events: vec![],
-                    }],
-                },
-            },
-        };
-        state
-            .handle(&mutate(
-                &state,
-                Mutation::Add {
-                    placement: id.clone(),
-                    workspace: 1,
-                    component,
-                    geometry: Geometry {
-                        position: [0.0, 0.0],
-                        size: [100.0, 100.0],
-                    },
-                },
-            ))
-            .unwrap();
-        let change = mutate(
-            &state,
-            Mutation::Configure {
-                placement: id,
-                component: Component::Builtin {
-                    state: ComponentState::Text {
-                        text: "Unprotected".into(),
-                    },
-                },
-            },
-        );
-        assert!(state.handle(&change).is_err());
-    }
-    #[test]
-    fn populated_canvas_has_bounded_cost_and_never_replays_evicted_requests() {
-        let mut state = state();
-        let mut first = None;
-        for index in 0..MAX_PLACEMENTS {
-            let request = mutate(
-                &state,
-                Mutation::Add {
-                    placement: crate::new_uid("placement"),
-                    workspace: 1,
-                    component: Component::Builtin {
-                        state: ComponentState::Text {
-                            text: format!("Panel {index}"),
-                        },
-                    },
-                    geometry: Geometry {
-                        position: [index as f64, 0.0],
-                        size: [100.0, 100.0],
-                    },
-                },
-            );
-            if first.is_none() {
-                first = Some(request.clone());
-            }
-            state.handle(&request).unwrap();
-        }
-        assert_eq!(state.receipts.len(), 16);
-        state.validate().unwrap();
-        assert!(state.handle(&first.unwrap()).is_err());
-        let before = state.snapshot.clone();
-        let request = mutate(
-            &state,
-            Mutation::Add {
-                placement: state.snapshot.placements[0].id.clone(),
-                workspace: 1,
-                component: Component::Builtin {
-                    state: ComponentState::Text {
-                        text: "Duplicate".into(),
-                    },
-                },
-                geometry: Geometry {
-                    position: [0.0, 0.0],
-                    size: [100.0, 100.0],
-                },
-            },
-        );
-        assert!(state.handle(&request).is_err());
-        assert_eq!(state.snapshot, before);
-    }
-    #[test]
-    fn inspection_pages_do_not_limit_the_whole_canvas_to_one_page() {
-        let mut state = state();
-        for _ in 0..300 {
-            let snapshot = Arc::make_mut(&mut state.snapshot);
-            snapshot.placements.push(Placement {
-                id: crate::new_uid("placement"),
-                workspace: 1,
-                component: Component::Builtin {
-                    state: ComponentState::Text {
-                        text: "Existing panel".into(),
-                    },
-                },
-                geometry: Geometry {
-                    position: [0.0, 0.0],
-                    size: [100.0, 100.0],
-                },
-                selected: false,
-                group: None,
-                metadata: Default::default(),
-            });
-        }
-        state.validate().unwrap();
-        let response = state
-            .handle(&Request::Inspect {
-                workspace: None,
-                selected_only: false,
-                offset: 0,
-                limit: 256,
-            })
-            .unwrap();
-        let Response::Snapshot { snapshot } = response else {
-            panic!("snapshot");
-        };
-        assert_eq!(snapshot.placements.len(), 256);
-        assert_eq!(snapshot.next_offset, Some(256));
-        let remove = mutate(
-            &state,
-            Mutation::Remove {
-                placement: state.snapshot.placements[299].id.clone(),
-            },
-        );
-        state.handle(&remove).unwrap();
-        assert_eq!(state.snapshot.placements.len(), 299);
-        state
-            .handle(&mutate(
-                &state,
-                Mutation::CreateWorkspace {
-                    name: "Destination".into(),
-                },
-            ))
-            .unwrap();
-        let response = state
-            .handle(&mutate(&state, Mutation::RemoveWorkspace { workspace: 1 }))
-            .unwrap();
-        let Response::Receipt { receipt } = response else {
-            panic!("receipt");
-        };
-        assert_eq!(receipt.affected_count, 299);
-        assert_eq!(receipt.affected_placements.len(), 256);
-        assert!(state.snapshot.placements.is_empty());
-    }
-    #[test]
-    fn deleted_workspace_identifiers_are_never_reassigned() {
-        let mut state = state();
-        state
-            .handle(&mutate(
-                &state,
-                Mutation::CreateWorkspace { name: "Old".into() },
-            ))
-            .unwrap();
-        state
-            .handle(&mutate(&state, Mutation::RemoveWorkspace { workspace: 2 }))
-            .unwrap();
-        let mut restored: State =
-            serde_json::from_slice(&serde_json::to_vec(&state).unwrap()).unwrap();
-        restored.validate().unwrap();
-        restored
-            .handle(&mutate(
-                &restored,
-                Mutation::CreateWorkspace { name: "New".into() },
-            ))
-            .unwrap();
-        assert_eq!(restored.snapshot.active_workspace, 3);
-        assert!(
-            restored
-                .handle(&mutate(
-                    &restored,
-                    Mutation::SwitchWorkspace { workspace: 2 }
-                ))
-                .is_err()
-        );
-    }
+        .iter()
+        .try_for_each(|placement| placement.component.validate_snapshot(registry))
 }

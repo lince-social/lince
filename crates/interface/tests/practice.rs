@@ -1,14 +1,24 @@
-// non-lean-yet
-// Scope: fn runner, fn ticket, fn next_checks_completion_and_never_duplicates_pending_actions, fn
-//   skip_close_and_chapter_changes_invalidate_late_responses.
-// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+use lince_interface::{
+    handbook::{foundations, pages},
+    practice::{
+        Effect, LearningProgress, Lesson, Mode, Observation, Ownership, Phase, Progress,
+        Resolution, Runner, Target, Ticket, lessons, resolve,
+    },
+};
 
-use lince_interface::practice::*;
+const EDIT_STEP: &str = "step-interface-open-edit";
+
+fn lesson(subject: &str) -> &'static Lesson {
+    lessons()
+        .iter()
+        .find(|lesson| lesson.subject == subject)
+        .unwrap_or_else(|| panic!("missing authored Practice lesson {subject}"))
+}
 
 fn runner() -> Runner {
     Runner::start(
         1,
-        &lessons()[0],
+        lesson("sands"),
         Mode::Assisted,
         LearningProgress::default(),
     )
@@ -38,28 +48,24 @@ fn next_checks_completion_and_never_duplicates_pending_actions() {
         runner.response(request, Observation::Complete),
         Effect::None
     );
-    assert_eq!(
-        runner.progress.0["step-interface-open-edit"],
-        Progress::Practiced
-    );
+    assert_eq!(runner.progress.0.get(EDIT_STEP), Some(&Progress::Practiced));
     assert_eq!(runner.next(Observation::Complete, 42, 30), Effect::Advanced);
     assert_eq!(runner.step, 2);
 }
 
 #[test]
 fn skip_close_and_chapter_changes_invalidate_late_responses() {
-    for exit in 0..3 {
+    let exits: [fn(&mut Runner); 3] = [
+        |runner| {
+            runner.skip();
+        },
+        Runner::close,
+        |runner| assert!(runner.select(lesson("areas-of-influence"), 2)),
+    ];
+    for exit in exits {
         let mut runner = runner();
         let request = ticket(runner.next(Observation::Waiting, 0, 30));
-        match exit {
-            0 => {
-                runner.skip();
-            }
-            1 => runner.close(),
-            _ => {
-                assert!(runner.select(&lessons()[3], 2));
-            }
-        }
+        exit(&mut runner);
         let phase = runner.phase.clone();
         let step = runner.step;
         assert_eq!(
@@ -81,8 +87,11 @@ fn modes_and_missing_targets_release_restrictions_and_recovery_is_independent() 
         owner: "sample".into(),
         role: "edit.open".into(),
     };
-    let mut other = target.clone();
-    other.role = "delete".into();
+    let other = Target {
+        owner: target.owner.clone(),
+        role: "delete".into(),
+        ..target
+    };
     runner.set_target(Ok(()));
     assert!(runner.restricted());
     assert!(!runner.permits(&other, &target, false, false));
@@ -98,20 +107,22 @@ fn modes_and_missing_targets_release_restrictions_and_recovery_is_independent() 
     assert!(!runner.restricted());
     runner.skip();
     assert_eq!(
-        runner.progress.0["step-interface-open-edit"],
-        Progress::Unavailable
+        runner.progress.0.get(EDIT_STEP),
+        Some(&Progress::Unavailable)
     );
 }
 
 #[test]
 fn every_lesson_starts_directly_and_skip_is_never_verified_practice() {
-    for lesson in lessons() {
+    let lessons = lessons();
+    assert!(!lessons.is_empty(), "missing authored Practice lessons");
+    for lesson in lessons {
         for mode in [Mode::Free, Mode::Assisted] {
             let mut runner = Runner::start(1, lesson, mode, LearningProgress::default());
             assert_eq!(runner.current(), lesson.steps.first());
             for step in lesson.steps {
                 runner.skip();
-                assert_eq!(runner.progress.0[step.slug], Progress::Skipped);
+                assert_eq!(runner.progress.0.get(step.slug), Some(&Progress::Skipped));
             }
             assert_eq!(runner.phase, Phase::Complete);
         }
@@ -126,8 +137,11 @@ fn semantic_resolution_requires_the_exact_instance_and_accepts_recreation() {
         owner: "castle-a".into(),
         role: "protein.run".into(),
     };
-    let mut other = target.clone();
-    other.owner = "castle-b".into();
+    let other = Target {
+        owner: "castle-b".into(),
+        role: target.role.clone(),
+        ..target
+    };
     assert_eq!(
         resolve(&target, [(other, 11), (target.clone(), 12)]),
         Ok(12)
@@ -147,32 +161,36 @@ fn discard_only_returns_owned_resources_and_keeps_pending_work_visible() {
     ownership.created("sample-a");
     ownership.pending("request-b");
     assert_eq!(ownership.discard(), ["sample-a"]);
-    assert_eq!(ownership.outstanding().collect::<Vec<_>>(), ["request-b"]);
+    assert!(ownership.outstanding().eq(["request-b"]));
     ownership.confirmed("request-b", "sample-b");
     assert_eq!(ownership.discard(), ["sample-b"]);
-    assert_eq!(ownership.outstanding().count(), 0);
+    assert_eq!(ownership.outstanding().next(), None);
 }
+
 #[test]
 fn unavailable_hardware_inspection_is_visited_and_never_practiced() {
     let mut runner = runner();
-    let slug = runner.current().unwrap().slug;
+    let slug = runner.current().expect("introductory inspection step").slug;
     runner.next(Observation::Viewed, 0, 30);
-    assert_eq!(runner.progress.0[slug], Progress::Visited);
+    assert_eq!(runner.progress.0.get(slug), Some(&Progress::Visited));
     assert_eq!(runner.step, 1);
-    let slug = runner.current().unwrap().slug;
+    let slug = runner.current().expect("first actionable step").slug;
     let request = ticket(runner.next(Observation::Waiting, 1, 30));
     runner.response(request, Observation::Viewed);
-    assert_eq!(runner.progress.0[slug], Progress::Visited);
+    assert_eq!(runner.progress.0.get(slug), Some(&Progress::Visited));
 }
+
 #[test]
 fn foundations_refer_to_earlier_pages_without_creating_progress_locks() {
-    for (index, page) in lince_interface::handbook::pages().iter().enumerate() {
-        for earlier in lince_interface::handbook::foundations(page.slug) {
-            let position = lince_interface::handbook::pages()
+    let pages = pages();
+    assert!(!pages.is_empty(), "missing authored handbook pages");
+    for (index, page) in pages.iter().enumerate() {
+        for &foundation in foundations(page.slug) {
+            let precedes = pages
                 .iter()
-                .position(|page| page.slug == *earlier)
-                .unwrap();
-            assert!(position < index, "{} must precede {}", earlier, page.slug);
+                .take(index)
+                .any(|earlier| earlier.slug == foundation);
+            assert!(precedes, "{foundation} must precede {}", page.slug);
         }
     }
 }

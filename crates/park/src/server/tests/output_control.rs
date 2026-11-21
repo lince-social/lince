@@ -145,19 +145,19 @@ fn real_output_requests_publish_each_quarter_turn_and_reject_flipped_transforms_
     for (transform, rotation) in [
         (
             wl_output::Transform::Normal,
-            lince_interface::host::mapping::QuarterTurn::Normal,
+            lince_host::mapping::QuarterTurn::Normal,
         ),
         (
             wl_output::Transform::_90,
-            lince_interface::host::mapping::QuarterTurn::Clockwise90,
+            lince_host::mapping::QuarterTurn::Clockwise90,
         ),
         (
             wl_output::Transform::_180,
-            lince_interface::host::mapping::QuarterTurn::UpsideDown,
+            lince_host::mapping::QuarterTurn::UpsideDown,
         ),
         (
             wl_output::Transform::_270,
-            lince_interface::host::mapping::QuarterTurn::Clockwise270,
+            lince_host::mapping::QuarterTurn::Clockwise270,
         ),
     ] {
         let mut harness = harness();
@@ -263,8 +263,8 @@ fn adaptive_sync_v4_reports_observed_state_and_nested_enable_fails_without_chang
     harness.sync();
     harness.server.output_adaptive_sync(
         OutputId(1),
-        lince_interface::host::display::AdaptiveSyncStatus {
-            support: lince_interface::host::display::AdaptiveSyncSupport::Supported,
+        lince_host::display::AdaptiveSyncStatus {
+            support: lince_host::display::AdaptiveSyncSupport::Supported,
             prepared: Some(true),
             effective: Some(false),
             pending: true,
@@ -284,8 +284,8 @@ fn adaptive_sync_v4_reports_observed_state_and_nested_enable_fails_without_chang
     );
     harness.server.output_adaptive_sync(
         OutputId(1),
-        lince_interface::host::display::AdaptiveSyncStatus {
-            support: lince_interface::host::display::AdaptiveSyncSupport::Supported,
+        lince_host::display::AdaptiveSyncStatus {
+            support: lince_host::display::AdaptiveSyncSupport::Supported,
             prepared: Some(true),
             effective: Some(true),
             pending: false,
@@ -316,8 +316,8 @@ fn adaptive_sync_v4_reports_observed_state_and_nested_enable_fails_without_chang
     let events = harness.client.output_control.adaptive_sync.len();
     harness.server.output_adaptive_sync(
         OutputId(1),
-        lince_interface::host::display::AdaptiveSyncStatus {
-            support: lince_interface::host::display::AdaptiveSyncSupport::Supported,
+        lince_host::display::AdaptiveSyncStatus {
+            support: lince_host::display::AdaptiveSyncSupport::Supported,
             prepared: Some(false),
             effective: Some(false),
             pending: false,
@@ -640,7 +640,7 @@ fn fixed_point_output_scales_round_to_the_supported_fractional_step() {
 
 #[test]
 fn native_confirmation_rejects_external_apply_but_preserves_external_test_semantics() {
-    use lince_interface::host::display::{DisplayAction, DisplayRequest};
+    use lince_host::display::{DisplayAction, DisplayRequest};
     let mut harness = harness();
     let snapshot = harness.server.display_snapshot();
     let mut heads = snapshot.configuration();
@@ -701,7 +701,7 @@ fn native_confirmation_rejects_external_apply_but_preserves_external_test_semant
 
 #[test]
 fn native_controller_cannot_persist_a_prepared_hdr_preview_until_its_matching_color_is_observed() {
-    use lince_interface::host::{
+    use lince_host::{
         color::{ColorMode, OutputColor},
         display::{ColorStatus, DisplayAction, DisplayOutcome, DisplayRequest},
     };
@@ -816,7 +816,7 @@ fn native_controller_cannot_persist_a_prepared_hdr_preview_until_its_matching_co
 
 #[test]
 fn locking_a_native_preview_allows_only_the_trusted_rollback_to_change_outputs() {
-    use lince_interface::host::display::{DisplayAction, DisplayOutcome, DisplayRequest};
+    use lince_host::display::{DisplayAction, DisplayOutcome, DisplayRequest};
     let mut harness = harness();
     let before = harness.server.display_snapshot();
     let mut heads = before.configuration();
@@ -885,7 +885,7 @@ fn locking_a_native_preview_allows_only_the_trusted_rollback_to_change_outputs()
 
 #[test]
 fn native_rollback_keeps_priority_when_external_test_requests_fill_the_queue() {
-    use lince_interface::host::display::{DisplayAction, DisplayRequest};
+    use lince_host::display::{DisplayAction, DisplayRequest};
     let mut harness = harness();
     let before = harness.server.display_snapshot();
     let mut heads = before.configuration();

@@ -1,10 +1,6 @@
-// non-lean-yet
-// Scope: fn setup, fn activate, fn prepared, fn
-//   invitation_buttons_require_review_and_send_only_the_unchanged_scope.
-// BeautifulRust (baseline lines):
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 31, 32, 35, 36.
-// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
-//   Sites unwrap (5, 20, 22, 29, 32).
+use std::time::Duration;
+
+use nucleus::location::{SourceKind, Status};
 
 use super::*;
 
@@ -15,7 +11,6 @@ fn setup() -> (World, Entity) {
     state.invite_conversation = nucleus::new_uid("r");
     state.invite_radius = "1000".into();
     state.fields.clear();
-    drop(state);
     draw(&mut world, panel);
     (world, panel)
 }
@@ -222,7 +217,6 @@ fn opening_a_scoped_reference_never_observes_or_downgrades_it_and_expired_review
     state.fields.clear();
     let review = state.invitation_review.as_mut().unwrap();
     review.received = review.received - Duration::from_secs(61);
-    drop(state);
     apply(&mut world, panel, Intent::SendInvitation);
     assert!(world.resource::<Messages<Request>>().is_empty());
 }

@@ -4,7 +4,7 @@
 
 use std::time::Instant;
 
-use lince_interface::host::display::{
+use lince_host::display::{
     DisplayAction, DisplayConfiguration, DisplayOutcome, DisplayRequest,
 };
 
@@ -69,7 +69,7 @@ fn rotated_preview_timeout_restores_the_complete_configuration_and_status_update
     let before = server.display_snapshot();
     let mut heads = proposed(&server, 2.0);
     let settings = heads.get_mut(&OutputId(1)).unwrap().as_mut().unwrap();
-    settings.rotation = lince_interface::host::mapping::QuarterTurn::Clockwise90;
+    settings.rotation = lince_host::mapping::QuarterTurn::Clockwise90;
     settings.position = [20, 10];
     submit(
         &mut server,
@@ -84,8 +84,8 @@ fn rotated_preview_timeout_restores_the_complete_configuration_and_status_update
     let revision = server.display_snapshot().revision;
     server.output_adaptive_sync(
         OutputId(1),
-        lince_interface::host::display::AdaptiveSyncStatus {
-            support: lince_interface::host::display::AdaptiveSyncSupport::Supported,
+        lince_host::display::AdaptiveSyncStatus {
+            support: lince_host::display::AdaptiveSyncSupport::Supported,
             prepared: Some(false),
             effective: Some(false),
             pending: false,
@@ -683,7 +683,7 @@ fn a_selected_virtual_refresh_rate_reaches_the_public_wayland_output_metadata() 
 #[cfg(feature = "nested")]
 fn modeled_hdr_confirmation_refuses_unobserved_mismatched_and_pending_keep_preserves_failed_save_and_reverts_or_reloads_confirmed_intent()
  {
-    use lince_interface::host::{
+    use lince_host::{
         color::{ColorMode, OutputColor},
         display::{AdaptiveSyncStatus, AdaptiveSyncSupport, ColorStatus},
     };
@@ -885,7 +885,7 @@ fn twenty_later_head_failures_reject_old_completions_and_restore_the_entire_mult
         let before = server.display_snapshot();
         let mut proposed = before.configuration();
         let first = proposed.get_mut(&OutputId(1)).unwrap().as_mut().unwrap();
-        first.rotation = lince_interface::host::mapping::QuarterTurn::Clockwise90;
+        first.rotation = lince_host::mapping::QuarterTurn::Clockwise90;
         first.scale = 1.25;
         proposed
             .get_mut(&OutputId(2))

@@ -1,45 +1,36 @@
-// non-lean-yet
-// Scope: const MAX_INPUT_BYTES, mod commands, struct TerminalHost, struct TerminalHandle.
-// BeautifulRust (baseline lines):
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 67, 74, 76, 277,
-//   287, 317.
-// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 72, 103,
-//   119, 334.
-// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites close: String
-//   (127), input: String (86), open: String (45), resize: String (113).
-// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
-//   278.
-// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
-//   inputs. Sites 278.
-// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
-//   Sites 72, 103, 119, 334.
-// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
-//   functions. Sites 45, 86, 113, 127.
-// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 371, 393,
-//   396.
-// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
-//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 19.
-// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
-//   17, 19, 39, 45, 86, 113, 127, 135, 142, 170.
+//! PTY lifecycle and frame handling for interactive terminals and saved Commands.
 
-use {
-    crate::ServerMessage,
-    base64::{Engine as _, engine::general_purpose::STANDARD as BASE64},
-    portable_pty::{ChildKiller, CommandBuilder, MasterPty, PtySize, native_pty_system},
-    std::{
-        collections::HashMap,
-        io::{Read, Write},
-        path::PathBuf,
-        sync::{Arc, Mutex},
-        thread,
+use std::{
+    collections::{HashMap, hash_map::Entry},
+    env::{current_dir, var},
+    fmt,
+    io::{self, Read, Write},
+    path::{Path, PathBuf},
+    sync::{
+        Arc, Mutex, Weak,
+        atomic::{
+            AtomicBool,
+            Ordering::{Acquire, Release},
+        },
     },
-    tokio::sync::mpsc,
+    thread,
 };
 
+use base64::{DecodeError, Engine as _, engine::general_purpose::STANDARD as BASE64};
+use dirs::home_dir;
+use portable_pty::{Child, ChildKiller, CommandBuilder, MasterPty, PtySize, native_pty_system};
+use tokio::{sync::mpsc, task::spawn_blocking};
+
+use crate::ServerMessage;
+
+const MAX_SESSIONS: usize = 16;
 const MAX_INPUT_BYTES: usize = 1024 * 1024;
+const OUTPUT_CHUNK_BYTES: usize = 8192;
 
 pub mod commands;
 
+/// Interactive terminal sessions for one connection.
+#[derive(Default)]
 pub struct TerminalHost {
     sessions: HashMap<String, Arc<TerminalHandle>>,
 }
@@ -48,7 +39,7 @@ struct TerminalHandle {
     writer: Mutex<Box<dyn Write + Send>>,
     master: Mutex<Box<dyn MasterPty + Send>>,
     killer: Mutex<Box<dyn ChildKiller + Send + Sync>>,
-    exited: std::sync::atomic::AtomicBool,
+    exited: AtomicBool,
 }
 
 struct SpawnedTerminal {
@@ -56,16 +47,27 @@ struct SpawnedTerminal {
     cwd: String,
     handle: Arc<TerminalHandle>,
     reader: Box<dyn Read + Send>,
-    child: Box<dyn portable_pty::Child + Send + Sync>,
+    child: Box<dyn Child + Send + Sync>,
+}
+
+impl fmt::Debug for TerminalHost {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("TerminalHost")
+            .field("sessions", &self.sessions.len())
+            .finish_non_exhaustive()
+    }
 }
 
 impl TerminalHost {
+    /// Creates a terminal host with no open sessions.
     pub fn new() -> Self {
-        Self {
-            sessions: HashMap::new(),
-        }
+        Self::default()
     }
 
+    /// Opens an interactive terminal and publishes its initial session message.
+    ///
+    /// # Errors
+    /// Returns a diagnostic for a duplicate ID, a full host, or a failed spawn or delivery.
     pub async fn open(
         &mut self,
         id: String,
@@ -73,27 +75,38 @@ impl TerminalHost {
         out_tx: mpsc::Sender<ServerMessage>,
         done_tx: mpsc::Sender<String>,
     ) -> Result<(), String> {
-        if self.sessions.contains_key(&id) {
-            return Err(format!("terminal session `{id}` is already open"));
-        }
-        if self.sessions.len() >= 16 {
+        let at_limit = self.sessions.len() >= MAX_SESSIONS;
+        let slot = match self.sessions.entry(id) {
+            Entry::Occupied(entry) => {
+                return Err(format!(
+                    "terminal session `{}` is already open",
+                    entry.key()
+                ));
+            }
+            Entry::Vacant(slot) => slot,
+        };
+        if at_limit {
             return Err(
                 "Close a terminal before opening another (16 sessions per connection)".into(),
             );
         }
 
-        let spawned = tokio::task::spawn_blocking(move || spawn_terminal(size))
+        let spawned = spawn_blocking(move || spawn_terminal(size))
             .await
             .map_err(|error| format!("terminal spawn task failed: {error}"))??;
 
-        out_tx
+        let id = slot.key();
+        if out_tx
             .send(ServerMessage::TerminalOpened {
                 id: id.clone(),
                 shell: spawned.shell,
                 cwd: spawned.cwd,
             })
             .await
-            .map_err(|_| "terminal transport closed while opening".to_string())?;
+            .is_err()
+        {
+            return Err("terminal transport closed while opening".into());
+        }
 
         spawn_reader(id.clone(), spawned.reader, out_tx.clone())?;
         spawn_waiter(
@@ -103,24 +116,24 @@ impl TerminalHost {
             out_tx,
             done_tx,
         )?;
-        self.sessions.insert(id, spawned.handle);
+        slot.insert(spawned.handle);
         Ok(())
     }
 
+    /// Writes a Base64 frame to the selected terminal and flushes the PTY.
+    ///
+    /// # Errors
+    /// Returns a diagnostic for malformed or oversized input, a missing session, or a failed write.
     pub async fn input(&self, id: &str, data_base64: &str) -> Result<(), String> {
-        if data_base64.len() > MAX_INPUT_BYTES.div_ceil(3) * 4 {
-            return Err("Terminal input is too large".into());
-        }
-        let bytes = BASE64
-            .decode(data_base64)
-            .map_err(|error| format!("invalid terminal input base64: {error}"))?;
-        if bytes.len() > MAX_INPUT_BYTES {
-            return Err(format!(
-                "terminal input exceeds the {MAX_INPUT_BYTES}-byte frame limit"
-            ));
-        }
+        let bytes = decode_input(data_base64).map_err(|error| match error {
+            InputError::EncodedLimit => "Terminal input is too large".into(),
+            InputError::DecodedLimit => {
+                format!("terminal input exceeds the {MAX_INPUT_BYTES}-byte frame limit")
+            }
+            InputError::Encoding(error) => format!("invalid terminal input base64: {error}"),
+        })?;
         let handle = self.handle(id)?;
-        tokio::task::spawn_blocking(move || {
+        spawn_blocking(move || {
             let mut writer = handle
                 .writer
                 .lock()
@@ -134,9 +147,13 @@ impl TerminalHost {
         .map_err(|error| format!("terminal input task failed: {error}"))?
     }
 
+    /// Applies the terminal's cell and pixel dimensions.
+    ///
+    /// # Errors
+    /// Returns a diagnostic if the session is missing or its resize fails.
     pub async fn resize(&self, id: &str, size: PtySize) -> Result<(), String> {
         let handle = self.handle(id)?;
-        tokio::task::spawn_blocking(move || {
+        spawn_blocking(move || {
             handle
                 .master
                 .lock()
@@ -148,6 +165,10 @@ impl TerminalHost {
         .map_err(|error| format!("terminal resize task failed: {error}"))?
     }
 
+    /// Removes the session and requests termination of its shell.
+    ///
+    /// # Errors
+    /// Returns a diagnostic if the session is missing or termination fails.
     pub async fn close(&mut self, id: &str) -> Result<(), String> {
         let handle = self
             .sessions
@@ -156,6 +177,7 @@ impl TerminalHost {
         terminate(handle).await
     }
 
+    /// Drains all sessions and attempts to terminate their shells.
     pub async fn shutdown(&mut self) {
         let handles = self.sessions.drain().map(|(_, handle)| handle);
         for handle in handles {
@@ -163,6 +185,7 @@ impl TerminalHost {
         }
     }
 
+    /// Removes a session after its exit monitor reports completion.
     pub fn forget(&mut self, id: &str) {
         self.sessions.remove(id);
     }
@@ -170,20 +193,31 @@ impl TerminalHost {
     fn handle(&self, id: &str) -> Result<Arc<TerminalHandle>, String> {
         self.sessions
             .get(id)
-            .cloned()
+            .map(Arc::clone)
             .ok_or_else(|| format!("terminal session `{id}` was not found"))
     }
 }
 
-impl Default for TerminalHost {
-    fn default() -> Self {
-        Self::new()
+enum InputError {
+    EncodedLimit,
+    DecodedLimit,
+    Encoding(DecodeError),
+}
+
+fn decode_input(data: &str) -> Result<Vec<u8>, InputError> {
+    if data.len() > MAX_INPUT_BYTES.div_ceil(3) * 4 {
+        return Err(InputError::EncodedLimit);
     }
+    let bytes = BASE64.decode(data).map_err(InputError::Encoding)?;
+    if bytes.len() > MAX_INPUT_BYTES {
+        return Err(InputError::DecodedLimit);
+    }
+    Ok(bytes)
 }
 
 impl Drop for TerminalHandle {
     fn drop(&mut self) {
-        if !self.exited.load(std::sync::atomic::Ordering::Acquire)
+        if !self.exited.load(Acquire)
             && let Ok(killer) = self.killer.get_mut()
         {
             let _ = killer.kill();
@@ -191,6 +225,7 @@ impl Drop for TerminalHandle {
     }
 }
 
+/// Builds PTY dimensions with at least one row and column.
 pub fn pty_size(cols: u16, rows: u16, pixel_width: u16, pixel_height: u16) -> PtySize {
     PtySize {
         rows: rows.max(1),
@@ -237,7 +272,7 @@ fn spawn_command(
         writer: Mutex::new(writer),
         master: Mutex::new(pair.master),
         killer: Mutex::new(killer),
-        exited: std::sync::atomic::AtomicBool::new(false),
+        exited: AtomicBool::new(false),
     });
 
     Ok(SpawnedTerminal {
@@ -249,7 +284,7 @@ fn spawn_command(
     })
 }
 
-fn terminal_command(shell: &str, working_directory: &std::path::Path) -> CommandBuilder {
+fn terminal_command(shell: &str, working_directory: &Path) -> CommandBuilder {
     let mut command = CommandBuilder::new(shell);
     #[cfg(not(windows))]
     command.arg("-i");
@@ -263,17 +298,16 @@ fn terminal_command(shell: &str, working_directory: &std::path::Path) -> Command
 }
 
 fn terminal_working_directory() -> Result<PathBuf, String> {
-    if let Some(home) = dirs::home_dir().filter(|path| path.is_dir()) {
+    if let Some(home) = home_dir().filter(|path| path.is_dir()) {
         return Ok(home);
     }
 
-    std::env::current_dir()
-        .map_err(|error| format!("could not resolve terminal working directory: {error}"))
+    current_dir().map_err(|error| format!("could not resolve terminal working directory: {error}"))
 }
 
 fn configured_shell() -> String {
-    std::env::var("SHELL")
-        .or_else(|_| std::env::var("COMSPEC"))
+    var("SHELL")
+        .or_else(|_| var("COMSPEC"))
         .unwrap_or_else(|_| {
             if cfg!(windows) {
                 "cmd.exe".into()
@@ -291,15 +325,20 @@ fn spawn_reader(
     thread::Builder::new()
         .name(format!("terminal-reader-{id}"))
         .spawn(move || {
-            let mut buffer = [0_u8; 8192];
+            let mut buffer = [0; OUTPUT_CHUNK_BYTES];
             loop {
-                match reader.read(&mut buffer) {
-                    Ok(0) => return,
-                    Ok(read) => {
+                let chunk = reader.read(&mut buffer).and_then(|count| {
+                    buffer
+                        .get(..count)
+                        .ok_or_else(|| io::Error::other("invalid byte count"))
+                });
+                match chunk {
+                    Ok([]) => return,
+                    Ok(bytes) => {
                         if out_tx
                             .blocking_send(ServerMessage::TerminalData {
                                 id: id.clone(),
-                                data_base64: BASE64.encode(&buffer[..read]),
+                                data_base64: BASE64.encode(bytes),
                             })
                             .is_err()
                         {
@@ -323,8 +362,8 @@ fn spawn_reader(
 
 fn spawn_waiter(
     id: String,
-    mut child: Box<dyn portable_pty::Child + Send + Sync>,
-    handle: std::sync::Weak<TerminalHandle>,
+    mut child: Box<dyn Child + Send + Sync>,
+    handle: Weak<TerminalHandle>,
     out_tx: mpsc::Sender<ServerMessage>,
     done_tx: mpsc::Sender<String>,
 ) -> Result<(), String> {
@@ -333,9 +372,7 @@ fn spawn_waiter(
         .spawn(move || {
             let exit_code = child.wait().ok().map(|status| status.exit_code());
             if let Some(handle) = handle.upgrade() {
-                handle
-                    .exited
-                    .store(true, std::sync::atomic::Ordering::Release);
+                handle.exited.store(true, Release);
             }
             let _ = out_tx.blocking_send(ServerMessage::TerminalExit {
                 id: id.clone(),
@@ -348,10 +385,10 @@ fn spawn_waiter(
 }
 
 async fn terminate(handle: Arc<TerminalHandle>) -> Result<(), String> {
-    if handle.exited.load(std::sync::atomic::Ordering::Acquire) {
+    if handle.exited.load(Acquire) {
         return Ok(());
     }
-    tokio::task::spawn_blocking(move || {
+    spawn_blocking(move || {
         handle
             .killer
             .lock()
@@ -366,7 +403,10 @@ async fn terminate(handle: Arc<TerminalHandle>) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use {
-        super::{BASE64, TerminalHost, pty_size, terminal_command},
+        super::{
+            BASE64, InputError, MAX_INPUT_BYTES, TerminalHost, decode_input, pty_size,
+            terminal_command,
+        },
         crate::ServerMessage,
         base64::Engine as _,
         tokio::{sync::mpsc, time::Duration},
@@ -379,6 +419,25 @@ mod tests {
         for variable in ["PS1", "PS2", "PS3", "PS4"] {
             assert!(command.get_env(variable).is_none());
         }
+    }
+
+    #[test]
+    fn input_checks_the_encoded_limit_before_decoding() {
+        let mut input = vec![0; MAX_INPUT_BYTES];
+        let max = BASE64.encode(&input);
+        assert!(matches!(decode_input(&max), Ok(bytes) if bytes.len() == MAX_INPUT_BYTES));
+        input.push(0);
+        let decoded_overflow = BASE64.encode(&input);
+        assert!(matches!(
+            decode_input(&decoded_overflow),
+            Err(InputError::DecodedLimit)
+        ));
+        input.extend([0, 0]);
+        assert!(matches!(
+            decode_input(&BASE64.encode(input)),
+            Err(InputError::EncodedLimit)
+        ));
+        assert!(matches!(decode_input("!"), Err(InputError::Encoding(_))));
     }
 
     #[tokio::test]
@@ -398,17 +457,27 @@ mod tests {
         assert_eq!(
             cwd,
             super::terminal_working_directory()
-                .unwrap()
+                .expect("terminal working directory")
                 .display()
                 .to_string()
         );
-        host.input("test", &BASE64.encode(b"printf '__lince_terminal__\\n'\r"))
+        host.resize("test", pty_size(104, 37, 0, 0))
             .await
-            .expect("input should reach the shell");
+            .expect("PTY should resize");
+        host.input(
+            "test",
+            &BASE64.encode(b"printf '__lince_%s__\\n' terminal; stty size\r"),
+        )
+        .await
+        .expect("input should reach the shell");
 
         let output = tokio::time::timeout(Duration::from_secs(5), async {
             let mut output = Vec::new();
-            while !String::from_utf8_lossy(&output).contains("__lince_terminal__") {
+            loop {
+                let text = String::from_utf8_lossy(&output);
+                if text.contains("__lince_terminal__") && text.contains("37 104") {
+                    return output;
+                }
                 match out_rx.recv().await {
                     Some(ServerMessage::TerminalData { data_base64, .. }) => {
                         output.extend(BASE64.decode(data_base64).expect("valid output base64"));
@@ -420,7 +489,6 @@ mod tests {
                     None => panic!("terminal stream ended before marker"),
                 }
             }
-            output
         })
         .await
         .expect("terminal output timed out");

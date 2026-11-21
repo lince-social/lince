@@ -1,22 +1,31 @@
 // non-lean-yet
-// Scope: struct ScriptText, struct Rendered, struct ScriptFont, fn labels.
-// BeautifulRust (baseline lines):
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 62, 63, 64, 90,
-//   91, 94, 95, 98, 110, 118.
 
+//! Native Ithkuil text for Bevy labels and spans.
+
+use crate::theme::bundled_font;
 use bevy::{
     prelude::*,
-    text::{EditableText, FontFeatureTag, FontFeatures, TextSection},
-    ui::prelude::AccessibleLabel,
+    text::{
+        EditableText, FontFeatureTag, FontFeatures, FontSource, TextSection,
+        detect_text_needs_rerender, load_font_assets_into_font_collection,
+    },
+    ui::{UiSystems, prelude::AccessibleLabel},
 };
+use lince_ithkuil::FONT_BYTES;
 use std::sync::Arc;
 
 pub use lince_ithkuil::{Error, Script, render};
 
+/// A pre-rendered native script shared by labels or spans.
 #[derive(Component, Clone)]
 pub struct ScriptText(pub Arc<Script>);
 
 impl ScriptText {
+    /// Renders the romanized label in native script.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the renderer rejects the romanization.
     pub fn parse(romanization: &str) -> Result<Self, Error> {
         render(romanization).map(Arc::new).map(Self)
     }
@@ -25,32 +34,42 @@ impl ScriptText {
 #[derive(Component)]
 struct Rendered {
     script: Arc<Script>,
-    original: TextFont,
+    original: ScriptStyle,
     applied: TextFont,
     accessible: bool,
+}
+
+#[derive(Clone)]
+struct ScriptStyle {
+    font: FontSource,
+    features: FontFeatures,
 }
 
 #[derive(Resource, Default)]
 struct ScriptFont(Option<Handle<Font>>);
 
+type LabelQuery<'w, 's, T> = Query<
+    'w,
+    's,
+    (
+        Entity,
+        &'static mut T,
+        &'static mut TextFont,
+        Option<&'static ScriptText>,
+        Option<&'static Rendered>,
+        Option<&'static AccessibleLabel>,
+    ),
+    (
+        Without<EditableText>,
+        Or<(Changed<T>, Changed<TextFont>, Changed<ScriptText>)>,
+    ),
+>;
+
 fn labels<T: TextSection>(
     mut commands: Commands,
     mut assets: ResMut<Assets<Font>>,
     mut native_font: ResMut<ScriptFont>,
-    mut texts: Query<
-        (
-            Entity,
-            &mut T,
-            &mut TextFont,
-            Option<&ScriptText>,
-            Option<&Rendered>,
-            Option<&AccessibleLabel>,
-        ),
-        (
-            Without<EditableText>,
-            Or<(Changed<T>, Changed<TextFont>, Changed<ScriptText>)>,
-        ),
-    >,
+    mut texts: LabelQuery<T>,
 ) {
     for (entity, mut text, mut font, explicit, previous, accessible) in &mut texts {
         let value = text.get_text();
@@ -62,12 +81,24 @@ fn labels<T: TextSection>(
                     .map(|previous| &previous.script)
             })
             .or_else(|| crate::i18n::native_text(value));
+        if let Some(script) = script
+            && previous.is_some_and(|previous| {
+                Arc::ptr_eq(script, &previous.script)
+                    && value == script.encoding()
+                    && *font == previous.applied
+            })
+        {
+            continue;
+        }
+        let previous_style = previous
+            .filter(|previous| font.font == previous.applied.font)
+            .map(|previous| &previous.original);
         let Some(script) = script else {
             if let Some(previous) = previous {
-                if font.font == previous.applied.font {
+                if let Some(style) = previous_style {
                     let mut original = font.clone();
-                    original.font = previous.original.font.clone();
-                    original.font_features = previous.original.font_features.clone();
+                    original.font.clone_from(&style.font);
+                    original.font_features.clone_from(&style.features);
                     font.set_if_neq(original);
                 }
                 let mut entity = commands.entity(entity);
@@ -78,30 +109,15 @@ fn labels<T: TextSection>(
             }
             continue;
         };
-        if previous.is_some_and(|previous| {
-            Arc::ptr_eq(script, &previous.script)
-                && value == script.encoding()
-                && *font == previous.applied
-        }) {
-            continue;
-        }
         let handle = native_font
             .0
-            .get_or_insert_with(|| {
-                assets.add(Font {
-                    data: fontique::Blob::new(Arc::new(lince_ithkuil::FONT_BYTES)),
-                    alias: String::new(),
-                })
-            })
+            .get_or_insert_with(|| assets.add(bundled_font(FONT_BYTES)))
             .clone();
-        let mut original = font.clone();
-        if let Some(previous) = previous {
-            if original.font == previous.applied.font {
-                original.font = previous.original.font.clone();
-                original.font_features = previous.original.font_features.clone();
-            }
-        }
-        let mut applied = original.clone();
+        let original = previous_style.cloned().unwrap_or_else(|| ScriptStyle {
+            font: font.font.clone(),
+            features: font.font_features.clone(),
+        });
+        let mut applied = font.clone();
         applied.font = handle.into();
         applied.font_features = FontFeatures::from([
             FontFeatureTag::STANDARD_LIGATURES,
@@ -129,6 +145,7 @@ fn labels<T: TextSection>(
     }
 }
 
+/// Shapes native labels before Bevy lays out text and leaves editors untouched.
 pub struct IthkuilPlugin;
 
 impl Plugin for IthkuilPlugin {
@@ -137,9 +154,9 @@ impl Plugin for IthkuilPlugin {
             PostUpdate,
             (labels::<Text>, labels::<TextSpan>)
                 .chain()
-                .before(bevy::text::load_font_assets_into_font_collection)
-                .before(bevy::text::detect_text_needs_rerender)
-                .before(bevy::ui::UiSystems::Content),
+                .before(load_font_assets_into_font_collection)
+                .before(detect_text_needs_rerender)
+                .before(UiSystems::Content),
         );
     }
 }

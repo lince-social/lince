@@ -621,6 +621,57 @@ async fn remote_admin_cannot_configure_computer_directory_sync() {
 }
 
 #[tokio::test]
+async fn legacy_extension_cannot_enable_sync_over_a_named_directory() {
+    use engine::{
+        error::EngineError,
+        file_sync::{DirectorySync, FileFormat, Request},
+    };
+
+    let (engine, organ) = cell_with_local_organ().await;
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().to_str().unwrap();
+    engine
+        .act(
+            Action::DirectorySync {
+                request: Request::Save {
+                    settings: DirectorySync {
+                        uid: "notes".into(),
+                        name: "Notes".into(),
+                        path: path.into(),
+                        protein: None,
+                        format: FileFormat::Lingua,
+                        enabled: false,
+                    },
+                    create: true,
+                },
+            },
+            None,
+        )
+        .await
+        .expect("save the named sync");
+
+    let result = engine
+        .act(
+            Action::SetExtension {
+                target: organ.clone(),
+                namespace: "lince.file_sync".into(),
+                fds: serde_json::json!({"enabled": true, "path": path}),
+            },
+            None,
+        )
+        .await;
+    assert!(
+        matches!(result, Err(EngineError::Consequence(message)) if message.contains("overlaps a named file sync"))
+    );
+    assert!(
+        store::records::get_extension(&engine.store.pool, &organ, "lince.file_sync")
+            .await
+            .unwrap()
+            .is_none()
+    );
+}
+
+#[tokio::test]
 async fn protein_directory_sync_honors_order_and_limit() {
     let (e, organ) = cell_with_local_organ().await;
     plain(&e, "First", "One").await;

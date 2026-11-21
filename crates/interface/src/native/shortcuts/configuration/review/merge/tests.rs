@@ -1,10 +1,3 @@
-// non-lean-yet
-// Scope: fn independent_bindings_and_scalar_preferences_merge_without_text_or_list_splicing, fn
-//   removed_override_and_explicit_unbound_are_different_choices, fn
-//   conflicting_preset_and_rule_order_lists_are_atomic_fields, fn
-//   identical_edits_are_not_conflicts_and_review_work_is_bounded.
-// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
-
 use super::*;
 use serde_json::json;
 
@@ -15,7 +8,12 @@ fn independent_bindings_and_scalar_preferences_merge_without_text_or_list_splici
     let file = json!({"overrides":{"desktop.operation":"Mod+P"},"focus":{"click":true,"pointer_follow":true},"presets":[[1,1],[1,2]]});
     let proposal = Proposal::new(&base, &local, &file).unwrap();
     assert!(proposal.resolved());
-    assert_eq!(proposal.value, Some(json!({"overrides":{"item.grow-width":"Mod+F2","desktop.operation":"Mod+P"},"focus":{"click":true,"pointer_follow":true},"presets":[[1,1],[1,3]]})));
+    assert_eq!(
+        proposal.value,
+        Some(
+            json!({"overrides":{"item.grow-width":"Mod+F2","desktop.operation":"Mod+P"},"focus":{"click":true,"pointer_follow":true},"presets":[[1,1],[1,3]]})
+        )
+    );
 }
 
 #[test]
@@ -25,7 +23,7 @@ fn removed_override_and_explicit_unbound_are_different_choices() {
     let file = json!({"overrides":{}});
     let mut proposal = Proposal::new(&base, &local, &file).unwrap();
     assert_eq!(proposal.conflicts.len(), 1);
-    assert_eq!(proposal.conflicts[0].path, vec!["overrides", "command"]);
+    assert_eq!(proposal.conflicts[0].path, ["overrides", "command"]);
     assert!(!proposal.resolved());
     proposal.choose(0, Choice::Local).unwrap();
     assert_eq!(proposal.value, Some(local));
@@ -40,13 +38,24 @@ fn conflicting_preset_and_rule_order_lists_are_atomic_fields() {
     let file = json!({"presets":[[2,3],[1,2]],"rules":["A","C","B"]});
     let mut proposal = Proposal::new(&base, &local, &file).unwrap();
     assert_eq!(proposal.conflicts.len(), 2);
-    let preset = proposal.conflicts.iter().position(|conflict| conflict.path == ["presets"]).unwrap();
-    let rules = proposal.conflicts.iter().position(|conflict| conflict.path == ["rules"]).unwrap();
+    let preset = proposal
+        .conflicts
+        .iter()
+        .position(|conflict| conflict.path == ["presets"])
+        .unwrap();
+    let rules = proposal
+        .conflicts
+        .iter()
+        .position(|conflict| conflict.path == ["rules"])
+        .unwrap();
     proposal.choose(preset, Choice::Local).unwrap();
     assert!(!proposal.resolved());
     proposal.choose(rules, Choice::File).unwrap();
     assert!(proposal.resolved());
-    assert_eq!(proposal.value, Some(json!({"presets":[[1,1],[1,3]],"rules":["A","C","B"]})));
+    assert_eq!(
+        proposal.value,
+        Some(json!({"presets":[[1,1],[1,3]],"rules":["A","C","B"]}))
+    );
 }
 
 #[test]
@@ -55,8 +64,35 @@ fn identical_edits_are_not_conflicts_and_review_work_is_bounded() {
     let proposal = Proposal::new(&json!({"chord":"Mod+H"}), &edited, &edited).unwrap();
     assert!(proposal.resolved());
     assert_eq!(proposal.value, Some(edited));
-    assert!(Proposal::new(&json!({}), &json!({"large":"x".repeat(super::super::super::LIMIT + 1)}), &json!({})).is_err());
+    assert!(
+        Proposal::new(
+            &json!({}),
+            &json!({"large":"x".repeat(super::super::super::LIMIT + 1)}),
+            &json!({})
+        )
+        .is_err()
+    );
     let mut nested = json!(1);
-    for _ in 0..18 { nested = json!({"next":nested}); }
+    for _ in 0..18 {
+        nested = json!({"next":nested});
+    }
     assert!(Proposal::new(&nested, &nested, &nested).is_err());
+}
+
+#[test]
+fn resolving_a_root_conflict_replaces_the_whole_value() {
+    let mut proposal =
+        Proposal::new(&json!({}), &json!([1]), &json!(null)).expect("valid bounded draft");
+    let [conflict] = proposal.conflicts.as_slice() else {
+        panic!("expected one root conflict");
+    };
+    assert!(conflict.path.is_empty());
+    assert!(!proposal.resolved());
+    proposal.choose(0, Choice::File).expect("root choice");
+    assert_eq!(proposal.value, Some(json!(null)));
+    assert!(proposal.resolved());
+    proposal
+        .choose(0, Choice::Local)
+        .expect("change root choice");
+    assert_eq!(proposal.value, Some(json!([1])));
 }

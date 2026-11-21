@@ -1,5 +1,5 @@
 // non-lean-yet
-// Scope: struct Chrome, fn surfaces, fn controls_open, fn close_controls.
+// Scope: struct Chrome, fn controls_open, fn close_controls.
 // BeautifulRust (baseline lines):
 // - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 596, 599.
 // - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
@@ -26,27 +26,6 @@ pub(super) struct Chrome {
     tab: usize,
     peek_closed: bool,
     round: bool,
-}
-
-pub(super) fn surfaces(world: &World, owner: Entity) -> Vec<Entity> {
-    let Some(chrome) = world.get::<Chrome>(owner) else {
-        return Vec::new();
-    };
-    let entry = if chrome.round && !chrome.open {
-        chrome.center
-    } else {
-        chrome.button
-    };
-    if chrome.open {
-        vec![chrome.panel, entry]
-    } else if world
-        .get::<Node>(chrome.peek)
-        .is_some_and(|node| node.display != Display::None)
-    {
-        vec![entry, chrome.peek]
-    } else {
-        vec![entry]
-    }
 }
 
 pub(super) fn controls_open(world: &World, owner: Entity) -> bool {
@@ -717,7 +696,6 @@ mod tests {
         );
         assert!(visible(&world, center));
         assert!(!visible(&world, button));
-        assert_eq!(surfaces(&world, owner), [center]);
         assert_eq!(world.get::<BackgroundColor>(center).unwrap().0, Color::NONE);
         assert!(world.get::<IconButton>(center_button).is_none());
         assert_eq!(

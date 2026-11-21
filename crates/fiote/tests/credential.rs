@@ -1,7 +1,7 @@
-// non-lean-yet
-// Scope: fn a_credential_says_where_it_came_from_and_never_prints_its_secret, fn
-//   an_absent_or_empty_environment_variable_is_no_credential.
-// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+use std::{
+    env::{current_exe, var_os},
+    process::Command,
+};
 
 use fiote::{CredentialSource, ProviderCredential};
 
@@ -23,9 +23,9 @@ fn a_credential_says_where_it_came_from_and_never_prints_its_secret() {
 #[test]
 fn an_absent_or_empty_environment_variable_is_no_credential() {
     const CHILD: &str = "LINCE_TEST_PROVIDER_ENV_CHILD";
-    if std::env::var_os(CHILD).is_none() {
-        let executable = std::env::current_exe().expect("find the credential test binary");
-        let output = std::process::Command::new(executable)
+    if var_os(CHILD).is_none() {
+        let executable = current_exe().expect("find the credential test binary");
+        let output = Command::new(executable)
             .args([
                 "--exact",
                 "an_absent_or_empty_environment_variable_is_no_credential",

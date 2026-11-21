@@ -1,15 +1,4 @@
-// non-lean-yet
-// Scope: mod contacts, mod paths, mod commands, mod query.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
-//   Sites 31.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 50, 109.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 1, 2,
-//   3, 4, 5, 6, 7, 8, 9, 10, 17, 18, 19, 20, 31, 32, 33, 37, 44, 50, 60, 61, 62, 63, 64, 103, 104,
-//   105, 109, 119, 133, 134, 135, 136, 137.
-// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites validate:
-//   String (50, 109).
+//! Identities, visibility filters, and observed evidence for Trust Analysis.
 
 pub mod claims;
 pub mod commands;
@@ -21,13 +10,17 @@ pub mod paths;
 pub mod query;
 pub mod remote;
 pub mod serving;
+mod signature;
 
 use std::collections::BTreeSet;
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::visibility::Bound;
+use crate::{
+    valid_uid,
+    visibility::{self, Bound},
+};
 
 pub const MAX_IDENTITIES: usize = 1024;
 pub const MAX_DEPTH: u8 = 6;
@@ -63,7 +56,7 @@ impl Identity {
     }
 
     pub fn validate(&self) -> Result<(), String> {
-        if !crate::valid_uid(self.uid(), "r") {
+        if !valid_uid(self.uid(), "r") {
             return Err("Choose a canonical Person or Organ Record identity".into());
         }
         Ok(())
@@ -89,8 +82,8 @@ impl Condition {
         for identity in &self.identities {
             identity.validate()?;
         }
-        crate::visibility::Policy {
-            include: vec![crate::visibility::Condition {
+        visibility::Policy {
+            include: vec![visibility::Condition {
                 lower: self.lower,
                 upper: self.upper,
                 ..Default::default()
@@ -104,7 +97,7 @@ impl Condition {
     fn matches(&self, identity: &Identity, context: &IdentityContext) -> bool {
         (self.identities.is_empty() || self.identities.contains(identity))
             && self.known.is_none_or(|known| known == context.known)
-            && crate::visibility::Condition {
+            && visibility::Condition {
                 lower: self.lower,
                 upper: self.upper,
                 ..Default::default()

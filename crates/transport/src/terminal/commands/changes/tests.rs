@@ -1,11 +1,5 @@
-// non-lean-yet
-// Scope: fn
-//   run_changes_coalesce_without_waking_history_or_unrelated_sources_and_release_registration, fn
-//   observers_do_not_keep_the_host_alive_and_notice_its_shutdown.
-// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
-
 use super::*;
-use std::time::Duration;
+use std::{path::PathBuf, time::Duration};
 
 #[tokio::test]
 async fn run_changes_coalesce_without_waking_history_or_unrelated_sources_and_release_registration()
@@ -40,6 +34,7 @@ async fn run_changes_coalesce_without_waking_history_or_unrelated_sources_and_re
     assert!(history.changed().await);
     assert!(output.changed().await);
     assert!(output.source().matches(&host));
+    assert!(output.source().same(&history.source()));
     assert!(!output.source().matches(&CommandHost::new(PathBuf::new())));
     drop(output);
     assert_eq!(

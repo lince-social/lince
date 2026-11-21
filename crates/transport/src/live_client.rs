@@ -1,28 +1,16 @@
-// non-lean-yet
-// Scope: mod actions, struct SessionConnection, fn read, fn write.
-// BeautifulRust (baseline lines):
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 100, 101, 103,
-//   140, 141, 142.
-// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 19, 27, 45,
-//   67, 80, 136, 145.
-// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites drive: String
-//   (48).
-// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
-//   contract. Sites 20, 37.
-// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
-//   Sites 37.
-// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
-//   Sites 19, 27, 45, 67, 80, 136, 145, 157, 171.
-// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
-//   functions. Sites 48.
-// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
-//   48.
+//! Authentication and framed I/O for a remote Interface view.
 
 use crate::{ClientMessage, ServerMessage};
 use iroh::endpoint::{Connection, RecvStream, SendStream};
-use tokio::sync::mpsc;
+use serde_json::{from_slice, to_vec};
+use std::{pin::pin, time::Duration};
+use tokio::{sync::mpsc, time::timeout};
 
 mod actions;
+
+const FRAME_LIMIT: usize = 8 * 1024 * 1024;
+const HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(30);
+const WRITE_TIMEOUT: Duration = Duration::from_secs(10);
 
 struct SessionConnection(Connection);
 
@@ -37,24 +25,30 @@ async fn read(recv: &mut RecvStream) -> Result<ServerMessage, String> {
     recv.read_exact(&mut size)
         .await
         .map_err(|_| "Live connection closed")?;
-    let size = u32::from_be_bytes(size) as usize;
-    if size > 8 * 1024 * 1024 {
-        return Err("Live response exceeds the size limit".into());
-    }
+    let size = usize::try_from(u32::from_be_bytes(size))
+        .ok()
+        .filter(|&size| size <= FRAME_LIMIT)
+        .ok_or("Live response exceeds the size limit")?;
     let mut bytes = vec![0; size];
     recv.read_exact(&mut bytes)
         .await
         .map_err(|_| "Incomplete live response")?;
-    serde_json::from_slice(&bytes).map_err(|error| error.to_string())
+    from_slice(&bytes).map_err(|error| error.to_string())
+}
+
+async fn read_next(mut recv: RecvStream) -> Result<(RecvStream, ServerMessage), String> {
+    let message = read(&mut recv).await?;
+    Ok((recv, message))
 }
 
 async fn write(send: &mut SendStream, message: &ClientMessage) -> Result<(), String> {
-    let bytes = serde_json::to_vec(message).map_err(|error| error.to_string())?;
-    if bytes.len() > 8 * 1024 * 1024 {
-        return Err("Live request exceeds the size limit".into());
-    }
-    tokio::time::timeout(std::time::Duration::from_secs(10), async {
-        send.write_all(&(bytes.len() as u32).to_be_bytes())
+    let bytes = to_vec(message).map_err(|error| error.to_string())?;
+    let size = u32::try_from(bytes.len())
+        .ok()
+        .filter(|_| bytes.len() <= FRAME_LIMIT)
+        .ok_or("Live request exceeds the size limit")?;
+    timeout(WRITE_TIMEOUT, async {
+        send.write_all(&size.to_be_bytes())
             .await
             .map_err(|error| error.to_string())?;
         send.write_all(&bytes)
@@ -65,6 +59,10 @@ async fn write(send: &mut SendStream, message: &ClientMessage) -> Result<(), Str
     .map_err(|_| "Live request timed out".to_string())?
 }
 
+/// Drives one remote view connection from login through frame delivery.
+///
+/// # Errors
+/// Returns a diagnostic for a failed login, handshake, frame, or response delivery.
 pub async fn drive(
     connection: Connection,
     mut outgoing: mpsc::Receiver<ClientMessage>,
@@ -81,11 +79,10 @@ async fn drive_session(
     incoming: &mpsc::Sender<ServerMessage>,
     wake: &(impl Fn() + Send + Sync),
 ) -> Result<(), String> {
-    let (mut send, mut recv) =
-        tokio::time::timeout(std::time::Duration::from_secs(30), connection.accept_bi())
-            .await
-            .map_err(|_| "Live connection timed out")?
-            .map_err(|error| error.to_string())?;
+    let (mut send, mut recv) = timeout(HANDSHAKE_TIMEOUT, connection.accept_bi())
+        .await
+        .map_err(|_| "Live connection timed out")?
+        .map_err(|error| error.to_string())?;
     let handshake = async {
         loop {
             match read(&mut recv).await? {
@@ -150,10 +147,9 @@ async fn drive_session(
             }
         }
     };
-    let (signer, session_id, challenge) =
-        tokio::time::timeout(std::time::Duration::from_secs(30), handshake)
-            .await
-            .map_err(|_| "Live login timed out")??;
+    let (signer, session_id, challenge) = timeout(HANDSHAKE_TIMEOUT, handshake)
+        .await
+        .map_err(|_| "Live login timed out")??;
     incoming
         .send(ServerMessage::SessionAuthenticated {
             id: "interface-auth".into(),
@@ -165,7 +161,8 @@ async fn drive_session(
         .map_err(|_| "View closed")?;
     wake();
     let mut actions = actions::Actions::new(signer, session_id, challenge);
-    let mut response = Box::pin(read(&mut recv));
+    // Keep partial reads alive while sending requests and reuse the future's storage.
+    let mut response = pin!(read_next(recv));
     loop {
         tokio::select! {
             message = outgoing.recv() => {
@@ -184,9 +181,8 @@ async fn drive_session(
                 write(&mut send, &message).await?;
             }
             message = &mut response => {
-                let mut message = message?;
-                drop(response);
-                response = Box::pin(read(&mut recv));
+                let (recv, mut message) = message?;
+                response.set(read_next(recv));
                 actions.restore(&mut message);
                 incoming.send(message).await.map_err(|_| "View closed")?;
                 wake();

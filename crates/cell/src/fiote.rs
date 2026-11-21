@@ -197,6 +197,7 @@ impl Host {
                     continue;
                 }
                 host.engine.access_scope(true, async {
+                    timeline::recover_tools(&host.engine, &pending.message).await?;
                     let row = store::records::get(&host.engine.store.pool, &pending.message).await?
                         .ok_or_else(|| engine::EngineError::UnknownRecord(pending.message.clone()))?;
                     let note = "Fiote was interrupted when the Cell stopped. Record and file operations may have completed; check their current state before asking again.";
@@ -265,7 +266,7 @@ impl Host {
         {
             store::sqlx::query("UPDATE fiote_activation SET state = 'cancelled', detail = 'Fiote disabled' WHERE fiote_uid = ? AND state IN ('queued','waiting')").bind(record).execute(&self.engine.store.pool).await.map_err(|e| e.to_string())?;
         }
-        let running = self
+        let mut running: Vec<_> = self
             .running
             .lock()
             .await
@@ -273,6 +274,7 @@ impl Host {
             .filter(|(_, run)| run.record == record)
             .map(|(thread, _)| thread.clone())
             .collect();
+        running.sort();
         let (login_url, login_pending) = {
             let login = self.login.lock().await;
             (
@@ -304,6 +306,7 @@ impl Host {
         let instructions = self.prompt_sources(record).await;
         Ok(Status {
             assistant_reply: None,
+            tool_history: None,
             assistant_directory: None,
             assistant_request: None,
             intake: self.intake_selection().await?,
@@ -460,7 +463,22 @@ impl Host {
         }
         let mut messages = Vec::new();
         let mut seen = std::collections::HashSet::new();
+        let tool_messages: std::collections::HashSet<String> = store::sqlx::query_scalar(
+            "SELECT a.subject_uid FROM record_assertion a
+             JOIN record_extension e ON e.record_uid = a.subject_uid AND e.namespace = 'lince.tool-call'
+             WHERE a.object_uid = ? AND a.predicate_uid = ? AND a.retracted_at IS NULL",
+        )
+        .bind(thread)
+        .bind(&predicate)
+        .fetch_all(&self.engine.store.pool)
+        .await
+        .map_err(|error| error.to_string())?
+        .into_iter()
+        .collect();
         for row in rows.into_iter().rev() {
+            if tool_messages.contains(&row.uid) {
+                continue;
+            }
             seen.insert(row.uid.clone());
             let metadata =
                 store::records::get_extension(&self.engine.store.pool, &row.uid, "lince.message")
@@ -931,6 +949,13 @@ impl Service for Host {
                 return self.connection_request(&record, request).await;
             }
             Request::Inspect { record } => record,
+            Request::InspectDashboard { record } => return self.dashboard_status(&record).await,
+            Request::InspectToolHistory { thread, message } => {
+                let record = self.thread_fiote(&thread).await?;
+                let mut status = self.status(&record).await?;
+                status.tool_history = Some(self.saved_tool_history(&thread, &message).await?);
+                return Ok(status);
+            }
             Request::Configure {
                 record,
                 settings,
@@ -1255,7 +1280,7 @@ impl Host {
                     content: Vec::new(),
                     thread: thread.into(),
                     body: String::new(),
-                    author: Some(config.author),
+                    author: Some(config.author.clone()),
                     state: MessageState::Writing,
                     parent: outcome.created.clone(),
                     references: Vec::new(),
@@ -1345,6 +1370,7 @@ impl Host {
         let credentials = self.credentials.clone();
         let slot = credentials::slot(&config.settings);
         let attached = native.attach_message(&reply).await;
+        let timeline_engine = self.engine.clone();
         let usage_path = usage::path(&self.directory, &thread);
         let context_path = self.directory.join(format!("context-{thread}.json"));
         native.set_source_message(outcome.created.as_deref());
@@ -1359,6 +1385,22 @@ impl Host {
                 tools: &tools,
                 message: &reply,
                 text: Default::default(),
+                timeline: laboratory_tools.is_none().then(|| timeline::Timeline {
+                    root: reply.clone(),
+                    engine: timeline_engine,
+                    tools: &tools,
+                    author: config.author,
+                    thread: thread.clone(),
+                    pending: pending.clone(),
+                    state: Mutex::new(timeline::State {
+                        message: reply.clone(),
+                        text: String::new(),
+                        offset: 0,
+                        closed: false,
+                        message_id: None,
+                        calls: HashMap::new(),
+                    }),
+                }),
             };
             let result = match attached {
                 Ok(()) => {

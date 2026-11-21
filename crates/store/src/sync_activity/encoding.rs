@@ -1,25 +1,22 @@
-// non-lean-yet
-// Scope: const SUBJECTS, fn prefix, struct Subjects, struct SummaryView.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
-//   Sites 53.
-// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
-//   14.
-
-use nucleus::sync::{Outcome, Summary};
+use nucleus::{
+    performance::add,
+    sync::{Outcome, Summary},
+};
 use serde::{Serialize, Serializer, ser::SerializeSeq};
 
+use super::protocol;
 use crate::StoreError;
 
 const SUBJECTS: usize = 32;
 
-fn prefix(text: &str, count: usize) -> &str {
+pub(super) fn prefix(text: &str, count: usize) -> &str {
     if text.len() <= count {
         return text;
     }
     text.char_indices()
         .nth(count)
-        .map_or(text, |(end, _)| &text[..end])
+        .and_then(|(end, _)| text.get(..end))
+        .unwrap_or(text)
 }
 
 struct Subjects<'a>(&'a [String]);
@@ -55,10 +52,8 @@ pub(super) fn summary(summary: &Summary) -> Result<String, StoreError> {
         subjects: Subjects(subjects),
         message: message.as_deref().map(|message| prefix(message, 1024)),
     })
-    .map_err(|error| StoreError::Protocol(error.to_string()))?;
-    nucleus::performance::add(
-        "sync-history-subjects-encoded",
-        subjects.len().min(SUBJECTS) as u64,
-    );
+    .map_err(protocol)?;
+    let subject_count = u64::try_from(subjects.len().min(SUBJECTS)).map_err(protocol)?;
+    add("sync-history-subjects-encoded", subject_count);
     Ok(encoded)
 }

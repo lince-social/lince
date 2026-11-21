@@ -1,25 +1,23 @@
-// non-lean-yet
-// Scope: fn rule, fn sparse_override_keeps_explicit_false_and_exact_requested_dimensions, fn
-//   area_conditions_and_application_metadata_share_exact_matching_without_inferred_authority, fn
-//   known_extensions_validate_before_reporting_a_revision.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
-//   Sites 47, 64, 66, 68.
+use serde_json::{Value, json, to_value};
 
-use serde_json::json;
+use super::{Dimension, Properties, RULE_NAMESPACE, Rule, WINDOW_NAMESPACE, revision};
+use crate::property_rule::{Property, PropertyRule};
 
-use super::*;
-use crate::property_rule::Property;
+const APP_ID: &str = "org.example.Editor";
+
+fn condition(property: Property, value: impl Into<String>) -> PropertyRule {
+    PropertyRule {
+        property,
+        value: value.into(),
+    }
+}
 
 fn rule() -> Rule {
     Rule {
         revision: 1,
         enabled: true,
         match_all: true,
-        conditions: vec![PropertyRule {
-            property: Property::ApplicationId,
-            value: "org.example.Editor".into(),
-        }],
+        conditions: vec![condition(Property::ApplicationId, APP_ID)],
         properties: Properties {
             width: Some(Dimension::Fraction([1, 2])),
             floating: Some(false),
@@ -49,42 +47,49 @@ fn sparse_override_keeps_explicit_false_and_exact_requested_dimensions() {
     assert_eq!(result.height, Some(Dimension::Pixels(720)));
     assert_eq!(result.floating, Some(false));
     assert_eq!(result.focus, Some(false));
-    assert_eq!(result.width.unwrap().resolve(900.0), 300.0);
+    assert_eq!(result.width.map(|width| width.resolve(900.0)), Some(300.0));
     assert_eq!(base.floating, Some(true));
 }
 
 #[test]
 fn area_conditions_and_application_metadata_share_exact_matching_without_inferred_authority() {
     let mut rule = rule();
-    rule.conditions.push(PropertyRule {
-        property: Property::Title,
-        value: "Owner document".into(),
-    });
-    assert!(rule.matches(&json!({"head":"Owner document","app_id":"org.example.Editor"})));
-    assert!(!rule.matches(&json!({"head":"Other","app_id":"org.example.Editor"})));
-    assert!(!rule.matches(&json!({"head":"Owner document","app_id":"org.example.editor"})));
+    rule.conditions
+        .push(condition(Property::Title, "Owner document"));
+    for (head, app_id, expected) in [
+        ("Owner document", APP_ID, true),
+        ("Other", APP_ID, false),
+        ("Owner document", "org.example.editor", false),
+    ] {
+        assert_eq!(
+            rule.matches(&json!({"head":head,"app_id":app_id})),
+            expected
+        );
+    }
     rule.match_all = false;
-    assert!(rule.matches(&json!({"head":"Other","app_id":"org.example.Editor"})));
+    assert!(rule.matches(&json!({"head":"Other","app_id":APP_ID})));
     rule.enabled = false;
-    assert!(!rule.matches(&json!({"head":"Owner document","app_id":"org.example.Editor"})));
-    let quantity = PropertyRule {
-        property: Property::Quantity,
-        value: "0.10".into(),
-    };
+    assert!(!rule.matches(&json!({"head":"Owner document","app_id":APP_ID})));
+    let quantity = condition(Property::Quantity, "0.10");
     assert!(quantity.matches(&json!({"quantity":"0.1"})));
     assert!(!quantity.matches(&json!({"quantity":"0.1000000001"})));
 }
 
 #[test]
-fn known_extensions_validate_before_reporting_a_revision() {
-    let mut value = serde_json::to_value(rule()).unwrap();
-    assert_eq!(revision(RULE_NAMESPACE, &value).unwrap(), Some(1));
-    value["properties"]["program"] = json!("untrusted-command");
+fn known_extensions_validate_before_reporting_a_revision() -> serde_json::Result<()> {
+    let mut value = to_value(rule())?;
+    assert_eq!(revision(RULE_NAMESPACE, &value), Ok(Some(1)));
+    value
+        .get_mut("properties")
+        .and_then(Value::as_object_mut)
+        .expect("the serialized opening rule has a properties object")
+        .insert("program".into(), json!("untrusted-command"));
     assert!(revision(RULE_NAMESPACE, &value).is_err());
-    assert_eq!(revision("org.example.unrelated", &value).unwrap(), None);
+    assert_eq!(revision("org.example.unrelated", &value), Ok(None));
     let value = json!({"revision":1,"properties":{"focus":false}});
-    assert_eq!(revision(WINDOW_NAMESPACE, &value).unwrap(), Some(1));
+    assert_eq!(revision(WINDOW_NAMESPACE, &value), Ok(Some(1)));
     assert!(revision(WINDOW_NAMESPACE, &json!({"revision":0,"properties":{}})).is_err());
+    Ok(())
 }
 
 #[test]
@@ -115,19 +120,25 @@ fn malformed_and_oversized_preferences_never_match() {
             .is_err()
         );
     }
-    let mut invalid = rule();
-    invalid.conditions[0].value = "x".repeat(4097);
+    let oversized_value = "x".repeat(4097);
+    let invalid = Rule {
+        conditions: vec![condition(Property::ApplicationId, &oversized_value)],
+        ..rule()
+    };
     assert!(invalid.validate().is_err());
-    assert!(!invalid.matches(&json!({"app_id":invalid.conditions[0].value})));
-    invalid = rule();
-    invalid.conditions = vec![invalid.conditions[0].clone(); 33];
-    assert!(invalid.validate().is_err());
-    invalid.conditions = vec![
-        PropertyRule {
-            property: Property::Title,
-            value: "x".repeat(4096)
-        };
-        32
-    ];
-    assert!(invalid.validate().is_err());
+    assert!(!invalid.matches(&json!({"app_id":oversized_value})));
+
+    for conditions in [
+        vec![condition(Property::ApplicationId, APP_ID); 33],
+        vec![condition(Property::Title, "x".repeat(4096)); 32],
+    ] {
+        assert!(
+            Rule {
+                conditions,
+                ..rule()
+            }
+            .validate()
+            .is_err()
+        );
+    }
 }

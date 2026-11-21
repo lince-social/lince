@@ -1,92 +1,96 @@
-// non-lean-yet
-// Scope: struct Work, fn allocate.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
-//   Sites 49, 54, 55, 57.
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 67.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 12.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 6,
-//   7, 8, 9, 12.
-// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites allocate:
-//   String (12).
+use std::{
+    cmp::Ordering::{Equal, Greater, Less},
+    iter::{from_fn, once},
+};
 
 use super::{MAX_INSTANT_MS, TimeRange};
 use crate::DecimalValue;
 
+/// Work that can be placed at or after its release time.
 #[derive(Clone, Debug)]
 pub struct Work {
+    /// Stable identifier used to order otherwise equivalent work.
     pub id: String,
+    /// Earliest placement in Unix milliseconds.
     pub release_ms: i64,
+    /// Time the work occupies, in milliseconds.
     pub duration_ms: i64,
+    /// Priority keys, with missing values ordered last in either direction.
     pub priority: Vec<Option<DecimalValue>>,
 }
 
+/// Places work in release, priority, and identifier order.
+/// Groups with identical release and priority start together. Each group's
+/// longest duration determines when the next group can start.
+///
+/// # Errors
+///
+/// Returns the first invalid duration or out-of-range end time in placement order.
 pub fn allocate(
     mut work: Vec<Work>,
     descending: &[bool],
 ) -> Result<Vec<(String, TimeRange)>, String> {
-    let compare = |a: &Work, b: &Work| {
+    let compare = |left: &[Option<DecimalValue>], right: &[Option<DecimalValue>]| {
         for (index, descending) in descending.iter().enumerate() {
             let order = match (
-                a.priority.get(index).copied().flatten(),
-                b.priority.get(index).copied().flatten(),
+                left.get(index).copied().flatten(),
+                right.get(index).copied().flatten(),
             ) {
-                (Some(a), Some(b)) => {
-                    if *descending {
-                        b.cmp(&a)
-                    } else {
-                        a.cmp(&b)
-                    }
-                }
-                (Some(_), None) => std::cmp::Ordering::Less,
-                (None, Some(_)) => std::cmp::Ordering::Greater,
-                (None, None) => std::cmp::Ordering::Equal,
+                (Some(a), Some(b)) if *descending => b.cmp(&a),
+                (Some(a), Some(b)) => a.cmp(&b),
+                (Some(_), None) => Less,
+                (None, Some(_)) => Greater,
+                (None, None) => Equal,
             };
             if !order.is_eq() {
                 return order;
             }
         }
-        std::cmp::Ordering::Equal
+        Equal
     };
     work.sort_by(|a, b| {
         a.release_ms
             .cmp(&b.release_ms)
-            .then_with(|| compare(a, b))
+            .then_with(|| compare(&a.priority, &b.priority))
             .then_with(|| a.id.cmp(&b.id))
     });
     let mut result = Vec::with_capacity(work.len());
+    let mut work = work.into_iter().peekable();
     let mut cursor = 0;
-    let mut index = 0;
-    while index < work.len() {
-        let first = &work[index];
-        let start = cursor.max(first.release_ms);
+    while let Some(Work {
+        id,
+        release_ms,
+        duration_ms,
+        priority,
+    }) = work.next()
+    {
+        let start = cursor.max(release_ms);
         let mut end = start;
-        let mut next = index;
-        while next < work.len()
-            && work[next].release_ms == first.release_ms
-            && compare(first, &work[next]).is_eq()
+        let tied = from_fn(|| {
+            work.next_if(|task| {
+                task.release_ms == release_ms && compare(&priority, &task.priority).is_eq()
+            })
+        });
+        for (id, duration_ms) in
+            once((id, duration_ms)).chain(tied.map(|task| (task.id, task.duration_ms)))
         {
-            let task = &work[next];
-            if task.duration_ms < 0 || start < 0 {
+            if duration_ms < 0 {
                 return Err("Invalid work allocation".into());
             }
             let until = start
-                .checked_add(task.duration_ms)
+                .checked_add(duration_ms)
                 .filter(|until| *until <= MAX_INSTANT_MS)
                 .ok_or("Work allocation overflow")?;
             end = end.max(until);
             result.push((
-                task.id.clone(),
+                id,
                 TimeRange {
                     from_ms: start,
                     until_ms: (until > start).then_some(until),
                 },
             ));
-            next += 1;
         }
         cursor = end;
-        index = next;
     }
     Ok(result)
 }

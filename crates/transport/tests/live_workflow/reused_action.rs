@@ -1,49 +1,73 @@
-// non-lean-yet
-// Scope: struct Tasks, fn receive, fn edit, fn
-//   denied_live_autosave_recovers_with_the_same_reply_id_without_allowing_a_replay.
-// BeautifulRust (baseline lines):
-// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
-//   contract. Sites 159, 184.
-// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
-//   conversion. Sites 159.
-// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
-//   Sites 42, 47, 98, 102.
-// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 261.
+use std::{collections::BTreeSet, sync::Arc, time::Duration};
 
-use super::*;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
-use store::sqlx::Row;
-use tokio::sync::mpsc;
+use engine::{
+    Engine,
+    actions::Action,
+    collab::encode_update,
+    record_change::{Mutation, Request},
+    wire::{ALPN_LIVE, Reach, Wire},
+};
+use iroh::SecretKey;
+use loro::LoroDoc;
+use nucleus::{RecordKind, new_uid};
+use serde_json::Value;
+use store::{
+    auth, records,
+    sqlx::{query_as, query_scalar},
+};
+use tokio::{sync::mpsc, task::JoinSet, time::timeout};
+use transport::{ClientMessage, LaneHub, ServerMessage, live::LiveHost, live_client::drive};
 
-struct Tasks(Vec<tokio::task::JoinHandle<()>>);
+use super::{cell, know, loopback};
 
-impl Drop for Tasks {
-    fn drop(&mut self) {
-        for task in &self.0 {
-            task.abort();
-        }
-    }
-}
+const AUTOSAVE_ID: &str = "body-autosave";
 
 async fn receive(incoming: &mut mpsc::Receiver<ServerMessage>) -> ServerMessage {
-    tokio::time::timeout(std::time::Duration::from_secs(20), incoming.recv())
+    timeout(Duration::from_secs(20), incoming.recv())
         .await
         .expect("The live Action did not receive a response")
         .expect("The live client disconnected")
 }
 
-async fn edit(outgoing: &mpsc::Sender<ClientMessage>, uid: &str, body: &str) {
+async fn send_action(outgoing: &mpsc::Sender<ClientMessage>, id: &str, action: Action) {
     outgoing
         .send(ClientMessage::Act {
-            id: "body-autosave".into(),
-            action: Action::EditRecordText {
-                target: uid.into(),
-                head: None,
-                body: Some(body.into()),
-            },
+            id: id.into(),
+            action,
         })
         .await
-        .unwrap();
+        .expect("queue the live Action");
+}
+
+async fn edit(outgoing: &mpsc::Sender<ClientMessage>, uid: &str, body: &str) {
+    send_action(
+        outgoing,
+        AUTOSAVE_ID,
+        Action::EditRecordText {
+            target: uid.into(),
+            head: None,
+            body: Some(body.into()),
+        },
+    )
+    .await;
+}
+
+async fn record_body(host: &Engine, uid: &str) -> String {
+    records::get(&host.store.pool, uid)
+        .await
+        .expect("read the host Record")
+        .expect("find the autosave target")
+        .body
+}
+
+async fn permission_denied(incoming: &mut mpsc::Receiver<ServerMessage>, expected_id: &str) {
+    let reply = receive(incoming).await;
+    assert!(
+        matches!(&reply, ServerMessage::Error { id, message, .. }
+            if id == expected_id && message.to_lowercase().contains("permission")),
+        "expected a permission denial for {expected_id}: {reply:?}"
+    );
 }
 
 #[tokio::test]
@@ -51,17 +75,21 @@ async fn denied_live_autosave_recovers_with_the_same_reply_id_without_allowing_a
     let (host, host_organ) = cell("http://action-host.test").await;
     let (guest, guest_organ) = cell("http://action-guest.test").await;
     let host_wire = Arc::new(
-        Wire::bind(host.clone(), SecretKey::from_bytes(&[83; 32]), Reach::Local)
-            .await
-            .unwrap(),
+        Wire::bind(
+            Arc::clone(&host),
+            SecretKey::from_bytes(&[83; 32]),
+            Reach::Local,
+        )
+        .await
+        .expect("bind the host"),
     );
     let guest_wire = Wire::bind(
-        guest.clone(),
+        Arc::clone(&guest),
         SecretKey::from_bytes(&[84; 32]),
         Reach::Local,
     )
     .await
-    .unwrap();
+    .expect("bind the guest");
     know(&host, &guest_organ, &guest_wire.node_id().to_string()).await;
     know(&guest, &host_organ, &host_wire.node_id().to_string()).await;
     let person = host
@@ -73,29 +101,30 @@ async fn denied_live_autosave_recovers_with_the_same_reply_id_without_allowing_a
             None,
         )
         .await
-        .unwrap()
+        .expect("grant the guest login")
         .created
-        .unwrap();
-    let role = store::auth::ensure_role(&host.store.pool, "autosave-subject")
+        .expect("guest Person uid");
+    let pool = &host.store.pool;
+    let role = auth::ensure_role(pool, "autosave-subject")
         .await
-        .unwrap();
-    let read = store::auth::ensure_permission(&host.store.pool, "record", "read")
+        .expect("create the test role");
+    let read = auth::ensure_permission(pool, "record", "read")
         .await
-        .unwrap();
-    let update = store::auth::ensure_permission(&host.store.pool, "record", "update")
+        .expect("create the read permission");
+    let update = auth::ensure_permission(pool, "record", "update")
         .await
-        .unwrap();
-    store::auth::grant(&host.store.pool, role, read)
+        .expect("create the update permission");
+    auth::grant(pool, role, read)
         .await
-        .unwrap();
-    store::auth::set_user_role(&host.store.pool, &person, role)
+        .expect("grant read permission only");
+    auth::set_user_role(pool, &person, role)
         .await
-        .unwrap();
+        .expect("assign the guest role");
     let uid = host
         .act(
             Action::CreateRecord {
                 slug: None,
-                kind: nucleus::RecordKind::Plain,
+                kind: RecordKind::Plain,
                 head: "Autosave target".into(),
                 body: "original".into(),
                 quantity: 0.0,
@@ -103,212 +132,162 @@ async fn denied_live_autosave_recovers_with_the_same_reply_id_without_allowing_a
             None,
         )
         .await
-        .unwrap()
+        .expect("create the target Record")
         .created
-        .unwrap();
-    host_wire.set_live_handler(LiveHost::new(
-        host.clone(),
-        Arc::new(transport::LaneHub::new()),
-    ));
-    let mut tasks = Tasks(Vec::new());
-    let serving = host_wire.clone();
-    tasks.0.push(tokio::spawn(async move {
+        .expect("target Record uid");
+    host_wire.set_live_handler(LiveHost::new(Arc::clone(&host), Arc::new(LaneHub::new())));
+    let mut tasks = JoinSet::new();
+    let serving = Arc::clone(&host_wire);
+    tasks.spawn(async move {
         serving.serve().await;
-    }));
+    });
     let connection = guest_wire
         .endpoint()
         .connect(loopback(&host_wire), ALPN_LIVE)
         .await
-        .unwrap();
+        .expect("connect to the live host");
     let (outgoing, requests) = mpsc::channel(16);
     let (responses, mut incoming) = mpsc::channel(16);
-    tasks.0.push(tokio::spawn(async move {
-        transport::live_client::drive(connection, requests, responses, || {})
+    tasks.spawn(async move {
+        drive(connection, requests, responses, || {})
             .await
-            .unwrap();
-    }));
+            .expect("drive the guest connection");
+    });
     assert!(matches!(
         receive(&mut incoming).await,
         ServerMessage::SessionAuthenticated { .. }
     ));
     edit(&outgoing, &uid, "denied draft").await;
-    assert!(
-        matches!(receive(&mut incoming).await, ServerMessage::Error { id, message, .. } if id == "body-autosave" && message.to_lowercase().contains("permission"))
-    );
-    assert_eq!(
-        store::records::get(&host.store.pool, &uid)
-            .await
-            .unwrap()
-            .unwrap()
-            .body,
-        "original"
-    );
-    store::auth::grant(&host.store.pool, role, update)
+    permission_denied(&mut incoming, AUTOSAVE_ID).await;
+    assert_eq!(record_body(&host, &uid).await, "original");
+    auth::grant(pool, role, update)
         .await
-        .unwrap();
+        .expect("enable the same autosave to recover");
     for body in ["recovered draft", "another edit"] {
         edit(&outgoing, &uid, body).await;
         assert!(
-            matches!(receive(&mut incoming).await, ServerMessage::ActionOk { id, .. } if id == "body-autosave")
+            matches!(receive(&mut incoming).await, ServerMessage::ActionOk { id, .. } if id == AUTOSAVE_ID)
         );
-        assert_eq!(
-            store::records::get(&host.store.pool, &uid)
-                .await
-                .unwrap()
-                .unwrap()
-                .body,
-            body
-        );
+        assert_eq!(record_body(&host, &uid).await, body);
     }
-    let first = store::sqlx::query("SELECT session_id, session_challenge, sequence, message_id, action_base64, signature FROM signed_action_intent WHERE actor_person_uid = ? ORDER BY sequence LIMIT 1")
-        .bind(&person).fetch_one(&host.store.pool).await.unwrap();
-    let old_wire: String = first.get("message_id");
+    let (session_id, session_challenge, sequence, old_wire, action_base64, signature): (
+        String, String, i64, String, String, String,
+    ) = query_as("SELECT session_id, session_challenge, sequence, message_id, action_base64, signature FROM signed_action_intent WHERE actor_person_uid = ? ORDER BY sequence LIMIT 1")
+        .bind(&person)
+        .fetch_one(pool)
+        .await
+        .expect("load the original signed envelope");
     outgoing
         .send(ClientMessage::SignedAct {
             id: old_wire.clone(),
-            session_id: first.get("session_id"),
-            session_challenge: first.get("session_challenge"),
-            sequence: first.get::<i64, _>("sequence") as u64,
-            action_base64: first.get("action_base64"),
-            signature: first.get("signature"),
+            session_id,
+            session_challenge,
+            sequence: u64::try_from(sequence).expect("stored sequence is nonnegative"),
+            action_base64,
+            signature,
         })
         .await
-        .unwrap();
+        .expect("send the same signed envelope again");
     assert!(
         matches!(receive(&mut incoming).await, ServerMessage::Error { id, code, .. } if id == old_wire && code.as_deref() == Some("action_intent_replay"))
     );
-    assert_eq!(
-        store::records::get(&host.store.pool, &uid)
-            .await
-            .unwrap()
-            .unwrap()
-            .body,
-        "another edit"
-    );
+    assert_eq!(record_body(&host, &uid).await, "another edit");
     edit(&outgoing, &uid, "after replay rejection").await;
     assert!(
-        matches!(receive(&mut incoming).await, ServerMessage::ActionOk { id, .. } if id == "body-autosave")
+        matches!(receive(&mut incoming).await, ServerMessage::ActionOk { id, .. } if id == AUTOSAVE_ID)
     );
-    let intents = store::sqlx::query("SELECT sequence, message_id FROM signed_action_intent WHERE actor_person_uid = ? ORDER BY sequence").bind(&person).fetch_all(&host.store.pool).await.unwrap();
+    let intents: Vec<(i64, String)> = query_as(
+        "SELECT sequence, message_id FROM signed_action_intent WHERE actor_person_uid = ? ORDER BY sequence",
+    )
+    .bind(&person)
+    .fetch_all(pool)
+    .await
+    .expect("list the signed envelopes in sequence order");
     assert_eq!(intents.len(), 4);
-    let mut ids = std::collections::BTreeSet::new();
-    for (index, intent) in intents.iter().enumerate() {
-        assert_eq!(intent.get::<i64, _>("sequence"), index as i64 + 1);
-        let id: String = intent.get("message_id");
-        assert_ne!(id, "body-autosave");
+    let mut ids = BTreeSet::new();
+    for (expected, (sequence, id)) in (1..).zip(intents) {
+        assert_eq!(sequence, expected);
+        assert_ne!(id, AUTOSAVE_ID);
         assert!(ids.insert(id));
     }
-    assert_eq!(
-        store::records::get(&host.store.pool, &uid)
-            .await
-            .unwrap()
-            .unwrap()
-            .body,
-        "after replay rejection"
-    );
-    let document = loro::LoroDoc::new();
+    assert_eq!(record_body(&host, &uid).await, "after replay rejection");
+    let document = LoroDoc::new();
+    let snapshot = host
+        .collab_snapshot(&uid)
+        .await
+        .expect("read the saved document");
+    let snapshot = STANDARD.decode(snapshot).expect("decode the snapshot");
     document
-        .import(
-            &STANDARD
-                .decode(host.collab_snapshot(&uid).await.unwrap())
-                .unwrap(),
-        )
-        .unwrap();
+        .import(&snapshot)
+        .expect("import the host document");
     let version = document.oplog_vv();
     let text = document.get_text("body");
     let original = text.to_string();
-    text.insert(original.chars().count(), " + retry").unwrap();
+    text.insert(text.len_unicode(), " + retry")
+        .expect("append the durable edit");
     document.commit();
-    let change = nucleus::new_uid("op");
+    let change = new_uid("op");
     let operation = Action::ChangeRecord {
-        request: engine::record_change::Request {
+        request: Request {
             id: change.clone(),
             record_uid: uid.clone(),
-            mutation: engine::record_change::Mutation::Text {
-                update_base64: engine::collab::encode_update(&document, &version).unwrap(),
+            mutation: Mutation::Text {
+                update_base64: encode_update(&document, &version).expect("encode the pending edit"),
             },
         },
     };
-    store::auth::revoke(&host.store.pool, role, update)
+    auth::revoke(pool, role, update)
         .await
-        .unwrap();
-    outgoing
-        .send(ClientMessage::Act {
-            id: change.clone(),
-            action: operation.clone(),
-        })
+        .expect("disable the first durable edit attempt");
+    send_action(&outgoing, &change, operation.clone()).await;
+    permission_denied(&mut incoming, &change).await;
+    assert_eq!(record_body(&host, &uid).await, original);
+    auth::grant(pool, role, update)
         .await
-        .unwrap();
-    assert!(
-        matches!(receive(&mut incoming).await, ServerMessage::Error { id, message, .. } if id == change && message.to_lowercase().contains("permission"))
-    );
-    assert_eq!(
-        store::records::get(&host.store.pool, &uid)
-            .await
-            .unwrap()
-            .unwrap()
-            .body,
-        original
-    );
-    store::auth::grant(&host.store.pool, role, update)
-        .await
-        .unwrap();
-    let mut receipt = None;
-    let mut fact_count = None;
-    for _ in 0..2 {
-        outgoing
-            .send(ClientMessage::Act {
-                id: change.clone(),
-                action: operation.clone(),
-            })
-            .await
-            .unwrap();
+        .expect("allow the durable edit to recover");
+    let updated = format!("{original} + retry");
+    let mut observed = None;
+    for attempt in [operation.clone(), operation] {
+        send_action(&outgoing, &change, attempt).await;
+        let reply = receive(&mut incoming).await;
         let ServerMessage::ActionOk {
             id,
             data: Some(data),
             facts,
             ..
-        } = receive(&mut incoming).await
+        } = reply
         else {
-            panic!("The retained durable autosave did not recover");
+            panic!("The retained durable autosave did not recover: {reply:?}");
         };
         assert_eq!(id, change);
-        assert_eq!(data["change_id"], change);
-        if let Some(previous) = &receipt {
-            assert_eq!(&data, previous);
+        assert_eq!(
+            data.get("change_id").and_then(Value::as_str),
+            Some(change.as_str())
+        );
+        assert_eq!(record_body(&host, &uid).await, updated);
+        let count: i64 = query_scalar("SELECT COUNT(*) FROM fact WHERE record_uid = ?")
+            .bind(&uid)
+            .fetch_one(pool)
+            .await
+            .expect("count the Record's Facts");
+        let current = (data, count);
+        if let Some(previous) = &observed {
+            assert_eq!(&current, previous);
             assert_eq!(facts, 0);
         }
-        receipt = Some(data);
-        assert_eq!(
-            store::records::get(&host.store.pool, &uid)
-                .await
-                .unwrap()
-                .unwrap()
-                .body,
-            format!("{original} + retry")
-        );
-        let count: i64 =
-            store::sqlx::query_scalar("SELECT COUNT(*) FROM fact WHERE record_uid = ?")
-                .bind(&uid)
-                .fetch_one(&host.store.pool)
-                .await
-                .unwrap();
-        if let Some(previous) = fact_count {
-            assert_eq!(count, previous);
-        }
-        fact_count = Some(count);
+        observed = Some(current);
     }
-    let receipts: i64 = store::sqlx::query_scalar(
+    let receipts: i64 = query_scalar(
         "SELECT COUNT(*) FROM record_change_receipt WHERE actor = ? AND change_uid = ?",
     )
     .bind(&person)
     .bind(&change)
-    .fetch_one(&host.store.pool)
+    .fetch_one(pool)
     .await
-    .unwrap();
+    .expect("count durable receipts for the change");
     assert_eq!(receipts, 1);
     drop(outgoing);
-    drop(tasks);
+    tasks.shutdown().await;
     guest_wire.endpoint().close().await;
     host_wire.endpoint().close().await;
 }

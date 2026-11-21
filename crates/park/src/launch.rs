@@ -18,7 +18,7 @@ use std::{
 };
 
 #[cfg(feature = "server")]
-pub use lince_interface::host::launch::{Capability, Description};
+pub use lince_host::launch::{Capability, Description};
 
 #[cfg(feature = "server")]
 impl Application {

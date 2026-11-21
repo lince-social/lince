@@ -1,88 +1,72 @@
-// non-lean-yet
-// Scope: fn reference, fn words, fn parse, fn from_value.
-// BeautifulRust (baseline lines):
-// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 8, 97, 109.
-// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (42, 155, 179,
-//   187).
-// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
-//   66, 124.
-// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
-//   Sites unwrap (89, 96, 103, 112).
-
 use engine::record_creation::Assertion;
-use serde_json::Value;
+use lince_resources::reference::is_uri;
+use nucleus::{DecimalValue, valid_uid};
+use serde_json::{Value, from_str, to_string};
+use std::borrow::Cow;
 
-fn reference(value: &str) -> Result<String, String> {
+const MAX_TERM_CHARACTERS: usize = 256;
+const MAX_ADDRESS_BYTES: usize = 8192;
+const MAX_ASSERTIONS: usize = 40;
+
+fn reference(value: &str) -> Result<String, &'static str> {
     let value = value.trim_start_matches(['#', '@']);
     let quoted = value.starts_with('"');
     let value = if quoted {
-        serde_json::from_str::<String>(value).map_err(|_| "Finish the quoted term".to_string())?
+        Cow::Owned(from_str(value).map_err(|_| "Finish the quoted term")?)
     } else {
-        value.to_owned()
+        Cow::Borrowed(value)
     };
     if value.is_empty()
-        || value.chars().count() > 256
+        || value.chars().count() > MAX_TERM_CHARACTERS
         || value.chars().any(char::is_control)
         || !quoted && value.contains(['#', '@', ':'])
     {
-        return Err("Enter a concept or slug after # or @".into());
+        return Err("Enter a concept or slug after # or @");
     }
-    Ok(value)
+    Ok(value.into_owned())
 }
 
-fn words(text: &str) -> Result<Vec<String>, String> {
-    let mut out = Vec::new();
+fn words(text: &str) -> Result<Vec<&str>, &'static str> {
+    let mut words = Vec::new();
     let mut chars = text.char_indices().peekable();
     while let Some((start, ch)) = chars.next() {
         if ch == '\n' {
-            out.push(";".into());
+            words.push(";");
             continue;
         }
         if ch.is_whitespace() {
             continue;
         }
-        if ",;:".contains(ch) {
-            out.push(ch.to_string());
-            continue;
-        }
-        let quote =
-            ch == '"' || matches!(ch, '#' | '@') && chars.peek().is_some_and(|(_, ch)| *ch == '"');
-        let mut end = start + ch.len_utf8();
-        if quote {
-            if ch != '"' {
-                end = chars.next().expect("quoted reference").0 + 1;
-            }
+        if ch == '"' || matches!(ch, '#' | '@') && chars.next_if(|(_, next)| *next == '"').is_some()
+        {
             let mut escaped = false;
-            let mut closed = false;
-            for (index, next) in chars.by_ref() {
-                end = index + next.len_utf8();
+            if !chars.by_ref().any(|(_, next)| {
                 if next == '"' && !escaped {
-                    closed = true;
-                    break;
+                    return true;
                 }
                 escaped = next == '\\' && !escaped;
+                false
+            }) {
+                return Err("Finish the quoted term");
             }
-            if !closed {
-                return Err("Finish the quoted term".into());
-            }
-        } else {
-            while let Some((index, next)) = chars.peek().copied() {
-                if next.is_whitespace() || ",;:".contains(next) {
-                    break;
-                }
-                chars.next();
-                end = index + next.len_utf8();
-            }
+        } else if !",;:".contains(ch) {
+            while chars
+                .next_if(|(_, next)| !next.is_whitespace() && !",;:".contains(*next))
+                .is_some()
+            {}
         }
-        out.push(text[start..end].into());
+        let end = chars.peek().map_or(text.len(), |(end, _)| *end);
+        words.push(
+            text.get(start..end)
+                .expect("token bounds come from char_indices"),
+        );
     }
-    Ok(out)
+    Ok(words)
 }
 
 pub(super) fn parse(text: &str) -> Result<Vec<Assertion>, String> {
     let mut assertions = Vec::new();
-    let words = words(text)?;
-    let mut words = words.iter().map(String::as_str).peekable();
+    let mut words = words(text)?.into_iter().peekable();
     while let Some(predicate) = words.next() {
         if matches!(predicate, "," | ";") {
             continue;
@@ -96,36 +80,35 @@ pub(super) fn parse(text: &str) -> Result<Vec<Assertion>, String> {
             quantity: None,
             unit: None,
         };
-        if words.peek().is_some_and(|word| word.starts_with('^')) {
-            let uid = words.next().unwrap().trim_start_matches('^');
-            if !nucleus::valid_uid(uid, "c") {
+        if let Some(uid) = words.next_if(|word| word.starts_with('^')) {
+            let uid = uid.trim_start_matches('^');
+            if !valid_uid(uid, "c") {
                 return Err("Choose a valid Concept identity".into());
             }
             assertion.predicate = uid.into();
         }
-        if words.peek().is_some_and(|word| word.starts_with('"')) {
-            let uri: String = serde_json::from_str(words.next().unwrap())
-                .map_err(|_| "Finish the quoted reference")?;
-            if uri.is_empty() || uri.len() > 8192 || uri.chars().any(char::is_control) {
+        if let Some(uri) = words.next_if(|word| word.starts_with('"')) {
+            let uri: String = from_str(uri).map_err(|_| "Finish the quoted reference")?;
+            if uri.is_empty() || uri.len() > MAX_ADDRESS_BYTES || uri.chars().any(char::is_control)
+            {
                 return Err("Check the reference address".into());
             }
             assertion.object = Some(uri);
-        } else if words.peek().is_some_and(|word| word.starts_with('@')) {
-            assertion.object = Some(reference(words.next().unwrap())?);
+        } else if let Some(object) = words.next_if(|word| word.starts_with('@')) {
+            assertion.object = Some(reference(object)?);
         }
-        if words.peek() == Some(&":") {
-            words.next();
+        if words.next_if_eq(&":").is_some() {
             let quantity = words.next().ok_or("Enter a quantity after :")?;
-            nucleus::DecimalValue::parse_inferred(quantity)
+            DecimalValue::parse_inferred(quantity)
                 .map_err(|_| "Enter a decimal quantity after :")?;
             assertion.quantity = Some(quantity.into());
-            if words.peek().is_some_and(|word| word.starts_with('@')) {
-                assertion.unit = Some(reference(words.next().unwrap())?);
+            if let Some(unit) = words.next_if(|word| word.starts_with('@')) {
+                assertion.unit = Some(reference(unit)?);
             }
         }
         assertions.push(assertion);
-        if assertions.len() > 40 {
-            return Err("Add at most 40 assertions at a time".into());
+        if assertions.len() > MAX_ASSERTIONS {
+            return Err(format!("Add at most {MAX_ASSERTIONS} assertions at a time"));
         }
     }
     Ok(assertions)
@@ -159,11 +142,11 @@ pub(super) fn format_parts(
     unit: Option<&str>,
 ) -> String {
     let mut text = String::from("#");
-    push_term(&mut text, predicate);
+    text.push_str(&term_text(predicate));
     if let Some(object) = object {
         text.push(' ');
-        if lince_resources::reference::is_uri(object) || object.contains('/') {
-            text.push_str(&serde_json::to_string(object).expect("reference text"));
+        if is_uri(object) || object.contains('/') {
+            text.push_str(&quote(object));
         } else {
             text.push('@');
             text.push_str(object);
@@ -175,29 +158,23 @@ pub(super) fn format_parts(
     }
     if let Some(unit) = unit {
         text.push_str(" @");
-        push_term(&mut text, unit);
+        text.push_str(&term_text(unit));
     }
     text
 }
 
-fn quoted(name: &str) -> bool {
-    name.chars()
+fn quote(text: &str) -> String {
+    to_string(text).expect("JSON string serialization is infallible")
+}
+
+pub(super) fn term_text(name: &str) -> Cow<'_, str> {
+    if name
+        .chars()
         .any(|ch| ch.is_whitespace() || ",;:#@\"^".contains(ch))
-}
-
-fn push_term(text: &mut String, name: &str) {
-    if quoted(name) {
-        text.push_str(&serde_json::to_string(name).expect("term text"));
+    {
+        Cow::Owned(quote(name))
     } else {
-        text.push_str(name);
-    }
-}
-
-pub(super) fn term_text(name: &str) -> String {
-    if quoted(name) {
-        serde_json::to_string(name).expect("term text")
-    } else {
-        name.into()
+        Cow::Borrowed(name)
     }
 }
 
@@ -207,19 +184,18 @@ mod tests {
 
     #[test]
     fn concepts_links_and_amounts_share_one_input_without_rounding() {
-        let assertions =
-            parse("#planned #depends-on @project, #cost: 9007199254740993.125 @real").unwrap();
-        assert_eq!(assertions.len(), 3);
-        assert_eq!(assertions[1].object.as_deref(), Some("project"));
-        assert_eq!(
-            assertions[2].quantity.as_deref(),
-            Some("9007199254740993.125")
-        );
-        assert_eq!(assertions[2].unit.as_deref(), Some("real"));
+        let assertions = parse("#planned #depends-on @project, #cost: 9007199254740993.125 @real")
+            .expect("mixed draft assertions parse");
+        let [_, dependency, cost] = assertions.as_slice() else {
+            panic!("expected three assertions: {assertions:?}");
+        };
+        assert_eq!(dependency.object.as_deref(), Some("project"));
+        assert_eq!(cost.quantity.as_deref(), Some("9007199254740993.125"));
+        assert_eq!(cost.unit.as_deref(), Some("real"));
         let text = assertions.iter().map(format).collect::<Vec<_>>().join(", ");
         assert_eq!(
-            serde_json::to_value(parse(&text).unwrap()).unwrap(),
-            serde_json::to_value(assertions).unwrap()
+            parse(&text).expect("formatted assertions parse"),
+            assertions
         );
     }
 
@@ -242,10 +218,13 @@ mod tests {
     fn translated_terms_and_completion_identities_are_preserved() {
         let id = nucleus::vocabulary::TOPOS_UID;
         let text = format!("#\"saved geographic place\" ^{id} @street4, #tópos @street4");
-        let assertions = parse(&text).unwrap();
-        assert_eq!(assertions[0].predicate, id);
-        assert_eq!(assertions[0].object.as_deref(), Some("street4"));
-        assert_eq!(assertions[1].predicate, "tópos");
+        let assertions = parse(&text).expect("Unicode terms and completion identity parse");
+        let [saved, translated] = assertions.as_slice() else {
+            panic!("expected two assertions: {assertions:?}");
+        };
+        assert_eq!(saved.predicate, id);
+        assert_eq!(saved.object.as_deref(), Some("street4"));
+        assert_eq!(translated.predicate, "tópos");
         assert!(parse("#\"unfinished").is_err());
     }
 }

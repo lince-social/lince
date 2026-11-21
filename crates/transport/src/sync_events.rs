@@ -1,57 +1,88 @@
-// non-lean-yet
-// Scope: enum SyncEvent, const MAX_FACT_BATCH, struct SyncEvents, mod tests.
-// BeautifulRust (baseline lines):
-// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
-//   next:ephemeral (54).
-// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
-//   non_exhaustive. Sites 5.
-// - [Clippy probe: clippy::large_enum_variant] large size difference between variants. Sites 5.
-// - [Clippy probe: clippy::missing_panics_doc] State the panic conditions for exported functions.
-//   Sites 54.
-// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
-//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 5, 16.
-// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
-//   5, 6, 7, 8, 9, 10, 11, 16, 25, 49, 54.
+//! Merges fact, query, clock, and presence updates for a live session.
 
-use engine::Engine;
+use std::{fmt, time::Duration};
+
+use engine::{Engine, QueryChanges};
 use nucleus::Fact;
-use tokio::sync::{broadcast, watch};
+use tokio::{
+    sync::{
+        broadcast,
+        broadcast::error::{RecvError, TryRecvError},
+        watch,
+    },
+    time::{Interval, MissedTickBehavior, interval},
+};
 
+/// Work available for the live session.
+#[allow(
+    clippy::large_enum_variant,
+    reason = "the public Fact variant carries one fact inline without allocating"
+)]
 pub enum SyncEvent {
+    /// A single new fact.
     Fact(Fact),
+    /// Several consecutive facts in order.
     Facts(Vec<Fact>),
+    /// A full refresh after a general change or missed facts.
     Refresh,
+    /// A projection-only refresh.
     Projection,
+    /// The periodic ephemeral tick.
     Ephemeral,
+    /// A presence update.
     Presence,
+}
+
+impl fmt::Debug for SyncEvent {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            Self::Fact(_) => "Fact(..)",
+            Self::Facts(_) => "Facts(..)",
+            Self::Refresh => "Refresh",
+            Self::Projection => "Projection",
+            Self::Ephemeral => "Ephemeral",
+            Self::Presence => "Presence",
+        })
+    }
 }
 
 const MAX_FACT_BATCH: usize = 64;
 
+/// A live session's independent event receivers and query cursor.
 pub struct SyncEvents {
     facts: broadcast::Receiver<Fact>,
-    queries: watch::Receiver<engine::QueryChanges>,
-    observed_queries: Option<engine::QueryChanges>,
-    ephemeral: tokio::time::Interval,
+    queries: watch::Receiver<QueryChanges>,
+    observed_queries: Option<QueryChanges>,
+    ephemeral: Interval,
     presence: Option<watch::Receiver<u64>>,
 }
 
+impl fmt::Debug for SyncEvents {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("SyncEvents")
+            .field("observed_queries", &self.observed_queries)
+            .field("has_presence", &self.presence.is_some())
+            .finish_non_exhaustive()
+    }
+}
+
 impl SyncEvents {
+    /// Subscribes to the Engine's live events.
+    ///
+    /// # Panics
+    /// Requires a Tokio runtime with time enabled.
     pub fn new(engine: &Engine) -> Self {
         Self::from_receivers(engine.subscribe(), engine.watch_query_changes())
     }
 
     fn from_receivers(
         facts: broadcast::Receiver<Fact>,
-        queries: watch::Receiver<engine::QueryChanges>,
+        queries: watch::Receiver<QueryChanges>,
     ) -> Self {
-        let mut ephemeral = tokio::time::interval(std::time::Duration::from_secs(3));
-        ephemeral.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+        let mut ephemeral = interval(Duration::from_secs(3));
+        ephemeral.set_missed_tick_behavior(MissedTickBehavior::Delay);
         let current = *queries.borrow();
-        let observed_queries = match queries.has_changed() {
-            Ok(false) => Some(current),
-            _ => None,
-        };
+        let observed_queries = matches!(queries.has_changed(), Ok(false)).then_some(current);
         Self {
             facts,
             queries,
@@ -61,21 +92,21 @@ impl SyncEvents {
         }
     }
 
+    /// Adds a source of presence updates.
     pub fn with_presence(mut self, presence: watch::Receiver<u64>) -> Self {
         self.presence = Some(presence);
         self
     }
 
+    /// Waits for the next event. `ephemeral` enables the periodic tick.
     pub async fn next(&mut self, ephemeral: bool) -> Option<SyncEvent> {
         tokio::select! {
-            _ = async { self.presence.as_mut().expect("presence receiver").changed().await }, if self.presence.is_some() => Some(SyncEvent::Presence),
+            // An update or closure on an attached watcher schedules a presence refresh.
+            Some(_) = async { Some(self.presence.as_mut()?.changed().await) } => Some(SyncEvent::Presence),
             fact = self.facts.recv() => match fact {
                 Ok(fact) => Some(self.fact_batch(fact)),
-                Err(broadcast::error::RecvError::Lagged(_)) => {
-                    self.facts = self.facts.resubscribe();
-                    Some(SyncEvent::Refresh)
-                }
-                Err(broadcast::error::RecvError::Closed) => None,
+                Err(RecvError::Lagged(_)) => Some(self.refresh_facts()),
+                Err(RecvError::Closed) => None,
             },
             changed = self.queries.changed() => changed.ok().map(|()| {
                 let current = *self.queries.borrow_and_update();
@@ -94,36 +125,69 @@ impl SyncEvents {
     fn fact_batch(&mut self, first: Fact) -> SyncEvent {
         let second = match self.facts.try_recv() {
             Ok(fact) => fact,
-            Err(broadcast::error::TryRecvError::Empty | broadcast::error::TryRecvError::Closed) => {
-                return SyncEvent::Fact(first);
-            }
-            Err(broadcast::error::TryRecvError::Lagged(_)) => {
-                self.facts = self.facts.resubscribe();
-                return SyncEvent::Refresh;
-            }
+            Err(TryRecvError::Empty | TryRecvError::Closed) => return SyncEvent::Fact(first),
+            Err(TryRecvError::Lagged(_)) => return self.refresh_facts(),
         };
         let mut facts = vec![first, second];
         while facts.len() < MAX_FACT_BATCH {
             match self.facts.try_recv() {
                 Ok(fact) => facts.push(fact),
-                Err(
-                    broadcast::error::TryRecvError::Empty | broadcast::error::TryRecvError::Closed,
-                ) => {
-                    break;
-                }
-                Err(broadcast::error::TryRecvError::Lagged(_)) => {
-                    self.facts = self.facts.resubscribe();
-                    return SyncEvent::Refresh;
-                }
+                Err(TryRecvError::Empty | TryRecvError::Closed) => break,
+                Err(TryRecvError::Lagged(_)) => return self.refresh_facts(),
             }
         }
         SyncEvent::Facts(facts)
+    }
+
+    fn refresh_facts(&mut self) -> SyncEvent {
+        self.facts = self.facts.resubscribe();
+        SyncEvent::Refresh
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use nucleus::{Cause, NewFact, execution::now, fact::seal};
+
+    fn fixture_fact(sequence: usize) -> Fact {
+        let mut draft = NewFact::quantity_f64("fixture-record", 0.0, Cause::user_edit());
+        draft.uid = Some(sequence.to_string());
+        seal(draft, "genesis", now())
+    }
+
+    #[tokio::test]
+    async fn fact_batches_keep_order_and_recover_from_lag() {
+        let (sender, facts) = broadcast::channel(MAX_FACT_BATCH * 2);
+        let (changes, queries) = watch::channel(QueryChanges::default());
+        let mut events = SyncEvents::from_receivers(facts, queries);
+        for sequence in 0..=MAX_FACT_BATCH {
+            sender
+                .send(fixture_fact(sequence))
+                .expect("a live subscriber");
+        }
+        let Some(SyncEvent::Facts(batch)) = events.next(false).await else {
+            panic!("expected a full fact batch");
+        };
+        assert_eq!(batch.len(), MAX_FACT_BATCH);
+        for (sequence, fact) in batch.iter().enumerate() {
+            assert_eq!(fact.uid, sequence.to_string());
+        }
+        assert!(
+            matches!(events.next(false).await, Some(SyncEvent::Fact(fact)) if fact.uid == MAX_FACT_BATCH.to_string())
+        );
+
+        let (sender, facts) = broadcast::channel(2);
+        let mut events = SyncEvents::from_receivers(facts, changes.subscribe());
+        for sequence in 0..3 {
+            sender
+                .send(fixture_fact(sequence))
+                .expect("a live subscriber");
+        }
+        assert!(matches!(events.next(false).await, Some(SyncEvent::Refresh)));
+        sender.send(fixture_fact(3)).expect("a live subscriber");
+        assert!(matches!(events.next(false).await, Some(SyncEvent::Fact(fact)) if fact.uid == "3"));
+    }
 
     #[tokio::test]
     async fn coalesced_general_changes_cannot_be_hidden_by_forecast_notifications() {

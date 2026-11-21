@@ -1,20 +1,15 @@
-// non-lean-yet
-// Scope: fn prefix, fn map_positions, fn scalar_positions, fn byte_positions.
-// BeautifulRust (baseline lines):
-// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
-//   11, 60, 74, 102, 108.
+//! Text slicing and selection utilities for editable and read-only UI.
 
 use std::borrow::Cow;
 
+/// Returns up to `char_limit` Unicode scalar values from the start of the text.
 pub fn prefix(text: &str, char_limit: usize) -> &str {
-    let end = if text.len() > char_limit {
-        text.char_indices()
-            .nth(char_limit)
-            .map_or(text.len(), |(byte, _)| byte)
-    } else {
-        text.len()
-    };
-    &text[..end]
+    if text.len() <= char_limit {
+        return text;
+    }
+    text.char_indices()
+        .nth(char_limit)
+        .map_or(text, |(byte, _)| &text[..byte])
 }
 
 fn map_positions(positions: [usize; 2], mut read: impl FnMut(usize) -> usize) -> [usize; 2] {
@@ -31,6 +26,8 @@ fn map_positions(positions: [usize; 2], mut read: impl FnMut(usize) -> usize) ->
     }
 }
 
+/// Converts anchor and focus byte offsets to scalar offsets, rounding up within a scalar.
+/// Positions past the end clamp to the text length.
 pub fn scalar_positions(mut chars: impl Iterator<Item = char>, bytes: [usize; 2]) -> [usize; 2] {
     let (mut byte, mut scalar) = (0, 0);
     map_positions(bytes, |target| {
@@ -45,6 +42,7 @@ pub fn scalar_positions(mut chars: impl Iterator<Item = char>, bytes: [usize; 2]
     })
 }
 
+/// Converts anchor and focus scalar offsets to byte offsets, clamping to the text length.
 pub fn byte_positions(mut chars: impl Iterator<Item = char>, scalars: [usize; 2]) -> [usize; 2] {
     let (mut byte, mut scalar) = (0, 0);
     map_positions(scalars, |target| {
@@ -59,31 +57,38 @@ pub fn byte_positions(mut chars: impl Iterator<Item = char>, scalars: [usize; 2]
     })
 }
 
+const MAX_PAGE_SCALARS: usize = 16_000;
+const MAX_PAGE_BREAKS: usize = 64;
+
+/// Returns a zero-based page and whether additional text follows.
+/// Each page caps both the scalar count and the number of paragraph breaks.
 pub fn reading_page(text: &str, page: usize, char_limit: usize) -> (&str, bool) {
-    let char_limit = char_limit.clamp(1, 16000);
-    let mut offset = 0;
+    let char_limit = char_limit.clamp(1, MAX_PAGE_SCALARS);
+    let mut remaining = text;
     for index in 0..=page {
-        let tail = &text[offset..];
-        if tail.is_empty() {
-            return ("", false);
+        if remaining.is_empty() {
+            break;
         }
-        let mut end = offset;
+        let mut end = 0;
         let mut paragraphs = 0;
-        for (count, (byte, ch)) in tail.char_indices().enumerate() {
-            end = offset + byte + ch.len_utf8();
+        for (count, (byte, ch)) in remaining.char_indices().enumerate() {
+            end = byte + ch.len_utf8();
             paragraphs += usize::from(matches!(ch, '\n' | '\u{2028}' | '\u{2029}'));
-            if count + 1 == char_limit || paragraphs == 64 {
+            if count + 1 == char_limit || paragraphs == MAX_PAGE_BREAKS {
                 break;
             }
         }
+        // The end comes from a complete scalar in `remaining`.
+        let (part, next) = remaining.split_at(end);
         if index == page {
-            return (&text[offset..end], end < text.len());
+            return (part, !next.is_empty());
         }
-        offset = end;
+        remaining = next;
     }
-    unreachable!()
+    ("", false)
 }
 
+/// Uses the measured width to fit text, adding an ellipsis when space permits.
 pub fn truncate<'a>(text: &'a str, width: f32, measure: impl Fn(&str) -> f32) -> Cow<'a, str> {
     if !width.is_finite() || width <= 0.0 {
         return Cow::Borrowed("");
@@ -103,8 +108,9 @@ pub fn truncate<'a>(text: &'a str, width: f32, measure: impl Fn(&str) -> f32) ->
         .collect();
     let mut low = 0;
     let mut high = boundaries.len();
+    // Low is an index into the nonempty boundary list. High is exclusive.
     while low + 1 < high {
-        let middle = (low + high) / 2;
+        let middle = low.midpoint(high);
         if measure(&text[..boundaries[middle]]) <= remaining {
             low = middle;
         } else {

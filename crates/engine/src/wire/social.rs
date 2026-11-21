@@ -128,6 +128,7 @@ impl Wire {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use iroh::SecretKey;
     use std::{sync::Arc, time::Duration};
 
     async fn slots(wire: &Wire, available: usize) {

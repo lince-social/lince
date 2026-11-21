@@ -10,7 +10,11 @@ extern crate self as lince_interface;
 pub mod testing;
 
 #[cfg(feature = "models")]
-pub mod transfers;
+pub use lince_presentation_models::{
+    calendar, frequency, karma, markup, organ, presentation, qr, queries, records, terrain,
+    time_castle, transfers,
+};
+pub use lince_presentation_models::{settings, sound, tokens};
 
 #[cfg(feature = "map-presentation")]
 pub mod map_navigation;
@@ -23,22 +27,14 @@ pub mod credits;
 pub use lince_practice::{content, handbook, practice};
 #[cfg(feature = "activation")]
 pub mod activation;
-pub mod host;
+pub use lince_host::{self as host, layout};
 pub use lince_i18n as i18n;
 #[cfg(feature = "images")]
 pub mod images;
 #[cfg(feature = "ui")]
 pub mod ithkuil;
-pub mod layout;
 pub mod motion;
-pub mod settings;
-pub mod sound;
-#[cfg(feature = "models")]
-pub mod terrain;
 pub mod text;
-
-#[cfg(feature = "models")]
-pub mod presentation;
 
 #[cfg(feature = "ui")]
 pub mod controls;
@@ -48,30 +44,28 @@ pub mod location;
 pub mod style;
 #[cfg(feature = "ui")]
 pub mod theme;
-pub mod tokens;
 #[cfg(feature = "ui")]
 pub mod visibility;
 #[cfg(feature = "ui")]
 pub mod wake;
 
-#[cfg(feature = "models")]
-pub mod calendar;
-#[cfg(feature = "models")]
-pub mod frequency;
-#[cfg(feature = "models")]
-pub mod karma;
-#[cfg(feature = "models")]
-pub mod markup;
-#[cfg(feature = "models")]
-pub mod organ;
-#[cfg(feature = "models")]
-pub mod qr;
-#[cfg(feature = "models")]
-pub mod queries;
-#[cfg(feature = "models")]
-pub mod records;
-#[cfg(feature = "models")]
-pub mod time_castle;
+#[cfg(any(feature = "native-presentation", all(test, feature = "ui")))]
+mod record_date_order;
+
+#[cfg(any(feature = "native-presentation", test))]
+mod monitor_arrangement;
+
+#[cfg(any(feature = "native-presentation", test))]
+mod pixel_scale;
+
+#[cfg(any(feature = "native-presentation", test))]
+mod record_splice;
+
+#[cfg(any(feature = "native-presentation", all(test, feature = "ui")))]
+mod work_timer_logs;
+
+#[cfg(any(feature = "native-presentation", test))]
+mod workspace_save_queue;
 
 #[cfg(feature = "native-presentation")]
 pub mod native;

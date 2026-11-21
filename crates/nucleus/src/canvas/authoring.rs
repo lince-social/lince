@@ -1,29 +1,23 @@
-// non-lean-yet
-// Scope: enum TokenValue, enum Measure, struct Style, struct PartEdit.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
-//   Sites 348.
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 386, 395, 398,
-//   404, 414, 474, 482, 490, 656, 674, 694.
-// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
-//   Sites 4, 16, 512.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 52, 217, 226, 383, 556, 634, 699.
-// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
-//   conventions. Sites 1.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 5,
-//   6, 16, 17, 18, 19, 20, 21, 22, 23, 27, 42, 44, 46, 48, 52, 135, 136, 137, 139, 141, 143, 145,
-//   146, 147, 148, 149, 150, 152, 154, 159, 160, 161, 162, 167, 168, 169, 170, 171, 172, 173, 174,
-//   175, 176, 177, 182, 183, 184, 185, 186, 191, 192, 193, 194, 195, 196, 201, 202, 204, 206, 208,
-//   210, 212, 214, 217, 226, 383, 512, 513, 514, 515, 517, 518, 520, 521, 522, 524, 525, 526, 528,
-//   529, 530, 532, 533, 534, 536, 537, 539, 540, 541, 543, 544, 546, 547, 548, 550, 551, 556, 576,
-//   577, 578, 579, 580, 581, 582, 583, 584, 588, 589, 590, 591, 592, 593, 594, 595, 596, 597, 598,
-//   599, 600, 601, 602, 603, 607, 608, 609, 610, 611, 612, 613, 616, 623, 627, 634, 699.
-// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites apply: String
-//   (383), hash: String (699), part_id: String (217), rebind: String (634), validate: String (52,
-//   226, 556).
+//! Authored component edits, layout settings, and inspected parts.
+//!
+//! [Edits] describes a stored editing layer.
+//! [Change] describes one operation on that layer.
 
-use super::*;
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    ops::ControlFlow,
+};
+
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+use serde_json::{Value, to_value};
+
+use crate::json::sha256_hex;
+
+use super::{Component, Geometry, Placement};
+
+mod changes;
+mod layout;
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub enum TokenValue {
@@ -48,20 +42,6 @@ pub enum Measure {
     Vmax(f32),
 }
 
-impl Measure {
-    pub fn validate(&self) -> bool {
-        match self {
-            Self::Auto => true,
-            Self::Px(value)
-            | Self::Percent(value)
-            | Self::Vw(value)
-            | Self::Vh(value)
-            | Self::Vmin(value)
-            | Self::Vmax(value) => value.is_finite() && value.abs() <= 100_000.0,
-        }
-    }
-}
-
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Style {
@@ -71,88 +51,6 @@ pub struct Style {
     pub numbers: BTreeMap<String, f32>,
     #[serde(default)]
     pub choices: BTreeMap<String, String>,
-}
-
-impl Style {
-    pub fn validate(&self) -> Result<(), String> {
-        for (key, value) in &self.dimensions {
-            if !matches!(
-                key.as_str(),
-                "width"
-                    | "height"
-                    | "min-width"
-                    | "min-height"
-                    | "max-width"
-                    | "max-height"
-                    | "flex-basis"
-                    | "left"
-                    | "right"
-                    | "top"
-                    | "bottom"
-                    | "row-gap"
-                    | "column-gap"
-                    | "padding-left"
-                    | "padding-right"
-                    | "padding-top"
-                    | "padding-bottom"
-                    | "margin-left"
-                    | "margin-right"
-                    | "margin-top"
-                    | "margin-bottom"
-                    | "border-left"
-                    | "border-right"
-                    | "border-top"
-                    | "border-bottom"
-            ) || !value.validate()
-            {
-                return Err(format!("Unsupported or invalid layout dimension: {key}."));
-            }
-        }
-        for (key, value) in &self.numbers {
-            if !matches!(key.as_str(), "flex-grow" | "flex-shrink" | "aspect-ratio")
-                || !value.is_finite()
-                || !(0.0..=10_000.0).contains(value)
-                || key == "aspect-ratio" && *value == 0.0
-            {
-                return Err(format!("Unsupported or invalid layout number: {key}."));
-            }
-        }
-        for (key, value) in &self.choices {
-            let allowed: &[&str] = match key.as_str() {
-                "display" => &["flex", "none", "grid"],
-                "direction" => &["row", "column", "row-reverse", "column-reverse"],
-                "wrap" => &["wrap", "no-wrap", "wrap-reverse"],
-                "position" => &["relative", "absolute"],
-                "align-items" | "align-self" => &[
-                    "default",
-                    "start",
-                    "end",
-                    "flex-start",
-                    "flex-end",
-                    "center",
-                    "stretch",
-                    "baseline",
-                ],
-                "justify-content" => &[
-                    "default",
-                    "start",
-                    "end",
-                    "flex-start",
-                    "flex-end",
-                    "center",
-                    "space-between",
-                    "space-around",
-                    "space-evenly",
-                ],
-                "overflow-x" | "overflow-y" => &["visible", "clip", "hidden", "scroll"],
-                _ => &[],
-            };
-            if !allowed.contains(&value.as_str()) {
-                return Err(format!("Unsupported layout choice: {key}={value}."));
-            }
-        }
-        Ok(())
-    }
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
@@ -167,11 +65,11 @@ pub struct PartEdit {
     #[serde(default)]
     pub token_uses: BTreeMap<String, String>,
     #[serde(default)]
-    pub settings: BTreeMap<String, serde_json::Value>,
+    pub settings: BTreeMap<String, Value>,
     pub text: Option<String>,
     pub native_actions_enabled: Option<bool>,
     pub geometry: Option<Geometry>,
-    pub layout: Option<serde_json::Value>,
+    pub layout: Option<Value>,
     pub layout_parent: Option<String>,
     #[serde(default)]
     pub layout_detached: bool,
@@ -198,7 +96,7 @@ pub struct PartDefaults {
     pub text: Option<String>,
     pub geometry: Option<Geometry>,
     pub aspect_ratio: Option<Measure>,
-    pub layout: Option<serde_json::Value>,
+    pub layout: Option<Value>,
     pub layout_parent: Option<String>,
 }
 
@@ -207,7 +105,7 @@ pub struct PartDefaults {
 pub struct Behavior {
     pub part: String,
     pub event: String,
-    pub action: serde_json::Value,
+    pub action: Value,
     pub enabled: bool,
 }
 
@@ -239,294 +137,14 @@ pub struct Edits {
     pub groups: BTreeMap<String, Vec<String>>,
 }
 
+/// Checks the stable identifier of an authored component part.
+///
+/// # Errors
+///
+/// Returns an error for an empty, oversized, or control-character-containing identifier.
 pub fn part_id(id: &str) -> Result<(), String> {
     if id.is_empty() || id.len() > 512 || id.chars().any(char::is_control) {
         Err("Use a nonempty stable part identity of at most 512 bytes.".into())
-    } else {
-        Ok(())
-    }
-}
-
-impl Edits {
-    pub fn validate(&self, _registry: &[Descriptor]) -> Result<(), String> {
-        if let Some(size) = self.size {
-            Geometry {
-                position: [0.0; 2],
-                size,
-            }
-            .validate()?;
-        }
-        if self.defaults.len() > 512 {
-            return Err("Factory defaults exceed 512 edited parts.".into());
-        }
-        for (id, defaults) in &self.defaults {
-            part_id(id)?;
-            defaults.style.validate()?;
-            if let Some(geometry) = &defaults.geometry {
-                geometry.validate()?;
-            }
-            if defaults.tokens.len() > 64
-                || defaults.token_uses.len() > 16
-                || defaults.order > 2048
-                || defaults
-                    .text
-                    .as_ref()
-                    .is_some_and(|text| text.len() > 65536)
-            {
-                return Err("Invalid authored defaults.".into());
-            }
-        }
-        if self.parts.len() + self.added.len() > 512
-            || self.behaviors.len() > 128
-            || self.links.len() > 128
-        {
-            return Err(
-                "An editing layer supports 512 part entries and 128 behaviors or links.".into(),
-            );
-        }
-        for (id, edit) in &self.parts {
-            part_id(id)?;
-            edit.style.validate()?;
-            if let Some(geometry) = &edit.geometry {
-                geometry.validate()?;
-            }
-            if let Some(parent) = &edit.parent {
-                part_id(parent)?;
-            }
-            if let Some(parent) = &edit.layout_parent {
-                part_id(parent)?;
-                if parent == id || edit.layout_detached {
-                    return Err(
-                        "Layout attachment needs a distinct parent and cannot also detach.".into(),
-                    );
-                }
-            }
-            if edit.order.is_some_and(|order| order > 512)
-                || edit.tokens.len() > 64
-                || edit.token_uses.len() > 16
-            {
-                return Err("Part edits exceed their bounds.".into());
-            }
-            if edit.settings.len() > 64 || edit.text.as_ref().is_some_and(|text| text.len() > 65536)
-            {
-                return Err("Part text or settings exceed their bounds.".into());
-            }
-            for (token, value) in &edit.tokens {
-                part_id(token)?;
-                if matches!(value, TokenValue::Number(value) if !value.is_finite()) {
-                    return Err("Token values must be finite.".into());
-                }
-            }
-            for (usage, token) in &edit.token_uses {
-                if !matches!(
-                    usage.as_str(),
-                    "background"
-                        | "border"
-                        | "text"
-                        | "outline"
-                        | "cursor"
-                        | "font-size"
-                        | "spacing"
-                        | "padding"
-                        | "icon-size"
-                        | "icon-padding"
-                ) {
-                    return Err("Unsupported token use.".into());
-                }
-                part_id(token)?;
-            }
-        }
-        for (id, part) in &self.added {
-            if !id.starts_with("user/") {
-                return Err("New part identities start with user/.".into());
-            }
-            part_id(id)?;
-            part_id(&part.parent)?;
-            Geometry {
-                position: [0.0; 2],
-                size: part.size,
-            }
-            .validate()?;
-        }
-        for id in self.parts.keys().chain(self.added.keys()) {
-            let mut seen = BTreeSet::from([id.as_str()]);
-            let mut parent = self
-                .parts
-                .get(id)
-                .and_then(|edit| edit.parent.as_deref())
-                .or_else(|| self.added.get(id).map(|part| part.parent.as_str()));
-            while let Some(current) = parent {
-                if !seen.insert(current) || seen.len() > 32 {
-                    return Err("Part ownership cannot contain cycles or exceed 32 levels.".into());
-                }
-                parent = self
-                    .parts
-                    .get(current)
-                    .and_then(|edit| edit.parent.as_deref())
-                    .or_else(|| self.added.get(current).map(|part| part.parent.as_str()));
-            }
-        }
-        for (id, behavior) in &self.behaviors {
-            part_id(id)?;
-            part_id(&behavior.part)?;
-            event_name(&behavior.event)?;
-            if !behavior.action.is_object() || !behavior.action["action"].is_string() {
-                return Err("A behavior uses an ordinary registered Lince Action.".into());
-            }
-        }
-        for (id, link) in &self.links {
-            part_id(id)?;
-            part_id(&link.from)?;
-            part_id(&link.to)?;
-            event_name(&link.event)?;
-            event_name(&link.receive)?;
-        }
-        if self.groups.len() > 64 {
-            return Err("An item supports at most 64 transform groups.".into());
-        }
-        let mut members = BTreeSet::new();
-        for (id, group) in &self.groups {
-            if id.len() != 32
-                || !id.bytes().all(|byte| byte.is_ascii_hexdigit())
-                || group.is_empty()
-                || group.len() > 256
-            {
-                return Err(
-                    "A transform group has a hexadecimal identity and 1–256 members.".into(),
-                );
-            }
-            for member in group {
-                part_id(member)?;
-                if !members.insert(member) {
-                    return Err("A part belongs to at most one authored transform group.".into());
-                }
-            }
-        }
-        bounded(self)
-    }
-
-    pub fn apply(&mut self, change: &Change) -> Result<(), String> {
-        match change {
-            Change::SetPart { part, edit } => {
-                self.parts.insert(part.clone(), edit.clone());
-            }
-            Change::ResetPart { part } => {
-                self.parts.remove(part);
-            }
-            Change::InsertPart { part, definition } => {
-                if self.added.contains_key(part) {
-                    return Err("This authored part already exists.".into());
-                }
-                self.added.insert(part.clone(), definition.clone());
-            }
-            Change::ConfigurePart { part, component } => {
-                self.added.get_mut(part).ok_or("Configure an authored part's factory; use its registered settings for renderer-owned parts.")?.component = component.clone();
-            }
-            Change::RemovePart { part, cascade } => {
-                if part == "root" {
-                    return Err("Remove the placement to delete its root.".into());
-                }
-                let mut removed = BTreeSet::from([part.clone()]);
-                loop {
-                    let count = removed.len();
-                    for (id, definition) in &self.added {
-                        let parent = self
-                            .parts
-                            .get(id)
-                            .and_then(|edit| edit.parent.as_ref())
-                            .unwrap_or(&definition.parent);
-                        if removed.contains(parent) {
-                            removed.insert(id.clone());
-                        }
-                    }
-                    if count == removed.len() {
-                        break;
-                    }
-                }
-                let references = self
-                    .links
-                    .values()
-                    .any(|link| removed.contains(&link.from) || removed.contains(&link.to))
-                    || self
-                        .behaviors
-                        .values()
-                        .any(|behavior| removed.contains(&behavior.part))
-                    || self
-                        .groups
-                        .values()
-                        .any(|group| group.iter().any(|member| removed.contains(member)))
-                    || self.parts.iter().any(|(id, edit)| {
-                        !removed.contains(id)
-                            && edit
-                                .parent
-                                .as_ref()
-                                .is_some_and(|parent| removed.contains(parent))
-                    });
-                if !cascade && (removed.len() > 1 || references) {
-                    return Err("This part has children or incoming references; use an explicit cascade or detach them first.".into());
-                }
-                if references && *cascade {
-                    self.links.retain(|_, link| {
-                        !removed.contains(&link.from) && !removed.contains(&link.to)
-                    });
-                    self.behaviors
-                        .retain(|_, behavior| !removed.contains(&behavior.part));
-                    for group in self.groups.values_mut() {
-                        group.retain(|member| !removed.contains(member));
-                    }
-                    self.groups.retain(|_, members| !members.is_empty());
-                    for edit in self.parts.values_mut() {
-                        if edit
-                            .parent
-                            .as_ref()
-                            .is_some_and(|parent| removed.contains(parent))
-                        {
-                            edit.parent = None;
-                        }
-                    }
-                }
-                for id in removed {
-                    self.parts.remove(&id);
-                    if self.added.remove(&id).is_none() {
-                        self.parts.entry(id).or_default().removed = true;
-                    } else {
-                        self.defaults
-                            .retain(|part, _| part != &id && !part.starts_with(&format!("{id}/")));
-                    }
-                }
-            }
-            Change::SetBehavior { id, behavior } => {
-                self.behaviors.insert(id.clone(), behavior.clone());
-            }
-            Change::RemoveBehavior { id } => {
-                if self.behaviors.remove(id).is_none() {
-                    return Err("This behavior does not exist.".into());
-                }
-            }
-            Change::SetLink { id, link } => {
-                self.links.insert(id.clone(), link.clone());
-            }
-            Change::RemoveLink { id } => {
-                if self.links.remove(id).is_none() {
-                    return Err("This link does not exist.".into());
-                }
-            }
-            Change::SetGroup { id, members } => {
-                self.groups.insert(id.clone(), members.clone());
-            }
-            Change::RemoveGroup { id } => {
-                if self.groups.remove(id).is_none() {
-                    return Err("This transform group does not exist.".into());
-                }
-            }
-        }
-        Ok(())
-    }
-}
-
-fn event_name(name: &str) -> Result<(), String> {
-    if name.is_empty() || name.len() > 128 || name.chars().any(char::is_control) {
-        Err("Use an event name of 1–128 bytes.".into())
     } else {
         Ok(())
     }
@@ -577,26 +195,6 @@ pub enum Change {
     },
 }
 
-impl Change {
-    pub fn validate(&self) -> Result<(), String> {
-        let id = match self {
-            Self::SetPart { part, .. }
-            | Self::ResetPart { part }
-            | Self::InsertPart { part, .. }
-            | Self::ConfigurePart { part, .. }
-            | Self::RemovePart { part, .. } => part,
-            Self::SetBehavior { id, .. }
-            | Self::RemoveBehavior { id }
-            | Self::SetLink { id, .. }
-            | Self::RemoveLink { id }
-            | Self::SetGroup { id, .. }
-            | Self::RemoveGroup { id } => id,
-        };
-        part_id(id)?;
-        bounded(self)
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct TokenInfo {
     pub token: String,
@@ -619,11 +217,11 @@ pub struct PartInfo {
     pub measured_size: [f32; 2],
     pub geometry: Option<Geometry>,
     pub group: Option<String>,
-    pub layout: Option<serde_json::Value>,
+    pub layout: Option<Value>,
     pub layout_parent: Option<String>,
     pub tokens: Vec<TokenInfo>,
     pub text: Option<String>,
-    pub settings: serde_json::Value,
+    pub settings: Value,
     pub removed: bool,
     pub structural_reason: Option<String>,
 }
@@ -638,6 +236,7 @@ pub struct Element {
     pub capabilities: Vec<String>,
 }
 
+/// Borrows the component without its editing layer.
 pub fn base(component: &Component) -> &Component {
     match component {
         Component::Authored { base, .. } => base,
@@ -645,10 +244,12 @@ pub fn base(component: &Component) -> &Component {
     }
 }
 
+/// Clones the stored editing layer, or creates an empty one.
 pub fn edits(component: &Component) -> Edits {
     edits_ref(component).cloned().unwrap_or_default()
 }
 
+/// Borrows the stored editing layer, when present.
 pub fn edits_ref(component: &Component) -> Option<&Edits> {
     match component {
         Component::Authored { edits, .. } => Some(edits),
@@ -656,17 +257,26 @@ pub fn edits_ref(component: &Component) -> Option<&Edits> {
     }
 }
 
+/// Returns a copy with matching declared Record bindings replaced.
+///
+/// # Errors
+///
+/// Returns an error for undeclared bindings or typed native settings that embed a binding.
 pub fn rebind(
     component: &Component,
     records: &BTreeMap<String, String>,
 ) -> Result<Component, String> {
     if !records.is_empty() {
-        let mut declared = component.records();
-        declared.sort_unstable();
-        if records
-            .keys()
-            .any(|record| declared.binary_search(&record.as_str()).is_err())
-        {
+        let mut missing: BTreeSet<_> = records.keys().map(String::as_str).collect();
+        let _ = component.visit_records(&mut |record| {
+            missing.remove(record);
+            if missing.is_empty() {
+                ControlFlow::Break(())
+            } else {
+                ControlFlow::Continue(())
+            }
+        });
+        if !missing.is_empty() {
             return Err("Rebinding keys must be declared Record bindings in this item.".into());
         }
     }
@@ -676,11 +286,11 @@ pub fn rebind(
     ) -> Result<(), String> {
         match component {
             Component::Builtin { state } => {
-                for binding in state.records_mut() {
+                state.visit_records_mut(&mut |binding| {
                     if let Some(record) = records.get(binding) {
-                        *binding = record.clone();
+                        binding.clone_from(record);
                     }
-                }
+                });
             }
             Component::Native {
                 bindings, settings, ..
@@ -696,7 +306,7 @@ pub fn rebind(
                 }
                 for binding in bindings {
                     if let Some(record) = records.get(binding) {
-                        *binding = record.clone();
+                        binding.clone_from(record);
                     }
                 }
             }
@@ -721,26 +331,13 @@ pub fn rebind(
     Ok(component)
 }
 
+/// Returns the lowercase SHA-256 digest of JSON with recursively sorted object keys.
+///
+/// # Errors
+///
+/// Returns an error if the value cannot be serialized.
 pub fn hash(value: &impl Serialize) -> Result<String, String> {
-    fn canonical(value: serde_json::Value) -> serde_json::Value {
-        match value {
-            serde_json::Value::Object(values) => {
-                let sorted: BTreeMap<_, _> = values
-                    .into_iter()
-                    .map(|(key, value)| (key, canonical(value)))
-                    .collect();
-                serde_json::Value::Object(sorted.into_iter().collect())
-            }
-            serde_json::Value::Array(values) => {
-                serde_json::Value::Array(values.into_iter().map(canonical).collect())
-            }
-            value => value,
-        }
-    }
-    let value = canonical(serde_json::to_value(value).map_err(|error| error.to_string())?);
-    Ok(crate::json::sha256(&value)
-        .map_err(|error| error.to_string())?
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect())
+    let mut value = to_value(value).map_err(|error| error.to_string())?;
+    value.sort_all_objects();
+    sha256_hex(&value).map_err(|error| error.to_string())
 }

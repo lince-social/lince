@@ -1,0 +1,975 @@
+// non-lean-yet
+
+use crossbeam_queue::ArrayQueue;
+#[cfg(feature = "backend")]
+use lince_instrumentation::{Reading as BackendReading, install as install_observer};
+use serde::Serialize;
+
+mod accounting;
+pub use accounting::{Coverage, Phase, SystemReading, SystemThreadReading, TimingKind};
+use std::{
+    collections::BTreeMap,
+    sync::{
+        Mutex, OnceLock,
+        atomic::{AtomicBool, AtomicU64, Ordering},
+        mpsc::{SyncSender, sync_channel},
+    },
+    time::{Duration, Instant, SystemTime},
+};
+
+const LIMITS_US: [u64; 32] = [
+    10,
+    25,
+    50,
+    100,
+    250,
+    500,
+    750,
+    1_000,
+    1_500,
+    2_000,
+    2_500,
+    3_000,
+    4_000,
+    5_000,
+    6_000,
+    8_000,
+    10_000,
+    12_000,
+    14_000,
+    16_000,
+    16_667,
+    20_000,
+    25_000,
+    33_334,
+    40_000,
+    50_000,
+    66_667,
+    100_000,
+    200_000,
+    500_000,
+    1_000_000,
+    u64::MAX,
+];
+
+macro_rules! catalog {
+    ($(#[$attribute:meta])* $name:ident, $visibility:vis, {
+        $($variant:ident => $label:literal),* $(,)?
+    }) => {
+        $(#[$attribute])*
+        #[repr(usize)]
+        pub enum $name { $($variant,)* }
+
+        impl $name {
+            pub const ALL: &'static [Self] = &[$(Self::$variant,)*];
+            const NAMES: &'static [&'static str] = &[$(stringify!($variant),)*];
+
+            $visibility fn label(self) -> &'static str {
+                match self { $(Self::$variant => $label,)* }
+            }
+
+            pub fn from_label(label: &str) -> Option<Self> {
+                match label { $($label => Some(Self::$variant),)* _ => None }
+            }
+        }
+
+        impl std::fmt::Debug for $name {
+            fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str(Self::NAMES[*self as usize])
+            }
+        }
+    };
+}
+
+mod counters;
+mod stages;
+pub use counters::Count;
+pub use stages::Stage;
+
+#[derive(Default)]
+struct Distribution {
+    count: u64,
+    total_us: u64,
+    maximum_us: u64,
+    buckets: [u64; LIMITS_US.len()],
+}
+
+impl Distribution {
+    fn merge(&mut self, other: Self) {
+        self.count = self.count.saturating_add(other.count);
+        self.total_us = self.total_us.saturating_add(other.total_us);
+        self.maximum_us = self.maximum_us.max(other.maximum_us);
+        for (target, value) in self.buckets.iter_mut().zip(other.buckets) {
+            *target = target.saturating_add(value);
+        }
+    }
+
+    fn record(&mut self, duration: Duration) {
+        let micros = duration.as_micros().min(u128::from(u64::MAX)) as u64;
+        self.count = self.count.saturating_add(1);
+        self.total_us = self.total_us.saturating_add(micros);
+        self.maximum_us = self.maximum_us.max(micros);
+        let bucket = LIMITS_US
+            .partition_point(|limit| *limit < micros)
+            .min(LIMITS_US.len() - 1);
+        self.buckets[bucket] = self.buckets[bucket].saturating_add(1);
+    }
+
+    fn percentile(&self, percent: u64) -> u64 {
+        let needed = (u128::from(self.count) * u128::from(percent)).div_ceil(100);
+        let mut observed = 0_u128;
+        for (limit, count) in LIMITS_US.into_iter().zip(self.buckets) {
+            observed += u128::from(count);
+            if observed >= needed {
+                return limit.min(self.maximum_us);
+            }
+        }
+        self.maximum_us
+    }
+
+    fn report(self, stage: &'static str) -> Reading {
+        Reading {
+            stage,
+            count: self.count,
+            total_us: self.total_us,
+            maximum_us: self.maximum_us,
+            p50_upper_us: self.percentile(50),
+            p95_upper_us: self.percentile(95),
+            p99_upper_us: self.percentile(99),
+            kind: TimingKind::for_label(stage),
+            buckets: self.buckets,
+        }
+    }
+}
+
+#[derive(Serialize)]
+pub struct Reading {
+    pub stage: &'static str,
+    pub kind: TimingKind,
+    pub buckets: [u64; LIMITS_US.len()],
+    pub count: u64,
+    pub total_us: u64,
+    pub maximum_us: u64,
+    pub p50_upper_us: u64,
+    pub p95_upper_us: u64,
+    pub p99_upper_us: u64,
+}
+
+#[derive(Default)]
+struct Output {
+    previous: Option<Duration>,
+    hardware_clock: Option<bool>,
+    intervals: Distribution,
+    presentations: u64,
+    stages: BTreeMap<usize, Distribution>,
+}
+
+#[derive(Serialize)]
+pub struct OutputReading {
+    pub output: u64,
+    pub presentations: u64,
+    pub clock: &'static str,
+    pub interval: Reading,
+    pub stages: Vec<Reading>,
+}
+
+#[derive(Serialize)]
+pub struct Report {
+    pub schema_version: u32,
+    pub counter_catalog: Vec<&'static str>,
+    pub histogram_limits_us: &'static [u64],
+    pub process: u32,
+    pub capture_started_unix_ns: String,
+    pub revision: &'static str,
+    pub optimized: bool,
+    pub workload: Option<&'static str>,
+    pub phase: &'static str,
+    pub sequence: u64,
+    pub window_started_us: u64,
+    pub window_ended_us: u64,
+    pub final_report: bool,
+    pub systems: Vec<SystemReading>,
+    pub render_diagnostics: Vec<RenderDiagnostic>,
+    pub spans: Vec<SpanReading>,
+    pub dropped_span_trace: u64,
+    pub dropped_system_samples: u64,
+    pub coverage: Vec<Coverage>,
+    #[serde(skip)]
+    completion: Option<SyncSender<()>>,
+    pub elapsed_us: u64,
+    pub dropped_reports: u64,
+    pub stages: Vec<Reading>,
+    pub outputs: Vec<OutputReading>,
+    pub counters: Vec<CountReading>,
+    pub input_trace: Vec<InputTrace>,
+    pub dropped_input_trace: u64,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub park_frames: Vec<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dropped_park_frames: Option<u64>,
+}
+
+#[derive(Clone, Copy, Debug, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum InputStage {
+    Dispatch,
+    NativeEnqueued,
+    NativeDequeued,
+    NativeDelivered,
+    FramePrepared,
+    GpuReady,
+    Published,
+    PresentedDrm,
+    PresentedObserved,
+    ClientForwarded,
+    ClientProxyDrm,
+    ClientProxyObserved,
+}
+
+#[derive(Clone, Copy, Debug, Serialize)]
+pub struct InputTrace {
+    pub stage: InputStage,
+    pub origin: u64,
+    pub origin_us: u64,
+    pub observed_us: u64,
+    pub input_serial: u64,
+    pub pointer_serial: u64,
+    pub frame: u64,
+    pub output: Option<u64>,
+}
+
+#[derive(Serialize)]
+pub struct SpanReading {
+    pub stage: &'static str,
+    pub started_us: u64,
+    pub ended_us: u64,
+    pub start_thread: u64,
+    pub end_thread: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub operation: Option<u64>,
+}
+
+#[derive(Serialize)]
+pub struct RenderDiagnostic {
+    pub path: String,
+    pub unit: std::borrow::Cow<'static, str>,
+    pub count: u64,
+    pub total: f64,
+    pub maximum: f64,
+    pub published_us: u64,
+    pub source_frame: Option<u64>,
+    pub identity: &'static str,
+}
+
+const SPAN_TRACE_LIMIT: usize = 16_384;
+const SYSTEM_LIMIT: usize = 2048;
+const SYSTEM_SHARDS: usize = 16;
+
+thread_local! {
+    static THREAD_ID: u64 = {
+        static NEXT: AtomicU64 = AtomicU64::new(1);
+        NEXT.fetch_add(1, Ordering::Relaxed)
+    };
+}
+
+pub fn thread_id() -> u64 {
+    THREAD_ID.with(|id| *id)
+}
+
+const INPUT_TRACE_LIMIT: usize = 1024;
+const PARK_FRAME_TRACE_LIMIT: usize = 1024;
+
+#[derive(Serialize)]
+pub struct CountReading {
+    pub counter: &'static str,
+    pub count: u64,
+}
+
+struct Monitor {
+    stages: Vec<Mutex<Distribution>>,
+    systems: [Mutex<BTreeMap<String, accounting::SystemSample>>; SYSTEM_SHARDS],
+    render_diagnostics: Mutex<BTreeMap<String, RenderDiagnostic>>,
+    spans: ArrayQueue<SpanReading>,
+    dropped_span_trace: AtomicU64,
+    dropped_system_samples: AtomicU64,
+    snapshot_at_us: AtomicU64,
+    sequence: AtomicU64,
+    flushing: Mutex<()>,
+    finalized: AtomicBool,
+    phase: AtomicU64,
+    workload: Mutex<Option<&'static str>>,
+    outputs: Mutex<BTreeMap<u64, Output>>,
+    started: Instant,
+    capture_started_unix_ns: String,
+    reported_at_us: AtomicU64,
+    dropped_reports: AtomicU64,
+    sender: Option<SyncSender<Report>>,
+    counters: Vec<AtomicU64>,
+    input_trace: ArrayQueue<InputTrace>,
+    dropped_input_trace: AtomicU64,
+    park_frames: Option<ArrayQueue<serde_json::Value>>,
+    dropped_park_frames: AtomicU64,
+}
+
+impl Monitor {
+    #[cfg(feature = "backend")]
+    fn backend(&self, reading: BackendReading) {
+        match reading {
+            BackendReading::Elapsed(label, elapsed) => {
+                if let Some(stage) = Stage::from_label(label) {
+                    self.record(stage, elapsed);
+                }
+            }
+            BackendReading::Count(label, count) => {
+                if let Some(counter) = Count::from_label(label) {
+                    self.counters[counter as usize].fetch_add(count, Ordering::Relaxed);
+                }
+            }
+            BackendReading::Mark(label, operation) => {
+                if let Some(stage) = Stage::from_label(label) {
+                    let now = self.timestamp(Instant::now());
+                    let thread = thread_id();
+                    self.trace_span(SpanReading {
+                        stage: stage.label(),
+                        started_us: now,
+                        ended_us: now,
+                        start_thread: thread,
+                        end_thread: thread,
+                        operation: Some(operation),
+                    });
+                }
+            }
+        }
+    }
+
+    fn timestamp(&self, at: Instant) -> u64 {
+        at.saturating_duration_since(self.started)
+            .as_micros()
+            .min(u128::from(u64::MAX)) as u64
+    }
+
+    fn new(sender: Option<SyncSender<Report>>) -> Self {
+        Self {
+            stages: Stage::ALL
+                .iter()
+                .map(|_| Mutex::new(Distribution::default()))
+                .collect(),
+            outputs: Mutex::new(BTreeMap::new()),
+            systems: std::array::from_fn(|_| Mutex::new(BTreeMap::new())),
+            render_diagnostics: Mutex::new(BTreeMap::new()),
+            spans: ArrayQueue::new(SPAN_TRACE_LIMIT),
+            dropped_span_trace: AtomicU64::new(0),
+            dropped_system_samples: AtomicU64::new(0),
+            snapshot_at_us: AtomicU64::new(0),
+            sequence: AtomicU64::new(0),
+            flushing: Mutex::new(()),
+            finalized: AtomicBool::new(false),
+            phase: AtomicU64::new(0),
+            workload: Mutex::new(None),
+            started: Instant::now(),
+            capture_started_unix_ns: SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_nanos()
+                .to_string(),
+            reported_at_us: AtomicU64::new(0),
+            dropped_reports: AtomicU64::new(0),
+            sender,
+            counters: Count::ALL.iter().map(|_| AtomicU64::new(0)).collect(),
+            input_trace: ArrayQueue::new(INPUT_TRACE_LIMIT),
+            dropped_input_trace: AtomicU64::new(0),
+            park_frames: std::env::var_os("LINCE_PARK_TRACE_FRAMES")
+                .map(|_| ArrayQueue::new(PARK_FRAME_TRACE_LIMIT)),
+            dropped_park_frames: AtomicU64::new(0),
+        }
+    }
+
+    fn record(&self, stage: Stage, duration: Duration) {
+        self.stages[stage as usize]
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .record(duration);
+    }
+
+    fn record_output(&self, stage: Stage, output: u64, duration: Duration) {
+        self.record(stage, duration);
+        let mut outputs = self
+            .outputs
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        if outputs.len() >= 16 && !outputs.contains_key(&output) {
+            self.counters[Count::TimingCapacity as usize].fetch_add(1, Ordering::Relaxed);
+            return;
+        }
+        outputs
+            .entry(output)
+            .or_default()
+            .stages
+            .entry(stage as usize)
+            .or_default()
+            .record(duration);
+    }
+
+    fn presented(&self, output: u64, timestamp: Duration, hardware_clock: bool) {
+        let mut outputs = self
+            .outputs
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        if outputs.len() >= 16 && !outputs.contains_key(&output) {
+            return;
+        }
+        let output = outputs.entry(output).or_default();
+        if output.hardware_clock != Some(hardware_clock) {
+            output.previous = None;
+            output.intervals = Distribution::default();
+            output.hardware_clock = Some(hardware_clock);
+        }
+        if let Some(previous) = output.previous {
+            if timestamp <= previous {
+                return;
+            }
+            output.intervals.record(timestamp - previous);
+        }
+        output.presentations = output.presentations.saturating_add(1);
+        output.previous = Some(timestamp);
+    }
+
+    fn record_system(&self, name: &str, wall: Duration, cpu: Duration, exclusive_cpu: Duration) {
+        if !accepts_system_name(name) {
+            self.dropped_system_samples.fetch_add(1, Ordering::Relaxed);
+            return;
+        }
+        let mut systems = self.systems[(thread_id() % SYSTEM_SHARDS as u64) as usize]
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        if let Some(sample) = systems.get_mut(name) {
+            sample.record(wall, cpu, exclusive_cpu);
+        } else if systems.len() < SYSTEM_LIMIT {
+            let mut sample = accounting::SystemSample::default();
+            sample.record(wall, cpu, exclusive_cpu);
+            systems.insert(name.to_owned(), sample);
+        } else {
+            self.dropped_system_samples.fetch_add(1, Ordering::Relaxed);
+        }
+    }
+
+    fn snapshot(&self) -> Report {
+        let ended = self.started.elapsed().as_micros().min(u128::from(u64::MAX)) as u64;
+        let began = self.snapshot_at_us.swap(ended, Ordering::Relaxed);
+        let mut combined = BTreeMap::<String, accounting::SystemSample>::new();
+        for shard in &self.systems {
+            let samples =
+                std::mem::take(&mut *shard.lock().unwrap_or_else(|error| error.into_inner()));
+            for (name, sample) in samples {
+                combined.entry(name).or_default().merge(sample);
+            }
+        }
+        let systems = combined
+            .iter_mut()
+            .filter_map(|(name, sample)| sample.take(name))
+            .collect::<Vec<_>>();
+        let stages = Stage::ALL
+            .iter()
+            .filter_map(|stage| {
+                let mut values = self.stages[*stage as usize]
+                    .lock()
+                    .unwrap_or_else(|error| error.into_inner());
+                (values.count != 0).then(|| std::mem::take(&mut *values).report(stage.label()))
+            })
+            .collect();
+        let outputs = self
+            .outputs
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .iter_mut()
+            .filter_map(|(id, output)| {
+                (output.presentations != 0
+                    || output.intervals.count != 0
+                    || output.stages.values().any(|stage| stage.count != 0))
+                .then(|| OutputReading {
+                    output: *id,
+                    presentations: std::mem::take(&mut output.presentations),
+                    clock: match output.hardware_clock {
+                        Some(true) => "drm",
+                        Some(false) => "dispatch",
+                        None => "unobserved",
+                    },
+                    interval: std::mem::take(&mut output.intervals).report("presentation-interval"),
+                    stages: output
+                        .stages
+                        .iter_mut()
+                        .filter_map(|(stage, values)| {
+                            (values.count != 0)
+                                .then(|| std::mem::take(values).report(Stage::ALL[*stage].label()))
+                        })
+                        .collect(),
+                })
+            })
+            .collect();
+        let render_diagnostics = std::mem::take(
+            &mut *self
+                .render_diagnostics
+                .lock()
+                .unwrap_or_else(|error| error.into_inner()),
+        )
+        .into_values()
+        .collect::<Vec<_>>();
+        let observed_gpu = render_diagnostics
+            .iter()
+            .any(|reading| reading.path.ends_with("/elapsed_gpu"));
+        let observed_systems = !systems.is_empty();
+        Report {
+            schema_version: 2,
+            histogram_limits_us: &LIMITS_US,
+            counter_catalog: Count::ALL.iter().map(|counter| counter.label()).collect(),
+            process: std::process::id(),
+            capture_started_unix_ns: self.capture_started_unix_ns.clone(),
+            revision: utils::build_info::revision(),
+            optimized: !cfg!(debug_assertions),
+            workload: *self
+                .workload
+                .lock()
+                .unwrap_or_else(|error| error.into_inner()),
+            phase: Phase::ALL[self.phase.load(Ordering::Relaxed) as usize].label(),
+            sequence: self.sequence.fetch_add(1, Ordering::Relaxed) + 1,
+            window_started_us: began,
+            window_ended_us: ended,
+            final_report: false,
+            systems,
+            render_diagnostics,
+            spans: std::iter::from_fn(|| self.spans.pop())
+                .take(SPAN_TRACE_LIMIT)
+                .collect(),
+            dropped_span_trace: self.dropped_span_trace.swap(0, Ordering::Relaxed),
+            dropped_system_samples: self.dropped_system_samples.swap(0, Ordering::Relaxed),
+            coverage: accounting::coverage(observed_systems, observed_gpu),
+            completion: None,
+            elapsed_us: ended,
+            dropped_reports: self.dropped_reports.load(Ordering::Relaxed),
+            stages,
+            outputs,
+            counters: Count::ALL
+                .iter()
+                .filter_map(|counter| {
+                    let count = self.counters[*counter as usize].swap(0, Ordering::Relaxed);
+                    (count != 0).then_some(CountReading {
+                        counter: counter.label(),
+                        count,
+                    })
+                })
+                .collect(),
+            input_trace: std::iter::from_fn(|| self.input_trace.pop())
+                .take(INPUT_TRACE_LIMIT)
+                .collect(),
+            dropped_input_trace: self.dropped_input_trace.swap(0, Ordering::Relaxed),
+            park_frames: self
+                .park_frames
+                .as_ref()
+                .map(|queue| {
+                    std::iter::from_fn(|| queue.pop())
+                        .take(PARK_FRAME_TRACE_LIMIT)
+                        .collect()
+                })
+                .unwrap_or_default(),
+            dropped_park_frames: self
+                .park_frames
+                .as_ref()
+                .map(|_| self.dropped_park_frames.swap(0, Ordering::Relaxed)),
+        }
+    }
+
+    fn trace_input(&self, reading: InputTrace) {
+        if self.input_trace.push(reading).is_err() {
+            self.dropped_input_trace.fetch_add(1, Ordering::Relaxed);
+        }
+    }
+
+    fn trace_span(&self, reading: SpanReading) {
+        if self.spans.push(reading).is_err() {
+            self.dropped_span_trace.fetch_add(1, Ordering::Relaxed);
+        }
+    }
+
+    fn flush(&self) {
+        let Ok(_flushing) = self.flushing.try_lock() else {
+            return;
+        };
+        if self.finalized.load(Ordering::Acquire) {
+            return;
+        }
+        if let Some(sender) = &self.sender
+            && sender.try_send(self.snapshot()).is_err()
+        {
+            self.dropped_reports.fetch_add(1, Ordering::Relaxed);
+        }
+    }
+
+    fn flush_if_due(&self) {
+        if self.finalized.load(Ordering::Acquire) || self.sender.is_none() {
+            return;
+        }
+        let now = self.started.elapsed().as_micros().min(u128::from(u64::MAX)) as u64;
+        let previous = self.reported_at_us.load(Ordering::Relaxed);
+        if now.saturating_sub(previous) < 1_000_000
+            || self
+                .reported_at_us
+                .compare_exchange(previous, now, Ordering::Relaxed, Ordering::Relaxed)
+                .is_err()
+        {
+            return;
+        }
+        self.flush();
+    }
+}
+
+fn monitor() -> Option<&'static Monitor> {
+    static MONITOR: OnceLock<Option<Monitor>> = OnceLock::new();
+    MONITOR
+        .get_or_init(|| {
+            let active = std::env::var("LINCE_TRACE_PERFORMANCE")
+                .is_ok_and(|value| matches!(value.as_str(), "1" | "true"));
+            if !active {
+                return None;
+            }
+            let mut output = match std::env::var_os("LINCE_PERFORMANCE_LOG") {
+                Some(path) => {
+                    let path = std::path::PathBuf::from(path);
+                    if !path.is_absolute() {
+                        eprintln!("Lince performance log needs an absolute private path");
+                        return None;
+                    }
+                    let mut options = std::fs::OpenOptions::new();
+                    options.write(true).create_new(true);
+                    #[cfg(unix)]
+                    {
+                        use std::os::unix::fs::OpenOptionsExt;
+                        options.mode(0o600);
+                    }
+                    match options.open(path) {
+                        Ok(file) => Some(file),
+                        Err(error) => {
+                            eprintln!("Lince performance log unavailable: {error}");
+                            return None;
+                        }
+                    }
+                }
+                None => None,
+            };
+            let (sender, receiver) = sync_channel::<Report>(4);
+            let logger = std::thread::Builder::new()
+                .name("lince-perf-report".into())
+                .spawn(move || {
+                    use std::io::Write;
+                    loop {
+                        let report = match receiver.recv_timeout(Duration::from_secs(1)) {
+                            Ok(report) => report,
+                            Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
+                                if let Some(monitor) = monitor() {
+                                    monitor.flush_if_due();
+                                }
+                                continue;
+                            }
+                            Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => break,
+                        };
+                        let mut bytes = b"Lince performance ".to_vec();
+                        if serde_json::to_writer(&mut bytes, &report).is_err() {
+                            break;
+                        }
+                        bytes.push(b'\n');
+                        let written = if let Some(file) = &mut output {
+                            file.write_all(&bytes).and_then(|()| file.flush())
+                        } else {
+                            let stderr = std::io::stderr();
+                            let mut stderr = stderr.lock();
+                            stderr.write_all(&bytes).and_then(|()| stderr.flush())
+                        };
+                        if written.is_err() {
+                            break;
+                        }
+                        if let Some(completion) = report.completion {
+                            let _ = completion.try_send(());
+                        }
+                    }
+                });
+            let monitor = logger.ok().map(|_| Monitor::new(Some(sender)));
+            #[cfg(feature = "backend")]
+            if monitor.is_some() {
+                install_observer(backend);
+            }
+            monitor
+        })
+        .as_ref()
+}
+
+#[cfg(feature = "backend")]
+fn backend(reading: BackendReading) {
+    if let Some(monitor) = monitor() {
+        monitor.backend(reading);
+    }
+}
+
+pub fn enabled() -> bool {
+    monitor().is_some()
+}
+
+pub fn start() -> Option<Instant> {
+    monitor().map(|_| Instant::now())
+}
+
+pub fn timestamp(at: Instant) -> Option<u64> {
+    monitor().map(|monitor| monitor.timestamp(at))
+}
+
+pub fn record(stage: Stage, duration: Duration) {
+    if let Some(monitor) = monitor() {
+        monitor.record(stage, duration);
+    }
+}
+
+pub fn record_output(stage: Stage, output: super::OutputId, duration: Duration) {
+    if let Some(monitor) = monitor() {
+        monitor.record_output(stage, output.0, duration);
+    }
+}
+
+pub fn count(counter: Count) {
+    add(counter, 1);
+}
+
+pub fn add(counter: Count, value: u64) {
+    if let Some(monitor) = monitor() {
+        monitor.counters[counter as usize].fetch_add(value, Ordering::Relaxed);
+    }
+}
+
+pub fn record_since(stage: Stage, started: Option<Instant>) {
+    if let Some(started) = started {
+        record(stage, started.elapsed());
+    }
+}
+
+pub fn presented(output: super::OutputId, timestamp: Duration, hardware_clock: bool) {
+    if let Some(monitor) = monitor() {
+        monitor.presented(output.0, timestamp, hardware_clock);
+    }
+}
+
+pub fn retire_output(output: super::OutputId) {
+    if let Some(monitor) = monitor() {
+        monitor
+            .outputs
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .remove(&output.0);
+    }
+}
+
+pub fn flush_if_due() {
+    if let Some(monitor) = monitor() {
+        monitor.flush_if_due();
+    }
+}
+
+pub fn trace_input(reading: InputTrace) {
+    if let Some(monitor) = monitor() {
+        monitor.trace_input(reading);
+    }
+}
+
+pub fn flush() {
+    if let Some(monitor) = monitor() {
+        monitor.flush();
+    }
+}
+
+#[expect(
+    clippy::ptr_arg,
+    reason = "A borrowed static unit stays borrowed in the report"
+)]
+pub fn record_render_diagnostic(path: &str, unit: &std::borrow::Cow<'static, str>, value: f64) {
+    let Some(monitor) = monitor() else {
+        return;
+    };
+    if !path.starts_with("render/") || path.len() > 512 || !value.is_finite() || value < 0.0 {
+        count(Count::TimingRejected);
+        return;
+    }
+    if let Ok(mut values) = monitor.render_diagnostics.try_lock() {
+        let now = monitor
+            .started
+            .elapsed()
+            .as_micros()
+            .min(u128::from(u64::MAX)) as u64;
+        if let Some(reading) = values.get_mut(path) {
+            if &reading.unit != unit {
+                count(Count::TimingRejected);
+                return;
+            }
+            reading.count = reading.count.saturating_add(1);
+            reading.total += value;
+            reading.maximum = reading.maximum.max(value);
+            reading.published_us = now;
+        } else if values.len() < 512 {
+            values.insert(
+                path.to_owned(),
+                RenderDiagnostic {
+                    path: path.to_owned(),
+                    unit: unit.clone(),
+                    count: 1,
+                    total: value,
+                    maximum: value,
+                    published_us: now,
+                    source_frame: None,
+                    identity: "last-completed-bevy-diagnostic; publication-time-is-not-gpu-time",
+                },
+            );
+        } else {
+            count(Count::TimingCapacity);
+        }
+    } else {
+        count(Count::TimingCapacity);
+    }
+}
+
+pub fn accepts_system_name(name: &str) -> bool {
+    name.len() <= 512
+        && (name.starts_with("bevy_")
+            || name.starts_with("avian3d::")
+            || name.starts_with("lince_interface::")
+            || name.starts_with("lince_park::"))
+}
+
+pub fn record_system(name: &str, wall: Duration, cpu: Duration, exclusive_cpu: Duration) {
+    if let Some(monitor) = monitor() {
+        monitor.record_system(name, wall, cpu, exclusive_cpu);
+    }
+}
+
+pub fn record_park_frame(mut sample: serde_json::Value) -> Result<(), serde_json::Value> {
+    let Some(monitor) = monitor() else {
+        return Err(sample);
+    };
+    let Some(queue) = &monitor.park_frames else {
+        return Err(sample);
+    };
+    if monitor.finalized.load(Ordering::Acquire) {
+        return Ok(());
+    }
+    if sample["event"] == "render-start" {
+        let workload = monitor
+            .workload
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        sample["workload"] = serde_json::json!(*workload);
+        sample["phase"] = Phase::ALL[monitor.phase.load(Ordering::Relaxed) as usize]
+            .label()
+            .into();
+    }
+    if queue.push(sample).is_err() {
+        monitor.dropped_park_frames.fetch_add(1, Ordering::Relaxed);
+    }
+    Ok(())
+}
+
+pub fn set_phase(phase: Phase) {
+    set_context(phase, None);
+}
+
+pub fn set_workload(workload: &'static str, phase: Phase) {
+    set_context(phase, Some(workload));
+}
+
+fn set_context(phase: Phase, workload: Option<&'static str>) {
+    if let Some(monitor) = monitor() {
+        let _flushing = monitor
+            .flushing
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        if monitor.finalized.load(Ordering::Acquire) {
+            return;
+        }
+        if let Some(sender) = &monitor.sender
+            && sender.try_send(monitor.snapshot()).is_err()
+        {
+            monitor.dropped_reports.fetch_add(1, Ordering::Relaxed);
+        }
+        let mut current_workload = monitor
+            .workload
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        if let Some(workload) = workload {
+            *current_workload = Some(workload);
+        }
+        monitor.phase.store(phase as u64, Ordering::Relaxed);
+    }
+}
+
+pub fn finish(timeout: Duration) -> bool {
+    let Some(monitor) = monitor() else {
+        return true;
+    };
+    let Some(sender) = &monitor.sender else {
+        return true;
+    };
+    let flushing = monitor
+        .flushing
+        .lock()
+        .unwrap_or_else(|error| error.into_inner());
+    if monitor.finalized.load(Ordering::Acquire) {
+        return true;
+    }
+    let (completion, finished) = sync_channel(1);
+    let mut report = monitor.snapshot();
+    report.final_report = true;
+    report.completion = Some(completion);
+    if sender.try_send(report).is_err() {
+        monitor.dropped_reports.fetch_add(1, Ordering::Relaxed);
+        return false;
+    }
+    monitor.finalized.store(true, Ordering::Release);
+    drop(flushing);
+    finished.recv_timeout(timeout).is_ok()
+}
+
+pub struct Span {
+    stage: Stage,
+    started: Option<Instant>,
+    thread: u64,
+}
+
+impl Span {
+    pub fn new(stage: Stage) -> Self {
+        Self {
+            stage,
+            started: start(),
+            thread: if enabled() { thread_id() } else { 0 },
+        }
+    }
+}
+
+impl Drop for Span {
+    fn drop(&mut self) {
+        record_since(self.stage, self.started);
+        if let (Some(monitor), Some(started)) = (monitor(), self.started) {
+            let ended = Instant::now();
+            let reading = SpanReading {
+                stage: self.stage.label(),
+                started_us: started
+                    .saturating_duration_since(monitor.started)
+                    .as_micros()
+                    .min(u128::from(u64::MAX)) as u64,
+                ended_us: ended
+                    .saturating_duration_since(monitor.started)
+                    .as_micros()
+                    .min(u128::from(u64::MAX)) as u64,
+                start_thread: self.thread,
+                end_thread: thread_id(),
+                operation: None,
+            };
+            monitor.trace_span(reading);
+        }
+    }
+}
+
+#[cfg(any(test, feature = "behavior-checks"))]
+pub mod checks;

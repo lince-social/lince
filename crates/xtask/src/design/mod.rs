@@ -17,7 +17,7 @@ use std::{
     path::{Component, Path, PathBuf},
 };
 
-use lince_interface::tokens::{
+use lince_presentation_models::tokens::{
     ColorScheme, SandStyleKind, ThemeSettings, TokenOverrides, css, document::ThemeDocument,
 };
 use serde::{Deserialize, Serialize};

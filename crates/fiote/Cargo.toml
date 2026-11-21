@@ -39,6 +39,7 @@ agent-client-protocol = "=2.2.0"
 async-trait = { workspace = true }
 futures = { workspace = true }
 cap-std = "=4.0.3"
+similar = "=2.7.0"
 genai = "=0.6.5"
 openidconnect = { version = "=4.0.1", default-features = false }
 eventsource-stream = "=0.2.3"

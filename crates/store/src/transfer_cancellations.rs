@@ -190,10 +190,12 @@ where
     let fact = crate::transfers::insert_revision_fact(
         &mut tx,
         &input.transfer,
-        revision,
-        input.expected_revision,
-        &input.request_id,
-        "propose-transfer-cancellation",
+        crate::transfers::RevisionChange {
+            revision,
+            previous_revision: input.expected_revision,
+            request_id: &input.request_id,
+            action: "propose-transfer-cancellation",
+        },
         Some(input.person),
         now,
         &sign,

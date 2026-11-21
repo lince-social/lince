@@ -11,10 +11,10 @@ autoexamples = false
 [features]
 graphics-probe = ["dep:ash", "dep:pollster", "dep:serde", "dep:serde_json", "dep:wgpu", "dep:rustix", "smithay/backend_egl", "smithay/renderer_gl", "smithay/backend_vulkan"]
 graphics-gate = ["graphics-probe", "dep:bevy", "dep:lince-interface", "lince-interface/ui", "dep:wayland-client", "dep:wayland-protocols", "smithay/backend_winit"]
-server = ["dep:lince-interface", "dep:rustix", "dep:serde_json", "dep:wayland-scanner", "dep:wayland-protocols", "dep:wayland-protocols-wlr", "dep:lince-smithay-capture"]
+server = ["dep:lince-host", "dep:rustix", "dep:serde_json", "dep:wayland-scanner", "dep:wayland-protocols", "dep:wayland-protocols-wlr", "dep:lince-smithay-capture"]
 server-tests = ["server", "dep:serde_json", "dep:wayland-client", "dep:wayland-protocols", "dep:wayland-protocols-wlr", "dep:wayland-protocols-misc", "dep:tempfile"]
 clipboard-gate = ["server", "dep:bevy_clipboard", "dep:wayland-client"]
-native-presentation = ["graphics-probe", "server", "dep:bevy", "dep:bevy_utils", "lince-interface/native-presentation", "dep:tokio", "dep:tempfile", "dep:cell", "dep:engine", "dep:nucleus", "dep:store", "dep:accesskit", "dep:accesskit_unix"]
+native-presentation = ["graphics-probe", "server", "dep:bevy", "dep:bevy_utils", "dep:lince-interface", "lince-interface/native-presentation", "dep:tokio", "dep:tempfile", "dep:cell", "dep:engine", "dep:nucleus", "dep:store", "dep:accesskit", "dep:accesskit_unix"]
 native-client-gate = ["native-presentation", "graphics-gate"]
 accessibility-gate = ["native-presentation", "dep:zbus", "dep:atspi-common"]
 worker-gate = ["native-presentation", "server-tests"]
@@ -37,6 +37,7 @@ serde = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
 wgpu = { version = "=30.0.2", default-features = false, features = ["std", "vulkan", "wgsl"], optional = true }
 lince-interface = { workspace = true, optional = true }
+lince-host = { workspace = true, optional = true }
 rustix = { version = "=1.1.6", features = ["event", "time", "fs", "process", "net", "rand"], optional = true }
 wayland-scanner = { version = "=0.31.11", optional = true }
 wayland-client = { version = "=0.31.15", optional = true }

@@ -6,7 +6,7 @@
 // - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
 //   Sites unwrap (229).
 
-use lince_interface::host::color::{Description, Primaries, Transfer};
+use lince_host::color::{Description, Primaries, Transfer};
 use smithay::{
     reexports::wayland_server::{
         DataInit, Dispatch, GlobalDispatch, New, WEnum, backend::GlobalId,
@@ -123,7 +123,7 @@ struct Parameters {
     transfer: Option<Transfer>,
     primaries: Option<Primaries>,
     luminances: Option<[u32; 3]>,
-    mastering: lince_interface::host::color::Mastering,
+    mastering: lince_host::color::Mastering,
 }
 
 struct ParamsData {
@@ -223,7 +223,7 @@ impl State {
             return Some(Description::default());
         };
         let effective = status.effective?;
-        if effective.mode == lince_interface::host::color::ColorMode::Srgb {
+        if effective.mode == lince_host::color::ColorMode::Srgb {
             return Some(Description::default());
         }
         let mut description = Description::hdr10();
@@ -240,7 +240,7 @@ impl State {
                         .as_ref()?
                         .items
                         .iter()
-                        .find(|item| item.id == lince_interface::host::ItemId::Application(id))
+                        .find(|item| item.id == lince_host::ItemId::Application(id))
                         .map(|item| item.output)
                 })
                 .or_else(|| self.layers.outputs.get(&root).copied())

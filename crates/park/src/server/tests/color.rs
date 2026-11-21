@@ -2,7 +2,7 @@
 // Scope: struct Capture, fn bind, fn harness, fn description.
 // BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
 
-use lince_interface::host::color::{Description, Primaries, Transfer};
+use lince_host::color::{Description, Primaries, Transfer};
 use wayland_protocols::wp::color_management::v1::client::{
     wp_color_management_output_v1::{self as color_output, WpColorManagementOutputV1 as Output},
     wp_color_management_surface_feedback_v1::{
@@ -496,7 +496,7 @@ fn hdr_harness() -> Harness {
 
 #[test]
 fn output_description_changes_only_after_effective_color_observation_and_preserves_old_objects() {
-    use lince_interface::host::{
+    use lince_host::{
         color::{ColorMode, OutputColor},
         display::ColorStatus,
     };

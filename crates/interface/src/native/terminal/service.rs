@@ -156,22 +156,18 @@ pub(super) fn update(
                 continue;
             }
             if output.input.len_bytes() != 0 {
-                if !world
-                    .get::<TerminalSand>(owner)
-                    .unwrap()
-                    .input
-                    .fits(output.input.len_bytes())
-                {
+                let full = {
+                    let mut terminal = world.get_mut::<TerminalSand>(owner).unwrap();
+                    if terminal.exited {
+                        !terminal.input.fits(output.input.len_bytes())
+                    } else {
+                        terminal.input.append(output.input).is_err()
+                    }
+                };
+                if full {
                     close(world, owner);
                     panel::status(world, status, "Terminal input queue is full; shell closed");
                     continue;
-                }
-                if !world.get::<TerminalSand>(owner).unwrap().exited {
-                    world
-                        .get_mut::<TerminalSand>(owner)
-                        .unwrap()
-                        .input
-                        .append(output.input);
                 }
             }
             if let Some(frame) = output.frame {

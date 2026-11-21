@@ -1176,6 +1176,29 @@ async fn activation_runs_native_commands_in_its_working_directory_and_persists_t
             .iter()
             .any(|row| row.body == "Created Hello.txt containing world.")
     );
+    let thread = activations[0].thread.as_deref().unwrap();
+    let messages = rows(&host, thread).await;
+    let reply = messages
+        .iter()
+        .find(|row| row.body == "Created Hello.txt containing world.")
+        .unwrap();
+    let tool = messages
+        .iter()
+        .find(|row| row.body == "run_command")
+        .unwrap();
+    let receipt =
+        store::records::get_extension(&host.engine.store.pool, &tool.uid, "lince.tool-call")
+            .await
+            .unwrap()
+            .unwrap();
+    assert_eq!(receipt["status"], "completed");
+    let transcript = rows(&host, receipt["thread"].as_str().unwrap()).await;
+    assert!(transcript.iter().any(|row| row.body.contains("Hello.txt")));
+    let history = host.saved_tool_history(thread, &reply.uid).await.unwrap();
+    assert!(history.contains("run_command · completed"));
+    assert!(!host.history(thread, &record).await.unwrap().iter().any(|message| {
+        matches!(message, Message::Assistant { text, calls } if text == "run_command" && calls.is_empty())
+    }));
 }
 
 #[tokio::test]
@@ -2783,6 +2806,17 @@ async fn assignment_starts_one_visible_session_and_survives_restart_without_repl
             .any(|thread| thread.uid == tasks[0].thread)
     );
     assert_eq!(host.thread_fiote(&tasks[0].thread).await.unwrap(), record);
+    let dashboard: protein::Protein = serde_json::from_value(serde_json::json!({
+        "source": "record",
+        "where": [{"uid_eq":record}],
+        "fields": ["uid", "threads"],
+        "include": {"threads":{"fiote_sessions":true}},
+    })).unwrap();
+    let projected = protein::execute(&host.engine.store, &dashboard).await.unwrap();
+    let tab = projected[0]["threads"].as_array().unwrap().iter()
+        .find(|tab| tab["uid"] == tasks[0].thread).unwrap();
+    assert_eq!(tab["task_uid"], task);
+    assert_eq!(tab["task_title"], "Assigned task");
     let opened = host
         .handle(Request::OpenTools {
             record: task.clone(),

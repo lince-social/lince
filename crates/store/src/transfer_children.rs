@@ -87,10 +87,12 @@ where
     let fact = transfers::insert_revision_fact(
         tx,
         parent,
-        revision,
-        previous,
-        request,
-        "change-transfer-children",
+        transfers::RevisionChange {
+            revision,
+            previous_revision: previous,
+            request_id: request,
+            action: "change-transfer-children",
+        },
         Some(person.into()),
         now,
         sign,

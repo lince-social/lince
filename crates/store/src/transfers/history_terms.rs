@@ -1,16 +1,14 @@
-// non-lean-yet
-// Scope: fn read, fn read_on.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 4.
-// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
-//   conventions. Sites 1.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4.
-
 use nucleus::transfer::public_history::{NAMESPACE, Terms};
 
-use super::*;
+use sqlx::{Sqlite, SqlitePool, Transaction};
 
+use crate::StoreError;
+
+/// Reads the public-history terms, when present.
+///
+/// # Errors
+///
+/// Returns an error if storage fails or the terms are malformed.
 pub async fn read(pool: &SqlitePool, transfer: &str) -> Result<Option<Terms>, StoreError> {
     let mut tx = pool.begin().await?;
     read_on(&mut tx, transfer).await
@@ -27,11 +25,15 @@ pub(super) async fn read_on(
             .fetch_optional(&mut **tx)
             .await?;
     let Some(raw) = raw else { return Ok(None) };
-    let value: serde_json::Value =
+    let mut value: serde_json::Value =
         serde_json::from_str(&raw).map_err(|error| StoreError::Protocol(error.to_string()))?;
-    let terms: Option<Terms> =
-        serde_json::from_value(value.get("terms").cloned().unwrap_or_default())
-            .map_err(|error| StoreError::Protocol(error.to_string()))?;
+    let terms: Option<Terms> = serde_json::from_value(
+        value
+            .get_mut("terms")
+            .map(std::mem::take)
+            .unwrap_or_default(),
+    )
+    .map_err(|error| StoreError::Protocol(error.to_string()))?;
     if let Some(terms) = &terms {
         terms.validate().map_err(StoreError::Protocol)?;
     }

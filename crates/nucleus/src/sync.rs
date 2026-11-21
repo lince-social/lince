@@ -1,26 +1,25 @@
-// non-lean-yet
-// Scope: struct WorkspaceSync, enum Content, enum Destination, struct Capabilities.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
-//   Sites 220.
-// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
-//   Sites 146.
-// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
-//   Sites 10, 18, 102, 110, 125.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 5,
-//   10, 11, 12, 13, 18, 19, 20, 21, 22, 26, 27, 28, 29, 33, 34, 35, 36, 40, 54, 68, 83, 102, 103,
-//   104, 105, 110, 111, 112, 113, 117, 118, 119, 120, 125, 126, 127, 128, 129, 130, 131, 135, 136,
-//   137, 138, 139, 143, 154, 155, 156, 157, 158, 162, 163, 164, 165, 179, 185, 186, 187, 188, 189,
-//   190, 191, 192, 193, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 210, 211, 212, 213, 215,
-//   217.
+//! Types shared by file, peer, plugin, and live interface synchronization.
+//!
+//! [Instance] describes a link. [Activity] and [Summary] describe one operation,
+//! and [Overview] collects the active operations, pending work, and retained history.
+
+use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
+const SECONDS_PER_DAY: u64 = 86_400;
+const MIN_RETENTION_SECONDS: u64 = 60;
+const MAX_RETENTION_SECONDS: u64 = 90 * SECONDS_PER_DAY;
+const MAX_HISTORY_ENTRIES: u32 = 10_000;
+const MAX_FILE_ORIGIN_BYTES: usize = 64;
+
+/// Identifies a synchronized workspace.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WorkspaceSync {
     pub workspace_uid: String,
 }
 
+/// Selects the content flowing through a sync instance.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Content {
@@ -29,6 +28,7 @@ pub enum Content {
     Workspace(WorkspaceSync),
 }
 
+/// Identifies the other endpoint of a sync instance.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Destination {
@@ -38,13 +38,18 @@ pub enum Destination {
     Interface { connection: String },
 }
 
+/// Independent capabilities of the sync link.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Capabilities {
+    /// Supports partial updates on this link.
     pub incremental: bool,
+    /// Keeps queued work across restarts.
     pub durable_queue: bool,
+    /// Supports review of changes on this link.
     pub review: bool,
 }
 
+/// The content, destination and capabilities of one sync link.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Instance {
     pub content: Content,
@@ -52,7 +57,16 @@ pub struct Instance {
     pub capabilities: Capabilities,
 }
 
+impl Capabilities {
+    const QUEUED_REVIEW: Self = Self {
+        incremental: true,
+        durable_queue: true,
+        review: true,
+    };
+}
+
 impl Instance {
+    /// Describes a plugin binding.
     pub fn plugin(provider: &str, binding: &str) -> Self {
         Self {
             content: Content::Records { root: None },
@@ -60,28 +74,23 @@ impl Instance {
                 provider: provider.into(),
                 binding: binding.into(),
             },
-            capabilities: Capabilities {
-                incremental: true,
-                durable_queue: true,
-                review: true,
-            },
+            capabilities: Capabilities::QUEUED_REVIEW,
         }
     }
+
+    /// Describes a peer link for all records or a selected root.
     pub fn peer(organ: &str, root: Option<&str>) -> Self {
         Self {
             content: Content::Records {
                 root: root.map(str::to_owned),
             },
             destination: Destination::Organ { uid: organ.into() },
-            capabilities: Capabilities {
-                incremental: true,
-                durable_queue: true,
-                review: true,
-            },
+            capabilities: Capabilities::QUEUED_REVIEW,
         }
     }
 
-    pub fn files(organ: &str, path: &std::path::Path) -> Self {
+    /// Describes a directory link, storing the path in its display form.
+    pub fn files(organ: &str, path: &Path) -> Self {
         Self {
             content: Content::Records { root: None },
             destination: Destination::Directory {
@@ -96,6 +105,7 @@ impl Instance {
         }
     }
 
+    /// Describes a live query subscription.
     pub fn interface(connection: &str, subscription: &str) -> Self {
         Self {
             content: Content::Query {
@@ -113,6 +123,7 @@ impl Instance {
     }
 }
 
+/// The direction of a sync operation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Direction {
@@ -121,6 +132,7 @@ pub enum Direction {
     Both,
 }
 
+/// The scope of a sync operation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Update {
@@ -129,6 +141,7 @@ pub enum Update {
     Reconcile,
 }
 
+/// The link, direction and scope of a sync operation.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Activity {
     pub instance: Instance,
@@ -136,6 +149,7 @@ pub struct Activity {
     pub update: Update,
 }
 
+/// The reported result of a sync operation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Outcome {
@@ -147,37 +161,52 @@ pub enum Outcome {
     Failed,
 }
 
+/// The result and affected subjects of a sync operation.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Summary {
     pub outcome: Outcome,
+    /// Number of affected items reported by the operation.
     pub count: u64,
     pub subjects: Vec<String>,
     pub message: Option<String>,
 }
 
 impl Summary {
+    /// Creates a summary before any affected subjects or message are supplied.
     pub fn new(outcome: Outcome, count: usize) -> Self {
+        #[expect(
+            clippy::as_conversions,
+            reason = "supported pointer widths fit in the persisted u64 count"
+        )]
+        let count = count as u64;
         Self {
             outcome,
-            count: count as u64,
+            count,
             subjects: Vec::new(),
             message: None,
         }
     }
 }
 
+/// A retained sync activity and its result.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Change {
+    /// Sequence number used to page retained history.
     pub seq: i64,
+    /// Unix timestamp in seconds.
     pub at: i64,
     pub activity: Activity,
     pub summary: Summary,
 }
 
+/// The age and count limits for retained sync history.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Retention {
+    /// Enables recording new history.
     pub enabled: bool,
+    /// Maximum age of a retained entry in seconds.
     pub seconds: u64,
+    /// Maximum number of retained entries.
     pub max_entries: u32,
 }
 
@@ -185,18 +214,21 @@ impl Default for Retention {
     fn default() -> Self {
         Self {
             enabled: false,
-            seconds: 7 * 24 * 60 * 60,
-            max_entries: 1000,
+            seconds: 7 * SECONDS_PER_DAY,
+            max_entries: 1_000,
         }
     }
 }
 
 impl Retention {
+    /// Checks the supported age and count limits, including for disabled history.
     pub fn valid(self) -> bool {
-        (60..=90 * 24 * 60 * 60).contains(&self.seconds) && (1..=10_000).contains(&self.max_entries)
+        (MIN_RETENTION_SECONDS..=MAX_RETENTION_SECONDS).contains(&self.seconds)
+            && (1..=MAX_HISTORY_ENTRIES).contains(&self.max_entries)
     }
 }
 
+/// An outstanding operation or held conflict.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Pending {
     pub id: String,
@@ -209,6 +241,7 @@ pub struct Pending {
     pub message: Option<String>,
 }
 
+/// A snapshot of current sync activity and history.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Overview {
     pub active: Vec<Activity>,
@@ -222,19 +255,37 @@ pub struct Overview {
     pub history_error: Option<String>,
 }
 
+/// Incoming and outgoing counts for one sync link.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Queue {
     pub instance: Instance,
     pub incoming: u64,
     pub outgoing: u64,
 }
+
+/// File origin reserved for the owner's personal directory.
 pub const PERSONAL_FILE_ORIGIN: &str = "personal";
 
+/// Checks file origin syntax. The first byte must be a lowercase ASCII letter.
 pub fn valid_file_origin(value: &str) -> bool {
-    !value.is_empty()
-        && value.len() <= 64
-        && value.as_bytes()[0].is_ascii_lowercase()
-        && value
-            .bytes()
-            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'-')
+    let mut bytes = value.bytes();
+    value.len() <= MAX_FILE_ORIGIN_BYTES
+        && bytes.next().is_some_and(|first| first.is_ascii_lowercase())
+        && bytes.all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-')
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{MAX_FILE_ORIGIN_BYTES, PERSONAL_FILE_ORIGIN, valid_file_origin};
+
+    #[test]
+    fn file_origins_preserve_ascii_syntax_and_the_byte_limit() {
+        assert!(valid_file_origin(PERSONAL_FILE_ORIGIN));
+        assert!(valid_file_origin("folder-42"));
+        assert!(valid_file_origin(&"a".repeat(MAX_FILE_ORIGIN_BYTES)));
+        for origin in ["", "Folder", "2folders", "-folder", "a_b", "équipe"] {
+            assert!(!valid_file_origin(origin));
+        }
+        assert!(!valid_file_origin(&"a".repeat(MAX_FILE_ORIGIN_BYTES + 1)));
+    }
 }

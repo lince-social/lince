@@ -1,11 +1,13 @@
-// non-lean-yet
-// Scope: enum Edit, fn valid.
-// BeautifulRust (baseline lines):
-// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
-//   65.
-
-use super::*;
-use crate::native::area_effects::{ForceMode, Immunity, Sorting};
+use super::{AreaShape, AttractionTarget, InfluenceArea, MAX_RULES, valid_polygon};
+use crate::{
+    host::performance::{Span, Stage},
+    native::{
+        area_effects::{ForceMode, Immunity, Sorting},
+        protein_area::Config,
+        sound_area::SoundArea,
+    },
+};
+use bevy::math::DVec2;
 use engine::area_transition::RecordChanges;
 
 pub(crate) enum Edit<'a> {
@@ -68,7 +70,12 @@ impl Edit<'_> {
     pub(crate) fn apply(self, area: &mut InfluenceArea) {
         match self {
             Self::Name(value) => value.clone_into(&mut area.name),
-            Self::Rule(index, value) => value.clone_into(&mut area.rules[index].value),
+            Self::Rule(index, value) => {
+                let Some(rule) = area.rules.get_mut(index) else {
+                    return;
+                };
+                value.clone_into(&mut rule.value);
+            }
             Self::Center(value) => area.center = value,
             Self::Size(value) => area.size = value,
             Self::Radius(value) => area.reach.radius = value,
@@ -95,8 +102,6 @@ impl Edit<'_> {
 pub(super) fn valid(area: &InfluenceArea, edit: Option<&Edit<'_>>) -> bool {
     let (
         mut name,
-        mut center,
-        mut size,
         mut depth,
         mut target,
         mut strength,
@@ -107,8 +112,6 @@ pub(super) fn valid(area: &InfluenceArea, edit: Option<&Edit<'_>>) -> bool {
         mut leave,
     ) = (
         area.name.as_str(),
-        area.center,
-        area.size,
         area.depth,
         area.target,
         area.strength,
@@ -118,6 +121,7 @@ pub(super) fn valid(area: &InfluenceArea, edit: Option<&Edit<'_>>) -> bool {
         &area.changes.enter,
         &area.changes.leave,
     );
+    let (center, size) = edit.map_or((area.center, area.size), |edit| edit.geometry(area));
     let mut rule_override = None;
     if let Some(edit) = edit {
         match edit {
@@ -128,8 +132,6 @@ pub(super) fn valid(area: &InfluenceArea, edit: Option<&Edit<'_>>) -> bool {
                 }
                 rule_override = Some((*index, *value));
             }
-            Edit::Center(value) => center = *value,
-            Edit::Size(value) => size = *value,
             Edit::Radius(value) => radius = *value,
             Edit::Depth(value) => depth = *value,
             Edit::Target(value) => target = *value,
@@ -146,11 +148,11 @@ pub(super) fn valid(area: &InfluenceArea, edit: Option<&Edit<'_>>) -> bool {
                     leave = changes;
                 }
             }
-            Edit::Immunity(_) | Edit::ForceMode(_) => {}
+            Edit::Center(_) | Edit::Size(_) | Edit::Immunity(_) | Edit::ForceMode(_) => {}
         }
     }
-    let _timing =
-        crate::host::performance::Span::new(crate::host::performance::Stage::NativeAreaValidation);
+    let _timing = Span::new(Stage::NativeAreaValidation);
+    let center = DVec2::from_array(center);
     let size_vector = DVec2::from_array(size);
     area.records.len() <= 100_000
         && area
@@ -158,60 +160,44 @@ pub(super) fn valid(area: &InfluenceArea, edit: Option<&Edit<'_>>) -> bool {
             .iter()
             .all(|(uid, state)| !uid.is_empty() && uid.len() <= 128 && state.valid())
         && area.id.len() == 32
-        && area.id.bytes().all(|byte| byte.is_ascii_hexdigit())
+        && area.id.as_bytes().iter().all(u8::is_ascii_hexdigit)
         && !name.trim().is_empty()
-        && name.chars().take(81).count() <= 80
-        && area.opacity.is_finite()
+        && name.chars().nth(80).is_none()
         && (0.0..=1.0).contains(&area.opacity)
-        && DVec2::from_array(center).is_finite()
+        && center.is_finite()
         && size_vector.is_finite()
         && size_vector.min_element() >= 1.0
         && size_vector.max_element() <= 100_000.0
-        && depth.is_finite()
         && (1.0..=100_000.0).contains(&depth)
         && match target {
             AttractionTarget::Center => true,
             AttractionTarget::Point(offset) => {
-                DVec2::from_array(offset).is_finite()
-                    && (DVec2::from_array(center) + DVec2::from_array(offset)).is_finite()
+                let offset = DVec2::from_array(offset);
+                offset.is_finite() && (center + offset).is_finite()
             }
         }
         && (0.0..=1_000_000.0).contains(&strength)
-        && radius.is_finite()
         && (0.0..=100_000.0).contains(&radius)
         && area.rules.len() <= MAX_RULES
-        && area.rules.iter().enumerate().all(|(index, rule)| {
-            rule_override
-                .filter(|(slot, _)| *slot == index)
-                .map_or_else(
-                    || rule.validate(),
-                    |(_, value)| rule.property.valid_value(value),
-                )
-        })
         && area
-            .sound
-            .as_ref()
-            .is_none_or(crate::native::sound_area::SoundArea::valid)
+            .rules
+            .iter()
+            .enumerate()
+            .all(|(index, rule)| match rule_override {
+                Some((slot, value)) if slot == index => rule.property.valid_value(value),
+                _ => rule.validate(),
+            })
+        && area.sound.as_ref().is_none_or(SoundArea::valid)
         && enter.validate()
         && leave.validate()
         && area.creation.valid()
-        && area
-            .change_filter
-            .as_ref()
-            .is_none_or(crate::native::protein_area::Config::valid)
-        && scale.is_finite()
+        && area.change_filter.as_ref().is_none_or(Config::valid)
         && (0.05..=20.0).contains(&scale)
-        && sorting.as_ref().is_none_or(|sort| {
-            sort.strength.is_finite() && (0.0..=1_000_000.0).contains(&sort.strength)
-        })
-        && area
-            .protein
+        && sorting
             .as_ref()
-            .is_none_or(crate::native::protein_area::Config::valid)
-        && area
-            .filter
-            .as_ref()
-            .is_none_or(crate::native::protein_area::Config::valid)
+            .is_none_or(|sort| (0.0..=1_000_000.0).contains(&sort.strength))
+        && area.protein.as_ref().is_none_or(Config::valid)
+        && area.filter.as_ref().is_none_or(Config::valid)
         && match &area.shape {
             AreaShape::Square | AreaShape::Circle => size[0] == size[1],
             AreaShape::Polygon(points) => valid_polygon(points),

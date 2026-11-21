@@ -122,7 +122,78 @@ impl Host {
         if rows.len() > 10_000 {
             return Err("Fiote discovery supports up to 10,000 Fiotes. Narrow the local hierarchy before using assistant discovery.".into());
         }
-        Ok(rows.into_iter().map(|(record, title)| FioteChoice { record, title }).collect())
+        Ok(rows
+            .into_iter()
+            .map(|(record, title)| FioteChoice {
+                record,
+                title,
+                dashboard: None,
+            })
+            .collect())
+    }
+
+    pub(super) async fn dashboard_status(&self, record: &str) -> Result<Status, String> {
+        let mut status = self.status(record).await?;
+        let working: std::collections::HashSet<_> = self
+            .running
+            .lock()
+            .await
+            .values()
+            .map(|run| run.record.clone())
+            .collect();
+        let mut signed_in = HashMap::new();
+        for choice in &mut status.fiotes {
+            let Ok(config) = self.load(&choice.record) else {
+                continue;
+            };
+            let mut ready = false;
+            if let Some(config) = &config
+                && config.settings.enabled
+            {
+                if let Some(agent) = &config.agent {
+                    ready = !agent.requires_node()
+                        && self
+                            .agents
+                            .info(&choice.record)
+                            .await
+                            .is_some_and(|info| info["connectionCheck"]["ready"] == true);
+                } else if let Ok(method) = self.catalog.method(&config.settings) {
+                    ready = if method.kind == fiote::adapters::AuthKind::None {
+                        true
+                    } else {
+                        let slot = credentials::slot(&config.settings);
+                        if let Some(&present) = signed_in.get(&slot) {
+                            present
+                        } else {
+                            let present = self
+                                .credentials
+                                .key(&slot)
+                                .await
+                                .is_ok_and(|key| key.is_some());
+                            signed_in.insert(slot, present);
+                            present
+                        }
+                    };
+                }
+            }
+            let model = config.and_then(|config| {
+                if let Some(agent) = config.agent {
+                    agent
+                        .options
+                        .get("model")
+                        .and_then(serde_json::Value::as_str)
+                        .map(str::to_owned)
+                } else {
+                    (!config.settings.model.is_empty()).then_some(config.settings.model)
+                }
+            });
+            choice.dashboard = Some(fiote::config::DashboardState {
+                ready,
+                model,
+                working: working.contains(&choice.record),
+            });
+        }
+        Ok(status)
     }
 
     pub(super) async fn prepare(&self, record: &str) -> Result<(), String> {

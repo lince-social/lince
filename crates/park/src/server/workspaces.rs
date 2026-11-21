@@ -72,11 +72,11 @@ fn permitted(client: &Client, control: bool) -> bool {
 impl Workspaces {
     pub(super) fn snapshot_entries(
         &self,
-    ) -> impl Iterator<Item = lince_interface::host::control::Entry> + '_ {
+    ) -> impl Iterator<Item = lince_host::control::Entry> + '_ {
         self.snapshot
             .entries
             .iter()
-            .map(|entry| lince_interface::host::control::Entry::Workspace {
+            .map(|entry| lince_host::control::Entry::Workspace {
                 id: entry.id,
                 name: entry.name.clone(),
                 active: entry.active,

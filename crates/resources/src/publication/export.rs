@@ -18,6 +18,7 @@
 //   64, 68, 78, 101.
 
 use anicca::grammar::grammar::{self as ast, Declaration};
+use regex::{Captures, Regex};
 use serde_json::Value;
 
 use super::*;
@@ -129,6 +130,9 @@ impl Publication {
                 locations.insert(resource.uri, target);
             }
         }
+        let markdown_links =
+            Regex::new(r"(!?\[[^\]\n]*\]\()([^\)\n]+)(\))").map_err(|error| error.to_string())?;
+        let wiki_links = Regex::new(r"\[\[([^\]\n]+)\]\]").map_err(|error| error.to_string())?;
         for source in &self.documents {
             let output = &locations[&source.uri];
             let rewrite = |value: &str| relative(&source.base, value, output, &locations);
@@ -155,12 +159,11 @@ impl Publication {
                             }
                         }
                         if let Some(description) = &mut record.description {
-                            let pattern = regex::Regex::new(r"(!?\[[^\]\n]*\]\()([^\)\n]+)(\))")
-                                .map_err(|error| error.to_string())?;
                             let mut problem = None;
-                            description.0 = pattern
-                                .replace_all(&description.0, |captures: &regex::Captures<'_>| {
-                                    match rewrite(&captures[2]) {
+                            description.0 = markdown_links
+                                .replace_all(
+                                    &description.0,
+                                    |captures: &Captures<'_>| match rewrite(&captures[2]) {
                                         Ok(uri) => {
                                             format!("{}{}{}", &captures[1], uri, &captures[3])
                                         }
@@ -168,16 +171,14 @@ impl Publication {
                                             problem = Some(error);
                                             captures[0].to_owned()
                                         }
-                                    }
-                                })
+                                    },
+                                )
                                 .into_owned();
                             if let Some(error) = problem {
                                 return Err(error);
                             }
-                            let pattern = regex::Regex::new(r"\[\[([^\]\n]+)\]\]")
-                                .map_err(|error| error.to_string())?;
-                            description.0 = pattern
-                                .replace_all(&description.0, |captures: &regex::Captures<'_>| {
+                            description.0 = wiki_links
+                                .replace_all(&description.0, |captures: &Captures<'_>| {
                                     let (label, target) = captures[1]
                                         .split_once('|')
                                         .map_or((None, &captures[1]), |(label, target)| {

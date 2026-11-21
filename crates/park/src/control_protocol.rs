@@ -1,7 +1,14 @@
-// non-lean-yet
-// Scope: mod server, mod client, const _, fn response_file.
-// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+//! Park's Wayland control protocol and sealed response-file transport.
 
+use std::{
+    fs::File,
+    io::{self, ErrorKind::InvalidData, Write},
+};
+
+use lince_host::control::RESPONSE_LIMIT;
+use rustix::fs::{MemfdFlags, SealFlags, fcntl_add_seals, memfd_create};
+
+/// Server bindings for desktop control.
 pub mod server {
     use smithay::reexports::wayland_server;
 
@@ -16,6 +23,7 @@ pub mod server {
 }
 
 #[cfg(any(feature = "server-tests", feature = "nested"))]
+/// Client bindings for desktop control.
 pub mod client {
     use wayland_client;
 
@@ -30,47 +38,50 @@ pub mod client {
 }
 const _: &str = include_str!("../protocols/lince-park-control-v1.xml");
 
-pub(crate) fn response_file(bytes: &[u8]) -> std::io::Result<std::fs::File> {
-    use std::io::Write;
+const RESPONSE_SEALS: SealFlags = SealFlags::SEAL
+    .union(SealFlags::SHRINK)
+    .union(SealFlags::GROW)
+    .union(SealFlags::WRITE);
 
-    use rustix::fs::{MemfdFlags, SealFlags, fcntl_add_seals, memfd_create};
-    if bytes.len() > lince_interface::host::control::RESPONSE_LIMIT {
-        return Err(std::io::Error::new(
-            std::io::ErrorKind::InvalidData,
+pub(crate) fn response_file(bytes: &[u8]) -> io::Result<File> {
+    if bytes.len() > RESPONSE_LIMIT {
+        return Err(io::Error::new(
+            InvalidData,
             "The management response exceeds its size bound",
         ));
     }
-    let mut file = std::fs::File::from(memfd_create(
+    let mut file = File::from(memfd_create(
         c"park-control-response",
         MemfdFlags::CLOEXEC | MemfdFlags::ALLOW_SEALING,
     )?);
     file.write_all(bytes)?;
-    fcntl_add_seals(
-        &file,
-        SealFlags::SEAL | SealFlags::SHRINK | SealFlags::GROW | SealFlags::WRITE,
-    )?;
+    fcntl_add_seals(&file, RESPONSE_SEALS)?;
     Ok(file)
 }
 
 #[cfg(any(feature = "server-tests", feature = "nested"))]
-pub(crate) fn read_response(fd: std::os::fd::OwnedFd) -> std::io::Result<Vec<u8>> {
+pub(crate) fn read_response(fd: std::os::fd::OwnedFd) -> io::Result<Vec<u8>> {
     use std::os::unix::fs::FileExt;
 
-    use rustix::fs::{FileType, SealFlags, fcntl_get_seals, fstat};
-    let file = std::fs::File::from(fd);
+    use rustix::fs::{FileType, fcntl_get_seals, fstat};
+    let file = File::from(fd);
     let stat = fstat(&file)?;
-    if FileType::from_raw_mode(stat.st_mode) != FileType::RegularFile
-        || stat.st_size < 0
-        || stat.st_size as u64 > lince_interface::host::control::RESPONSE_LIMIT as u64
-        || !fcntl_get_seals(&file)?
-            .contains(SealFlags::SEAL | SealFlags::SHRINK | SealFlags::GROW | SealFlags::WRITE)
-    {
-        return Err(std::io::Error::new(
-            std::io::ErrorKind::InvalidData,
-            "The management response must be a bounded sealed regular file",
-        ));
-    }
-    let mut bytes = vec![0; stat.st_size as usize];
+    let size = match usize::try_from(stat.st_size) {
+        Ok(size)
+            if size <= RESPONSE_LIMIT
+                && FileType::from_raw_mode(stat.st_mode) == FileType::RegularFile
+                && fcntl_get_seals(&file)?.contains(RESPONSE_SEALS) =>
+        {
+            size
+        }
+        _ => {
+            return Err(io::Error::new(
+                InvalidData,
+                "The management response must be a bounded sealed regular file",
+            ));
+        }
+    };
+    let mut bytes = vec![0; size];
     file.read_exact_at(&mut bytes, 0)?;
     Ok(bytes)
 }
@@ -83,7 +94,7 @@ mod tests {
 
     #[test]
     fn response_files_preserve_large_bounded_payloads_and_refuse_mutation_oversize_and_streams() {
-        let bytes = vec![b'x'; lince_interface::host::control::RESPONSE_LIMIT];
+        let bytes = vec![b'x'; RESPONSE_LIMIT];
         let file = response_file(&bytes).unwrap();
         assert!(file.write_all_at(b"y", 0).is_err());
         assert_eq!(
@@ -91,31 +102,19 @@ mod tests {
             bytes
         );
         assert!(response_file(&vec![0; bytes.len() + 1]).is_err());
-        let unsealed = std::fs::File::from(
-            rustix::fs::memfd_create(
-                c"unsealed-control-response",
-                rustix::fs::MemfdFlags::CLOEXEC,
-            )
-            .unwrap(),
-        );
+        let unsealed =
+            File::from(memfd_create(c"unsealed-control-response", MemfdFlags::CLOEXEC).unwrap());
         unsealed.write_all_at(b"{}", 0).unwrap();
         assert!(read_response(unsealed.into()).is_err());
-        let oversized = std::fs::File::from(
-            rustix::fs::memfd_create(
+        let oversized = File::from(
+            memfd_create(
                 c"oversized-control-response",
-                rustix::fs::MemfdFlags::CLOEXEC | rustix::fs::MemfdFlags::ALLOW_SEALING,
+                MemfdFlags::CLOEXEC | MemfdFlags::ALLOW_SEALING,
             )
             .unwrap(),
         );
         oversized.set_len(bytes.len() as u64 + 1).unwrap();
-        rustix::fs::fcntl_add_seals(
-            &oversized,
-            rustix::fs::SealFlags::SEAL
-                | rustix::fs::SealFlags::SHRINK
-                | rustix::fs::SealFlags::GROW
-                | rustix::fs::SealFlags::WRITE,
-        )
-        .unwrap();
+        fcntl_add_seals(&oversized, RESPONSE_SEALS).unwrap();
         assert!(read_response(oversized.into()).is_err());
         let (socket, _peer) = std::os::unix::net::UnixStream::pair().unwrap();
         assert!(read_response(socket.into()).is_err());

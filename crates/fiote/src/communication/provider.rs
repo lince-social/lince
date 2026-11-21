@@ -112,6 +112,8 @@ pub trait TextOutput: Send + Sync {
     async fn tool_pending(&self, _call: &ToolCall) -> Result<(), String> {
         Ok(())
     }
+    /// Presents a completed tool receipt and any workspace patch after the turn journal is updated.
+    async fn tool_finished(&self, _id: &str, _result: &Value, _diff: Option<&str>) {}
 
     async fn context(&self, _messages: &[Message]) -> Result<(), String> {
         Ok(())

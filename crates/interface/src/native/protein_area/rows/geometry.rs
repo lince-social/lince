@@ -154,6 +154,7 @@ fn update_layout(world: &mut World, mut preparation: Local<LayoutPreparation>) {
         let height = content_height + 24.0 + (count.saturating_sub(1) as f32 * 8.0);
         let height = config
             .viewport_height
+            .or_else(|| config.fiote.then_some(config.width * 0.75))
             .unwrap_or(height)
             .min(config.max_height.unwrap_or(f32::MAX));
         if let Some(cell) = world.get::<grouping::Cell>(*entity).copied() {

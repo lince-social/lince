@@ -1,43 +1,62 @@
-// non-lean-yet
-// Scope: const MAX_ENTRIES, const MAX_BYTES, const MAX_OFFER_BYTES, struct Entry.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 28, 75.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 5,
-//   6, 10, 11, 12, 13, 18, 19, 20, 24, 28, 75, 109, 110, 111, 112.
-// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites validate:
-//   String (28), validate_path: String (75).
-
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
+use uuid::{Uuid, fmt::Hyphenated};
 
+use crate::json::encoded_len;
+
+/// Maximum number of files and directories in an offer.
 pub const MAX_ENTRIES: usize = 4096;
-pub const MAX_BYTES: u64 = 1024 * 1024 * 1024 * 1024;
+/// Maximum total size of the offered files, one tebibyte.
+pub const MAX_BYTES: u64 = 1 << 40;
+/// Maximum encoded size of the complete offer envelope.
 pub const MAX_OFFER_BYTES: usize = 2 * 1024 * 1024;
 
+const OFFER_ENVELOPE_BYTES: usize = 128;
+const HASH_HEX_BYTES: usize = 64;
+const MAX_PATH_BYTES: usize = 1024;
+const MAX_PATH_COMPONENTS: usize = 64;
+const MAX_COMPONENT_BYTES: usize = 240;
+
+/// A file or directory in an offered copy.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Entry {
+    /// Portable path relative to the offer's root.
     pub path: String,
+    /// Hexadecimal blob hash for a file, absent for a directory.
     pub hash: Option<String>,
+    /// File size in bytes, zero for a directory.
     pub size: u64,
 }
 
+/// Identifies an offered copy and lists its contents.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Manifest {
+    /// Hyphenated UUID of the offer.
     pub id: String,
+    /// All files and directories, including parents of nested entries.
     pub entries: Vec<Entry>,
 }
 
 impl Manifest {
+    /// Returns the total listed size in bytes. Validate untrusted manifests first.
+    ///
+    /// # Panics
+    ///
+    /// May panic with overflow checks enabled if an unvalidated manifest exceeds [`u64::MAX`].
     pub fn bytes(&self) -> u64 {
         self.entries.iter().map(|entry| entry.size).sum()
     }
 
+    /// Checks portability and the file, directory, and envelope limits of this offer.
+    ///
+    /// # Errors
+    ///
+    /// Returns a diagnostic for an invalid identifier, entry, directory tree, or envelope size.
     pub fn validate(&self) -> Result<(), String> {
-        if self.id.len() != 36 || uuid::Uuid::parse_str(&self.id).is_err() {
+        if self.id.len() != Hyphenated::LENGTH || Uuid::parse_str(&self.id).is_err() {
             return Err("Invalid Blob Sync offer identifier".into());
         }
         if self.entries.is_empty() || self.entries.len() > MAX_ENTRIES {
@@ -50,13 +69,15 @@ impl Manifest {
         for entry in &self.entries {
             validate_path(&entry.path)?;
             if paths
-                .insert(entry.path.to_lowercase(), entry.hash.is_some())
+                .insert(entry.path.to_lowercase(), entry.hash.is_none())
                 .is_some()
             {
                 return Err("Files must have distinct names, including letter case".into());
             }
             match &entry.hash {
-                Some(hash) if hash.len() == 64 && hash.bytes().all(|b| b.is_ascii_hexdigit()) => {}
+                Some(hash)
+                    if hash.len() == HASH_HEX_BYTES
+                        && hash.bytes().all(|b| b.is_ascii_hexdigit()) => {}
                 None if entry.size == 0 => {}
                 _ => return Err("Invalid file hash or directory size".into()),
             }
@@ -65,17 +86,16 @@ impl Manifest {
                 .filter(|bytes| *bytes <= MAX_BYTES)
                 .ok_or("A Blob Sync copy cannot exceed 1 TiB")?;
         }
-        for path in paths.keys() {
-            let mut parent = path.as_str();
-            while let Some((next, _)) = parent.rsplit_once('/') {
-                if paths.get(next) != Some(&false) {
-                    return Err("Every parent must be a directory in the offer".into());
-                }
-                parent = next;
-            }
+        // Each parent is checked as an entry, so direct edges cover every ancestor.
+        if paths
+            .keys()
+            .filter_map(|path| path.rsplit_once('/'))
+            .any(|(parent, _)| paths.get(parent) != Some(&true))
+        {
+            return Err("Every parent must be a directory in the offer".into());
         }
-        if crate::json::encoded_len(self).map_err(|error| error.to_string())?
-            > MAX_OFFER_BYTES - 128
+        if encoded_len(self).map_err(|error| error.to_string())?
+            > MAX_OFFER_BYTES - OFFER_ENVELOPE_BYTES
         {
             return Err("The file list is too large for one offer".into());
         }
@@ -83,30 +103,27 @@ impl Manifest {
     }
 }
 
+/// Checks that a relative path is portable across supported filesystems.
+///
+/// # Errors
+///
+/// Returns a diagnostic for an invalid length, depth, or component name.
 pub fn validate_path(path: &str) -> Result<(), String> {
-    if path.is_empty() || path.len() > 1024 || path.split('/').count() > 64 {
+    let parts = path.split('/');
+    if path.is_empty()
+        || path.len() > MAX_PATH_BYTES
+        || parts.clone().nth(MAX_PATH_COMPONENTS).is_some()
+    {
         return Err("Invalid file path length".into());
     }
-    for part in path.split('/') {
-        let stem = part
-            .split('.')
-            .next()
-            .unwrap_or_default()
-            .to_ascii_uppercase();
+    for part in parts {
         if part.is_empty()
-            || part == "."
-            || part == ".."
-            || part.len() > 240
+            || part.len() > MAX_COMPONENT_BYTES
             || part.ends_with(['.', ' '])
             || part
                 .chars()
                 .any(|c| c.is_control() || "\\:<>\"|?*".contains(c))
-            || [
-                "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7",
-                "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8",
-                "LPT9",
-            ]
-            .contains(&stem.as_str())
+            || is_reserved_name(part)
         {
             return Err(
                 "Choose portable filenames without special characters or parent paths".into(),
@@ -116,9 +133,28 @@ pub fn validate_path(path: &str) -> Result<(), String> {
     Ok(())
 }
 
+fn is_reserved_name(part: &str) -> bool {
+    let stem = part
+        .split_once('.')
+        .map_or(part, |(stem, _)| stem)
+        .as_bytes();
+    [b"CON", b"PRN", b"AUX", b"NUL"]
+        .iter()
+        .any(|reserved| stem.eq_ignore_ascii_case(*reserved))
+        || matches!(
+            stem.split_last(),
+            Some((b'1'..=b'9', prefix))
+                if prefix.eq_ignore_ascii_case(b"COM") || prefix.eq_ignore_ascii_case(b"LPT")
+        )
+}
+
+/// A peer that can receive an offered copy.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Target {
+    /// Transport node identifier.
     pub node_id: String,
+    /// Display label for the peer.
     pub label: String,
+    /// Whether the peer was discovered nearby.
     pub nearby: bool,
 }

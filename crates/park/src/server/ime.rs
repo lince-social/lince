@@ -233,7 +233,7 @@ impl Server {
     #[cfg(feature = "nested")]
     pub(crate) fn magnification_caret(
         &self,
-    ) -> Option<lince_interface::host::magnification::Caret> {
+    ) -> Option<lince_host::magnification::Caret> {
         if self.locked() {
             return None;
         }
@@ -248,7 +248,7 @@ impl Server {
                 }
             });
         let caret = caret?;
-        let rectangle = lince_interface::host::Rectangle::new(
+        let rectangle = lince_host::Rectangle::new(
             [f64::from(caret.loc.x), f64::from(caret.loc.y)],
             [
                 f64::from(caret.size.w.max(1)),
@@ -283,11 +283,11 @@ impl Server {
                         ])
                     })
                 })?;
-            let rectangle = lince_interface::host::Rectangle::new(
+            let rectangle = lince_host::Rectangle::new(
                 std::array::from_fn(|axis| rectangle.origin()[axis] + offset[axis]),
                 rectangle.size(),
             )?;
-            return Some(lince_interface::host::magnification::Caret::Application {
+            return Some(lince_host::magnification::Caret::Application {
                 surface,
                 rectangle,
             });
@@ -311,14 +311,14 @@ impl Server {
                     }))
                 })
             })?;
-        let rectangle = lince_interface::host::Rectangle::new(
+        let rectangle = lince_host::Rectangle::new(
             [
                 rectangle.origin()[0] + f64::from(origin.x) + f64::from(geometry.loc.x) + offset[0],
                 rectangle.origin()[1] + f64::from(origin.y) + f64::from(geometry.loc.y) + offset[1],
             ],
             rectangle.size(),
         )?;
-        Some(lince_interface::host::magnification::Caret::Layer { output, rectangle })
+        Some(lince_host::magnification::Caret::Layer { output, rectangle })
     }
 
     #[cfg(feature = "nested")]

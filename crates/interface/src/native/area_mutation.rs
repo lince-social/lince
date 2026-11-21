@@ -31,6 +31,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 mod admission;
+mod contributions;
 mod cycles;
 mod snapshot;
 #[path = "area_mutation_tests.rs"]
@@ -54,6 +55,10 @@ impl AreaChanges {
 
     pub fn is_empty(&self) -> bool {
         self.enter.is_empty() && self.leave.is_empty()
+    }
+
+    fn crossing(&self, inside: bool) -> &RecordChanges {
+        if inside { &self.enter } else { &self.leave }
     }
 }
 
@@ -665,7 +670,9 @@ fn update(
     if !crate::native::laboratory::normal(world) {
         return;
     }
-    let mut state = world.remove_resource::<Mutations>().unwrap();
+    let Some(mut state) = world.remove_resource::<Mutations>() else {
+        return;
+    };
     let record_keys: HashSet<_> = records
         .iter()
         .map(|record| (record.root, record.workspace, record.uid.as_str()))
@@ -675,9 +682,8 @@ fn update(
         .values()
         .map(|pending| pending.target.as_str())
         .collect();
-    let mut candidates =
-        BTreeMap::<(Entity, u64, String, Option<String>), Vec<(Entity, bool, RecordChanges)>>::new(
-        );
+    // Candidate selection updates visits. Grants keep their crossing payloads through submission.
+    let mut candidates = BTreeMap::<_, Vec<_>>::new();
     for (entity, grant) in &mut state.grants {
         if crate::native::laboratory::blocked(world, *entity) {
             continue;
@@ -739,12 +745,7 @@ fn update(
                 previous.eligible
             };
             *previous = next;
-            let changes = if inside {
-                &grant.area.changes.enter
-            } else {
-                &grant.area.changes.leave
-            };
-            if eligible && !changes.is_empty() {
+            if eligible && !grant.area.changes.crossing(inside).is_empty() {
                 candidates
                     .entry((
                         grant.root,
@@ -756,24 +757,18 @@ fn update(
                         },
                     ))
                     .or_default()
-                    .push((*entity, inside, changes.clone()));
+                    .push((*entity, inside));
             }
         }
     }
     let mut stopped = Vec::new();
-    for ((root, workspace, uid, source), mut contributions) in candidates {
-        let mut changes = RecordChanges::default();
-        let entering_quantity = contributions
-            .iter()
-            .any(|(_, inside, change)| *inside && change.quantity.is_some());
-        let mut conflict = contributions.iter_mut().any(|(_, inside, change)| {
-            if !*inside && entering_quantity {
-                change.quantity = None;
-            }
-            !changes.merge(change)
-        });
+    for ((root, workspace, uid, source), contributions) in candidates {
+        let Some(&(owner, _)) = contributions.first() else {
+            continue;
+        };
+        let (changes, mut conflict) = contributions::merge(&state.grants, &contributions);
         let mut constraints = changes.clone();
-        let mut involved: Vec<_> = contributions.iter().map(|(entity, _, _)| *entity).collect();
+        let mut involved: Vec<_> = contributions.iter().map(|(entity, _)| *entity).collect();
         for (entity, grant) in &state.grants {
             if !involved.contains(entity)
                 && grant.root == root
@@ -790,26 +785,14 @@ fn update(
                 involved.push(*entity);
             }
         }
-        let settings = involved
-            .first()
-            .and_then(|area| state.grants.get(area))
+        let settings = state
+            .grants
+            .get(&owner)
             .map(|grant| crate::native::workspace_config::rules(world, grant.root, grant.workspace))
             .unwrap_or_default();
         let exhausted = state.pending.len() >= usize::from(settings.max_pending);
         if exhausted && !conflict {
-            for (entity, inside, _) in &contributions {
-                if let Some(grant) = state.grants.get_mut(entity) {
-                    grant.visits.insert(
-                        uid.clone(),
-                        Visit {
-                            inside: !inside,
-                            eligible: !inside,
-                            immune: false,
-                            deferred: true,
-                        },
-                    );
-                }
-            }
+            contributions::defer(&mut state.grants, &contributions, &uid);
             continue;
         }
         if conflict {
@@ -821,23 +804,31 @@ fn update(
             }
             continue;
         }
-        let cycle = contributions.iter().find_map(|(area, inside, _)| {
-            let grant = state.grants.get(area)?;
-            state
-                .cycles
-                .check(
-                    grant.root,
-                    grant.workspace,
-                    *area,
-                    &uid,
-                    *inside,
-                    settings.max_repeats,
+        let cycle = contributions
+            .iter()
+            .find_map(|(area, inside)| {
+                let grant = state.grants.get(area)?;
+                state
+                    .cycles
+                    .check(
+                        grant.root,
+                        grant.workspace,
+                        *area,
+                        &uid,
+                        *inside,
+                        settings.max_repeats,
+                    )
+                    .err()
+            })
+            .or_else(|| {
+                let new_keys = contributions
+                    .iter()
+                    .filter(|(area, _)| !state.cycles.has(*area, &uid))
+                    .count();
+                (new_keys > state.cycles.available()).then_some(
+                    "Area paused: the bounded crossing history is full. Resume after reviewing the rules.",
                 )
-                .err()
-        }).or_else(|| {
-            (contributions.iter().filter(|(area, _, _)| !state.cycles.has(*area, &uid)).count() > state.cycles.available())
-                .then_some("Area paused: the bounded crossing history is full. Resume after reviewing the rules.")
-        });
+            });
         if let Some(message) = cycle {
             for area in involved {
                 if let Some(mut source) = world.get_mut::<InfluenceArea>(area) {
@@ -850,7 +841,7 @@ fn update(
         let id = request_id();
         if send(
             world,
-            contributions[0].0,
+            owner,
             id.clone(),
             Action::PreviewAreaTransition {
                 target: uid.clone(),
@@ -858,7 +849,7 @@ fn update(
                 constraints,
             },
         ) {
-            for (area, inside, _) in &contributions {
+            for (area, inside) in &contributions {
                 if let Some(grant) = state.grants.get(area) {
                     state
                         .cycles
@@ -869,30 +860,15 @@ fn update(
                 id,
                 Pending {
                     target: uid,
-                    areas: contributions
-                        .into_iter()
-                        .map(|(entity, inside, _)| (entity, inside))
-                        .collect(),
+                    areas: contributions,
                     applying: false,
                     retry: None,
                 },
             );
-        } else if crate::native::practice_cells::sender(world, contributions[0].0)
+        } else if crate::native::practice_cells::sender(world, owner)
             .is_some_and(|sender| !sender.is_closed())
         {
-            for (entity, inside, _) in &contributions {
-                if let Some(grant) = state.grants.get_mut(entity) {
-                    grant.visits.insert(
-                        uid.clone(),
-                        Visit {
-                            inside: !inside,
-                            eligible: !inside,
-                            immune: false,
-                            deferred: true,
-                        },
-                    );
-                }
-            }
+            contributions::defer(&mut state.grants, &contributions, &uid);
             if let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>() {
                 wake.ring();
             }

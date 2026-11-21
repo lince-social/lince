@@ -1,5 +1,5 @@
 // non-lean-yet
-// Scope: struct SchedulePick, struct FaceCut, struct Scene, struct Connectors.
+// Scope: struct SchedulePick, struct Scene, struct Connectors.
 // BeautifulRust (baseline lines):
 // - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 123, 168, 176,
 //   195, 234, 314, 375, 489, 569, 691.
@@ -19,12 +19,6 @@ use bevy::{
 pub struct SchedulePick {
     owner: Entity,
     ids: Vec<String>,
-}
-
-#[derive(Component, PartialEq)]
-struct FaceCut {
-    uv: Rect,
-    regions: Vec<Rect>,
 }
 
 #[derive(Component)]
@@ -66,48 +60,6 @@ impl Ribbon {
             offset + 2,
             offset + 3,
         ]);
-    }
-
-    fn strip(
-        &mut self,
-        curve: &model::Geometry,
-        range: &nucleus::schedule::TimeRange,
-        now: i64,
-        width: f32,
-        color: [f32; 4],
-        budget: usize,
-    ) {
-        let points: Vec<_> = curve.samples(range, budget).map(Vec3::from_array).collect();
-        let end = range.until_ms.unwrap_or(range.from_ms);
-        if points.len() == 1 {
-            let point = points[0] + Vec3::Y * 0.05;
-            let cross = Vec3::from_array(curve.transverse(range.from_ms.max(now))) * 10.0;
-            let tangent = Vec3::new(-cross.z, 0.0, cross.x).normalize_or_zero() * width * 0.5;
-            self.quad(
-                [
-                    point - cross - tangent,
-                    point + cross - tangent,
-                    point + cross + tangent,
-                    point - cross + tangent,
-                ],
-                color,
-            );
-        } else {
-            let at = |index: usize| {
-                range.from_ms.max(now)
-                    + ((end - range.from_ms.max(now)) as f64 * index as f64
-                        / (points.len() - 1) as f64)
-                        .round() as i64
-            };
-            let mut a_cross = Vec3::from_array(curve.transverse(at(0))) * width * 0.5;
-            for (index, pair) in points.windows(2).enumerate() {
-                let b_cross = Vec3::from_array(curve.transverse(at(index + 1))) * width * 0.5;
-                let a = pair[0] + Vec3::Y * 0.05;
-                let b = pair[1] + Vec3::Y * 0.05;
-                self.quad([a - a_cross, a + a_cross, b + b_cross, b - b_cross], color);
-                a_cross = b_cross;
-            }
-        }
     }
 
     fn mesh(self) -> Mesh {
@@ -220,7 +172,7 @@ pub(super) fn update(
     settings: &Settings,
     now: i64,
     size: Vec2,
-    spatial: bool,
+    duration: i64,
 ) {
     if !crate::native::topology::presentation::ready(world) {
         if let Some(previous) = world.get_mut::<View>(owner).unwrap().scene.take()
@@ -243,78 +195,10 @@ pub(super) fn update(
         .palette
         .clone()
         .unwrap_or_else(|| palette::Palette::resolve(world, owner));
-    let duration = if spatial {
-        settings.horizon_ms
-    } else {
-        (settings.aperture_ms as f64
-            + (settings.horizon_ms - settings.aperture_ms) as f64 * f64::from(unwind))
-            as i64
-    };
     let previous_scene = view
         .scene
         .filter(|entity| world.get_entity(*entity).is_ok());
-    let mut background = Ribbon::default();
-    if spatial {
-        background.strip(
-            &curve,
-            &nucleus::schedule::TimeRange {
-                from_ms: now,
-                until_ms: Some(now + settings.horizon_ms),
-            },
-            now,
-            10.0,
-            palette::rgba(palette.track),
-            4096,
-        );
-    }
-    let circular = size.min_element()
-        * std::f32::consts::TAU
-        * 0.4
-        * (settings.horizon_ms as f64 / settings.aperture_ms as f64) as f32;
-    let pixels = (circular * (1.0 - unwind) + size.x * unwind) * density;
-    let interval = model::tick_interval(settings.horizon_ms, pixels, 25.0)
-        .max(model::tick_interval(settings.horizon_ms, 256.0, 1.0));
-    let major_interval = model::tick_interval(settings.horizon_ms, pixels, 85.0).max(interval);
-    let mut at = now.div_euclid(interval) * interval + interval;
-    while spatial && at < now + settings.horizon_ms {
-        background.strip(
-            &curve,
-            &nucleus::schedule::TimeRange {
-                from_ms: at,
-                until_ms: None,
-            },
-            now,
-            density.recip().clamp(0.2, 3.0),
-            if at.rem_euclid(major_interval) == 0 {
-                palette::rgba(palette.muted)
-            } else {
-                palette::rgba(palette.track)
-            },
-            1,
-        );
-        at += interval;
-    }
-    if spatial {
-        let point = Vec3::from_array(curve.position(now)) + Vec3::Y * 0.2;
-        let cross = Vec3::from_array(curve.transverse(now));
-        let inner = point - cross * 18.0;
-        let end = point + cross * 15.0;
-        let tangent = Vec3::new(-cross.z, 0.0, cross.x) * density.recip().clamp(0.5, 3.0);
-        background.quad(
-            [
-                inner - tangent,
-                end - tangent,
-                end + tangent,
-                inner + tangent,
-            ],
-            palette::rgba(palette.present),
-        );
-    }
-    let mut ribbons = if background.positions.is_empty() {
-        Vec::new()
-    } else {
-        vec![(background, None)]
-    };
+    let mut ribbons = Vec::new();
     let settled;
     let mut bands: Vec<&motion::Band> = if let Some(motion) = world.get::<motion::Motion>(owner) {
         motion.bands.values().collect()
@@ -342,10 +226,8 @@ pub(super) fn update(
         );
         let mut ribbon = Ribbon::default();
         let mut points = motion::points_in(band, &curve, settings, now, size, palette.width);
-        if !spatial {
-            for point in &mut points {
-                point.y = 0.0;
-            }
+        for point in &mut points {
+            point.y = 0.0;
         }
         let width = palette.width;
         if points.len() == 1 {
@@ -602,82 +484,17 @@ pub(super) fn hand(
     }
 }
 
-fn face_mesh(uv: Rect, rectangles: &[Rect]) -> Mesh {
-    let mut positions = Vec::new();
-    let mut coords = Vec::new();
-    let mut indices = Vec::new();
-    for rect in rectangles {
-        if rect.size().min_element() <= 0.0 {
-            continue;
-        }
-        let points = [
-            rect.min,
-            Vec2::new(rect.max.x, rect.min.y),
-            rect.max,
-            Vec2::new(rect.min.x, rect.max.y),
-        ];
-        let offset = positions.len() as u32;
-        for point in points {
-            let position = (point - uv.min) / uv.size() - Vec2::splat(0.5);
-            positions.push([position.x, -position.y, 0.0]);
-            coords.push(point.to_array());
-        }
-        indices.extend([
-            offset,
-            offset + 2,
-            offset + 1,
-            offset,
-            offset + 3,
-            offset + 2,
-        ]);
-    }
-    let normals = vec![[0.0, 0.0, 1.0]; positions.len()];
-    Mesh::new(
-        PrimitiveTopology::TriangleList,
-        RenderAssetUsages::MAIN_WORLD | RenderAssetUsages::RENDER_WORLD,
-    )
-    .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, positions)
-    .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, normals)
-    .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, coords)
-    .with_inserted_indices(Indices::U32(indices))
-}
-
-pub(super) fn placement(world: &mut World, owner: Entity, viewport: Entity, spatial: bool) {
+pub(super) fn placement(world: &mut World, owner: Entity, viewport: Entity) {
     let Some(surface) = world.get::<crate::native::topology::presentation::Surface>(owner) else {
         return;
     };
-    let (face, body, density, size, uv) = (
-        surface.face,
-        surface.body,
-        surface.density,
-        surface.size,
-        surface.uv,
-    );
     if world.get::<ComputedNode>(viewport).is_none() {
         return;
     }
     let Some(transform) = world.get::<UiGlobalTransform>(viewport) else {
         return;
     };
-    let center = transform.translation / density - size * 0.5;
-    let regions = if spatial {
-        chrome::surfaces(world, owner)
-            .into_iter()
-            .filter_map(|entity| {
-                let node = world.get::<ComputedNode>(entity)?;
-                let transform = world.get::<UiGlobalTransform>(entity)?;
-                let center = transform.translation / density;
-                let extent = node.size() / density * 0.5;
-                let rect = Rect::from_corners(
-                    ((center - extent) / size).max(uv.min),
-                    ((center + extent) / size).min(uv.max),
-                );
-                (rect.size().min_element() > 0.0).then_some(rect)
-            })
-            .collect()
-    } else {
-        vec![uv]
-    };
+    let center = transform.translation / surface.density - surface.size * 0.5;
     if let Some(scene) = world.get::<View>(owner).and_then(|view| view.scene)
         && let Some(mut transform) = world.get_mut::<Transform>(scene)
     {
@@ -693,26 +510,76 @@ pub(super) fn placement(world: &mut World, owner: Entity, viewport: Entity, spat
             transform.translation = translation;
         }
     }
-    if let Some(mut visibility) = world.get_mut::<Visibility>(body) {
-        *visibility = Visibility::Hidden;
-    }
-    let cut = FaceCut { uv, regions };
-    if world.get::<FaceCut>(face) != Some(&cut) {
-        let handle = world.get::<Mesh3d>(face).unwrap().0.clone();
-        let mesh = face_mesh(uv, &cut.regions);
-        let _ = world
-            .resource_mut::<Assets<Mesh>>()
-            .insert(handle.id(), mesh);
-        world
-            .entity_mut(face)
-            .remove::<bevy::camera::primitives::Aabb>()
-            .insert(cut);
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn camera_mode_keeps_the_same_clock_face_and_hand() {
+        use crate::native::{canvas, topology, workspace};
+
+        for mode in [Mode::Coiled, Mode::Straight] {
+            let mut world = World::new();
+            world.insert_resource(crate::native::theme::Typography(Handle::default()));
+            world.init_resource::<bevy::input_focus::InputFocus>();
+            world.init_resource::<Assets<Image>>();
+            world.init_resource::<Assets<Mesh>>();
+            world.init_resource::<Assets<StandardMaterial>>();
+            world.spawn(Window {
+                resolution: (1920, 1080).into(),
+                ..default()
+            });
+            let root = world
+                .spawn((
+                    workspace::Workspaces::default(),
+                    canvas::CanvasView::default(),
+                    topology::view::View::default(),
+                ))
+                .id();
+            let owner = world
+                .spawn((
+                    Node::default(),
+                    canvas::CanvasItem {
+                        position: bevy::math::DVec2::ZERO,
+                        size: Vec2::splat(420.0),
+                    },
+                    workspace::WorkspaceMember(1),
+                    ChildOf(root),
+                    TimeSettings(Settings { mode, ..default() }),
+                ))
+                .id();
+            populate(&mut world, owner);
+            let viewport = world.get::<View>(owner).unwrap().viewport;
+            let mut node = world.get_mut::<ComputedNode>(viewport).unwrap();
+            node.size = Vec2::splat(420.0);
+            node.inverse_scale_factor = 1.0;
+
+            topology::presentation::synchronize(&mut world);
+            world.run_system_cached(render::update).unwrap();
+            let image = world.get::<ImageNode>(viewport).unwrap().image.id();
+            let hand = |world: &World| world.get::<Hand>(owner).map(|hand| hand.0);
+            let initial_hand = hand(&world);
+            assert_eq!(initial_hand.is_some(), mode == Mode::Coiled);
+            for spatial in [true, false] {
+                world.get_mut::<topology::view::View>(root).unwrap().spatial = spatial;
+                topology::presentation::synchronize(&mut world);
+                world.run_system_cached(render::update).unwrap();
+
+                let surface = world.get::<topology::presentation::Surface>(owner).unwrap();
+                assert!(surface.visible);
+                assert_eq!(world.get::<ImageNode>(viewport).unwrap().image.id(), image);
+                assert_eq!(hand(&world), initial_hand);
+                let scene = world.get::<View>(owner).unwrap().scene.unwrap();
+                assert!(world.get::<Scene>(scene).unwrap().meshes.is_empty());
+                assert_eq!(
+                    world.get::<Visibility>(surface.body),
+                    Some(&Visibility::Hidden)
+                );
+            }
+        }
+    }
 
     #[test]
     fn strings_end_at_the_nearest_card_edge_even_during_entry_motion() {
@@ -795,29 +662,5 @@ mod tests {
         assert_eq!(points[0], [3.0, 0.0, 0.0]);
         replace(&mut world, parent, owner, vec![(ribbon(4.0), None)]);
         assert!(world.get_entity(previous[1]).is_err());
-    }
-
-    #[test]
-    fn face_has_a_real_opening_and_valid_clipped_uvs() {
-        let uv = Rect::from_corners(Vec2::splat(0.1), Vec2::splat(0.9));
-        let hole = Rect::from_corners(Vec2::splat(0.3), Vec2::splat(0.7));
-        let regions = [
-            Rect::from_corners(uv.min, Vec2::new(uv.max.x, hole.min.y)),
-            Rect::from_corners(Vec2::new(uv.min.x, hole.max.y), uv.max),
-        ];
-        let mesh = face_mesh(uv, &regions);
-        assert_eq!(mesh.count_vertices(), 8);
-        assert_eq!(mesh.indices().unwrap().len(), 12);
-        let bevy::mesh::VertexAttributeValues::Float32x2(coords) =
-            mesh.attribute(Mesh::ATTRIBUTE_UV_0).unwrap()
-        else {
-            panic!()
-        };
-        assert!(
-            coords
-                .iter()
-                .all(|point| uv.contains(Vec2::from_array(*point))
-                    && (point[1] <= hole.min.y || point[1] >= hole.max.y))
-        );
     }
 }

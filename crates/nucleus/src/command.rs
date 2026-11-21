@@ -1,17 +1,14 @@
-// non-lean-yet
-// Scope: enum Command, struct CommandResponse.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
-//   Sites 5.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 16.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 6,
-//   7, 9, 10, 11, 16, 40, 41, 42, 43, 45.
-// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites validate:
-//   String (16).
-
 use serde::{Deserialize, Serialize};
 
+const MAX_CONFIGURATION_BYTES: usize = 16 * 1024;
+const MAX_PROCESS_VALUE_BYTES: usize = 4 * 1024;
+const MAX_ARGUMENTS: usize = 128;
+
+#[expect(
+    missing_docs,
+    clippy::exhaustive_enums,
+    reason = "Rustdoc feeds the published schema and callers match every variant"
+)]
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum Command {
@@ -25,20 +22,16 @@ pub enum Command {
 }
 
 impl Command {
+    /// Checks that the command text and any process arguments fit the configuration limits.
+    ///
+    /// # Errors
+    ///
+    /// Returns a diagnostic for missing command text, embedded NULs, or exceeded limits.
     pub fn validate(&self) -> Result<(), String> {
         let valid = match self {
-            Self::Shell { script } => {
-                !script.trim().is_empty() && script.len() <= 16_384 && !script.contains('\0')
-            }
+            Self::Shell { script } => valid_command_text(script, MAX_CONFIGURATION_BYTES),
             Self::Process { program, arguments } => {
-                !program.trim().is_empty()
-                    && program.len() <= 4096
-                    && !program.contains('\0')
-                    && arguments.len() <= 128
-                    && arguments
-                        .iter()
-                        .all(|argument| argument.len() <= 4096 && !argument.contains('\0'))
-                    && arguments.iter().map(String::len).sum::<usize>() <= 16_384
+                valid_command_text(program, MAX_PROCESS_VALUE_BYTES) && arguments_fit(arguments)
             }
         };
         valid.then_some(()).ok_or_else(|| {
@@ -47,6 +40,25 @@ impl Command {
     }
 }
 
+fn valid_command_text(text: &str, max_bytes: usize) -> bool {
+    text.len() <= max_bytes && !text.trim().is_empty() && !text.contains('\0')
+}
+
+fn arguments_fit(arguments: &[String]) -> bool {
+    arguments.len() <= MAX_ARGUMENTS
+        && arguments
+            .iter()
+            .try_fold(MAX_CONFIGURATION_BYTES, |remaining, argument| {
+                let bytes = argument.len();
+                if bytes > MAX_PROCESS_VALUE_BYTES || argument.contains('\0') {
+                    return None;
+                }
+                remaining.checked_sub(bytes)
+            })
+            .is_some()
+}
+
+#[expect(missing_docs, reason = "Rustdoc feeds the published response schema")]
 #[derive(Clone, Debug, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct CommandResponse {

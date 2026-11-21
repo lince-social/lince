@@ -17,7 +17,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use lince_interface::testing::{Backend, Dispatch, Limits, Route, Runner, Selector, Step};
+use lince_host::testing::{Backend, Dispatch, Limits, Route, Runner, Selector, Step};
 use quick_xml::{Reader, events::Event};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -1227,7 +1227,7 @@ mod tests {
         let report = Runner::new(Limits::default()).run(&mut backend, &step);
         assert!(matches!(
             report.outcome,
-            lince_interface::testing::Outcome::BackendError(_)
+            lince_host::testing::Outcome::BackendError(_)
         ));
         assert_eq!(report.metrics.dispatches, 1);
         assert!(backend.terminal);

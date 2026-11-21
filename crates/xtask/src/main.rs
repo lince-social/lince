@@ -13,7 +13,7 @@ use std::{
     process::{Command, Stdio},
 };
 
-use lince_interface::testing::InterfaceSelection;
+use lince_host::testing::InterfaceSelection;
 
 mod ailuros;
 mod android;

@@ -1,15 +1,17 @@
-// non-lean-yet
-// Scope: fn amount, fn hash, fn statement, fn analysis.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
-//   Sites 136, 198, 388, 450, 451, 452, 461, 462, 479, 481, 491.
-// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 320, 335.
-// - [Clippy: clippy::redundant_clone] Move or borrow at the marked sites and check later uses.
-//   Sites 332, 348, 351.
+mod generated;
 
 use super::*;
 use crate::{
-    trust_analysis::query::{EvidenceRow, Group},
+    DecimalValue,
+    karma::{CanonicalHash, canonical_hash},
+    new_uid,
+    transfer::{outcome::Role, receipt::Measurement},
+    trust_analysis::{
+        Condition, Identity, IdentityContext,
+        contacts::Audience,
+        paths,
+        query::{Analysis, CounterpartyBasis, EvidenceLevel, EvidenceRow, Group, Query},
+    },
     vocabulary::reference::MeaningReference,
 };
 
@@ -21,20 +23,20 @@ fn hash(value: &str) -> CanonicalHash {
 }
 
 fn statement() -> Statement {
-    let issuer = Identity::Person(crate::new_uid("r"));
+    let issuer = Identity::Person(new_uid("r"));
     Statement {
         category: Default::default(),
         title: "Food contribution history".into(),
         issuer: issuer.clone(),
-        claim: crate::new_uid("r"),
+        claim: new_uid("r"),
         revision: 1,
         descriptor: Descriptor {
             subject: issuer,
             role: Role::Giver,
             measurement: Measurement {
                 meaning: MeaningReference {
-                    vocabulary_uid: crate::new_uid("g"),
-                    concept_uid: crate::new_uid("c"),
+                    vocabulary_uid: new_uid("g"),
+                    concept_uid: new_uid("c"),
                     revision: 1,
                     definition_hash: "a".repeat(64),
                 },
@@ -125,9 +127,9 @@ fn visible_ten_against_claimed_hundred_is_partial_support_not_disproof() {
 #[test]
 fn checking_uses_the_readers_sources_and_pins_the_claims_exact_measurement_and_period() {
     let statement = statement();
-    let mut sources = Query::for_subject(Identity::Organ(crate::new_uid("r")));
-    sources.issuers.exclude.push(super::super::Condition {
-        identities: vec![Identity::Organ(crate::new_uid("r"))],
+    let mut sources = Query::for_subject(Identity::Organ(new_uid("r")));
+    sources.issuers.exclude.push(Condition {
+        identities: vec![Identity::Organ(new_uid("r"))],
         ..Default::default()
     });
     let checked = statement
@@ -158,7 +160,7 @@ fn zero_reports_and_replicas_do_not_become_positive_contribution_occurrences() {
         agreed_quantity: None,
         canonical_unit: None,
         issuer: statement.issuer.clone(),
-        counterparty: Identity::Organ(crate::new_uid("r")),
+        counterparty: Identity::Organ(new_uid("r")),
         measurement: statement.descriptor.measurement.clone(),
         level: statement.descriptor.level,
         recorded_at: 950,
@@ -212,218 +214,6 @@ fn signed_claim_format_binds_audience_versions_basis_and_purpose_and_rejects_ins
     document.statement.amount = amount("1");
     document.statement.as_of = document.statement.issued_at + 1;
     assert!(document.validate().is_err());
-}
-
-fn recipe() -> recipes::Recipe {
-    let statement = statement();
-    let mut inputs = Query::for_subject(statement.descriptor.subject.clone());
-    inputs.measurements = vec![statement.descriptor.measurement.clone()];
-    inputs.from = statement.descriptor.from;
-    inputs.rely_on_all_visible = true;
-    let definition = recipes::Definition {
-        starting_claim_revision: 0,
-        recipe: crate::new_uid("r"),
-        revision: 1,
-        controller: statement.issuer.uid().into(),
-        terms: recipes::Terms {
-            issuer: statement.issuer,
-            claim: statement.claim,
-            title: statement.title,
-            descriptor: statement.descriptor,
-            comparator: statement.comparator,
-            audience: Audience::Public,
-            issued_at: 1001,
-            expires_at: 2000,
-            lifetime_seconds: 600,
-            delegate: recipes::Delegate {
-                organ: crate::new_uid("r"),
-                cell: crate::new_uid("r"),
-                key_id: "publishing-cell".into(),
-                public_key: format!("{}=", "A".repeat(43)),
-            },
-        },
-        inputs,
-        start_enabled: false,
-        refresh_seconds: 60,
-    };
-    recipes::Recipe {
-        permit: recipes::Permit {
-            recipe: definition.id().unwrap(),
-            revision: 1,
-            terms: definition.terms.clone(),
-            key_id: "original-person".into(),
-            public_key: format!("{}=", "A".repeat(43)),
-            signature: format!("{}==", "A".repeat(86)),
-        },
-        definition,
-    }
-}
-
-#[test]
-fn generated_permits_bind_scope_without_exporting_private_recipe_policy() {
-    let recipe = recipe();
-    recipe.validate().unwrap();
-    let mut statement = statement();
-    statement.title = recipe.definition.terms.title.clone();
-    statement.issuer = recipe.definition.terms.issuer.clone();
-    statement.claim = recipe.definition.terms.claim.clone();
-    statement.descriptor = recipe.definition.terms.descriptor.clone();
-    statement.audience = Audience::Public;
-    statement.issued_at = 1100;
-    statement.as_of = 1100;
-    statement.expires_at = 1700;
-    statement.authorship = Authorship::Generated {
-        recipe: recipe.permit.recipe.clone(),
-        revision: 1,
-        partial: false,
-        state: recipes::EvaluationState::Available,
-        permit: Box::new(recipe.permit.clone()),
-    };
-    let document = Document {
-        statement,
-        key_id: recipe.permit.terms.delegate.key_id.clone(),
-        public_key: recipe.permit.terms.delegate.public_key.clone(),
-        signature: format!("{}==", "A".repeat(86)),
-    };
-    document.validate().unwrap();
-    let encoded = serde_json::to_string(&document).unwrap();
-    assert!(!encoded.contains("\"inputs\""));
-    assert!(!encoded.contains("\"controller\""));
-    assert!(!encoded.contains(&recipe.definition.recipe));
-    let serving = crate::trust_analysis::serving::Review {
-        person: recipe.definition.controller.clone(),
-        previous: None,
-        request: crate::trust_analysis::serving::Request {
-            source: crate::trust_analysis::serving::Source {
-                record: crate::new_uid("r"),
-                kind: crate::trust_analysis::serving::SourceKind::Claim,
-            },
-            scope: crate::trust_analysis::serving::Scope::Recipe,
-            as_organ: false,
-            audience: Default::default(),
-            lifetime_seconds: 1000,
-        },
-        artifact: crate::trust_analysis::serving::Artifact::Claim(document.clone()),
-        source_version: 1,
-        source_revision: 0,
-        reviewed_at: 1100,
-        expires_at: 2000,
-    };
-    serving.hash().unwrap();
-    let mut newer = document.clone();
-    newer.statement.amount = amount("125.000000000000000001");
-    newer.statement.revision = 2;
-    newer.statement.issued_at = 1200;
-    newer.statement.as_of = 1200;
-    newer.statement.expires_at = 1800;
-    let artifact = crate::trust_analysis::serving::Artifact::Claim(newer.clone());
-    assert!(serving.allows_current(&artifact, 1, 3));
-    assert!(!serving.allows_current(&artifact, 2, 3));
-    let mut fixed = serving.clone();
-    fixed.request.scope = crate::trust_analysis::serving::Scope::Fixed;
-    fixed.expires_at = 1700;
-    fixed.hash().unwrap();
-    assert!(!fixed.allows_current(&artifact, 1, 0));
-    assert_ne!(fixed.hash().unwrap(), serving.hash().unwrap());
-    let Authorship::Generated { permit, .. } = &mut newer.statement.authorship else {
-        panic!("permit");
-    };
-    permit.terms.title = "Different reviewed title".into();
-    newer.statement.title = permit.terms.title.clone();
-    assert!(!serving.allows_current(
-        &crate::trust_analysis::serving::Artifact::Claim(newer),
-        1,
-        0
-    ));
-    let mut contact = serving.request.clone();
-    contact.source.kind = crate::trust_analysis::serving::SourceKind::Contact;
-    assert!(contact.validate().is_err());
-    let mut manual = serving.clone();
-    let crate::trust_analysis::serving::Artifact::Claim(manual_document) = &mut manual.artifact
-    else {
-        panic!("claim");
-    };
-    manual_document.statement.authorship = Authorship::Manual;
-    assert!(manual.hash().is_err());
-    let mut changed = document.clone();
-    changed.statement.audience = Audience::default();
-    assert!(changed.validate().is_err());
-    let mut changed = document.clone();
-    changed.statement.descriptor.measurement.meaning.revision += 1;
-    assert!(changed.validate().is_err());
-    let mut changed = document.clone();
-    changed.statement.expires_at = 1800;
-    assert!(changed.validate().is_err());
-    let mut changed = document.clone();
-    changed.key_id = "unreviewed-key".into();
-    assert!(changed.validate().is_err());
-    let mut changed = recipe.clone();
-    changed.definition.inputs.rely_on_all_visible = false;
-    assert!(changed.validate().is_err());
-}
-
-#[test]
-fn automatic_recipes_reject_private_graph_criteria_and_imported_instructions() {
-    let recipe = recipe();
-    let mut changed = recipe.definition.clone();
-    changed.inputs.contacts = Some(super::super::paths::Policy::for_anchor(
-        changed.terms.issuer.clone(),
-    ));
-    assert!(changed.validate().is_err());
-    let mut changed = recipe.definition.clone();
-    changed
-        .inputs
-        .issuers
-        .include
-        .push(super::super::Condition {
-            known: Some(true),
-            ..Default::default()
-        });
-    assert!(changed.validate().is_err());
-    let mut changed = recipe.definition.clone();
-    changed
-        .inputs
-        .counterparties
-        .exclude
-        .push(super::super::Condition {
-            upper: Some(crate::visibility::Bound {
-                value: 3,
-                inclusive: true,
-            }),
-            ..Default::default()
-        });
-    assert!(changed.validate().is_err());
-    let mut encoded = serde_json::to_value(&recipe).unwrap();
-    encoded["execute"] = serde_json::json!({"kind":"set_quantity","quantity":1000});
-    assert!(serde_json::from_value::<recipes::Recipe>(encoded).is_err());
-}
-
-#[test]
-fn unavailable_generated_summaries_withdraw_instead_of_claiming_zero() {
-    let recipe = recipe();
-    let mut statement = statement();
-    let terms = &recipe.definition.terms;
-    statement.title = terms.title.clone();
-    statement.issuer = terms.issuer.clone();
-    statement.claim = terms.claim.clone();
-    statement.descriptor = terms.descriptor.clone();
-    statement.audience = terms.audience.clone();
-    statement.issued_at = 1100;
-    statement.as_of = 1100;
-    statement.expires_at = 1700;
-    statement.amount = amount("0");
-    statement.authorship = Authorship::Generated {
-        recipe: recipe.permit.recipe.clone(),
-        revision: 1,
-        partial: true,
-        state: recipes::EvaluationState::Unknown,
-        permit: Box::new(recipe.permit),
-    };
-    assert!(statement.validate().is_err());
-    statement.withdrawn = true;
-    statement.validate().unwrap();
-    statement.amount = amount("100");
-    assert!(statement.validate().is_err());
 }
 
 #[test]
@@ -508,7 +298,7 @@ fn recommendations_and_credentials_never_become_delivery_totals() {
         statement.category = category;
         if category == Category::Recommendation {
             assert!(statement.validate().is_err());
-            statement.issuer = Identity::Person(crate::new_uid("r"));
+            statement.issuer = Identity::Person(new_uid("r"));
         }
         statement.validate().unwrap();
         assert!(compare(&statement, &query, &evidence).is_err());
@@ -529,11 +319,11 @@ fn typed_issuer_trust_is_activity_scoped_and_expiry_withdrawal_and_exclusions_wi
     statement.category = Category::Credential;
     let mut query = Query::for_subject(statement.descriptor.subject.clone());
     query.measurements = vec![statement.descriptor.measurement.clone()];
-    query.issuers.include.push(super::super::Condition {
+    query.issuers.include.push(Condition {
         identities: vec![statement.issuer.clone()],
         ..Default::default()
     });
-    let context = super::super::IdentityContext {
+    let context = IdentityContext {
         readable: true,
         ..Default::default()
     };

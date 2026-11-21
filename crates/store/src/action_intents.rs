@@ -1,64 +1,94 @@
-// non-lean-yet
-// Scope: struct NewSignedActionIntent, struct StoredSignedActionIntent, fn insert_pending, fn
-//   mark_committed.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
-//   framework contracts. Sites 232.
-// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
-//   Sites 237.
-// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
-//   conversion. Sites 237.
-// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
-//   39.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 33, 73, 138, 164, 185, 203, 219.
-// - [Clippy: clippy::needless_question_mark] enclosing `Ok` and `?` operator are unneeded. Sites
-//   223.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 8, 9,
-//   10, 11, 12, 13, 14, 15, 16, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 33, 73, 138, 164, 185,
-//   203, 219.
+//! Persistence and attribution of authenticated signed Action intents.
+
+use std::fmt::{self, Debug, Formatter};
 
 use chrono::{DateTime, Utc};
-use nucleus::Fact;
-use sqlx::{Row, Sqlite, SqlitePool, Transaction};
+use nucleus::{Fact, new_uid};
+use sqlx::{
+    Row, Sqlite, SqliteConnection, SqlitePool, Transaction, query, query_as, query_scalar,
+    sqlite::SqliteRow,
+};
 
-use crate::StoreError;
+use crate::{StoreError, write_tx};
 
-#[derive(Debug, Clone)]
+/// Borrowed signed Action envelope ready to be persisted.
+#[derive(Clone)]
 pub struct NewSignedActionIntent<'a> {
+    /// Authenticated session identity.
     pub session_id: &'a str,
+    /// Challenge bound into the signed envelope.
     pub session_challenge: &'a str,
+    /// Sequence within the authenticated session.
     pub sequence: u64,
+    /// Client message identity within the session.
     pub message_id: &'a str,
+    /// Person to whom the Action is attributed.
     pub actor_person_uid: &'a str,
+    /// Published key that signed the Action.
     pub key_id: &'a str,
+    /// Exact encoded Action payload.
     pub action_base64: &'a str,
+    /// Exact signature supplied with the Action.
     pub signature: &'a str,
 }
 
-#[derive(Debug, Clone)]
+/// A persisted Action envelope and its dispatch status.
+#[derive(Clone)]
 pub struct StoredSignedActionIntent {
+    /// Local identity of the stored intent.
     pub uid: String,
+    /// Authenticated session identity.
     pub session_id: String,
+    /// Challenge bound into the signed envelope.
     pub session_challenge: String,
+    /// Sequence within the authenticated session.
     pub sequence: u64,
+    /// Client message identity within the session.
     pub message_id: String,
+    /// Person to whom the Action is attributed.
     pub actor_person_uid: String,
+    /// Published key that signed the Action.
     pub key_id: String,
+    /// Exact encoded Action payload.
     pub action_base64: String,
+    /// Exact signature supplied with the Action.
     pub signature: String,
+    /// Stored dispatch status.
     pub status: String,
 }
 
+impl Debug for NewSignedActionIntent<'_> {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("NewSignedActionIntent")
+            .field("sequence", &self.sequence)
+            .finish_non_exhaustive()
+    }
+}
+
+impl Debug for StoredSignedActionIntent {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("StoredSignedActionIntent")
+            .field("uid", &self.uid)
+            .field("sequence", &self.sequence)
+            .field("status", &self.status)
+            .finish_non_exhaustive()
+    }
+}
+
+/// Stores the exact signed envelope before dispatch.
+/// # Errors
+/// Returns an error if the sequence cannot be represented or the envelope conflicts with stored data.
 pub async fn insert_pending(
     pool: &SqlitePool,
     input: NewSignedActionIntent<'_>,
     now: DateTime<Utc>,
 ) -> Result<StoredSignedActionIntent, StoreError> {
     let sequence = i64::try_from(input.sequence)
-        .map_err(|_| sqlx::Error::Protocol("Action intent sequence exceeds SQLite range".into()))?;
-    let uid = nucleus::new_uid("sai");
-    sqlx::query(
+        .map_err(|_| StoreError::Protocol("Action intent sequence exceeds SQLite range".into()))?;
+    let uid = new_uid("sai");
+    query(
         "INSERT INTO signed_action_intent
             (uid, session_id, session_challenge, sequence, message_id,
              actor_person_uid, key_id, action_base64, signature, received_at)
@@ -90,60 +120,51 @@ pub async fn insert_pending(
     })
 }
 
+/// Commits successful dispatch and attributes the listed Facts in one transaction.
+/// # Errors
+/// Returns an error if the intent is missing or failed, a Fact is incompatible, or the write fails.
 pub async fn mark_committed(
     pool: &SqlitePool,
     intent_uid: &str,
     fact_uids: &[String],
     now: DateTime<Utc>,
 ) -> Result<(), StoreError> {
-    let mut tx = crate::write_tx(pool).await?;
-    let intent =
-        sqlx::query("SELECT actor_person_uid, status FROM signed_action_intent WHERE uid = ?")
-            .bind(intent_uid)
-            .fetch_optional(&mut *tx)
-            .await?
-            .ok_or(sqlx::Error::RowNotFound)?;
-    let actor: String = intent.get("actor_person_uid");
-    let status: String = intent.get("status");
+    let mut tx = write_tx(pool).await?;
+    let (actor, status) = actor_and_status(&mut tx, intent_uid).await?;
     if status == "failed" {
-        return Err(sqlx::Error::Protocol(
+        return Err(StoreError::Protocol(
             "failed Action intent cannot be committed".into(),
         ));
     }
     for fact_uid in fact_uids {
-        let fact_actor: Option<String> =
-            sqlx::query_scalar("SELECT actor_uid FROM fact WHERE uid = ?")
-                .bind(fact_uid)
-                .fetch_optional(&mut *tx)
-                .await?
-                .flatten();
+        let fact_actor: Option<String> = query_scalar("SELECT actor_uid FROM fact WHERE uid = ?")
+            .bind(fact_uid)
+            .fetch_optional(&mut *tx)
+            .await?
+            .flatten();
         if fact_actor.as_deref() != Some(actor.as_str()) {
-            return Err(sqlx::Error::Protocol(
+            return Err(StoreError::Protocol(
                 "Action intent can link only Facts attributed to its Person".into(),
             ));
         }
         let linked: Option<String> =
-            sqlx::query_scalar("SELECT intent_uid FROM fact_action_intent WHERE fact_uid = ?")
+            query_scalar("SELECT intent_uid FROM fact_action_intent WHERE fact_uid = ?")
                 .bind(fact_uid)
                 .fetch_optional(&mut *tx)
                 .await?;
         match linked.as_deref() {
             Some(existing) if existing != intent_uid => {
-                return Err(sqlx::Error::Protocol(
+                return Err(StoreError::Protocol(
                     "Fact is already attributed to a different Action intent".into(),
                 ));
             }
             Some(_) => {}
             None => {
-                sqlx::query("INSERT INTO fact_action_intent (fact_uid, intent_uid) VALUES (?, ?)")
-                    .bind(fact_uid)
-                    .bind(intent_uid)
-                    .execute(&mut *tx)
-                    .await?;
+                associate(&mut tx, intent_uid, fact_uid).await?;
             }
         }
     }
-    sqlx::query(
+    query(
         "UPDATE signed_action_intent
          SET status = 'committed', error_code = NULL, error_message = NULL, finished_at = ?
          WHERE uid = ?",
@@ -155,32 +176,26 @@ pub async fn mark_committed(
     tx.commit().await
 }
 
+/// Links a Fact to a pending intent on the caller’s transaction.
+/// # Errors
+/// Returns an error if the intent is absent, is no longer pending, or does not authorize the Fact actor.
 pub async fn link_pending_fact(
     tx: &mut Transaction<'_, Sqlite>,
     intent_uid: &str,
     fact: &Fact,
 ) -> Result<(), StoreError> {
-    let row =
-        sqlx::query("SELECT actor_person_uid, status FROM signed_action_intent WHERE uid = ?")
-            .bind(intent_uid)
-            .fetch_optional(&mut **tx)
-            .await?
-            .ok_or(sqlx::Error::RowNotFound)?;
-    let status: String = row.get("status");
-    let actor: String = row.get("actor_person_uid");
+    let (actor, status) = actor_and_status(tx, intent_uid).await?;
     if status != "pending" || fact.actor_uid.as_deref() != Some(actor.as_str()) {
-        return Err(sqlx::Error::Protocol(
+        return Err(StoreError::Protocol(
             "pending Action intent does not authorize this Fact actor".into(),
         ));
     }
-    sqlx::query("INSERT INTO fact_action_intent (fact_uid, intent_uid) VALUES (?, ?)")
-        .bind(&fact.uid)
-        .bind(intent_uid)
-        .execute(&mut **tx)
-        .await?;
-    Ok(())
+    associate(tx, intent_uid, &fact.uid).await
 }
 
+/// Marks an intent failed while it is still pending.
+/// # Errors
+/// Returns an error if updating the intent fails.
 pub async fn mark_failed(
     pool: &SqlitePool,
     intent_uid: &str,
@@ -188,7 +203,7 @@ pub async fn mark_failed(
     error_message: &str,
     now: DateTime<Utc>,
 ) -> Result<(), StoreError> {
-    sqlx::query(
+    query(
         "UPDATE signed_action_intent
          SET status = 'failed', error_code = ?, error_message = ?, finished_at = ?
          WHERE uid = ? AND status = 'pending'",
@@ -202,11 +217,14 @@ pub async fn mark_failed(
     Ok(())
 }
 
+/// Reads the committed signed Action that authorized the Fact.
+/// # Errors
+/// Returns an error if the associated intent cannot be read or decoded.
 pub async fn for_fact(
     pool: &SqlitePool,
     fact_uid: &str,
 ) -> Result<Option<StoredSignedActionIntent>, StoreError> {
-    Ok(sqlx::query(
+    query(
         "SELECT sai.uid, sai.session_id, sai.session_challenge, sai.sequence,
                 sai.message_id, sai.actor_person_uid, sai.key_id,
                 sai.action_base64, sai.signature, sai.status
@@ -215,16 +233,19 @@ pub async fn for_fact(
          WHERE fai.fact_uid = ? AND sai.status = 'committed'",
     )
     .bind(fact_uid)
+    .try_map(map_row)
     .fetch_optional(pool)
-    .await?
-    .map(map_row))
+    .await
 }
 
+/// Reports whether the Fact is linked to a committed signed Action.
+/// # Errors
+/// Returns an error if the attribution cannot be read.
 pub async fn fact_has_committed_intent(
     pool: &SqlitePool,
     fact_uid: &str,
 ) -> Result<bool, StoreError> {
-    sqlx::query_scalar(
+    query_scalar(
         "SELECT EXISTS(
              SELECT 1 FROM fact_action_intent fai
              JOIN signed_action_intent sai ON sai.uid = fai.intent_uid
@@ -236,30 +257,57 @@ pub async fn fact_has_committed_intent(
     .await
 }
 
+/// Lists the actor’s published key IDs and public keys in ID order.
+/// # Errors
+/// Returns an error if the key bindings cannot be read.
 pub async fn published_keys_for_actor(
     pool: &SqlitePool,
     actor_uid: &str,
 ) -> Result<Vec<(String, String)>, StoreError> {
-    Ok(sqlx::query_as(
+    query_as(
         "SELECT key_id, public_key FROM identity_key
          WHERE actor_uid = ? ORDER BY key_id",
     )
     .bind(actor_uid)
     .fetch_all(pool)
-    .await?)
+    .await
 }
 
-fn map_row(row: sqlx::sqlite::SqliteRow) -> StoredSignedActionIntent {
-    StoredSignedActionIntent {
-        uid: row.get("uid"),
-        session_id: row.get("session_id"),
-        session_challenge: row.get("session_challenge"),
-        sequence: row.get::<i64, _>("sequence") as u64,
-        message_id: row.get("message_id"),
-        actor_person_uid: row.get("actor_person_uid"),
-        key_id: row.get("key_id"),
-        action_base64: row.get("action_base64"),
-        signature: row.get("signature"),
-        status: row.get("status"),
-    }
+async fn actor_and_status(
+    connection: &mut SqliteConnection,
+    intent_uid: &str,
+) -> Result<(String, String), StoreError> {
+    query_as("SELECT actor_person_uid, status FROM signed_action_intent WHERE uid = ?")
+        .bind(intent_uid)
+        .fetch_one(connection)
+        .await
+}
+
+async fn associate(
+    connection: &mut SqliteConnection,
+    intent_uid: &str,
+    fact_uid: &str,
+) -> Result<(), StoreError> {
+    query("INSERT INTO fact_action_intent (fact_uid, intent_uid) VALUES (?, ?)")
+        .bind(fact_uid)
+        .bind(intent_uid)
+        .execute(connection)
+        .await?;
+    Ok(())
+}
+
+fn map_row(row: SqliteRow) -> Result<StoredSignedActionIntent, StoreError> {
+    Ok(StoredSignedActionIntent {
+        uid: row.try_get("uid")?,
+        session_id: row.try_get("session_id")?,
+        session_challenge: row.try_get("session_challenge")?,
+        sequence: u64::try_from(row.try_get::<i64, _>("sequence")?)
+            .map_err(|error| StoreError::Protocol(error.to_string()))?,
+        message_id: row.try_get("message_id")?,
+        actor_person_uid: row.try_get("actor_person_uid")?,
+        key_id: row.try_get("key_id")?,
+        action_base64: row.try_get("action_base64")?,
+        signature: row.try_get("signature")?,
+        status: row.try_get("status")?,
+    })
 }

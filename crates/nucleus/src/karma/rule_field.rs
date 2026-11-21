@@ -1,24 +1,25 @@
-// non-lean-yet
-// Scope: struct RuleIdentity, fn check_condition_source, enum RuleFieldKind, enum RuleFieldInput.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
-//   170.
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 166.
-// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
-//   Sites 50, 70.
-// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
-//   184, 196, 198.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 14, 82.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 9,
-//   11, 14, 50, 51, 52, 53, 57, 59, 70, 71, 72, 76, 77, 78, 82, 170.
-// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites
-//   check_condition_source: String (14), parse: String (82).
+//! The Karma editor’s rule fields and consequence text format.
+//!
+//! [RuleFieldKind] names the Condition, Threshold, and Consequence fields.
+//! [RuleFieldInput] holds user-authored text or a reference at a fixed revision.
+//! [RuleIdentity] supplies the name and slug stored with the fields.
 
 use serde::{Deserialize, Serialize};
+use serde_json::{from_str, to_string};
 
-use super::{Consequence, Consequences};
-use crate::DecimalValue;
+use super::{
+    Consequence::{
+        self, ActivateFiote, AddQuantity, InvokeCommand, RunCommand, SetQuantity, ShowComponent,
+    },
+    Consequences, transfer_consequence,
+};
+use crate::{DecimalValue, component::ComponentState};
+
+const MAX_CONDITION_BYTES: usize = 4096;
+const MAX_CONDITION_DEPTH: usize = 32;
+const MAX_CONDITION_OPERATORS: usize = 128;
+const CONSEQUENCE_SYNTAX: &str =
+    "Use @record to save the calculated quantity, or @record: command(\"…\")";
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct RuleIdentity {
@@ -28,34 +29,35 @@ pub struct RuleIdentity {
     pub slug: String,
 }
 
+/// Bounds the work of parsing an interactive condition. Operators and parentheses in strings
+/// do not count toward the complexity limits.
+///
+/// # Errors
+///
+/// Returns an editor message if the byte length, depth, or operator count is too large.
 pub fn check_condition_source(source: &str) -> Result<(), String> {
-    if source.len() > 4096 {
+    if source.len() > MAX_CONDITION_BYTES {
         return Err("A condition can contain at most 4096 bytes".into());
     }
-    let mut depth = 0u32;
-    let mut operators = 0u32;
+    let (mut depth, mut operators) = (0usize, 0);
     let mut quoted = false;
     let mut escaped = false;
-    for character in source.chars() {
+    for byte in source.bytes() {
         if quoted {
-            if character == '"' && !escaped {
+            if byte == b'"' && !escaped {
                 quoted = false;
             }
-            escaped = character == '\\' && !escaped;
+            escaped = byte == b'\\' && !escaped;
             continue;
         }
-        if character == '"' {
-            quoted = true;
-            continue;
+        match byte {
+            b'"' => quoted = true,
+            b'(' => depth += 1,
+            b')' => depth = depth.saturating_sub(1),
+            byte if b"+-*/%^!<>=&|".contains(&byte) => operators += 1,
+            _ => {}
         }
-        if character == '(' {
-            depth += 1;
-        } else if character == ')' {
-            depth = depth.saturating_sub(1);
-        } else if "+-*/%^!<>=&|".contains(character) {
-            operators += 1;
-        }
-        if depth > 32 || operators > 128 {
+        if depth > MAX_CONDITION_DEPTH || operators > MAX_CONDITION_OPERATORS {
             return Err("This condition is too deeply nested or has too many operations".into());
         }
     }
@@ -71,8 +73,10 @@ pub enum RuleFieldKind {
 }
 
 impl RuleFieldKind {
+    /// The fields in evaluation order.
     pub const ALL: [Self; 3] = [Self::Condition, Self::Threshold, Self::Consequence];
 
+    /// Returns the stable wire spelling.
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Condition => "condition",
@@ -89,134 +93,133 @@ pub enum RuleFieldInput {
     Reference { uid: String, revision: i64 },
 }
 
+/// A target Record and its ordered consequences.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct RuleConsequence {
+    /// The target Record or Transfer reference.
     pub target: String,
+    /// The effects in execution order.
     pub consequences: Vec<Consequence>,
 }
 
 impl RuleConsequence {
+    /// Parses a compact `@record` expression or a JSON object for a list of effects.
+    ///
+    /// # Errors
+    ///
+    /// Returns an editor message for malformed input, an invalid target, or invalid consequences.
     pub fn parse(source: &str) -> Result<Self, String> {
         let source = source.trim();
-        let result: Self = if source.starts_with('{') {
-            serde_json::from_str(source).map_err(|error| error.to_string())?
+        let result = if source.starts_with('{') {
+            from_str(source).map_err(|error| error.to_string())?
         } else {
-            let source = source
-                .strip_prefix('@')
-                .ok_or("Use @record to save the calculated quantity, or @record: command(\"…\")")?;
+            let source = source.strip_prefix('@').ok_or(CONSEQUENCE_SYNTAX)?;
             let (target, operation) = source
                 .find(|character: char| {
                     character.is_whitespace() || matches!(character, '=' | '+' | ':')
                 })
                 .map_or((source, ""), |at| source.split_at(at));
-            let operation = operation.trim();
-            let consequences = if operation.is_empty() {
-                vec![Consequence::SetQuantity { value: None }]
-            } else if let Some(value) = operation.strip_prefix("+=") {
-                vec![Consequence::AddQuantity {
-                    delta: amount(value)?,
-                }]
-            } else if let Some(value) = operation.strip_prefix('=') {
-                vec![Consequence::SetQuantity {
-                    value: amount(value)?,
-                }]
-            } else if let Some(command) = operation.strip_prefix(':').map(str::trim) {
-                if let Some(effect) = super::transfer_consequence::parse(target, command)? {
-                    vec![effect]
-                } else if command == "activate-fiote" {
-                    vec![Consequence::ActivateFiote]
-                } else if let Some(command) = command
-                    .strip_prefix("run(@")
-                    .and_then(|source| source.strip_suffix(')'))
-                {
-                    vec![Consequence::InvokeCommand {
-                        command: command.trim().into(),
-                    }]
-                } else if let Some(state) = command
-                    .strip_prefix("show(")
-                    .and_then(|source| source.strip_suffix(')'))
-                {
-                    let mut component: crate::component::ComponentState =
-                        serde_json::from_str(state)
-                            .map_err(|error| format!("Invalid component state: {error}"))?;
-                    if let Some(record) = component.record_mut()
-                        && record.is_empty()
-                    {
-                        *record = target.into();
-                    }
-                    vec![Consequence::ShowComponent { component }]
-                } else {
-                    let command = command
-                        .strip_prefix("command(")
-                        .and_then(|v| v.strip_suffix(')'))
-                        .ok_or("Use command(\"shell command\")")?;
-                    vec![Consequence::RunCommand {
-                        command: serde_json::from_str(command)
-                            .map_err(|error| format!("Quote the command: {error}"))?,
-                    }]
-                }
-            } else {
-                return Err(
-                    "Use @record to save the calculated quantity, or @record: command(\"…\")"
-                        .into(),
-                );
-            };
+            let consequence = parse_consequence(target, operation.trim())?;
             Self {
                 target: target.into(),
-                consequences,
+                consequences: vec![consequence],
             }
         };
         if result.target.trim().is_empty() {
             return Err("Choose a target Record".into());
         }
-        if result
-            .consequences
-            .iter()
-            .any(|effect| effect.transfer_target().is_some())
-            && result
-                .consequences
-                .iter()
-                .any(|effect| effect.transfer_target() != Some(result.target.as_str()))
+        let mut targets = result.consequences.iter().map(Consequence::transfer_target);
+        if let Some(first) = targets.next()
+            && (first.is_some_and(|target| target != result.target)
+                || targets.any(|target| target != first))
         {
             return Err("Choose the same Transfer in the destination and each consequence".into());
         }
-        Consequences::new(result.consequences.clone()).map_err(|error| error.to_string())?;
+        Consequences::validate(&result.consequences).map_err(|error| error.to_string())?;
         Ok(result)
     }
 
+    /// Formats an editor expression where one is available, or JSON for the full list.
     pub fn as_text(&self) -> String {
+        let target = &self.target;
         if let [effect] = self.consequences.as_slice()
-            && let Some(source) = super::transfer_consequence::display(&self.target, effect)
+            && let Some(source) = transfer_consequence::display(target, effect)
         {
             return source;
         }
         match self.consequences.as_slice() {
-            [Consequence::ActivateFiote] => format!("@{}: activate-fiote", self.target),
-            [Consequence::InvokeCommand { command }] => {
-                format!("@{}: run(@{})", self.target, command)
-            }
-            [Consequence::ShowComponent { component }] => format!(
-                "@{}: show({})",
-                self.target,
-                serde_json::to_string(component).expect("the component name is a string")
-            ),
-            [Consequence::SetQuantity { value: None }] => format!("@{}", self.target),
-            [Consequence::SetQuantity { value }] => {
-                format!("@{} = {}", self.target, display_amount(value))
-            }
-            [Consequence::AddQuantity { delta }] => {
-                format!("@{} += {}", self.target, display_amount(delta))
-            }
-            [Consequence::RunCommand { command }] => format!(
-                "@{}: command({})",
-                self.target,
-                serde_json::to_string(command).expect("the command text is a string")
-            ),
-            _ => {
-                serde_json::to_string(self).expect("rule fields contain serializable tagged values")
-            }
+            [ActivateFiote] => format!("@{target}: activate-fiote"),
+            [InvokeCommand { command }] => format!("@{target}: run(@{command})"),
+            [ShowComponent { component }] => format!("@{target}: show({})", editor_json(component)),
+            [SetQuantity { value: None }] => format!("@{target}"),
+            [SetQuantity { value }] => format!("@{target} = {}", display_amount(value.as_ref())),
+            [AddQuantity { delta }] => format!("@{target} += {}", display_amount(delta.as_ref())),
+            [RunCommand { command }] => format!("@{target}: command({})", editor_json(command)),
+            _ => editor_json(self),
         }
     }
+}
+
+fn parse_consequence(target: &str, operation: &str) -> Result<Consequence, String> {
+    if operation.is_empty() {
+        return Ok(SetQuantity { value: None });
+    }
+    if let Some(value) = operation.strip_prefix("+=") {
+        return Ok(AddQuantity {
+            delta: amount(value)?,
+        });
+    }
+    if let Some(value) = operation.strip_prefix('=') {
+        return Ok(SetQuantity {
+            value: amount(value)?,
+        });
+    }
+    let command = operation
+        .strip_prefix(':')
+        .ok_or(CONSEQUENCE_SYNTAX)?
+        .trim();
+    if let Some(effect) = transfer_consequence::parse(target, command)? {
+        return Ok(effect);
+    }
+    if command == "activate-fiote" {
+        return Ok(ActivateFiote);
+    }
+    if let Some(command) = command
+        .strip_prefix("run(@")
+        .and_then(|source| source.strip_suffix(')'))
+    {
+        return Ok(InvokeCommand {
+            command: command.trim().into(),
+        });
+    }
+    if let Some(state) = command
+        .strip_prefix("show(")
+        .and_then(|source| source.strip_suffix(')'))
+    {
+        let mut component: ComponentState =
+            from_str(state).map_err(|error| format!("Invalid component state: {error}"))?;
+        if let Some(record) = component.record_mut()
+            && record.is_empty()
+        {
+            *record = target.into();
+        }
+        return Ok(ShowComponent { component });
+    }
+    let command = command
+        .strip_prefix("command(")
+        .and_then(|source| source.strip_suffix(')'))
+        .ok_or("Use command(\"shell command\")")?;
+    Ok(RunCommand {
+        command: from_str(command).map_err(|error| format!("Quote the command: {error}"))?,
+    })
+}
+
+#[expect(
+    clippy::expect_used,
+    reason = "the editor values use JSON primitives and string keys"
+)]
+fn editor_json(value: &impl Serialize) -> String {
+    to_string(value).expect("editor values have an infallible JSON representation")
 }
 
 fn amount(value: &str) -> Result<Option<DecimalValue>, String> {
@@ -230,8 +233,8 @@ fn amount(value: &str) -> Result<Option<DecimalValue>, String> {
     }
 }
 
-fn display_amount(value: &Option<DecimalValue>) -> String {
-    value.map_or_else(|| "result".into(), |value| value.to_string())
+fn display_amount(value: Option<&DecimalValue>) -> String {
+    value.map_or_else(|| "result".into(), ToString::to_string)
 }
 
 #[cfg(test)]
@@ -280,7 +283,20 @@ mod tests {
     }
 
     #[test]
+    fn invalid_effects_are_reported_before_duplicates() {
+        let input = r#"{"target":"balance","consequences":[{"kind":"set-quantity"},{"kind":"set-quantity"},{"kind":"run-command","command":""}]}"#;
+        assert_eq!(
+            RuleConsequence::parse(input).unwrap_err(),
+            "parse error: `run-command` needs something to run"
+        );
+    }
+
+    #[test]
     fn interactive_conditions_are_bounded_before_recursive_parsing() {
+        let quoted_operators = format!(r#""é\"{}""#, "(-".repeat(200));
+        assert!(check_condition_source(&quoted_operators).is_ok());
+        assert!(check_condition_source(&"é".repeat(MAX_CONDITION_BYTES / 2)).is_ok());
+        assert!(check_condition_source(&"é".repeat(MAX_CONDITION_BYTES / 2 + 1)).is_err());
         assert!(check_condition_source("-1 * freq(@daily) * @balance").is_ok());
         assert!(
             check_condition_source(&format!("{}@balance{}", "(".repeat(40), ")".repeat(40)))

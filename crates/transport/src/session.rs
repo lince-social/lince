@@ -28,63 +28,29 @@
 //   59, 88, 116, 122, 133, 137, 150, 154, 156, 165, 169, 182, 222, 680, 981, 986, 990, 1101, 1267,
 //   1336.
 
-use std::collections::{HashMap, HashSet};
-use std::sync::{Arc, Weak};
+use std::collections::HashMap;
+use std::sync::Arc;
 
-use engine::action_intent::ActionIntentSession;
 use engine::{Engine, EngineError};
 use nucleus::Fact;
-use nucleus::action_intent::{ActionIntentSessionProof, SignedActionIntent};
+use nucleus::action_intent::ActionIntentSessionProof;
+#[cfg(test)]
 use protein::Protein;
+
+mod actions;
+mod collaboration;
+mod subscriptions;
+mod workspace;
+
+use self::{
+    actions::ActionIntents,
+    collaboration::Collaboration,
+    subscriptions::{Subscription, SubscriptionChange},
+    workspace::WorkspaceSubscription,
+};
 
 use crate::lane::{LaneEvent, LaneHub};
 use crate::protocol::{ClientMessage, ServerMessage};
-
-struct Subscription {
-    query: Arc<Protein>,
-    rows: Option<Arc<Vec<serde_json::Value>>>,
-}
-
-struct QueryResult {
-    rows: Arc<Vec<serde_json::Value>>,
-    compared: Option<(Weak<Vec<serde_json::Value>>, bool)>,
-}
-
-impl QueryResult {
-    fn unchanged(&mut self, previous: Option<&Arc<Vec<serde_json::Value>>>, first: bool) -> bool {
-        let Some(previous) = previous else {
-            return false;
-        };
-        if Arc::ptr_eq(previous, &self.rows) {
-            return true;
-        }
-        if let Some((compared, equal)) = &self.compared
-            && compared.as_ptr() == Arc::as_ptr(previous)
-        {
-            engine::performance::add("cell-query-result-comparison-reuses", 1);
-            return *equal;
-        }
-        let equal = {
-            let _comparison = engine::performance::Span::new("cell-query-result-comparison");
-            engine::performance::add("cell-query-result-comparisons", 1);
-            previous.as_ref() == self.rows.as_ref()
-        };
-        if first && equal {
-            self.rows = previous.clone();
-        } else {
-            self.compared = Some((Arc::downgrade(previous), equal));
-        }
-        equal
-    }
-}
-
-#[derive(Clone, Copy)]
-enum SubscriptionChange<'a> {
-    All,
-    Facts(&'a [Fact]),
-    Projection,
-    Ephemeral,
-}
 
 pub struct Session {
     engine: Arc<Engine>,
@@ -94,14 +60,10 @@ pub struct Session {
     connection_id: String,
     workspace_participant: String,
     subscriptions: HashMap<String, Subscription>,
-    workspace_subscriptions: HashMap<String, (String, engine::workspace_sync::Client)>,
+    workspace_subscriptions: HashMap<String, WorkspaceSubscription>,
     joined_rooms: Vec<String>,
-    collab_records: HashSet<String>,
-    collab_versions: std::sync::Mutex<HashMap<String, String>>,
-    last_cursors: HashMap<String, Vec<crate::protocol::CollabCursor>>,
-    action_intent: Option<ActionIntentSession>,
-    action_intent_initialization_error: Option<(String, Option<String>)>,
-    action_intent_initialized: bool,
+    collaboration: Collaboration,
+    action_intent: ActionIntents,
     local_sync: bool,
     fiote: Option<Arc<dyn crate::fiote::Service>>,
     speech: Option<Arc<dyn crate::speech::Service>>,
@@ -110,7 +72,7 @@ pub struct Session {
 impl Drop for Session {
     fn drop(&mut self) {
         self.engine.presence.leave_cursor(None, &self.connection_id);
-        if self.engine.workspace_presence.leave(None, &self.workspace_participant) { self.engine.notify_query_changed(); }
+        self.leave_workspaces();
     }
 }
 
@@ -131,12 +93,8 @@ impl Session {
             subscriptions: HashMap::new(),
             workspace_subscriptions: HashMap::new(),
             joined_rooms: Vec::new(),
-            collab_records: HashSet::new(),
-            collab_versions: std::sync::Mutex::new(HashMap::new()),
-            last_cursors: HashMap::new(),
-            action_intent: None,
-            action_intent_initialization_error: None,
-            action_intent_initialized: false,
+            collaboration: Collaboration::default(),
+            action_intent: ActionIntents::default(),
             local_sync: false,
             fiote: None,
             speech: None,
@@ -181,7 +139,10 @@ impl Session {
         crate::native::NativeTools::new(self.engine.clone(), self, context)
     }
 
-    pub fn with_speech(mut self, service: Arc<dyn crate::speech::Service>) -> Self { self.speech = Some(service); self }
+    pub fn with_speech(mut self, service: Arc<dyn crate::speech::Service>) -> Self {
+        self.speech = Some(service);
+        self
+    }
 
     pub fn with_fiote(mut self, service: Arc<dyn crate::fiote::Service>) -> Self {
         self.fiote = Some(service);
@@ -209,51 +170,10 @@ impl Session {
             .unwrap_or(false)
     }
 
-    pub async fn initialize_action_intent(&mut self) -> ServerMessage {
-        if !self.action_intent_initialized {
-            self.action_intent_initialized = true;
-            if let Some(subject) = self.subject.as_deref() {
-                match self.engine.begin_action_intent_session(subject).await {
-                    Ok(session) => self.action_intent = Some(session),
-                    Err(error) => {
-                        let (message, code) = engine_error(&error);
-                        self.action_intent_initialization_error = Some((
-                            message,
-                            code.or(Some("action_intent_session_unavailable".into())),
-                        ));
-                    }
-                }
-            }
-        }
-
-        let person = self
-            .action_intent
-            .as_ref()
-            .map(|session| session.person_uid().to_string());
-        let session_id = self
-            .action_intent
-            .as_ref()
-            .map(|session| session.session_id().to_string())
-            .unwrap_or_else(|| nucleus::new_uid("unavailable-action-intent"));
-        let challenge = self
-            .action_intent
-            .as_ref()
-            .map(|session| session.challenge().to_string())
-            .unwrap_or_else(|| nucleus::new_uid("unavailable-action-challenge"));
-        ServerMessage::SessionChallenge {
-            session_id,
-            challenge,
-            algorithm: "ed25519".into(),
-            person,
-            signing_required: self.subject.is_some(),
-        }
-    }
-
     pub async fn handle(&mut self, msg: ClientMessage) -> Vec<ServerMessage> {
         if !self.subject_may_act().await {
             self.clear_subscription_rows();
-            self.workspace_subscriptions.clear();
-            if self.engine.workspace_presence.leave(None, &self.workspace_participant) { self.engine.notify_query_changed(); }
+            self.clear_workspace_subscriptions();
             return vec![session_expired()];
         }
         if let Some(login) = &self.login {
@@ -262,7 +182,9 @@ impl Session {
         if msg.runs_karma_preview() {
             let engine = self.engine.clone();
             if let Some(login) = self.login.clone() {
-                return login.run_unlocked(&engine, async { Ok(self.handle_inner(msg).await) }).await
+                return login
+                    .run_unlocked(&engine, async { Ok(self.handle_inner(msg).await) })
+                    .await
                     .unwrap_or_else(|_| {
                         self.clear_subscription_rows();
                         vec![session_expired()]
@@ -270,7 +192,15 @@ impl Session {
             }
             return self.handle_inner(msg).await;
         }
-        if self.local_sync && self.login.is_none() && matches!(msg, ClientMessage::Fiote { .. } | ClientMessage::FioteTerminal { .. } | ClientMessage::Speech { .. }) {
+        if self.local_sync
+            && self.login.is_none()
+            && matches!(
+                msg,
+                ClientMessage::Fiote { .. }
+                    | ClientMessage::FioteTerminal { .. }
+                    | ClientMessage::Speech { .. }
+            )
+        {
             return self.handle_inner(msg).await;
         }
         let engine = self.engine.clone();
@@ -280,12 +210,15 @@ impl Session {
             _ => matches!(
                 &msg,
                 ClientMessage::SignedAct { .. }
-                | ClientMessage::DescriptionAsset { request: nucleus::description_asset::Request::Put { .. }, .. }
-                | ClientMessage::CollabUpdate { .. }
-                | ClientMessage::SessionAuthenticate { .. }
-                | ClientMessage::Fiote { .. }
-                | ClientMessage::FioteTerminal { .. }
-                | ClientMessage::Speech { .. }
+                    | ClientMessage::DescriptionAsset {
+                        request: nucleus::description_asset::Request::Put { .. },
+                        ..
+                    }
+                    | ClientMessage::CollabUpdate { .. }
+                    | ClientMessage::SessionAuthenticate { .. }
+                    | ClientMessage::Fiote { .. }
+                    | ClientMessage::FioteTerminal { .. }
+                    | ClientMessage::Speech { .. }
             ),
         };
         let work = self.handle_inner(msg);
@@ -301,9 +234,10 @@ impl Session {
         })
     }
 
-    fn handle_inner(&mut self, msg: ClientMessage) -> std::pin::Pin<
-        Box<dyn std::future::Future<Output = Vec<ServerMessage>> + Send + '_>,
-    > {
+    fn handle_inner(
+        &mut self,
+        msg: ClientMessage,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Vec<ServerMessage>> + Send + '_>> {
         if matches!(
             msg,
             ClientMessage::Act { .. } | ClientMessage::SignedAct { .. }
@@ -314,50 +248,25 @@ impl Session {
         }
     }
 
-    async fn handle_action(&mut self, msg: ClientMessage) -> Vec<ServerMessage> {
-        match msg {
-            ClientMessage::Act { id, action } => {
-                if self.subject.is_some() {
-                    vec![ServerMessage::Error {
-                        id,
-                        message: "authenticated WebSocket Actions require a signed intent".into(),
-                        code: Some("action_intent_required".into()),
-                    }]
-                } else {
-                    vec![self.act(id, action).await]
-                }
-            }
-            ClientMessage::SignedAct {
-                id,
-                session_id,
-                session_challenge,
-                sequence,
-                action_base64,
-                signature,
-            } => {
-                vec![
-                    self.signed_act(SignedActionIntent {
-                        session_id,
-                        session_challenge,
-                        sequence,
-                        message_id: id,
-                        action_base64,
-                        signature,
-                    })
-                    .await,
-                ]
-            }
-            _ => vec![session_denied("Action required")],
-        }
-    }
-
     async fn handle_protocol(&mut self, msg: ClientMessage) -> Vec<ServerMessage> {
         match msg {
-            ClientMessage::WorkspaceSubscribe { id, workspace, client } => self.subscribe_workspace(id, workspace, client).await,
+            ClientMessage::WorkspaceSubscribe {
+                id,
+                workspace,
+                client,
+            } => self.subscribe_workspace(id, workspace, client).await,
             ClientMessage::DescriptionAsset { id, request } => {
-                vec![match self.engine.description_asset(self.subject.as_deref(), request).await {
+                vec![match self
+                    .engine
+                    .description_asset(self.subject.as_deref(), request)
+                    .await
+                {
                     Ok(response) => ServerMessage::DescriptionAsset { id, response },
-                    Err(error) => ServerMessage::Error { id, message: error.to_string(), code: Some("description_asset".into()) },
+                    Err(error) => ServerMessage::Error {
+                        id,
+                        message: error.to_string(),
+                        code: Some("description_asset".into()),
+                    },
                 }]
             }
             ClientMessage::CallContext { id, thread } => {
@@ -408,14 +317,28 @@ impl Session {
                     Some(service) if self.local_sync => service.handle(request).await,
                     _ => Err("Speech settings are available only on the local Cell.".into()),
                 };
-                vec![match result { Ok(status) => ServerMessage::Speech { id, status }, Err(message) => ServerMessage::Error { id, message, code: Some("speech".into()) } }]
+                vec![match result {
+                    Ok(status) => ServerMessage::Speech { id, status },
+                    Err(message) => ServerMessage::Error {
+                        id,
+                        message,
+                        code: Some("speech".into()),
+                    },
+                }]
             }
             ClientMessage::FioteTerminal { id, request } => {
                 let result = match &self.fiote {
                     Some(service) if self.local_sync => service.terminal(request).await,
                     _ => Err("Terminal login is available only on the local Cell.".into()),
                 };
-                vec![match result { Ok(frame) => ServerMessage::FioteTerminal { id, frame }, Err(message) => ServerMessage::Error { id, message, code: Some("fiote_terminal".into()) } }]
+                vec![match result {
+                    Ok(frame) => ServerMessage::FioteTerminal { id, frame },
+                    Err(message) => ServerMessage::Error {
+                        id,
+                        message,
+                        code: Some("fiote_terminal".into()),
+                    },
+                }]
             }
             ClientMessage::Fiote { id, request } => {
                 let result = match &self.fiote {
@@ -461,10 +384,10 @@ impl Session {
                 }
             }
             ClientMessage::Subscribe { id, protein } => self.subscribe(id, protein).await,
-            ClientMessage::SubscribeSaved { id, name } => self.subscribe_saved(id, name).await,
+            ClientMessage::SubscribeSaved { id, name } => self.subscribe_saved(id, &name).await,
             ClientMessage::Unsubscribe { id } => {
                 self.subscriptions.remove(&id);
-                if let Some((workspace, _)) = self.workspace_subscriptions.remove(&id) && !self.workspace_subscriptions.values().any(|(other, _)| other == &workspace) && self.engine.workspace_presence.leave(Some(&workspace), &self.workspace_participant) { self.engine.notify_query_changed(); }
+                self.unsubscribe_workspace(&id);
                 vec![]
             }
             message @ (ClientMessage::Act { .. } | ClientMessage::SignedAct { .. }) => {
@@ -537,149 +460,23 @@ impl Session {
                 vec![]
             }
             ClientMessage::CollabJoin { id, record_uid } => {
-                if self.collab_records.len() >= 64 && !self.collab_records.contains(&record_uid) {
-                    return vec![session_denied("document limit")];
-                }
-                if !self
-                    .engine
-                    .may_read_record(self.subject.as_deref(), &record_uid)
-                    .await
-                    .unwrap_or(false)
-                {
-                    return vec![ServerMessage::Error {
-                        id,
-                        message: "record is not visible to you".into(),
-                        code: Some("collab_not_visible".into()),
-                    }];
-                }
-                match self.engine.collab_state(&record_uid).await {
-                    Ok((snapshot_base64, version)) => {
-                        self.collab_records.insert(record_uid.clone());
-                        self.engine.presence.join(&record_uid, &self.connection_id);
-                        self.collab_versions
-                            .lock()
-                            .expect("document versions")
-                            .insert(record_uid.clone(), version.clone());
-                        let writable = self
-                            .engine
-                            .record_text_permissions(self.subject.as_deref(), &record_uid)
-                            .await
-                            .unwrap_or_default()
-                            .into_iter()
-                            .filter_map(|property| match property {
-                                protein::authority::Property::Head => Some("head".into()),
-                                protein::authority::Property::Body => Some("body".into()),
-                                _ => None,
-                            })
-                            .collect();
-                        vec![ServerMessage::CollabState {
-                            id,
-                            record_uid,
-                            snapshot_base64,
-                            version,
-                            writable,
-                        }]
-                    }
-                    Err(e) => {
-                        let code = e.code().map(str::to_string);
-                        vec![ServerMessage::Error {
-                            id,
-                            message: e.to_string(),
-                            code,
-                        }]
-                    }
-                }
+                self.join_document(id, record_uid).await
             }
-            ClientMessage::CollabLeave { record_uid } => {
-                self.engine
-                    .presence
-                    .leave_cursor(Some(&record_uid), &self.connection_id);
-                self.last_cursors.remove(&record_uid);
-                self.collab_records.remove(&record_uid);
-                self.collab_versions
-                    .lock()
-                    .expect("document versions")
-                    .remove(&record_uid);
-                vec![]
-            }
+            ClientMessage::CollabLeave { record_uid } => self.leave_document(&record_uid),
             ClientMessage::CollabPresence {
                 record_uid,
                 property,
                 anchor,
                 focus,
             } => {
-                if self.collab_records.contains(&record_uid)
-                    && matches!(property.as_str(), "head" | "body")
-                    && anchor.len() <= 2048
-                    && focus.len() <= 2048
-                    && self
-                        .engine
-                        .may_read_record(self.subject.as_deref(), &record_uid)
-                        .await
-                        .unwrap_or(false)
-                {
-                    self.engine.presence.cursor(
-                        &record_uid,
-                        crate::protocol::CollabCursor {
-                            session: self.connection_id.clone(),
-                            organ: None,
-                            person: self.subject.clone(),
-                            property,
-                            anchor,
-                            focus,
-                        },
-                    );
-                }
-                vec![]
+                self.publish_cursor(&record_uid, property, anchor, focus)
+                    .await
             }
             ClientMessage::CollabUpdate {
                 id,
                 record_uid,
                 update_base64,
-            } => {
-                if self
-                    .engine
-                    .require_permission(self.subject.as_deref(), "record:update")
-                    .await
-                    .is_err()
-                {
-                    return vec![session_denied("record:update")];
-                }
-                if !self
-                    .engine
-                    .may_read_record(self.subject.as_deref(), &record_uid)
-                    .await
-                    .unwrap_or(false)
-                {
-                    return vec![ServerMessage::Error {
-                        id,
-                        message: "record is not visible to you".into(),
-                        code: Some("collab_not_visible".into()),
-                    }];
-                }
-                match self
-                    .engine
-                    .apply_client_crdt_update_as(
-                        &record_uid,
-                        &update_base64,
-                        self.subject.as_deref(),
-                    )
-                    .await
-                {
-                    Ok(()) => vec![ServerMessage::CollabAck {
-                        id: id.clone(),
-                        record_uid: record_uid.clone(),
-                    }],
-                    Err(e) => {
-                        let code = e.code().map(str::to_string);
-                        vec![ServerMessage::Error {
-                            id,
-                            message: e.to_string(),
-                            code,
-                        }]
-                    }
-                }
-            }
+            } => self.update_document(id, record_uid, &update_base64).await,
             ClientMessage::Command { id, .. }
             | ClientMessage::TerminalOpen { id, .. }
             | ClientMessage::TerminalInput { id, .. }
@@ -710,8 +507,7 @@ impl Session {
     pub async fn on_sync_event(&mut self, event: crate::SyncEvent) -> Vec<ServerMessage> {
         if !self.subject_may_act().await {
             self.clear_subscription_rows();
-            self.workspace_subscriptions.clear();
-            if self.engine.workspace_presence.leave(None, &self.workspace_participant) { self.engine.notify_query_changed(); }
+            self.clear_workspace_subscriptions();
             return vec![session_expired()];
         }
         let engine = self.engine.clone();
@@ -754,287 +550,26 @@ impl Session {
         }
     }
 
-    async fn execute_sync(
-        &self,
-        id: &str,
-        protein: &Protein,
-        reused: Option<&Arc<Vec<serde_json::Value>>>,
-    ) -> Result<Arc<Vec<serde_json::Value>>, protein::ProteinError> {
-        use nucleus::sync::{Activity, Direction, Instance, Outcome, Summary, Update};
-        self.engine
-            .sync_service
-            .run(
-                &self.engine.store,
-                Activity {
-                    instance: Instance::interface(&self.connection_id, id),
-                    direction: Direction::Outgoing,
-                    update: Update::Full,
-                },
-                async {
-                    if let Some(rows) = reused {
-                        engine::performance::add("cell-query-batch-reuses", 1);
-                        Ok(rows.clone())
-                    } else {
-                        self.execute(protein).await.map(Arc::new)
-                    }
-                },
-                |rows| {
-                    let mut summary = Summary::new(Outcome::Refreshed, rows.len());
-                    summary.subjects = rows
-                        .iter()
-                        .filter_map(|row| row["uid"].as_str().map(str::to_owned))
-                        .take(32)
-                        .collect();
-                    summary
-                },
-            )
-            .await
-    }
-
-    async fn update_subscriptions(
-        &mut self,
-        change: SubscriptionChange<'_>,
-        full_snapshot: bool,
-    ) -> Vec<ServerMessage> {
-        let _batch = engine::performance::Span::new("cell-query-batch-await");
-        if self.subscriptions.is_empty() {
-            return Vec::new();
-        }
-        let subscriptions: Vec<_> = {
-            let _selection = engine::performance::Span::new("cell-query-invalidation");
-            let facts = match change {
-                SubscriptionChange::Facts(facts) => {
-                    Some(protein::FactChanges::new(facts, self.subject.as_deref()))
-                }
-                _ => None,
-            };
-            self.subscriptions
-                .iter()
-                .filter(|(_, subscription)| match change {
-                    SubscriptionChange::All => true,
-                    SubscriptionChange::Facts(_) => facts
-                        .as_ref()
-                        .is_some_and(|facts| facts.affects(&subscription.query)),
-                    SubscriptionChange::Projection => {
-                        protein::depends_on_forecast(&subscription.query)
-                    }
-                    SubscriptionChange::Ephemeral => protein::is_ephemeral(&subscription.query),
-                })
-                .map(|(id, subscription)| (id.clone(), subscription.query.clone()))
-                .collect()
-        };
-        let mut out = Vec::with_capacity(subscriptions.len());
-        let mut results: HashMap<usize, QueryResult> = HashMap::with_capacity(subscriptions.len());
-        for (id, query) in &subscriptions {
-            let key = Arc::as_ptr(query) as usize;
-            let reused = results.get(&key).map(|result| &result.rows);
-            let first_result = reused.is_none();
-            let result = if matches!(change, SubscriptionChange::Ephemeral) {
-                match reused {
-                    Some(rows) => {
-                        engine::performance::add("cell-query-batch-reuses", 1);
-                        Ok(rows.clone())
-                    }
-                    None => self.execute(query).await.map(Arc::new),
-                }
-            } else {
-                self.execute_sync(id, query, reused).await
-            };
-            let subscription = self
-                .subscriptions
-                .get_mut(id)
-                .expect("query execution does not change the selected subscriptions");
-            match result {
-                Ok(rows) => {
-                    let result = results.entry(key).or_insert(QueryResult {
-                        rows,
-                        compared: None,
-                    });
-                    let changed = !result.unchanged(subscription.rows.as_ref(), first_result);
-                    let rows = result.rows.clone();
-                    if full_snapshot || changed {
-                        out.push(ServerMessage::Update {
-                            id: id.clone(),
-                            rows: rows.clone(),
-                        });
-                    } else {
-                        engine::performance::add("cell-query-results-unchanged", 1);
-                    }
-                    subscription.rows = Some(rows);
-                }
-                Err(error) => {
-                    subscription.rows = None;
-                    out.push(ServerMessage::Error {
-                        id: id.clone(),
-                        message: error.to_string(),
-                        code: protein::error_code(&error),
-                    });
-                }
-            }
-        }
-        out
-    }
-
-    fn clear_subscription_rows(&mut self) {
-        for subscription in self.subscriptions.values_mut() {
-            subscription.rows = None;
-        }
-    }
-
-    async fn execute(
-        &self,
-        protein: &Protein,
-    ) -> Result<Vec<serde_json::Value>, protein::ProteinError> {
-        let _query = engine::performance::Span::new("cell-query-execute-await");
-        let _source = engine::performance::Span::new(match protein.source {
-            protein::Source::Record => "cell-query-record-await",
-            protein::Source::Promise => "cell-query-promise-await",
-            protein::Source::Decision => "cell-query-decision-await",
-            protein::Source::Fact => "cell-query-fact-await",
-            protein::Source::Concept => "cell-query-concept-await",
-            protein::Source::Lingua => "cell-query-lingua-await",
-            protein::Source::Assertion => "cell-query-assertion-await",
-            protein::Source::Transfer => "cell-query-transfer-await",
-            protein::Source::TransferSettlementPreview => "cell-query-transfer-settlement-preview-await",
-            protein::Source::TransferBulkCompletionPreview => "cell-query-transfer-bulk-completion-preview-await",
-            protein::Source::Auth => "cell-query-auth-await",
-            protein::Source::Karma => "cell-query-karma-await",
-            protein::Source::KarmaRule => "cell-query-karma-rule-await",
-            protein::Source::Timeline => "cell-query-timeline-await",
-            protein::Source::Calendar => "cell-query-calendar-await",
-            protein::Source::Schedule => "cell-query-schedule-await",
-            protein::Source::Entry => "cell-query-entry-await",
-            protein::Source::Frequency => "cell-query-frequency-await",
-            protein::Source::Recurrence => "cell-query-recurrence-await",
-            protein::Source::Nearby => "cell-query-nearby-await",
-        });
-        engine::performance::add("cell-queries", 1);
-        if protein::depends_on_forecast(protein) {
-            let _projection = engine::performance::Span::new("cell-query-projection-request-await");
-            let context = protein::calendar::context(protein, self.subject.as_deref())?;
-            self.engine.request_projection(context).await.map_err(|error| store::StoreError::Protocol(error.to_string()))?;
-        }
-        let signer_actor = if protein::uses_signer(protein) {
-            let _signer = engine::performance::Span::new("cell-query-signer-context-await");
-            engine::performance::add("cell-query-signer-lookups", 1);
-            self.available_signer_actor().await
-        } else {
-            None
-        };
-        let nearby = protein::is_ephemeral(protein).then(|| self.engine.nearby_peers());
-        let rows = protein::execute_for_with_context(
-            &self.engine.store,
-            protein,
-            self.subject.as_deref(),
-            signer_actor.as_deref(),
-            protein::Context {
-                nearby: nearby.as_deref(),
-            },
-        )
-        .await?;
-        engine::performance::add("cell-query-rows", rows.len() as u64);
-        Ok(rows)
-    }
-
-    async fn subscribe_workspace(&mut self, id: String, workspace: String, client: engine::workspace_sync::Client) -> Vec<ServerMessage> {
-        if id.len() > 512 || self.subscriptions.contains_key(&id) || self.workspace_subscriptions.len() >= 8 && !self.workspace_subscriptions.contains_key(&id) {
-            return vec![session_denied("Workspace subscription limit")];
-        }
-        match self.engine.workspace_view(self.subject.as_deref(), &workspace, &client, false).await {
-            Ok(mut snapshot) => {
-                match self.engine.workspace_presence.join(&workspace, &self.workspace_participant) {
-                    Ok(true) => self.engine.notify_query_changed(),
-                    Ok(false) => {},
-                    Err(error) => return vec![action_error(id, error)],
-                }
-                if let Some((old, _)) = self.workspace_subscriptions.get(&id) && old != &workspace && !self.workspace_subscriptions.iter().any(|(other_id,(other,_))| other_id != &id && other == old) && self.engine.workspace_presence.leave(Some(old), &self.workspace_participant) { self.engine.notify_query_changed(); }
-                snapshot["participants"] = serde_json::json!(self.engine.workspace_presence.participants(&workspace));
-                self.workspace_subscriptions.insert(id.clone(), (workspace, client));
-                vec![ServerMessage::Workspace { id, workspace: snapshot }]
-            }
-            Err(error) => {
-                if let Some((workspace, _)) = self.workspace_subscriptions.remove(&id) && !self.workspace_subscriptions.values().any(|(other, _)| other == &workspace) && self.engine.workspace_presence.leave(Some(&workspace), &self.workspace_participant) { self.engine.notify_query_changed(); }
-                vec![ServerMessage::Error { id, message: error.to_string(), code: error.code().map(str::to_owned) }]
-            }
-        }
-    }
-
-    async fn subscribe(&mut self, id: String, protein: Protein) -> Vec<ServerMessage> {
-        if id.len() > 512
-            || self.workspace_subscriptions.contains_key(&id)
-            || (self.subscriptions.len() >= 64 && !self.subscriptions.contains_key(&id))
-        {
-            return vec![session_denied("subscription limit")];
-        }
-        match self.execute_sync(&id, &protein, None).await {
-            Ok(rows) => {
-                let query = self
-                    .subscriptions
-                    .values()
-                    .find(|subscription| subscription.query.as_ref() == &protein)
-                    .map(|subscription| subscription.query.clone())
-                    .unwrap_or_else(|| Arc::new(protein));
-                let rows = self
-                    .subscriptions
-                    .values()
-                    .filter(|subscription| Arc::ptr_eq(&subscription.query, &query))
-                    .filter_map(|subscription| subscription.rows.as_ref())
-                    .find(|previous| previous.as_ref() == rows.as_ref())
-                    .cloned()
-                    .unwrap_or(rows);
-                let message = ServerMessage::Snapshot {
-                    id: id.clone(),
-                    rows: rows.clone(),
-                };
-                self.subscriptions.insert(
-                    id,
-                    Subscription {
-                        query,
-                        rows: Some(rows),
-                    },
-                );
-                vec![message]
-            }
-            Err(e) => {
-                if let Some(subscription) = self.subscriptions.get_mut(&id) {
-                    subscription.rows = None;
-                }
-                vec![ServerMessage::Error {
-                    id,
-                    message: e.to_string(),
-                    code: protein::error_code(&e),
-                }]
-            }
-        }
-    }
-
-    pub fn has_ephemeral_subscriptions(&self) -> bool {
-        !self.collab_records.is_empty()
-            || self.subscriptions.values().any(|subscription| protein::is_ephemeral(&subscription.query))
-    }
-
-    pub fn presence_changes(&self) -> tokio::sync::watch::Receiver<u64> {
-        self.engine.presence.changes()
-    }
-
     pub async fn refresh(&mut self) -> Vec<ServerMessage> {
         self.refresh_inner(SubscriptionChange::All, true).await
     }
 
-    async fn refresh_inner(&mut self, change: SubscriptionChange<'_>, full_snapshot: bool) -> Vec<ServerMessage> {
+    async fn refresh_inner(
+        &mut self,
+        change: SubscriptionChange<'_>,
+        full_snapshot: bool,
+    ) -> Vec<ServerMessage> {
         let _refresh = engine::performance::Span::new("cell-refresh-await");
         if !self.subject_may_act().await {
             self.clear_subscription_rows();
-            self.workspace_subscriptions.clear();
-            if self.engine.workspace_presence.leave(None, &self.workspace_participant) { self.engine.notify_query_changed(); }
+            self.clear_workspace_subscriptions();
             return vec![session_expired()];
         }
-        let mut out = Vec::new();
-        if matches!(change, SubscriptionChange::All) {
-            for (id, (workspace, client)) in self.workspace_subscriptions.clone() {
-                out.extend(self.subscribe_workspace(id, workspace, client).await);
-            }
-        }
+        let mut out = if matches!(change, SubscriptionChange::All) {
+            self.refresh_workspaces().await
+        } else {
+            Vec::new()
+        };
         for message in self.update_subscriptions(change, full_snapshot).await {
             if let ServerMessage::Update { id, rows } = message {
                 out.push(ServerMessage::Snapshot { id, rows });
@@ -1045,86 +580,7 @@ impl Session {
         if matches!(change, SubscriptionChange::Projection) {
             return out;
         }
-        let _collaboration = engine::performance::Span::new("cell-refresh-collaboration-await");
-        for record_uid in self.collab_records.clone() {
-            if self
-                .engine
-                .may_read_record(self.subject.as_deref(), &record_uid)
-                .await
-                .unwrap_or(false)
-            {
-                match self.collab_delta(&record_uid).await {
-                    Ok(Some(message)) => out.push(message),
-                    Ok(None) => {}
-                    Err(error) => out.push(action_error(record_uid.clone(), error)),
-                }
-            } else {
-                self.collab_records.remove(&record_uid);
-                self.engine
-                    .presence
-                    .leave_cursor(Some(&record_uid), &self.connection_id);
-                out.push(ServerMessage::Error {
-                    id: record_uid,
-                    message: "Record access was removed".into(),
-                    code: Some("collab_not_visible".into()),
-                });
-            }
-        }
-        out
-    }
-
-    async fn tick_cursors(&mut self) -> Vec<ServerMessage> {
-        let _refresh = engine::performance::Span::new("cell-cursor-refresh-await");
-        if !self.subject_may_act().await {
-            self.clear_subscription_rows();
-            self.engine.presence.leave_cursor(None, &self.connection_id);
-            return vec![session_expired()];
-        }
-        let mut out = Vec::new();
-        let records: Vec<_> = self.collab_records.iter().cloned().collect();
-        let mut prepared = self
-            .engine
-            .presence
-            .cursors_for(records.iter().map(String::as_str));
-        for uid in &records {
-            if !self
-                .engine
-                .may_read_record(self.subject.as_deref(), uid)
-                .await
-                .unwrap_or(false)
-            {
-                self.engine
-                    .presence
-                    .leave_cursor(Some(uid), &self.connection_id);
-                self.collab_records.remove(uid);
-                self.last_cursors.remove(uid);
-                out.push(ServerMessage::CollabCursors {
-                    record_uid: uid.clone(),
-                    cursors: Vec::new(),
-                });
-                continue;
-            }
-            let mut cursors = Vec::new();
-            for cursor in prepared.remove(uid.as_str()).unwrap_or_default() {
-                if cursor.session != self.connection_id
-                    && (cursor.organ.is_some()
-                        || self
-                            .engine
-                            .may_read_record(cursor.person.as_deref(), uid)
-                            .await
-                            .unwrap_or(false))
-                {
-                    cursors.push(cursor);
-                }
-            }
-            if self.last_cursors.get(uid) != Some(&cursors) {
-                self.last_cursors.insert(uid.clone(), cursors.clone());
-                out.push(ServerMessage::CollabCursors {
-                    record_uid: uid.clone(),
-                    cursors,
-                });
-            }
-        }
+        out.extend(self.refresh_documents().await);
         out
     }
 
@@ -1141,159 +597,6 @@ impl Session {
         out
     }
 
-    async fn subscribe_saved(&mut self, id: String, name: String) -> Vec<ServerMessage> {
-        let protein = match load_saved(&self.engine, &name).await {
-            Ok(protein) => protein,
-            Err(e) => {
-                if let Some(subscription) = self.subscriptions.get_mut(&id) {
-                    subscription.rows = None;
-                }
-                return vec![ServerMessage::Error {
-                    id,
-                    message: e,
-                    code: None,
-                }];
-            }
-        };
-        self.subscribe(id, protein).await
-    }
-
-    async fn act(&self, id: String, action: engine::actions::Action) -> ServerMessage {
-        if self.local_sync
-            && let Some(service) = &self.fiote
-            && let engine::actions::Action::CreateMessage {
-                content,
-                thread,
-                body,
-                author: None,
-                state: nucleus::MessageState::Finished,
-                parent: None,
-                references,
-            } = &action
-            && references.is_empty()
-        {
-            match service.send_content(thread, body, content).await {
-                Ok(Some(outcome)) => {
-                    return ServerMessage::ActionOk {
-                        id,
-                        created: outcome.created,
-                        facts: outcome.facts.len(),
-                        warnings: outcome.warnings,
-                        data: outcome.data,
-                    };
-                }
-                Ok(None) => {}
-                Err(message) => {
-                    return ServerMessage::Error {
-                        id,
-                        message,
-                        code: Some("fiote".into()),
-                    };
-                }
-            }
-        }
-        match self.engine.act(action, self.subject.clone()).await {
-            Ok(outcome) => ServerMessage::ActionOk {
-                id,
-                created: outcome.created,
-                facts: outcome.facts.len(),
-                warnings: outcome.warnings,
-                data: outcome.data,
-            },
-            Err(e) => {
-                let code = e.code().map(str::to_string);
-                ServerMessage::Error {
-                    id,
-                    message: e.to_string(),
-                    code,
-                }
-            }
-        }
-    }
-
-    async fn authenticate_action_intent(
-        &mut self,
-        id: String,
-        proof: ActionIntentSessionProof,
-    ) -> ServerMessage {
-        if self.subject.is_none() {
-            return ServerMessage::Error {
-                id,
-                message: "trusted local sessions do not register remote Action keys".into(),
-                code: Some("action_intent_not_required".into()),
-            };
-        }
-        let Some(session) = self.action_intent.as_mut() else {
-            return self.action_intent_unavailable(id);
-        };
-        let key_id = proof.key_id.clone();
-        match self
-            .engine
-            .authenticate_action_intent_session(session, proof)
-            .await
-        {
-            Ok(()) => ServerMessage::SessionAuthenticated {
-                id,
-                session_id: session.session_id().to_string(),
-                person: session.person_uid().to_string(),
-                key_id,
-            },
-            Err(error) => action_error(id, error),
-        }
-    }
-
-    async fn signed_act(&mut self, intent: SignedActionIntent) -> ServerMessage {
-        let id = intent.message_id.clone();
-        if self.subject.is_none() {
-            return ServerMessage::Error {
-                id,
-                message: "signed Action intents require an authenticated app user".into(),
-                code: Some("action_intent_subject_required".into()),
-            };
-        }
-        let Some(session) = self.action_intent.as_mut() else {
-            return self.action_intent_unavailable(id);
-        };
-        let verified = match self.engine.access_scope(true, self.engine.verify_action_intent(session, intent)).await {
-            Ok(verified) => verified,
-            Err(error) => return action_error(id, error),
-        };
-        match self.engine.act_verified_intent(verified).await {
-            Ok(outcome) => ServerMessage::ActionOk {
-                id,
-                created: outcome.created,
-                facts: outcome.facts.len(),
-                warnings: outcome.warnings,
-                data: outcome.data,
-            },
-            Err(error) => action_error(id, error),
-        }
-    }
-
-    fn action_intent_unavailable(&self, id: String) -> ServerMessage {
-        let (message, code) = self
-            .action_intent_initialization_error
-            .clone()
-            .unwrap_or_else(|| {
-                (
-                    "signed Action intent session was not initialized".into(),
-                    Some("action_intent_session_unavailable".into()),
-                )
-            });
-        ServerMessage::Error { id, message, code }
-    }
-
-    async fn available_signer_actor(&self) -> Option<String> {
-        if self.subject.is_some() {
-            return self
-                .action_intent
-                .as_ref()
-                .filter(|session| session.bound_key_id().is_some())
-                .map(|session| session.person_uid().to_string());
-        }
-        self.engine.signer_actor_uid().await
-    }
-
     pub async fn on_fact(&mut self, fact: &Fact) -> Vec<ServerMessage> {
         self.on_facts(std::slice::from_ref(fact)).await
     }
@@ -1302,65 +605,15 @@ impl Session {
         let _refresh = engine::performance::Span::new("cell-refresh-await");
         if !self.subject_may_act().await {
             self.clear_subscription_rows();
-            if self
-                .engine
-                .workspace_presence
-                .leave(None, &self.workspace_participant)
-            {
-                self.engine.notify_query_changed();
-            }
+            self.leave_workspaces();
             return vec![session_expired()];
         }
-        let mut out = Vec::new();
-        let collaboration = engine::performance::Span::new("cell-refresh-collaboration-await");
-        let mut refreshed = HashSet::new();
-        for fact in facts {
-            if !self.collab_records.contains(&fact.record_uid)
-                || (facts.len() > 1 && !refreshed.insert(fact.record_uid.as_str()))
-            {
-                continue;
-            }
-            if self
-                .engine
-                .may_read_record(self.subject.as_deref(), &fact.record_uid)
-                .await
-                .unwrap_or(false)
-            {
-                if let Ok(Some(message)) = self.collab_delta(&fact.record_uid).await {
-                    out.push(message);
-                }
-            }
-        }
-        drop(collaboration);
+        let mut out = self.document_changes(facts).await;
         out.extend(
             self.update_subscriptions(SubscriptionChange::Facts(facts), false)
                 .await,
         );
         out
-    }
-
-    async fn collab_delta(&self, uid: &str) -> Result<Option<ServerMessage>, EngineError> {
-        let version = self
-            .collab_versions
-            .lock()
-            .expect("document versions")
-            .get(uid)
-            .cloned();
-        let Some(version) = version else {
-            return Ok(None);
-        };
-        let Some((update_base64, version)) = self.engine.collab_since(uid, &version).await? else {
-            return Ok(None);
-        };
-        self.collab_versions
-            .lock()
-            .expect("document versions")
-            .insert(uid.into(), version.clone());
-        Ok(Some(ServerMessage::CollabChange {
-            record_uid: uid.into(),
-            update_base64,
-            version,
-        }))
     }
 
     pub async fn may_use_lane(&self) -> bool {
@@ -1406,18 +659,6 @@ fn action_error(id: String, error: EngineError) -> ServerMessage {
     ServerMessage::Error { id, message, code }
 }
 
-async fn load_saved(engine: &Engine, name: &str) -> Result<Protein, String> {
-    let record = store::records::resolve(&engine.store.pool, name)
-        .await
-        .map_err(|e| e.to_string())?
-        .ok_or_else(|| format!("no saved protein {name}"))?;
-    let ast = store::records::get_extension(&engine.store.pool, &record.uid, "lince.protein")
-        .await
-        .map_err(|e| e.to_string())?
-        .ok_or_else(|| format!("{name} has no protein AST"))?;
-    serde_json::from_value(ast).map_err(|e| e.to_string())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1425,23 +666,37 @@ mod tests {
     #[tokio::test]
     async fn subscription_aliases_share_exact_retained_rows_and_release_them_on_unsubscribe() {
         let engine = Arc::new(Engine::open_memory().await.unwrap());
-        let uid = engine.act(engine::actions::Action::CreateRecord {
-            slug: None,
-            kind: nucleus::RecordKind::Plain,
-            head: "Private shared result".into(),
-            body: "Shared retained body ".repeat(4096),
-            quantity: 0.0,
-        }, None).await.unwrap().created.unwrap();
+        let uid = engine
+            .act(
+                engine::actions::Action::CreateRecord {
+                    slug: None,
+                    kind: nucleus::RecordKind::Plain,
+                    head: "Private shared result".into(),
+                    body: "Shared retained body ".repeat(4096),
+                    quantity: 0.0,
+                },
+                None,
+            )
+            .await
+            .unwrap()
+            .created
+            .unwrap();
         let query: Protein = serde_json::from_value(serde_json::json!({
             "source": "record", "where": [{"uid_eq": uid}],
             "fields": ["uid", "head", "body"]
-        })).unwrap();
+        }))
+        .unwrap();
         let mut session = Session::local(engine, Arc::new(LaneHub::new()), "retention");
         for id in ["a", "b"] {
-            let response = session.handle(ClientMessage::Subscribe {
-                id: id.into(), protein: query.clone(),
-            }).await;
-            assert!(matches!(response.as_slice(), [ServerMessage::Snapshot { rows, .. }] if rows.len() == 1));
+            let response = session
+                .handle(ClientMessage::Subscribe {
+                    id: id.into(),
+                    protein: query.clone(),
+                })
+                .await;
+            assert!(
+                matches!(response.as_slice(), [ServerMessage::Snapshot { rows, .. }] if rows.len() == 1)
+            );
         }
         let retained = Arc::downgrade(session.subscriptions["a"].rows.as_ref().unwrap());
         assert_eq!(retained.strong_count(), 2);
@@ -1450,12 +705,21 @@ mod tests {
             session.subscriptions["b"].rows.as_ref().unwrap(),
         ));
         for _ in 0..3 {
-            assert!(session.on_sync_event(crate::SyncEvent::Refresh).await.is_empty());
+            assert!(
+                session
+                    .on_sync_event(crate::SyncEvent::Refresh)
+                    .await
+                    .is_empty()
+            );
             assert_eq!(retained.strong_count(), 2);
         }
-        session.handle(ClientMessage::Unsubscribe { id: "a".into() }).await;
+        session
+            .handle(ClientMessage::Unsubscribe { id: "a".into() })
+            .await;
         assert_eq!(retained.strong_count(), 1);
-        session.handle(ClientMessage::Unsubscribe { id: "b".into() }).await;
+        session
+            .handle(ClientMessage::Unsubscribe { id: "b".into() })
+            .await;
         assert!(retained.upgrade().is_none());
     }
 }

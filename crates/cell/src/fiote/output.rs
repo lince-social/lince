@@ -12,6 +12,7 @@
 
 use super::*;
 use fiote::provider::TextOutput;
+use serde_json::Value;
 
 pub(super) struct Output<'a> {
     pub context_path: Option<PathBuf>,
@@ -23,6 +24,7 @@ pub(super) struct Output<'a> {
     pub tools: &'a Registry,
     pub message: &'a str,
     pub text: Mutex<String>,
+    pub timeline: Option<timeline::Timeline<'a>>,
 }
 
 impl Output<'_> {
@@ -41,6 +43,9 @@ impl Output<'_> {
     }
 
     pub async fn finish(&self, body: &str, state: MessageState) -> Result<(), String> {
+        if let Some(timeline) = &self.timeline {
+            timeline.interrupt_tools().await;
+        }
         if let Some(path) = &self.journal_path {
             let mut journal = history::load(path)?.unwrap_or_default();
             journal.body = Some(body.into());
@@ -66,7 +71,49 @@ impl TextOutput for Output<'_> {
             journal.pending = Some(call.clone());
             save(path, &journal)?;
         }
+        if let Some(timeline) = &self.timeline {
+            let input = match call.name.as_str() {
+                "create_file" | "write_file" | "edit_file" | "read_file" | "list_directory" => {
+                    serde_json::json!({"path": call.arguments["path"]})
+                }
+                "run_command" => serde_json::json!({"command": call.arguments["command"]}),
+                _ => Value::Null,
+            };
+            timeline
+                .native_activity(
+                    &call.id,
+                    &serde_json::json!({
+                        "title": call.name,
+                        "status": "in_progress",
+                        "rawInput": input,
+                    }),
+                )
+                .await;
+        }
         Ok(())
+    }
+
+    async fn tool_finished(&self, id: &str, result: &Value, diff: Option<&str>) {
+        if let Some(timeline) = &self.timeline {
+            let output = &result["result"];
+            let detail = if result["ok"] != true {
+                result.get("error").cloned().unwrap_or_default()
+            } else if output.get("exit_code").is_some() {
+                serde_json::json!({
+                    "exit_code": output["exit_code"],
+                    "stdout": output["stdout"],
+                    "stderr": output["stderr"],
+                    "timed_out": output["timed_out"],
+                })
+            } else {
+                Value::Null
+            };
+            timeline.native_activity(id, &serde_json::json!({
+                "status": if result["ok"] == true && output["success"] != false { "completed" } else { "failed" },
+                "rawOutput": detail,
+                "diff": diff,
+            })).await;
+        }
     }
     async fn executed_calls(&self) -> Result<Vec<String>, String> {
         Ok(self
@@ -160,6 +207,7 @@ mod tests {
             tools: &tools,
             message: "fixture",
             text: Default::default(),
+            timeline: None,
         };
         output.context(&before).await.unwrap();
         let after = vec![Message::Replay {

@@ -65,7 +65,12 @@ pub(crate) async fn execute_records(
     {
         Some((
             settings,
-            record_threads::Selection::load(store, &ids).await?,
+            record_threads::Selection::load(
+                store,
+                &ids,
+                settings.fiote_sessions && subject.is_none() && visible.is_none(),
+            )
+            .await?,
         ))
     } else {
         None

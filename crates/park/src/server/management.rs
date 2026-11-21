@@ -107,7 +107,7 @@ impl State {
                             .items
                             .iter()
                             .filter(|item| {
-                                item.id == lince_interface::host::ItemId::Application(*id)
+                                item.id == lince_host::ItemId::Application(*id)
                             })
                             .map(|item| item.output)
                             .collect()

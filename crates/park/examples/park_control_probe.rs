@@ -41,7 +41,7 @@ mod probe {
         time::{Duration, Instant},
     };
 
-    use lince_interface::host::control::{
+    use lince_host::control::{
         Arguments, Context, Disposition, Entry, Error, Invocation, Response,
     };
     use lince_park::control_client::ControlClient;
@@ -241,7 +241,7 @@ mod probe {
         let mut client = ControlClient::from_connection(connection)?;
         client.subscribe(true)?;
         let (revision, scope) = client.next_change(Duration::from_secs(5))?;
-        if scope & lince_interface::host::control::CHANGE_RESYNC == 0 {
+        if scope & lince_host::control::CHANGE_RESYNC == 0 {
             return Err(fail("The initial subscription did not require a snapshot"));
         }
         report["subscription"] = json!({"revision":revision,"scope":scope});

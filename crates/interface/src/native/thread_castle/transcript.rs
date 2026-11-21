@@ -20,6 +20,7 @@ pub(super) struct Transcript {
     binding: RecordBinding,
     message: String,
     thread: String,
+    toggle: Entity,
     preview: Entity,
     content: Entity,
     text: Entity,
@@ -34,7 +35,7 @@ pub(super) fn populate(world: &mut World, owner: Entity, binding: &RecordBinding
         return;
     };
     let preview = crate::native::edit_mode::label(world, owner, "", 13.0);
-    control(world, owner, owner, "Show / hide tool transcript", Toggle);
+    let toggle = control(world, owner, owner, "Show / hide tool transcript", Toggle);
     let content = world
         .spawn((
             Node {
@@ -61,6 +62,7 @@ pub(super) fn populate(world: &mut World, owner: Entity, binding: &RecordBinding
         binding: binding.clone(),
         message: data["uid"].as_str().unwrap().into(),
         thread: thread.into(),
+        toggle,
         preview,
         content,
         text,
@@ -75,7 +77,20 @@ pub(super) fn refresh(world: &mut World, owner: Entity, data: &Value) {
     };
     let _presentation = nucleus::performance::Span::new("message-transcript-presentation");
     let preview = transcript.preview;
+    let toggle = transcript.toggle;
     let tool = &data["tool_call"];
+    if tool["has_diff"] == true {
+        let caption = "Show / hide tool output and diff";
+        if let Some(mut access) = world.get_mut::<AccessibilityNode>(toggle) {
+            if access.label() != Some(caption) {
+                access.set_label(caption);
+            }
+        }
+        let label = world.get::<Children>(toggle).and_then(|children| children.first()).copied();
+        if let Some(mut text) = label.and_then(|label| world.get_mut::<Text>(label)) {
+            text.set_if_neq(Text::new(caption));
+        }
+    }
     publish(
         world,
         preview,
@@ -136,6 +151,129 @@ impl Action for Toggle {
         } else {
             Display::None
         };
+    }
+}
+
+#[derive(Component)]
+struct SavedHistory {
+    binding: RecordBinding,
+    thread: String,
+    message: String,
+    group: Entity,
+    text: Entity,
+    pending: Option<String>,
+    loaded: bool,
+}
+
+pub(super) fn saved_history(
+    world: &mut World,
+    owner: Entity,
+    binding: &RecordBinding,
+    thread: &str,
+    data: &Value,
+    has_live_transcript: bool,
+) {
+    let eligible = !has_live_transcript
+        && data["author"].as_str() == Some(&binding.uid)
+        && data["tool_call"].is_null()
+        && data["message_state"] != "writing";
+    if !eligible {
+        if let Some(history) = world.entity_mut(owner).take::<SavedHistory>() {
+            world.despawn(history.group);
+        }
+        return;
+    }
+    if world.get::<SavedHistory>(owner).is_some() {
+        return;
+    }
+    let Some(message) = data["uid"].as_str() else {
+        return;
+    };
+    let group = world
+        .spawn((
+            Node {
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::Start,
+                ..default()
+            },
+            ChildOf(owner),
+        ))
+        .id();
+    control(world, group, owner, "Saved tool history", OpenSavedHistory);
+    let text = crate::native::edit_mode::label(world, group, "", 13.0);
+    world.get_mut::<Node>(text).unwrap().display = Display::None;
+    world.entity_mut(owner).insert(SavedHistory {
+        binding: binding.clone(),
+        thread: thread.into(),
+        message: message.into(),
+        group,
+        text,
+        pending: None,
+        loaded: false,
+    });
+}
+
+#[derive(Clone)]
+struct OpenSavedHistory;
+
+impl Action for OpenSavedHistory {
+    fn apply(&self, world: &mut World, owner: Entity) {
+        let Some(history) = world.get::<SavedHistory>(owner) else {
+            return;
+        };
+        let entity = history.text;
+        let opening = world
+            .get::<Node>(entity)
+            .is_some_and(|node| node.display == Display::None);
+        let fetch = opening && history.pending.is_none() && !history.loaded;
+        if fetch {
+            let id = nucleus::new_uid("fiote-tool-history");
+            let request = cell::FioteRequest::InspectToolHistory {
+                thread: history.thread.clone(),
+                message: history.message.clone(),
+            };
+            let sent = crate::native::protein_area::editor_sender(world, &history.binding)
+                .is_some_and(|sender| {
+                    sender
+                        .try_send(ClientMessage::Fiote {
+                            id: id.clone(),
+                            request,
+                        })
+                        .is_ok()
+                });
+            if sent {
+                world.get_mut::<SavedHistory>(owner).unwrap().pending = Some(id);
+            }
+            world.get_mut::<Text>(entity).unwrap().0 = if sent {
+                "Loading tool history…"
+            } else {
+                "The local Cell is unavailable."
+            }
+            .into();
+        }
+        world.get_mut::<Node>(entity).unwrap().display = if opening {
+            Display::Flex
+        } else {
+            Display::None
+        };
+    }
+}
+
+pub(crate) fn receive_saved_history(world: &mut World, id: &str, text: &str, loaded: bool) {
+    let targets: Vec<_> = world
+        .query::<(Entity, &SavedHistory)>()
+        .iter(world)
+        .filter(|(_, history)| history.pending.as_deref() == Some(id))
+        .map(|(entity, history)| (entity, history.text))
+        .collect();
+    for (owner, label) in targets {
+        if let Some(mut history) = world.get_mut::<SavedHistory>(owner) {
+            history.loaded = loaded;
+            history.pending = None;
+        }
+        if let Some(mut output) = world.get_mut::<Text>(label) {
+            output.0 = text.into();
+        }
     }
 }
 

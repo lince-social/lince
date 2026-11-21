@@ -1,14 +1,4 @@
-// non-lean-yet
-// Scope: mod access_snapshot, mod action_intents, mod artifact_deliveries, mod assertions.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 118, 156, 199, 204, 210, 215.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 1, 2,
-//   3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,
-//   28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51,
-//   52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75,
-//   76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99,
-//   100, 101, 102, 111, 112, 116, 118, 137, 144, 152, 156, 199, 204, 210, 215.
+//! Lince's SQLite Store and the storage operations for its domains.
 
 pub mod access_snapshot;
 pub mod action_intents;
@@ -27,6 +17,7 @@ pub mod contact_disclosures;
 pub mod contact_rate;
 pub mod contact_share;
 pub mod data_visibility;
+mod database;
 pub mod door;
 pub mod entries;
 pub mod evidence_custody;
@@ -113,45 +104,24 @@ pub mod trust_queries;
 pub mod visibility;
 pub mod vocabulary;
 
-use std::str::FromStr;
-
+pub use database::write_tx;
+use nucleus::projection::ExecutionIdentity;
 pub use sqlx;
-use sqlx::{
-    SqlitePool,
-    sqlite::{SqliteConnectOptions, SqlitePoolOptions},
-};
+use sqlx::SqlitePool;
 
+/// A SQLite connection pool and the optional identity of its execution environment.
 #[derive(Debug, Clone)]
 pub struct Store {
+    /// Connections used by Store queries and write transactions.
     pub pool: SqlitePool,
-    execution_identity: Option<&'static nucleus::projection::ExecutionIdentity>,
+    execution_identity: Option<&'static ExecutionIdentity>,
 }
 
+/// Error reported by SQLite operations and Store invariant checks.
 pub type StoreError = sqlx::Error;
 
-pub async fn write_tx(
-    pool: &SqlitePool,
-) -> Result<sqlx::Transaction<'static, sqlx::Sqlite>, StoreError> {
-    let connection = {
-        let _acquire = nucleus::performance::Span::new("store-write-pool-acquire-await");
-        pool.acquire().await?
-    };
-    let mut tx = {
-        let _begin = nucleus::performance::Span::new("store-write-begin-await");
-        sqlx::Transaction::begin(
-            connection,
-            Some(sqlx::SqlSafeStr::into_sql_str("BEGIN IMMEDIATE")),
-        )
-        .await?
-    };
-    let _sequence = nucleus::performance::Span::new("store-write-sequence-await");
-    sqlx::query("UPDATE commit_sequence SET value = value + 1 WHERE id = 1")
-        .execute(&mut *tx)
-        .await?;
-    Ok(tx)
-}
-
 impl Store {
+    /// Wraps the supplied SQLite pool as-is.
     pub fn from_pool(pool: SqlitePool) -> Self {
         Self {
             pool,
@@ -159,144 +129,14 @@ impl Store {
         }
     }
 
-    pub fn with_execution_identity(
-        mut self,
-        identity: &'static nucleus::projection::ExecutionIdentity,
-    ) -> Self {
+    /// Associates a trusted execution identity with this Store handle.
+    pub fn with_execution_identity(mut self, identity: &'static ExecutionIdentity) -> Self {
         self.execution_identity = Some(identity);
         self
     }
 
-    pub fn execution_identity(&self) -> Option<&nucleus::projection::ExecutionIdentity> {
+    /// Returns the execution identity explicitly associated with this handle.
+    pub fn execution_identity(&self) -> Option<&ExecutionIdentity> {
         self.execution_identity
     }
-
-    pub async fn open_readonly(path: &std::path::Path) -> Result<Store, StoreError> {
-        if !path.is_file() {
-            return Err(StoreError::Protocol(format!(
-                "Lince database does not exist or is not a file: {}",
-                path.display()
-            )));
-        }
-        let options = SqliteConnectOptions::new()
-            .filename(path)
-            .read_only(true)
-            .create_if_missing(false)
-            .busy_timeout(std::time::Duration::from_secs(2));
-        let pool = SqlitePoolOptions::new()
-            .max_connections(1)
-            .min_connections(1)
-            .idle_timeout(None)
-            .max_lifetime(None)
-            .connect_with(options)
-            .await?;
-        sqlx::query("BEGIN DEFERRED").execute(&pool).await?;
-        let migrations = sqlx::migrate!("./migrations");
-        let applied: Vec<(i64, Vec<u8>, bool)> = sqlx::query_as(
-            "SELECT version, checksum, success FROM _sqlx_migrations ORDER BY version",
-        )
-        .fetch_all(&pool)
-        .await?;
-        if applied.len() != migrations.iter().count()
-            || migrations.iter().zip(&applied).any(|(expected, actual)| {
-                expected.version != actual.0
-                    || expected.checksum.as_ref() != actual.1.as_slice()
-                    || !actual.2
-            })
-        {
-            return Err(StoreError::Protocol("The database is not a current, valid Lince database; open it with Lince to initialize or migrate it".into()));
-        }
-        let _: i64 = sqlx::query_scalar(
-            "SELECT count(*) FROM record WHERE kind = 'organ' AND deleted_at IS NULL",
-        )
-        .fetch_one(&pool)
-        .await?;
-        Ok(Store::from_pool(pool))
-    }
-
-    pub async fn open(url: &str) -> Result<Store, StoreError> {
-        let pool = connect_file(url, true, false).await?;
-        initialize(pool).await
-    }
-
-    pub async fn open_durable(url: &str) -> Result<Store, StoreError> {
-        let pool = connect_file(url, true, true).await?;
-        migrate(&pool).await?;
-        Ok(Store::from_pool(pool))
-    }
-
-    pub async fn open_existing_durable(url: &str) -> Result<Store, StoreError> {
-        let pool = connect_file(url, false, true).await?;
-        Ok(Store::from_pool(pool))
-    }
-
-    pub async fn open_memory() -> Result<Store, StoreError> {
-        let opts = SqliteConnectOptions::from_str("sqlite::memory:")?.foreign_keys(true);
-        let pool = SqlitePoolOptions::new()
-            .max_connections(1)
-            .idle_timeout(None)
-            .max_lifetime(None)
-            .connect_with(opts)
-            .await?;
-        initialize(pool).await
-    }
-}
-
-async fn connect_file(
-    url: &str,
-    create_if_missing: bool,
-    require_file_backed: bool,
-) -> Result<SqlitePool, StoreError> {
-    let opts = SqliteConnectOptions::from_str(url)?
-        .create_if_missing(create_if_missing)
-        .foreign_keys(true)
-        .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal)
-        .synchronous(sqlx::sqlite::SqliteSynchronous::Full)
-        .busy_timeout(std::time::Duration::from_secs(10));
-    let pool = SqlitePoolOptions::new()
-        .max_connections(4)
-        .connect_with(opts)
-        .await?;
-    if require_file_backed {
-        require_file_backed_pool(&pool).await?;
-    }
-    Ok(pool)
-}
-
-async fn require_file_backed_pool(pool: &SqlitePool) -> Result<(), StoreError> {
-    let filename: String =
-        sqlx::query_scalar("SELECT file FROM pragma_database_list WHERE name = 'main'")
-            .fetch_one(pool)
-            .await?;
-    if filename.is_empty() {
-        return Err(StoreError::Configuration(
-            "durable Store requires a file-backed SQLite database".into(),
-        ));
-    }
-    Ok(())
-}
-
-async fn initialize(pool: SqlitePool) -> Result<Store, StoreError> {
-    migrate(&pool).await?;
-    linguas::ensure_local(&pool).await?;
-    ensure_identity(&pool).await?;
-    Ok(Store::from_pool(pool))
-}
-
-async fn migrate(pool: &SqlitePool) -> Result<(), StoreError> {
-    sqlx::migrate!("./migrations")
-        .run(pool)
-        .await
-        .map_err(|e| match e {
-            sqlx::migrate::MigrateError::Execute(e) => e,
-            other => sqlx::Error::Protocol(other.to_string()),
-        })?;
-    signal_endpoints::ensure_authority(pool).await?;
-    transfer_replication::install(pool).await?;
-    projection::install(pool).await
-}
-
-async fn ensure_identity(pool: &SqlitePool) -> Result<(), StoreError> {
-    organs::ensure_local(pool, "").await?;
-    Ok(())
 }

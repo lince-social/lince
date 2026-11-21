@@ -611,6 +611,7 @@ impl Host {
                 tools: &tools,
                 message: &reply,
                 text: Default::default(),
+                timeline: None,
             };
             let _ = output
                 .finish(

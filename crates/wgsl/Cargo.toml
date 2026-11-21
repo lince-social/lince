@@ -1,0 +1,22 @@
+[package]
+name = "lince-wgsl"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Lince's shader interface, spatial settings, and bounded WGSL compiler."
+
+[features]
+default = ["compiler"]
+compiler = ["dep:naga"]
+
+[dependencies]
+naga = { version = "=30.0.2", features = ["wgsl-in"], optional = true }
+serde.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[lints]
+workspace = true

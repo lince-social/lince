@@ -1,9 +1,12 @@
-// non-lean-yet
-// Scope: fn candidates, fn same_configuration.
-// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
-
-use crate::native::area::InfluenceArea;
-use crate::native::workspace::WorkspaceMember;
+use super::{Suspended, armed};
+use crate::native::{
+    area::InfluenceArea,
+    influence_report::{Outcome, activity},
+    laboratory::blocked,
+    practice_cells::sender,
+    topology::holes::live,
+    workspace::WorkspaceMember,
+};
 use bevy::prelude::*;
 
 pub(super) fn candidates(
@@ -18,30 +21,27 @@ pub(super) fn candidates(
     let mut examined = 0;
     let candidates = areas
         .iter(world)
-        .filter(|(entity, area, _, _)| {
-            area.enabled
-                && !area.paused
-                && area.changes_enabled
-                && !area.changes.is_empty()
-                && !super::armed(world, *entity)
-        })
-        .filter(|(entity, area, parent, member)| {
+        .filter_map(|(entity, area, parent, member)| {
+            if !area.enabled
+                || area.paused
+                || !area.changes_enabled
+                || area.changes.is_empty()
+                || armed(world, entity)
+            {
+                return None;
+            }
             examined += 1;
-            !crate::native::laboratory::blocked(world, *entity)
-                && crate::native::influence_report::activity(
-                    world,
-                    *entity,
-                    area,
-                    parent.parent(),
-                    member.0,
-                ) == crate::native::influence_report::Outcome::Active
-                && crate::native::practice_cells::sender(world, *entity).is_some()
+            let root = parent.parent();
+            let workspace = member.0;
+            (!blocked(world, entity)
+                && activity(world, entity, area, root, workspace) == Outcome::Active
+                && sender(world, entity).is_some()
                 && world
-                    .get::<super::Suspended>(*entity)
-                    .is_none_or(|s| &s.0 != *area)
-                && crate::native::topology::holes::live(world, parent.parent(), member.0)
+                    .get::<Suspended>(entity)
+                    .is_none_or(|suspended| &suspended.0 != area)
+                && live(world, root, workspace))
+            .then_some((entity, root))
         })
-        .map(|(entity, _, parent, _)| (entity, parent.parent()))
         .collect();
     nucleus::performance::add("area-mutation-activation-candidates", examined);
     candidates
@@ -52,6 +52,8 @@ pub(super) fn same_configuration(
     previous: &InfluenceArea,
     follows: bool,
 ) -> bool {
+    // Color and creation edits leave admission intact. Followed Areas can move, but NaN
+    // still invalidates the current center or opacity.
     let InfluenceArea {
         backend_components,
         records,

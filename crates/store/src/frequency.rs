@@ -1,47 +1,63 @@
-// non-lean-yet
-// Scope: struct Frequency, struct NewFrequency, fn create, fn get.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
-//   framework contracts. Sites 205.
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 23, 107.
-// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
-//   Sites 114.
-// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
-//   113.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 26, 42, 81, 135, 145, 155.
-// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
-//   adding `#[derive(Debug)]` or a manual implementation. Sites 33.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 9, 10,
-//   11, 12, 13, 14, 15, 16, 17, 18, 22, 26, 33, 34, 35, 36, 37, 38, 39, 42, 81, 135, 145, 155.
+//! Simple Frequency declarations and lookups for recurrence and query callers.
+
+use std::{
+    fmt::{self, Debug, Formatter},
+    iter::once,
+};
 
 use chrono::{DateTime, Utc};
-use nucleus::karma::{Cadence, CadenceStep, CompiledSchedule, Slug, TimestampMs};
-use sqlx::SqlitePool;
+use nucleus::{
+    execution::now,
+    karma::{
+        Cadence, CadenceStep, CompiledSchedule, KarmaBoundaryError, NodeOperation::Trigger, Slug,
+        TimestampMs, TriggerSource, simple_frequency::frequency_from_cadence,
+    },
+};
+use sqlx::{SqlitePool, query, query_scalar};
 
 use crate::{
     StoreError,
-    karma::frequencies::{self, CreateFrequencyInput, FrequencyMutationCommit},
+    karma::{
+        frequencies::{self, CreateFrequencyInput, FrequencyMutationCommit},
+        programs,
+    },
+    recurrence, write_tx,
 };
 
+const MILLIS_PER_DAY: u64 = 86_400_000;
+
+/// The simple cadence view of a stored Frequency.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Frequency {
+    /// Record identity.
     pub uid: String,
+    /// Record name used by simple recurrence references.
     pub slug: String,
+    /// Purpose from the selected definition revision.
     pub head: String,
+    /// Repeating step in the selected cadence.
     pub every: CadenceStep,
+    /// Selected cadence and its calendar constraints.
     pub cadence: Cadence,
+    /// Anchor instant in RFC 3339 form.
     pub anchor_at: String,
+    /// Person who owns the Frequency, when recorded.
     pub actor_uid: Option<String>,
+    /// Creation time of the Frequency.
     pub created_at: String,
+    /// Last update time of the Frequency.
     pub updated_at: String,
 }
 
 impl Frequency {
+    /// Returns an owned copy of the cadence.
     pub fn cadence(&self) -> Cadence {
         self.cadence.clone()
     }
 
+    /// Returns the stored anchor in UTC.
+    /// # Errors
+    /// Returns an error if the anchor is not valid RFC 3339.
     pub fn anchor(&self) -> Result<DateTime<Utc>, StoreError> {
         DateTime::parse_from_rfc3339(&self.anchor_at)
             .map(|at| at.with_timezone(&Utc))
@@ -49,28 +65,48 @@ impl Frequency {
     }
 }
 
+/// Inputs for authoring a simple repeating Frequency.
 pub struct NewFrequency<'a> {
+    /// Name as entered, optionally prefixed with an at sign.
     pub slug: &'a str,
+    /// Purpose, with the input name used when this is blank.
     pub head: &'a str,
+    /// Repeating time step.
     pub every: CadenceStep,
+    /// Instant from which the cadence is derived.
     pub anchor_at: DateTime<Utc>,
+    /// Identity used to recognize a retry.
     pub request_id: &'a str,
+    /// Optional author and owner.
     pub actor_uid: Option<&'a str>,
 }
 
+impl Debug for NewFrequency<'_> {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("NewFrequency")
+            .field("every", &self.every)
+            .finish_non_exhaustive()
+    }
+}
+
+/// Creates a simple Frequency or returns its matching replay.
+/// # Errors
+/// Returns an error for invalid input, a conflicting declaration, or a failed write or reread.
 pub async fn create(
     pool: &SqlitePool,
     new: NewFrequency<'_>,
     now: DateTime<Utc>,
 ) -> Result<Frequency, StoreError> {
     let slug = Slug::new(new.slug.trim().trim_start_matches('@')).map_err(boundary)?;
-    let frequency = nucleus::karma::simple_frequency::frequency_from_cadence(
+    let purpose = if new.head.trim().is_empty() {
+        new.slug
+    } else {
+        new.head
+    };
+    let frequency = frequency_from_cadence(
         slug,
-        if new.head.trim().is_empty() {
-            new.slug.to_string()
-        } else {
-            new.head.to_string()
-        },
+        purpose.to_owned(),
         &Cadence::every(new.every),
         TimestampMs::from_millis(new.anchor_at.timestamp_millis()).map_err(boundary)?,
     )
@@ -78,10 +114,10 @@ pub async fn create(
     let commit = frequencies::create(
         pool,
         CreateFrequencyInput {
-            request_id: new.request_id.to_string(),
+            request_id: new.request_id.to_owned(),
             frequency,
-            owner_person_uid: new.actor_uid.map(str::to_string),
-            actor_person_uid: new.actor_uid.map(str::to_string),
+            owner_person_uid: new.actor_uid.map(str::to_owned),
+            actor_person_uid: new.actor_uid.map(str::to_owned),
         },
         now,
         |_| None,
@@ -94,9 +130,12 @@ pub async fn create(
     };
     get(pool, &handle.record_uid)
         .await?
-        .ok_or(sqlx::Error::RowNotFound)
+        .ok_or(StoreError::RowNotFound)
 }
 
+/// Reads a live Frequency, preferring its active definition and activation.
+/// # Errors
+/// Returns an error if the selected schedule or referenced evidence cannot be read or represented.
 pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<Frequency>, StoreError> {
     let Some(handle) = frequencies::get_handle(pool, uid).await? else {
         return Ok(None);
@@ -109,12 +148,12 @@ pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<Frequency>, Stor
             .unwrap_or(&handle.head_revision_hash),
     )
     .await?
-    .ok_or(sqlx::Error::RowNotFound)?;
+    .ok_or(StoreError::RowNotFound)?;
     let activation = match &handle.active_activation_hash {
         Some(hash) => Some(
             frequencies::get_activation(pool, hash)
                 .await?
-                .ok_or(sqlx::Error::RowNotFound)?,
+                .ok_or(StoreError::RowNotFound)?,
         ),
         None => None,
     };
@@ -128,17 +167,25 @@ pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<Frequency>, Stor
             schedule.cadence.clone(),
             schedule.anchor.as_naive().and_utc().to_rfc3339(),
         ),
-        CompiledSchedule::Elapsed { schedule } => (
-            Cadence::every(CadenceStep {
-                days: u32::try_from(schedule.interval_ms() / 86_400_000)
-                    .map_err(|_| protocol("frequency interval exceeds simple form"))?,
-                milliseconds: (schedule.interval_ms() % 86_400_000) as u32,
-                ..Default::default()
-            }),
-            DateTime::from_timestamp_millis(schedule.anchor().as_millis())
-                .ok_or_else(|| protocol("invalid frequency anchor"))?
-                .to_rfc3339(),
-        ),
+        CompiledSchedule::Elapsed { schedule } => {
+            let interval = schedule.interval_ms();
+            let (Ok(days), Ok(milliseconds)) = (
+                u32::try_from(interval / MILLIS_PER_DAY),
+                u32::try_from(interval % MILLIS_PER_DAY),
+            ) else {
+                return Err(protocol("frequency interval exceeds simple form"));
+            };
+            let anchor = DateTime::from_timestamp_millis(schedule.anchor().as_millis())
+                .ok_or_else(|| protocol("invalid frequency anchor"))?;
+            (
+                Cadence::every(CadenceStep {
+                    days,
+                    milliseconds,
+                    ..Default::default()
+                }),
+                anchor.to_rfc3339(),
+            )
+        }
     };
     Ok(Some(Frequency {
         uid: handle.record_uid,
@@ -153,9 +200,12 @@ pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<Frequency>, Stor
     }))
 }
 
+/// Resolves a live Frequency by trimmed name or Record identity.
+/// # Errors
+/// Returns an error if resolving the name or reading the selected Frequency fails.
 pub async fn resolve(pool: &SqlitePool, name: &str) -> Result<Option<Frequency>, StoreError> {
     let name = name.trim().trim_start_matches('@');
-    let uid: Option<String> = sqlx::query_scalar("SELECT k.record_uid FROM karma_frequency k JOIN record r ON r.uid = k.record_uid WHERE (r.slug = ? OR r.uid = ?) AND r.deleted_at IS NULL")
+    let uid: Option<String> = query_scalar("SELECT k.record_uid FROM karma_frequency k JOIN record r ON r.uid = k.record_uid WHERE (r.slug = ? OR r.uid = ?) AND r.deleted_at IS NULL")
         .bind(name).bind(name).fetch_optional(pool).await?;
     match uid {
         Some(uid) => get(pool, &uid).await,
@@ -163,9 +213,13 @@ pub async fn resolve(pool: &SqlitePool, name: &str) -> Result<Option<Frequency>,
     }
 }
 
+/// Lists Frequencies in Record name and identity order.
+/// # Errors
+/// Returns an error if the listing or any still-live Frequency cannot be read.
 pub async fn all(pool: &SqlitePool) -> Result<Vec<Frequency>, StoreError> {
-    let mut result = Vec::new();
-    for handle in frequencies::list_handles(pool).await? {
+    let handles = frequencies::list_handles(pool).await?;
+    let mut result = Vec::with_capacity(handles.len());
+    for handle in handles {
         if let Some(frequency) = get(pool, &handle.record_uid).await? {
             result.push(frequency);
         }
@@ -173,16 +227,21 @@ pub async fn all(pool: &SqlitePool) -> Result<Vec<Frequency>, StoreError> {
     Ok(result)
 }
 
+/// Soft-deletes an unreferenced Frequency and clears its active schedule.
+/// # Errors
+/// Returns an error if the Frequency is missing or in use, or if checking or writing fails.
 pub async fn delete(pool: &SqlitePool, uid: &str) -> Result<(), StoreError> {
-    let frequency = get(pool, uid).await?.ok_or(sqlx::Error::RowNotFound)?;
-    let bound: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM karma_rule_frequency WHERE frequency_uid = ? UNION ALL SELECT 1 FROM karma_signal_frequency WHERE frequency_uid = ?)")
+    let frequency = get(pool, uid).await?.ok_or(StoreError::RowNotFound)?;
+    let bound: bool = query_scalar("SELECT EXISTS(SELECT 1 FROM karma_rule_frequency WHERE frequency_uid = ? UNION ALL SELECT 1 FROM karma_signal_frequency WHERE frequency_uid = ?)")
         .bind(uid).bind(uid).fetch_one(pool).await?;
     if bound {
         return Err(protocol("a rule or Signal still uses that frequency"));
     }
-    for rule in crate::recurrence::all(pool).await? {
+    for rule in recurrence::all(pool).await? {
         if let Some(condition) = rule.condition {
-            let parsed = condition.parsed().map_err(|e| protocol(e.to_string()))?;
+            let parsed = condition
+                .parsed()
+                .map_err(|error| protocol(error.to_string()))?;
             if parsed.reads_ref().iter().any(|token| {
                 token.func == "freq" && (token.slug == frequency.slug || token.slug == uid)
             }) {
@@ -190,39 +249,42 @@ pub async fn delete(pool: &SqlitePool, uid: &str) -> Result<(), StoreError> {
             }
         }
     }
-    for handle in crate::karma::programs::list_handles(pool).await? {
-        for hash in
-            std::iter::once(&handle.head_revision_hash).chain(handle.active_revision_hash.as_ref())
-        {
-            if let Some(revision) = crate::karma::programs::get_revision(pool, hash).await? {
-                for node in revision.program.nodes.values() {
-                    if let nucleus::karma::NodeOperation::Trigger {
-                        source: nucleus::karma::TriggerSource::Frequency { frequency },
-                        ..
-                    } = &node.operation
-                        && frequency.target.as_str() == uid
-                    {
-                        return Err(protocol("a Program still reads that frequency"));
-                    }
-                }
+    for handle in programs::list_handles(pool).await? {
+        let active = handle
+            .active_revision_hash
+            .as_ref()
+            .filter(|&hash| hash != &handle.head_revision_hash);
+        for hash in once(&handle.head_revision_hash).chain(active) {
+            let Some(revision) = programs::get_revision(pool, hash).await? else {
+                continue;
+            };
+            if revision.program.nodes.values().any(|node| {
+                matches!(
+                    &node.operation,
+                    Trigger { source: TriggerSource::Frequency { frequency }, .. }
+                    if frequency.target.as_str() == uid
+                )
+            }) {
+                return Err(protocol("a Program still reads that frequency"));
             }
         }
     }
-    let mut tx = crate::write_tx(pool).await?;
-    sqlx::query("UPDATE record SET deleted_at = ? WHERE uid = ?")
-        .bind(nucleus::execution::now().to_rfc3339())
+    let mut tx = write_tx(pool).await?;
+    query("UPDATE record SET deleted_at = ? WHERE uid = ?")
+        .bind(now().to_rfc3339())
         .bind(uid)
         .execute(&mut *tx)
         .await?;
-    sqlx::query("UPDATE karma_frequency SET status = 'paused', active_revision_hash = NULL, active_activation_hash = NULL WHERE record_uid = ?")
+    query("UPDATE karma_frequency SET status = 'paused', active_revision_hash = NULL, active_activation_hash = NULL WHERE record_uid = ?")
         .bind(uid).execute(&mut *tx).await?;
     tx.commit().await?;
     Ok(())
 }
 
 fn protocol(message: impl Into<String>) -> StoreError {
-    sqlx::Error::Protocol(message.into())
+    StoreError::Protocol(message.into())
 }
-fn boundary(error: nucleus::karma::KarmaBoundaryError) -> StoreError {
+
+fn boundary(error: KarmaBoundaryError) -> StoreError {
     protocol(error.to_string())
 }

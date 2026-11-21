@@ -12,7 +12,7 @@ use crate::native::{
     protein_area::{Config, RecordBinding, Source},
 };
 use bevy::{math::DVec2, prelude::*};
-use serde_json::json;
+use serde_json::{Value, json};
 
 pub mod window;
 
@@ -62,6 +62,21 @@ pub fn open_in(
     reference: &str,
     source: Source,
 ) -> Option<Entity> {
+    open_castle(world, root, workspace, position, reference, source, false)
+}
+
+const FIOTE_WIDTH: f32 = 880.0;
+const FIOTE_HEIGHT: f32 = 660.0;
+
+fn open_castle(
+    world: &mut World,
+    root: Entity,
+    workspace: u64,
+    position: DVec2,
+    reference: &str,
+    source: Source,
+    fiote: bool,
+) -> Option<Entity> {
     if reference.trim().is_empty()
         || !position.is_finite()
         || position.abs().max_element() > 1_000_000_000.0
@@ -82,19 +97,41 @@ pub fn open_in(
             [-0.5, -0.5],
         ]),
         position,
-        DVec2::new(520.0, 640.0),
+        if fiote {
+            DVec2::new(FIOTE_WIDTH.into(), FIOTE_HEIGHT.into())
+        } else {
+            DVec2::new(520.0, 640.0)
+        },
     );
-    area.name = "Record Castle".into();
-    area.protein = Some(config(reference, source));
+    let mut protein = config(reference, source);
+    if fiote {
+        area.name = "Fiote Castle".into();
+        protein.fiote = true;
+        protein.width = FIOTE_WIDTH;
+        protein.viewport_height = Some(FIOTE_HEIGHT);
+    } else {
+        area.name = "Record Castle".into();
+    }
+    area.protein = Some(protein);
     crate::native::area::spawn_area(world, root, workspace, area)
 }
 
 pub fn open_fiote(world: &mut World, root: Entity, reference: &str) -> Option<Entity> {
-    let entity = open(world, root, reference, Source::Local)?;
-    let mut area = world.get_mut::<crate::native::area::InfluenceArea>(entity)?;
-    area.name = "Fiote Castle".into();
-    area.protein.as_mut()?.fiote = true;
-    Some(entity)
+    let workspace = world
+        .get::<crate::native::workspace::Workspaces>(root)?
+        .active;
+    let position = world
+        .get::<crate::native::canvas::CanvasView>(root)
+        .map_or(DVec2::ZERO, |view| view.center);
+    open_castle(
+        world,
+        root,
+        workspace,
+        position,
+        reference,
+        Source::Local,
+        true,
+    )
 }
 
 pub(crate) fn fit_source(world: &mut World, source: Entity, castle: Entity) {
@@ -378,7 +415,7 @@ pub(crate) fn store_entry(world: &mut World, root: Entity, parent: Entity) {
         root,
         parent,
         "Fiote Castle",
-        "An agent with its prompt in the description and a session in each thread.",
+        "See your Fiotes, follow their work in Record threads, and configure their connections.",
         AddFiote,
         |world, _| preview_fiote(world),
     );
@@ -429,14 +466,17 @@ fn preview_fiote(world: &mut World) -> Entity {
     let mut area = crate::native::area::InfluenceArea::new(
         crate::native::area::AreaShape::Square,
         DVec2::ZERO,
-        DVec2::new(520.0, 640.0),
+        DVec2::new(FIOTE_WIDTH.into(), FIOTE_HEIGHT.into()),
     );
     area.protein = Some(Config {
         fiote: true,
         ..Config::records()
     });
     world.entity_mut(entity).insert(area);
-    crate::native::fiote::session::populate(
+    if let Some(mut item) = world.get_mut::<crate::native::canvas::CanvasItem>(entity) {
+        item.size = Vec2::new(FIOTE_WIDTH, FIOTE_HEIGHT);
+    }
+    crate::native::fiote::session::populate_dashboard(
         world,
         entity,
         RecordBinding {
@@ -444,6 +484,7 @@ fn preview_fiote(world: &mut World) -> Entity {
             uid: nucleus::new_uid("r"),
             source: Source::Local,
         },
+        &Value::Null,
     );
     entity
 }
@@ -614,6 +655,8 @@ mod tests {
             );
             let config = area.protein.as_ref().unwrap();
             assert!(config.enabled);
+            assert_eq!(config.width, FIOTE_WIDTH);
+            assert_eq!(config.viewport_height, Some(FIOTE_HEIGHT));
             let uid = config.draft.query["where"][0]["all"][0]["uid_eq"]
                 .as_str()
                 .unwrap();

@@ -26,8 +26,8 @@ use super::*;
 
 pub(crate) const MAX_CAPTURE_PIXELS: u64 = 16 * 1024 * 1024;
 
-use lince_interface::host::capture::PolicyGate;
-pub use lince_interface::host::capture::Target as CaptureTarget;
+use lince_host::capture::PolicyGate;
+pub use lince_host::capture::Target as CaptureTarget;
 
 #[derive(Clone, Copy)]
 struct SessionTag {
@@ -79,8 +79,8 @@ pub struct CaptureJob {
     pub deadline: Instant,
     pub policy_revision: u64,
     pub mapping_revision: u64,
-    pub mappings: Vec<lince_interface::host::capture::Mapping>,
-    pub output_mapping: Option<lince_interface::host::mapping::Mapping>,
+    pub mappings: Vec<lince_host::capture::Mapping>,
+    pub output_mapping: Option<lince_host::mapping::Mapping>,
     pub color_revision: Option<(OutputId, u64)>,
     pub window: Option<WindowSnapshot>,
     connection: Arc<AtomicBool>,
@@ -507,8 +507,8 @@ impl Server {
         self.state.capture.gate.clone()
     }
 
-    pub fn capture_demand(&self) -> lince_interface::host::capture::Demand {
-        let mut demand = lince_interface::host::capture::Demand::default();
+    pub fn capture_demand(&self) -> lince_host::capture::Demand {
+        let mut demand = lince_host::capture::Demand::default();
         if let Ok(counts) = self.state.capture.demand.lock() {
             for target in counts.keys() {
                 match target {
@@ -558,7 +558,7 @@ impl Server {
         )
     }
 
-    pub fn capture_status(&self) -> lince_interface::host::capture::Status {
+    pub fn capture_status(&self) -> lince_host::capture::Status {
         let entries = self
             .state
             .capture
@@ -597,12 +597,12 @@ impl Server {
                         bounded(metadata.lock().unwrap_or_else(|error| error.into_inner()).title.as_deref().unwrap_or_default())))?
                 }
             };
-            Some(lince_interface::host::capture::Session { id: tag.id, connection: tag.connection, target, label, cursor,
+            Some(lince_host::capture::Session { id: tag.id, connection: tag.connection, target, label, cursor,
                 paused: self.state.capture.suspended || self.locked() || self.state.capture_policy_revision(target).is_none()
                     || matches!(target, CaptureTarget::Output(output) if !self.state.output_powered(output)) })
         }).collect();
         sessions.sort_by_key(|session| session.id);
-        lince_interface::host::capture::Status {
+        lince_host::capture::Status {
             available: true,
             paused: self.state.capture.suspended || self.locked(),
             sessions,
@@ -683,7 +683,7 @@ impl Server {
                 .state
                 .output_viewports()
                 .iter()
-                .map(|(_, output)| lince_interface::host::capture::Mapping::from(output))
+                .map(|(_, output)| lince_host::capture::Mapping::from(output))
                 .collect::<Vec<_>>()
                 != job.mappings
         {

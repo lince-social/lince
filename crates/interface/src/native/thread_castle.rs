@@ -27,6 +27,7 @@ pub(crate) mod message_view;
 )]
 pub(crate) mod tests;
 pub(crate) mod transcript;
+pub(crate) use transcript::receive_saved_history;
 
 use crate::native::{
     actions::Action,
@@ -48,6 +49,14 @@ pub struct ThreadCastle {
     status: Entity,
     creating: bool,
     select_new: Option<String>,
+    dashboard: Option<DashboardTabs>,
+}
+
+struct DashboardTabs {
+    running: Vec<String>,
+    order: Vec<String>,
+    queued_active: bool,
+    empty: Entity,
 }
 
 #[derive(Component)]
@@ -67,6 +76,8 @@ struct Page {
     limit: usize,
     requested: Option<usize>,
     has_more: bool,
+    activity: Option<Entity>,
+    title: Option<Entity>,
 }
 
 #[derive(Component)]
@@ -231,6 +242,25 @@ pub fn populate(world: &mut World, parent: Entity, binding: RecordBinding, data:
             crate::native::tokens::Token::Accent,
         ));
     crate::native::fiote::session::populate(world, parent, binding.clone());
+    populate_tabs(world, parent, binding, data, false);
+}
+
+pub(crate) fn populate_dashboard(
+    world: &mut World,
+    parent: Entity,
+    binding: RecordBinding,
+    data: &Value,
+) {
+    populate_tabs(world, parent, binding, data, true);
+}
+
+fn populate_tabs(
+    world: &mut World,
+    parent: Entity,
+    binding: RecordBinding,
+    data: &Value,
+    dashboard: bool,
+) {
     let header = world
         .spawn((
             Node {
@@ -243,14 +273,18 @@ pub fn populate(world: &mut World, parent: Entity, binding: RecordBinding, data:
         ))
         .id();
     crate::native::edit_mode::label(world, header, "Threads", 20.0);
-    let add = control(world, header, parent, "+", controls::Add);
-    world.entity_mut(add).insert(Node {
-        width: px(28),
-        height: px(28),
-        align_items: AlignItems::Center,
-        justify_content: JustifyContent::Center,
-        ..default()
-    });
+    if dashboard {
+        control(world, header, parent, "New thread", controls::Add);
+    } else {
+        let add = control(world, header, parent, "+", controls::Add);
+        world.entity_mut(add).insert(Node {
+            width: px(28),
+            height: px(28),
+            align_items: AlignItems::Center,
+            justify_content: JustifyContent::Center,
+            ..default()
+        });
+    }
     let status = message_view::status(world, parent);
     let tabs = world
         .spawn((
@@ -267,7 +301,26 @@ pub fn populate(world: &mut World, parent: Entity, binding: RecordBinding, data:
     let prefer_first = world
         .get::<crate::native::area::InfluenceArea>(binding.area)
         .and_then(|area| area.protein.as_ref())
-        .is_some_and(|config| config.fiote);
+        .is_some_and(|config| config.fiote)
+        && !dashboard;
+    let dashboard = dashboard.then(|| {
+        if let Some(mut node) = world.get_mut::<Node>(tabs) {
+            node.max_height = px(112);
+            node.flex_shrink = 0.0;
+        }
+        crate::native::scroll_sand::attach(world, tabs);
+        DashboardTabs {
+            running: Vec::new(),
+            order: Vec::new(),
+            queued_active: false,
+            empty: crate::native::edit_mode::label(
+                world,
+                parent,
+                "No conversations yet. Start a thread to message this Fiote.",
+                14.0,
+            ),
+        }
+    });
     world.entity_mut(parent).insert(ThreadCastle {
         binding,
         tabs,
@@ -277,6 +330,7 @@ pub fn populate(world: &mut World, parent: Entity, binding: RecordBinding, data:
         status,
         creating: false,
         select_new: None,
+        dashboard,
     });
     refresh(world, parent, data);
 }
@@ -411,6 +465,8 @@ fn page(
     uid: &str,
     title: &str,
     social: bool,
+    dashboard: bool,
+    task: Option<&str>,
 ) -> Entity {
     let entity = world
         .spawn((
@@ -419,7 +475,9 @@ fn page(
                 flex_direction: FlexDirection::Column,
                 row_gap: px(4),
                 padding: UiRect::all(px(0)),
-                flex_shrink: 0.0,
+                flex_shrink: if dashboard { 1.0 } else { 0.0 },
+                flex_grow: if dashboard { 1.0 } else { 0.0 },
+                min_height: px(0),
                 ..default()
             },
             ChildOf(castle),
@@ -431,34 +489,75 @@ fn page(
             Node {
                 align_items: AlignItems::Center,
                 height: px(32),
-                flex_shrink: 0.0,
+                flex_shrink: if dashboard { 1.0 } else { 0.0 },
+                min_width: px(0),
                 ..default()
             },
             ChildOf(tabs),
         ))
         .id();
-    let editor = world
-        .spawn((
-            crate::native::sand::text_editor(
-                title,
-                world.resource::<crate::native::theme::Typography>(),
-                0,
-            ),
-            ChildOf(tab),
-            TabName {
-                castle,
-                thread: uid.into(),
+    let title_label = if dashboard {
+        world.get_mut::<AccessibilityNode>(tab).unwrap().set_label(title);
+        let button = control(world, tab, castle, title, Switch(uid.into()));
+        if let Some(mut node) = world.get_mut::<Node>(button) {
+            node.min_width = px(0);
+            node.max_width = px(210);
+            node.max_height = px(32);
+            node.overflow = Overflow::clip();
+        }
+        world
+            .get::<Children>(button)
+            .and_then(|children| children.first())
+            .copied()
+    } else {
+        let editor = world
+            .spawn((
+                crate::native::sand::text_editor(
+                    title,
+                    world.resource::<crate::native::theme::Typography>(),
+                    0,
+                ),
+                ChildOf(tab),
+                TabName {
+                    castle,
+                    thread: uid.into(),
+                },
+            ))
+            .insert(Node {
+                min_width: px(80),
+                max_width: px(200),
+                height: px(32),
+                padding: UiRect::all(px(4)),
+                ..default()
+            })
+            .id();
+        world.get_mut::<TextFont>(editor).unwrap().font_size = 14.0.into();
+        let status = message_view::status(world, entity);
+        crate::native::record_binding::attach(
+            world,
+            editor,
+            RecordBinding {
+                uid: uid.into(),
+                ..binding.clone()
             },
-        ))
-        .insert(Node {
-            min_width: px(80),
-            max_width: px(200),
-            height: px(32),
-            padding: UiRect::all(px(4)),
-            ..default()
-        })
-        .id();
-    world.get_mut::<TextFont>(editor).unwrap().font_size = 14.0.into();
+            "head",
+            Some(status),
+        );
+        {
+            let mut title = world.get_mut::<EditableText>(editor).unwrap();
+            title.allow_newlines = false;
+            title.visible_lines = Some(1.0);
+            title.max_characters = Some(256);
+        }
+        None
+    };
+    let activity = dashboard.then(|| {
+        let badge = crate::native::edit_mode::label(world, tab, "Working", 11.0);
+        if let Some(mut node) = world.get_mut::<Node>(badge) {
+            node.display = Display::None;
+        }
+        badge
+    });
     let delete = control(world, tab, entity, "×", controls::AskDelete);
     world.entity_mut(delete).insert(Node {
         width: px(28),
@@ -467,22 +566,36 @@ fn page(
         justify_content: JustifyContent::Center,
         ..default()
     });
-    let status = message_view::status(world, entity);
-    crate::native::record_binding::attach(
-        world,
-        editor,
-        RecordBinding {
-            uid: uid.into(),
-            ..binding.clone()
-        },
-        "head",
-        Some(status),
-    );
-    {
-        let mut title = world.get_mut::<EditableText>(editor).unwrap();
-        title.allow_newlines = false;
-        title.visible_lines = Some(1.0);
-        title.max_characters = Some(256);
+    if dashboard {
+        let controls = world
+            .spawn((
+                Node {
+                    flex_wrap: FlexWrap::Wrap,
+                    column_gap: px(6),
+                    row_gap: px(4),
+                    flex_shrink: 0.0,
+                    ..default()
+                },
+                ChildOf(entity),
+            ))
+            .id();
+        for (caption, record) in [
+            ("Open thread Record", Some(uid)),
+            ("Open task Record", task),
+        ] {
+            if let Some(record) = record {
+                control(
+                    world,
+                    controls,
+                    entity,
+                    caption,
+                    crate::native::full_record::Open(RecordBinding {
+                        uid: record.into(),
+                        ..binding.clone()
+                    }),
+                );
+            }
+        }
     }
     let status = message_view::status(world, entity);
     #[cfg(feature = "native-media")]
@@ -492,11 +605,12 @@ fn page(
         .spawn((
             Node {
                 width: percent(100),
-                max_height: px(360),
-                min_height: px(80),
+                max_height: if dashboard { Val::Auto } else { px(360) },
+                min_height: if dashboard { px(0) } else { px(80) },
                 overflow: Overflow::scroll_y(),
                 flex_direction: FlexDirection::Column,
-                flex_shrink: 0.0,
+                flex_shrink: if dashboard { 1.0 } else { 0.0 },
+                flex_grow: if dashboard { 1.0 } else { 0.0 },
                 ..default()
             },
             ScrollPosition::default(),
@@ -535,6 +649,8 @@ fn page(
         limit: PAGE_SIZE,
         requested: None,
         has_more: false,
+        activity,
+        title: title_label,
     });
     entity
 }
@@ -559,6 +675,11 @@ pub fn refresh(world: &mut World, parent: Entity, data: &Value) -> bool {
         };
         retained.insert(uid);
         let title = thread["head"].as_str().unwrap_or("Thread");
+        let tab_title = if castle.dashboard.is_some() {
+            thread["task_title"].as_str().unwrap_or(title)
+        } else {
+            title
+        };
         let entity = if let Some(&entity) = castle.pages.get(uid) {
             entity
         } else {
@@ -568,8 +689,10 @@ pub fn refresh(world: &mut World, parent: Entity, data: &Value) -> bool {
                 castle.tabs,
                 &castle.binding,
                 uid,
-                title,
+                tab_title,
                 thread["social_conversation"] == true,
+                castle.dashboard.is_some(),
+                thread["task_uid"].as_str(),
             );
             castle.pages.insert(uid.into(), entity);
             entity
@@ -587,6 +710,20 @@ pub fn refresh(world: &mut World, parent: Entity, data: &Value) -> bool {
             castle.prefer_first = false;
         }
         let mut page = world.entity_mut(entity).take::<Page>().unwrap();
+        if let Some(label) = page.title
+            && let Some(mut text) = world.get_mut::<Text>(label)
+            && text.0 != tab_title
+        {
+            text.0 = tab_title.into();
+            if let Some(mut accessibility) = world.get_mut::<AccessibilityNode>(page.tab) {
+                accessibility.set_label(tab_title);
+            }
+            if let Some(button) = world.get::<ChildOf>(label).map(ChildOf::parent)
+                && let Some(mut accessibility) = world.get_mut::<AccessibilityNode>(button)
+            {
+                accessibility.set_label(tab_title);
+            }
+        }
         #[cfg(feature = "native-media")]
         if thread["social_conversation"] != true {
             crate::native::communication::calls::summaries(world, entity, thread);
@@ -613,7 +750,17 @@ pub fn refresh(world: &mut World, parent: Entity, data: &Value) -> bool {
         let mut order = Vec::new();
         let mut seen = HashSet::new();
         let mut previous_author = None;
-        for data in thread["messages"].as_array().into_iter().flatten() {
+        let messages = thread["messages"].as_array().into_iter().flatten();
+        let tool_parents: HashSet<_> = if castle.dashboard.is_some() {
+            messages
+                .clone()
+                .filter(|message| !message["tool_call"].is_null())
+                .filter_map(|message| message["parent_message_uid"].as_str())
+                .collect()
+        } else {
+            HashSet::new()
+        };
+        for data in messages {
             let Some(uid) = data["uid"].as_str() else {
                 continue;
             };
@@ -634,6 +781,16 @@ pub fn refresh(world: &mut World, parent: Entity, data: &Value) -> bool {
             message_view::refresh(world, entity, data, previous_author);
             previous_author = data["author"].as_str();
             transcript::refresh(world, entity, data);
+            if castle.dashboard.is_some() {
+                transcript::saved_history(
+                    world,
+                    entity,
+                    &castle.binding,
+                    &page.uid,
+                    data,
+                    tool_parents.contains(uid),
+                );
+            }
         }
         if let Some(previous_first) = page.order.first().map(String::as_str)
             && order.first().copied() != Some(previous_first)
@@ -702,12 +859,116 @@ pub fn refresh(world: &mut World, parent: Entity, data: &Value) -> bool {
             }
         }
     }
+    if let Some(dashboard) = &mut castle.dashboard {
+        dashboard.order = data["threads"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|thread| thread["uid"].as_str().map(str::to_owned))
+            .collect();
+        if selected_new || requested.is_some() {
+            dashboard.queued_active = false;
+        }
+        choose_working_thread(&mut castle);
+    }
     world.entity_mut(parent).insert(castle);
     show_active(world, parent);
+    update_dashboard_tabs(world, parent);
     if selected_new {
         focus_composer(world, parent);
     }
     true
+}
+
+pub(crate) fn dashboard_activity(world: &mut World, owner: Entity, running: &[String]) {
+    let Some(mut castle) = world.get_mut::<ThreadCastle>(owner) else {
+        return;
+    };
+    let Some(dashboard) = &mut castle.dashboard else {
+        return;
+    };
+    if dashboard.running == running {
+        return;
+    }
+    dashboard.queued_active |= dashboard.running.is_empty() && !running.is_empty();
+    dashboard.running = running.to_vec();
+    choose_working_thread(&mut castle);
+    show_active(world, owner);
+    update_dashboard_tabs(world, owner);
+}
+
+pub(crate) fn dashboard_current(world: &mut World, owner: Entity) {
+    let Some(castle) = world.get::<ThreadCastle>(owner) else {
+        return;
+    };
+    let Some(tabs) = &castle.dashboard else {
+        return;
+    };
+    let thread = tabs.order.iter().find(|uid| tabs.running.contains(uid))
+        .or_else(|| tabs.order.first()).cloned();
+    if let Some(thread) = thread {
+        Switch(thread).apply(world, owner);
+    }
+}
+
+fn choose_working_thread(castle: &mut ThreadCastle) {
+    let Some(dashboard) = &mut castle.dashboard else {
+        return;
+    };
+    if dashboard.queued_active
+        && castle.select_new.is_none()
+        && let Some(thread) = dashboard
+            .order
+            .iter()
+            .find(|thread| dashboard.running.contains(thread) && castle.pages.contains_key(*thread))
+    {
+        castle.active = Some(thread.clone());
+        dashboard.queued_active = false;
+    }
+}
+
+fn update_dashboard_tabs(world: &mut World, owner: Entity) {
+    let Some(castle) = world.get::<ThreadCastle>(owner) else {
+        return;
+    };
+    let Some(dashboard) = &castle.dashboard else {
+        return;
+    };
+    let empty = dashboard.empty;
+    let no_threads = castle.pages.is_empty();
+    let tab_bar = castle.tabs;
+    let mut tabs: Vec<_> = dashboard
+        .order
+        .iter()
+        .filter_map(|uid| {
+            let page = world.get::<Page>(*castle.pages.get(uid)?)?;
+            Some((page.tab, page.activity?, dashboard.running.contains(uid)))
+        })
+        .collect();
+    tabs.sort_by_key(|(_, _, working)| !working);
+    for (entity, visible) in tabs
+        .iter()
+        .map(|(_, activity, working)| (*activity, *working))
+        .chain([(empty, no_threads)])
+    {
+        if let Some(node) = world.get_mut::<Node>(entity) {
+            node.map_unchanged(|node| &mut node.display)
+                .set_if_neq(if visible {
+                    Display::Flex
+                } else {
+                    Display::None
+                });
+        }
+    }
+    let ordered: Vec<_> = tabs.iter().map(|(tab, _, _)| *tab).collect();
+    if let Some(children) = world.get::<Children>(tab_bar) {
+        let (current, others): (Vec<_>, Vec<_>) =
+            children.iter().partition(|child| ordered.contains(child));
+        if current != ordered {
+            let children: Vec<_> = ordered.into_iter().chain(others).collect();
+            world.entity_mut(tab_bar).replace_children(&children);
+        }
+    }
 }
 
 fn show_active(world: &mut World, owner: Entity) {
@@ -758,6 +1019,9 @@ impl Action for Switch {
             return;
         }
         castle.active = Some(self.0.clone());
+        if let Some(dashboard) = &mut castle.dashboard {
+            dashboard.queued_active = false;
+        }
         if let Some(mut focus) = world.get_resource_mut::<bevy::input_focus::InputFocus>() {
             focus.clear();
         }

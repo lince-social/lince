@@ -1,15 +1,9 @@
-// non-lean-yet
-// Scope: struct Scalar32, struct Scalar64, struct Vector, enum Reason.
-// BeautifulRust (baseline lines):
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 443.
-// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
-//   Sites unwrap (444, 452, 453).
-
 use super::*;
 use crate::native::{
     area::Direction,
     area_effects::{ForceMode, Immunity},
 };
+use nucleus::performance::{Span, add};
 use std::{borrow::Cow, fmt};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -273,6 +267,18 @@ impl Header<'_> {
         }
         Ok(())
     }
+
+    fn format_with_entries(
+        &self,
+        f: &mut fmt::Formatter<'_>,
+        entries: impl IntoIterator<Item = impl fmt::Display>,
+    ) -> fmt::Result {
+        self.start(f)?;
+        for entry in entries {
+            write!(f, "\n{entry}")?;
+        }
+        self.finish(f)
+    }
 }
 
 fn condition(world: &World, root: Entity, sand: Entity, workspace: u64) -> &'static str {
@@ -339,12 +345,13 @@ impl<'a> Description<'a> {
         let workspace = world
             .get::<WorkspaceMember>(sand)
             .map_or(1, |member| member.0);
-        let raw: DVec3 = report.entries.iter().map(|entry| entry.force).sum();
-        let magnitudes: f64 = report
+        // Preserve the initial values and order of the separate sums.
+        let (raw, magnitudes) = report
             .entries
             .iter()
-            .map(|entry| entry.force.length())
-            .sum();
+            .fold((DVec3::ZERO, -0.0), |(raw, magnitudes), entry| {
+                (raw + entry.force, magnitudes + entry.force.length())
+            });
         let length = raw.length();
         description.header = Header::Report {
             condition: condition(world, root, sand, workspace),
@@ -400,11 +407,7 @@ impl<'a> Description<'a> {
 
 impl fmt::Display for Description<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.header.start(f)?;
-        for entry in self.entries() {
-            write!(f, "\n{entry}")?;
-        }
-        self.header.finish(f)
+        self.header.format_with_entries(f, self.entries())
     }
 }
 
@@ -415,11 +418,7 @@ struct Snapshot {
 
 impl fmt::Display for Snapshot {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.header.start(f)?;
-        for entry in &self.entries {
-            write!(f, "\n{entry}")?;
-        }
-        self.header.finish(f)
+        self.header.format_with_entries(f, &self.entries)
     }
 }
 
@@ -436,7 +435,7 @@ pub(super) fn update(
     sand: Option<Entity>,
     filter: Option<Entity>,
 ) {
-    let _description = nucleus::performance::Span::new("influence-description-presentation");
+    let _description = Span::new("influence-description-presentation");
     let Some(label) = world.get::<Text>(text) else {
         return;
     };
@@ -445,20 +444,22 @@ pub(super) fn update(
         .get::<Presented>(text)
         .filter(|old| current.matches(&old.snapshot))
     {
-        nucleus::performance::add("influence-descriptions-retained", 1);
-        if label.0 != previous.text {
-            let value = previous.text.clone();
-            world.get_mut::<Text>(text).unwrap().0 = value;
-            nucleus::performance::add("influence-description-labels-published", 1);
+        add("influence-descriptions-retained", 1);
+        let repair = (label.0 != previous.text).then(|| previous.text.clone());
+        if let Some(value) = repair
+            && let Some(mut label) = world.get_mut::<Text>(text)
+        {
+            label.0 = value;
+            add("influence-description-labels-published", 1);
         }
         return;
     }
     let snapshot = current.into_snapshot();
     let value = snapshot.to_string();
-    nucleus::performance::add("influence-descriptions-formatted", 1);
-    if world.get::<Text>(text).unwrap().0 != value {
-        value.clone_into(&mut world.get_mut::<Text>(text).unwrap().0);
-        nucleus::performance::add("influence-description-labels-published", 1);
+    add("influence-descriptions-formatted", 1);
+    if let Some(mut label) = world.get_mut::<Text>(text).filter(|label| label.0 != value) {
+        value.clone_into(&mut label.0);
+        add("influence-description-labels-published", 1);
     }
     world.entity_mut(text).insert(Presented {
         snapshot,

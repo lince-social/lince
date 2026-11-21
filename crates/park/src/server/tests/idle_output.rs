@@ -2,7 +2,7 @@
 // Scope: fn idle_inhibition_stops_when_its_presented_output_disappears.
 // BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
 
-use lince_interface::host::{
+use lince_host::{
     ContentMapping, GeometrySnapshot, ItemGeometry, ItemId, Rectangle as CanvasRectangle,
 };
 

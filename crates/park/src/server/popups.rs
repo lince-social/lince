@@ -35,7 +35,7 @@ pub struct PopupSnapshot {
 }
 
 impl PopupSnapshot {
-    pub fn layer_mapping(&self, origin: [f64; 2]) -> Option<lince_interface::host::ContentMapping> {
+    pub fn layer_mapping(&self, origin: [f64; 2]) -> Option<lince_host::ContentMapping> {
         let mut nodes = self.nodes.iter();
         let rectangle = |node: &SurfaceNode| {
             Rectangle::new(
@@ -45,16 +45,16 @@ impl PopupSnapshot {
         };
         let first: Rectangle<f64, Logical> = rectangle(nodes.next()?);
         let bounds = nodes.fold(first, |bounds, node| bounds.merge(rectangle(node)));
-        Some(lince_interface::host::ContentMapping {
+        Some(lince_host::ContentMapping {
             corners: None,
-            canvas: lince_interface::host::Rectangle::new(
+            canvas: lince_host::Rectangle::new(
                 [
                     origin[0] + f64::from(self.origin[0]) + bounds.loc.x,
                     origin[1] + f64::from(self.origin[1]) + bounds.loc.y,
                 ],
                 [bounds.size.w, bounds.size.h],
             )?,
-            surface: lince_interface::host::Rectangle::new(
+            surface: lince_host::Rectangle::new(
                 [bounds.loc.x, bounds.loc.y],
                 [bounds.size.w, bounds.size.h],
             )?,
@@ -64,8 +64,8 @@ impl PopupSnapshot {
     pub fn mapping(
         &self,
         parent: &WindowSnapshot,
-        item: &lince_interface::host::ItemGeometry,
-    ) -> Option<lince_interface::host::ContentMapping> {
+        item: &lince_host::ItemGeometry,
+    ) -> Option<lince_host::ContentMapping> {
         let mut nodes = self.nodes.iter();
         let rectangle = |node: &SurfaceNode| {
             Rectangle::new(
@@ -87,13 +87,13 @@ impl PopupSnapshot {
             f64::from(self.origin[1]) + bounds.loc.y + parent_origin.y - parent_bounds.loc.y,
         ];
         let anchor = item.mapping.canvas_point(popup_origin)?;
-        Some(lince_interface::host::ContentMapping {
+        Some(lince_host::ContentMapping {
             corners: None,
-            canvas: lince_interface::host::Rectangle::new(
+            canvas: lince_host::Rectangle::new(
                 anchor,
                 [bounds.size.w * scale[0], bounds.size.h * scale[1]],
             )?,
-            surface: lince_interface::host::Rectangle::new(
+            surface: lince_host::Rectangle::new(
                 [bounds.loc.x, bounds.loc.y],
                 [bounds.size.w, bounds.size.h],
             )?,
@@ -243,7 +243,7 @@ impl State {
                     if let Some(item) = geometry
                         .items
                         .iter()
-                        .filter(|item| item.id == lince_interface::host::ItemId::Application(id))
+                        .filter(|item| item.id == lince_host::ItemId::Application(id))
                         .min_by_key(|item| self.presented_focus != Some(item.output))
                     {
                         if let Some(output) = geometry
@@ -498,7 +498,7 @@ fn valid_positioner(positioner: PositionerState) -> bool {
             .is_none_or(|size| (1..=16384).contains(&size.w) && (1..=16384).contains(&size.h))
 }
 
-fn valid_mapping(mapping: &lince_interface::host::ContentMapping) -> bool {
+fn valid_mapping(mapping: &lince_host::ContentMapping) -> bool {
     mapping
         .canvas
         .origin()

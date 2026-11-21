@@ -1,12 +1,15 @@
-// non-lean-yet
-// Scope: trait Service.
-// BeautifulRust (baseline lines):
-// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
-//   4, 5.
+//! Speech capabilities supplied by the host to a local Transport session.
+
+use async_trait::async_trait;
 
 pub use fiote::speech::{Job, Request, Status};
 
-#[async_trait::async_trait]
+/// Receives speech control requests from a local Cell.
+#[async_trait]
 pub trait Service: Send + Sync {
+    /// Handles a speech request and returns the resulting status.
+    ///
+    /// # Errors
+    /// Returns the diagnostic to send in the speech response if the request fails.
     async fn handle(&self, request: Request) -> Result<Status, String>;
 }

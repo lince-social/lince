@@ -1,27 +1,23 @@
-// non-lean-yet
-// Scope: mod plan, const MAX_CONDITIONS, const MAX_ORGANS_PER_CONDITION, const MAX_POLICY_BYTES.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
-//   Sites 214, 327.
-// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
-//   Sites 12, 253.
-// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
-//   170.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 143, 156.
-// - [Clippy: clippy::nonminimal_bool] this boolean expression can be simplified. Sites 120.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 6,
-//   7, 8, 12, 13, 14, 15, 19, 30, 31, 32, 37, 38, 39, 40, 41, 42, 46, 50, 129, 130, 131, 135, 136,
-//   137, 138, 139, 143, 156, 180, 184, 227, 228, 229, 230, 234, 235, 236, 237, 238, 242, 243, 244,
-//   245, 246, 247, 248, 253, 254, 255, 256, 258, 259, 260, 261, 262.
+//! Stored visibility rules and their wire format.
+//!
+//! A [Policy] allows a principal when at least one inclusion matches and no
+//! exclusion matches. [Condition] intersects identities with a proximity range.
+//! [Decision] retains the matching condition indices and the most precise admitted
+//! radius. The [plan] module makes these rules available in timed audience stages.
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-pub mod plan;
+use crate::location::Choice;
 
+pub mod plan;
+mod rules;
+
+/// Maximum total inclusion and exclusion rules in one policy.
 pub const MAX_CONDITIONS: usize = 64;
+/// Maximum number of Organs or Persons in either list of a condition.
 pub const MAX_ORGANS_PER_CONDITION: usize = 64;
+/// Maximum encoded policy size.
 pub const MAX_POLICY_BYTES: usize = 12 * 1024;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
@@ -33,6 +29,7 @@ pub enum Data {
 }
 
 impl Data {
+    /// Returns the stable wire name for this visibility domain.
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Record => "record",
@@ -59,88 +56,6 @@ pub struct Condition {
     pub radius_metres: Option<u32>,
 }
 
-impl Condition {
-    pub fn matches(&self, organ: &str, proximity: Option<u32>) -> bool {
-        self.matches_principal(organ, None, proximity)
-    }
-
-    pub fn matches_principal(
-        &self,
-        organ: &str,
-        person: Option<&str>,
-        proximity: Option<u32>,
-    ) -> bool {
-        if organ.is_empty()
-            || (!self.organs.is_empty() && !self.organs.iter().any(|uid| uid == organ))
-            || (!self.persons.is_empty()
-                && !person.is_some_and(|person| self.persons.iter().any(|uid| uid == person)))
-        {
-            return false;
-        }
-        if self.lower.is_none() && self.upper.is_none() {
-            return true;
-        }
-        proximity.is_some_and(|value| {
-            self.lower.is_none_or(|bound| {
-                value > bound.value || (bound.inclusive && value == bound.value)
-            }) && self.upper.is_none_or(|bound| {
-                value < bound.value || (bound.inclusive && value == bound.value)
-            })
-        })
-    }
-
-    fn validate(&self) -> Result<(), &'static str> {
-        if self
-            .radius_metres
-            .is_some_and(|radius| !crate::place::valid_area_radius(radius))
-        {
-            return Err("Choose an approximate area radius between 100 and 100000 metres");
-        }
-        if self.organs.len() > MAX_ORGANS_PER_CONDITION {
-            return Err("Choose at most 64 Organs in each visibility condition");
-        }
-        if self.persons.len() > MAX_ORGANS_PER_CONDITION {
-            return Err("Choose at most 64 Persons in each visibility condition");
-        }
-        let mut seen = std::collections::HashSet::new();
-        if self
-            .organs
-            .iter()
-            .any(|uid| !crate::valid_uid(uid, "r") || !seen.insert(uid))
-        {
-            return Err("Choose distinct valid Organ identities");
-        }
-        let mut seen = std::collections::HashSet::new();
-        if self
-            .persons
-            .iter()
-            .any(|uid| !crate::valid_uid(uid, "r") || !seen.insert(uid))
-        {
-            return Err("Choose distinct valid Person identities");
-        }
-        let minimum = match self.lower {
-            Some(Bound {
-                value,
-                inclusive: false,
-            }) => value.checked_add(1),
-            Some(Bound { value, .. }) => Some(value),
-            None => Some(0),
-        };
-        let maximum = match self.upper {
-            Some(Bound {
-                value,
-                inclusive: false,
-            }) => value.checked_sub(1),
-            Some(Bound { value, .. }) => Some(value),
-            None => Some(u32::MAX),
-        };
-        if !minimum.zip(maximum).is_some_and(|(low, high)| low <= high) {
-            return Err("Choose a nonempty proximity range");
-        }
-        Ok(())
-    }
-}
-
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(default, deny_unknown_fields)]
 pub struct Policy {
@@ -154,90 +69,6 @@ pub struct Decision {
     pub included_by: Vec<usize>,
     pub excluded_by: Vec<usize>,
     pub radius_metres: Option<u32>,
-}
-
-impl Policy {
-    pub fn validate_for(&self, data: Data) -> Result<(), &'static str> {
-        self.validate()?;
-        if data == Data::Record
-            && self
-                .include
-                .iter()
-                .any(|condition| condition.radius_metres.is_some())
-        {
-            return Err("Approximate areas apply to saved places and live locations");
-        }
-        Ok(())
-    }
-
-    pub fn validate(&self) -> Result<(), &'static str> {
-        if self.include.len() + self.exclude.len() > MAX_CONDITIONS {
-            return Err("Choose at most 64 visibility conditions");
-        }
-        for condition in self.include.iter().chain(&self.exclude) {
-            condition.validate()?;
-        }
-        if self
-            .exclude
-            .iter()
-            .any(|condition| condition.radius_metres.is_some())
-        {
-            return Err("Exclusions deny access; choose an area size on an inclusion");
-        }
-        if crate::json::encoded_len(self).map_err(|_| "Cannot encode visibility rules")?
-            > MAX_POLICY_BYTES
-        {
-            return Err(
-                "Visibility rules exceed the 12 KiB limit; use fewer conditions or identities",
-            );
-        }
-        Ok(())
-    }
-
-    pub fn decide(&self, organ: &str, proximity: Option<u32>) -> Decision {
-        self.decide_principal(organ, None, proximity)
-    }
-
-    pub fn decide_principal(
-        &self,
-        organ: &str,
-        person: Option<&str>,
-        proximity: Option<u32>,
-    ) -> Decision {
-        let matches = |conditions: &[Condition], exclusion: bool| {
-            conditions
-                .iter()
-                .enumerate()
-                .filter_map(|(index, condition)| {
-                    condition
-                        .matches_principal(
-                            organ,
-                            person.or_else(|| {
-                                exclusion
-                                    .then(|| condition.persons.first())
-                                    .flatten()
-                                    .map(String::as_str)
-                            }),
-                            proximity,
-                        )
-                        .then_some(index)
-                })
-                .collect::<Vec<_>>()
-        };
-        let included_by = matches(&self.include, false);
-        let excluded_by = matches(&self.exclude, true);
-        let radius_metres = included_by
-            .iter()
-            .map(|index| self.include[*index].radius_metres.unwrap_or(0))
-            .min()
-            .filter(|radius| *radius > 0);
-        Decision {
-            allowed: !included_by.is_empty() && excluded_by.is_empty(),
-            included_by,
-            excluded_by,
-            radius_metres,
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -261,8 +92,8 @@ pub struct Context {
     pub data: Data,
     pub saved: Option<SavedPolicy>,
     pub organs: Vec<Organ>,
-    pub persons: Vec<crate::location::Choice>,
-    pub records: Vec<crate::location::Choice>,
+    pub persons: Vec<Choice>,
+    pub records: Vec<Choice>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -281,184 +112,4 @@ pub enum Command {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn persons_intersect_organ_ranges_and_exclusions_bound_organ_replication() {
-        let organ = crate::new_uid("r");
-        let person = crate::new_uid("r");
-        let other = crate::new_uid("r");
-        let mut policy = Policy {
-            include: vec![Condition {
-                organs: vec![organ.clone()],
-                persons: vec![person.clone()],
-                upper: Some(Bound {
-                    value: 2,
-                    inclusive: true,
-                }),
-                radius_metres: Some(1000),
-                ..Default::default()
-            }],
-            exclude: vec![],
-        };
-        policy.validate_for(Data::Place).unwrap();
-        assert!(!policy.decide(&organ, Some(1)).allowed);
-        assert!(
-            !policy
-                .decide_principal(&organ, Some(&other), Some(1))
-                .allowed
-        );
-        assert!(
-            !policy
-                .decide_principal(&other, Some(&person), Some(1))
-                .allowed
-        );
-        assert!(
-            !policy
-                .decide_principal(&organ, Some(&person), Some(3))
-                .allowed
-        );
-        let decision = policy.decide_principal(&organ, Some(&person), Some(2));
-        assert!(decision.allowed);
-        assert_eq!(decision.radius_metres, Some(1000));
-        policy.include.push(Condition {
-            organs: vec![organ.clone()],
-            ..Default::default()
-        });
-        policy.exclude.push(Condition {
-            persons: vec![person.clone()],
-            ..Default::default()
-        });
-        assert!(
-            !policy
-                .decide_principal(&organ, Some(&person), Some(1))
-                .allowed
-        );
-        assert!(
-            policy
-                .decide_principal(&organ, Some(&other), Some(1))
-                .allowed
-        );
-        assert!(!policy.decide(&organ, Some(1)).allowed);
-        policy.exclude[0].persons.push(person);
-        assert!(policy.validate().is_err());
-    }
-
-    #[test]
-    fn composed_ranges_intersect_organs_and_exclusions_win() {
-        let a = crate::new_uid("r");
-        let b = crate::new_uid("r");
-        let policy = Policy {
-            include: vec![
-                Condition {
-                    upper: Some(Bound {
-                        value: 3,
-                        inclusive: false,
-                    }),
-                    ..Default::default()
-                },
-                Condition {
-                    organs: vec![b.clone()],
-                    lower: Some(Bound {
-                        value: 6,
-                        inclusive: true,
-                    }),
-                    ..Default::default()
-                },
-            ],
-            exclude: vec![Condition {
-                organs: vec![a.clone()],
-                lower: Some(Bound {
-                    value: 1,
-                    inclusive: true,
-                }),
-                upper: Some(Bound {
-                    value: 2,
-                    inclusive: true,
-                }),
-                ..Default::default()
-            }],
-        };
-        policy.validate().unwrap();
-        assert!(policy.decide(&a, Some(0)).allowed);
-        let denied = policy.decide(&a, Some(2));
-        assert_eq!(denied.included_by, vec![0]);
-        assert_eq!(denied.excluded_by, vec![0]);
-        assert!(!denied.allowed);
-        assert!(!policy.decide(&a, Some(3)).allowed);
-        assert!(policy.decide(&b, Some(6)).allowed);
-        assert!(!policy.decide(&a, Some(6)).allowed);
-        assert!(!policy.decide(&b, None).allowed);
-        assert!(!policy.decide("", Some(1)).allowed);
-        assert!(!Policy::default().decide(&b, Some(0)).allowed);
-    }
-
-    #[test]
-    fn invalid_ranges_and_oversized_policies_are_rejected() {
-        for (lower, upper) in [
-            (
-                Some(Bound {
-                    value: u32::MAX,
-                    inclusive: false,
-                }),
-                None,
-            ),
-            (
-                None,
-                Some(Bound {
-                    value: 0,
-                    inclusive: false,
-                }),
-            ),
-            (
-                Some(Bound {
-                    value: 3,
-                    inclusive: false,
-                }),
-                Some(Bound {
-                    value: 4,
-                    inclusive: false,
-                }),
-            ),
-        ] {
-            assert!(
-                Policy {
-                    include: vec![Condition {
-                        lower,
-                        upper,
-                        ..Default::default()
-                    }],
-                    exclude: vec![]
-                }
-                .validate()
-                .is_err()
-            );
-        }
-        assert!(
-            Policy {
-                include: vec![Condition::default(); MAX_CONDITIONS + 1],
-                exclude: vec![]
-            }
-            .validate()
-            .is_err()
-        );
-        let organs = (0..MAX_ORGANS_PER_CONDITION)
-            .map(|_| crate::new_uid("r"))
-            .collect::<Vec<_>>();
-        assert!(
-            Policy {
-                include: vec![
-                    Condition {
-                        organs,
-                        ..Default::default()
-                    };
-                    MAX_CONDITIONS
-                ],
-                exclude: vec![]
-            }
-            .validate()
-            .is_err()
-        );
-    }
-}
+mod tests;

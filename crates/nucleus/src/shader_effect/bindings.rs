@@ -263,11 +263,14 @@ mod tests {
         assert_eq!(restored, value);
         let mut effect = super::super::Effect::default();
         effect.bindings = vec![value.clone()];
+        #[cfg(feature = "shader-compiler")]
         assert!(effect.validate().is_ok());
         let restored: super::super::Effect =
             serde_json::from_value(serde_json::to_value(&effect).unwrap()).unwrap();
         assert_eq!(restored.bindings, vec![value.clone()]);
         effect.bindings.push(value);
+        assert!(validate(&effect.bindings).is_err());
+        #[cfg(feature = "shader-compiler")]
         assert!(effect.validate().is_err());
     }
 }

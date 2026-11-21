@@ -7,7 +7,7 @@
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     use std::time::{Duration, Instant};
 
-    use lince_interface::host::control::{Arguments, Entry, Error, Invocation, Response};
+    use lince_host::control::{Arguments, Entry, Error, Invocation, Response};
     use lince_park::control_client::ControlClient;
     let arguments: Vec<_> = std::env::args().skip(1).collect();
     if arguments

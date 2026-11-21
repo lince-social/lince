@@ -1,24 +1,15 @@
-// non-lean-yet
-// Scope: fn merge_review, fn documents.
-// BeautifulRust (baseline lines):
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 9, 23, 39, 45,
-//   59, 63, 72, 84.
+//! Merge independently received approvals and event evidence for the same scope.
 
 use super::{Document, Review, view};
+use crate::performance::Span;
 
 fn merge_review(current: view::Bundle<'_>, incoming: view::Bundle<'_>) -> Result<Review, String> {
     if current.publication.scope != incoming.publication.scope {
         return Err("Changed receipt terms require a new scope and new approvals".into());
     }
-    let mut merged = Review {
-        person_approvals: current.publication.person_approvals.to_vec(),
-        scope: current.publication.scope.clone(),
-        approvals: current.publication.approvals.to_vec(),
-        authorities: current.authorities.to_vec(),
-    };
+    let mut person_approvals = current.publication.person_approvals.to_vec();
     for approval in incoming.publication.person_approvals {
-        if let Some(previous) = merged
-            .person_approvals
+        if let Some(previous) = person_approvals
             .iter()
             .find(|item| item.role == approval.role)
         {
@@ -26,32 +17,35 @@ fn merge_review(current: view::Bundle<'_>, incoming: view::Bundle<'_>) -> Result
                 return Err("Conflicting personal consent requires a separate review".into());
             }
         } else {
-            merged.person_approvals.push(approval.clone());
+            person_approvals.push(approval.clone());
         }
     }
-    merged
-        .person_approvals
-        .sort_by_key(|approval| approval.role);
+    person_approvals.sort_by_key(|approval| approval.role);
+
+    let mut approvals = current.publication.approvals.to_vec();
     for approval in incoming.publication.approvals {
-        if let Some(previous) = merged
-            .approvals
-            .iter()
-            .find(|item| item.role == approval.role)
-        {
+        if let Some(previous) = approvals.iter().find(|item| item.role == approval.role) {
             if previous != approval {
                 return Err("Conflicting approvals must be reviewed separately".into());
             }
         } else {
-            merged.approvals.push(approval.clone());
+            approvals.push(approval.clone());
         }
     }
-    merged.approvals.sort_by_key(|approval| approval.role);
+    approvals.sort_by_key(|approval| approval.role);
+
+    let mut authorities = current.authorities.to_vec();
     for authority in incoming.authorities {
-        if !merged.authorities.contains(authority) {
-            merged.authorities.push(authority.clone());
+        if !authorities.contains(authority) {
+            authorities.push(authority.clone());
         }
     }
-    Ok(merged)
+    Ok(Review {
+        person_approvals,
+        scope: current.publication.scope.clone(),
+        approvals,
+        authorities,
+    })
 }
 
 pub(super) fn documents(
@@ -59,15 +53,12 @@ pub(super) fn documents(
     incoming: &Document,
     now: i64,
 ) -> Result<Document, String> {
-    let _span = crate::performance::Span::new("receipt-model-merge");
+    let _span = Span::new("receipt-model-merge");
     if current == incoming {
         current.validate(now)?;
         return Ok(current.clone());
     }
     let merged = match (current, incoming) {
-        (Document::Authority(current), Document::Authority(incoming)) if current == incoming => {
-            Document::Authority(current.clone())
-        }
         (Document::Review(current), Document::Review(incoming)) => Document::Review(merge_review(
             view::Bundle::from(current),
             view::Bundle::from(incoming),

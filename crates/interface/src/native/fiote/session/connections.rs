@@ -59,14 +59,15 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
         "Native Fiote uses your subscription, API key, or local model directly. Optional ACP connects an installed agent. Check lists models; Test response sends a small prompt.",
         13.0,
     );
+    let routes = super::dashboard::controls(world, content);
     for (label, route) in [
         ("New native API / local connection", Route::Model),
         ("New optional ACP connection", Route::Harness),
         ("External AI tools", Route::External),
     ] {
-        crate::native::description::button(
+        super::dashboard::button(
             world,
-            content,
+            routes,
             owner,
             label,
             Edit {
@@ -75,34 +76,34 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
             },
         );
     }
-    crate::native::description::button(
+    super::dashboard::button(
         world,
-        content,
+        routes,
         owner,
         "Continue with ChatGPT",
         NativeLogin { settings: None },
     );
-    crate::native::description::button(world, content, owner, "Other native providers", ModelLogin);
-    crate::native::description::button(
+    super::dashboard::button(world, routes, owner, "Other native providers", ModelLogin);
+    super::dashboard::button(
         world,
-        content,
+        routes,
         owner,
         "Disconnect selected connection",
         Control(Request::Deselect),
     );
-    crate::native::description::button(world, content, owner, "Refresh", Control(Request::Inspect));
-    crate::native::description::button(
+    super::dashboard::button(world, routes, owner, "Refresh", Control(Request::Inspect));
+    super::dashboard::button(
         world,
-        content,
+        routes,
         owner,
         "Discover installed AI",
         Control(Request::Discover {
             refresh_registry: false,
         }),
     );
-    crate::native::description::button(
+    super::dashboard::button(
         world,
-        content,
+        routes,
         owner,
         "Refresh ACP registry",
         Control(Request::Discover {
@@ -121,7 +122,7 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
             "This saved connection requires Node.js. Choose a native connection above to talk to Fiote without an external agent.",
             14.0,
         );
-        crate::native::description::button(
+        super::dashboard::button(
             world,
             content,
             owner,
@@ -153,7 +154,7 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
             }
             crate::native::edit_mode::label(world, content, &candidate.detail, 13.0);
             if let Some(config) = &candidate.config {
-                crate::native::description::button(
+                super::dashboard::button(
                     world,
                     content,
                     owner,
@@ -178,7 +179,7 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
         }
     }
     if saved.agent.is_some() && !node_agent {
-        crate::native::description::button(
+        super::dashboard::button(
             world,
             content,
             owner,
@@ -187,9 +188,10 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
         );
     }
     for profile in &saved.connections.profiles.entries {
-        crate::native::edit_mode::label(
+        let profile_options = management::accordion(
             world,
             content,
+            owner,
             &format!(
                 "{}{}",
                 profile.name,
@@ -199,12 +201,12 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
                     ""
                 }
             ),
-            16.0,
+            saved.connections.profiles.selected.as_deref() == Some(&profile.id),
         );
-        let row = crate::native::sand_panel::row(world, content);
+        let row = super::dashboard::controls(world, profile_options);
         if matches!(&profile.connection, Connection::Harness { config } if config.requires_node()) {
             crate::native::edit_mode::label(world, row, "Requires Node.js · unsupported", 13.0);
-            crate::native::description::button(
+            super::dashboard::button(
                 world,
                 row,
                 owner,
@@ -236,10 +238,10 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
                 },
             ),
         ] {
-            crate::native::description::button(world, row, owner, label, Control(command));
+            super::dashboard::button(world, row, owner, label, Control(command));
         }
         if let Connection::Model { settings } = &profile.connection {
-            crate::native::description::button(
+            super::dashboard::button(
                 world,
                 row,
                 owner,
@@ -249,7 +251,7 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
                 }),
             );
             if cell::fiote_communication::native::has_native_login(settings) {
-                crate::native::description::button(
+                super::dashboard::button(
                     world,
                     row,
                     owner,
@@ -258,7 +260,7 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
                         settings: Some(settings.clone()),
                     },
                 );
-                crate::native::description::button(
+                super::dashboard::button(
                     world,
                     row,
                     owner,
@@ -269,7 +271,7 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
                 );
             }
             if saved.connections.profiles.selected.as_deref() == Some(&profile.id) {
-                native_options(world, content, owner, saved, settings);
+                native_options(world, profile_options, owner, saved, settings);
             }
         }
         let route = match profile.connection {
@@ -277,7 +279,7 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
             Connection::Model { .. } => Route::Model,
             Connection::External => Route::External,
         };
-        crate::native::description::button(
+        super::dashboard::button(
             world,
             row,
             owner,
@@ -570,7 +572,7 @@ impl Action for Edit {
                         method.kind,
                         cell::FioteAuthKind::ApiKey | cell::FioteAuthKind::None
                     ) {
-                        crate::native::description::button(
+                        super::dashboard::button(
                             world,
                             content,
                             owner,
@@ -585,10 +587,10 @@ impl Action for Edit {
                 }
             }
         }
-        crate::native::description::button(world, content, owner, "Save profile", Save);
-        crate::native::description::button(world, content, owner, "Check saved profile", Check);
-        crate::native::description::button(world, content, owner, "Connect saved profile", Connect);
-        crate::native::description::button(world, content, owner, "Back to connections", Open);
+        super::dashboard::button(world, content, owner, "Save profile", Save);
+        super::dashboard::button(world, content, owner, "Check saved profile", Check);
+        super::dashboard::button(world, content, owner, "Connect saved profile", Connect);
+        super::dashboard::button(world, content, owner, "Back to connections", Open);
     }
 }
 
@@ -1404,10 +1406,11 @@ fn native_options(
             13.0,
         );
     }
+    let options = super::dashboard::controls(world, content);
     for model in &models {
-        crate::native::description::button(
+        super::dashboard::button(
             world,
-            content,
+            options,
             owner,
             &model.name,
             NativeSetting {
@@ -1418,9 +1421,9 @@ fn native_options(
         );
         if model.id == settings.model {
             for level in &model.reasoning {
-                crate::native::description::button(
+                super::dashboard::button(
                     world,
-                    content,
+                    options,
                     owner,
                     &format!("Thinking: {level}"),
                     NativeSetting {
@@ -1431,9 +1434,9 @@ fn native_options(
                 );
             }
             if !model.reasoning.is_empty() {
-                crate::native::description::button(
+                super::dashboard::button(
                     world,
-                    content,
+                    options,
                     owner,
                     "Thinking: model default",
                     NativeSetting {
@@ -1444,9 +1447,9 @@ fn native_options(
                 );
             }
             if model.fast {
-                crate::native::description::button(
+                super::dashboard::button(
                     world,
-                    content,
+                    options,
                     owner,
                     if settings.fast {
                         "Fast: on · turn off"

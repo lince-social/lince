@@ -1,9 +1,6 @@
-// non-lean-yet
-// Scope: fn size, fn state.
-// BeautifulRust (baseline lines):
-// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
-//   state:incoming (15).
+//! Display labels shared by Blob Sync presentations.
 
+/// Formats a byte count using binary units.
 pub fn size(bytes: u64) -> String {
     for (unit, divisor) in [
         ("TiB", 1u64 << 40),
@@ -18,6 +15,7 @@ pub fn size(bytes: u64) -> String {
     format!("{bytes} B")
 }
 
+/// Describes a transfer state from the receiving or sending side.
 pub fn state(state: &str, incoming: bool) -> &'static str {
     match (state, incoming) {
         ("offered", true) => "Waiting for your acceptance",

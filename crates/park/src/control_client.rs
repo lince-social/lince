@@ -11,7 +11,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use lince_interface::host::control::{self as contract, Invocation, Response};
+use lince_host::control::{self as contract, Invocation, Response};
 use wayland_client::{
     Connection, Dispatch, EventQueue, QueueHandle,
     protocol::{wl_callback, wl_registry},

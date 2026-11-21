@@ -1,16 +1,14 @@
-// non-lean-yet
-// Scope: fn configuration, fn runtime, fn evidence, fn interaction.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
-//   Sites 115, 121, 213, 215, 228, 230, 236, 238, 245, 246, 251, 290, 293, 309, 318, 320, 323, 343,
-//   344, 421.
-// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
-//   Sites 92, 261.
-// - [rustc: unreachable_pub] unreachable `pub` item. Sites 3.
+use glam::DVec2;
+use serde_json::{from_slice, from_str, to_string, to_value, to_vec};
 
-use super::*;
+use super::{
+    Configuration, Device, DeviceKind, Evidence, Interaction, MAX_AGE_MS, MAX_OBSERVATIONS,
+    MAX_REQUESTS, MAX_RUNNING, Phase, Quad, Request, Runtime, Status, Surface, Target,
+    replay::{Event, Step, Trace},
+};
+use crate::canvas::room;
 
-pub fn configuration() -> Configuration {
+fn configuration() -> Configuration {
     Configuration {
         devices: vec![
             Device {
@@ -39,6 +37,19 @@ pub fn configuration() -> Configuration {
             camera_quad: Quad::default(),
         }],
     }
+}
+
+fn surface_mut<'a>(configuration: &'a mut Configuration, id: &str) -> &'a mut Surface {
+    configuration
+        .surfaces
+        .iter_mut()
+        .find(|surface| surface.id == id)
+        .expect("the fixture contains the requested surface")
+}
+
+fn widen(surface: &mut Surface) {
+    let [width, _] = &mut surface.size_meters;
+    *width = 2.0;
 }
 
 fn runtime() -> Runtime {
@@ -94,12 +105,16 @@ fn request(id: &str, record: &str, time: u64) -> Request {
     }
 }
 
+fn request_status(runtime: &Runtime, id: &str) -> Option<Status> {
+    runtime.requests.get(id).map(|request| request.status)
+}
+
 #[test]
 fn projective_mapping_round_trips_corners_and_dense_interiors() {
     let quad = Quad([[0.08, 0.12], [0.92, 0.03], [0.78, 0.95], [0.2, 0.82]]);
     for y in 0..=20 {
         for x in 0..=20 {
-            let point = [x as f64 / 20.0, y as f64 / 20.0];
+            let point = [f64::from(x) / 20.0, f64::from(y) / 20.0];
             let output = quad.map(point, false).unwrap();
             let restored = quad.map(output, true).unwrap();
             assert!((DVec2::from_array(restored) - DVec2::from_array(point)).length() < 1e-10);
@@ -118,17 +133,21 @@ fn projective_mapping_round_trips_corners_and_dense_interiors() {
 
 #[test]
 fn physical_coordinates_are_explicit_meters_and_independent_of_canvas_poses() {
-    let mut surface = configuration().surfaces.remove(0);
+    let mut config = configuration();
+    let surface = surface_mut(&mut config, "desk");
     surface.physical_pose_meters.position = [2.0, 3.0, 4.0];
     assert_eq!(surface.physical_point([0.5, 0.5]).unwrap(), [2.6, 3.4, 4.0]);
-    let mut config = configuration();
-    config.surfaces[0] = surface;
     assert_eq!(
-        serde_json::from_str::<Configuration>(&serde_json::to_string(&config).unwrap()).unwrap(),
+        from_str::<Configuration>(&to_string(&config).unwrap()).unwrap(),
         config
     );
     assert!(config.validate().is_ok());
-    config.devices[0].kind = DeviceKind::Projector;
+    config
+        .devices
+        .iter_mut()
+        .find(|device| device.id == "camera")
+        .expect("the fixture contains a camera")
+        .kind = DeviceKind::Projector;
     assert!(config.validate().is_err());
 }
 
@@ -220,9 +239,9 @@ fn blank_disconnect_recalibration_and_projected_evidence_cannot_commit() {
     runtime.disconnect("projector");
     assert!(runtime.pointers.is_empty());
     let mut config = runtime.configuration.clone();
-    config.surfaces[0].size_meters[0] = 2.0;
+    widen(surface_mut(&mut config, "desk"));
     assert!(runtime.configure(config.clone()).is_err());
-    config.surfaces[0].calibration_revision += 1;
+    surface_mut(&mut config, "desk").calibration_revision += 1;
     runtime.configure(config).unwrap();
     assert!(runtime.blanked);
     assert!(runtime.connections.is_empty());
@@ -231,34 +250,40 @@ fn blank_disconnect_recalibration_and_projected_evidence_cannot_commit() {
 #[test]
 fn requests_run_in_parallel_but_serialize_writes_and_reject_stale_results() {
     let mut runtime = runtime();
-    runtime.enqueue(request("a", "record-1", 0), 1, 0).unwrap();
-    runtime.enqueue(request("b", "record-2", 0), 1, 0).unwrap();
+    let first = request("a", "record-1", 0);
+    let second = request("b", "record-2", 0);
+    let target = first.target.clone();
+    let stale = Target {
+        revision: "revision-2".into(),
+        ..second.target.clone()
+    };
+    runtime.enqueue(first, 1, 0).unwrap();
+    runtime.enqueue(second, 1, 0).unwrap();
     runtime.enqueue(request("c", "record-1", 0), 1, 0).unwrap();
     assert_eq!(runtime.dispatch(1, 0).unwrap().len(), 2);
-    assert_eq!(runtime.requests["c"].status, Status::Queued);
+    assert_eq!(request_status(&runtime, "c"), Some(Status::Queued));
     runtime.cancel("a").unwrap();
-    let target = runtime.requests["a"].target.clone();
     assert!(
         runtime
             .finish("a", &target, "owner", "Late answer".into(), 10)
             .is_err()
     );
-    assert_eq!(runtime.requests["b"].status, Status::Running);
+    assert_eq!(request_status(&runtime, "b"), Some(Status::Running));
     assert_eq!(runtime.dispatch(1, 10).unwrap().len(), 1);
-    let mut target = runtime.requests["b"].target.clone();
-    target.revision = "revision-2".into();
     assert!(
         runtime
-            .finish("b", &target, "owner", "Stale answer".into(), 20)
+            .finish("b", &stale, "owner", "Stale answer".into(), 20)
             .is_err()
     );
-    assert_eq!(runtime.requests["b"].status, Status::Failed);
-    let target = runtime.requests["c"].target.clone();
+    assert_eq!(request_status(&runtime, "b"), Some(Status::Failed));
     runtime
         .finish("c", &target, "owner", "Current answer".into(), 20)
         .unwrap();
     assert_eq!(
-        runtime.requests["c"].result.as_deref(),
+        runtime
+            .requests
+            .get("c")
+            .and_then(|request| request.result.as_deref()),
         Some("Current answer")
     );
     assert!(runtime.dismiss("b").is_ok());
@@ -267,8 +292,9 @@ fn requests_run_in_parallel_but_serialize_writes_and_reject_stale_results() {
 #[test]
 fn bounded_observations_requests_and_expiry_do_not_accumulate_unlimited_work() {
     let mut runtime = runtime();
-    for i in 1..=MAX_OBSERVATIONS {
-        runtime.observe(1, evidence(i as u64, 0), 0).unwrap();
+    let capacity = u64::try_from(MAX_OBSERVATIONS).expect("the observation limit fits a sequence");
+    for sequence in 1..=capacity {
+        runtime.observe(1, evidence(sequence, 0), 0).unwrap();
     }
     assert!(runtime.observe(1, evidence(1000, 0), 0).is_err());
     for i in 0..MAX_REQUESTS {
@@ -297,10 +323,10 @@ fn observed_content_is_not_a_command_and_expired_sources_do_not_start_work() {
     scoped.observations.push("observation-1".into());
     assert!(runtime.enqueue(scoped.clone(), 1, 0).is_err());
     runtime.observe(1, evidence(2, 0), 0).unwrap();
-    scoped.observations[0] = "observation-2".into();
+    scoped.observations = vec!["observation-2".into()];
     runtime.enqueue(scoped, 1, 0).unwrap();
     assert!(runtime.dispatch(1, MAX_AGE_MS + 1).unwrap().is_empty());
-    assert_eq!(runtime.requests["a"].status, Status::Canceled);
+    assert_eq!(request_status(&runtime, "a"), Some(Status::Canceled));
 }
 
 #[test]
@@ -316,7 +342,7 @@ fn observation_replacement_cannot_retarget_or_revive_queued_requests() {
     let later = MAX_AGE_MS + 1;
     replacement.captured_ms = later;
     assert!(runtime.observe(1, replacement.clone(), later).is_err());
-    assert_eq!(runtime.requests["scoped"].status, Status::Canceled);
+    assert_eq!(request_status(&runtime, "scoped"), Some(Status::Canceled));
     assert!(runtime.dispatch(1, later).unwrap().is_empty());
     runtime.dismiss("scoped").unwrap();
     runtime.observe(1, replacement, later).unwrap();
@@ -325,12 +351,14 @@ fn observation_replacement_cannot_retarget_or_revive_queued_requests() {
 #[test]
 fn multiple_devices_and_recalibration_preserve_unrelated_surface_work() {
     let mut config = configuration();
-    let mut camera = config.devices[0].clone();
+    let [camera, projector] = config.devices.as_slice() else {
+        panic!("the fixture contains a camera and a projector");
+    };
+    let [mut camera, mut projector] = [camera.clone(), projector.clone()];
     camera.id = "camera-2".into();
-    let mut projector = config.devices[1].clone();
     projector.id = "projector-2".into();
     config.devices.extend([camera, projector]);
-    let mut surface = config.surfaces[0].clone();
+    let mut surface = surface_mut(&mut config, "desk").clone();
     surface.id = "wall".into();
     surface.camera = Some("camera-2".into());
     surface.projector = "projector-2".into();
@@ -350,8 +378,9 @@ fn multiple_devices_and_recalibration_preserve_unrelated_surface_work() {
     runtime
         .interact(1, interaction(1, 0, Phase::Begin), 0)
         .unwrap();
-    config.surfaces[1].size_meters[0] = 2.0;
-    config.surfaces[1].calibration_revision += 1;
+    let wall = surface_mut(&mut config, "wall");
+    widen(wall);
+    wall.calibration_revision += 1;
     runtime.configure(config).unwrap();
     assert!(runtime.connections.contains_key("camera"));
     assert!(!runtime.connections.contains_key("camera-2"));
@@ -366,8 +395,8 @@ fn multiple_devices_and_recalibration_preserve_unrelated_surface_work() {
 }
 
 #[test]
-fn serialized_replay_has_deterministic_results_and_bounded_admission() {
-    use replay::{Event, Step, Trace};
+fn serialized_replay_has_deterministic_results_and_bounded_admission()
+-> Result<(), Box<dyn std::error::Error>> {
     let trace = Trace {
         workspace: 1,
         configuration: configuration(),
@@ -410,6 +439,10 @@ fn serialized_replay_has_deterministic_results_and_bounded_admission() {
                 },
             },
             Step {
+                now_ms: 19,
+                event: Event::Blank { enabled: true },
+            },
+            Step {
                 now_ms: 30,
                 event: Event::Interact {
                     interaction: interaction(3, 30, Phase::End),
@@ -417,17 +450,29 @@ fn serialized_replay_has_deterministic_results_and_bounded_admission() {
             },
         ],
     };
-    let decoded: Trace = serde_json::from_slice(&serde_json::to_vec(&trace).unwrap()).unwrap();
-    let (_, first) = trace.run().unwrap();
-    let (_, second) = decoded.run().unwrap();
-    assert_eq!(
-        serde_json::to_value(&first).unwrap(),
-        serde_json::to_value(&second).unwrap()
-    );
+    let decoded: Trace = from_slice(&to_vec(&trace)?)?;
+    let (runtime, first) = trace.run()?;
+    let (_, second) = decoded.run()?;
+    assert_eq!(to_value(&first)?, to_value(&second)?);
     assert_eq!(first.commits.len(), 1);
-    assert_eq!(first.errors.len(), 1);
+    assert_eq!(first.accepted, 6);
+    assert_eq!(
+        first.errors,
+        [
+            (6, String::from("The adapter clock moved backwards.")),
+            (7, String::from("Begin a deliberate selection first.")),
+        ]
+    );
+    assert!(!runtime.blanked);
     assert_eq!(first.remaining_pointers, 0);
     let mut too_many = trace;
-    too_many.steps = vec![too_many.steps[0].clone(); 513];
+    too_many.steps = vec![
+        Step {
+            now_ms: 0,
+            event: Event::Dispatch
+        };
+        513
+    ];
     assert!(too_many.run().is_err());
+    Ok(())
 }

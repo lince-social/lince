@@ -1,15 +1,3 @@
-// non-lean-yet
-// Scope: const LEGACY_QUERY, type Entry, fn
-//   disabled_history_does_not_wait_for_the_writer_or_commit, fn
-//   enabled_history_does_not_prune_when_nothing_has_expired.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
-//   Sites 248, 249.
-// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
-//   Sites 113, 114, 115, 131, 136.
-// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
-//   220.
-
 use std::{
     collections::HashSet,
     sync::{
@@ -19,14 +7,21 @@ use std::{
     time::Instant,
 };
 
+use nucleus::sync::{Direction, Instance, Outcome, Update};
 use sqlx::Executor;
 
 use super::*;
-use crate::Store;
+use crate::{Store, write_tx};
 
 const LEGACY_QUERY: &str = "DELETE FROM sync_activity WHERE at <= ? - (SELECT seconds FROM sync_history_policy WHERE id = 1) OR seq NOT IN (SELECT seq FROM sync_activity ORDER BY seq DESC LIMIT (SELECT max_entries FROM sync_history_policy WHERE id = 1))";
 
 type Entry = (i64, i64, String, String);
+
+#[test]
+fn diagnostic_prefix_keeps_complete_unicode_scalars() {
+    assert_eq!(encoding::prefix("α🙂z", 2), "α🙂");
+    assert_eq!(encoding::prefix("α🙂z", 3), "α🙂z");
+}
 
 #[tokio::test]
 async fn disabled_history_does_not_wait_for_the_writer_or_commit() {
@@ -37,11 +32,11 @@ async fn disabled_history_does_not_wait_for_the_writer_or_commit() {
     );
     let store = Store::open(&url).await.unwrap();
     assert!(!retention(&store.pool).await.unwrap().enabled);
-    let mut writer = crate::write_tx(&store.pool).await.unwrap();
+    let mut writer = write_tx(&store.pool).await.unwrap();
     let activity = Activity {
         instance: Instance::interface("local", "records"),
         direction: Direction::Outgoing,
-        update: nucleus::sync::Update::Full,
+        update: Update::Full,
     };
     let summary = Summary::new(Outcome::Refreshed, 10);
     tokio::time::timeout(std::time::Duration::from_secs(1), async {
@@ -90,7 +85,7 @@ async fn enabled_history_does_not_prune_when_nothing_has_expired() {
 }
 
 async fn seed(store: &Store, entries: &[Entry]) {
-    let mut tx = crate::write_tx(&store.pool).await.unwrap();
+    let mut tx = write_tx(&store.pool).await.unwrap();
     for (seq, at, activity, summary) in entries {
         sqlx::query("INSERT INTO sync_activity(seq,at,activity,summary) VALUES(?,?,?,?)")
             .bind(seq)
@@ -109,6 +104,7 @@ async fn retention_preserves_newest_entries_and_exact_age_boundary_with_sequence
     let store = Store::open_memory().await.unwrap();
     let now = 10_000_000i64;
     for seconds in [60u64, 604800, 7776000] {
+        let cutoff = now - i64::try_from(seconds).unwrap();
         for max_entries in [1u32, 2, 10, 1000, 10000] {
             for count in [0i64, 1, 2, 7, 128] {
                 clear(&store.pool).await.unwrap();
@@ -126,9 +122,9 @@ async fn retention_preserves_newest_entries_and_exact_age_boundary_with_sequence
                 let entries: Vec<_> = (0..count)
                     .map(|index| {
                         let at = match index % 5 {
-                            0 => now - seconds as i64 - 1,
-                            1 => now - seconds as i64,
-                            2 => now - seconds as i64 + 1,
+                            0 => cutoff - 1,
+                            1 => cutoff,
+                            2 => cutoff + 1,
                             3 => now,
                             _ => now + 10,
                         };
@@ -144,12 +140,12 @@ async fn retention_preserves_newest_entries_and_exact_age_boundary_with_sequence
                 let newest: HashSet<_> = entries
                     .iter()
                     .rev()
-                    .take(max_entries as usize)
+                    .take(usize::try_from(max_entries).unwrap())
                     .map(|row| row.0)
                     .collect();
                 let expected: Vec<_> = entries
                     .into_iter()
-                    .filter(|row| newest.contains(&row.0) && row.1 > now - seconds as i64)
+                    .filter(|row| newest.contains(&row.0) && row.1 > cutoff)
                     .collect();
                 prune(&store.pool, now).await.unwrap();
                 let actual: Vec<Entry> = sqlx::query_as(
@@ -184,7 +180,7 @@ async fn file_backed_retention_query_probe() {
     let activity = serde_json::to_string(&Activity {
         instance: Instance::interface("private-probe", "history"),
         direction: Direction::Outgoing,
-        update: nucleus::sync::Update::Full,
+        update: Update::Full,
     })
     .unwrap();
     let summary = serde_json::to_string(&Summary {
@@ -233,7 +229,7 @@ async fn file_backed_retention_query_probe() {
                 .await
                 .unwrap()
                 .set_progress_handler(1, {
-                    let steps = steps.clone();
+                    let steps = Arc::clone(&steps);
                     move || {
                         steps.fetch_add(1, Ordering::Relaxed);
                         true
@@ -260,10 +256,16 @@ async fn file_backed_retention_query_probe() {
                 serde_json::json!({"variant": variant, "progress_callbacks": count, "plan": plan}),
             );
         }
-        assert!(
-            work[1]["progress_callbacks"].as_u64().unwrap() * 2
-                < work[0]["progress_callbacks"].as_u64().unwrap()
-        );
+        let [legacy, candidate] = work.as_slice() else {
+            panic!("expected a legacy and candidate query measurement");
+        };
+        let steps = |measurement: &serde_json::Value| {
+            measurement
+                .get("progress_callbacks")
+                .and_then(serde_json::Value::as_u64)
+                .unwrap()
+        };
+        assert!(steps(candidate) * 2 < steps(legacy));
         for (sample, variant) in [0usize, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0]
             .into_iter()
             .enumerate()

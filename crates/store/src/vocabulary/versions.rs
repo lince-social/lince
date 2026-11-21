@@ -1,64 +1,70 @@
-// non-lean-yet
-// Scope: fn definitions_on, fn definition_versions, fn revise_definition_on, fn
-//   validate_definitions.
-// BeautifulRust (baseline lines):
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 35.
-// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
-//   Sites 89.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 5, 25, 47, 132.
-// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
-//   conventions. Sites 1.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 25,
-//   47, 132.
+//! Immutable vocabulary definitions and paginated record content versions.
 
-use nucleus::vocabulary::{DefinitionVersion, Dictionary};
-use serde_json::{Value, json};
+use std::collections::HashMap;
 
-use super::*;
+use nucleus::{
+    execution::now,
+    vocabulary::{DefinitionVersion, Dictionary},
+};
+use serde_json::{Map, Value, from_str};
+use sqlx::{Row, SqliteConnection, SqlitePool, query, query_as, query_scalar, sqlite::SqliteRow};
 
+use super::invalid;
+use crate::StoreError;
+
+const MAX_DEFINITION_VERSIONS: usize = 256;
+const MAX_DEFINITION_BYTES: usize = 16_384;
+
+fn definition_row(row: SqliteRow) -> Result<DefinitionVersion, StoreError> {
+    Ok(DefinitionVersion {
+        concept_uid: row.try_get("concept_uid")?,
+        revision: row.try_get("revision")?,
+        definition: row.try_get("definition")?,
+        created_at: row.try_get("created_at")?,
+    })
+}
+
+/// Reads a concept's saved definitions in revision order.
+///
+/// # Errors
+/// Returns an error if the definitions cannot be queried or decoded.
 pub async fn definitions_on(
     connection: &mut SqliteConnection,
     concept: &str,
 ) -> Result<Vec<DefinitionVersion>, StoreError> {
-    Ok(sqlx::query(
-        "SELECT * FROM concept_definition_version WHERE concept_uid=? ORDER BY revision",
-    )
-    .bind(concept)
-    .fetch_all(connection)
-    .await?
-    .into_iter()
-    .map(|row| DefinitionVersion {
-        concept_uid: row.get("concept_uid"),
-        revision: row.get("revision"),
-        definition: row.get("definition"),
-        created_at: row.get("created_at"),
-    })
-    .collect())
+    query("SELECT * FROM concept_definition_version WHERE concept_uid=? ORDER BY revision")
+        .bind(concept)
+        .try_map(definition_row)
+        .fetch_all(connection)
+        .await
 }
 
+/// Groups saved definitions by concept, keeping each history in revision order.
+///
+/// # Errors
+/// Returns an error if the definitions cannot be queried or decoded.
 pub async fn definition_versions(
     pool: &SqlitePool,
 ) -> Result<HashMap<String, Vec<DefinitionVersion>>, StoreError> {
-    let mut versions: HashMap<String, Vec<DefinitionVersion>> = HashMap::new();
-    for row in sqlx::query("SELECT * FROM concept_definition_version ORDER BY concept_uid,revision")
+    let mut versions = HashMap::<String, Vec<DefinitionVersion>>::new();
+    let rows = query("SELECT * FROM concept_definition_version ORDER BY concept_uid,revision")
+        .try_map(definition_row)
         .fetch_all(pool)
-        .await?
-    {
-        let concept_uid: String = row.get("concept_uid");
-        versions
-            .entry(concept_uid.clone())
-            .or_default()
-            .push(DefinitionVersion {
-                concept_uid,
-                revision: row.get("revision"),
-                definition: row.get("definition"),
-                created_at: row.get("created_at"),
-            });
+        .await?;
+    for version in rows {
+        if let Some(history) = versions.get_mut(&version.concept_uid) {
+            history.push(version);
+        } else {
+            versions.insert(version.concept_uid.clone(), vec![version]);
+        }
     }
     Ok(versions)
 }
 
+/// Appends a changed definition only when its current revision matches the caller's expectation.
+///
+/// # Errors
+/// Returns an error for invalid text, a missing concept, a stale or exhausted revision, or failed storage.
 pub async fn revise_definition_on(
     connection: &mut SqliteConnection,
     concept: &str,
@@ -66,10 +72,10 @@ pub async fn revise_definition_on(
     definition: &str,
 ) -> Result<i64, StoreError> {
     let definition = definition.trim();
-    if definition.is_empty() || definition.len() > 16384 {
+    if definition.is_empty() || definition.len() > MAX_DEFINITION_BYTES {
         return Err(invalid("Describe the meaning in 1–16384 bytes"));
     }
-    let current: Option<(i64,String)> = sqlx::query_as("SELECT revision,definition FROM concept_definition_version WHERE concept_uid=? ORDER BY revision DESC LIMIT 1")
+    let current: Option<(i64,String)> = query_as("SELECT revision,definition FROM concept_definition_version WHERE concept_uid=? ORDER BY revision DESC LIMIT 1")
         .bind(concept).fetch_optional(&mut *connection).await?;
     let (revision, previous) = current.ok_or_else(|| invalid("Choose a saved source Concept"))?;
     if expected_revision != revision {
@@ -78,34 +84,37 @@ pub async fn revise_definition_on(
     if previous == definition {
         return Ok(revision);
     }
-    if revision >= 256 {
+    if revision
+        >= i64::try_from(MAX_DEFINITION_VERSIONS).map_err(|error| invalid(&error.to_string()))?
+    {
         return Err(invalid(
             "This Concept has 256 definition versions; create a distinct meaning",
         ));
     }
-    sqlx::query("INSERT INTO concept_definition_version VALUES(?,?,?,?)")
+    let next = revision + 1;
+    query("INSERT INTO concept_definition_version VALUES(?,?,?,?)")
         .bind(concept)
-        .bind(revision + 1)
+        .bind(next)
         .bind(definition)
-        .bind(nucleus::execution::now().to_rfc3339())
+        .bind(now().to_rfc3339())
         .execute(&mut *connection)
         .await?;
-    sqlx::query("UPDATE lingua SET revision=revision+1 WHERE uid IN (SELECT lingua_uid FROM lingua_concept WHERE concept_uid=?)")
+    query("UPDATE lingua SET revision=revision+1 WHERE uid IN (SELECT lingua_uid FROM lingua_concept WHERE concept_uid=?)")
         .bind(concept).execute(connection).await?;
-    Ok(revision + 1)
+    Ok(next)
 }
 
 pub(super) fn validate_definitions(dictionary: &Dictionary) -> Result<(), StoreError> {
-    if dictionary.definitions.len() > 256 {
+    if dictionary.definitions.len() > MAX_DEFINITION_VERSIONS {
         return Err(invalid("Too many definition versions"));
     }
-    for (index, version) in dictionary.definitions.iter().enumerate() {
+    for (revision, version) in (1_i64..).zip(&dictionary.definitions) {
         if version.concept_uid != dictionary.source.concept_uid
-            || version.revision != index as i64 + 1
-            || version.definition.len() > 16384
+            || version.revision != revision
+            || version.definition.len() > MAX_DEFINITION_BYTES
             || version.created_at.is_empty()
             || version.created_at.len() > 64
-            || index == 0 && version.definition != dictionary.source.definition
+            || revision == 1 && version.definition != dictionary.source.definition
         {
             return Err(invalid("Invalid saved definition history"));
         }
@@ -118,7 +127,7 @@ pub(super) async fn save_definitions_on(
     dictionary: &Dictionary,
 ) -> Result<(), StoreError> {
     for version in &dictionary.definitions {
-        let previous: Option<String> = sqlx::query_scalar(
+        let previous: Option<String> = query_scalar(
             "SELECT definition FROM concept_definition_version WHERE concept_uid=? AND revision=?",
         )
         .bind(&version.concept_uid)
@@ -132,7 +141,7 @@ pub(super) async fn save_definitions_on(
                 ));
             }
         } else {
-            sqlx::query("INSERT INTO concept_definition_version VALUES(?,?,?,?)")
+            query("INSERT INTO concept_definition_version VALUES(?,?,?,?)")
                 .bind(&version.concept_uid)
                 .bind(version.revision)
                 .bind(&version.definition)
@@ -144,22 +153,33 @@ pub(super) async fn save_definitions_on(
     Ok(())
 }
 
+/// Reads one newest-first page of saved record content and its total count.
+///
+/// # Errors
+/// Returns an error if the count, page, or stored content cannot be read or decoded.
 pub async fn record_history_on(
     connection: &mut SqliteConnection,
     record: &str,
     offset: u32,
 ) -> Result<Value, StoreError> {
-    let count: i64 =
-        sqlx::query_scalar("SELECT COUNT(*) FROM record_content_version WHERE record_uid=?")
-            .bind(record)
-            .fetch_one(&mut *connection)
-            .await?;
-    let mut versions = Vec::new();
-    for row in sqlx::query("SELECT revision,content,saved_at FROM record_content_version WHERE record_uid=? ORDER BY revision DESC LIMIT 30 OFFSET ?")
-        .bind(record).bind(offset).fetch_all(connection).await? {
-        let content: String=row.get("content");
-        let content: Value=serde_json::from_str(&content).map_err(|error| invalid(&error.to_string()))?;
-        versions.push(json!({"revision":row.get::<i64,_>("revision"),"saved_at":row.get::<String,_>("saved_at"),"content":content}));
-    }
-    Ok(json!({"record":record,"count":count,"offset":offset,"versions":versions}))
+    let count: i64 = query_scalar("SELECT COUNT(*) FROM record_content_version WHERE record_uid=?")
+        .bind(record)
+        .fetch_one(&mut *connection)
+        .await?;
+    let versions = query("SELECT revision,content,saved_at FROM record_content_version WHERE record_uid=? ORDER BY revision DESC LIMIT 30 OFFSET ?")
+        .bind(record).bind(offset).try_map(|row| {
+            let content = from_str(row.try_get("content")?)
+                .map_err(|error| invalid(&error.to_string()))?;
+            Ok(Value::Object(Map::from_iter([
+                ("revision".into(), row.try_get::<i64, _>("revision")?.into()),
+                ("saved_at".into(), row.try_get::<String, _>("saved_at")?.into()),
+                ("content".into(), content),
+            ])))
+        }).fetch_all(connection).await?;
+    Ok(Value::Object(Map::from_iter([
+        ("record".into(), record.into()),
+        ("count".into(), count.into()),
+        ("offset".into(), offset.into()),
+        ("versions".into(), Value::Array(versions)),
+    ])))
 }

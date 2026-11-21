@@ -1,54 +1,41 @@
-// non-lean-yet
-// Scope: const MAX_BYTES, const MAX_PLACEMENTS, const MAX_STATE_PLACEMENTS, mod state.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
-//   Sites 258.
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 218.
-// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
-//   validate:configuring (163).
-// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
-//   Sites 19, 127, 630, 708, 909, 927.
-// - [Clippy: clippy::large_enum_variant] large size difference between variants. Sites 630, 708,
-//   927.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 98, 163, 168, 350, 361, 381, 549, 740, 947, 961, 969, 977.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 8,
-//   9, 13, 14, 15, 19, 20, 21, 23, 24, 25, 26, 28, 29, 30, 31, 33, 34, 35, 37, 38, 39, 44, 85, 86,
-//   87, 88, 89, 90, 91, 92, 93, 94, 98, 127, 128, 129, 130, 132, 133, 135, 136, 137, 138, 140, 141,
-//   147, 148, 149, 150, 155, 156, 157, 158, 159, 163, 168, 289, 298, 328, 342, 343, 344, 345, 349,
-//   350, 361, 375, 376, 377, 381, 398, 399, 400, 401, 402, 403, 404, 421, 422, 423, 428, 429, 430,
-//   435, 436, 437, 438, 439, 455, 457, 459, 461, 463, 465, 467, 468, 469, 470, 471, 472, 473, 518,
-//   519, 520, 521, 522, 523, 528, 529, 530, 531, 532, 533, 534, 535, 540, 541, 542, 543, 544, 545,
-//   549, 630, 631, 632, 634, 635, 636, 638, 639, 640, 642, 643, 644, 646, 647, 648, 649, 650, 652,
-//   653, 654, 656, 657, 658, 659, 660, 662, 663, 664, 665, 666, 667, 669, 670, 671, 673, 674, 675,
-//   676, 678, 679, 680, 682, 683, 685, 686, 688, 689, 690, 692, 693, 695, 696, 698, 699, 701, 702,
-//   708, 709, 710, 711, 712, 714, 715, 716, 718, 719, 720, 721, 722, 724, 725, 726, 727, 728, 730,
-//   731, 736, 740, 909, 910, 911, 916, 917, 918, 919, 920, 921, 922, 927, 928, 929, 931, 932, 933,
-//   934, 936, 937, 939, 940, 942, 943, 947, 961, 969, 977.
-// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites bounded: String
-//   (961), decode: String (350), encode: String (361), placement_id: String (977),
-//   request_identifier: String (969), validate: String (98, 163, 381, 549, 740), validate_registry:
-//   String (947), validate_snapshot: String (168).
+//! Models for Canvas components, workspaces, and authoring requests.
+//!
+//! [Component](crate::canvas::Component) describes a placement's content.
+//! [Snapshot](crate::canvas::Snapshot) carries a workspace view, and
+//! [Request](crate::canvas::Request) and [Response](crate::canvas::Response)
+//! form the authoring protocol.
 
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    ops::ControlFlow,
-};
+use std::{collections::BTreeMap, ops::ControlFlow};
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use serde_json::{Value, from_str, to_string};
 
-use crate::component::ComponentState;
+use crate::{
+    component::{ComponentState, EventBinding, composition::Origin},
+    terrain::SpatialBinding,
+};
 
+/// The byte limit for a Canvas document, request, or snapshot page.
 pub const MAX_BYTES: usize = 256 * 1024;
+/// The placement limit for a snapshot page or batch operation.
 pub const MAX_PLACEMENTS: usize = 256;
+/// The placement limit for a complete stored Canvas.
 pub const MAX_STATE_PLACEMENTS: usize = 16_384;
 
-mod state;
-pub use state::State;
 pub mod appearance;
 pub mod authoring;
 pub mod room;
+mod state;
+mod validation;
+
+#[cfg(test)]
+mod tests;
+
+pub use state::State;
+pub use validation::{bounded, placement_id, request_identifier, validate_registry};
+
+use validation::workspace_name;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "type", rename_all = "kebab-case", deny_unknown_fields)]
@@ -76,46 +63,6 @@ pub enum Setting {
     },
 }
 
-impl Setting {
-    pub fn accepts(&self, value: &serde_json::Value) -> bool {
-        match self {
-            Self::Boolean { .. } => value.is_boolean(),
-            Self::Integer { min, max, .. } => {
-                value.as_i64().is_some_and(|n| min <= &n && &n <= max)
-            }
-            Self::Number { min, max, .. } => value
-                .as_f64()
-                .is_some_and(|n| n.is_finite() && n >= *min && n <= *max),
-            Self::Text { max_bytes, .. } => value.as_str().is_some_and(|s| s.len() <= *max_bytes),
-            Self::Choice { values, .. } => value
-                .as_str()
-                .is_some_and(|s| values.iter().any(|v| v == s)),
-        }
-    }
-
-    fn validate(&self) -> bool {
-        let default = match self {
-            Self::Boolean { default } => serde_json::json!(default),
-            Self::Integer { default, min, max } if min <= max => serde_json::json!(default),
-            Self::Number { default, min, max }
-                if min.is_finite() && max.is_finite() && min <= max =>
-            {
-                serde_json::json!(default)
-            }
-            Self::Text { default, max_bytes } if *max_bytes <= 65_536 => serde_json::json!(default),
-            Self::Choice { default, values }
-                if !values.is_empty()
-                    && values.len() <= 64
-                    && values.iter().all(|v| !v.is_empty() && v.len() <= 256) =>
-            {
-                serde_json::json!(default)
-            }
-            _ => return false,
-        };
-        self.accepts(&default)
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Descriptor {
@@ -130,34 +77,6 @@ pub struct Descriptor {
     pub unavailable_reason: Option<String>,
 }
 
-impl Descriptor {
-    pub fn validate(&self) -> Result<(), String> {
-        if self.kind.is_empty()
-            || self.kind.len() > 80
-            || !self
-                .kind
-                .bytes()
-                .all(|c| c.is_ascii_alphanumeric() || c == b'-' || c == b'_')
-            || self.name.trim().is_empty()
-            || self.name.len() > 256
-            || self.description.len() > 4096
-            || self.max_bindings > 32
-            || self.settings.len() > 64
-            || self
-                .settings
-                .iter()
-                .any(|(key, setting)| key.is_empty() || key.len() > 80 || !setting.validate())
-            || self
-                .unavailable_reason
-                .as_ref()
-                .is_some_and(|s| s.len() > 1024)
-        {
-            return Err("Invalid native component descriptor.".into());
-        }
-        Ok(())
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "source", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum Component {
@@ -170,7 +89,7 @@ pub enum Component {
     },
     Native {
         kind: String,
-        settings: BTreeMap<String, serde_json::Value>,
+        settings: BTreeMap<String, Value>,
         bindings: Vec<String>,
     },
     Composition {
@@ -183,7 +102,7 @@ pub enum Component {
 pub struct Composition {
     pub name: String,
     pub parts: Vec<Part>,
-    pub origin: Option<crate::component::composition::Origin>,
+    pub origin: Option<Origin>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
@@ -192,136 +111,11 @@ pub struct Part {
     pub id: String,
     pub geometry: Geometry,
     pub component: Component,
-    pub events: Vec<crate::component::EventBinding>,
+    pub events: Vec<EventBinding>,
 }
 
 impl Component {
-    pub fn validate(&self, registry: &[Descriptor], configuring: bool) -> Result<(), String> {
-        self.validate_tree(registry, Some(configuring), 0, &mut 0)?;
-        bounded(self)
-    }
-
-    pub fn validate_snapshot(&self, registry: &[Descriptor]) -> Result<(), String> {
-        self.validate_tree(registry, None, 0, &mut 0)?;
-        bounded(self)
-    }
-
-    fn validate_tree(
-        &self,
-        registry: &[Descriptor],
-        operation: Option<bool>,
-        depth: usize,
-        total: &mut usize,
-    ) -> Result<(), String> {
-        *total += 1;
-        if depth >= 8 || *total > 256 {
-            return Err("Compose at most 256 parts within eight levels.".into());
-        }
-        match self {
-            Self::Authored { base, edits } => {
-                if matches!(base.as_ref(), Self::Authored { .. }) {
-                    return Err("An authored item has one editing layer.".into());
-                }
-                edits.validate(registry)?;
-                base.validate_tree(registry, operation, depth, total)?;
-                for part in edits.added.values() {
-                    if let Some(component) = &part.component {
-                        component.validate_tree(registry, Some(false), depth + 1, total)?;
-                    }
-                }
-                Ok(())
-            }
-            Self::Builtin { state } => {
-                state.validate()?;
-                Self::validate_builtin_limits(state, depth, total)
-            }
-            Self::Native {
-                kind,
-                settings,
-                bindings,
-            } => {
-                let descriptor = registry
-                    .iter()
-                    .find(|d| &d.kind == kind)
-                    .ok_or("Discover a registered native component before using it.")?;
-                if operation.is_some_and(|configuring| {
-                    !descriptor.placeable
-                        || configuring && !descriptor.configurable
-                        || depth > 0 && !descriptor.composable
-                }) {
-                    return Err(descriptor
-                        .unavailable_reason
-                        .clone()
-                        .unwrap_or("This component does not support this operation.".into()));
-                }
-                if bindings.len() > descriptor.max_bindings
-                    || bindings.iter().any(|uid| !crate::valid_uid(uid, "r"))
-                {
-                    return Err("Invalid component Record bindings.".into());
-                }
-                if settings.iter().any(|(key, value)| {
-                    descriptor
-                        .settings
-                        .get(key)
-                        .is_none_or(|setting| !setting.accepts(value))
-                }) {
-                    return Err("The component settings do not match its advertised schema.".into());
-                }
-                Ok(())
-            }
-            Self::Composition { composition } => {
-                workspace_name(&composition.name)?;
-                if composition.parts.is_empty()
-                    || composition.origin.as_ref().is_some_and(|origin| {
-                        !crate::valid_uid(&origin.agent, "r")
-                            || !crate::valid_uid(&origin.thread, "r")
-                    })
-                {
-                    return Err("A composition needs valid parts and origin.".into());
-                }
-                let mut ids = BTreeSet::new();
-                for part in &composition.parts {
-                    if part.id.is_empty()
-                        || part.id.len() > 80
-                        || part.id.chars().any(char::is_control)
-                        || !ids.insert(&part.id)
-                        || part.events.len() > 32
-                        || part.events.iter().any(|event| {
-                            event.event.is_empty()
-                                || event.event.len() > 128
-                                || event.event.chars().any(char::is_control)
-                                || !event.action.is_object()
-                                || !event.action["action"].is_string()
-                        })
-                    {
-                        return Err("Invalid composition part identity or event binding.".into());
-                    }
-                    part.geometry.validate()?;
-                    part.component
-                        .validate_tree(registry, operation, depth + 1, total)?;
-                }
-                Ok(())
-            }
-        }
-    }
-
-    fn validate_builtin_limits(
-        state: &ComponentState,
-        depth: usize,
-        total: &mut usize,
-    ) -> Result<(), String> {
-        if let ComponentState::Composition { composition } = state {
-            for part in &composition.parts {
-                *total += 1;
-                if depth + 1 >= 8 || *total > 256 {
-                    return Err("Compose at most 256 parts within eight levels.".into());
-                }
-                Self::validate_builtin_limits(&part.component, depth + 1, total)?;
-            }
-        }
-        Ok(())
-    }
-
+    /// Collects Record references in traversal order.
     pub fn records(&self) -> Vec<&str> {
         let mut records = Vec::new();
         let _: ControlFlow<()> = self.visit_records(&mut |record| {
@@ -331,6 +125,7 @@ impl Component {
         records
     }
 
+    /// Visits Record references without collecting them and propagates an early exit.
     pub fn visit_records<'a, B>(
         &'a self,
         visit: &mut impl FnMut(&'a str) -> ControlFlow<B>,
@@ -361,7 +156,8 @@ impl Component {
         ControlFlow::Continue(())
     }
 
-    pub fn origin(&self) -> Option<&crate::component::composition::Origin> {
+    /// Borrows the authored origin if the component is a composition.
+    pub fn origin(&self) -> Option<&Origin> {
         match self {
             Self::Authored { base, .. } => base.origin(),
             Self::Builtin {
@@ -382,18 +178,29 @@ pub struct Document {
 }
 
 impl Document {
+    /// Format identifier for a standalone Canvas component.
     pub const FORMAT: &str = "lince.canvas_component";
+    /// Decodes a component document and validates its envelope.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error for oversized or malformed JSON, an unknown format, or an invalid name.
     pub fn decode(body: &str) -> Result<Self, String> {
         if body.len() > MAX_BYTES {
             return Err("The canvas component definition exceeds 256 KiB.".into());
         }
-        let document: Self = serde_json::from_str(body).map_err(|e| e.to_string())?;
+        let document: Self = from_str(body).map_err(|error| error.to_string())?;
         if document.format != Self::FORMAT {
             return Err("Unknown canvas component definition format.".into());
         }
         workspace_name(&document.name)?;
         Ok(document)
     }
+    /// Encodes a component as a standalone Canvas document.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error for an invalid name or a document that cannot be encoded within the limit.
     pub fn encode(name: String, component: Component) -> Result<String, String> {
         workspace_name(&name)?;
         let document = Self {
@@ -402,7 +209,7 @@ impl Document {
             component,
         };
         bounded(&document)?;
-        serde_json::to_string(&document).map_err(|e| e.to_string())
+        to_string(&document).map_err(|error| error.to_string())
     }
 }
 
@@ -414,6 +221,11 @@ pub struct Geometry {
 }
 
 impl Geometry {
+    /// Checks that positions are finite and dimensions are positive and bounded.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if either position or size is invalid.
     pub fn validate(&self) -> Result<(), String> {
         if self.position.iter().any(|n| !n.is_finite())
             || self
@@ -438,18 +250,6 @@ pub struct View {
     pub pitch: f64,
     pub plane: f64,
     pub selection_depth: f64,
-}
-
-impl View {
-    fn validate(&self) -> bool {
-        self.position.iter().all(|n| n.is_finite())
-            && self.yaw.is_finite()
-            && self.pitch.is_finite()
-            && self.pitch.abs() < std::f64::consts::FRAC_PI_2
-            && self.plane.is_finite()
-            && self.selection_depth.is_finite()
-            && self.selection_depth > 0.0
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
@@ -498,7 +298,7 @@ pub struct Metadata {
     #[serde(default)]
     pub light: Option<appearance::Light>,
     #[serde(default)]
-    pub binding: Option<crate::terrain::SpatialBinding>,
+    pub binding: Option<SpatialBinding>,
     #[serde(default)]
     pub follow_slope: bool,
     pub order: i32,
@@ -507,46 +307,6 @@ pub struct Metadata {
     pub spatial: Spatial,
     pub attachment: Option<Pose>,
     pub group_pose: Option<Pose>,
-}
-
-impl Metadata {
-    fn validate(&self) -> bool {
-        let rotation = |q: &[f64; 4]| {
-            q.iter().all(|n| n.is_finite())
-                && (q.iter().map(|n| n * n).sum::<f64>() - 1.0).abs() < 1e-6
-        };
-        let pose = |p: &Pose| p.position.iter().all(|n| n.is_finite()) && rotation(&p.rotation);
-        self.room.as_ref().is_none_or(room::Room::valid)
-            && self.room_member.as_ref().is_none_or(room::Member::valid)
-            && !(self.room.is_some() && self.room_member.is_some())
-            && !((self.room.is_some() || self.room_member.is_some()) && self.pinned.is_some())
-            && !(self.room_member.is_some() && (self.binding.is_some() || self.follow_slope))
-            && self
-                .material
-                .as_ref()
-                .is_none_or(appearance::Material::valid)
-            && self.light.as_ref().is_none_or(appearance::Light::valid)
-            && self
-                .binding
-                .as_ref()
-                .is_none_or(crate::terrain::SpatialBinding::valid)
-            && self.pinned.as_ref().is_none_or(|p| {
-                p.anchor.iter().all(|n| n.is_finite()) && (0.1..=3.0).contains(&p.scale)
-            })
-            && self.event_boundary.len() <= 64
-            && self
-                .event_boundary
-                .iter()
-                .all(|s| !s.is_empty() && s.len() <= 128 && !s.chars().any(char::is_control))
-            && self.spatial.elevation.is_finite()
-            && rotation(&self.spatial.rotation)
-            && self
-                .spatial
-                .depth
-                .is_none_or(|n| n.is_finite() && n > 0.0 && n <= 100_000.0)
-            && self.attachment.as_ref().is_none_or(pose)
-            && self.group_pose.as_ref().is_none_or(pose)
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
@@ -581,88 +341,12 @@ pub struct Snapshot {
     pub next_offset: Option<usize>,
 }
 
-impl Snapshot {
-    pub fn validate(&self) -> Result<(), String> {
-        self.validate_with_limits(MAX_PLACEMENTS, MAX_BYTES, false)
-    }
-    fn validate_full(&self) -> Result<(), String> {
-        self.validate_with_limits(MAX_STATE_PLACEMENTS, 16 * 1024 * 1024, true)
-    }
-    fn validate_with_limits(
-        &self,
-        placements: usize,
-        bytes: usize,
-        complete: bool,
-    ) -> Result<(), String> {
-        if self.workspaces.is_empty()
-            || self.workspaces.len() > 64
-            || self.placements.len() > placements
-        {
-            return Err("Canvas snapshot exceeds workspace/placement bounds.".into());
-        }
-        let mut spaces = BTreeSet::new();
-        for space in &self.workspaces {
-            workspace_name(&space.name)?;
-            if space.id == 0
-                || !spaces.insert(space.id)
-                || space.center.iter().any(|n| !n.is_finite())
-                || !space.zoom.is_finite()
-                || space.zoom <= 0.0
-                || space.view.as_ref().is_some_and(|view| !view.validate())
-            {
-                return Err("Invalid workspace identity or view.".into());
-            }
-        }
-        if !spaces.contains(&self.active_workspace) {
-            return Err("The active workspace is missing.".into());
-        }
-        let mut ids = BTreeSet::new();
-        for placement in &self.placements {
-            placement_id(&placement.id)?;
-            placement.geometry.validate()?;
-            if !placement.metadata.validate() {
-                return Err("Invalid canvas placement metadata.".into());
-            }
-            if !ids.insert(&placement.id)
-                || !spaces.contains(&placement.workspace)
-                || placement.group.as_ref().is_some_and(|g| g.len() > 80)
-            {
-                return Err("Invalid or duplicate canvas placement.".into());
-            }
-        }
-        room::validate(&self.placements, complete)?;
-        let bindings: BTreeMap<_, _> = self
-            .placements
-            .iter()
-            .filter_map(|p| match p.metadata.binding.as_ref().map(|b| &b.anchor) {
-                Some(crate::terrain::Anchor::Item(id)) => Some((p.id.as_str(), id.as_str())),
-                _ => None,
-            })
-            .collect();
-        let mut checked = BTreeSet::new();
-        for start in bindings.keys() {
-            let mut path = BTreeSet::new();
-            let mut cursor = *start;
-            while !checked.contains(cursor) {
-                if !path.insert(cursor) {
-                    return Err("Spatial bindings cannot form a cycle.".into());
-                }
-                let Some(next) = bindings.get(cursor) else {
-                    break;
-                };
-                cursor = next;
-            }
-            checked.extend(path);
-        }
-        if crate::json::encoded_len(self).map_err(|e| e.to_string())? > bytes {
-            return Err("Canvas snapshot exceeds its byte limit.".into());
-        }
-        Ok(())
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "operation", rename_all = "kebab-case", deny_unknown_fields)]
+#[expect(
+    clippy::large_enum_variant,
+    reason = "AddWithMetadata retains its public inline component and metadata"
+)]
 pub enum Mutation {
     SetRoomMembers {
         members: BTreeMap<String, Option<room::Member>>,
@@ -741,6 +425,10 @@ pub enum Mutation {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "operation", rename_all = "kebab-case", deny_unknown_fields)]
+#[expect(
+    clippy::large_enum_variant,
+    reason = "Mutate retains its public inline Mutation payload"
+)]
 pub enum Request {
     InspectElement {
         placement: String,
@@ -768,178 +456,6 @@ pub enum Request {
     },
 }
 
-impl Request {
-    pub fn is_mutation(&self) -> bool {
-        matches!(self, Self::Mutate { .. })
-    }
-
-    pub fn validate(&self) -> Result<(), String> {
-        match self {
-            Self::InspectElement {
-                placement,
-                offset,
-                limit,
-            } => {
-                placement_id(placement)?;
-                if *limit == 0 || *limit > 128 || *offset > 16_384 {
-                    return Err("Inspect 1–128 parts at a bounded offset.".into());
-                }
-            }
-            Self::Export { placement, name } => {
-                placement_id(placement)?;
-                workspace_name(name)?;
-            }
-            Self::Inspect { limit, offset, .. }
-                if *limit == 0 || *limit > MAX_PLACEMENTS || *offset > 1_000_000 =>
-            {
-                return Err("Inspect 1–256 placements at a bounded offset.".into());
-            }
-            Self::Mutate {
-                request_id,
-                mutation,
-                ..
-            } => {
-                request_identifier(request_id)?;
-                match mutation {
-                    Mutation::Rebind { placement, records } => {
-                        placement_id(placement)?;
-                        if records.is_empty()
-                            || records.len() > 32
-                            || records.iter().any(|(from, to)| {
-                                !crate::valid_uid(from, "r") || !crate::valid_uid(to, "r")
-                            })
-                        {
-                            return Err(
-                                "Rebind 1–32 existing Record UIDs to resolved Record UIDs.".into(),
-                            );
-                        }
-                    }
-                    Mutation::Patch { placement, changes } => {
-                        placement_id(placement)?;
-                        if changes.is_empty() || changes.len() > 256 {
-                            return Err("Apply 1–256 authored changes in a patch.".into());
-                        }
-                        for change in changes {
-                            change.validate()?;
-                        }
-                    }
-                    Mutation::Duplicate {
-                        placement,
-                        copy,
-                        workspace,
-                        position,
-                    } => {
-                        placement_id(placement)?;
-                        placement_id(copy)?;
-                        workspace_id(*workspace)?;
-                        Geometry {
-                            position: *position,
-                            size: [1.0; 2],
-                        }
-                        .validate()?;
-                    }
-                    Mutation::Group { placements, group } => {
-                        if placements.is_empty()
-                            || placements.len() > MAX_PLACEMENTS
-                            || group.as_ref().is_some_and(|group| {
-                                group.len() != 32
-                                    || !group.bytes().all(|byte| byte.is_ascii_hexdigit())
-                            })
-                        {
-                            return Err("Group 1–256 placements with a 32-digit hexadecimal group identity, or null to ungroup.".into());
-                        }
-                        let mut ids = BTreeSet::new();
-                        for placement in placements {
-                            placement_id(placement)?;
-                            if !ids.insert(placement) {
-                                return Err("Group members must be unique.".into());
-                            }
-                        }
-                    }
-                    Mutation::Add {
-                        placement,
-                        geometry,
-                        workspace,
-                        ..
-                    }
-                    | Mutation::AddWithMetadata {
-                        placement,
-                        geometry,
-                        workspace,
-                        ..
-                    } => {
-                        placement_id(placement)?;
-                        geometry.validate()?;
-                        workspace_id(*workspace)?;
-                        if let Mutation::AddWithMetadata { metadata, .. } = mutation
-                            && !metadata.validate()
-                        {
-                            return Err("Invalid placement metadata.".into());
-                        }
-                    }
-                    Mutation::SetRoomMembers { members } => {
-                        if members.is_empty() || members.len() > MAX_PLACEMENTS {
-                            return Err("Assign between one and 256 room members at a time.".into());
-                        }
-                        for (id, member) in members {
-                            placement_id(id)?;
-                            if member.as_ref().is_some_and(|member| !member.valid()) {
-                                return Err("Invalid room membership.".into());
-                            }
-                        }
-                    }
-                    Mutation::SetMetadata {
-                        placement,
-                        metadata,
-                    } => {
-                        placement_id(placement)?;
-                        if !metadata.validate() {
-                            return Err("Invalid canvas placement metadata.".into());
-                        }
-                    }
-                    Mutation::Configure { placement, .. } | Mutation::Remove { placement } => {
-                        placement_id(placement)?
-                    }
-                    Mutation::Move {
-                        placement,
-                        workspace,
-                        position,
-                    } => {
-                        placement_id(placement)?;
-                        workspace_id(*workspace)?;
-                        Geometry {
-                            position: *position,
-                            size: [1.0, 1.0],
-                        }
-                        .validate()?;
-                    }
-                    Mutation::Resize { placement, size } => {
-                        placement_id(placement)?;
-                        Geometry {
-                            position: [0.0, 0.0],
-                            size: *size,
-                        }
-                        .validate()?;
-                    }
-                    Mutation::CreateWorkspace { name } => workspace_name(name)?,
-                    Mutation::RenameWorkspace { workspace, name } => {
-                        workspace_id(*workspace)?;
-                        workspace_name(name)?;
-                    }
-                    Mutation::SwitchWorkspace { workspace }
-                    | Mutation::RemoveWorkspace { workspace } => workspace_id(*workspace)?,
-                    Mutation::Undo { receipt } | Mutation::UndoChanges { receipt } => {
-                        request_identifier(receipt)?
-                    }
-                }
-            }
-            Self::Receipt { request_id } => request_identifier(request_id)?,
-            _ => {}
-        }
-        bounded(self)
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum Persistence {
@@ -960,6 +476,10 @@ pub struct Receipt {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "result", rename_all = "kebab-case", deny_unknown_fields)]
+#[expect(
+    clippy::large_enum_variant,
+    reason = "Element retains its public inline authoring payload"
+)]
 pub enum Response {
     Element {
         element: authoring::Element,
@@ -978,179 +498,4 @@ pub enum Response {
     Receipt {
         receipt: Receipt,
     },
-}
-
-pub fn validate_registry(components: &[Descriptor]) -> Result<(), String> {
-    if components.len() > 128 {
-        return Err("The component registry exceeds 128 entries.".into());
-    }
-    let mut kinds = BTreeSet::new();
-    for component in components {
-        component.validate()?;
-        if !kinds.insert(&component.kind) {
-            return Err("Component kinds must be unique.".into());
-        }
-    }
-    bounded(components)
-}
-
-pub fn bounded(value: &(impl Serialize + ?Sized)) -> Result<(), String> {
-    if crate::json::encoded_len(value).map_err(|e| e.to_string())? > MAX_BYTES {
-        Err("Canvas data exceeds 256 KiB.".into())
-    } else {
-        Ok(())
-    }
-}
-
-pub fn request_identifier(id: &str) -> Result<(), String> {
-    if crate::valid_uid(id, "request") {
-        Ok(())
-    } else {
-        Err("Use a stable canvas request UID.".into())
-    }
-}
-
-pub fn placement_id(id: &str) -> Result<(), String> {
-    if crate::valid_uid(id, "placement") {
-        Ok(())
-    } else {
-        Err("Use a stable canvas placement UID.".into())
-    }
-}
-
-fn workspace_id(id: u64) -> Result<(), String> {
-    if id == 0 {
-        Err("Choose a nonzero workspace ID.".into())
-    } else {
-        Ok(())
-    }
-}
-fn workspace_name(name: &str) -> Result<(), String> {
-    if name.trim().is_empty() || name.chars().count() > 80 || name.chars().any(char::is_control) {
-        Err("Use a workspace name of 1–80 characters.".into())
-    } else {
-        Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn mixed_compositions_share_one_part_and_depth_budget() {
-        let builtin = |parts: Vec<crate::component::Part>| ComponentState::Composition {
-            composition: crate::component::Composition {
-                name: "Builtin".into(),
-                parts,
-                origin: None,
-            },
-        };
-        let part = |id: usize, component| crate::component::Part {
-            id: format!("part-{id}"),
-            settings: BTreeMap::new(),
-            position: [0, 0],
-            size: [100, 100],
-            component,
-            events: vec![],
-        };
-        let wrap = |component| Component::Composition {
-            composition: Composition {
-                name: "Wrapper".into(),
-                origin: None,
-                parts: vec![Part {
-                    id: "content".into(),
-                    geometry: Geometry {
-                        position: [0.0, 0.0],
-                        size: [100.0, 100.0],
-                    },
-                    component,
-                    events: vec![],
-                }],
-            },
-        };
-        let text = ComponentState::Text {
-            text: "hello".into(),
-        };
-        let full = |count| Component::Builtin {
-            state: builtin((0..count).map(|id| part(id, text.clone())).collect()),
-        };
-        assert!(wrap(full(254)).validate(&[], false).is_ok());
-        assert!(wrap(full(255)).validate(&[], false).is_err());
-        let mut nested = text;
-        for _ in 0..6 {
-            nested = builtin(vec![part(0, nested)]);
-        }
-        let nested = Component::Builtin { state: nested };
-        assert!(wrap(nested.clone()).validate(&[], false).is_ok());
-        assert!(wrap(wrap(nested)).validate(&[], false).is_err());
-    }
-
-    #[test]
-    fn canvas_contract_rejects_unsafe_geometry_and_requests() {
-        assert!(
-            Geometry {
-                position: [f64::NAN, 0.0],
-                size: [1.0, 1.0]
-            }
-            .validate()
-            .is_err()
-        );
-        assert!(
-            Geometry {
-                position: [0.0, 0.0],
-                size: [0.0, 1.0]
-            }
-            .validate()
-            .is_err()
-        );
-        assert!(
-            Request::Inspect {
-                workspace: None,
-                selected_only: false,
-                offset: 0,
-                limit: 257
-            }
-            .validate()
-            .is_err()
-        );
-        assert!(
-            Request::Mutate {
-                request_id: "invented".into(),
-                expected_revision: 0,
-                mutation: Mutation::Remove {
-                    placement: crate::new_uid("placement")
-                }
-            }
-            .validate()
-            .is_err()
-        );
-    }
-    #[test]
-    fn schema_rejects_unknown_settings_and_missing_kinds() {
-        let descriptor = Descriptor {
-            kind: "clock".into(),
-            name: "Clock".into(),
-            description: String::new(),
-            settings: BTreeMap::from([("running".into(), Setting::Boolean { default: false })]),
-            max_bindings: 0,
-            placeable: true,
-            configurable: true,
-            composable: false,
-            unavailable_reason: None,
-        };
-        let mut component = Component::Native {
-            kind: "clock".into(),
-            settings: BTreeMap::from([("running".into(), serde_json::json!(true))]),
-            bindings: vec![],
-        };
-        assert!(
-            component
-                .validate(std::slice::from_ref(&descriptor), false)
-                .is_ok()
-        );
-        if let Component::Native { settings, .. } = &mut component {
-            settings.insert("shell".into(), serde_json::json!("anything"));
-        }
-        assert!(component.validate(&[descriptor], false).is_err());
-    }
 }

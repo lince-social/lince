@@ -45,6 +45,7 @@ pub(super) struct Call {
     thread: String,
     bytes: usize,
     previous: String,
+    status: String,
 }
 
 impl Timeline<'_> {
@@ -222,10 +223,45 @@ impl Timeline<'_> {
             .as_str()
             .ok_or("Tool update has no identifier.")?;
         if !state.calls.contains_key(id) {
+            self.close(&mut state).await?;
+        }
+        self.record_call(&mut state, id, value).await
+    }
+
+    pub(super) async fn native_activity(&self, id: &str, value: &Value) {
+        let mut state = self.state.lock().await;
+        match self.record_call(&mut state, id, value).await {
+            Ok(()) if matches!(value["status"].as_str(), Some("completed" | "failed")) => {
+                state.calls.remove(id);
+            }
+            Ok(()) => {}
+            Err(error) => tracing::warn!(%error, "Could not save Fiote tool activity"),
+        }
+    }
+
+    pub(super) async fn interrupt_tools(&self) {
+        let mut state = self.state.lock().await;
+        let pending: Vec<_> = state
+            .calls
+            .iter()
+            .filter(|(_, call)| call.status == "in_progress")
+            .map(|(id, _)| id.clone())
+            .collect();
+        for id in pending {
+            if let Err(error) = self
+                .record_call(&mut state, &id, &json!({"status":"interrupted"}))
+                .await
+            {
+                tracing::warn!(%error, "Could not mark Fiote tool as interrupted");
+            }
+        }
+    }
+
+    async fn record_call(&self, state: &mut State, id: &str, value: &Value) -> Result<(), String> {
+        if !state.calls.contains_key(id) {
             if state.calls.len() >= 256 {
                 return Err("The turn reached its saved tool-call limit.".into());
             }
-            self.close(&mut state).await?;
             let title = value["title"].as_str().unwrap_or("Agent tool");
             let message = self
                 .engine
@@ -265,6 +301,7 @@ impl Timeline<'_> {
                     thread,
                     bytes: 0,
                     previous: String::new(),
+                    status: String::new(),
                 },
             );
         }
@@ -279,11 +316,23 @@ impl Timeline<'_> {
         for content in value["content"].as_array().into_iter().flatten() {
             if let Some(text) = content["content"]["text"].as_str() {
                 parts.push(text.to_string());
+            } else if content["type"] == "diff"
+                && let (Some(path), Some(new)) =
+                    (content["path"].as_str(), content["newText"].as_str())
+            {
+                if let Some(patch) =
+                    fiote::tools::file_diff(path, content["oldText"].as_str(), Some(new))
+                {
+                    parts.push(patch);
+                }
             } else {
                 parts.push(
                     serde_json::to_string_pretty(content).map_err(|error| error.to_string())?,
                 );
             }
+        }
+        if let Some(diff) = value["diff"].as_str() {
+            parts.push(diff.into());
         }
         if let Some(output) = value.get("rawOutput").filter(|v| !v.is_null()) {
             parts.push(format!(
@@ -341,17 +390,43 @@ impl Timeline<'_> {
         .await
         .map_err(|error| error.to_string())?
         .unwrap_or_default();
+        let has_diff = old["has_diff"] == true
+            || value["diff"].is_string()
+            || value["content"].as_array().is_some_and(|blocks| {
+                blocks.iter().any(|block| block["type"] == "diff")
+            });
         let status = value
             .get("status")
             .cloned()
             .unwrap_or_else(|| old["status"].clone());
+        call.status = status.as_str().unwrap_or_default().into();
         if detail.is_empty() {
             preview = old["preview"].as_str().unwrap_or("").into();
         }
         self.engine.act(Action::SetExtension {
             target: call.message.clone(), namespace: "lince.tool-call".into(),
-            fds: json!({"id":id,"thread":call.thread,"status":status,"preview":preview.chars().take(800).collect::<String>()}),
+            fds: json!({"id":id,"thread":call.thread,"status":status,"has_diff":has_diff,"preview":preview.chars().take(800).collect::<String>()}),
         }, None).await.map_err(|error| error.to_string())?;
         Ok(())
     }
+}
+
+pub(super) async fn recover_tools(engine: &Engine, reply: &str) -> Result<(), engine::EngineError> {
+    let pool = &engine.store.pool;
+    let Some(predicate) = store::vocabulary::feature_read(pool, "reply").await? else {
+        return Ok(());
+    };
+    for row in store::assertions::subjects_pointing_to(pool, &predicate, reply).await? {
+        if let Some(mut tool) = store::records::get_extension(pool, &row.uid, "lince.tool-call").await?
+            && tool["status"] == "in_progress"
+        {
+            tool["status"] = "interrupted".into();
+            engine.act(Action::SetExtension {
+                target: row.uid,
+                namespace: "lince.tool-call".into(),
+                fds: tool,
+            }, None).await?;
+        }
+    }
+    Ok(())
 }

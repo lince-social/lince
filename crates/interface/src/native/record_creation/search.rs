@@ -20,6 +20,7 @@ use std::{
     hash::Hash,
 };
 
+mod popup;
 mod preparation;
 
 #[derive(Resource, Default)]
@@ -243,33 +244,33 @@ impl Filter {
             .iter()
             .all(|(key, query)| contains(&row[*key], query))
             && self.relations.iter().all(|(assignee, fields)| {
-                fields.iter().all(String::is_empty)
-                    || if *assignee {
-                        row["assignees"]
-                            .as_array()
-                            .into_iter()
-                            .flatten()
-                            .any(|person| {
-                                reference(&person["uid"], &fields[0])
-                                    || contains(&person["head"], &fields[0])
-                            })
-                    } else {
+                if fields.iter().all(String::is_empty) {
+                    return true;
+                }
+                match (*assignee, fields.as_slice()) {
+                    (true, [query, ..]) => row["assignees"]
+                        .as_array()
+                        .into_iter()
+                        .flatten()
+                        .any(|person| {
+                            reference(&person["uid"], query) || contains(&person["head"], query)
+                        }),
+                    (false, [predicate, object, quantity, unit, ..]) => {
+                        let predicate = predicate.trim_start_matches('#');
                         row["assertions"]
                             .as_array()
                             .into_iter()
                             .flatten()
                             .any(|assertion| {
-                                (contains(
-                                    &assertion["predicate"],
-                                    fields[0].trim_start_matches('#'),
-                                ) || reference(
-                                    &assertion["predicate_uid"],
-                                    fields[0].trim_start_matches('#'),
-                                )) && reference(&assertion["object"], &fields[1])
-                                    && contains(&assertion["quantity"], &fields[2])
-                                    && reference(&assertion["unit"], &fields[3])
+                                (contains(&assertion["predicate"], predicate)
+                                    || reference(&assertion["predicate_uid"], predicate))
+                                    && reference(&assertion["object"], object)
+                                    && contains(&assertion["quantity"], quantity)
+                                    && reference(&assertion["unit"], unit)
                             })
                     }
+                    _ => false,
+                }
             })
             && self.logs.iter().all(|(start, end)| {
                 start.is_empty() && end.is_empty()
@@ -307,144 +308,6 @@ impl Action for Open {
             open_record(world, owner, &self.0);
         }
     }
-}
-
-#[derive(Component)]
-struct PopupPresentation {
-    choices: Vec<Entity>,
-    children: Vec<Entity>,
-    selected: usize,
-    font: Handle<Font>,
-}
-
-impl PopupPresentation {
-    fn current(&self, world: &World, popup: Entity) -> bool {
-        if self.font != world.resource::<crate::native::theme::Typography>().0 {
-            return false;
-        }
-        let mut children = world
-            .get::<Children>(popup)
-            .into_iter()
-            .flat_map(|children| children.iter());
-        self.children
-            .iter()
-            .all(|expected| children.by_ref().any(|child| child == *expected))
-    }
-}
-
-fn scroll_to_selection(world: &mut World, popup: Entity, selected: usize) {
-    let offset = (selected.saturating_sub(5) * 32) as f32;
-    let mut position = world.get_mut::<ScrollPosition>(popup).unwrap();
-    if position.0.y != offset {
-        position.0.y = offset;
-    }
-}
-
-fn select(world: &mut World, form: Entity, popup: Entity) {
-    let _selection = nucleus::performance::Span::new("record-creation-search-selection");
-    let Some(presented) = world
-        .get::<PopupPresentation>(popup)
-        .filter(|view| view.current(world, popup))
-    else {
-        draw(world, form, popup);
-        return;
-    };
-    let selected = world.get::<Search>(form).unwrap().selected;
-    if presented.selected != selected {
-        let previous = presented.choices.get(presented.selected).copied();
-        let next = presented.choices.get(selected).copied();
-        if let Some(previous) = previous {
-            world
-                .entity_mut(previous)
-                .remove::<crate::native::token_style::BackgroundToken>()
-                .insert(BackgroundColor::default());
-        }
-        if let Some(next) = next {
-            world
-                .entity_mut(next)
-                .insert(crate::native::token_style::background(
-                    crate::native::tokens::Token::Accent,
-                ));
-        }
-        world.get_mut::<PopupPresentation>(popup).unwrap().selected = selected;
-    }
-    scroll_to_selection(world, popup, selected);
-}
-
-fn draw(world: &mut World, form: Entity, popup: Entity) {
-    let _draw = nucleus::performance::Span::new("record-creation-search-draw");
-    if let Some(children) = world.get::<Children>(popup) {
-        for child in children.iter().collect::<Vec<_>>() {
-            world.despawn(child);
-        }
-    }
-    let search = world.get::<Search>(form).unwrap();
-    let options = search.options.clone();
-    let selected = search.selected;
-    let total = search.total;
-    let message = search.message.clone();
-    let mut choices = Vec::new();
-    if !message.is_empty() {
-        crate::native::edit_mode::label(world, popup, &message, 13.0);
-    } else if options.is_empty() {
-        crate::native::edit_mode::label(
-            world,
-            popup,
-            "No matches. Create a Record with these values.",
-            13.0,
-        );
-    } else {
-        for (index, (uid, label)) in options.iter().enumerate() {
-            let button = world
-                .spawn((
-                    crate::native::sand::button(0),
-                    ActionButton::new(form, crate::native::actions![Open(uid.clone())]),
-                    Node {
-                        width: percent(100),
-                        min_height: px(32),
-                        flex_shrink: 0.0,
-                        padding: UiRect::all(px(6)),
-                        ..default()
-                    },
-                    ChildOf(popup),
-                ))
-                .id();
-            choices.push(button);
-            if index == selected {
-                world
-                    .entity_mut(button)
-                    .insert(crate::native::token_style::background(
-                        crate::native::tokens::Token::Accent,
-                    ));
-            }
-            crate::native::edit_mode::label(world, button, label, 14.0);
-        }
-        if total > 100 {
-            crate::native::edit_mode::label(
-                world,
-                popup,
-                &format!("100 of {total} matches shown. Keep typing to narrow the list."),
-                13.0,
-            );
-        }
-    }
-    nucleus::performance::add("record-creation-search-rows-created", choices.len() as u64);
-    let children = world
-        .get::<Children>(popup)
-        .into_iter()
-        .flat_map(|children| children.iter())
-        .collect();
-    let font = world
-        .resource::<crate::native::theme::Typography>()
-        .0
-        .clone();
-    world.entity_mut(popup).insert(PopupPresentation {
-        choices,
-        children,
-        selected,
-        font,
-    });
-    scroll_to_selection(world, popup, selected);
 }
 
 pub(super) fn update(
@@ -653,9 +516,9 @@ pub(super) fn update(
             continue;
         }
         if changed {
-            draw(world, entity, popup);
+            popup::draw(world, entity, popup);
         } else if moved {
-            select(world, entity, popup);
+            popup::select(world, entity, popup);
         }
         let anchor = anchor.unwrap();
         if let Some(bounds) = crate::native::topology::presentation::bounds(world, anchor)

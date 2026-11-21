@@ -6,7 +6,7 @@
 
 use std::time::Duration;
 
-use lince_interface::host::performance::{self, Count, InputStage, Stage};
+use lince_host::performance::{self, Count, InputStage, Stage};
 
 use super::*;
 use crate::runtime::latency::{Outputs, Stamp};

@@ -8,14 +8,16 @@
 // - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
 //   Sites unwrap (106, 137, 337, 340, 352, 353, 410).
 
+mod categories;
 mod layout;
 pub(super) use layout::Layout;
 
 use super::*;
 use crate::native::{area::AreaShape, icons::Tooltip, tokens::Token};
 use bevy::math::DVec2;
+use categories::{Category, category, compare};
 use serde::{Deserialize, Serialize};
-use std::{cmp::Ordering, collections::BTreeMap};
+use std::collections::BTreeMap;
 
 pub const PROPERTIES: [&str; 10] = [
     "head",
@@ -78,147 +80,6 @@ impl Grouping {
         self.fields().all(|key| PROPERTIES.contains(&key))
             && self.strength.is_finite()
             && (0.0..=1_000_000.0).contains(&self.strength)
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-struct Category {
-    key: String,
-    title: String,
-    order: String,
-    missing: bool,
-}
-
-fn category(row: &Value, axis: Option<&GroupAxis>) -> Category {
-    let Some(axis) = axis else {
-        return Category {
-            key: String::new(),
-            title: String::new(),
-            order: String::new(),
-            missing: false,
-        };
-    };
-    let value = &row[&axis.property];
-    let (key, title) = if axis.property == "assignees" {
-        let mut people: Vec<_> = value
-            .as_array()
-            .into_iter()
-            .flatten()
-            .filter_map(|person| {
-                Some((
-                    person["uid"].as_str()?.to_string(),
-                    person["head"].as_str().unwrap_or("Person").to_string(),
-                ))
-            })
-            .collect();
-        people.sort_by(|a, b| a.0.cmp(&b.0));
-        people.dedup_by(|a, b| a.0 == b.0);
-        let key = serde_json::to_string(&people.iter().map(|p| &p.0).collect::<Vec<_>>()).unwrap();
-        people.sort_by_cached_key(|(uid, name)| (name.to_lowercase(), uid.clone()));
-        (
-            key,
-            people
-                .iter()
-                .map(|p| p.1.as_str())
-                .collect::<Vec<_>>()
-                .join(", "),
-        )
-    } else if axis.property == "assertions" {
-        let mut assertions: Vec<_> = value
-            .as_array()
-            .into_iter()
-            .flatten()
-            .map(|a| {
-                serde_json::json!([a["predicate_uid"], a["object"], a["quantity"], a["unit"]])
-                    .to_string()
-            })
-            .collect();
-        assertions.sort();
-        assertions.dedup();
-        let mut titles: Vec<_> = value
-            .as_array()
-            .into_iter()
-            .flatten()
-            .map(|a| lince_interface::records::display_list(std::slice::from_ref(a)))
-            .collect();
-        titles.sort();
-        titles.dedup();
-        (
-            serde_json::to_string(&assertions).unwrap(),
-            titles.join(", "),
-        )
-    } else {
-        let title = rows::display(value);
-        (title.clone(), title)
-    };
-    let missing = value.is_null() || title.trim().is_empty();
-    let order = if missing {
-        "unset".into()
-    } else {
-        title.to_lowercase()
-    };
-    Category {
-        key: if missing {
-            "null".into()
-        } else {
-            format!("value:{key}")
-        },
-        title: if missing { "Unset".into() } else { title },
-        order,
-        missing,
-    }
-}
-
-fn decimal_order(a: &str, b: &str) -> Ordering {
-    let negative_a = a.starts_with('-');
-    let negative_b = b.starts_with('-');
-    fn parts(value: &str) -> (&str, &str) {
-        let (integer, fraction) = value
-            .trim_start_matches('-')
-            .split_once('.')
-            .unwrap_or((value.trim_start_matches('-'), ""));
-        (
-            integer.trim_start_matches('0'),
-            fraction.trim_end_matches('0'),
-        )
-    }
-    let a = parts(a);
-    let b = parts(b);
-    let negative_a = negative_a && (!a.0.is_empty() || !a.1.is_empty());
-    let negative_b = negative_b && (!b.0.is_empty() || !b.1.is_empty());
-    let order =
-        a.0.len()
-            .cmp(&b.0.len())
-            .then(a.0.cmp(&b.0))
-            .then(a.1.cmp(&b.1));
-    match (negative_a, negative_b) {
-        (true, false) => Ordering::Less,
-        (false, true) => Ordering::Greater,
-        (true, true) => order.reverse(),
-        _ => order,
-    }
-}
-
-fn compare(a: &Category, b: &Category, axis: Option<&GroupAxis>) -> Ordering {
-    let Some(axis) = axis else {
-        return Ordering::Equal;
-    };
-    if a.missing != b.missing {
-        return a.missing.cmp(&b.missing);
-    }
-    let order = if matches!(
-        axis.property.as_str(),
-        "quantity" | "estimate_min" | "spent_seconds"
-    ) {
-        decimal_order(&a.title, &b.title)
-    } else {
-        a.order.cmp(&b.order)
-    }
-    .then(a.key.cmp(&b.key));
-    if axis.descending {
-        order.reverse()
-    } else {
-        order
     }
 }
 

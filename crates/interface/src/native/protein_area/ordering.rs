@@ -1,17 +1,10 @@
-// non-lean-yet
-// Scope: type Subscriptions, type Snapshot, struct Order, fn empty.
-// BeautifulRust (baseline lines):
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 23, 26, 135.
-// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (121, 143).
-// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
-//   making lifetimes explicit. Sites 125.
-
 use super::{RecordBinding, Runtime, Source, filter};
 use crate::native::area::InfluenceArea;
 use bevy::{ecs::system::InRef, prelude::*};
+use nucleus::performance::{Span, add};
 use std::{
     collections::HashMap,
-    sync::{Arc, OnceLock},
+    sync::{Arc, LazyLock},
 };
 
 pub(crate) type Subscriptions = QueryState<(Entity, &'static filter::Subscription)>;
@@ -30,21 +23,23 @@ impl Order<'_> {
         {
             return previous.clone();
         }
-        nucleus::performance::add("protein-order-snapshots-prepared", 1);
+        add("protein-order-snapshots-prepared", 1);
         Arc::new((self.source.clone(), self.ids.clone()))
     }
 }
 
-fn empty() -> &'static Arc<Vec<String>> {
-    static EMPTY: OnceLock<Arc<Vec<String>>> = OnceLock::new();
-    EMPTY.get_or_init(Arc::default)
+static EMPTY: LazyLock<Arc<Vec<String>>> = LazyLock::new(Arc::default);
+
+enum SubscriptionIndex {
+    Empty,
+    Single(Entity, Option<Entity>),
+    Indexed(HashMap<Entity, Entity>),
 }
 
 pub(crate) struct Lookup<'w, 'q> {
     world: &'w World,
     subscriptions: &'q mut Subscriptions,
-    first: Option<(Entity, Option<Entity>)>,
-    indexed: Option<HashMap<Entity, Entity>>,
+    index: SubscriptionIndex,
 }
 
 impl<'w, 'q> Lookup<'w, 'q> {
@@ -52,48 +47,48 @@ impl<'w, 'q> Lookup<'w, 'q> {
         Self {
             world,
             subscriptions,
-            first: None,
-            indexed: None,
+            index: SubscriptionIndex::Empty,
         }
     }
 
     fn subscription(&mut self, owner: Entity) -> Option<Entity> {
-        if let Some(indexed) = &self.indexed {
-            return indexed.get(&owner).copied();
-        }
-        if let Some((first, entity)) = self.first {
-            if first == owner {
-                return entity;
-            }
-            let mut indexed = HashMap::new();
-            let mut examined = 0;
-            for (entity, subscription) in self.subscriptions.iter(self.world) {
-                examined += 1;
-                if !subscription.1 {
-                    indexed.entry(subscription.0).or_insert(entity);
+        use SubscriptionIndex::*;
+        match &self.index {
+            Indexed(index) => index.get(&owner).copied(),
+            Single(first, entity) if *first == owner => *entity,
+            Single(..) => {
+                let mut index = HashMap::new();
+                let mut examined = 0;
+                for (entity, subscription) in self.subscriptions.iter(self.world) {
+                    examined += 1;
+                    if !subscription.1 {
+                        index.entry(subscription.0).or_insert(entity);
+                    }
                 }
+                add("protein-order-subscriptions-examined", examined);
+                add("protein-order-indexes-prepared", 1);
+                let entity = index.get(&owner).copied();
+                self.index = Indexed(index);
+                entity
             }
-            nucleus::performance::add("protein-order-subscriptions-examined", examined);
-            nucleus::performance::add("protein-order-indexes-prepared", 1);
-            let entity = indexed.get(&owner).copied();
-            self.indexed = Some(indexed);
-            return entity;
+            Empty => {
+                let mut examined = 0;
+                let entity =
+                    self.subscriptions
+                        .iter(self.world)
+                        .find_map(|(entity, subscription)| {
+                            examined += 1;
+                            (subscription.0 == owner && !subscription.1).then_some(entity)
+                        });
+                add("protein-order-subscriptions-examined", examined);
+                self.index = Single(owner, entity);
+                entity
+            }
         }
-        let mut examined = 0;
-        let entity = self
-            .subscriptions
-            .iter(self.world)
-            .find_map(|(entity, subscription)| {
-                examined += 1;
-                (subscription.0 == owner && !subscription.1).then_some(entity)
-            });
-        nucleus::performance::add("protein-order-subscriptions-examined", examined);
-        self.first = Some((owner, entity));
-        entity
     }
 
     pub(crate) fn get(&mut self, owner: Entity) -> Option<Order<'w>> {
-        let _read = nucleus::performance::Span::new("protein-order-read");
+        let _read = Span::new("protein-order-read");
         let world = self.world;
         let area = world.get::<InfluenceArea>(owner)?;
         let (config, filtered) = if let Some(config) = &area.filter {
@@ -112,7 +107,7 @@ impl<'w, 'q> Lookup<'w, 'q> {
                 config.enabled && state.ready && state.applied.as_deref() == Some(config)
             })
             .map(|state| &state.order)
-            .unwrap_or_else(|| empty());
+            .unwrap_or_else(|| &EMPTY);
         Some(Order {
             source: &config.source,
             ids,
@@ -124,13 +119,14 @@ pub(crate) fn columns(
     world: &mut World,
     owners: &[Option<Entity>],
 ) -> Vec<Option<Arc<Vec<String>>>> {
+    // Both cached readers inspect current data without invoking other systems.
     world
         .run_system_cached_with(read_columns, owners)
         .expect("read Protein column orders")
 }
 
 fn read_columns(
-    InRef(owners): InRef<[Option<Entity>]>,
+    InRef(owners): InRef<'_, [Option<Entity>]>,
     world: &mut World,
     subscriptions: &mut Subscriptions,
 ) -> Vec<Option<Arc<Vec<String>>>> {

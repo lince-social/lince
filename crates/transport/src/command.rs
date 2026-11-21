@@ -1,49 +1,44 @@
-// non-lean-yet
-// Scope: enum Request, struct Run, enum Event, enum Response.
-// BeautifulRust (baseline lines):
-// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
-//   non_exhaustive. Sites 5, 63, 83.
-// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
-//   5, 6, 7, 8, 9, 11, 12, 14, 15, 16, 17, 19, 20, 21, 22, 24, 25, 26, 27, 28, 30, 31, 32, 37, 50,
-//   51, 52, 53, 54, 55, 56, 57, 58, 63, 64, 65, 67, 68, 70, 71, 72, 74, 75, 76, 77, 83, 84, 85, 87,
-//   88, 90, 91, 92, 93, 95.
+//! Wire messages for saved command runs and their output journals.
 
 use serde::{Deserialize, Serialize};
 
+/// A request scoped to a saved Command Record.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "operation", rename_all = "snake_case")]
 pub enum Request {
+    /// Starts a run using the supplied script and working directory.
     Run {
         command: String,
         script: String,
         cwd: String,
     },
-    History {
-        command: String,
-    },
+    /// Lists the Command's retained runs.
+    History { command: String },
+    /// Reads events from an absolute byte offset in the run's journal.
     Read {
         command: String,
         run: String,
         offset: u64,
     },
+    /// Sends Base64-encoded input bytes to a running process.
     Input {
         command: String,
         run: String,
         data_base64: String,
     },
+    /// Changes the running terminal's dimensions in character cells.
     Resize {
         command: String,
         run: String,
         cols: u16,
         rows: u16,
     },
-    Stop {
-        command: String,
-        run: String,
-    },
+    /// Requests shutdown of a running process.
+    Stop { command: String, run: String },
 }
 
 impl Request {
+    /// Returns the Command Record identifier shared by all operations.
     pub fn command(&self) -> &str {
         match self {
             Self::Run { command, .. }
@@ -56,31 +51,38 @@ impl Request {
     }
 }
 
+/// The script, working directory, and saved outcome of a single run.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Run {
+    /// Owning Command Record.
     pub command: String,
+    /// Run identifier used for subsequent requests.
     pub id: String,
+    /// Script captured at launch.
     pub script: String,
+    /// Resolved working directory.
     pub cwd: String,
+    /// Start timestamp in Unix milliseconds.
     pub started_ms: u64,
+    /// Finish timestamp in Unix milliseconds, when available.
     pub finished_ms: Option<u64>,
+    /// Process exit code, when available.
     pub exit_code: Option<u32>,
+    /// Saved diagnostic for an unsuccessful or interrupted run.
     pub error: Option<String>,
 }
 
+/// An event stored in the run's line-delimited journal.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "event", rename_all = "snake_case")]
 pub enum Event {
-    Started {
-        run: Run,
-    },
-    Output {
-        data_base64: String,
-    },
-    Resize {
-        cols: u16,
-        rows: u16,
-    },
+    /// Records the initial run metadata.
+    Started { run: Run },
+    /// Carries Base64-encoded terminal output bytes.
+    Output { data_base64: String },
+    /// Records a terminal size for output playback.
+    Resize { cols: u16, rows: u16 },
+    /// Records the end timestamp and any available outcome.
     Finished {
         finished_ms: u64,
         exit_code: Option<u32>,
@@ -88,19 +90,22 @@ pub enum Event {
     },
 }
 
+/// A result produced by the command host.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "result", rename_all = "snake_case")]
 pub enum Response {
-    Started {
-        run: Run,
-    },
-    History {
-        runs: Vec<Run>,
-    },
+    /// Confirms a newly started run.
+    Started { run: Run },
+    /// Lists retained runs in newest-first order.
+    History { runs: Vec<Run> },
+    /// A page of events and its continuation position.
     Output {
         events: Vec<Event>,
+        /// Absolute byte offset for the next read.
         next_offset: u64,
+        /// Whether the host has reached the end of a finished run.
         complete: bool,
     },
+    /// Acknowledges a request with no response payload.
     Ok,
 }

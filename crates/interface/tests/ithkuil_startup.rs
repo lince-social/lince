@@ -1,11 +1,8 @@
-// non-lean-yet
-// Scope: fn startup_language_renders_native_translations_and_restores_english_font_on_reuse.
-// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
-
 #![cfg(feature = "ui")]
 
 use bevy::prelude::*;
 use lince_interface::{
+    controls::status,
     i18n::{Language, Token, initialize, native_text},
     ithkuil::IthkuilPlugin,
 };
@@ -13,22 +10,24 @@ use lince_interface::{
 #[test]
 fn startup_language_renders_native_translations_and_restores_english_font_on_reuse() {
     initialize(Language::Ithkuil).unwrap();
+    let name = Token::Name.text();
+    let save = Token::Save.text();
     let mut app = App::new();
     app.init_resource::<Assets<Font>>()
         .add_plugins(IthkuilPlugin);
     let original = TextFont::from_font_size(18.0);
     let native = app
         .world_mut()
-        .spawn((Text::new(Token::Name.text()), original.clone()))
+        .spawn((Text::new(name), original.clone()))
         .id();
     let english = app
         .world_mut()
-        .spawn((Text::new(Token::Save.text()), original.clone()))
+        .spawn((Text::new(save), original.clone()))
         .id();
     app.update();
     assert_eq!(
         app.world().get::<Text>(native).unwrap().0,
-        native_text(Token::Name.text()).unwrap().encoding()
+        native_text(name).unwrap().encoding()
     );
     assert_ne!(
         app.world().get::<TextFont>(native).unwrap().font,
@@ -44,7 +43,7 @@ fn startup_language_renders_native_translations_and_restores_english_font_on_reu
         .unwrap()
         .last_changed();
     for _ in 0..1000 {
-        lince_interface::controls::status(app.world_mut(), native, Token::Name.text());
+        status(app.world_mut(), native, name);
     }
     app.update();
     assert_eq!(app.world().get::<Text>(native).unwrap().0.as_ptr(), pointer);
@@ -56,7 +55,7 @@ fn startup_language_renders_native_translations_and_restores_english_font_on_reu
             .last_changed(),
         tick
     );
-    app.world_mut().get_mut::<Text>(native).unwrap().0 = Token::Save.text().into();
+    app.world_mut().get_mut::<Text>(native).unwrap().0 = save.into();
     app.update();
     assert_eq!(app.world().get::<Text>(native).unwrap().0, "Save");
     assert_eq!(*app.world().get::<TextFont>(native).unwrap(), original);

@@ -1,14 +1,10 @@
-// non-lean-yet
-// Scope: struct Inheritance, struct RootOwners, struct Candidates, enum Owner.
-// BeautifulRust (baseline lines):
-// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
-//   156, 157.
-// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
-//   Sites unwrap (106, 109).
-// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
-//   making lifetimes explicit. Sites 203.
-
-use super::*;
+use super::{
+    LayoutBox, RestoredTransient, TransientParent, WorkspaceMember, Workspaces, direct_children,
+};
+use crate::native::notifications::report;
+use bevy::prelude::*;
+use engine::performance::{Span, add};
+use std::collections::HashMap;
 
 #[derive(Resource)]
 struct Inheritance {
@@ -39,6 +35,7 @@ struct RootOwners {
 
 #[derive(Default)]
 struct Candidates {
+    // Three matches suffice to detect ambiguity after excluding the requester.
     first: [Option<Entity>; 3],
     needs_model: bool,
     retained: bool,
@@ -110,14 +107,14 @@ impl Inheritance {
             }
         }
         for &(entity, id, root) in &self.restored {
-            let request = self
+            if let Some(request) = self
                 .owners
                 .get_mut(&root)
-                .unwrap()
-                .requests
-                .get_mut(&id)
-                .unwrap();
-            request.needs_model |= matches!(request.excluding(entity), Owner::Missing);
+                .and_then(|owners| owners.requests.get_mut(&id))
+                && !request.needs_model
+            {
+                request.needs_model = matches!(request.excluding(entity), Owner::Missing);
+            }
         }
         let mut model_items_examined = 0;
         for (&root, owners) in &mut self.owners {
@@ -153,9 +150,9 @@ impl Inheritance {
                 }
             }
         }
-        engine::performance::add("desktop-restored-owner-roots", self.owners.len() as u64);
-        engine::performance::add("desktop-restored-children-examined", children_examined);
-        engine::performance::add(
+        add("desktop-restored-owner-roots", self.owners.len() as u64);
+        add("desktop-restored-children-examined", children_examined);
+        add(
             "desktop-restored-model-items-examined",
             model_items_examined,
         );
@@ -163,24 +160,29 @@ impl Inheritance {
 
     fn apply_restored(&self, world: &mut World) {
         for &(entity, id, root) in &self.restored {
-            let owners = &self.owners[&root];
-            let request = &owners.requests[&id];
-            match request.excluding(entity) {
-                Owner::Unique(parent) => {
-                    world
-                        .entity_mut(entity)
-                        .remove::<RestoredTransient>()
-                        .insert(TransientParent(parent));
-                }
-                Owner::Missing if owners.known && !request.retained => {
-                    world.entity_mut(entity).remove::<RestoredTransient>();
-                    crate::native::notifications::report(
-                        world,
-                        "Item owner",
-                        "The saved owner is no longer available. Its retained item was restored independently.",
-                    );
-                }
-                _ => {}
+            let Some(owners) = self.owners.get(&root) else {
+                continue;
+            };
+            let Some(request) = owners.requests.get(&id) else {
+                continue;
+            };
+            let parent = match request.excluding(entity) {
+                Owner::Unique(parent) => Some(parent),
+                Owner::Missing if owners.known && !request.retained => None,
+                _ => continue,
+            };
+            let Ok(mut target) = world.get_entity_mut(entity) else {
+                continue;
+            };
+            target.remove::<RestoredTransient>();
+            if let Some(parent) = parent {
+                target.insert(TransientParent(parent));
+            } else {
+                report(
+                    world,
+                    "Item owner",
+                    "The saved owner is no longer available. Its retained item was restored independently.",
+                );
             }
         }
     }
@@ -193,24 +195,27 @@ impl Inheritance {
                 .map(|(entity, parent)| (entity, parent.0)),
         );
         for &(entity, parent) in &self.transients {
-            if entity == parent || world.get_entity(parent).is_err() {
-                world.entity_mut(entity).remove::<TransientParent>();
-                continue;
-            }
-            if let Some(member) = world.get::<WorkspaceMember>(parent).copied()
-                && world.get::<WorkspaceMember>(entity).map(|member| member.0) != Some(member.0)
+            if entity != parent
+                && let Ok(owner) = world.get_entity(parent)
             {
-                world.entity_mut(entity).insert(member);
-                engine::performance::add("desktop-transient-memberships-written", 1);
+                if let Some(member) = owner.get::<WorkspaceMember>().copied()
+                    && let Ok(mut target) = world.get_entity_mut(entity)
+                    && target.get::<WorkspaceMember>() != Some(&member)
+                {
+                    target.insert(member);
+                    add("desktop-transient-memberships-written", 1);
+                }
+            } else if let Ok(mut target) = world.get_entity_mut(entity) {
+                target.remove::<TransientParent>();
             }
         }
     }
 }
 
 pub(super) fn inherit(world: &mut World) {
-    let _inheritance = engine::performance::Span::new("desktop-transient-inheritance");
+    let _inheritance = Span::new("desktop-transient-inheritance");
     world.init_resource::<Inheritance>();
-    world.resource_scope(|world, mut inheritance: Mut<Inheritance>| {
+    world.resource_scope(|world, mut inheritance: Mut<'_, Inheritance>| {
         inheritance.prepare_restored(world);
         inheritance.apply_restored(world);
         inheritance.inherit_current(world);

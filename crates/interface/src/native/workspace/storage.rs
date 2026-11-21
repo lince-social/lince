@@ -14,14 +14,17 @@
 //   fires. Sites 464.
 
 use super::{Document, write_atomic};
-use crate::native::wake::WakeSignal;
+use crate::{
+    native::wake::WakeSignal,
+    workspace_save_queue::{ReservationMode, SaveQueue, Slot},
+};
 use cell::InterfaceStorage;
 use std::{
     ffi::OsStr,
     io,
     path::{Path, PathBuf},
     sync::{
-        Arc, Condvar, Mutex,
+        Arc, Mutex,
         atomic::{AtomicBool, Ordering},
         mpsc,
     },
@@ -34,86 +37,9 @@ type SaveResult = Result<(), String>;
 struct Request {
     document: Document,
     finished: Option<mpsc::SyncSender<SaveResult>>,
-    slot: Slot,
 }
 
-struct QueueState {
-    sender: Option<mpsc::SyncSender<Request>>,
-    reserved: bool,
-}
-
-struct Queue {
-    state: Mutex<QueueState>,
-    available: Condvar,
-}
-
-impl Queue {
-    fn reserve(self: &Arc<Self>, wait: bool) -> Result<Option<Slot>, String> {
-        let mut state = self
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        loop {
-            if state.sender.is_none() {
-                return Err("Workspace saving stopped".into());
-            }
-            if !state.reserved {
-                state.reserved = true;
-                return Ok(Some(Slot(self.clone())));
-            }
-            if !wait {
-                return Ok(None);
-            }
-            state = self
-                .available
-                .wait(state)
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
-        }
-    }
-
-    fn send(&self, request: Request) -> SaveResult {
-        let sent = {
-            let state = self
-                .state
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
-            match &state.sender {
-                Some(sender) => sender.try_send(request),
-                None => Err(mpsc::TrySendError::Disconnected(request)),
-            }
-        };
-        sent.map_err(|error| match error {
-            mpsc::TrySendError::Disconnected(_) => "Workspace saving stopped".into(),
-            mpsc::TrySendError::Full(_) => "Workspace saving lost its queue reservation".into(),
-        })
-    }
-
-    fn close(&self) {
-        let sender = self
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .sender
-            .take();
-        self.available.notify_all();
-        drop(sender);
-    }
-}
-
-struct Slot(Arc<Queue>);
-
-impl Drop for Slot {
-    fn drop(&mut self) {
-        self.0
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .reserved = false;
-        self.0.available.notify_one();
-    }
-}
-
-struct WorkerQueue(Arc<Queue>);
+struct WorkerQueue(Arc<SaveQueue<Request>>);
 impl Drop for WorkerQueue {
     fn drop(&mut self) {
         self.0.close();
@@ -121,24 +47,21 @@ impl Drop for WorkerQueue {
 }
 
 pub(super) struct Capture {
-    slot: Slot,
+    slot: Slot<Request>,
     flush: bool,
 }
 
 impl Capture {
     pub(super) fn save(self, document: Document) -> SaveResult {
-        let queue = self.slot.0.clone();
         let (finished, completion) = if self.flush {
             let (sender, receiver) = mpsc::sync_channel(1);
             (Some(sender), Some(receiver))
         } else {
             (None, None)
         };
-        queue.send(Request {
-            document,
-            finished,
-            slot: self.slot,
-        })?;
+        self.slot
+            .send(Request { document, finished })
+            .map_err(|error| error.to_string())?;
         if let Some(completion) = completion {
             let _wait = nucleus::performance::Span::new("workspace-save-flush-await");
             completion
@@ -151,7 +74,7 @@ impl Capture {
 }
 
 pub(super) struct Writer {
-    queue: Arc<Queue>,
+    queue: Arc<SaveQueue<Request>>,
     status: Arc<Mutex<Option<SaveResult>>>,
     due: Arc<AtomicBool>,
     saved_revision: Arc<Mutex<Option<(String, u64)>>>,
@@ -165,14 +88,7 @@ impl Writer {
         settings: InterfaceStorage,
         wake: Option<WakeSignal>,
     ) -> io::Result<Self> {
-        let (sender, receiver) = mpsc::sync_channel::<Request>(1);
-        let queue = Arc::new(Queue {
-            state: Mutex::new(QueueState {
-                sender: Some(sender),
-                reserved: false,
-            }),
-            available: Condvar::new(),
-        });
+        let (queue, receiver) = SaveQueue::<Request>::channel();
         let worker_queue = queue.clone();
         let status = Arc::new(Mutex::new(None));
         let result = status.clone();
@@ -189,13 +105,11 @@ impl Writer {
                 let mut next = Instant::now() + interval;
                 loop {
                     match receiver.recv_timeout(next.saturating_duration_since(Instant::now())) {
-                        Ok(request) => {
+                        Ok(queued) => {
                             let Request {
                                 mut document,
                                 finished,
-                                slot,
-                            } = request;
-                            drop(slot);
+                            } = queued.start();
                             let saved_canvas_revision = document
                                 .canvas_state
                                 .as_ref()
@@ -269,7 +183,16 @@ impl Writer {
 
     pub(super) fn prepare(&self, flush: bool) -> Result<Option<Capture>, String> {
         let _admission = nucleus::performance::Span::new("workspace-save-admission-await");
-        match self.queue.reserve(flush)? {
+        let mode = if flush {
+            ReservationMode::Wait
+        } else {
+            ReservationMode::Defer
+        };
+        match self
+            .queue
+            .reserve(mode)
+            .map_err(|error| error.to_string())?
+        {
             Some(slot) => {
                 nucleus::performance::add("workspace-captures-admitted", 1);
                 Ok(Some(Capture { slot, flush }))

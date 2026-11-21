@@ -1,12 +1,6 @@
-// non-lean-yet
-// Scope: struct Home, type Homes, trait Saved, fn normalize.
-// BeautifulRust (baseline lines):
-// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
-//   21.
-
 use super::Placement;
 use crate::layout::{Rules, desktop::Geometry};
-use std::collections::BTreeMap;
+use std::{array::from_fn, collections::BTreeMap};
 
 pub(crate) struct Home {
     pub workspace: u64,
@@ -20,24 +14,47 @@ pub(crate) trait Saved {
     fn normalize_scratch(&mut self, homes: &Homes);
 }
 
-pub(crate) fn normalize(placement: &mut Placement, workspace: &mut u64, position: &mut [f64; 2], size: &mut [f32; 2], homes: &Homes) {
-    let Some(layout) = &mut placement.layout else { return; };
-    let Some(home) = homes.get(&layout.id) else { return; };
-    *workspace = home.workspace;
-    *position = std::array::from_fn(|axis| home.geometry.origin[axis] + home.geometry.size[axis] * 0.5);
-    *size = home.geometry.size.map(|value| value as f32);
-    layout.rules = home.rules;
+impl Placement {
+    pub(crate) fn normalize_home(
+        &mut self,
+        workspace: &mut u64,
+        position: &mut [f64; 2],
+        size: &mut [f32; 2],
+        homes: &Homes,
+    ) {
+        if let Some(layout) = &mut self.layout
+            && let Some(home) = homes.get(&layout.id)
+        {
+            let geometry = home.geometry;
+            *workspace = home.workspace;
+            *position = from_fn(|axis| geometry.origin[axis] + geometry.size[axis] * 0.5);
+            *size = geometry.size.map(|value| value as f32);
+            layout.rules = home.rules;
+        }
+    }
 }
 
 pub(crate) fn normalize_all<T: Saved>(saved: &mut [T], homes: &Homes) {
-    for saved in saved { saved.normalize_scratch(homes); }
+    for saved in saved {
+        saved.normalize_scratch(homes);
+    }
 }
 
 macro_rules! saved {
     ($kind:ty) => {
-        impl crate::native::sand_placement::scratch::Saved for $kind {
-            fn normalize_scratch(&mut self, homes: &crate::native::sand_placement::scratch::Homes) {
-                crate::native::sand_placement::scratch::normalize(&mut self.placement, &mut self.workspace, &mut self.position, &mut self.size, homes);
+        impl $crate::native::sand_placement::scratch::Saved for $kind {
+            fn normalize_scratch(
+                &mut self,
+                homes: &$crate::native::sand_placement::scratch::Homes,
+            ) {
+                let Self {
+                    placement,
+                    workspace,
+                    position,
+                    size,
+                    ..
+                } = self;
+                placement.normalize_home(workspace, position, size, homes);
             }
         }
     };

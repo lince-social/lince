@@ -1,10 +1,32 @@
-// non-lean-yet
-// Scope: fn fixture, fn settle, fn
-//   choosing_a_search_result_is_unsaved_and_scope_change_clears_private_query, fn
-//   routing_sends_only_reviewed_visible_points_and_cancelled_replies_stay_cleared.
-// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+use super::{
+    Intent, Panel, RouteEdit, mount, operate, panel::Button, poll, requests::Lookup, update,
+};
+use crate::{controls, theme::Typography};
+use bevy::{prelude::*, text::EditableText};
+use lince_map::{
+    Coordinate,
+    navigation::{Place, Settings},
+};
+use std::{
+    fs::{read, write},
+    path::PathBuf,
+    slice::from_ref,
+    time::Duration,
+};
+use tempfile::tempdir;
+use tokio::{
+    io::{AsyncReadExt, AsyncWriteExt},
+    net::TcpListener,
+    runtime::Handle,
+    sync::oneshot::channel,
+    task::yield_now,
+    time::timeout,
+};
 
-use super::*;
+const ORIGIN: Coordinate = Coordinate {
+    latitude: 10.0,
+    longitude: 20.0,
+};
 
 fn fixture(path: PathBuf) -> (World, Entity, Entity) {
     let mut world = World::new();
@@ -16,11 +38,8 @@ fn fixture(path: PathBuf) -> (World, Entity, Entity) {
         owner,
         owner,
         path,
-        Coordinate {
-            latitude: 10.0,
-            longitude: 20.0,
-        },
-        Some(tokio::runtime::Handle::current()),
+        ORIGIN,
+        Some(Handle::current()),
     );
     let panel = world.query::<(Entity, &Panel)>().single(&world).unwrap().0;
     assert!(
@@ -29,23 +48,15 @@ fn fixture(path: PathBuf) -> (World, Entity, Entity) {
             .iter(&world)
             .all(|(entity, _)| world.get::<Node>(entity).is_some())
     );
-    update(
-        &mut world,
-        owner,
-        Coordinate {
-            latitude: 10.0,
-            longitude: 20.0,
-        },
-        "alice",
-    );
+    update(&mut world, owner, ORIGIN, "alice");
     (world, owner, panel)
 }
 
 async fn settle(world: &mut World, panel: Entity) {
-    tokio::time::timeout(std::time::Duration::from_secs(5), async {
+    timeout(Duration::from_secs(5), async {
         while world.get::<Panel>(panel).unwrap().job.is_some() {
             poll(world);
-            tokio::task::yield_now().await;
+            yield_now().await;
         }
     })
     .await
@@ -54,18 +65,15 @@ async fn settle(world: &mut World, panel: Entity) {
 
 #[tokio::test]
 async fn choosing_a_search_result_is_unsaved_and_scope_change_clears_private_query() {
-    let directory = tempfile::tempdir().unwrap();
+    let directory = tempdir().unwrap();
     let place = Place {
         name: "Private Street Four".into(),
-        coordinate: Coordinate {
-            latitude: 10.0,
-            longitude: 20.0,
-        },
+        coordinate: ORIGIN,
         credits: "Fixture".into(),
     };
     let index = directory.path().join("places.json");
-    let bytes = serde_json::to_vec(&vec![place.clone()]).unwrap();
-    std::fs::write(&index, &bytes).unwrap();
+    let bytes = serde_json::to_vec(from_ref(&place)).unwrap();
+    write(&index, &bytes).unwrap();
     let path = directory.path().join("navigation.json");
     Settings {
         places: index.clone(),
@@ -73,15 +81,15 @@ async fn choosing_a_search_result_is_unsaved_and_scope_change_clears_private_que
     }
     .save_atomic(&path)
     .unwrap();
-    let saved = std::fs::read(&path).unwrap();
+    let saved = read(&path).unwrap();
     let (mut world, owner, panel) = fixture(path.clone());
-    let query = world.get::<Panel>(panel).unwrap().fields[0];
+    let query = world.get::<Panel>(panel).unwrap().query;
     world
-        .get_mut::<bevy::text::EditableText>(query)
+        .get_mut::<EditableText>(query)
         .unwrap()
         .editor
         .set_text("Private Street");
-    operate(&mut world, panel, Intent::Search).unwrap();
+    operate(&mut world, panel, Intent::Request(Lookup::Search)).unwrap();
     settle(&mut world, panel).await;
     assert!(
         update(&mut world, owner, place.coordinate, "alice")
@@ -90,17 +98,19 @@ async fn choosing_a_search_result_is_unsaved_and_scope_change_clears_private_que
     );
     operate(&mut world, panel, Intent::Choose(0)).unwrap();
     assert_eq!(
-        update(&mut world, owner, place.coordinate, "alice").1,
-        Some(place.clone())
+        update(&mut world, owner, place.coordinate, "alice")
+            .1
+            .as_ref(),
+        Some(&place)
     );
     assert!(
         update(&mut world, owner, place.coordinate, "alice")
             .1
             .is_none()
     );
-    assert_eq!(std::fs::read(path).unwrap(), saved);
-    assert_eq!(std::fs::read(index).unwrap(), bytes);
-    operate(&mut world, panel, Intent::Origin).unwrap();
+    assert_eq!(read(path).unwrap(), saved);
+    assert_eq!(read(index).unwrap(), bytes);
+    operate(&mut world, panel, Intent::EditRoute(RouteEdit::Origin)).unwrap();
     update(&mut world, owner, place.coordinate, "bob");
     assert_eq!(controls::value(&world, query).unwrap(), "");
     assert!(world.get::<Panel>(panel).unwrap().origin.is_none());
@@ -116,11 +126,7 @@ async fn choosing_a_search_result_is_unsaved_and_scope_change_clears_private_que
 
 #[tokio::test]
 async fn routing_sends_only_reviewed_visible_points_and_cancelled_replies_stay_cleared() {
-    use tokio::{
-        io::{AsyncReadExt, AsyncWriteExt},
-        net::TcpListener,
-    };
-    let directory = tempfile::tempdir().unwrap();
+    let directory = tempdir().unwrap();
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let path = directory.path().join("navigation.json");
     Settings {
@@ -130,8 +136,8 @@ async fn routing_sends_only_reviewed_visible_points_and_cancelled_replies_stay_c
     }
     .save_atomic(&path)
     .unwrap();
-    let (sent, received) = tokio::sync::oneshot::channel();
-    let (release, released) = tokio::sync::oneshot::channel();
+    let (sent, received) = channel();
+    let (release, released) = channel();
     let server = tokio::spawn(async move {
         let (mut socket, _) = listener.accept().await.unwrap();
         let mut request = Vec::new();
@@ -152,7 +158,7 @@ async fn routing_sends_only_reviewed_visible_points_and_cancelled_replies_stay_c
             .await;
     });
     let (mut world, owner, panel) = fixture(path);
-    operate(&mut world, panel, Intent::Origin).unwrap();
+    operate(&mut world, panel, Intent::EditRoute(RouteEdit::Origin)).unwrap();
     update(
         &mut world,
         owner,
@@ -162,7 +168,7 @@ async fn routing_sends_only_reviewed_visible_points_and_cancelled_replies_stay_c
         },
         "alice",
     );
-    operate(&mut world, panel, Intent::Destination).unwrap();
+    operate(&mut world, panel, Intent::EditRoute(RouteEdit::Destination)).unwrap();
     update(
         &mut world,
         owner,
@@ -172,14 +178,14 @@ async fn routing_sends_only_reviewed_visible_points_and_cancelled_replies_stay_c
         },
         "alice",
     );
-    operate(&mut world, panel, Intent::Route).unwrap();
-    let request = tokio::time::timeout(std::time::Duration::from_secs(5), received)
+    operate(&mut world, panel, Intent::Request(Lookup::Route)).unwrap();
+    let request = timeout(Duration::from_secs(5), received)
         .await
         .unwrap()
         .unwrap();
     assert!(request.starts_with("GET /route/v1/driving/20,10;21,11?"));
     assert!(!request.contains("44,33"));
-    operate(&mut world, panel, Intent::Cancel).unwrap();
+    operate(&mut world, panel, Intent::EditRoute(RouteEdit::Cancel)).unwrap();
     update(
         &mut world,
         owner,
@@ -191,7 +197,7 @@ async fn routing_sends_only_reviewed_visible_points_and_cancelled_replies_stay_c
     );
     release.send(()).unwrap();
     server.await.unwrap();
-    tokio::task::yield_now().await;
+    yield_now().await;
     poll(&mut world);
     let state = world.get::<Panel>(panel).unwrap();
     assert!(state.job.is_none());

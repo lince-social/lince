@@ -1,14 +1,19 @@
 // non-lean-yet
-// Scope: static DATA, const FAMILY, struct Fallback, fn needed.
-// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
 
-use bevy::{prelude::*, text::EditableText};
-use std::sync::Arc;
+use super::{bundled_font, register_fallbacks};
+use crate::wake::WakeSignal;
+use bevy::{
+    prelude::*,
+    text::{EditableText, FontCx},
+};
 
 static DATA: &[u8] = include_bytes!(
     "../../../../institute/assets/fonts/NotoSansMonoCJK/NotoSansMonoCJKjp-Regular.otf"
 );
 const FAMILY: &str = "Noto Sans Mono CJK JP";
+const SCRIPTS: [[u8; 4]; 7] = [
+    *b"Hani", *b"Hira", *b"Kana", *b"Hang", *b"Bopo", *b"Zyyy", *b"Zinh",
+];
 
 #[derive(Resource, Default)]
 pub(super) struct Fallback(Option<Handle<Font>>);
@@ -17,7 +22,7 @@ fn needed(value: &str) -> bool {
     !value.is_ascii()
         && value.chars().any(|ch| {
             matches!(
-                ch as u32,
+                u32::from(ch),
                 0x1100..=0x11ff
                     | 0x2e80..=0x9fff
                     | 0xa960..=0xa97f
@@ -39,7 +44,7 @@ pub(super) fn load(
     texts: Query<&Text, Changed<Text>>,
     spans: Query<&TextSpan, Changed<TextSpan>>,
     inputs: Query<&EditableText, Changed<EditableText>>,
-    wake: Option<Res<crate::wake::WakeSignal>>,
+    wake: Option<Res<WakeSignal>>,
 ) {
     if fallback.0.is_some()
         || !(texts.iter().any(|text| needed(&text.0))
@@ -48,10 +53,7 @@ pub(super) fn load(
     {
         return;
     }
-    fallback.0 = Some(fonts.add(Font {
-        data: fontique::Blob::new(Arc::new(DATA)),
-        alias: String::new(),
-    }));
+    fallback.0 = Some(fonts.add(bundled_font(DATA)));
     if let Some(wake) = wake {
         wake.ring();
     }
@@ -59,31 +61,15 @@ pub(super) fn load(
 
 pub(super) fn configure(
     fallback: Res<Fallback>,
-    mut fonts: Option<ResMut<bevy::text::FontCx>>,
+    fonts: Option<ResMut<FontCx>>,
     mut text_fonts: Query<&mut TextFont>,
 ) {
     if fallback.0.is_none() {
         return;
     }
-    let Some(fonts) = fonts.as_mut() else { return };
-    let Some(id) = fonts.collection.family_id(FAMILY) else {
-        return;
-    };
-    let mut changed = false;
-    for tag in [
-        *b"Hani", *b"Hira", *b"Kana", *b"Hang", *b"Bopo", *b"Zyyy", *b"Zinh",
-    ] {
-        let script = fontique::Script::from_bytes(tag);
-        if !fonts
-            .collection
-            .fallback_families(script)
-            .any(|family| family == id)
-        {
-            fonts.collection.append_fallbacks(script, [id].into_iter());
-            changed = true;
-        }
-    }
-    if changed {
+    if let Some(mut fonts) = fonts
+        && register_fallbacks(&mut fonts.collection, FAMILY, SCRIPTS)
+    {
         for mut text_font in &mut text_fonts {
             text_font.set_changed();
         }

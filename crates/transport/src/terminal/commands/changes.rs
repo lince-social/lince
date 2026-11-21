@@ -1,21 +1,15 @@
-// non-lean-yet
-// Scope: struct Topics, struct Registry, struct Source, struct Changes.
-// BeautifulRust (baseline lines):
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 38.
-// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
-//   Sites 44.
-// - [Clippy probe: clippy::missing_panics_doc] State the panic conditions for exported functions.
-//   Sites 41.
-// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
-//   test conventions. Sites 1.
-// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
-//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 17, 29.
-// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
-//   17, 20, 24, 29, 37, 41.
+//! Coalesced notifications for command history and run output.
 
-use super::*;
-use std::sync::Weak;
+use std::{
+    collections::HashMap,
+    fmt,
+    ptr::eq,
+    sync::{Arc, Mutex, Weak},
+};
+
 use tokio::sync::watch;
+
+use super::CommandHost;
 
 #[derive(Default)]
 struct Topics {
@@ -28,38 +22,52 @@ pub(super) struct Registry {
     topics: Mutex<HashMap<String, Topics>>,
 }
 
-#[derive(Clone)]
+/// Identity of a command notification registry without keeping the host alive.
+#[derive(Clone, Debug)]
 pub struct Source(Weak<Registry>);
 
 impl Source {
+    /// Checks whether both sources identify the same registry.
     pub fn same(&self, other: &Self) -> bool {
         self.0.ptr_eq(&other.0)
     }
 
+    /// Checks whether this is the host's notification source.
     pub fn matches(&self, host: &CommandHost) -> bool {
-        self.0.ptr_eq(&Arc::downgrade(&host.0.changes))
+        eq(self.0.as_ptr(), Arc::as_ptr(&host.0.changes))
     }
 }
 
+/// A subscription to a command history or a particular run's output.
 pub struct Changes {
+    // Field order closes the receiver before registration cleanup counts subscribers.
+    receiver: watch::Receiver<()>,
+    registration: Registration,
+}
+
+struct Registration {
     source: Source,
     command: String,
     run: Option<String>,
-    receiver: Option<watch::Receiver<()>>,
+}
+
+impl fmt::Debug for Changes {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Changes")
+            .field("observes_run", &self.registration.run.is_some())
+            .finish_non_exhaustive()
+    }
 }
 
 impl Changes {
+    /// Returns the source identity for comparing subscriptions.
     pub fn source(&self) -> Source {
-        self.source.clone()
+        self.registration.source.clone()
     }
 
+    /// Waits for a change and returns false after the notification source closes.
     pub async fn changed(&mut self) -> bool {
-        self.receiver
-            .as_mut()
-            .expect("the watch receiver is present until Changes is dropped")
-            .changed()
-            .await
-            .is_ok()
+        self.receiver.changed().await.is_ok()
     }
 }
 
@@ -84,10 +92,12 @@ impl Registry {
             topic.history.get_or_insert_with(|| watch::channel(()).0)
         };
         Ok(Changes {
-            source: Source(Arc::downgrade(self)),
-            command: command.to_owned(),
-            run: run.map(str::to_owned),
-            receiver: Some(sender.subscribe()),
+            receiver: sender.subscribe(),
+            registration: Registration {
+                source: self.source(),
+                command: command.into(),
+                run: run.map(str::to_owned),
+            },
         })
     }
 
@@ -108,9 +118,8 @@ impl Registry {
 #[cfg(test)]
 mod tests;
 
-impl Drop for Changes {
+impl Drop for Registration {
     fn drop(&mut self) {
-        self.receiver.take();
         let Some(registry) = self.source.0.upgrade() else {
             return;
         };

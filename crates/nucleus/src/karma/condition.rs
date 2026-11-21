@@ -1,38 +1,30 @@
-// non-lean-yet
-// Scope: const MIN_DIVISION_SCALE, enum ConditionError, trait ExactResolver, fn zero.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
-//   Sites 396, 407, 776, 778, 788, 789.
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 371, 426, 537.
-// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
-//   Sites 59, 67, 98, 99, 100, 103, 111, 348, 429, 450.
-// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
-//   100.
-// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
-//   431.
-// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
-//   Sites 10, 159, 227.
-// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
-//   44, 48.
-// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
-//   101, 151, 195, 448, 450, 488.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 35, 170, 199, 234, 290, 378, 437, 559.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 10, 11,
-//   12, 13, 14, 15, 16, 34, 35, 159, 160, 161, 162, 163, 164, 165, 166, 170, 199, 212, 227, 228,
-//   229, 230, 234, 247, 255, 265, 290, 366, 370, 374, 378, 437, 559.
+//! Exact condition evaluation and consequence admission.
 
 use std::{fmt, sync::Arc};
 
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    expr::{BinOp, Expr, UnOp},
-    karma::{DecimalValue, MAX_DECIMAL_SCALE},
+    expr::{
+        BinOp, Expr, HAS_ASSERTION, TokenKey, UnOp, assertion_binding, assertion_token,
+        extension_token,
+    },
+    karma::DecimalValue,
+    performance::{self, Span},
+    transfer::karma::{is_agreement_reading, is_reading},
 };
 
-const MIN_DIVISION_SCALE: u8 = 6;
+mod numeric;
+pub(crate) use numeric::arithmetic;
+use numeric::{compare, remainder};
 
+#[cfg(test)]
+mod tests;
+
+const ZERO: DecimalValue = DecimalValue::from_integer(0);
+const ONE: DecimalValue = DecimalValue::from_integer(1);
+
+/// Failure to parse or evaluate a condition or apply its gate.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ConditionError {
     Parse(String),
@@ -58,7 +50,13 @@ impl fmt::Display for ConditionError {
 
 impl std::error::Error for ConditionError {}
 
+/// Supplies exact values for condition readings.
 pub trait ExactResolver {
+    /// Reads a reference with an optional window in seconds.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the reading is unavailable or cannot be represented.
     fn lookup(
         &mut self,
         func: &str,
@@ -67,120 +65,11 @@ pub trait ExactResolver {
     ) -> Result<DecimalValue, ConditionError>;
 }
 
-fn zero() -> DecimalValue {
-    DecimalValue::from_mantissa(0, 0).expect("scale 0 is valid")
-}
-
-fn one() -> DecimalValue {
-    DecimalValue::from_mantissa(0, 1).expect("scale 0 is valid")
-}
-
-fn pow10(exp: u32) -> Option<i128> {
-    10i128.checked_pow(exp)
-}
-
-fn upscale(value: DecimalValue, scale: u8) -> Option<DecimalValue> {
-    if scale < value.scale() || scale > MAX_DECIMAL_SCALE {
-        return None;
-    }
-    let factor = pow10((scale - value.scale()) as u32)?;
-    DecimalValue::from_mantissa(scale, value.mantissa().checked_mul(factor)?).ok()
-}
-
-fn downscale(scale: u8, mantissa: i128, target: u8) -> Option<DecimalValue> {
-    if target >= scale {
-        return DecimalValue::from_mantissa(scale, mantissa).ok();
-    }
-    let factor = pow10((scale - target) as u32)?;
-    let quotient = mantissa / factor;
-    let remainder = (mantissa % factor).abs();
-    let rounded = if remainder * 2 >= factor {
-        quotient + if mantissa.is_negative() { -1 } else { 1 }
-    } else {
-        quotient
-    };
-    DecimalValue::from_mantissa(target, rounded).ok()
-}
-
-fn align(a: DecimalValue, b: DecimalValue) -> Option<(DecimalValue, DecimalValue)> {
-    let scale = a.scale().max(b.scale());
-    Some((upscale(a, scale)?, upscale(b, scale)?))
-}
-
-fn add(a: DecimalValue, b: DecimalValue) -> Result<DecimalValue, ConditionError> {
-    let (a, b) = align(a, b).ok_or(ConditionError::Overflow)?;
-    a.checked_add(b).ok_or(ConditionError::Overflow)
-}
-
-fn sub(a: DecimalValue, b: DecimalValue) -> Result<DecimalValue, ConditionError> {
-    let (a, b) = align(a, b).ok_or(ConditionError::Overflow)?;
-    a.checked_sub(b).ok_or(ConditionError::Overflow)
-}
-
-fn mul(a: DecimalValue, b: DecimalValue) -> Result<DecimalValue, ConditionError> {
-    let mantissa = a
-        .mantissa()
-        .checked_mul(b.mantissa())
-        .ok_or(ConditionError::Overflow)?;
-    let scale = a.scale() as u16 + b.scale() as u16;
-    if scale <= MAX_DECIMAL_SCALE as u16 {
-        return DecimalValue::from_mantissa(scale as u8, mantissa)
-            .map_err(|_| ConditionError::Overflow);
-    }
-    downscale(scale.min(255) as u8, mantissa, MAX_DECIMAL_SCALE).ok_or(ConditionError::Overflow)
-}
-
-fn div(a: DecimalValue, b: DecimalValue) -> Result<DecimalValue, ConditionError> {
-    if b.mantissa() == 0 {
-        return Err(ConditionError::DivisionByZero);
-    }
-    let target = a.scale().max(b.scale()).max(MIN_DIVISION_SCALE);
-    let shift = (target - a.scale()) as u32 + b.scale() as u32 + 1;
-    let factor = pow10(shift).ok_or(ConditionError::Overflow)?;
-    let numerator = a
-        .mantissa()
-        .checked_mul(factor)
-        .ok_or(ConditionError::Overflow)?;
-    let quotient = numerator / b.mantissa();
-    downscale(target + 1, quotient, target).ok_or(ConditionError::Overflow)
-}
-
-fn compare(a: DecimalValue, b: DecimalValue) -> Result<std::cmp::Ordering, ConditionError> {
-    let (a, b) = align(a, b).ok_or(ConditionError::Overflow)?;
-    Ok(a.mantissa().cmp(&b.mantissa()))
-}
-
 fn truth(value: bool) -> DecimalValue {
-    if value { one() } else { zero() }
+    if value { ONE } else { ZERO }
 }
 
-pub(crate) fn arithmetic(
-    operator: crate::expr::BinOp,
-    left: DecimalValue,
-    right: DecimalValue,
-) -> Result<DecimalValue, ConditionError> {
-    use crate::expr::BinOp;
-    match operator {
-        BinOp::Add => add(left, right),
-        BinOp::Sub => sub(left, right),
-        BinOp::Mul => mul(left, right),
-        BinOp::Div => div(left, right),
-        BinOp::Rem => {
-            if right.mantissa() == 0 {
-                return Err(ConditionError::DivisionByZero);
-            }
-            let (left, right) = align(left, right).ok_or(ConditionError::Overflow)?;
-            let mantissa = left
-                .mantissa()
-                .checked_rem(right.mantissa())
-                .ok_or(ConditionError::Overflow)?;
-            DecimalValue::from_mantissa(left.scale(), mantissa)
-                .map_err(|_| ConditionError::Overflow)
-        }
-        _ => Err(ConditionError::Parse("Expected arithmetic operator".into())),
-    }
-}
-
+/// Determines whether a computed value admits a consequence.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
 pub enum Gate {
@@ -194,6 +83,11 @@ pub enum Gate {
 }
 
 impl Gate {
+    /// Parses a named gate or threshold comparison.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the gate or threshold is invalid.
     pub fn parse(text: &str) -> Result<Gate, ConditionError> {
         let text = text.trim();
         if text == "always" {
@@ -223,6 +117,11 @@ impl Gate {
         Ok(build(value))
     }
 
+    /// Checks the computed value against this gate.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if aligning the decimal scales overflows.
     pub fn passes(&self, computed: DecimalValue) -> Result<bool, ConditionError> {
         use std::cmp::Ordering::*;
         Ok(match self {
@@ -236,6 +135,7 @@ impl Gate {
         })
     }
 
+    /// Formats the rule in editor syntax.
     pub fn as_text(&self) -> String {
         match self {
             Gate::NonZero => "!=0".into(),
@@ -249,6 +149,7 @@ impl Gate {
     }
 }
 
+/// Selects the exact value carried to an admitted consequence.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
 pub enum Carry {
@@ -258,6 +159,11 @@ pub enum Carry {
 }
 
 impl Carry {
+    /// Parses a carry rule from the editor syntax.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error for an unknown rule or invalid constant.
     pub fn parse(text: &str) -> Result<Carry, ConditionError> {
         let text = text.trim();
         match text {
@@ -271,14 +177,16 @@ impl Carry {
         }
     }
 
+    /// Selects the exact value that will be carried.
     pub fn apply(&self, computed: DecimalValue) -> DecimalValue {
         match self {
             Carry::Value => computed,
-            Carry::One => one(),
+            Carry::One => ONE,
             Carry::Const { value } => *value,
         }
     }
 
+    /// Formats the rule in editor syntax.
     pub fn as_text(&self) -> String {
         match self {
             Carry::Value => "value".into(),
@@ -288,13 +196,14 @@ impl Carry {
     }
 }
 
+/// Validated condition expression and its prepared reading keys.
 #[derive(Clone)]
 pub struct Condition(Arc<Parsed>);
 
 struct Parsed {
     source: Arc<str>,
     expr: Expr,
-    readings: Vec<crate::expr::TokenKey>,
+    readings: Vec<TokenKey>,
 }
 
 impl fmt::Debug for Condition {
@@ -314,29 +223,32 @@ impl PartialEq for Condition {
 }
 
 impl Condition {
+    /// Parses a condition and collects its reading keys in expression order.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error for invalid readings, no readings, or multiple frequencies.
     pub fn parse(source: &str) -> Result<Condition, ConditionError> {
-        let _parse = crate::performance::Span::new("karma-condition-parse");
-        crate::performance::add("karma-condition-parse-attempts", 1);
+        let _parse = Span::new("karma-condition-parse");
+        performance::add("karma-condition-parse-attempts", 1);
         let expr = Expr::parse(source).map_err(|error| ConditionError::Parse(error.to_string()))?;
         fn validate(expr: &Expr) -> Result<(), ConditionError> {
             match expr {
-                Expr::Fn(name, args) if name == crate::expr::HAS_ASSERTION => {
-                    crate::expr::assertion_token(args)
+                Expr::Fn(name, args) if name == HAS_ASSERTION => {
+                    assertion_token(args)
                         .map_err(|error| ConditionError::Parse(error.to_string()))?;
                 }
                 Expr::Fn(name, args) if name == "extension" => {
-                    crate::expr::extension_token(args)
+                    extension_token(args)
                         .map_err(|error| ConditionError::Parse(error.to_string()))?;
                 }
                 Expr::Fn(name, args)
-                    if crate::transfer::karma::is_reading(name)
+                    if is_reading(name)
                         || name == "distance"
                         || name == "query_command"
                         || name == "startup" =>
                 {
-                    let count = if crate::transfer::karma::is_agreement_reading(name)
-                        || name == "distance"
-                    {
+                    let count = if is_agreement_reading(name) || name == "distance" {
                         2
                     } else {
                         1
@@ -372,7 +284,7 @@ impl Condition {
         }
         validate(&expr)?;
         let readings = expr.tokens();
-        crate::performance::add("karma-condition-readings-prepared", readings.len() as u64);
+        performance::add("karma-condition-readings-prepared", readings.len() as u64);
         if readings.is_empty() {
             return Err(ConditionError::Parse(
                 "this reads nothing, so nothing could ever make it true".into(),
@@ -390,24 +302,32 @@ impl Condition {
         })))
     }
 
+    /// Returns the written expression, including after reference binding.
     pub fn source(&self) -> &str {
         &self.0.source
     }
 
-    pub fn reads(&self) -> Vec<crate::expr::TokenKey> {
+    /// Copies the prepared reading keys for callers that need to own them.
+    pub fn reads(&self) -> Vec<TokenKey> {
         self.0.readings.clone()
     }
 
-    pub fn reads_ref(&self) -> &[crate::expr::TokenKey] {
+    /// Borrows the keys prepared from the current expression.
+    pub fn reads_ref(&self) -> &[TokenKey] {
         &self.0.readings
     }
 
+    /// Binds references in a new expression while keeping the written source.
+    ///
+    /// # Errors
+    ///
+    /// Returns the error from a failed binding.
     pub fn map_references(
         &self,
         mut resolve: impl FnMut(&str, &str) -> Result<String, ConditionError>,
     ) -> Result<Self, ConditionError> {
-        let _bind = crate::performance::Span::new("karma-condition-bind");
-        crate::performance::add("karma-condition-bind-attempts", 1);
+        let _bind = Span::new("karma-condition-bind");
+        performance::add("karma-condition-bind-attempts", 1);
         fn visit(
             expr: &mut Expr,
             reading: &str,
@@ -416,26 +336,29 @@ impl Condition {
             match expr {
                 Expr::Ref(name) => *name = resolve(reading, name)?,
                 Expr::Fn(name, arguments) => {
-                    if name == crate::expr::HAS_ASSERTION {
+                    if name == HAS_ASSERTION {
                         for (position, argument) in arguments.iter_mut().enumerate() {
-                            let reading = crate::expr::assertion_binding(position);
-                            if let Expr::Fn(_, inner) = argument {
-                                visit(&mut inner[0], reading, resolve)?;
-                            } else {
-                                visit(argument, reading, resolve)?;
-                            }
+                            let reading = assertion_binding(position);
+                            let reference = match argument {
+                                Expr::Fn(_, inner) => inner.first_mut().ok_or_else(|| {
+                                    ConditionError::Parse("Choose an assertion predicate".into())
+                                })?,
+                                reference => reference,
+                            };
+                            visit(reference, reading, resolve)?;
                         }
                         return Ok(());
                     }
                     if name == "extension" {
-                        let token = crate::expr::extension_token(arguments)
-                            .map_err(|error| ConditionError::Parse(error.to_string()))?;
-                        visit(
-                            &mut arguments[0],
-                            crate::expr::binding_reading(&token.func),
-                            resolve,
-                        )?;
-                        return Ok(());
+                        // Parsing validates the extension address. Binding changes only its Record.
+                        let [record @ Expr::Ref(_), Expr::Text(_), Expr::Text(_)] =
+                            arguments.as_mut_slice()
+                        else {
+                            return Err(ConditionError::Parse(
+                                r#"Use extension(@record, "namespace", "property")"#.into(),
+                            ));
+                        };
+                        return visit(record, "extension", resolve);
                     }
                     for argument in arguments {
                         visit(argument, name, resolve)?;
@@ -453,14 +376,19 @@ impl Condition {
         let mut expr = self.0.expr.clone();
         visit(&mut expr, "quantity", &mut resolve)?;
         let readings = expr.tokens();
-        crate::performance::add("karma-condition-readings-prepared", readings.len() as u64);
+        performance::add("karma-condition-readings-prepared", readings.len() as u64);
         Ok(Self(Arc::new(Parsed {
-            source: self.0.source.clone(),
+            source: Arc::clone(&self.0.source),
             expr,
             readings,
         })))
     }
 
+    /// Evaluates with exact decimals and short-circuit boolean operators.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error for an unavailable reading, invalid argument, or unrepresentable result.
     pub fn evaluate(
         &self,
         resolver: &mut dyn ExactResolver,
@@ -473,9 +401,7 @@ fn evaluate(expr: &Expr, resolver: &mut dyn ExactResolver) -> Result<DecimalValu
     match expr {
         Expr::Num(text) => DecimalValue::parse_inferred(text)
             .map_err(|_| ConditionError::Parse(format!("`{text}` is not a number"))),
-        Expr::Dur(seconds) => {
-            DecimalValue::from_mantissa(0, *seconds as i128).map_err(|_| ConditionError::Overflow)
-        }
+        Expr::Dur(seconds) => Ok(DecimalValue::from_integer(i128::from(*seconds))),
         Expr::Ref(slug) => resolver.lookup("quantity", slug, None),
         Expr::Text(_) => Err(ConditionError::Parse(
             "Text cannot be used as a number".into(),
@@ -493,8 +419,8 @@ fn evaluate(expr: &Expr, resolver: &mut dyn ExactResolver) -> Result<DecimalValu
                 let left = evaluate(left, resolver)?;
                 let left_true = left.mantissa() != 0;
                 return match (op, left_true) {
-                    (BinOp::And, false) => Ok(zero()),
-                    (BinOp::Or, true) => Ok(one()),
+                    (BinOp::And, false) => Ok(ZERO),
+                    (BinOp::Or, true) => Ok(ONE),
                     _ => Ok(truth(evaluate(right, resolver)?.mantissa() != 0)),
                 };
             }
@@ -502,18 +428,8 @@ fn evaluate(expr: &Expr, resolver: &mut dyn ExactResolver) -> Result<DecimalValu
             let b = evaluate(right, resolver)?;
             use std::cmp::Ordering::*;
             Ok(match op {
-                BinOp::Add => add(a, b)?,
-                BinOp::Sub => sub(a, b)?,
-                BinOp::Mul => mul(a, b)?,
-                BinOp::Div => div(a, b)?,
-                BinOp::Rem => {
-                    let (a, b) = align(a, b).ok_or(ConditionError::Overflow)?;
-                    if b.mantissa() == 0 {
-                        return Err(ConditionError::DivisionByZero);
-                    }
-                    DecimalValue::from_mantissa(a.scale(), a.mantissa() % b.mantissa())
-                        .map_err(|_| ConditionError::Overflow)?
-                }
+                BinOp::Add | BinOp::Sub | BinOp::Mul | BinOp::Div => arithmetic(*op, a, b)?,
+                BinOp::Rem => remainder(a, b)?,
                 BinOp::Lt => truth(compare(a, b)? == Less),
                 BinOp::Le => truth(matches!(compare(a, b)?, Less | Equal)),
                 BinOp::Gt => truth(compare(a, b)? == Greater),
@@ -533,35 +449,26 @@ fn call(
     args: &[Expr],
     resolver: &mut dyn ExactResolver,
 ) -> Result<DecimalValue, ConditionError> {
-    if name == crate::expr::HAS_ASSERTION {
-        let token = crate::expr::assertion_token(args)
-            .map_err(|error| ConditionError::Parse(error.to_string()))?;
+    if name == HAS_ASSERTION {
+        let token =
+            assertion_token(args).map_err(|error| ConditionError::Parse(error.to_string()))?;
         return resolver.lookup(&token.func, &token.slug, None);
     }
     if name == "extension" {
-        let token = crate::expr::extension_token(args)
-            .map_err(|error| ConditionError::Parse(error.to_string()))?;
+        let token =
+            extension_token(args).map_err(|error| ConditionError::Parse(error.to_string()))?;
         return resolver.lookup(&token.func, &token.slug, None);
     }
-    if crate::transfer::karma::is_agreement_reading(name) || name == "distance" {
-        let references = args
-            .iter()
-            .map(|argument| match argument {
-                Expr::Ref(name) => Ok(name.as_str()),
-                _ => Err(ConditionError::Parse(format!(
-                    "{name}() needs two @references"
-                ))),
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-        if references.len() != 2 {
+    if is_agreement_reading(name) || name == "distance" {
+        let [Expr::Ref(left), Expr::Ref(right)] = args else {
             return Err(ConditionError::Parse(format!(
                 "{name}() needs two @references"
             )));
-        }
-        return resolver.lookup(name, &references.join("|"), None);
+        };
+        return resolver.lookup(name, &format!("{left}|{right}"), None);
     }
     let slug = match args.first() {
-        Some(Expr::Ref(slug)) => slug.clone(),
+        Some(Expr::Ref(slug)) => slug,
         _ => {
             return Err(ConditionError::Parse(format!(
                 "{name}() needs a @reference as its first argument"
@@ -580,9 +487,14 @@ fn call(
     if WINDOWED.contains(&name) && window.is_none() {
         return Err(ConditionError::MissingWindow(format!("{name}(@{slug})")));
     }
-    resolver.lookup(name, &slug, window)
+    resolver.lookup(name, slug, window)
 }
 
+/// Evaluates a condition, checks its gate, and carries an admitted value.
+///
+/// # Errors
+///
+/// Returns any evaluation or gate comparison error.
 pub fn decide(
     condition: &Condition,
     gate: &Gate,
@@ -594,251 +506,4 @@ pub fn decide(
         return Ok(None);
     }
     Ok(Some(carry.apply(computed)))
-}
-
-#[cfg(test)]
-mod tests {
-    use std::collections::HashMap;
-
-    use super::*;
-
-    #[derive(Default)]
-    struct Map(HashMap<String, DecimalValue>);
-
-    impl Map {
-        fn set(&mut self, func: &str, slug: &str, value: &str) {
-            self.0.insert(
-                format!("{func}:{slug}"),
-                DecimalValue::parse_inferred(value).unwrap(),
-            );
-        }
-    }
-
-    impl ExactResolver for Map {
-        fn lookup(
-            &mut self,
-            func: &str,
-            slug: &str,
-            _window: Option<i64>,
-        ) -> Result<DecimalValue, ConditionError> {
-            self.0
-                .get(&format!("{func}:{slug}"))
-                .copied()
-                .ok_or_else(|| ConditionError::UnknownReference(slug.to_string()))
-        }
-    }
-
-    fn eval(source: &str, map: &mut Map) -> DecimalValue {
-        Condition::parse(source).unwrap().evaluate(map).unwrap()
-    }
-
-    #[test]
-    fn a_tenth_plus_two_tenths_is_exactly_three_tenths() {
-        let mut map = Map::default();
-        map.set("quantity", "opening", "0.1");
-        assert_eq!(eval("@opening + 0.2", &mut map).to_string(), "0.3");
-    }
-
-    #[test]
-    fn two_place_arithmetic_stays_exact() {
-        let mut map = Map::default();
-        map.set("quantity", "flour.jar", "1000.10");
-        assert_eq!(eval("@flour.jar - 0.20", &mut map).to_string(), "999.90");
-        map.set("quantity", "cent", "0.01");
-        assert_eq!(eval("@cent * 3", &mut map).to_string(), "0.03");
-    }
-
-    #[test]
-    fn the_old_operators_survive_the_port() {
-        let mut map = Map::default();
-        map.set("freq", "daily-7am", "0");
-        let condition = Condition::parse("-1 * freq(@daily-7am)").unwrap();
-        assert_eq!(
-            decide(&condition, &Gate::NonZero, &Carry::Value, &mut map).unwrap(),
-            None,
-            "a timer that did not fire must not fire the rule"
-        );
-
-        map.set("freq", "daily-7am", "1");
-        let carried = decide(&condition, &Gate::NonZero, &Carry::Value, &mut map)
-            .unwrap()
-            .unwrap();
-        assert_eq!(carried.to_string(), "-1");
-    }
-
-    #[test]
-    fn a_gate_decides_whether_and_a_carry_decides_what() {
-        let mut map = Map::default();
-        map.set("quantity", "apples.stock", "8");
-        let condition = Condition::parse("@apples.stock").unwrap();
-        let gate = Gate::parse("<3").unwrap();
-        assert_eq!(
-            decide(&condition, &gate, &Carry::One, &mut map).unwrap(),
-            None
-        );
-
-        map.set("quantity", "apples.stock", "2");
-        let carried = decide(&condition, &gate, &Carry::One, &mut map)
-            .unwrap()
-            .unwrap();
-        assert_eq!(carried.to_string(), "1", "carry=one decouples the payload");
-        let carried = decide(&condition, &gate, &Carry::Value, &mut map)
-            .unwrap()
-            .unwrap();
-        assert_eq!(carried.to_string(), "2", "carry=value keeps the number");
-        let carried = decide(
-            &condition,
-            &gate,
-            &Carry::parse("const:7.5").unwrap(),
-            &mut map,
-        )
-        .unwrap()
-        .unwrap();
-        assert_eq!(carried.to_string(), "7.5");
-    }
-
-    #[test]
-    fn comparisons_and_booleans_are_numbers() {
-        let mut map = Map::default();
-        map.set("quantity", "a", "5");
-        map.set("quantity", "b", "2");
-        assert_eq!(eval("@a > @b", &mut map).to_string(), "1");
-        assert_eq!(eval("@a < @b", &mut map).to_string(), "0");
-        assert_eq!(eval("(@a > @b) && (@b > 10)", &mut map).to_string(), "0");
-        assert_eq!(eval("(@a > @b) || (@b > 10)", &mut map).to_string(), "1");
-        assert_eq!(
-            eval("(@b > 10) && @nothing.here", &mut map).to_string(),
-            "0"
-        );
-    }
-
-    #[test]
-    fn division_rounds_once_and_says_so() {
-        let mut map = Map::default();
-        map.set("quantity", "one", "1");
-        map.set("quantity", "two", "2");
-        map.set("quantity", "ten", "10");
-        assert_eq!(eval("@one / 3", &mut map).to_string(), "0.333333");
-        assert_eq!(eval("@two / 3", &mut map).to_string(), "0.666667");
-        assert_eq!(eval("@ten / 4", &mut map).to_string(), "2.500000");
-    }
-
-    #[test]
-    fn dividing_by_zero_is_refused_rather_than_infinite() {
-        let mut map = Map::default();
-        map.set("quantity", "one", "1");
-        assert_eq!(
-            Condition::parse("@one / 0").unwrap().evaluate(&mut map),
-            Err(ConditionError::DivisionByZero)
-        );
-    }
-
-    #[test]
-    fn a_window_is_required_where_it_is_meaningless_without_one() {
-        let mut map = Map::default();
-        map.set("sum", "spend", "10");
-        assert!(matches!(
-            Condition::parse("sum(@spend)").unwrap().evaluate(&mut map),
-            Err(ConditionError::MissingWindow(_))
-        ));
-        assert_eq!(eval("sum(@spend, 30d)", &mut map).to_string(), "10");
-    }
-
-    #[test]
-    fn gates_and_carries_round_trip_through_their_text() {
-        for text in ["!=0", "always", "<3", "<=3", ">3", ">=3", "==3"] {
-            assert_eq!(Gate::parse(text).unwrap().as_text(), text);
-        }
-        for text in ["value", "one", "const:7.5"] {
-            assert_eq!(Carry::parse(text).unwrap().as_text(), text);
-        }
-        assert!(Gate::parse("~5").is_err());
-        assert!(Carry::parse("whatever").is_err());
-    }
-
-    #[test]
-    fn a_condition_that_reads_nothing_is_refused() {
-        assert!(matches!(
-            Condition::parse("1 + 1"),
-            Err(ConditionError::Parse(_))
-        ));
-        assert!(matches!(
-            Condition::parse("2 > 5"),
-            Err(ConditionError::Parse(_))
-        ));
-        assert!(Condition::parse("@a > 5").is_ok());
-    }
-
-    #[test]
-    fn a_second_frequency_is_refused_at_parse_time() {
-        assert!(Condition::parse("-1 * freq(@payday)").is_ok());
-        assert!(matches!(
-            Condition::parse("freq(@payday) + freq(@rent)"),
-            Err(ConditionError::Parse(_))
-        ));
-        assert!(
-            matches!(
-                Condition::parse("freq(@payday) + freq(@payday)"),
-                Err(ConditionError::Parse(_))
-            ),
-            "the same frequency named twice is still a second timer"
-        );
-        assert!(Condition::parse("freq(@payday) * @apples.stock").is_ok());
-    }
-
-    #[test]
-    fn a_condition_reports_what_it_reads() {
-        let condition = Condition::parse("@a + freq(@b) * sum(@c, 30d)").unwrap();
-        let reads: Vec<String> = condition.reads().into_iter().map(|t| t.slug).collect();
-        assert!(reads.contains(&"a".to_string()));
-        assert!(reads.contains(&"b".to_string()));
-        assert!(reads.contains(&"c".to_string()));
-    }
-
-    #[test]
-    fn extension_literals_are_explicit_and_only_the_record_is_bound() {
-        let condition =
-            Condition::parse(r#"extension(@apples.stock, "shop.inventory", "price") * 2"#).unwrap();
-        let reads = condition.reads();
-        assert_eq!(reads.len(), 1);
-        assert_eq!(reads[0].slug, "apples.stock");
-        assert_eq!(
-            crate::expr::extension_parts(&reads[0].func),
-            Some(("shop.inventory".into(), "price".into()))
-        );
-        let bound = condition
-            .map_references(|reading, record| {
-                assert_eq!(reading, "extension");
-                assert_eq!(record, "apples.stock");
-                Ok("original".into())
-            })
-            .unwrap();
-        assert_eq!(bound.reads()[0].slug, "original");
-        assert_eq!(bound.reads()[0].func, reads[0].func);
-        for invalid in [
-            r#"extension(@record)"#,
-            r#"extension(@record, @namespace, @property)"#,
-            r#"extension(@record, "", "price")"#,
-            r#"extension(@record, "work", "nested.price")"#,
-            r#"@record + "price""#,
-        ] {
-            assert!(Condition::parse(invalid).is_err(), "{invalid}");
-        }
-    }
-
-    #[test]
-    fn extension_properties_supply_distinct_exact_values_to_condition_math() {
-        let mut readings = Map::default();
-        readings.set(
-            &crate::expr::extension_reading("inventory", "price"),
-            "stock",
-            "0.1",
-        );
-        readings.set(
-            &crate::expr::extension_reading("inventory", "count"),
-            "stock",
-            "3",
-        );
-        assert_eq!(eval(r#"extension(@stock, "inventory", "price") * extension(@stock, "inventory", "count")"#, &mut readings).to_string(), "0.3");
-    }
 }

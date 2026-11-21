@@ -18,6 +18,11 @@ members = [
     "crates/park-clients",
     "crates/practice",
     "crates/interface",
+    "crates/host",
+    "crates/instrumentation",
+    "crates/wgsl",
+    "crates/karma",
+    "crates/presentation-models",
     "crates/i18n",
     "crates/ithkuil",
     "crates/mobile",
@@ -71,13 +76,18 @@ cell = { version = "=0.8.0", path = "crates/cell", package = "lince-cell" }
 simulation = { version = "=0.8.0", path = "crates/simulation", package = "lince-simulation" }
 lince-sandbox = { version = "=0.8.0", path = "crates/sandbox" }
 lince-interface = { version = "=0.8.0", path = "crates/interface", default-features = false }
+lince-host = { version = "=0.8.0", path = "crates/host" }
+lince-instrumentation = { version = "=0.8.0", path = "crates/instrumentation" }
+lince-wgsl = { version = "=0.8.0", path = "crates/wgsl", default-features = false }
+lince-karma = { version = "=0.8.0", path = "crates/karma" }
+lince-presentation-models = { version = "=0.8.0", path = "crates/presentation-models", default-features = false }
 lince-practice = { version = "=0.8.0", path = "crates/practice" }
 lince-map = { version = "=0.8.0", path = "crates/map" }
 lince-media = { version = "=0.8.0", path = "crates/media" }
 lince-resources = { version = "=0.8.0", path = "crates/resources" }
 lince-facade = { version = "=0.8.0", path = "crates/facade" }
 anicca = { version = "=0.8.0", path = "crates/anicca" }
-nucleus = { version = "=0.8.0", path = "crates/nucleus" }
+nucleus = { version = "=0.8.0", path = "crates/nucleus", default-features = false }
 plugins = { version = "=0.8.0", path = "crates/plugin", package = "lince-plugins" }
 store = { version = "=0.8.0", path = "crates/store" }
 engine = { version = "=0.8.0", path = "crates/engine" }

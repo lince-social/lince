@@ -2,7 +2,7 @@
 // Scope: mod sdk, mod outputs, struct Capture, fn call.
 // BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
 
-use lince_interface::host::control::{
+use lince_host::control::{
     Arguments, CHANGE_RESYNC, Catalog, Context, Disposition, EVENT_LIMIT, Entry, Error,
     IN_FLIGHT_LIMIT, Invocation, Response,
 };
@@ -233,7 +233,7 @@ fn malformed_and_oversized_invocations_do_not_reserve_or_execute_work() {
     assert!(harness.server.control_work().is_empty());
     manager.invoke(
         4,
-        "x".repeat(lince_interface::host::control::ARGUMENT_LIMIT + 1),
+        "x".repeat(lince_host::control::ARGUMENT_LIMIT + 1),
     );
     assert!(
         synchronize(

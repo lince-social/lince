@@ -443,7 +443,7 @@ impl Server {
         if let Some(pointer) = self.state.seat.get_pointer() {
             let serial = SERIAL_COUNTER.next_serial();
             #[cfg(feature = "nested")]
-            let delivered = lince_interface::host::performance::enabled()
+            let delivered = lince_host::performance::enabled()
                 .then(|| pointer.current_focus())
                 .flatten();
             if let Some(surface) = pointer.current_focus() {

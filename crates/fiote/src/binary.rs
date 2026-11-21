@@ -1,35 +1,33 @@
-// non-lean-yet
-// Scope: const BINARY_ENV, struct FioteBinary, enum Origin, fn locate.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
-//   Sites 15.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 29.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 9,
-//   10, 11, 15, 16, 17, 21, 29.
-// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites locate: String
-//   (29).
+//! Locates the external Fiote executable.
 
 use std::{
-    env,
+    env::{split_paths, var_os},
     path::{Path, PathBuf},
 };
 
+/// Environment variable that overrides the executable path.
 pub const BINARY_ENV: &str = "LINCE_FIOTE_BIN";
 
+/// A discovered executable and how its path was selected.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FioteBinary {
+    /// Candidate file path, as specified by the environment or found in `PATH`.
     pub path: PathBuf,
+    /// The source of the path.
     pub origin: Origin,
 }
 
+/// Where the executable path was found.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Origin {
+    /// The explicit environment override.
     Environment,
+    /// The first matching entry in `PATH`.
     Path,
 }
 
 impl Origin {
+    /// Returns the stable source label.
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Environment => "environment",
@@ -38,37 +36,34 @@ impl Origin {
     }
 }
 
+/// Resolves the explicit override first, otherwise searches `PATH` in order.
+/// The workspace root is accepted for API compatibility.
+///
+/// # Errors
+/// Returns a diagnostic for an invalid override or a failed `PATH` search.
 pub fn locate(_workspace_root: &Path) -> Result<FioteBinary, String> {
-    if let Some(raw) = env::var_os(BINARY_ENV) {
+    if let Some(raw) = var_os(BINARY_ENV) {
         let path = PathBuf::from(raw);
-        return if path.is_file() {
-            Ok(FioteBinary {
-                path,
-                origin: Origin::Environment,
-            })
-        } else {
-            Err(format!(
+        if !path.is_file() {
+            return Err(format!(
                 "{BINARY_ENV} points at `{}`, which is not a file",
                 path.display()
-            ))
-        };
-    }
-
-    if let Some(found) = search_path("fiote") {
+            ));
+        }
         return Ok(FioteBinary {
-            path: found,
-            origin: Origin::Path,
+            path,
+            origin: Origin::Environment,
         });
     }
-
-    Err(format!(
-        "no Fiote agent binary: set {BINARY_ENV} or put `fiote` on PATH"
-    ))
-}
-
-fn search_path(program: &str) -> Option<PathBuf> {
-    let raw = env::var_os("PATH")?;
-    env::split_paths(&raw)
-        .map(|directory| directory.join(program))
-        .find(|candidate| candidate.is_file())
+    let path = var_os("PATH")
+        .and_then(|raw| {
+            split_paths(&raw)
+                .map(|directory| directory.join("fiote"))
+                .find(|candidate| candidate.is_file())
+        })
+        .ok_or_else(|| format!("no Fiote agent binary: set {BINARY_ENV} or put `fiote` on PATH"))?;
+    Ok(FioteBinary {
+        path,
+        origin: Origin::Path,
+    })
 }

@@ -8,6 +8,7 @@ homepage.workspace = true
 description = "Lince query wire types and Record authorization over in-memory snapshots"
 
 [dependencies]
+chrono.workspace = true
 nucleus = { workspace = true }
 schemars = { workspace = true }
 serde = { workspace = true }

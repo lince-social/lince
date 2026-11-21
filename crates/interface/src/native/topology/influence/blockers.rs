@@ -1,16 +1,15 @@
-// non-lean-yet
-// Scope: type BlockerQuery, struct Source, struct Blocker, struct Blockers.
-// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
-
 use super::{contains, spatial};
 use crate::native::{
     area::{InfluenceArea, RecordProperties},
     area_effects::Immunity,
+    canvas_host, component_push,
+    influence_report::{Outcome, activity},
     protein_area::{RecordBinding, filter::Matches},
-    topology::Spatial,
+    topology::{Spatial, position},
     workspace::WorkspaceMember,
 };
 use bevy::{math::DVec3, prelude::*};
+use nucleus::performance::{Span, add};
 
 pub(crate) type BlockerQuery = QueryState<
     (
@@ -21,8 +20,8 @@ pub(crate) type BlockerQuery = QueryState<
         Option<&'static Matches>,
     ),
     (
-        Without<crate::native::component_push::composition::Generated>,
-        Without<crate::native::canvas_host::composition::Generated>,
+        Without<component_push::composition::Generated>,
+        Without<canvas_host::composition::Generated>,
     ),
 >;
 
@@ -32,6 +31,24 @@ struct Source {
     workspace: u64,
     center: DVec3,
     forces: bool,
+}
+
+impl Source {
+    fn new(
+        world: &World,
+        root: Entity,
+        workspace: u64,
+        entity: Entity,
+        forces: bool,
+    ) -> Option<Self> {
+        Some(Self {
+            entity,
+            root,
+            workspace,
+            center: position(world, entity)?,
+            forces,
+        })
+    }
 }
 
 struct Blocker<'w> {
@@ -58,13 +75,7 @@ impl<'w> Blocker<'w> {
             || member.0 != source.workspace
             || area.immunity == Immunity::None
             || (!source.forces && area.immunity == Immunity::Containment)
-            || crate::native::influence_report::activity(
-                world,
-                entity,
-                area,
-                source.root,
-                source.workspace,
-            ) != crate::native::influence_report::Outcome::Active
+            || activity(world, entity, area, source.root, source.workspace) != Outcome::Active
         {
             return None;
         }
@@ -73,7 +84,9 @@ impl<'w> Blocker<'w> {
             area,
             filter,
             placement,
-            source_inside: contains(area, placement, source.center),
+            // All immunity depends only on the target position.
+            source_inside: area.immunity != Immunity::All
+                && contains(area, placement, source.center),
         })
     }
 
@@ -105,22 +118,15 @@ impl<'w> Blockers<'w> {
         entity: Entity,
         forces: bool,
     ) -> Self {
-        let _preparation = nucleus::performance::Span::new("area-blocker-preparation");
-        let Some(center) = crate::native::topology::position(world, entity) else {
+        let _preparation = Span::new("area-blocker-preparation");
+        let Some(source) = Source::new(world, root, workspace, entity, forces) else {
             return Self(Vec::new());
-        };
-        let source = Source {
-            entity,
-            root,
-            workspace,
-            center,
-            forces,
         };
         let barriers: Vec<_> = query
             .iter(world)
             .filter_map(|entry| Blocker::prepare(world, &source, entry))
             .collect();
-        nucleus::performance::add("area-source-blockers-prepared", barriers.len() as u64);
+        add("area-source-blockers-prepared", barriers.len() as u64);
         Self(barriers)
     }
 
@@ -136,6 +142,10 @@ impl<'w> Blockers<'w> {
     }
 }
 
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The single-point check shares the prepared check's source and target inputs"
+)]
 pub(crate) fn blocked(
     world: &mut World,
     root: Entity,
@@ -146,15 +156,8 @@ pub(crate) fn blocked(
     binding: Option<&RecordBinding>,
     forces: bool,
 ) -> bool {
-    let Some(center) = crate::native::topology::position(world, entity) else {
+    let Some(source) = Source::new(world, root, workspace, entity, forces) else {
         return false;
-    };
-    let source = Source {
-        entity,
-        root,
-        workspace,
-        center,
-        forces,
     };
     BlockerQuery::new(world)
         .iter(world)

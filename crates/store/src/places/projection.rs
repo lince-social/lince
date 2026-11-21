@@ -1,26 +1,31 @@
-// non-lean-yet
-// Scope: fn saved_locations_for_person, fn saved_locations_for_person_among, fn project.
-// BeautifulRust (baseline lines):
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 42, 43.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 6, 14.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 14.
-
 use std::collections::{HashMap, HashSet};
 
-use nucleus::{visibility::Data, vocabulary::SavedLocation};
+use nucleus::{
+    place::{Place, approximate},
+    visibility::Data,
+    vocabulary::SavedLocation,
+};
 use sqlx::SqlitePool;
 
-use crate::StoreError;
+use super::{saved::saved_locations_scoped, saved_locations};
+use crate::{StoreError, data_visibility::decisions_for_person};
 
+/// Reads saved locations, applying the person's visibility and location precision when supplied.
+///
+/// # Errors
+/// Returns an error if locations, choices, or audience policies cannot be read.
 pub async fn saved_locations_for_person(
     pool: &SqlitePool,
     visible: Option<&HashSet<String>>,
     person: Option<&str>,
 ) -> Result<HashMap<String, SavedLocation>, StoreError> {
-    project(pool, super::saved_locations(pool, visible).await?, person).await
+    project(pool, saved_locations(pool, visible).await?, person).await
 }
 
+/// Reads a person's saved locations for the supplied root records.
+///
+/// # Errors
+/// Returns an error for an oversized root selection or a failed location or policy read.
 pub async fn saved_locations_for_person_among(
     pool: &SqlitePool,
     visible: Option<&HashSet<String>>,
@@ -29,7 +34,7 @@ pub async fn saved_locations_for_person_among(
 ) -> Result<HashMap<String, SavedLocation>, StoreError> {
     project(
         pool,
-        super::saved_locations_scoped(pool, visible, Some(roots)).await?,
+        saved_locations_scoped(pool, visible, Some(roots)).await?,
         person,
     )
     .await
@@ -43,14 +48,13 @@ async fn project(
     let Some(person) = person else {
         return Ok(locations);
     };
-    let decisions = crate::data_visibility::decisions_for_person(pool, person, Data::Place).await?;
-    let record_decisions =
-        crate::data_visibility::decisions_for_person(pool, person, Data::Record).await?;
+    let decisions = decisions_for_person(pool, person, Data::Place).await?;
+    let record_decisions = decisions_for_person(pool, person, Data::Record).await?;
     for (record, location) in &mut locations {
         let selected = location.selected.as_ref().map(|candidate| {
             (
-                candidate.record_uid.clone(),
-                candidate.assertion_uid.clone(),
+                candidate.record_uid.as_str(),
+                candidate.assertion_uid.as_deref(),
             )
         });
         let source = decisions.get(record);
@@ -73,8 +77,8 @@ async fn project(
                 .max(target.and_then(|decision| decision.radius_metres))
                 .max(candidate.radius_metres);
             if let Some(radius) = radius {
-                let Some(point) = nucleus::place::approximate(
-                    nucleus::place::Place {
+                let Some(point) = approximate(
+                    Place {
                         lat: candidate.latitude,
                         lon: candidate.longitude,
                     },
@@ -93,12 +97,13 @@ async fn project(
         location.selected = if !location.explicit && location.candidates.len() == 1 {
             location.candidates.first().cloned()
         } else {
-            selected.and_then(|selected| {
+            selected.and_then(|(record, assertion)| {
                 location
                     .candidates
                     .iter()
                     .find(|candidate| {
-                        candidate.record_uid == selected.0 && candidate.assertion_uid == selected.1
+                        candidate.record_uid == record
+                            && candidate.assertion_uid.as_deref() == assertion
                     })
                     .cloned()
             })

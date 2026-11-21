@@ -137,9 +137,6 @@ pub(super) fn update(
         .unwrap_or_default();
     let settings = world.get::<TimeSettings>(owner).unwrap().0.clone();
     let unwind = world.get::<View>(owner).unwrap().unwind;
-    let spatial_mode = world
-        .get::<crate::native::topology::view::View>(root)
-        .is_some_and(|view| view.spatial);
     let hovered = world.get::<View>(owner).unwrap().hovered.clone();
     let displacement = world
         .get::<Layout>(owner)
@@ -372,9 +369,7 @@ pub(super) fn update(
         let opacity = band.as_ref().map_or(1.0, |band| band.1);
         if let Some((anchor, _, _)) = band {
             label.anchor = anchor;
-            if !spatial_mode {
-                label.anchor[1] = 0.0;
-            }
+            label.anchor[1] = 0.0;
         }
         if !settings.floating_cards {
             if let Some(point) = world.get::<View>(owner).unwrap().hover_point {

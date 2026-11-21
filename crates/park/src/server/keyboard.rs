@@ -7,7 +7,7 @@
 // - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
 //   Sites unwrap (187).
 
-use lince_interface::host::input::{
+use lince_host::input::{
     InputOutcome, InputResponse, KeyLabel, KeyModifiers, KeyboardRequest, KeyboardSettings,
     KeyboardSnapshot,
 };

@@ -15,14 +15,19 @@
 
 #![cfg(test)]
 
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-use std::sync::Arc;
+use std::{
+    collections::HashSet,
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+    sync::Arc,
+};
 
 use engine::Engine;
 use engine::actions::Action;
 use engine::trust::Signer;
 use engine::wire::{ALPN_LIVE, Reach, Wire};
 use iroh::{EndpointAddr, SecretKey};
+use protein::Protein;
+use serde_json::Value;
 use transport::live::LiveHost;
 use transport::protocol::{ClientMessage, ServerMessage};
 
@@ -317,29 +322,36 @@ async fn a_contact_with_a_login_drives_a_live_session_over_iroh() {
     );
 
     tokio::time::timeout(std::time::Duration::from_secs(30), async {
+        // General refreshes only send subscriptions whose rows changed.
+        let concepts: Protein = serde_json::from_value(
+            serde_json::json!({"source": "concept", "fields": ["uid"]}),
+        )
+        .expect("concept query");
+        let mut pending = HashSet::new();
         for index in 0..40 {
+            let id = format!("many-{index}");
             say(
                 &mut send,
                 &ClientMessage::Subscribe {
-                    id: format!("many-{index}"),
-                    protein: serde_json::from_value(
-                        serde_json::json!({"source": "record", "fields": ["uid"]}),
-                    )
-                    .unwrap(),
+                    id: id.clone(),
+                    protein: concepts.clone(),
                 },
             )
             .await;
             assert!(matches!(
                 hear(&mut recv).await,
-                ServerMessage::Snapshot { .. }
+                ServerMessage::Snapshot { id: reply, .. } if reply == id
             ));
+            pending.insert(id);
         }
         let partial = serde_json::to_vec(&ClientMessage::Subscribe {
             id: "after-fragment".into(),
-            protein: serde_json::from_value(serde_json::json!({"source": "record", "fields": ["uid"]})).unwrap(),
-        }).unwrap();
-        let header = (partial.len() as u32).to_be_bytes();
-        send.write_all(&header[..2]).await.unwrap();
+            protein: concepts,
+        })
+        .expect("encode fragmented subscription");
+        let header = u32::try_from(partial.len()).expect("frame size").to_be_bytes();
+        let (prefix, suffix) = header.split_at(2);
+        send.write_all(prefix).await.expect("write partial header");
         tokio::time::sleep(std::time::Duration::from_millis(50)).await;
         let result = host
             .act(
@@ -351,18 +363,18 @@ async fn a_contact_with_a_login_drives_a_live_session_over_iroh() {
                 None,
             )
             .await
-            .unwrap();
+            .expect("create the concept that changes the subscribed rows");
         assert!(result.facts.is_empty());
-        let mut refreshed = std::collections::HashSet::new();
-        for _ in 0..41 {
-            let ServerMessage::Snapshot { id, .. } = hear(&mut recv).await else {
+        let created = result.created.expect("created concept uid");
+        while !pending.is_empty() {
+            let ServerMessage::Snapshot { id, rows } = hear(&mut recv).await else {
                 panic!("expected recovered view")
             };
-            refreshed.insert(id);
+            assert!(pending.remove(&id), "unexpected or duplicate refresh: {id}");
+            assert!(rows.iter().any(|row| row.get("uid").and_then(Value::as_str) == Some(&created)));
         }
-        assert_eq!(refreshed.len(), 41);
-        send.write_all(&header[2..]).await.unwrap();
-        send.write_all(&partial).await.unwrap();
+        send.write_all(suffix).await.expect("finish the header");
+        send.write_all(&partial).await.expect("write the frame body");
         assert!(matches!(hear(&mut recv).await, ServerMessage::Snapshot { id, .. } if id == "after-fragment"));
     })
     .await
@@ -812,17 +824,53 @@ async fn a_stranger_with_a_password_gets_in_and_a_wrong_one_never_does() {
 async fn native_live_client_authenticates_signs_actions_and_obeys_revocation() {
     let (host, _) = cell("http://native-host.test").await;
     let (guest, guest_organ) = cell("http://native-guest.test").await;
-    let host_wire = Arc::new(Wire::bind(host.clone(), SecretKey::from_bytes(&[81;32]), Reach::Local).await.unwrap());
-    let guest_wire = Wire::bind(guest.clone(), SecretKey::from_bytes(&[82;32]), Reach::Local).await.unwrap();
+    let host_wire = Arc::new(
+        Wire::bind(host.clone(), SecretKey::from_bytes(&[81; 32]), Reach::Local)
+            .await
+            .unwrap(),
+    );
+    let guest_wire = Wire::bind(
+        guest.clone(),
+        SecretKey::from_bytes(&[82; 32]),
+        Reach::Local,
+    )
+    .await
+    .unwrap();
     know(&host, &guest_organ, &guest_wire.node_id().to_string()).await;
-    let person = host.act(Action::GrantOrganLogin { organ: guest_organ.clone(), person_name: "Native visitor".into() }, None).await.unwrap().created.unwrap();
+    let person = host
+        .act(
+            Action::GrantOrganLogin {
+                organ: guest_organ.clone(),
+                person_name: "Native visitor".into(),
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
     guest_role(&host, &person).await;
-    host_wire.set_live_handler(LiveHost::new(host.clone(), Arc::new(transport::LaneHub::new())));
-    let serving = { let wire = host_wire.clone(); tokio::spawn(async move { wire.serve().await }) };
-    let connection = guest_wire.endpoint().connect(loopback(&host_wire), ALPN_LIVE).await.unwrap();
+    host_wire.set_live_handler(LiveHost::new(
+        host.clone(),
+        Arc::new(transport::LaneHub::new()),
+    ));
+    let serving = {
+        let wire = host_wire.clone();
+        tokio::spawn(async move { wire.serve().await })
+    };
+    let connection = guest_wire
+        .endpoint()
+        .connect(loopback(&host_wire), ALPN_LIVE)
+        .await
+        .unwrap();
     let (requests, outgoing) = tokio::sync::mpsc::channel(16);
     let (responses, mut incoming) = tokio::sync::mpsc::channel(16);
-    let client = tokio::spawn(transport::live_client::drive(connection, outgoing, responses, || {}));
+    let client = tokio::spawn(transport::live_client::drive(
+        connection,
+        outgoing,
+        responses,
+        || {},
+    ));
     tokio::time::timeout(std::time::Duration::from_secs(30), async {
         assert!(matches!(incoming.recv().await.unwrap(), ServerMessage::SessionAuthenticated { person: actor, .. } if actor == person));
         requests.send(ClientMessage::Subscribe { id: "native-view".into(), protein: serde_json::from_value(serde_json::json!({"source":"record","fields":["head","quantity"],"where":[{"kind_eq":"plain"}]})).unwrap() }).await.unwrap();

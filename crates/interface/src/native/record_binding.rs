@@ -21,13 +21,18 @@ use bevy::{
 use cell::{ClientMessage, ServerMessage};
 #[cfg(test)]
 use loro::ExportMode;
-use loro::{Frontiers, LoroDoc, UndoManager, VersionVector, cursor::Cursor};
-use std::collections::{HashMap, VecDeque};
-use std::sync::Arc;
-use std::time::{Duration, Instant};
+use loro::{Frontiers, LoroDoc, LoroResult, UndoManager, VersionVector, cursor::Cursor};
+use std::{
+    collections::{HashMap, VecDeque},
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
-use crate::host::performance::{self, Count, Stage};
-use crate::native::protein_area::{RecordBinding, Source};
+use crate::{
+    host::performance::{self, Count, Stage},
+    native::protein_area::{RecordBinding, Source},
+    record_splice::TextSplice,
+};
 
 mod journal;
 mod splice_checks;
@@ -36,7 +41,7 @@ mod identity;
 mod incoming;
 mod dispatch;
 mod preparation;
-use identity::{Documents, key_parts, key_ref};
+use identity::{Documents, PendingIds, key_parts, key_ref};
 
 pub(crate) fn laboratory_cases(cases: &mut Vec<crate::native::laboratory::Case>) {
     splice_checks::laboratory_cases(cases);
@@ -2194,35 +2199,18 @@ pub(crate) fn submit(
     Ok(())
 }
 
-fn splice(doc: &LoroDoc, property: &str, before: &str, after: &str) -> Result<(), String> {
-    let mut prefix = 0;
-    let mut prefix_bytes = 0;
-    for (old, new) in before.chars().zip(after.chars()) {
-        if old != new {
-            break;
-        }
-        prefix += 1;
-        prefix_bytes += old.len_utf8();
-    }
-    let old = &before[prefix_bytes..];
-    let new = &after[prefix_bytes..];
-    let suffix_bytes: usize = old
-        .chars()
-        .rev()
-        .zip(new.chars().rev())
-        .take_while(|(a, b)| a == b)
-        .map(|(character, _)| character.len_utf8())
-        .sum();
+fn splice(doc: &LoroDoc, property: &str, before: &str, after: &str) -> LoroResult<()> {
+    let TextSplice {
+        start,
+        removed,
+        inserted,
+    } = TextSplice::between(before, after);
     let text = doc.get_text(property);
-    let removed = old[..old.len() - suffix_bytes].chars().count();
     if removed != 0 {
-        text.delete(prefix, removed)
-            .map_err(|error| error.to_string())?;
+        text.delete(start, removed)?;
     }
-    let inserted = &new[..new.len() - suffix_bytes];
     if !inserted.is_empty() {
-        text.insert(prefix, inserted)
-            .map_err(|error| error.to_string())?;
+        text.insert(start, inserted)?;
     }
     doc.commit();
     Ok(())
@@ -2472,8 +2460,7 @@ fn update_bindings(
                                     .metadata
                                     .as_ref()
                                     .map_or(&[][..], |previous| previous.pending.as_slice());
-                                let mut known =
-                                    dispatch::Ids::new(previous.iter().map(String::as_str));
+                                let mut known = PendingIds::new(previous.iter().map(String::as_str));
                                 for id in &metadata.pending {
                                     if !known.contains(id) {
                                         nucleus::performance::Operation::new(id)
@@ -2575,6 +2562,7 @@ fn update_bindings(
                     let before = document.doc.oplog_vv();
                     if let Err(error) =
                         splice(&document.doc, &binding.property, &binding.observed, value)
+                            .map_err(|error| error.to_string())
                             .and_then(|()| document.queue(&key.1, &before))
                     {
                         fail(document, error);
@@ -2707,7 +2695,7 @@ fn update_bindings(
                             .expected
                             .as_ref()
                             .map_or(&[][..], |previous| previous.pending.as_slice());
-                        let mut known = dispatch::Ids::new(previous.iter().map(String::as_str));
+                        let mut known = PendingIds::new(previous.iter().map(String::as_str));
                         draft
                             .pending
                             .iter()

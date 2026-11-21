@@ -1,40 +1,45 @@
-// non-lean-yet
-// Scope: struct RecordRevision, fn protocol, fn validate_record_uid, fn get_on.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
-//   Sites 102.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 22, 57, 76.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 7,
-//   8, 22, 57, 76.
+//! Record revision reads and live snapshot comparisons.
 
-use sqlx::{Row, Sqlite, SqliteConnection, SqlitePool};
+use nucleus::{
+    performance::{Span, add},
+    valid_uid,
+};
+use sqlx::{QueryBuilder, Row, Sqlite, SqliteConnection, SqlitePool, query_as};
 
 use crate::StoreError;
 
+const BATCH_SIZE: usize = 512;
+
+/// The revision observed for a record.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RecordRevision {
+    /// Canonical record identity.
     pub record_uid: String,
+    /// Positive stored revision.
     pub revision: i64,
 }
 
 fn protocol(message: impl Into<String>) -> StoreError {
-    sqlx::Error::Protocol(message.into())
+    StoreError::Protocol(message.into())
 }
 
 fn validate_record_uid(record_uid: &str) -> Result<(), StoreError> {
-    if !nucleus::valid_uid(record_uid, "r") {
+    if !valid_uid(record_uid, "r") {
         return Err(protocol("Record revision requires a canonical Record uid"));
     }
     Ok(())
 }
 
+/// Reads and validates a record's revision on the caller's connection.
+///
+/// # Errors
+/// Returns an error for an invalid identity, missing record or revision, or invalid stored revision.
 pub async fn get_on(
     connection: &mut SqliteConnection,
     record_uid: &str,
 ) -> Result<RecordRevision, StoreError> {
     validate_record_uid(record_uid)?;
-    let row = sqlx::query_as::<_, (i64, String, Option<i64>)>(
+    let (present, kind, revision): (bool, String, Option<i64>) = query_as(
         "SELECT rr.record_uid IS NOT NULL,
                 typeof(rr.revision),
                 CASE WHEN typeof(rr.revision) = 'integer' THEN rr.revision END
@@ -43,18 +48,16 @@ pub async fn get_on(
           WHERE r.uid = ?",
     )
     .bind(record_uid)
-    .fetch_optional(&mut *connection)
+    .fetch_optional(connection)
     .await?
     .ok_or_else(|| protocol("Record revision requires an existing Record"))?;
-    if row.0 == 0 {
+    if !present {
         return Err(protocol("Record is missing its revision"));
     }
-    if row.1 != "integer" {
+    if kind != "integer" {
         return Err(protocol("Record revision has an invalid storage type"));
     }
-    let revision = row
-        .2
-        .ok_or_else(|| protocol("Record revision is unreadable"))?;
+    let revision = revision.ok_or_else(|| protocol("Record revision is unreadable"))?;
     if revision <= 0 {
         return Err(protocol("Record revision must be positive"));
     }
@@ -64,6 +67,10 @@ pub async fn get_on(
     })
 }
 
+/// Reads a revision and rejects it if it differs from the expected value.
+///
+/// # Errors
+/// Returns an error for a nonpositive expected revision, mismatched revision, or failed read.
 pub async fn check_expected_on(
     connection: &mut SqliteConnection,
     record_uid: &str,
@@ -83,22 +90,20 @@ pub async fn check_expected_on(
     Ok(revision)
 }
 
+/// Checks that all observed revisions still match live records, in bounded batches.
+///
+/// # Errors
+/// Returns an error if a batch cannot be fetched or decoded.
 pub async fn live_match(pool: &SqlitePool, expected: &[(String, i64)]) -> Result<bool, StoreError> {
-    let _read = nucleus::performance::Span::new("record-revision-observation-await");
-    for expected in expected.chunks(512) {
-        let mut query =
-            sqlx::QueryBuilder::<Sqlite>::new("WITH requested(position, uid) AS (VALUES ");
-        for (position, (uid, _)) in expected.iter().enumerate() {
-            if position != 0 {
-                query.push(", ");
-            }
-            query
-                .push("(")
-                .push(position)
-                .push(", ")
-                .push_bind(uid)
-                .push(")");
-        }
+    let _read = Span::new("record-revision-observation-await");
+    for expected in expected.chunks(BATCH_SIZE) {
+        let mut query = QueryBuilder::<Sqlite>::new("WITH requested(position, uid) AS (");
+        query.push_values(
+            expected.iter().enumerate(),
+            |mut tuple, (position, (uid, _))| {
+                tuple.push(position).push_bind(uid);
+            },
+        );
         query.push(
             ") SELECT rr.revision, rr.record_uid IS NOT NULL AS present,
                       r.deleted_at IS NOT NULL AS deleted
@@ -108,8 +113,11 @@ pub async fn live_match(pool: &SqlitePool, expected: &[(String, i64)]) -> Result
               ORDER BY requested.position",
         );
         let rows = query.build().fetch_all(pool).await?;
-        nucleus::performance::add("record-revision-observation-batches", 1);
-        nucleus::performance::add("record-revision-observation-rows", rows.len() as u64);
+        add("record-revision-observation-batches", 1);
+        add(
+            "record-revision-observation-rows",
+            u64::try_from(rows.len()).unwrap_or(u64::MAX),
+        );
         if rows.len() != expected.len() {
             return Err(protocol(
                 "Live revision observation returned an invalid row count",
@@ -126,4 +134,49 @@ pub async fn live_match(pool: &SqlitePool, expected: &[(String, i64)]) -> Result
         }
     }
     Ok(true)
+}
+
+#[cfg(test)]
+mod tests {
+    use nucleus::RecordKind;
+
+    use super::{BATCH_SIZE, get_on, live_match};
+    use crate::{
+        Store,
+        exact::zero,
+        records::{NewRecord, create, mark_deleted},
+    };
+
+    #[tokio::test]
+    async fn live_revisions_compare_duplicate_rows_across_batches_and_reject_deleted_records() {
+        let store = Store::open_memory().await.unwrap();
+        let pool = &store.pool;
+        let record = create(
+            pool,
+            NewRecord {
+                slug: None,
+                kind: RecordKind::Plain,
+                head: "Observed",
+                body: "",
+                quantity: zero(),
+            },
+        )
+        .await
+        .unwrap();
+        let mut connection = pool.acquire().await.unwrap();
+        let revision = get_on(&mut connection, &record.uid).await.unwrap().revision;
+        drop(connection);
+
+        let mut expected = vec![(record.uid.clone(), revision); BATCH_SIZE + 1];
+        assert!(live_match(pool, &[]).await.unwrap());
+        assert!(live_match(pool, &expected).await.unwrap());
+        expected.last_mut().unwrap().1 += 1;
+        assert!(!live_match(pool, &expected).await.unwrap());
+
+        assert!(mark_deleted(pool, &record.uid).await.unwrap());
+        let mut connection = pool.acquire().await.unwrap();
+        let revision = get_on(&mut connection, &record.uid).await.unwrap().revision;
+        drop(connection);
+        assert!(!live_match(pool, &[(record.uid, revision)]).await.unwrap());
+    }
 }

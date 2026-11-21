@@ -253,6 +253,79 @@ mod tests {
 }
 
 impl Host {
+    pub(super) async fn saved_tool_history(
+        &self,
+        thread: &str,
+        message: &str,
+    ) -> Result<String, String> {
+        use std::fmt::Write as _;
+        if !nucleus::valid_uid(message, "r") {
+            return Err("Choose an existing reply.".into());
+        }
+        let pool = &self.engine.store.pool;
+        let row = self.record(message).await?;
+        let attached = if let Some(predicate) = store::vocabulary::feature_read(pool, "message")
+            .await
+            .map_err(|error| error.to_string())?
+        {
+            store::assertions::object_uids_from_subject(pool, message, &predicate)
+                .await
+                .map_err(|error| error.to_string())?
+                .iter()
+                .any(|uid| uid == thread)
+        } else {
+            false
+        };
+        if row.kind != "message" || !attached {
+            return Err("This reply does not belong to the selected thread.".into());
+        }
+        let path = path(&self.directory, message);
+        let Some(journal) = load(&path)? else {
+            return Ok("No saved native tool calls for this reply.".into());
+        };
+        let frames = frames(&path, &journal)?;
+        let results: std::collections::HashMap<_, _> = frames
+            .iter()
+            .filter_map(|frame| match frame {
+                Message::Tool { id, result, .. } => Some((id.as_str(), result)),
+                _ => None,
+            })
+            .collect();
+        let mut text = String::new();
+        for call in frames
+            .iter()
+            .filter_map(|frame| match frame {
+                Message::Assistant { calls, .. } => Some(calls),
+                _ => None,
+            })
+            .flatten()
+        {
+            let result = results.get(call.id.as_str());
+            let state = match result {
+                Some(result) if result["ok"] == true && result["result"]["success"] != false => {
+                    "completed"
+                }
+                Some(_) => "failed",
+                None => "no recorded outcome",
+            };
+            let detail = call.arguments["path"]
+                .as_str()
+                .or_else(|| call.arguments["command"].as_str());
+            let _ = writeln!(text, "{} · {state}", call.name);
+            if let Some(detail) = detail {
+                let _ = writeln!(text, "{}", detail.chars().take(512).collect::<String>());
+            }
+            if text.len() > 16 * 1024 {
+                text.push_str("\n[Tool history truncated]");
+                break;
+            }
+        }
+        if text.is_empty() {
+            text.push_str("No saved native tool calls for this reply.");
+        }
+        Ok(text)
+    }
+
     pub(super) async fn restore_frames(
         &self,
         message: &str,

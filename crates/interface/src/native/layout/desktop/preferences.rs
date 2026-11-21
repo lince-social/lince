@@ -1,13 +1,11 @@
-// non-lean-yet
-// Scope: static DEFAULTS, struct OpeningSettings, struct Synchronization, fn synchronize.
-// BeautifulRust (baseline lines):
-// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
-//   making lifetimes explicit. Sites 42.
-
 use super::*;
 use crate::{
+    host::WindowRequest,
     layout::desktop::Workspace,
-    native::shortcuts::configuration::{ApplicationOpening, LayoutSettings},
+    native::{
+        output_views::canvas,
+        shortcuts::configuration::{ApplicationOpening, LayoutSettings},
+    },
 };
 use std::sync::LazyLock;
 
@@ -45,7 +43,7 @@ pub(super) fn synchronize(world: &mut World) -> OpeningSettings {
         application_opening: settings.application_opening,
     };
     world.init_resource::<Synchronization>();
-    world.resource_scope(|world, mut synchronization: Mut<Synchronization>| {
+    world.resource_scope::<Synchronization, _>(|world, mut synchronization| {
         let Synchronization { roots, changed } = &mut *synchronization;
         changed.clear();
         changed.extend(roots.iter(world).flat_map(|(root, spaces)| {
@@ -60,10 +58,10 @@ pub(super) fn synchronize(world: &mut World) -> OpeningSettings {
                     .entries
                     .iter_mut()
                     .find(|workspace| workspace.id == id)
-            }) {
-                if workspace.desktop.gap() != gap && workspace.desktop.set_gap(gap).is_ok() {
-                    engine::performance::add("desktop-layout-gaps-written", 1);
-                }
+            }) && workspace.desktop.gap() != gap
+                && workspace.desktop.set_gap(gap).is_ok()
+            {
+                engine::performance::add("desktop-layout-gaps-written", 1);
             }
         }
         if !changed.is_empty() {
@@ -98,23 +96,27 @@ pub(super) fn opening(
     let retained = world
         .get::<super::opening::Decision>(entity)
         .is_some_and(|decision| decision.retained);
-    if !retained && model.mode() == WorkspaceLayout::Free {
-        let scale = world
-            .resource::<Runtime>()
-            .fullscreen_views
-            .get(&(root, workspace))
-            .map(|saved| saved.canvas.zoom)
-            .unwrap_or_else(|| crate::native::output_views::canvas(world, root, workspace).zoom);
-        let _ = model.set_free_width(id, settings.default_width, scale);
-    }
-    if !retained && settings.application_opening == ApplicationOpening::Maximized {
-        model.request_state(
-            id,
-            crate::host::WindowRequest {
-                maximized: Some(true),
-                ..default()
-            },
-        );
+    if !retained {
+        if model.mode() == WorkspaceLayout::Free {
+            let scale = world
+                .resource::<Runtime>()
+                .fullscreen_views
+                .get(&(root, workspace))
+                .map_or_else(
+                    || canvas(world, root, workspace).zoom,
+                    |saved| saved.canvas.zoom,
+                );
+            let _ = model.set_free_width(id, settings.default_width, scale);
+        }
+        if settings.application_opening == ApplicationOpening::Maximized {
+            model.request_state(
+                id,
+                WindowRequest {
+                    maximized: Some(true),
+                    ..default()
+                },
+            );
+        }
     }
     super::opening::apply_initial(world, root, workspace, entity, id, model);
 }

@@ -1,44 +1,40 @@
-// non-lean-yet
-// Scope: mod allocation, const MAX_TIME_BYTES, const MAX_INSTANT_MS, const MAX_DURATION_MS.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
-//   Sites 139.
-// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
-//   139.
-// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
-//   Sites 13.
-// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
-//   25, 32, 194, 198, 224.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 19, 100, 128, 171, 180, 184, 193, 216.
-// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
-//   adding `#[derive(Debug)]` or a manual implementation. Sites 94.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 1, 8,
-//   9, 10, 13, 14, 15, 19, 39, 46, 53, 63, 64, 65, 69, 79, 86, 94, 100, 120, 124, 128, 171, 180,
-//   184, 193, 212, 216.
-// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites civil_instants:
-//   String (193), new: String (100), on_date: String (216), parse: String (19, 171), range: String
-//   (128, 184), validate_endpoints: String (180).
+//! Scheduling dates, civil-time conversion, and windows.
+//!
+//! [TimeValue] distinguishes date-only input from an offset-bearing instant.
+//! [Endpoints] checks their ordering before calculating a [TimeRange], whose
+//! missing end represents a point for overlap and clipping.
 
 pub mod allocation;
+mod endpoints;
 
-use std::borrow::Cow;
+pub use endpoints::{Endpoints, range, validate_endpoints};
 
 use chrono::{DateTime, Datelike, FixedOffset, LocalResult, NaiveDate, NaiveDateTime, TimeZone};
 pub use chrono_tz::Tz;
 use serde::{Deserialize, Serialize};
 
+/// Largest accepted date or timestamp input in bytes.
 pub const MAX_TIME_BYTES: usize = 64;
+/// Latest millisecond instant that fits in the hybrid clock.
 pub const MAX_INSTANT_MS: i64 = i64::MAX >> crate::hlc::COUNTER_BITS;
+/// Maximum duration of a supported schedule query window.
 pub const MAX_DURATION_MS: i64 = 366 * 86_400_000;
 
+/// A calendar date without a time, or an instant with its stored offset.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum TimeValue {
+    /// A date whose value does not depend on an offset.
     Date(NaiveDate),
+    /// An instant together with the offset in its input.
     Instant(DateTime<FixedOffset>),
 }
 
 impl TimeValue {
+    /// Reads a canonical date or an RFC 3339 timestamp.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error for invalid input or an instant outside the supported range.
     pub fn parse(value: &str) -> Result<Self, String> {
         if value.len() > MAX_TIME_BYTES {
             return Err("Scheduling time exceeds 64 bytes".into());
@@ -59,6 +55,7 @@ impl TimeValue {
         Ok(Self::Instant(time))
     }
 
+    /// Returns Unix milliseconds for an instant. Calendar dates have no instant.
     pub fn instant_ms(&self) -> Option<i64> {
         match self {
             Self::Date(_) => None,
@@ -66,6 +63,11 @@ impl TimeValue {
         }
     }
 
+    /// Interprets instants in the display timezone and keeps date-only values as-is.
+    ///
+    /// # Panics
+    ///
+    /// Panics if a manually constructed instant maps outside Chrono's local date range.
     pub fn date(&self, timezone: Tz) -> NaiveDate {
         match self {
             Self::Date(date) => *date,
@@ -73,10 +75,24 @@ impl TimeValue {
         }
     }
 
+    /// Uses the instant's stored offset to find its date.
+    ///
+    /// # Panics
+    ///
+    /// Panics if a manually constructed instant has an unrepresentable local date.
     pub fn stored_date(&self) -> NaiveDate {
         match self {
             Self::Date(date) => *date,
             Self::Instant(time) => time.date_naive(),
+        }
+    }
+    fn checked_stored_date(&self) -> Option<NaiveDate> {
+        match self {
+            Self::Date(date) => Some(*date),
+            Self::Instant(time) => time
+                .naive_utc()
+                .checked_add_offset(*time.offset())
+                .map(|local| local.date()),
         }
     }
 }
@@ -89,6 +105,7 @@ pub struct TimeRange {
 }
 
 impl TimeRange {
+    /// Builds a range at a cursor offset. If its end overflows, it stays a point.
     pub fn at_cursor(now: i64, offset: i64, duration: i64) -> Option<Self> {
         let start = now.checked_add(offset)?;
         Some(Self {
@@ -99,6 +116,7 @@ impl TimeRange {
         })
     }
 
+    /// Tests whether the interval or point meets a half-open query window.
     pub fn overlaps(&self, from_ms: i64, until_ms: i64) -> bool {
         self.from_ms < until_ms
             && self
@@ -106,6 +124,7 @@ impl TimeRange {
                 .map_or(self.from_ms >= from_ms, |end| end > from_ms)
     }
 
+    /// Intersects this range with a query window while preserving points.
     pub fn clipped(&self, from_ms: i64, until_ms: i64) -> Option<Self> {
         self.overlaps(from_ms, until_ms).then(|| Self {
             from_ms: self.from_ms.max(from_ms),
@@ -114,105 +133,11 @@ impl TimeRange {
     }
 }
 
-pub struct Endpoints<'a> {
-    start: Option<Cow<'a, TimeValue>>,
-    due: Option<Cow<'a, TimeValue>>,
-}
-
-impl<'a> Endpoints<'a> {
-    pub fn new(start: Option<&'a TimeValue>, due: Option<&'a TimeValue>) -> Result<Self, String> {
-        Self::checked(start.map(Cow::Borrowed), due.map(Cow::Borrowed))
-    }
-
-    fn checked(
-        start: Option<Cow<'a, TimeValue>>,
-        due: Option<Cow<'a, TimeValue>>,
-    ) -> Result<Self, String> {
-        if let (Some(start), Some(due)) = (start.as_deref(), due.as_deref()) {
-            let reversed = match (start.instant_ms(), due.instant_ms()) {
-                (Some(start), Some(due)) => start > due,
-                _ => start.stored_date() > due.stored_date(),
-            };
-            if reversed {
-                return Err("Due time must not be before start time".into());
-            }
-        }
-        Ok(Self { start, due })
-    }
-
-    pub fn start(&self) -> Option<&TimeValue> {
-        self.start.as_deref()
-    }
-
-    pub fn due(&self) -> Option<&TimeValue> {
-        self.due.as_deref()
-    }
-
-    pub fn range(
-        &self,
-        estimate_minutes: Option<f64>,
-        occurrence_ms: Option<i64>,
-    ) -> Result<Option<TimeRange>, String> {
-        let start = self.start().and_then(TimeValue::instant_ms);
-        let due = self.due().and_then(TimeValue::instant_ms);
-        let estimate = estimate_minutes.unwrap_or(0.0);
-        if !estimate.is_finite() || !(0.0..=1_000_000_000.0).contains(&estimate) {
-            return Err("Estimate must be a finite, nonnegative number of minutes".into());
-        }
-        let estimated_ms = (estimate * 60_000.0).round() as i64;
-        let duration = match (start, due) {
-            (Some(start), Some(due)) => due - start,
-            _ => estimated_ms,
-        };
-        let (from_ms, until_ms) = if let Some(occurrence) = occurrence_ms {
-            (occurrence, occurrence.checked_add(duration))
-        } else if let Some(start) = start {
-            (
-                start,
-                Some(due.unwrap_or(start.checked_add(duration).ok_or("Time range overflow")?)),
-            )
-        } else if let Some(due) = due {
-            (
-                due.checked_sub(duration).ok_or("Time range overflow")?,
-                Some(due),
-            )
-        } else {
-            return Ok(None);
-        };
-        let until_ms = until_ms.ok_or("Time range overflow")?;
-        if from_ms < 0 || until_ms > MAX_INSTANT_MS {
-            return Err("Time range is outside the supported range".into());
-        }
-        Ok(Some(TimeRange {
-            from_ms,
-            until_ms: (until_ms > from_ms).then_some(until_ms),
-        }))
-    }
-}
-
-impl Endpoints<'static> {
-    pub fn parse(start: Option<&str>, due: Option<&str>) -> Result<Self, String> {
-        let _prepare = crate::performance::Span::new("schedule-endpoint-preparation");
-        crate::performance::add("schedule-endpoint-parses", 1);
-        let start = start.map(TimeValue::parse).transpose()?.map(Cow::Owned);
-        let due = due.map(TimeValue::parse).transpose()?.map(Cow::Owned);
-        Self::checked(start, due)
-    }
-}
-
-pub fn validate_endpoints(start: Option<&str>, due: Option<&str>) -> Result<(), String> {
-    Endpoints::parse(start, due).map(|_| ())
-}
-
-pub fn range(
-    start: Option<&str>,
-    due: Option<&str>,
-    estimate_minutes: Option<f64>,
-    occurrence_ms: Option<i64>,
-) -> Result<Option<TimeRange>, String> {
-    Endpoints::parse(start, due)?.range(estimate_minutes, occurrence_ms)
-}
-
+/// Lists the instants for a local time, including both occurrences after a clock fold.
+///
+/// # Errors
+///
+/// Returns an error for invalid input, a skipped time, or an unsupported instant.
 pub fn civil_instants(date: &str, time: &str, timezone: &str) -> Result<Vec<String>, String> {
     let zone: Tz = timezone.parse().map_err(|_| "Unknown IANA timezone")?;
     let civil = format!("{date}T{time}");
@@ -232,10 +157,16 @@ pub fn civil_instants(date: &str, time: &str, timezone: &str) -> Result<Vec<Stri
     Ok(values)
 }
 
+/// Parses a schedule value and returns its date in the supplied timezone.
 pub fn timezone_date(value: &str, timezone: &str) -> Option<NaiveDate> {
     Some(TimeValue::parse(value).ok()?.date(timezone.parse().ok()?))
 }
 
+/// Moves a value to a different date while retaining its local time.
+///
+/// # Errors
+///
+/// Returns an error for invalid input or a clock change that makes the result ambiguous or unavailable.
 pub fn on_date(value: &str, date: &str, timezone: &str) -> Result<String, String> {
     let parsed = TimeValue::parse(value)?;
     let TimeValue::Date(date) = TimeValue::parse(date)? else {

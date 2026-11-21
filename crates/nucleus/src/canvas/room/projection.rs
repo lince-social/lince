@@ -1,16 +1,11 @@
-// non-lean-yet
-// Scope: fn compose, fn relative, fn pose, fn resolve.
-// BeautifulRust (baseline lines):
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 48, 63.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 18.
-
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
 use glam::{DQuat, DVec3};
 
 use super::{MAX_DEPTH, valid_pose};
 use crate::canvas::{Placement, Pose};
 
+/// Applies a parent's translation and rotation to a room-local pose.
 pub fn compose(parent: &Pose, local: &Pose) -> Pose {
     let rotation = DQuat::from_array(parent.rotation);
     Pose {
@@ -23,6 +18,7 @@ pub fn compose(parent: &Pose, local: &Pose) -> Pose {
     }
 }
 
+/// Expresses a pose relative to its parent, using the inverse parent rotation.
 pub fn relative(parent: &Pose, point: &Pose) -> Pose {
     let inverse = DQuat::from_array(parent.rotation).inverse();
     Pose {
@@ -36,38 +32,39 @@ pub fn relative(parent: &Pose, point: &Pose) -> Pose {
 }
 
 fn pose(item: &Placement) -> Pose {
+    let [x, z] = item.geometry.position;
     Pose {
-        position: [
-            item.geometry.position[0],
-            item.metadata.spatial.elevation,
-            item.geometry.position[1],
-        ],
+        position: [x, item.metadata.spatial.elevation, z],
         rotation: item.metadata.spatial.rotation,
     }
 }
 
-fn resolve(
-    id: &str,
-    items: &BTreeMap<&str, &Placement>,
+fn resolve<'a>(
+    id: &'a str,
+    items: &BTreeMap<&str, &'a Placement>,
     resolved: &mut BTreeMap<String, Pose>,
-    path: &mut BTreeSet<String>,
+    path: &mut Vec<&'a str>,
 ) -> Result<Pose, String> {
     if let Some(pose) = resolved.get(id) {
         return Ok(pose.clone());
     }
-    let item = items.get(id).ok_or("The room parent is unavailable.")?;
+    let item = items
+        .get(id)
+        .copied()
+        .ok_or("The room parent is unavailable.")?;
     let Some(member) = &item.metadata.room_member else {
         return Ok(pose(item));
     };
-    if path.len() >= MAX_DEPTH || !path.insert(id.into()) {
+    if path.len() >= MAX_DEPTH || path.contains(&id) {
         return Err("Room parenting must be acyclic and at most eight levels deep.".into());
     }
+    path.push(id);
     let parent = member.parent.as_deref().unwrap_or(&member.room);
     let point = compose(&resolve(parent, items, resolved, path)?, &member.local);
     if !valid_pose(&point) {
         return Err("The room transform exceeds finite coordinate bounds.".into());
     }
-    path.remove(id);
+    path.pop();
     resolved.insert(id.into(), point.clone());
     Ok(point)
 }
@@ -84,11 +81,12 @@ pub(crate) fn project(placements: &mut [Placement]) -> Result<(), String> {
         .map(|item| (item.id.as_str(), item))
         .collect();
     let mut resolved = BTreeMap::new();
+    let mut path = Vec::with_capacity(MAX_DEPTH);
     for item in placements
         .iter()
         .filter(|item| item.metadata.room_member.is_some())
     {
-        resolve(&item.id, &items, &mut resolved, &mut BTreeSet::new())?;
+        resolve(&item.id, &items, &mut resolved, &mut path)?;
     }
     for item in placements {
         if let Some(point) = resolved.get(&item.id) {
@@ -98,8 +96,9 @@ pub(crate) fn project(placements: &mut [Placement]) -> Result<(), String> {
             {
                 *group = compose(point, &relative(&previous, group));
             }
-            item.geometry.position = [point.position[0], point.position[2]];
-            item.metadata.spatial.elevation = point.position[1];
+            let [x, elevation, z] = point.position;
+            item.geometry.position = [x, z];
+            item.metadata.spatial.elevation = elevation;
             item.metadata.spatial.rotation = point.rotation;
         }
     }
@@ -111,9 +110,10 @@ pub(crate) fn relocalize_move(
     id: &str,
     position: [f64; 2],
 ) -> Result<(), String> {
-    let item = placements
+    let (index, item) = placements
         .iter()
-        .find(|item| item.id == id)
+        .enumerate()
+        .find(|(_, item)| item.id == id)
         .ok_or("The placement is unavailable.")?;
     let Some(member) = &item.metadata.room_member else {
         return Ok(());
@@ -124,15 +124,15 @@ pub(crate) fn relocalize_move(
         .find(|item| item.id == parent)
         .ok_or("The room parent is unavailable.")?;
     let mut next = pose(item);
-    next.position[0] = position[0];
-    next.position[2] = position[1];
+    let [x, z] = position;
+    let [_, elevation, _] = next.position;
+    next.position = [x, elevation, z];
     let local = relative(&pose(parent), &next);
     if !valid_pose(&local) {
         return Err("The room-local move exceeds finite coordinate bounds.".into());
     }
     placements
-        .iter_mut()
-        .find(|item| item.id == id)
+        .get_mut(index)
         .and_then(|item| item.metadata.room_member.as_mut())
         .ok_or("The room member is unavailable.")?
         .local = local;

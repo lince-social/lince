@@ -1,29 +1,25 @@
-// non-lean-yet
-// Scope: const MAX_STAGES, const MAX_LIFETIME_MS, const MAX_BYTES, const PRIVATE_NAMESPACE.
-// BeautifulRust (baseline lines):
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 82, 83.
-// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
-//   Sites 49.
-// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
-//   Sites 110, 133.
-// - [Clippy: clippy::large_enum_variant] large size difference between variants. Sites 133.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 32, 98.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 6,
-//   7, 8, 12, 13, 14, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 32, 80, 90, 91, 92, 93, 94, 98, 110,
-//   111, 112, 113, 114, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 133, 134, 135, 136, 138,
-//   139, 141, 142, 143, 145, 146, 147, 148, 150, 151, 152, 153.
-// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites commitment:
-//   String (98), validate: String (32).
+//! Staged visibility of a reviewed Record publication.
+//! Each stage changes the inclusions while retaining the plan's exclusions.
+//! A review commitment binds its source, definition, and replies.
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use super::{Condition, Data, Policy};
+use super::{Condition, Data, Policy, rules::PolicyView};
+use crate::{
+    json::encoded_len,
+    karma::canonical_hash,
+    social::{AuthorMode, PostDraft},
+    valid_uid,
+};
 
+/// Maximum number of audience stages in one plan.
 pub const MAX_STAGES: usize = 8;
+/// Maximum lifetime of an active plan in milliseconds.
 pub const MAX_LIFETIME_MS: i64 = 7 * 24 * 60 * 60 * 1000;
+/// Byte limit for a saved plan and its metadata.
 pub const MAX_BYTES: usize = 128 * 1024;
+/// Record extension namespace for the private plan data.
 pub const PRIVATE_NAMESPACE: &str = "lince.audience-plan.private";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
@@ -41,18 +37,26 @@ pub struct Definition {
     pub controller_uid: String,
     pub source_uid: String,
     pub source_revision: u64,
-    pub projection: crate::social::PostDraft,
+    pub projection: PostDraft,
     pub stages: Vec<Stage>,
     pub exclude: Vec<Condition>,
     pub expires_at_ms: i64,
 }
 
 impl Definition {
+    /// Validates the source, stages and expiry against the current timestamp.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error for invalid identifiers, publication rules, expiry, or size.
     pub fn validate(&self, now_ms: i64) -> Result<(), String> {
-        let ids = [&self.uid, &self.projection_uid, &self.source_uid];
-        if ids.iter().any(|uid| !crate::valid_uid(uid, "r"))
-            || !crate::valid_uid(&self.controller_uid, "r")
-            || ids.iter().collect::<std::collections::BTreeSet<_>>().len() != 3
+        let [plan, projection, source] = [&self.uid, &self.projection_uid, &self.source_uid];
+        if [plan, projection, source, &self.controller_uid]
+            .iter()
+            .any(|uid| !valid_uid(uid, "r"))
+            || plan == projection
+            || plan == source
+            || projection == source
             || self.source_revision == 0
         {
             return Err(
@@ -65,7 +69,7 @@ impl Definition {
                 if index == 0 {
                     stage.after_ms != 0
                 } else {
-                    stage.after_ms == 0 || stage.after_ms > MAX_LIFETIME_MS as u64
+                    stage.after_ms == 0 || stage.after_ms > MAX_LIFETIME_MS.unsigned_abs()
                 }
             })
         {
@@ -80,22 +84,25 @@ impl Definition {
             return Err("Choose an expiry within the next seven days".into());
         }
         self.projection.validate()?;
-        if self.projection.mode != crate::social::AuthorMode::Anonymous
-            || !self.projection.destinations.is_empty()
+        if self.projection.mode != AuthorMode::Anonymous || !self.projection.destinations.is_empty()
         {
             return Err("Audience stages use authenticated Record visibility; keep identity and directory publication separate".into());
         }
         for stage in &self.stages {
-            self.policy(stage)
-                .validate_for(Data::Record)
-                .map_err(str::to_owned)?;
+            PolicyView {
+                include: &stage.include,
+                exclude: &self.exclude,
+            }
+            .validate_for(Data::Record)
+            .map_err(str::to_owned)?;
         }
-        if crate::json::encoded_len(self).map_err(|error| error.to_string())? > MAX_BYTES / 2 {
+        if encoded_len(self).map_err(|error| error.to_string())? > MAX_BYTES / 2 {
             return Err("Audience plan exceeds its size limit".into());
         }
         Ok(())
     }
 
+    /// Builds the owned policy for the supplied stage.
     pub fn policy(&self, stage: &Stage) -> Policy {
         Policy {
             include: stage.include.clone(),
@@ -114,11 +121,16 @@ pub struct Review {
 }
 
 impl Review {
+    /// Calculates the canonical commitment for this review.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the review exceeds its byte budget or cannot be encoded.
     pub fn commitment(&self) -> Result<String, String> {
-        if crate::json::encoded_len(self).map_err(|error| error.to_string())? > MAX_BYTES - 4096 {
+        if encoded_len(self).map_err(|error| error.to_string())? > MAX_BYTES - 4096 {
             return Err("Audience review exceeds its byte limit".into());
         }
-        crate::karma::canonical_hash("lince.record-audience-plan.v1", self)
+        canonical_hash("lince.record-audience-plan.v1", self)
             .map(|hash| hash.as_str().to_owned())
             .map_err(|error| error.to_string())
     }
@@ -149,6 +161,10 @@ pub struct Saved {
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+#[expect(
+    clippy::large_enum_variant,
+    reason = "Review retains its public Definition payload type"
+)]
 pub enum Command {
     Inspect {
         source_uid: String,

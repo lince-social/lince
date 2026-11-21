@@ -1,178 +1,260 @@
-// non-lean-yet
-// Scope: fn protocol, const STATE_APPLIED, const STATE_VOID, struct Entry.
-// BeautifulRust (baseline lines):
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 262.
-// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
-//   Sites 54.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 87, 95, 103, 112, 137, 159, 234, 316.
-// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
-//   adding `#[derive(Debug)]` or a manual implementation. Sites 149, 222, 308.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 13, 14,
-//   17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 32, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48,
-//   49, 50, 54, 55, 56, 60, 66, 87, 95, 103, 112, 137, 149, 150, 151, 152, 153, 154, 155, 156, 159,
-//   222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 234, 308, 309, 310, 311, 312, 313, 316.
+//! Store queries and atomic changes for captured entries and their revision history.
+
+#[cfg(test)]
+mod tests;
+
+use std::fmt::{Debug, Formatter, Result as FmtResult};
 
 use chrono::{DateTime, Utc};
-use nucleus::DecimalValue;
-use sqlx::{Row, SqlitePool};
+use nucleus::{DecimalValue, new_uid};
+use sqlx::{
+    Row, Sqlite, SqliteConnection, SqliteExecutor, SqlitePool, Transaction, query,
+    sqlite::SqliteRow,
+};
 
 use crate::{
     StoreError,
-    exact::{decimal_columns, read_decimal},
+    exact::{decimal_columns, parse_decimal},
     facts::instant,
+    write_tx,
 };
 
-fn protocol(message: &str) -> StoreError {
-    sqlx::Error::Protocol(message.to_string())
-}
-
+/// State of an entry that still contributes its amount.
 pub const STATE_APPLIED: &str = "applied";
+/// State of an entry whose amount was voided.
 pub const STATE_VOID: &str = "void";
 
+const BY_UID: &str = "SELECT * FROM entry WHERE uid = ?";
+const BY_REQUEST: &str = "SELECT e.* FROM entry_revision r
+           JOIN entry e ON e.uid = r.entry_uid
+          WHERE r.request_id = ?";
+
+/// Current state of a captured entry.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Entry {
+    /// Entry UID.
     pub uid: String,
+    /// UID of the Record that owns the entry.
     pub record_uid: String,
+    /// Exact amount from the current revision.
     pub amount: DecimalValue,
+    /// Optional note from the current revision.
     pub note: Option<String>,
+    /// Effective instant as a UTC RFC 3339 timestamp.
     pub occurred_at: String,
+    /// Current persisted state.
     pub state: String,
+    /// Current revision number, starting at one.
     pub revision: i64,
+    /// UID of the associated Fact, if recorded.
     pub fact_uid: Option<String>,
+    /// UID of the actor who captured the entry, if recorded.
     pub actor_uid: Option<String>,
+    /// Capture timestamp in UTC.
     pub created_at: String,
+    /// Latest change timestamp in UTC.
     pub updated_at: String,
 }
 
 impl Entry {
+    /// Returns whether the entry was voided.
+    #[must_use]
     pub fn is_void(&self) -> bool {
         self.state == STATE_VOID
     }
 }
 
+/// Persisted history row from a capture, correction, or void.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EntryRevision {
+    /// Revision row UID.
     pub uid: String,
+    /// UID of the entry this revision changed.
     pub entry_uid: String,
+    /// Revision number within the entry.
     pub revision: i64,
+    /// Persisted change kind.
     pub kind: String,
+    /// Exact amount recorded in this revision.
     pub amount: DecimalValue,
+    /// Optional note recorded in this revision.
     pub note: Option<String>,
+    /// Effective instant in UTC.
     pub occurred_at: String,
+    /// UID of the Fact applied by this revision, if any.
     pub fact_uid: Option<String>,
+    /// UID of the compensation Fact, if any.
     pub compensated_fact_uid: Option<String>,
+    /// Idempotency key for the change.
     pub request_id: String,
+    /// UID of the actor who made the change, if recorded.
     pub actor_uid: Option<String>,
+    /// Change timestamp in UTC.
     pub at: String,
 }
 
+/// Result of a new or previously recorded change.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EntryCommit {
+    /// Entry state committed by this request.
     Committed(Entry),
+    /// Current state of the entry associated with a previous request.
     Replayed(Entry),
 }
 
 impl EntryCommit {
+    /// Borrows the entry returned by either outcome.
+    #[must_use]
     pub fn entry(&self) -> &Entry {
         match self {
             Self::Committed(entry) | Self::Replayed(entry) => entry,
         }
     }
 
+    /// Returns whether this request was already recorded.
+    #[must_use]
     pub fn was_replayed(&self) -> bool {
         matches!(self, Self::Replayed(_))
     }
 }
 
-fn map_entry(row: &sqlx::sqlite::SqliteRow) -> Result<Entry, StoreError> {
+fn protocol(message: &str) -> StoreError {
+    StoreError::Protocol(message.into())
+}
+
+fn amount(row: &SqliteRow) -> Result<DecimalValue, StoreError> {
+    parse_decimal(
+        row.try_get("amount_mantissa")?,
+        row.try_get("amount_scale")?,
+    )
+}
+
+fn map_entry(row: &SqliteRow) -> Result<Entry, StoreError> {
     Ok(Entry {
-        uid: row.get("uid"),
-        record_uid: row.get("record_uid"),
-        amount: read_decimal(row, "amount")?,
-        note: row.get("note"),
-        occurred_at: row.get("occurred_at"),
-        state: row.get("state"),
-        revision: row.get("revision"),
-        fact_uid: row.get("fact_uid"),
-        actor_uid: row.get("actor_uid"),
-        created_at: row.get("created_at"),
-        updated_at: row.get("updated_at"),
+        uid: row.try_get("uid")?,
+        record_uid: row.try_get("record_uid")?,
+        amount: amount(row)?,
+        note: row.try_get("note")?,
+        occurred_at: row.try_get("occurred_at")?,
+        state: row.try_get("state")?,
+        revision: row.try_get("revision")?,
+        fact_uid: row.try_get("fact_uid")?,
+        actor_uid: row.try_get("actor_uid")?,
+        created_at: row.try_get("created_at")?,
+        updated_at: row.try_get("updated_at")?,
     })
 }
 
+async fn lookup<'connection>(
+    executor: impl SqliteExecutor<'connection>,
+    sql: &'static str,
+    key: &'connection str,
+) -> Result<Option<Entry>, StoreError> {
+    query(sql)
+        .bind(key)
+        .fetch_optional(executor)
+        .await?
+        .as_ref()
+        .map(map_entry)
+        .transpose()
+}
+
+/// Loads the entry with the given UID.
+/// # Errors
+/// Returns an error if the query or row decoding fails.
 pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<Entry>, StoreError> {
-    let row = sqlx::query("SELECT * FROM entry WHERE uid = ?")
-        .bind(uid)
-        .fetch_optional(pool)
-        .await?;
-    row.as_ref().map(map_entry).transpose()
+    lookup(pool, BY_UID, uid).await
 }
 
+/// Finds an entry currently associated with a Fact.
+/// # Errors
+/// Returns an error if the query or row decoding fails.
 pub async fn for_fact(pool: &SqlitePool, fact_uid: &str) -> Result<Option<Entry>, StoreError> {
-    let row = sqlx::query("SELECT * FROM entry WHERE fact_uid = ? LIMIT 1")
-        .bind(fact_uid)
-        .fetch_optional(pool)
-        .await?;
-    row.as_ref().map(map_entry).transpose()
+    lookup(
+        pool,
+        "SELECT * FROM entry WHERE fact_uid = ? LIMIT 1",
+        fact_uid,
+    )
+    .await
 }
 
+/// Lists entries newest effective timestamp first, breaking ties by capture time.
+/// A negative limit leaves the result unbounded.
+/// # Errors
+/// Returns an error if the query or row decoding fails.
 pub async fn list_all(pool: &SqlitePool, limit: i64) -> Result<Vec<Entry>, StoreError> {
-    let rows =
-        sqlx::query("SELECT * FROM entry ORDER BY occurred_at DESC, created_at DESC LIMIT ?")
-            .bind(limit)
-            .fetch_all(pool)
-            .await?;
+    let rows = query("SELECT * FROM entry ORDER BY occurred_at DESC, created_at DESC LIMIT ?")
+        .bind(limit)
+        .fetch_all(pool)
+        .await?;
     rows.iter().map(map_entry).collect()
 }
 
+/// Lists every saved change for an entry in revision order.
+/// # Errors
+/// Returns an error if the query or row decoding fails.
 pub async fn history(pool: &SqlitePool, entry_uid: &str) -> Result<Vec<EntryRevision>, StoreError> {
-    let rows = sqlx::query("SELECT * FROM entry_revision WHERE entry_uid = ? ORDER BY revision")
+    let rows = query("SELECT * FROM entry_revision WHERE entry_uid = ? ORDER BY revision")
         .bind(entry_uid)
         .fetch_all(pool)
         .await?;
     rows.iter()
         .map(|row| {
             Ok(EntryRevision {
-                uid: row.get("uid"),
-                entry_uid: row.get("entry_uid"),
-                revision: row.get("revision"),
-                kind: row.get("kind"),
-                amount: read_decimal(row, "amount")?,
-                note: row.get("note"),
-                occurred_at: row.get("occurred_at"),
-                fact_uid: row.get("fact_uid"),
-                compensated_fact_uid: row.get("compensated_fact_uid"),
-                request_id: row.get("request_id"),
-                actor_uid: row.get("actor_uid"),
-                at: row.get("at"),
+                uid: row.try_get("uid")?,
+                entry_uid: row.try_get("entry_uid")?,
+                revision: row.try_get("revision")?,
+                kind: row.try_get("kind")?,
+                amount: amount(row)?,
+                note: row.try_get("note")?,
+                occurred_at: row.try_get("occurred_at")?,
+                fact_uid: row.try_get("fact_uid")?,
+                compensated_fact_uid: row.try_get("compensated_fact_uid")?,
+                request_id: row.try_get("request_id")?,
+                actor_uid: row.try_get("actor_uid")?,
+                at: row.try_get("at")?,
             })
         })
         .collect()
 }
 
+/// Finds the current entry associated with an already recorded request.
+/// # Errors
+/// Returns an error if the query or row decoding fails.
 pub async fn replayed(pool: &SqlitePool, request_id: &str) -> Result<Option<Entry>, StoreError> {
-    let row = sqlx::query(
-        "SELECT e.* FROM entry_revision r
-           JOIN entry e ON e.uid = r.entry_uid
-          WHERE r.request_id = ?",
-    )
-    .bind(request_id)
-    .fetch_optional(pool)
-    .await?;
-    row.as_ref().map(map_entry).transpose()
+    lookup(pool, BY_REQUEST, request_id).await
 }
 
+/// Inputs for capturing an entry on a Record.
 pub struct NewEntry<'a> {
+    /// UID of the owning Record.
     pub record_uid: &'a str,
+    /// Exact amount to capture.
     pub amount: DecimalValue,
+    /// Optional note to record.
     pub note: Option<&'a str>,
+    /// Effective time of the entry.
     pub occurred_at: DateTime<Utc>,
+    /// UID of the Fact applied for the capture.
     pub fact_uid: &'a str,
+    /// Idempotency key.
     pub request_id: &'a str,
+    /// UID of the actor making the capture, if recorded.
     pub actor_uid: Option<&'a str>,
 }
 
+impl Debug for NewEntry<'_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        f.debug_struct("NewEntry")
+            .field("record_uid", &self.record_uid)
+            .finish_non_exhaustive()
+    }
+}
+
+/// Captures an entry and its first revision in one transaction.
+/// # Errors
+/// Returns an error for a blank request key, a database failure, or a row
+/// that cannot be read back.
 pub async fn create(
     pool: &SqlitePool,
     input: NewEntry<'_>,
@@ -181,17 +263,18 @@ pub async fn create(
     if input.request_id.trim().is_empty() {
         return Err(protocol("entry needs a request id"));
     }
-    if let Some(existing) = replayed(pool, input.request_id).await? {
+    // Hold the write lock from the replay check through the revision insert.
+    let mut tx = write_tx(pool).await?;
+    if let Some(existing) = lookup(&mut *tx, BY_REQUEST, input.request_id).await? {
         return Ok(EntryCommit::Replayed(existing));
     }
 
-    let uid = nucleus::new_uid("en");
+    let uid = new_uid("en");
     let at = instant(now);
     let occurred_at = instant(input.occurred_at);
     let (mantissa, scale) = decimal_columns(input.amount);
 
-    let mut tx = crate::write_tx(pool).await?;
-    sqlx::query(
+    query(
         "INSERT INTO entry
            (uid, record_uid, amount_mantissa, amount_scale, note, occurred_at,
             state, revision, fact_uid, actor_uid, created_at, updated_at)
@@ -228,26 +311,44 @@ pub async fn create(
         },
     )
     .await?;
-    tx.commit().await?;
-
-    get(pool, &uid)
-        .await?
-        .map(EntryCommit::Committed)
-        .ok_or_else(|| protocol("entry vanished after insert"))
+    commit_entry(tx, &uid, "entry vanished after insert").await
 }
 
+/// Inputs for correcting the current revision of an entry.
 pub struct ReviseEntry<'a> {
+    /// UID of the entry to correct.
     pub entry_uid: &'a str,
+    /// Revision observed by the caller.
     pub expected_revision: i64,
+    /// Exact replacement amount.
     pub amount: DecimalValue,
+    /// Optional replacement note.
     pub note: Option<&'a str>,
+    /// Effective time of the corrected entry.
     pub occurred_at: DateTime<Utc>,
+    /// UID of the compensation Fact, if any.
     pub compensated_fact_uid: Option<&'a str>,
+    /// UID of the new applied Fact, if replacing the existing one.
     pub replacement_fact_uid: Option<&'a str>,
+    /// Idempotency key.
     pub request_id: &'a str,
+    /// UID of the actor making the correction, if recorded.
     pub actor_uid: Option<&'a str>,
 }
 
+impl Debug for ReviseEntry<'_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        f.debug_struct("ReviseEntry")
+            .field("entry_uid", &self.entry_uid)
+            .field("expected_revision", &self.expected_revision)
+            .finish_non_exhaustive()
+    }
+}
+
+/// Corrects an entry and appends the next revision in one transaction.
+/// # Errors
+/// Returns an error for a blank key, a missing, voided, or stale entry, a
+/// revision outside the stored range, or a database failure.
 pub async fn revise(
     pool: &SqlitePool,
     input: ReviseEntry<'_>,
@@ -256,30 +357,23 @@ pub async fn revise(
     if input.request_id.trim().is_empty() {
         return Err(protocol("entry revision needs a request id"));
     }
-    if let Some(existing) = replayed(pool, input.request_id).await? {
+    let mut tx = write_tx(pool).await?;
+    if let Some(existing) = lookup(&mut *tx, BY_REQUEST, input.request_id).await? {
         return Ok(EntryCommit::Replayed(existing));
     }
-    let current = get(pool, input.entry_uid)
-        .await?
-        .ok_or_else(|| protocol("no such entry"))?;
-    if current.is_void() {
-        return Err(protocol("a voided entry cannot be revised"));
-    }
-    if current.revision != input.expected_revision {
-        return Err(protocol("entry was changed by someone else"));
-    }
-
-    let revision = current.revision + 1;
+    let (current, revision) = next_revision(
+        &mut tx,
+        input.entry_uid,
+        input.expected_revision,
+        "a voided entry cannot be revised",
+    )
+    .await?;
     let at = instant(now);
     let occurred_at = instant(input.occurred_at);
     let (mantissa, scale) = decimal_columns(input.amount);
-    let live_fact = input
-        .replacement_fact_uid
-        .map(str::to_string)
-        .or_else(|| current.fact_uid.clone());
+    let live_fact = input.replacement_fact_uid.or(current.fact_uid.as_deref());
 
-    let mut tx = crate::write_tx(pool).await?;
-    sqlx::query(
+    query(
         "UPDATE entry
             SET amount_mantissa = ?, amount_scale = ?, note = ?, occurred_at = ?,
                 revision = ?, fact_uid = ?, updated_at = ?
@@ -290,7 +384,7 @@ pub async fn revise(
     .bind(input.note)
     .bind(&occurred_at)
     .bind(revision)
-    .bind(live_fact.as_deref())
+    .bind(live_fact)
     .bind(&at)
     .bind(input.entry_uid)
     .bind(input.expected_revision)
@@ -314,22 +408,36 @@ pub async fn revise(
         },
     )
     .await?;
-    tx.commit().await?;
-
-    get(pool, input.entry_uid)
-        .await?
-        .map(EntryCommit::Committed)
-        .ok_or_else(|| protocol("entry vanished after revision"))
+    commit_entry(tx, input.entry_uid, "entry vanished after revision").await
 }
 
+/// Inputs for voiding an entry.
 pub struct VoidEntry<'a> {
+    /// UID of the entry to void.
     pub entry_uid: &'a str,
+    /// Revision observed by the caller.
     pub expected_revision: i64,
+    /// UID of the compensation Fact, if any.
     pub compensated_fact_uid: Option<&'a str>,
+    /// Idempotency key.
     pub request_id: &'a str,
+    /// UID of the actor voiding the entry, if recorded.
     pub actor_uid: Option<&'a str>,
 }
 
+impl Debug for VoidEntry<'_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        f.debug_struct("VoidEntry")
+            .field("entry_uid", &self.entry_uid)
+            .field("expected_revision", &self.expected_revision)
+            .finish_non_exhaustive()
+    }
+}
+
+/// Marks an entry void and appends the next revision in one transaction.
+/// # Errors
+/// Returns an error for a blank key, a missing, voided, or stale entry, a
+/// revision outside the stored range, or a database failure.
 pub async fn void(
     pool: &SqlitePool,
     input: VoidEntry<'_>,
@@ -338,25 +446,21 @@ pub async fn void(
     if input.request_id.trim().is_empty() {
         return Err(protocol("voiding an entry needs a request id"));
     }
-    if let Some(existing) = replayed(pool, input.request_id).await? {
+    let mut tx = write_tx(pool).await?;
+    if let Some(existing) = lookup(&mut *tx, BY_REQUEST, input.request_id).await? {
         return Ok(EntryCommit::Replayed(existing));
     }
-    let current = get(pool, input.entry_uid)
-        .await?
-        .ok_or_else(|| protocol("no such entry"))?;
-    if current.is_void() {
-        return Err(protocol("entry is already void"));
-    }
-    if current.revision != input.expected_revision {
-        return Err(protocol("entry was changed by someone else"));
-    }
-
-    let revision = current.revision + 1;
+    let (current, revision) = next_revision(
+        &mut tx,
+        input.entry_uid,
+        input.expected_revision,
+        "entry is already void",
+    )
+    .await?;
     let at = instant(now);
     let (mantissa, scale) = decimal_columns(current.amount);
 
-    let mut tx = crate::write_tx(pool).await?;
-    sqlx::query(
+    query(
         "UPDATE entry SET state = ?, revision = ?, updated_at = ?
           WHERE uid = ? AND revision = ?",
     )
@@ -385,12 +489,40 @@ pub async fn void(
         },
     )
     .await?;
-    tx.commit().await?;
+    commit_entry(tx, input.entry_uid, "entry vanished after voiding").await
+}
 
-    get(pool, input.entry_uid)
+async fn next_revision(
+    connection: &mut SqliteConnection,
+    uid: &str,
+    expected_revision: i64,
+    voided: &str,
+) -> Result<(Entry, i64), StoreError> {
+    let entry = lookup(connection, BY_UID, uid)
         .await?
-        .map(EntryCommit::Committed)
-        .ok_or_else(|| protocol("entry vanished after voiding"))
+        .ok_or_else(|| protocol("no such entry"))?;
+    if entry.is_void() {
+        return Err(protocol(voided));
+    }
+    if entry.revision != expected_revision {
+        return Err(protocol("entry was changed by someone else"));
+    }
+    let revision = expected_revision
+        .checked_add(1)
+        .ok_or_else(|| protocol("entry revision exceeds SQLite integer range"))?;
+    Ok((entry, revision))
+}
+
+async fn commit_entry(
+    mut tx: Transaction<'_, Sqlite>,
+    uid: &str,
+    vanished: &str,
+) -> Result<EntryCommit, StoreError> {
+    let entry = lookup(&mut *tx, BY_UID, uid)
+        .await?
+        .ok_or_else(|| protocol(vanished))?;
+    tx.commit().await?;
+    Ok(EntryCommit::Committed(entry))
 }
 
 struct RevisionRow<'a> {
@@ -409,16 +541,16 @@ struct RevisionRow<'a> {
 }
 
 async fn insert_revision(
-    tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
+    tx: &mut Transaction<'_, Sqlite>,
     row: RevisionRow<'_>,
 ) -> Result<(), StoreError> {
-    sqlx::query(
+    query(
         "INSERT INTO entry_revision
            (uid, entry_uid, revision, kind, amount_mantissa, amount_scale, note,
             occurred_at, fact_uid, compensated_fact_uid, request_id, actor_uid, at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
-    .bind(nucleus::new_uid("enr"))
+    .bind(new_uid("enr"))
     .bind(row.entry_uid)
     .bind(row.revision)
     .bind(row.kind)

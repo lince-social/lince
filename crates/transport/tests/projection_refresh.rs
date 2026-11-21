@@ -1,44 +1,51 @@
-// non-lean-yet
-// Scope: static QUERIES, fn snapshots, fn publish, fn forecast_rows.
-// BeautifulRust (baseline lines):
-// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
-//   Sites 130.
-// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 24.
-
 #![cfg(test)]
 
-use engine::{Engine, actions::Action};
-use nucleus::projection::{Context, Incomplete, Window};
-use protein::Protein;
-use serde_json::{Value, json};
 use std::{
     collections::BTreeMap,
     sync::{
         Arc,
-        atomic::{AtomicU64, Ordering},
+        atomic::{AtomicU64, Ordering::Relaxed},
     },
     time::Duration,
 };
+
+use engine::{Engine, actions::Action, karma_runtime::KarmaDeadlineDirectorConfig};
+use nucleus::{
+    RecordKind,
+    execution::now,
+    performance::{Reading, install},
+    projection::{Context, Incomplete, Window},
+};
+use protein::{Protein, execute};
+use serde_json::{Value, from_value, json};
+use store::{
+    projection::{publish_schedule, revision, set_runtime},
+    sqlx::query,
+};
+use tokio::time::timeout;
 use transport::{ClientMessage, LaneHub, ServerMessage, Session, SyncEvent, SyncEvents};
 
 static QUERIES: AtomicU64 = AtomicU64::new(0);
+const FORECASTS: [&str; 2] = ["calendar", "schedule"];
 
-fn snapshots(messages: Vec<ServerMessage>) -> BTreeMap<String, Vec<Value>> {
+type Snapshots = BTreeMap<String, Arc<Vec<Value>>>;
+
+fn snapshots(messages: Vec<ServerMessage>) -> Snapshots {
     messages
         .into_iter()
         .map(|message| match message {
-            ServerMessage::Snapshot { id, rows } => (id, std::sync::Arc::unwrap_or_clone(rows)),
+            ServerMessage::Snapshot { id, rows } => (id, rows),
             message => panic!("Unexpected response: {message:?}"),
         })
         .collect()
 }
 
 async fn publish(engine: &Engine, context: &Context, incomplete: Option<&Incomplete>) {
-    let source = store::projection::revision(&engine.store.pool)
+    let source = revision(&engine.store.pool)
         .await
-        .unwrap();
+        .expect("read the source revision");
     assert!(
-        store::projection::publish_schedule(
+        publish_schedule(
             &engine.store,
             context,
             source,
@@ -49,50 +56,62 @@ async fn publish(engine: &Engine, context: &Context, incomplete: Option<&Incompl
             &[],
         )
         .await
-        .unwrap()
+        .expect("publish the projection fixture")
     );
 }
 
-async fn forecast_rows(
+async fn assert_forecasts(
     engine: &Engine,
     queries: &BTreeMap<String, Protein>,
-) -> BTreeMap<String, Vec<Value>> {
-    let mut expected = BTreeMap::new();
-    for id in ["calendar", "schedule"] {
-        expected.insert(
-            id.into(),
-            protein::execute(&engine.store, &queries[id]).await.unwrap(),
-        );
+    actual: &Snapshots,
+) {
+    for id in FORECASTS {
+        let protein = queries.get(id).expect("forecast query is registered");
+        let expected = execute(&engine.store, protein)
+            .await
+            .expect("run the reference query");
+        let rows = actual.get(id).expect("forecast snapshot is present");
+        assert_eq!(rows.as_slice(), expected, "forecast {id}");
     }
-    expected
+}
+
+async fn counted_event(session: &mut Session, event: SyncEvent, count: u64) -> Vec<ServerMessage> {
+    let before = QUERIES.load(Relaxed);
+    let messages = session.on_sync_event(event).await;
+    assert_eq!(QUERIES.load(Relaxed) - before, count);
+    messages
 }
 
 #[tokio::test]
 async fn forecast_refresh_preserves_live_status_errors_and_full_invalidation_without_unrelated_queries()
  {
-    assert!(nucleus::performance::install(|reading| {
-        if let nucleus::performance::Reading::Count("cell-queries", count) = reading {
-            QUERIES.fetch_add(count, Ordering::Relaxed);
+    assert!(install(|reading| {
+        if let Reading::Count("cell-queries", count) = reading {
+            QUERIES.fetch_add(count, Relaxed);
         }
     }));
-    let engine = Arc::new(Engine::open_memory().await.unwrap());
-    let config =
-        engine::karma_runtime::KarmaDeadlineDirectorConfig::for_host("forecast-refresh".into())
-            .unwrap();
-    store::projection::set_runtime(
+    let engine = Arc::new(Engine::open_memory().await.expect("open the Cell"));
+    let config = KarmaDeadlineDirectorConfig::for_host("forecast-refresh".into())
+        .expect("build the projection runtime configuration");
+    set_runtime(
         &engine.store.pool,
-        config.projection_identity().unwrap().as_str(),
+        config
+            .projection_identity()
+            .expect("projection runtime identity")
+            .as_str(),
     )
     .await
-    .unwrap();
-    engine.install_karma_runtime_config(config).unwrap();
+    .expect("set the runtime identity");
+    engine
+        .install_karma_runtime_config(config)
+        .expect("install the projection runtime");
     let mut queries: BTreeMap<String, Protein> = BTreeMap::new();
     for index in 0..32 {
         let uid = engine
             .act(
                 Action::CreateRecord {
                     slug: None,
-                    kind: nucleus::RecordKind::Plain,
+                    kind: RecordKind::Plain,
                     head: format!("Field {index}"),
                     body: String::new(),
                     quantity: 1.0,
@@ -100,22 +119,22 @@ async fn forecast_refresh_preserves_live_status_errors_and_full_invalidation_wit
                 None,
             )
             .await
-            .unwrap()
+            .expect("create a Record for the unrelated query")
             .created
-            .unwrap();
+            .expect("created Record uid");
         queries.insert(
             format!("record-{index}"),
-            serde_json::from_value(json!({
+            from_value(json!({
                 "source":"record", "where":[{"uid_eq":uid}], "fields":["uid", "head", "quantity"]
             }))
-            .unwrap(),
+            .expect("record query"),
         );
     }
     queries.insert(
         "concept".into(),
-        serde_json::from_value(json!({"source":"concept"})).unwrap(),
+        from_value(json!({"source":"concept"})).expect("concept query"),
     );
-    let now = nucleus::execution::now().timestamp_millis();
+    let now = now().timestamp_millis();
     let context = Context {
         actor: None,
         window: Window {
@@ -124,116 +143,110 @@ async fn forecast_refresh_preserves_live_status_errors_and_full_invalidation_wit
             timezone: "UTC".into(),
         },
     };
-    for source in ["calendar", "schedule"] {
+    for source in FORECASTS {
         queries.insert(
             source.into(),
-            serde_json::from_value(json!({
+            from_value(json!({
                 "source": source, "where":[{"projection_window":context.window}]
             }))
-            .unwrap(),
+            .expect("forecast query"),
         );
     }
     publish(&engine, &context, Some(&Incomplete::Budget {})).await;
-    let mut session = Session::local(engine.clone(), Arc::new(LaneHub::new()), "forecast-refresh");
-    let mut initial = BTreeMap::new();
-    for (id, query) in &queries {
+    let mut session = Session::local(
+        Arc::clone(&engine),
+        Arc::new(LaneHub::new()),
+        "forecast-refresh",
+    );
+    let mut initial = Snapshots::new();
+    for (id, protein) in &queries {
         initial.extend(snapshots(
             session
                 .handle(ClientMessage::Subscribe {
                     id: id.clone(),
-                    protein: query.clone(),
+                    protein: protein.clone(),
                 })
                 .await,
         ));
     }
     assert_eq!(initial.len(), 35);
-    assert_eq!(
-        forecast_rows(&engine, &queries).await,
-        initial
-            .iter()
-            .filter(|(id, _)| matches!(id.as_str(), "calendar" | "schedule"))
-            .map(|(id, rows)| (id.clone(), rows.clone()))
-            .collect()
-    );
+    assert_forecasts(&engine, &queries, &initial).await;
 
     let mut events = SyncEvents::new(&engine);
     let previous = *engine.watch_query_changes().borrow();
-    store::sqlx::query("DELETE FROM projection_window")
+    query("DELETE FROM projection_window")
         .execute(&engine.store.pool)
         .await
-        .unwrap();
-    engine.request_projection(context.clone()).await.unwrap();
-    let event = tokio::time::timeout(Duration::from_secs(20), events.next(false))
+        .expect("invalidate the stored forecast windows");
+    engine
+        .request_projection(context.clone())
         .await
-        .unwrap()
-        .unwrap();
+        .expect("request fresh projections");
+    let event = timeout(Duration::from_secs(20), events.next(false))
+        .await
+        .expect("projection completed before the deadline")
+        .expect("projection watcher is active");
     assert!(matches!(event, SyncEvent::Projection));
     let current = *engine.watch_query_changes().borrow();
     assert_eq!(current.general, previous.general);
     assert_eq!(current.revision(), previous.revision().wrapping_add(1));
-    let before = QUERIES.load(Ordering::Relaxed);
-    let ready = snapshots(session.on_sync_event(event).await);
-    assert_eq!(QUERIES.load(Ordering::Relaxed) - before, 2);
-    assert_eq!(ready, forecast_rows(&engine, &queries).await);
-    assert_eq!(ready.len(), 2);
+    let ready = snapshots(counted_event(&mut session, event, 2).await);
+    assert_forecasts(&engine, &queries, &ready).await;
+    assert_eq!(ready.len(), FORECASTS.len());
     for rows in ready.values() {
         let status = rows
             .iter()
-            .find(|row| row["kind"] == "projection-status")
-            .unwrap();
-        assert_eq!(status["status"]["kind"], "ready");
+            .find(|row| row.get("kind").and_then(Value::as_str) == Some("projection-status"))
+            .expect("forecast contains a projection status");
+        assert_eq!(
+            status.pointer("/status/kind").and_then(Value::as_str),
+            Some("ready")
+        );
     }
 
     publish(&engine, &context, Some(&Incomplete::UnavailableRuntime {})).await;
-    let before = QUERIES.load(Ordering::Relaxed);
-    let incomplete = snapshots(session.on_sync_event(SyncEvent::Projection).await);
-    assert_eq!(QUERIES.load(Ordering::Relaxed) - before, 2);
-    assert_eq!(incomplete, forecast_rows(&engine, &queries).await);
+    let incomplete = snapshots(counted_event(&mut session, SyncEvent::Projection, 2).await);
+    assert_forecasts(&engine, &queries, &incomplete).await;
+    assert_eq!(incomplete.len(), FORECASTS.len());
     assert_ne!(incomplete, ready);
 
-    store::sqlx::query("UPDATE projection_window SET incomplete=?")
+    query("UPDATE projection_window SET incomplete=?")
         .bind(r#"{"kind":"unknown-fixture-status"}"#)
         .execute(&engine.store.pool)
         .await
-        .unwrap();
-    let before = QUERIES.load(Ordering::Relaxed);
-    let failed = session.on_sync_event(SyncEvent::Projection).await;
-    assert_eq!(QUERIES.load(Ordering::Relaxed) - before, 2);
-    assert_eq!(failed.len(), 2);
+        .expect("store the malformed forecast status");
+    let failed = counted_event(&mut session, SyncEvent::Projection, 2).await;
+    assert_eq!(failed.len(), FORECASTS.len());
     assert!(failed.iter().all(|message| matches!(message,
-        ServerMessage::Error { id, .. } if matches!(id.as_str(), "calendar" | "schedule"))));
+        ServerMessage::Error { id, .. } if FORECASTS.contains(&id.as_str()))));
     publish(&engine, &context, None).await;
-    let before = QUERIES.load(Ordering::Relaxed);
-    let recovered = snapshots(session.on_sync_event(SyncEvent::Projection).await);
-    assert_eq!(QUERIES.load(Ordering::Relaxed) - before, 2);
-    assert_eq!(recovered, forecast_rows(&engine, &queries).await);
-    assert_eq!(recovered.len(), 2);
+    let recovered = snapshots(counted_event(&mut session, SyncEvent::Projection, 2).await);
+    assert_forecasts(&engine, &queries, &recovered).await;
+    assert_eq!(recovered.len(), FORECASTS.len());
 
     let previous = *engine.watch_query_changes().borrow();
     engine.notify_query_changed();
     let current = *engine.watch_query_changes().borrow();
     assert_eq!(current.projection, previous.projection);
     assert_eq!(current.revision(), previous.revision().wrapping_add(1));
-    let event = tokio::time::timeout(Duration::from_secs(1), events.next(false))
+    let event = timeout(Duration::from_secs(1), events.next(false))
         .await
-        .unwrap()
-        .unwrap();
+        .expect("general refresh arrives before the deadline")
+        .expect("query watcher is active");
     assert!(matches!(event, SyncEvent::Refresh));
-    let before = QUERIES.load(Ordering::Relaxed);
-    assert!(session.on_sync_event(event).await.is_empty());
-    assert_eq!(QUERIES.load(Ordering::Relaxed) - before, 35);
-    let before = QUERIES.load(Ordering::Relaxed);
+    assert!(counted_event(&mut session, event, 35).await.is_empty());
+    let before = QUERIES.load(Relaxed);
     let explicit = snapshots(session.refresh().await);
-    assert_eq!(QUERIES.load(Ordering::Relaxed) - before, 35);
+    assert_eq!(QUERIES.load(Relaxed) - before, 35);
     assert_eq!(explicit.len(), 35);
     for (id, rows) in initial
         .iter()
-        .filter(|(id, _)| !matches!(id.as_str(), "calendar" | "schedule"))
+        .filter(|(id, _)| !FORECASTS.contains(&id.as_str()))
     {
-        assert_eq!(&explicit[id], rows);
+        assert_eq!(explicit.get(id), Some(rows));
     }
-    for id in ["calendar", "schedule"] {
-        assert_eq!(explicit[id], recovered[id]);
+    for id in FORECASTS {
+        assert_eq!(explicit.get(id), recovered.get(id));
     }
     drop(session);
     engine.store.pool.close().await;

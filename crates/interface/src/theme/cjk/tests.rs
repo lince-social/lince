@@ -1,34 +1,31 @@
-// non-lean-yet
-// Scope: fn app, fn glyphs, fn latin_text_never_loads_the_cjk_font, fn
-//   a_text_span_loads_one_shared_font_without_copying_its_bytes.
-// BeautifulRust (baseline lines):
-// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
-//   making lifetimes explicit. Sites 34, 35, 220, 221, 253, 254.
-
 use super::*;
-use bevy::text::{FontCx, LayoutCx};
-use std::sync::atomic::{AtomicUsize, Ordering};
+use crate::theme::{LATO, TypographyPlugin};
+use bevy::{
+    text::{LayoutCx, RemSize, load_font_assets_into_font_collection},
+    ui::{UiSystems, widget::update_editable_text_styles},
+};
+use fontique::{Collection, CollectionOptions};
+use std::sync::{
+    Arc,
+    atomic::{AtomicUsize, Ordering::Relaxed},
+};
 
 fn app() -> App {
     let mut app = App::new();
     app.init_resource::<Assets<Font>>()
         .init_resource::<FontCx>()
         .init_resource::<LayoutCx>()
-        .init_resource::<bevy::text::RemSize>()
-        .add_plugins(super::super::TypographyPlugin)
+        .init_resource::<RemSize>()
+        .add_plugins(TypographyPlugin)
+        .add_systems(PostUpdate, load_font_assets_into_font_collection)
         .add_systems(
             PostUpdate,
-            bevy::text::load_font_assets_into_font_collection,
-        )
-        .add_systems(
-            PostUpdate,
-            bevy::ui::widget::update_editable_text_styles.in_set(bevy::ui::UiSystems::Content),
+            update_editable_text_styles.in_set(UiSystems::Content),
         );
-    app.world_mut().resource_mut::<FontCx>().collection =
-        fontique::Collection::new(fontique::CollectionOptions {
-            shared: false,
-            system_fonts: false,
-        });
+    app.world_mut().resource_mut::<FontCx>().collection = Collection::new(CollectionOptions {
+        shared: false,
+        system_fonts: false,
+    });
     app.update();
     app.world_mut()
         .resource_mut::<FontCx>()
@@ -38,8 +35,8 @@ fn app() -> App {
 }
 
 fn glyphs(world: &mut World, entity: Entity) {
-    world.resource_scope(|world, mut fonts: Mut<FontCx>| {
-        world.resource_scope(|world, mut layout: Mut<LayoutCx>| {
+    world.resource_scope(|world, mut fonts: Mut<'_, FontCx>| {
+        world.resource_scope(|world, mut layout: Mut<'_, LayoutCx>| {
             let mut input = world.get_mut::<EditableText>(entity).unwrap();
             let value = input.editor.raw_text().to_owned();
             let shaped = input.editor.layout(&mut fonts.context, &mut layout.0);
@@ -142,8 +139,8 @@ fn late_text_changes_wake_the_host_and_refresh_existing_fonts_once() {
     let mut app = app();
     let calls = Arc::new(AtomicUsize::new(0));
     let observed = calls.clone();
-    app.insert_resource(crate::wake::WakeSignal::new(move || {
-        observed.fetch_add(1, Ordering::Relaxed);
+    app.insert_resource(WakeSignal::new(move || {
+        observed.fetch_add(1, Relaxed);
     }));
     let editor = app
         .world_mut()
@@ -168,7 +165,7 @@ fn late_text_changes_wake_the_host_and_refresh_existing_fonts_once() {
                 *sent = true;
             }
         })
-        .after(bevy::ui::UiSystems::Content),
+        .after(UiSystems::Content),
     );
     app.update();
     assert!(app.world().resource::<Fallback>().0.is_some());
@@ -179,7 +176,7 @@ fn late_text_changes_wake_the_host_and_refresh_existing_fonts_once() {
             .family_id(FAMILY)
             .is_none()
     );
-    assert_eq!(calls.load(Ordering::Relaxed), 1);
+    assert_eq!(calls.load(Relaxed), 1);
     app.update();
     assert_ne!(
         app.world()
@@ -190,7 +187,7 @@ fn late_text_changes_wake_the_host_and_refresh_existing_fonts_once() {
         old_tick
     );
     glyphs(app.world_mut(), editor);
-    assert_eq!(calls.load(Ordering::Relaxed), 1);
+    assert_eq!(calls.load(Relaxed), 1);
 }
 
 #[test]
@@ -203,9 +200,7 @@ fn fallback_survives_an_unrelated_font_unloading() {
     let temporary = app
         .world_mut()
         .resource_mut::<Assets<Font>>()
-        .add(Font::from_bytes(
-            include_bytes!("../../../../../institute/assets/fonts/Lato/Lato-Regular.ttf").to_vec(),
-        ));
+        .add(bundled_font(LATO));
     app.update();
     glyphs(app.world_mut(), editor);
     app.world_mut()
@@ -224,8 +219,8 @@ fn preedit_loads_the_font_without_committing_or_moving_the_selection() {
         .id();
     app.update();
     app.world_mut()
-        .resource_scope(|world, mut fonts: Mut<FontCx>| {
-            world.resource_scope(|world, mut layout: Mut<LayoutCx>| {
+        .resource_scope(|world, mut fonts: Mut<'_, FontCx>| {
+            world.resource_scope(|world, mut layout: Mut<'_, LayoutCx>| {
                 world
                     .get_mut::<EditableText>(editor)
                     .unwrap()
@@ -257,8 +252,8 @@ fn preedit_loads_the_font_without_committing_or_moving_the_selection() {
         selection
     );
     app.world_mut()
-        .resource_scope(|world, mut fonts: Mut<FontCx>| {
-            world.resource_scope(|world, mut layout: Mut<LayoutCx>| {
+        .resource_scope(|world, mut fonts: Mut<'_, FontCx>| {
+            world.resource_scope(|world, mut layout: Mut<'_, LayoutCx>| {
                 let mut input = world.get_mut::<EditableText>(editor).unwrap();
                 let mut driver = input.editor.driver(&mut fonts.context, &mut layout.0);
                 driver.finish_compose();

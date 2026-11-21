@@ -8,8 +8,8 @@
 // - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
 //   693.
 
-use lince_interface::host::display::{AdaptiveSyncStatus, AdaptiveSyncSupport, ColorStatus};
-pub use lince_interface::host::display::{OutputHead, OutputMode, OutputSettings};
+use lince_host::display::{AdaptiveSyncStatus, AdaptiveSyncSupport, ColorStatus};
+pub use lince_host::display::{OutputHead, OutputMode, OutputSettings};
 use smithay::reexports::wayland_server::{
     DataInit, Dispatch, GlobalDispatch, New, WEnum, protocol::wl_output,
 };
@@ -258,7 +258,7 @@ impl Server {
     pub(crate) fn install_virtual_outputs(
         &mut self,
         mut catalog: Vec<OutputHead>,
-        heads: &lince_interface::host::display::DisplayConfiguration,
+        heads: &lince_host::display::DisplayConfiguration,
         bounds: [u32; 2],
         test: bool,
     ) -> io::Result<bool> {
@@ -275,7 +275,7 @@ impl Server {
             };
             if let Some(settings) = settings {
                 if settings.adaptive_sync
-                    || settings.color != lince_interface::host::color::ColorMode::Srgb
+                    || settings.color != lince_host::color::ColorMode::Srgb
                 {
                     return Ok(false);
                 }
@@ -983,19 +983,19 @@ impl Dispatch<Settings, SettingsData> for State {
             },
             settings::Request::SetTransform { transform } => match transform {
                 WEnum::Value(wl_output::Transform::Normal) => {
-                    draft.settings.rotation = lince_interface::host::mapping::QuarterTurn::Normal
+                    draft.settings.rotation = lince_host::mapping::QuarterTurn::Normal
                 }
                 WEnum::Value(wl_output::Transform::_90) => {
                     draft.settings.rotation =
-                        lince_interface::host::mapping::QuarterTurn::Clockwise90
+                        lince_host::mapping::QuarterTurn::Clockwise90
                 }
                 WEnum::Value(wl_output::Transform::_180) => {
                     draft.settings.rotation =
-                        lince_interface::host::mapping::QuarterTurn::UpsideDown
+                        lince_host::mapping::QuarterTurn::UpsideDown
                 }
                 WEnum::Value(wl_output::Transform::_270) => {
                     draft.settings.rotation =
-                        lince_interface::host::mapping::QuarterTurn::Clockwise270
+                        lince_host::mapping::QuarterTurn::Clockwise270
                 }
                 WEnum::Value(_) => draft.valid = false,
                 WEnum::Unknown(_) => resource.post_error(

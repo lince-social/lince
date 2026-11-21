@@ -18,6 +18,7 @@ use crate::native::{
     actions::{Action, ActionButton},
     protein_area::{RecordBinding, Source},
 };
+pub use crate::work_timer_logs::formatted;
 use bevy::{prelude::*, text::EditableText};
 use cell::{ClientMessage, ServerMessage};
 use model::Entry;
@@ -182,16 +183,6 @@ pub(crate) fn refresh(world: &mut World, entity: Entity, data: &Value) -> bool {
     }
     ui::reconcile(world, entity);
     true
-}
-
-pub fn formatted(seconds: i64) -> String {
-    let seconds = seconds.max(0);
-    format!(
-        "{:02}:{:02}:{:02}",
-        seconds / 3600,
-        seconds / 60 % 60,
-        seconds % 60
-    )
 }
 
 fn status(world: &mut World, entity: Entity, message: &str) {

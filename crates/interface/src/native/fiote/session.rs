@@ -161,16 +161,35 @@ pub(crate) fn field(world: &mut World, parent: Entity, title: &str, secret: bool
 }
 
 pub fn populate(world: &mut World, parent: Entity, binding: RecordBinding) {
+    populate_panel(world, parent, binding, None);
+}
+
+pub(crate) fn populate_dashboard(
+    world: &mut World,
+    parent: Entity,
+    binding: RecordBinding,
+    data: &serde_json::Value,
+) {
+    populate_panel(world, parent, binding, Some(data));
+}
+
+fn populate_panel(
+    world: &mut World,
+    parent: Entity,
+    binding: RecordBinding,
+    dashboard_data: Option<&serde_json::Value>,
+) {
     if (binding.source != Source::Local
         && !crate::native::practice_cells::owns_source(world, &binding.source))
         || !nucleus::valid_uid(&binding.uid, "r")
     {
         return;
     }
-    let automatic = world
-        .get::<crate::native::area::InfluenceArea>(binding.area)
-        .and_then(|area| area.protein.as_ref())
-        .is_some_and(|config| config.fiote);
+    let automatic = dashboard_data.is_some()
+        || world
+            .get::<crate::native::area::InfluenceArea>(binding.area)
+            .and_then(|area| area.protein.as_ref())
+            .is_some_and(|config| config.fiote);
     let owner = world
         .spawn((
             Node {
@@ -182,21 +201,34 @@ pub fn populate(world: &mut World, parent: Entity, binding: RecordBinding) {
                 flex_direction: FlexDirection::Column,
                 width: percent(100),
                 row_gap: px(6),
-                flex_shrink: 0.0,
+                flex_shrink: if dashboard_data.is_some() { 1.0 } else { 0.0 },
+                flex_grow: if dashboard_data.is_some() { 1.0 } else { 0.0 },
+                min_height: px(0),
                 ..default()
             },
             ChildOf(parent),
             crate::native::sand_store::SandCredits(super::CREDITS),
         ))
         .id();
+    let header = if dashboard_data.is_some() {
+        let header = dashboard::controls(world, owner);
+        crate::native::edit_mode::label(world, header, "Fiotes", 20.0);
+        header
+    } else {
+        owner
+    };
     let status = crate::native::edit_mode::label(
         world,
         owner,
-        "Choose a Fiote and connect its agent.",
+        if dashboard_data.is_some() {
+            ""
+        } else {
+            "Choose a Fiote and connect its agent."
+        },
         14.0,
     );
     crate::native::accessibility::status(world, status);
-    crate::native::description::button(world, owner, owner, "Manage Fiote", management::Open);
+    let toggle = dashboard::button(world, header, owner, "Manage Fiote", management::Open);
     let content = world
         .spawn((
             Node {
@@ -213,7 +245,7 @@ pub fn populate(world: &mut World, parent: Entity, binding: RecordBinding) {
         binding: binding.clone(),
         status,
         content,
-        step: if automatic {
+        step: if automatic && dashboard_data.is_none() {
             Step::Manage
         } else {
             Step::Closed
@@ -229,6 +261,9 @@ pub fn populate(world: &mut World, parent: Entity, binding: RecordBinding) {
         poll: std::time::Instant::now(),
         automatic,
     });
+    if let Some(data) = dashboard_data {
+        dashboard::populate(world, parent, owner, content, toggle, &binding, data);
+    }
     request(
         world,
         owner,
@@ -361,7 +396,9 @@ fn request(world: &mut World, owner: Entity, message: FioteRequest) {
     let status = world.get::<Panel>(owner).unwrap().status;
     let background = matches!(
         &message,
-        FioteRequest::Inspect { .. } | FioteRequest::BrowserPoll { .. }
+        FioteRequest::Inspect { .. }
+            | FioteRequest::InspectDashboard { .. }
+            | FioteRequest::BrowserPoll { .. }
     );
     let progress = if matches!(&message, FioteRequest::AgentCheck { .. }) {
         "Checking connection without sending a message…"
@@ -389,6 +426,7 @@ fn show(world: &mut World, owner: Entity, step: Step) {
         panel.method.clone(),
         panel.saved.clone(),
     );
+    dashboard::show(world, owner, step == Step::Closed);
     if let Some(children) = world.get::<Children>(content) {
         let children: Vec<_> = children.iter().collect();
         for child in children {
@@ -603,7 +641,9 @@ fn show(world: &mut World, owner: Entity, step: Step) {
         }
         Step::Closed => {}
     }
-    if step != Step::Closed {
+    if step != Step::Closed
+        && (world.get::<dashboard::Dashboard>(owner).is_none() || step != Step::Manage)
+    {
         crate::native::description::button(
             world,
             content,
@@ -633,6 +673,9 @@ fn show(world: &mut World, owner: Entity, step: Step) {
             .resource_mut::<InputFocus>()
             .set(owner, FocusCause::Navigated);
         highlight(world, owner);
+    }
+    if world.get::<dashboard::Dashboard>(owner).is_some() && step != Step::Closed {
+        crate::native::scroll_sand::attach(world, content);
     }
 }
 
@@ -716,7 +759,11 @@ struct Close;
 impl Action for Close {
     fn apply(&self, world: &mut World, owner: Entity) {
         let panel = world.get::<Panel>(owner).unwrap();
-        if panel.step == Step::Browser || panel.pending.is_some() {
+        if panel.step == Step::Browser
+            || panel.pending.is_some()
+                && (panel.step == Step::Credentials
+                    || world.get::<dashboard::Dashboard>(owner).is_none())
+        {
             let record = panel.binding.uid.clone();
             request(world, owner, FioteRequest::BrowserCancel { record });
         }
@@ -1204,14 +1251,16 @@ fn apply_status(world: &mut World, owner: Entity, saved: impl Into<Arc<FioteStat
         let area = panel.binding.area;
         if let Some(mut area) = world.get_mut::<crate::native::area::InfluenceArea>(area) {
             if let Some(config) = &mut area.protein {
-                config.draft.query["where"] = serde_json::json!([{"uid_eq":saved.record}]);
+                config.draft.query["where"] =
+                    serde_json::json!([{"all":[{"uid_eq":saved.record}]}]);
             }
         }
     }
     let panel = world.get::<Panel>(owner).unwrap();
     let step = panel.step;
     let record_changed = panel.binding.uid != saved.record;
-    let first = panel.saved.is_none() && panel.automatic;
+    let dashboard = world.get::<dashboard::Dashboard>(owner).is_some();
+    let first = panel.saved.is_none() && panel.automatic && !dashboard;
     let changed = matches!(step, Step::Manage | Step::Connections)
         && panel.saved.as_ref().is_none_or(|previous| {
             if Arc::ptr_eq(previous, &saved) {
@@ -1240,7 +1289,7 @@ fn apply_status(world: &mut World, owner: Entity, saved: impl Into<Arc<FioteStat
         step
     } else if saved.login_pending {
         Step::Browser
-    } else if saved.settings.enabled && (!saved.requires_credential || saved.has_key) {
+    } else if dashboard || saved.settings.enabled && (!saved.requires_credential || saved.has_key) {
         Step::Closed
     } else if first {
         Step::Manage
@@ -1268,6 +1317,8 @@ fn apply_status(world: &mut World, owner: Entity, saved: impl Into<Arc<FioteStat
                 .unwrap_or("connection not checked");
             format!("{} · {state} · /login", agent.command.display())
         }
+    } else if dashboard {
+        String::new()
     } else if saved.settings.enabled {
         format!(
             "{} · {} · /login",
@@ -1301,6 +1352,7 @@ fn apply_status(world: &mut World, owner: Entity, saved: impl Into<Arc<FioteStat
         ..panel.binding.clone()
     };
     panel.saved = Some(Arc::clone(&saved));
+    dashboard::update(world, owner, &saved);
     if next != step
         || (first && !connections::editing(world, owner))
         || (step == Step::Agent && (agent_changed || refreshed))
@@ -1364,6 +1416,17 @@ fn receive(
             cell::ServerMessage::Error { id, message, .. } => (id, Err(message.clone())),
             _ => continue,
         };
+        match &result {
+            Ok(status) => {
+                if let Some(history) = &status.tool_history {
+                    crate::native::thread_castle::receive_saved_history(world, id, history, true);
+                }
+            }
+            Err(error) if id.starts_with("fiote-tool-history_") => {
+                crate::native::thread_castle::receive_saved_history(world, id, error, false);
+            }
+            Err(_) => {}
+        }
         questions::receive(world, &id, &result);
         let owners: Vec<_> = world
             .query::<(Entity, &Panel)>()
@@ -1529,27 +1592,40 @@ fn keyboard(world: &mut World) {
     }
 }
 
-fn poll(world: &mut World) {
+fn poll(world: &mut World, mut deadline: Local<crate::host::WakeDeadline>) {
+    const DASHBOARD_INTERVAL: std::time::Duration = std::time::Duration::from_secs(2);
+    let now = std::time::Instant::now();
+    let mut next_dashboard = None;
     let owners: Vec<_> = world
         .query::<(Entity, &Panel)>()
         .iter(world)
-        .filter(|(_, panel)| {
-            panel.pending.is_none()
-                && panel.step != Step::Manage
-                && (((panel.step == Step::Browser
-                    || panel.saved.as_ref().is_some_and(|saved| {
-                        !saved.running.is_empty()
-                            || saved
-                                .agent_info
-                                .as_ref()
-                                .is_some_and(|info| info["loginPending"] == true)
-                    }))
-                    && panel.poll.elapsed().as_secs() >= 1)
-                    || (panel
-                        .saved
-                        .as_ref()
-                        .is_some_and(|saved| !saved.tool_connections.is_empty())
-                        && panel.poll.elapsed().as_secs() >= 5))
+        .filter(|(owner, panel)| {
+            if panel.pending.is_some() || panel.step == Step::Manage {
+                return false;
+            }
+            if panel.step == Step::Closed && world.get::<dashboard::Dashboard>(*owner).is_some() {
+                if !displayed(world, *owner) {
+                    return false;
+                }
+                let due = panel.poll + DASHBOARD_INTERVAL;
+                if due <= now {
+                    return true;
+                }
+                next_dashboard =
+                    Some(next_dashboard.map_or(due, |next: std::time::Instant| next.min(due)));
+                return false;
+            }
+            ((panel.step == Step::Browser
+                || panel.saved.as_ref().is_some_and(|saved| {
+                    !saved.running.is_empty()
+                        || saved
+                            .agent_info
+                            .as_ref()
+                            .is_some_and(|info| info["loginPending"] == true)
+                }))
+                && panel.poll.elapsed().as_secs() >= 1)
+                || (panel.saved.as_ref().is_some_and(|saved| !saved.tool_connections.is_empty())
+                    && panel.poll.elapsed().as_secs() >= 5)
         })
         .map(|(entity, panel)| (entity, panel.binding.uid.clone(), panel.step))
         .collect();
@@ -1557,10 +1633,21 @@ fn poll(world: &mut World) {
         world.get_mut::<Panel>(owner).unwrap().poll = std::time::Instant::now();
         let update = if step == Step::Browser {
             FioteRequest::BrowserPoll { record }
+        } else if step == Step::Closed && world.get::<dashboard::Dashboard>(owner).is_some() {
+            let due = now + DASHBOARD_INTERVAL;
+            next_dashboard = Some(next_dashboard.map_or(due, |next| next.min(due)));
+            FioteRequest::InspectDashboard { record }
         } else {
             FioteRequest::Inspect { record }
         };
         request(world, owner, update);
+    }
+    if let Some(due) = next_dashboard
+        && let Some(wake) = world.get_resource::<crate::native::wake::WakeSignal>()
+    {
+        deadline.at(wake, due);
+    } else {
+        deadline.cancel();
     }
 }
 fn masks(fields: Query<&EditableText>, mut masks: Query<(&Mask, &mut Text)>) {
@@ -1580,8 +1667,10 @@ fn protect_keys(mut fields: Query<&mut EditableText, With<SecretField>>) {
 mod agent;
 mod assistant;
 mod connections;
+mod dashboard;
 mod live;
 mod management;
+pub(crate) use dashboard::refresh as refresh_dashboard;
 mod questions;
 #[cfg(test)]
 mod tests;
@@ -1612,6 +1701,7 @@ fn displayed(world: &World, mut entity: Entity) -> bool {
         if world
             .get::<Node>(entity)
             .is_some_and(|node| node.display == Display::None)
+            || world.get::<Visibility>(entity) == Some(&Visibility::Hidden)
         {
             return false;
         }

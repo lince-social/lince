@@ -1,20 +1,4 @@
-// non-lean-yet
-// Scope: struct Policy, struct Path, struct ResultSet, fn search.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
-//   74.
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 120, 122, 148,
-//   149, 150, 151, 154.
-// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
-//   129.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 34, 74.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 11, 12,
-//   13, 14, 15, 16, 17, 18, 22, 34, 54, 55, 56, 57, 61, 67, 68, 69, 70, 71, 74.
-// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites search: String
-//   (74), validate: String (34).
-// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
-//   130, 153.
+//! Bounded contact traversal with deterministic routes and retained proofs.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -22,7 +6,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    Filter, Identity, IdentityContext, MAX_DEPTH, MAX_IDENTITIES,
+    Filter, Identity, IdentityContext, MAX_DEPTH, MAX_DISCLOSURES, MAX_IDENTITIES,
     contacts::{Edge, RelationKind},
 };
 use crate::karma::CanonicalHash;
@@ -92,13 +76,18 @@ pub struct ResultSet {
     pub depth_limit_reached: bool,
 }
 
+/// Find the first shortest observed route to each eligible identity.
+///
+/// # Errors
+///
+/// The policy is invalid or the observed edges exceed the traversal budget.
 pub fn search(
     edges: &[Edge],
     identities: &BTreeMap<Identity, IdentityContext>,
     policy: &Policy,
 ) -> Result<ResultSet, String> {
     policy.validate()?;
-    if edges.len() > super::MAX_DISCLOSURES * 2 {
+    if edges.len() > MAX_DISCLOSURES * 2 {
         return Err("Contact traversal exceeds its bounded edge budget".into());
     }
     let excluded = policy.exclude_everywhere.iter().collect::<BTreeSet<_>>();
@@ -138,27 +127,32 @@ pub fn search(
                 .or_insert(edge);
         }
     }
-    let mut visited = BTreeSet::from([policy.anchor.clone()]);
-    let mut frontier = vec![Path {
-        identities: vec![policy.anchor.clone()],
-        proofs: Vec::new(),
+    let mut visited = BTreeSet::from([&policy.anchor]);
+    let mut trails = vec![Step {
+        identity: &policy.anchor,
+        incoming: None,
         unilateral: false,
     }];
+    let mut frontier = 0..1;
     for depth in 0..=policy.max_depth {
-        let mut next = Vec::new();
-        for path in frontier {
-            let last = path
-                .identities
-                .last()
-                .expect("each path starts with the subject identity");
-            if depth > 0 && !policy.intermediaries.allows(last, &identities[last]) {
+        let next = trails.len();
+        // The frontier holds the appended range from the preceding level.
+        // Ordered parent routes and ordered neighbors produce ordered children.
+        for parent in frontier {
+            let step = trails[parent];
+            let last = step.identity;
+            if depth > 0
+                && !identities
+                    .get(last)
+                    .is_some_and(|context| policy.intermediaries.allows(last, context))
+            {
                 continue;
             }
             let Some(neighbors) = adjacency.get(last) else {
                 continue;
             };
-            for (identity, edge) in neighbors {
-                if visited.contains(*identity) {
+            for (&identity, &edge) in neighbors {
+                if visited.contains(identity) {
                     continue;
                 }
                 if depth == policy.max_depth {
@@ -169,19 +163,54 @@ pub fn search(
                     result.identity_limit_reached = true;
                     return Ok(result);
                 }
-                visited.insert((*identity).clone());
-                let mut candidate = path.clone();
-                candidate.identities.push((*identity).clone());
-                candidate.proofs.push(edge.proofs.clone());
-                candidate.unilateral |= edge.kind == RelationKind::Unilateral;
-                if policy.targets.allows(identity, &identities[*identity]) {
-                    result.paths.push(candidate.clone());
+                visited.insert(identity);
+                let candidate = Step {
+                    identity,
+                    incoming: Some((parent, edge)),
+                    unilateral: step.unilateral || edge.kind == RelationKind::Unilateral,
+                };
+                if identities
+                    .get(identity)
+                    .is_some_and(|context| policy.targets.allows(identity, context))
+                {
+                    result
+                        .paths
+                        .push(candidate.path(&trails, usize::from(depth) + 1));
                 }
-                next.push(candidate);
+                trails.push(candidate);
             }
         }
-        next.sort_by(|left, right| left.identities.cmp(&right.identities));
-        frontier = next;
+        frontier = next..trails.len();
+        if frontier.is_empty() {
+            break;
+        }
     }
     Ok(result)
+}
+
+#[derive(Clone, Copy)]
+struct Step<'a> {
+    identity: &'a Identity,
+    incoming: Option<(usize, &'a Edge)>,
+    unilateral: bool,
+}
+
+impl Step<'_> {
+    fn path(mut self, trail: &[Self], distance: usize) -> Path {
+        let mut path = Path {
+            identities: Vec::with_capacity(distance + 1),
+            proofs: Vec::with_capacity(distance),
+            unilateral: self.unilateral,
+        };
+        path.identities.push(self.identity.clone());
+        // Every parent index was assigned before its child was appended.
+        while let Some((parent, edge)) = self.incoming {
+            self = trail[parent];
+            path.identities.push(self.identity.clone());
+            path.proofs.push(edge.proofs.clone());
+        }
+        path.identities.reverse();
+        path.proofs.reverse();
+        path
+    }
 }

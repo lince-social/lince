@@ -1,13 +1,15 @@
-// non-lean-yet
-// Scope: struct History, struct Selection, fn output, fn capture.
-// BeautifulRust (baseline lines):
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 35.
-// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
-//   Sites unwrap (72).
+//! Per-canvas and per-output history for numeric workspace reselection.
 
-use super::*;
-use crate::host::OutputId;
-use std::collections::{BTreeMap, BTreeSet};
+use super::Workspaces;
+use crate::{
+    host::OutputId,
+    native::{
+        laboratory::temporary, layout::desktop::HostViewport, output_views::OutputViews,
+        shortcuts::configuration::LayoutSettings,
+    },
+};
+use bevy::prelude::{Component, Entity, World};
+use std::collections::BTreeMap;
 
 #[derive(Component, Default)]
 struct History {
@@ -25,16 +27,18 @@ pub struct Selection {
 
 fn output(world: &World, root: Entity) -> Option<OutputId> {
     world
-        .get::<crate::native::layout::desktop::HostViewport>(root)
+        .get::<HostViewport>(root)
         .map(|viewport| viewport.0.id)
+}
+
+fn live_workspace(world: &World, root: Entity, spaces: &Workspaces, workspace: u64) -> bool {
+    spaces.entries.iter().any(|entry| entry.id == workspace) && !temporary(world, root, workspace)
 }
 
 pub fn capture(world: &World, root: Entity) -> Option<Selection> {
     let spaces = world.get::<Workspaces>(root)?;
     let workspace = spaces.active;
-    if !spaces.entries.iter().any(|entry| entry.id == workspace)
-        || crate::native::laboratory::temporary(world, root, workspace)
-    {
+    if !live_workspace(world, root, spaces, workspace) {
         return None;
     }
     Some(Selection {
@@ -54,43 +58,46 @@ impl Selection {
         if active == self.workspace
             || spaces.canvas_id != self.canvas
             || output(world, self.root) != self.output
-            || crate::native::laboratory::temporary(world, self.root, active)
+            || !live_workspace(world, self.root, spaces, active)
+            || !live_workspace(world, self.root, spaces, self.workspace)
         {
             return;
         }
-        let workspaces: BTreeSet<_> = spaces
-            .entries
-            .iter()
-            .filter(|entry| !crate::native::laboratory::temporary(world, self.root, entry.id))
-            .map(|entry| entry.id)
+        let outputs = world
+            .get_resource::<OutputViews>()
+            .filter(|views| views.applies_to(self.root));
+        let stale: Vec<_> = world
+            .get::<History>(self.root)
+            .filter(|history| history.canvas == self.canvas)
+            .into_iter()
+            .flat_map(|history| history.previous.iter())
+            .filter_map(|(&output, &workspace)| {
+                if output == self.output {
+                    return None;
+                }
+                let present = outputs
+                    .is_some_and(|views| views.outputs.iter().any(|view| output == Some(view.id)));
+                (!present || !live_workspace(world, self.root, spaces, workspace)).then_some(output)
+            })
             .collect();
-        if !workspaces.contains(&active) || !workspaces.contains(&self.workspace) {
+        let Ok(mut root) = world.get_entity_mut(self.root) else {
             return;
-        }
-        let outputs: BTreeSet<_> = world
-            .get_resource::<crate::native::output_views::OutputViews>()
-            .filter(|views| views.applies_to(self.root))
-            .map(|views| views.outputs.iter().map(|output| Some(output.id)).collect())
-            .unwrap_or_else(|| BTreeSet::from([self.output]));
-        let mut root = world.entity_mut(self.root);
-        if !root.contains::<History>() {
-            root.insert(History::default());
-        }
-        let mut history = root.get_mut::<History>().unwrap();
+        };
+        let mut history = root.entry::<History>().or_default().into_mut();
         if history.canvas != self.canvas {
             history.canvas = self.canvas;
             history.previous.clear();
         }
-        history
-            .previous
-            .retain(|output, workspace| outputs.contains(output) && workspaces.contains(workspace));
+        for output in stale {
+            history.previous.remove(&output);
+        }
         history.previous.insert(self.output, self.workspace);
     }
 }
 
 pub fn numeric_destination(world: &World, root: Entity, requested: u64) -> u64 {
     let enabled = world
-        .get_resource::<crate::native::shortcuts::configuration::LayoutSettings>()
+        .get_resource::<LayoutSettings>()
         .is_some_and(|settings| settings.workspace_back_and_forth);
     let Some(spaces) = world.get::<Workspaces>(root) else {
         return requested;
@@ -103,11 +110,7 @@ pub fn numeric_destination(world: &World, root: Entity, requested: u64) -> u64 {
         .filter(|history| history.canvas == spaces.canvas_id)
         .and_then(|history| history.previous.get(&output(world, root)))
         .copied()
-        .filter(|previous| {
-            *previous != requested
-                && spaces.entries.iter().any(|entry| entry.id == *previous)
-                && !crate::native::laboratory::temporary(world, root, *previous)
-        })
+        .filter(|previous| *previous != requested && live_workspace(world, root, spaces, *previous))
         .unwrap_or(requested)
 }
 

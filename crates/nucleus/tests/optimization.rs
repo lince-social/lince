@@ -6,9 +6,12 @@
 
 #![cfg(test)]
 
+#[cfg(feature = "optimization-solver")]
 use std::sync::atomic::AtomicBool;
 
-use nucleus::optimization::{self, Constraint, Model, Options, Status, Term, Variable, decimal};
+#[cfg(feature = "optimization-solver")]
+use nucleus::optimization::{self, Options, Status};
+use nucleus::optimization::{Constraint, Model, Term, Variable, decimal};
 
 fn variable(name: &str, cost: f64, upper: Option<f64>) -> Variable {
     Variable {
@@ -39,10 +42,12 @@ fn constraint(
     }
 }
 
+#[cfg(feature = "optimization-solver")]
 fn solve(model: &Model) -> optimization::Report {
     optimization::solve(model, Options::default(), &AtomicBool::new(false))
 }
 
+#[cfg(feature = "optimization-solver")]
 #[test]
 fn minimizes_cost_and_rechecks_the_known_optimum() {
     let model = Model {
@@ -62,6 +67,7 @@ fn minimizes_cost_and_rechecks_the_known_optimum() {
     assert!(model.verify(&[0.0, 0.0]).is_err());
 }
 
+#[cfg(feature = "optimization-solver")]
 #[test]
 fn supports_equalities_fixed_variables_and_zero_cost() {
     let mut x = variable("stock", 0.0, Some(2.0));
@@ -82,6 +88,7 @@ fn supports_equalities_fixed_variables_and_zero_cost() {
     assert_eq!(result.values, vec![2.0, 3.0]);
 }
 
+#[cfg(feature = "optimization-solver")]
 #[test]
 fn reports_impossible_missing_coefficients_without_a_fake_solution() {
     let model = Model {
@@ -96,6 +103,7 @@ fn reports_impossible_missing_coefficients_without_a_fake_solution() {
     assert!(result.diagnostics.iter().any(|d| d.constraint == "iodine"));
 }
 
+#[cfg(feature = "optimization-solver")]
 #[test]
 fn labels_relaxation_of_conflicting_constraints_as_diagnostic() {
     let model = Model {
@@ -124,6 +132,8 @@ fn rejects_bad_indices_duplicates_and_contradictory_bounds() {
         constraints: vec![constraint("row", &[(2, 1.0)], None, Some(2.0))],
         ..Default::default()
     };
+    assert!(model.validate().is_err());
+    #[cfg(feature = "optimization-solver")]
     assert_eq!(solve(&model).status, Status::InvalidModel);
     model.constraints[0].terms = vec![
         Term {
@@ -132,14 +142,19 @@ fn rejects_bad_indices_duplicates_and_contradictory_bounds() {
         };
         2
     ];
+    assert!(model.validate().is_err());
+    #[cfg(feature = "optimization-solver")]
     assert_eq!(solve(&model).status, Status::InvalidModel);
     model.constraints.clear();
     model.variables[0].lower = Some(decimal(2.0).unwrap());
+    assert!(model.validate().is_err());
+    #[cfg(feature = "optimization-solver")]
     assert_eq!(solve(&model).status, Status::InvalidModel);
     assert!(decimal(f64::NAN).is_err());
     assert!(decimal(f64::INFINITY).is_err());
 }
 
+#[cfg(feature = "optimization-solver")]
 #[test]
 fn interrupts_before_solving_and_enforces_the_budget_ceiling() {
     let model = Model {
@@ -176,6 +191,7 @@ fn interrupts_before_solving_and_enforces_the_budget_ceiling() {
     );
 }
 
+#[cfg(feature = "optimization-solver")]
 #[test]
 fn identifies_an_unbounded_objective() {
     let model = Model {
@@ -195,9 +211,13 @@ fn exact_inputs_round_trip_and_solving_is_repeatable() {
     let text = serde_json::to_string(&model).unwrap();
     let decoded: Model = serde_json::from_str(&text).unwrap();
     assert_eq!(serde_json::to_string(&decoded).unwrap(), text);
-    let first = solve(&decoded);
-    let second = solve(&decoded);
-    assert_eq!(first.status, second.status);
-    assert_eq!(first.values, second.values);
-    assert_eq!(first.objective, second.objective);
+    assert!(decoded.verify(&[5.0]).is_ok());
+    #[cfg(feature = "optimization-solver")]
+    {
+        let first = solve(&decoded);
+        let second = solve(&decoded);
+        assert_eq!(first.status, second.status);
+        assert_eq!(first.values, second.values);
+        assert_eq!(first.objective, second.objective);
+    }
 }

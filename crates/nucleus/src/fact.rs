@@ -1,25 +1,10 @@
-// non-lean-yet
-// Scope: enum CauseKind, struct Cause, struct NewFact, fn decimal_from_f64.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
-//   117, 122.
-// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
-//   Sites 9.
-// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
-//   119, 123.
-// - [Clippy: clippy::format_push_string] `format!(..)` appended to existing `String`. Sites 185.
-// - [Clippy: clippy::redundant_clone] Move or borrow at the marked sites and check later uses.
-//   Sites 217.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 9, 10,
-//   11, 12, 13, 14, 15, 16, 17, 18, 19, 23, 38, 56, 57, 58, 62, 68, 74, 80, 89, 90, 91, 92, 93, 94,
-//   95, 96, 100, 112, 117, 122, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 155, 175,
-//   190.
+//! Exact Fact quantities, causal metadata, and compatible SHA-256 chain records.
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-use crate::karma::DecimalValue;
+use crate::{id::new_uid, json::lowercase_hex, karma::DecimalValue};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -37,6 +22,7 @@ pub enum CauseKind {
 }
 
 impl CauseKind {
+    /// Returns the stable wire spelling of a cause kind.
     pub fn as_str(self) -> &'static str {
         match self {
             Self::UserEdit => "user_edit",
@@ -52,6 +38,7 @@ impl CauseKind {
         }
     }
 
+    /// Parses a persisted cause kind.
     pub fn parse(s: &str) -> Option<Self> {
         Some(match s {
             "user_edit" => Self::UserEdit,
@@ -69,6 +56,7 @@ impl CauseKind {
     }
 }
 
+/// Identifies why a Fact was recorded.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Cause {
     pub kind: CauseKind,
@@ -76,24 +64,31 @@ pub struct Cause {
 }
 
 impl Cause {
+    /// Creates the cause of a direct edit.
     pub fn user_edit() -> Self {
         Self {
             kind: CauseKind::UserEdit,
             uid: None,
         }
     }
+
+    /// Creates a cause referencing the rule that ran.
     pub fn rule(uid: impl Into<String>) -> Self {
         Self {
             kind: CauseKind::Rule,
             uid: Some(uid.into()),
         }
     }
+
+    /// Creates a cause referencing the settlement.
     pub fn settlement(uid: impl Into<String>) -> Self {
         Self {
             kind: CauseKind::Settlement,
             uid: Some(uid.into()),
         }
     }
+
+    /// Creates a cause referencing the observed Signal.
     pub fn signal(uid: impl Into<String>) -> Self {
         Self {
             kind: CauseKind::Signal,
@@ -102,6 +97,7 @@ impl Cause {
     }
 }
 
+/// The inputs supplied before assigning chain metadata to a Fact.
 #[derive(Debug, Clone)]
 pub struct NewFact {
     pub uid: Option<String>,
@@ -114,6 +110,7 @@ pub struct NewFact {
 }
 
 impl NewFact {
+    /// Creates an unsealed change with an exact quantity.
     pub fn quantity(record_uid: impl Into<String>, delta: DecimalValue, cause: Cause) -> Self {
         Self {
             uid: None,
@@ -126,20 +123,23 @@ impl NewFact {
         }
     }
 
+    /// Creates an unsealed change using the legacy floating-point quantity conversion.
     pub fn quantity_f64(record_uid: impl Into<String>, delta: f64, cause: Cause) -> Self {
         Self::quantity(record_uid, decimal_from_f64(delta), cause)
     }
 }
 
+/// Converts a legacy numeric input, using a scale-zero delta when conversion fails.
 pub fn decimal_from_f64(value: f64) -> DecimalValue {
-    DecimalValue::from_f64_lossy(value)
-        .unwrap_or_else(|_| DecimalValue::from_mantissa(0, 0).expect("scale 0 is always valid"))
+    DecimalValue::from_f64_lossy(value).unwrap_or(zero_delta())
 }
 
+/// Creates an exact zero delta at scale zero.
 pub fn zero_delta() -> DecimalValue {
-    DecimalValue::from_mantissa(0, 0).expect("scale 0 is always valid")
+    DecimalValue::from_integer(0)
 }
 
+/// A confirmed, hash-linked change to a Record.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Fact {
     pub uid: String,
@@ -169,9 +169,10 @@ fn canonical(f: &Fact) -> String {
     )
 }
 
+/// Assigns a Fact's identity and timestamp defaults, then seals its chain hash.
 pub fn seal(new: NewFact, prev_hash: &str, now: DateTime<Utc>) -> Fact {
     let mut fact = Fact {
-        uid: new.uid.unwrap_or_else(|| crate::id::new_uid("f")),
+        uid: new.uid.unwrap_or_else(|| new_uid("f")),
         record_uid: new.record_uid,
         delta: new.delta,
         at: new.at.unwrap_or(now),
@@ -182,32 +183,25 @@ pub fn seal(new: NewFact, prev_hash: &str, now: DateTime<Utc>) -> Fact {
         hash: String::new(),
         signature: None,
     };
-    let mut hasher = Sha256::new();
-    hasher.update(prev_hash.as_bytes());
-    hasher.update(canonical(&fact).as_bytes());
-    fact.hash = hex(&hasher.finalize());
+    fact.hash = chain_hash(&fact);
     fact
 }
 
+/// Verifies the stored hash against the Fact and its recorded predecessor hash.
 pub fn verify_chain_step(fact: &Fact) -> bool {
+    chain_hash(fact) == fact.hash
+}
+
+fn chain_hash(fact: &Fact) -> String {
     let mut hasher = Sha256::new();
     hasher.update(fact.prev_hash.as_bytes());
     hasher.update(canonical(fact).as_bytes());
-    hex(&hasher.finalize()) == fact.hash
+    lowercase_hex(&hasher.finalize())
 }
 
-fn hex(bytes: &[u8]) -> String {
-    let mut s = String::with_capacity(bytes.len() * 2);
-    for b in bytes {
-        s.push_str(&format!("{b:02x}"));
-    }
-    s
-}
-
+/// Returns the lowercase SHA-256 digest of the supplied bytes.
 pub fn sha256_hex(bytes: &[u8]) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(bytes);
-    hex(&hasher.finalize())
+    lowercase_hex(&Sha256::digest(bytes))
 }
 
 #[cfg(test)]
@@ -231,7 +225,7 @@ mod tests {
         assert!(verify_chain_step(&f2));
         assert_eq!(f2.prev_hash, f1.hash);
 
-        let mut tampered = f2.clone();
+        let mut tampered = f2;
         tampered.delta = decimal_from_f64(500.0);
         assert!(!verify_chain_step(&tampered));
     }
@@ -267,28 +261,63 @@ mod tests {
             .expect("0.1 + 0.2 is exact at scale 1");
         assert_eq!(sum.canonical(), "0.3");
         assert_eq!(decimal_from_f64(0.1).canonical(), "0.1");
+        for value in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            assert_eq!(decimal_from_f64(value), DecimalValue::from_integer(0));
+        }
     }
 
     #[test]
-    fn seal_is_deterministic_with_preset_identity() {
-        let now = chrono::DateTime::parse_from_rfc3339("2026-07-05T10:00:00Z")
-            .unwrap()
-            .with_timezone(&Utc);
-        let mk = || {
-            seal(
-                NewFact {
-                    uid: Some("f_FIXED".into()),
-                    record_uid: "r_A".into(),
-                    delta: decimal_from_f64(2.5),
-                    at: Some(now),
-                    actor_uid: Some("r_ANA".into()),
-                    cause: Cause::settlement("t_X"),
-                    payload: None,
-                },
-                "genesis",
-                now,
-            )
-        };
-        assert_eq!(mk().hash, mk().hash, "DST: replay produces identical chain");
+    fn genesis_and_linked_facts_keep_canonical_and_hash_bytes()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let now = "2026-07-05T10:00:00Z".parse()?;
+        let genesis = seal(
+            NewFact {
+                uid: Some("f_GENESIS".into()),
+                record_uid: "r_A".into(),
+                delta: DecimalValue::parse_canonical(2, "2.50")?,
+                at: None,
+                actor_uid: None,
+                cause: Cause::user_edit(),
+                payload: None,
+            },
+            "genesis",
+            now,
+        );
+        let linked = seal(
+            NewFact {
+                uid: Some("f_LINKED".into()),
+                record_uid: "r_A".into(),
+                delta: DecimalValue::parse_canonical(3, "-0.125")?,
+                at: Some("2026-07-05T10:00:01.123456789Z".parse()?),
+                actor_uid: Some("r_ANA".into()),
+                cause: Cause::settlement("t_X"),
+                payload: Some("linha|é\n".into()),
+            },
+            &genesis.hash,
+            now,
+        );
+        assert_eq!(
+            canonical(&genesis),
+            "f_GENESIS|r_A|2:2.50|2026-07-05T10:00:00+00:00||user_edit||"
+        );
+        assert_eq!(
+            canonical(&linked),
+            "f_LINKED|r_A|3:-0.125|2026-07-05T10:00:01.123456789+00:00|r_ANA|settlement|t_X|linha|é\n"
+        );
+        assert_eq!(
+            genesis.hash,
+            "f5897901e9b9c6608450bc623619a247f06a2691d49649e7786051f2e3b12561"
+        );
+        assert_eq!(
+            linked.hash,
+            "57b3007f574c25263eda133bd947f2a131aaeb26c24a5aa2a803e28147d64c55"
+        );
+        assert!(verify_chain_step(&genesis));
+        assert!(verify_chain_step(&linked));
+        assert_eq!(
+            sha256_hex(b""),
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        );
+        Ok(())
     }
 }

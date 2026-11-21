@@ -1,0 +1,36 @@
+[package]
+name = "lince-host"
+version.workspace = true
+edition.workspace = true
+rust-version = "1.95"
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Desktop host contracts, presentation geometry, and performance reporting for Lince."
+
+[features]
+ui = ["dep:bevy_ecs", "wake-timer"]
+wake-timer = ["dep:tokio"]
+backend = ["dep:lince-instrumentation"]
+layout = []
+layout-telemetry = ["layout", "dep:lince-instrumentation"]
+behavior-checks = []
+test-driver = []
+test-driver-async = ["test-driver", "tokio/sync"]
+
+[dependencies]
+bevy_ecs = { version = "=0.20.1", default-features = false, optional = true }
+crossbeam-queue = "0.3.14"
+lince-i18n.workspace = true
+lince-instrumentation = { workspace = true, optional = true }
+serde.workspace = true
+serde_json = { workspace = true, features = ["float_roundtrip"] }
+tokio = { version = "1.53.1", default-features = false, features = ["rt", "time"], optional = true }
+utils.workspace = true
+
+[dev-dependencies]
+tempfile = "=3.27.0"
+tokio = { version = "1.53.1", features = ["macros", "rt-multi-thread", "sync", "time"] }
+
+[lints]
+workspace = true

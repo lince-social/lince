@@ -9422,6 +9422,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.11.1",
+ "similar",
  "tar",
  "tempfile",
  "tokenizers",
@@ -9441,12 +9442,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "lince-host"
+version = "0.8.0"
+dependencies = [
+ "bevy_ecs",
+ "crossbeam-queue",
+ "lince-i18n",
+ "lince-instrumentation",
+ "lince-utils",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+]
+
+[[package]]
 name = "lince-i18n"
 version = "0.8.0"
 dependencies = [
  "lince-ithkuil",
  "tnil",
 ]
+
+[[package]]
+name = "lince-instrumentation"
+version = "0.8.0"
 
 [[package]]
 name = "lince-interface"
@@ -9462,7 +9482,6 @@ dependencies = [
  "cc",
  "chrono",
  "cpal 0.18.2",
- "crossbeam-queue",
  "engine",
  "flexbuffers",
  "fontique",
@@ -9479,11 +9498,13 @@ dependencies = [
  "lince-editor",
  "lince-fiote",
  "lince-hand-input",
+ "lince-host",
  "lince-i18n",
  "lince-ithkuil",
  "lince-map",
  "lince-media",
  "lince-practice",
+ "lince-presentation-models",
  "lince-resources",
  "lince-simulation",
  "lince-utils",
@@ -9496,7 +9517,6 @@ dependencies = [
  "parley",
  "protein",
  "pulldown-cmark",
- "qrcode",
  "raw-window-handle",
  "reqwest",
  "resvg",
@@ -9525,6 +9545,18 @@ dependencies = [
  "rustybuzz",
  "sha2 0.11.1",
  "tnil",
+]
+
+[[package]]
+name = "lince-karma"
+version = "0.8.0"
+dependencies = [
+ "chrono",
+ "schemars 1.2.3",
+ "sensei",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
 ]
 
 [[package]]
@@ -9624,6 +9656,7 @@ dependencies = [
  "bevy_utils",
  "engine",
  "lince-cell",
+ "lince-host",
  "lince-interface",
  "lince-smithay-capture",
  "nucleus",
@@ -9756,6 +9789,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "lince-presentation-models"
+version = "0.8.0"
+dependencies = [
+ "bevy_color",
+ "bevy_ecs",
+ "chrono",
+ "nucleus",
+ "protein-authority",
+ "pulldown-cmark",
+ "qrcode",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "lince-resources"
 version = "0.8.0"
 dependencies = [
@@ -9838,7 +9886,7 @@ dependencies = [
  "engine",
  "lince-cell",
  "lince-fiote",
- "lince-interface",
+ "lince-presentation-models",
  "nucleus",
  "protein",
  "schemars 1.2.3",
@@ -9882,6 +9930,15 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "zeroize",
+]
+
+[[package]]
+name = "lince-wgsl"
+version = "0.8.0"
+dependencies = [
+ "naga",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -11312,8 +11369,10 @@ dependencies = [
  "chrono",
  "chrono-tz",
  "glam",
+ "lince-instrumentation",
+ "lince-karma",
+ "lince-wgsl",
  "microlp",
- "naga",
  "regex",
  "schemars 1.2.3",
  "sensei",
@@ -13547,6 +13606,7 @@ dependencies = [
 name = "protein-authority"
 version = "0.8.0"
 dependencies = [
+ "chrono",
  "nucleus",
  "schemars 1.2.3",
  "sensei",
@@ -20463,7 +20523,8 @@ dependencies = [
  "gltf",
  "image 0.25.10",
  "lince-ailuros",
- "lince-interface",
+ "lince-host",
+ "lince-presentation-models",
  "quick-xml 0.42.0",
  "reqwest",
  "rustix 1.1.6",

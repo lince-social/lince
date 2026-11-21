@@ -1,24 +1,21 @@
-// non-lean-yet
-// Scope: fn register, fn fonts, struct Options, fn build.
-// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
-
-#![cfg(test)]
-
 #![cfg(feature = "ui")]
 
-use fontique::{Blob, Collection, CollectionOptions, FontInfoOverride, SourceCache};
+use fontique::{
+    Blob, Collection, CollectionOptions, FontInfoOverride, FontStyle, FontWeight, FontWidth,
+    SourceCache,
+};
 use parley::{
     Affinity, Alignment, AlignmentOptions, FontContext, FontFamily, FontFeatures, FontVariations,
     InlineBox, InlineBoxKind, Layout, LayoutContext, LineHeight, StyleProperty, WordBreak,
     editing::Cursor,
 };
-use std::{borrow::Cow, path::Path, sync::Arc};
+use std::{borrow::Cow, fs::read, path::Path};
 
 fn register(fonts: &mut FontContext, file: &str, name: Option<&str>) {
     let path = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../institute/assets/fonts")
         .join(file);
-    let data = Blob::new(Arc::new(std::fs::read(path).unwrap()));
+    let data = Blob::from(read(path).unwrap());
     assert!(
         !fonts
             .collection
@@ -33,14 +30,18 @@ fn register(fonts: &mut FontContext, file: &str, name: Option<&str>) {
     );
 }
 
-fn fonts() -> FontContext {
-    let mut fonts = FontContext {
+fn empty_fonts() -> FontContext {
+    FontContext {
         collection: Collection::new(CollectionOptions {
             shared: false,
             system_fonts: false,
         }),
         source_cache: SourceCache::default(),
-    };
+    }
+}
+
+fn fonts() -> FontContext {
+    let mut fonts = empty_fonts();
     for file in [
         "Lato/Lato-Regular.ttf",
         "Lato/Lato-Bold.ttf",
@@ -53,7 +54,6 @@ fn fonts() -> FontContext {
     fonts
 }
 
-#[derive(Clone)]
 struct Options<'a> {
     family: &'a str,
     size: f32,
@@ -190,9 +190,10 @@ fn same(a: &Layout<u32>, b: &Layout<u32>, text: &str) {
                     )
                 );
                 assert_eq!(a.first_style(), b.first_style());
-                assert_eq!(
-                    a.glyphs().collect::<Vec<_>>(),
-                    b.glyphs().collect::<Vec<_>>()
+                assert!(
+                    a.glyphs().eq(b.glyphs()),
+                    "glyph mismatch at {:?} in {text:?}",
+                    a.text_range()
                 );
             }
         }
@@ -218,10 +219,9 @@ fn compare(
     options: &Options<'_>,
 ) {
     let expected = build(fonts, &mut LayoutContext::new(), text, options);
-    let actual = build(fonts, warm, text, options);
-    same(&actual, &expected, text);
-    let again = build(fonts, warm, text, options);
-    same(&again, &expected, text);
+    for _ in 0..2 {
+        same(&build(fonts, warm, text, options), &expected, text);
+    }
 }
 
 #[test]
@@ -320,9 +320,9 @@ fn replacement_fonts_and_other_font_contexts_do_not_reuse_old_glyphs() {
     let family = fonts.collection.family_id("Replacement").unwrap();
     assert!(fonts.collection.unregister_font(
         family,
-        fontique::FontWidth::NORMAL,
-        fontique::FontStyle::Normal,
-        fontique::FontWeight::NORMAL
+        FontWidth::NORMAL,
+        FontStyle::Normal,
+        FontWeight::NORMAL
     ));
     register(
         &mut fonts,
@@ -332,13 +332,7 @@ fn replacement_fonts_and_other_font_contexts_do_not_reuse_old_glyphs() {
     compare(&mut fonts, &mut warm, text, &options);
     let after = build(&mut fonts, &mut warm, text, &options);
     assert_ne!(before.full_width(), after.full_width());
-    let mut other = FontContext {
-        collection: Collection::new(CollectionOptions {
-            shared: false,
-            system_fonts: false,
-        }),
-        source_cache: SourceCache::default(),
-    };
+    let mut other = empty_fonts();
     register(&mut other, "Lato/Lato-Bold.ttf", Some("Replacement"));
     compare(&mut other, &mut warm, text, &options);
 }

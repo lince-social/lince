@@ -1,15 +1,17 @@
-// non-lean-yet
-// Scope: fn publication_input.
-// BeautifulRust (baseline lines):
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 19.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 3.
-// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
-//   conventions. Sites 1.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 3.
+use sqlx::SqlitePool;
 
-use super::*;
+use super::{
+    DraftPromiseRevisionInput, TransferDependencyInput, TransferDraftTermsInput,
+    WholeDraftRevisionInput, revision_snapshot,
+};
+use crate::StoreError;
 
+/// Builds publication terms from the expected Transfer revision.
+///
+/// # Errors
+///
+/// Returns an error if the revision changed, the creator is missing, or
+/// storage fails.
 pub async fn publication_input(
     pool: &SqlitePool,
     transfer: &str,
@@ -24,9 +26,9 @@ pub async fn publication_input(
     }
     let creator = snapshot
         .parties
-        .iter()
+        .into_iter()
         .find(|party| party.kind == "creator")
-        .map(|party| party.person_uid.clone())
+        .map(|party| party.person_uid)
         .ok_or_else(|| sqlx::Error::Protocol("Transfer has no creator Person".into()))?;
     let terms = snapshot.transfer;
     let promises = snapshot

@@ -1,123 +1,103 @@
-// non-lean-yet
-// Scope: struct Commitment, struct Balance, struct Promise, fn reserved_for.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
-//   Sites 144, 154, 155, 186, 193, 194, 208, 217, 241, 323, 345, 468, 471, 479, 490, 509, 511, 529,
-//   670, 675.
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 92, 94, 144, 176,
-//   178, 220, 222, 224, 230, 286, 288, 340, 573, 694, 726, 727, 729, 730, 735, 740, 742.
-// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
-//   Sites 143.
-// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
-//   conversion. Sites 143.
-// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
-//   246.
-// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
-//   210.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 83, 411, 418, 433.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 12, 13,
-//   14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 33, 34, 35, 36, 37, 38, 39, 40,
-//   83, 411, 418, 433.
-// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
-//   124, 315, 318, 488, 554.
+//! Projects actual stock, private Transfer commitments, and stock available to offer.
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap},
-    sync::Arc,
+    collections::{BTreeMap, HashMap},
+    fmt::Display,
 };
 
 use nucleus::DecimalValue;
 use serde::Serialize;
-use serde_json::Value;
 use sqlx::{Row, SqliteConnection, SqlitePool};
 
-use crate::{StoreError, exact, transfer_accounting as accounting};
+use crate::{StoreError, exact};
 
+mod commitment;
+mod inputs;
+mod occurrence;
+mod promise;
+
+use inputs::{Inputs, record_ids};
+
+fn invalid(error: impl Display) -> StoreError {
+    StoreError::Protocol(error.to_string())
+}
+
+/// One Person's outstanding private application of a Promise to a Record.
 #[derive(Clone, Debug, Serialize)]
 pub struct Commitment {
+    /// Transfer that supplied the terms.
     pub transfer: String,
+    /// Display title from the Promise or its Transfer.
     pub title: String,
+    /// Revision from which these terms were read.
     pub revision: u64,
+    /// Promise selected for this exchange and Person.
     pub promise: String,
+    /// Exchange within the Transfer.
     pub exchange: String,
+    /// Activated occurrence, or no occurrence for unactivated terms.
     pub occurrence: Option<String>,
+    /// Person responsible for the private application.
     pub person: String,
+    /// Record whose balance includes this commitment.
     pub record: String,
+    /// Record receiving the primary private effect.
     pub application_record: String,
+    /// Canonical unit used by the Transfer.
     pub unit: Option<String>,
+    /// Canonical quantity still to apply.
     pub canonical_remaining: DecimalValue,
+    /// Signed quantity change still to apply to this Record.
     pub private_remaining: DecimalValue,
+    /// Whether the Person gives the canonical quantity.
     pub outgoing: bool,
+    /// Quantity held back by the terms' reservation rule.
     pub reserved: DecimalValue,
+    /// State of the selected Promise.
     pub state: String,
+    /// End of the applicable delivery window.
     pub due: Option<String>,
+    /// Group whose unstarted alternatives share reservations.
     pub alternative_group: Option<String>,
 }
 
+/// A Record's exact stock and outstanding Transfer commitments.
 #[derive(Clone, Debug, Serialize)]
 pub struct Balance {
+    /// Quantity recorded in the ledger.
     pub actual: DecimalValue,
+    /// Ledger quantity adjusted for current loans.
     pub available: DecimalValue,
+    /// Quantity held back by commitments.
     pub reserved: DecimalValue,
+    /// Available quantity after reservations, possibly negative.
     pub surplus: DecimalValue,
+    /// Nonnegative stock available to offer under the current unit.
     pub can_offer: DecimalValue,
+    /// Outstanding commitments in Transfer, exchange, Person, and path order.
     pub commitments: Vec<Commitment>,
+    /// Diagnostics for stock or commitments that could not be fully projected.
     pub incomplete: Vec<String>,
 }
 
-struct Promise {
-    transfer: String,
-    title: String,
-    revision: u64,
-    uid: String,
-    exchange: String,
-    owner: String,
-    record: Option<String>,
-    quantity: f64,
-    unit: Option<String>,
-    state: String,
-    reserve_from: String,
-    giver: Option<String>,
-    receiver: Option<String>,
-    due: Option<String>,
-    alternative: Option<String>,
-    remote_occurrences: Option<Arc<[Value]>>,
-    unavailable: bool,
-}
-
-impl Promise {
-    fn outgoing(&self, person: &str) -> bool {
-        self.giver
-            .as_deref()
-            .map_or(self.quantity < 0.0, |giver| giver == person)
-    }
-
-    fn reserves(&self) -> bool {
-        match self.reserve_from.as_str() {
-            "proposed" => matches!(
-                self.state.as_str(),
-                "proposed" | "agreed" | "active" | "kept"
-            ),
-            "agreed" => matches!(self.state.as_str(), "agreed" | "active" | "kept"),
-            "active" => matches!(self.state.as_str(), "active" | "kept"),
-            _ => false,
-        }
-    }
-}
-
+/// Sum reservations, using the largest unstarted alternative per group and Person.
+///
+/// When a group has started, sum its active and kept alternatives instead.
+///
+/// # Errors
+///
+/// Returns an error if a reservation total exceeds the supported decimal range.
 pub fn reserved_for<'a>(
     commitments: impl IntoIterator<Item = &'a Commitment>,
 ) -> Result<DecimalValue, StoreError> {
     let mut reservations = Vec::new();
-    let mut alternatives: BTreeMap<(String, String), BTreeMap<String, (DecimalValue, bool)>> =
-        BTreeMap::new();
+    let mut alternatives: BTreeMap<_, BTreeMap<_, _>> = BTreeMap::new();
     for commitment in commitments {
         if let Some(group) = &commitment.alternative_group {
             let (amount, active) = alternatives
-                .entry((group.clone(), commitment.person.clone()))
+                .entry((group.as_str(), commitment.person.as_str()))
                 .or_default()
-                .entry(commitment.transfer.clone())
+                .entry(commitment.transfer.as_str())
                 .or_insert((exact::zero(), false));
             *amount = exact::sum_exact([*amount, commitment.reserved])?;
             *active |= matches!(commitment.state.as_str(), "active" | "kept");
@@ -146,294 +126,11 @@ pub fn reserved_for<'a>(
     exact::sum_exact(reservations)
 }
 
-fn field(value: &Value, name: &str) -> Option<String> {
-    value[name].as_str().map(str::to_string)
-}
-
-async fn promises(connection: &mut SqliteConnection) -> Result<Vec<Promise>, StoreError> {
-    let rows = sqlx::query("SELECT p.*, COALESCE(t.revision, 0) AS transfer_revision, t.source_uid AS alternative_source, t.satiation, tr.head AS transfer_head FROM promise p LEFT JOIN transfer t ON t.record_uid = p.transfer_uid LEFT JOIN record tr ON tr.uid = t.record_uid WHERE NOT EXISTS(SELECT 1 FROM transfer_source_group_result done WHERE done.source_uid = t.source_uid AND done.policy = t.satiation AND done.transfer_uid != t.record_uid AND p.state NOT IN ('active','kept'))")
-        .fetch_all(&mut *connection).await?;
-    let mut promises = Vec::new();
-    for row in rows {
-        let item = row
-            .get::<Option<&str>, _>("item_json")
-            .and_then(|value| serde_json::from_str::<Value>(value).ok())
-            .unwrap_or(Value::Null);
-        let uid: String = row.get("uid");
-        let transfer: Option<String> = row.get("transfer_uid");
-        promises.push(Promise {
-            transfer: transfer.unwrap_or_default(),
-            title: field(&item, "title")
-                .or(row.get::<Option<String>, _>("transfer_head"))
-                .unwrap_or_else(|| "Commitment".into()),
-            revision: row.get::<i64, _>("transfer_revision") as u64,
-            exchange: field(&item["exchange"], "uid").unwrap_or_else(|| uid.clone()),
-            uid,
-            owner: row
-                .get::<Option<String>, _>("party_uid")
-                .unwrap_or_default(),
-            record: row.get("record_uid"),
-            quantity: row.get("delta"),
-            unit: row.get("unit_uid"),
-            state: row.get("state"),
-            reserve_from: row.get("reserve_from"),
-            giver: field(&item["exchange"], "giver"),
-            receiver: field(&item["exchange"], "receiver"),
-            due: row.get("window_end"),
-            alternative: if row.get::<Option<String>, _>("satiation").as_deref()
-                == Some("first_completes")
-            {
-                row.get("alternative_source")
-            } else {
-                None
-            },
-            remote_occurrences: None,
-            unavailable: false,
-        });
-    }
-    let references = sqlx::query("SELECT projection, state FROM transfer_remote_reference WHERE projection IS NOT NULL AND recipient_organ_uid = (SELECT uid FROM record WHERE slug = 'local-organ' AND kind = 'organ') ORDER BY last_transfer_revision")
-        .fetch_all(&mut *connection).await?;
-    if references.is_empty() {
-        return Ok(promises);
-    }
-    let mut indices = HashMap::<String, HashMap<String, usize>>::new();
-    for (index, promise) in promises.iter().enumerate() {
-        indices
-            .entry(promise.transfer.clone())
-            .or_default()
-            .insert(promise.uid.clone(), index);
-    }
-    let mut promises: Vec<_> = promises.into_iter().map(Some).collect();
-    for reference in references {
-        let state: &str = reference.get("state");
-        let mut projection: Value = serde_json::from_str(reference.get::<&str, _>("projection"))
-            .map_err(|error| StoreError::Protocol(error.to_string()))?;
-        let transfer = field(&projection, "uid").unwrap_or_default();
-        let revision = projection["revision"].as_u64().unwrap_or(0);
-        let occurrences: Arc<[Value]> = projection
-            .get_mut("occurrences")
-            .and_then(Value::as_array_mut)
-            .map(std::mem::take)
-            .unwrap_or_default()
-            .into();
-        for row in projection["promises"].as_array().into_iter().flatten() {
-            if projection["status"] == "satiated"
-                && !matches!(row["state"].as_str(), Some("active" | "kept"))
-            {
-                continue;
-            }
-
-            let Some(uid) = field(row, "uid") else {
-                continue;
-            };
-            let previous = indices
-                .get(&transfer)
-                .and_then(|promises| promises.get(&uid))
-                .copied();
-            if previous.is_some_and(|index| {
-                promises[index]
-                    .as_ref()
-                    .expect("each promise index points to its latest revision")
-                    .revision
-                    >= revision
-            }) {
-                continue;
-            }
-            if let Some(index) = previous {
-                promises[index] = None;
-            }
-            indices
-                .entry(transfer.clone())
-                .or_default()
-                .insert(uid.clone(), promises.len());
-            promises.push(Some(Promise {
-                transfer: transfer.clone(),
-                title: field(row, "title")
-                    .or_else(|| field(&row["item"], "title"))
-                    .or_else(|| field(&projection, "head"))
-                    .unwrap_or_else(|| "Commitment".into()),
-                revision,
-                exchange: field(row, "exchange").unwrap_or_else(|| uid.clone()),
-                uid,
-                owner: field(row, "party").unwrap_or_default(),
-                record: field(row, "record"),
-                quantity: row["delta"].as_f64().unwrap_or(0.0),
-                unit: field(row, "unit"),
-                state: field(row, "state").unwrap_or_default(),
-                reserve_from: field(row, "reserve_from").unwrap_or_else(|| "none".into()),
-                giver: field(row, "giver"),
-                receiver: field(row, "receiver"),
-                due: field(row, "window_end"),
-                alternative: if projection["satiation"] == "first_completes" {
-                    field(&projection, "source")
-                } else {
-                    None
-                },
-                remote_occurrences: Some(occurrences.clone()),
-                unavailable: state != "active",
-            }));
-        }
-    }
-    Ok(promises.into_iter().flatten().collect())
-}
-
-#[derive(Default)]
-struct RecordInputs {
-    promises: Vec<usize>,
-    mappings: Vec<usize>,
-    previous: Vec<usize>,
-}
-
-struct Prepared {
-    promises: Vec<Promise>,
-    mappings: Vec<(String, String, String, String)>,
-    mapped_people: HashMap<String, HashMap<String, Vec<usize>>>,
-    handoffs: Vec<(String, String, String, String)>,
-    records: HashMap<String, RecordInputs>,
-    loans: HashMap<String, crate::transfer_loans::Adjustment>,
-    occurrences: HashMap<String, HashMap<String, Vec<Value>>>,
-    scenario_table: bool,
-}
-
-impl Prepared {
-    async fn load(
-        connection: &mut SqliteConnection,
-        selected: &[&str],
-    ) -> Result<Self, StoreError> {
-        let mut records: HashMap<_, _> = selected
-            .iter()
-            .map(|record| ((*record).to_owned(), RecordInputs::default()))
-            .collect();
-        let mappings: Vec<(String, String, String, String)> = sqlx::query_as("SELECT e.transfer_uid, e.exchange_uid, e.person_uid, COALESCE(json_extract(effect.value, '$.record'),e.record_uid) FROM transfer_private_policy p JOIN transfer_private_policy_event e ON e.uid = p.event_uid LEFT JOIN json_each(e.effects_json) effect")
-            .fetch_all(&mut *connection).await?;
-        let mut mapped_people = HashMap::<String, HashMap<String, Vec<usize>>>::new();
-        for (index, (transfer, exchange, _, target)) in mappings.iter().enumerate() {
-            mapped_people
-                .entry(transfer.clone())
-                .or_default()
-                .entry(exchange.clone())
-                .or_default()
-                .push(index);
-            if let Some(record) = records.get_mut(target) {
-                record.mappings.push(index);
-            }
-        }
-        let ids = serde_json::to_string(selected)
-            .map_err(|error| StoreError::Protocol(error.to_string()))?;
-        let handoffs: Vec<(String, String, String, String)> = sqlx::query_as("SELECT DISTINCT h.transfer_uid, h.source_promise_uid, h.participant_person_uid, a.local_record_uid FROM transfer_local_application a JOIN transfer_application_effect_handoff h ON h.uid = a.handoff_uid WHERE a.local_record_uid IN (SELECT value FROM json_each(?))")
-            .bind(ids).fetch_all(&mut *connection).await?;
-        let promises = promises(connection).await?;
-        {
-            let mut previous_records = HashMap::<(&str, &str), Vec<&str>>::new();
-            for (index, (transfer, source, _, target)) in handoffs.iter().enumerate() {
-                previous_records
-                    .entry((transfer.as_str(), source.as_str()))
-                    .or_default()
-                    .push(target);
-                if let Some(record) = records.get_mut(target) {
-                    record.previous.push(index);
-                }
-            }
-            for (index, promise) in promises.iter().enumerate() {
-                let mapped = mapped_people
-                    .get(&promise.transfer)
-                    .and_then(|exchanges| exchanges.get(&promise.exchange))
-                    .map_or(&[][..], Vec::as_slice);
-                let previous = previous_records
-                    .get(&(promise.transfer.as_str(), promise.uid.as_str()))
-                    .map_or(&[][..], Vec::as_slice);
-                for target in promise
-                    .record
-                    .iter()
-                    .map(String::as_str)
-                    .chain(mapped.iter().map(|&index| mappings[index].3.as_str()))
-                    .chain(previous.iter().copied())
-                {
-                    if let Some(record) = records.get_mut(target)
-                        && record.promises.last() != Some(&index)
-                    {
-                        record.promises.push(index);
-                    }
-                }
-            }
-        }
-        let loans = crate::transfer_loans::adjustments_on(
-            connection,
-            nucleus::execution::now().timestamp_millis(),
-        )
-        .await?
-        .into_iter()
-        .map(|adjustment| (adjustment.record.clone(), adjustment))
-        .collect();
-        let selected_exchanges: BTreeSet<_> = records
-            .values()
-            .flat_map(|record| &record.promises)
-            .map(|&index| &promises[index])
-            .filter(|promise| promise.remote_occurrences.is_none())
-            .filter(|promise| {
-                !matches!(
-                    promise.state.as_str(),
-                    "open" | "withdrawn" | "broken" | "expired"
-                )
-            })
-            .map(|promise| (promise.transfer.as_str(), promise.exchange.as_str()))
-            .collect();
-        let mut occurrences = HashMap::<String, HashMap<String, Vec<Value>>>::new();
-        if !selected_exchanges.is_empty() {
-            let selected_exchanges = serde_json::to_string(&selected_exchanges)
-                .map_err(|error| StoreError::Protocol(error.to_string()))?;
-            let rows = sqlx::query(
-                "SELECT o.transfer_uid, o.uid, o.promise_uid, o.quantity, o.window_end,
-                        o.exchange_path_uid, COALESCE(path.public_exchange_uid,o.promise_uid) AS exchange_uid
-                 FROM json_each(?) selected
-                 JOIN transfer_occurrence o ON o.transfer_uid = json_extract(selected.value, '$[0]')
-                 JOIN transfer_exchange_path path ON path.uid = o.exchange_path_uid
-                    AND COALESCE(path.public_exchange_uid,o.promise_uid) = json_extract(selected.value, '$[1]')
-                 ORDER BY o.created_at,o.uid",
-            )
-            .bind(selected_exchanges)
-            .fetch_all(&mut *connection)
-            .await?;
-            for row in rows {
-                let exchange: String = row.get("exchange_uid");
-                let occurrence = serde_json::json!({
-                    "uid": row.get::<String, _>("uid"),
-                    "promise": row.get::<String, _>("promise_uid"),
-                    "quantity": row.get::<f64, _>("quantity"),
-                    "window_end": row.get::<Option<String>, _>("window_end"),
-                    "exchange": exchange,
-                    "exchange_path": row.get::<String, _>("exchange_path_uid"),
-                });
-                occurrences
-                    .entry(row.get("transfer_uid"))
-                    .or_default()
-                    .entry(exchange)
-                    .or_default()
-                    .push(occurrence);
-            }
-        }
-        let scenario_table = if nucleus::execution::current().is_some() {
-            sqlx::query_scalar::<_, bool>(
-                "SELECT EXISTS(SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = 'simulation_assumed_transfer_effect')",
-            )
-            .fetch_one(&mut *connection)
-            .await?
-        } else {
-            false
-        };
-        Ok(Self {
-            promises,
-            mappings,
-            mapped_people,
-            handoffs,
-            records,
-            loans,
-            occurrences,
-            scenario_table,
-        })
-    }
-}
-
+/// Read one Record's balance in a consistent transaction.
+///
+/// # Errors
+///
+/// Returns an error if the Record is unavailable or a read or stock calculation fails.
 pub async fn read(pool: &SqlitePool, record: &str) -> Result<Balance, StoreError> {
     let mut tx = pool.begin().await?;
     let balance = read_on(&mut tx, record).await?;
@@ -441,6 +138,11 @@ pub async fn read(pool: &SqlitePool, record: &str) -> Result<Balance, StoreError
     Ok(balance)
 }
 
+/// Read one Record's balance on the caller's connection.
+///
+/// # Errors
+///
+/// Returns an error if the Record is unavailable or a read or stock calculation fails.
 pub async fn read_on(
     connection: &mut SqliteConnection,
     record: &str,
@@ -452,319 +154,49 @@ pub async fn read_on(
     .fetch_one(&mut *connection)
     .await?;
     let actual = exact::read_decimal(&resource, "quantity")?;
-    let prepared = Prepared::load(connection, &[record]).await?;
-    read_prepared_on(connection, record, actual, &prepared).await
+    let inputs = Inputs::load(connection, &record_ids(&[record])?).await?;
+    inputs
+        .scope(connection, &[record])
+        .await?
+        .balance_on(connection, record, actual)
+        .await
 }
 
+/// Read several Record balances from the same snapshot and shared inputs.
+///
+/// # Errors
+///
+/// Returns an error if any Record is unavailable or a read or stock calculation fails.
 pub async fn read_many(
     pool: &SqlitePool,
     records: &[&str],
 ) -> Result<HashMap<String, Balance>, StoreError> {
-    let mut balances = HashMap::new();
     if records.is_empty() {
-        return Ok(balances);
+        return Ok(HashMap::new());
     }
-    let ids =
-        serde_json::to_string(records).map_err(|error| StoreError::Protocol(error.to_string()))?;
+    let ids = record_ids(records)?;
     let mut tx = pool.begin().await?;
-    let rows = sqlx::query("SELECT uid, quantity_mantissa, quantity_scale FROM record WHERE deleted_at IS NULL AND uid IN (SELECT value FROM json_each(?))")
-        .bind(ids).fetch_all(&mut *tx).await?;
-    let mut actuals = HashMap::<String, DecimalValue>::with_capacity(rows.len());
+    let rows = sqlx::query(
+        "SELECT uid, quantity_mantissa, quantity_scale FROM record
+         WHERE deleted_at IS NULL AND uid IN (SELECT value FROM json_each(?))",
+    )
+    .bind(&ids)
+    .fetch_all(&mut *tx)
+    .await?;
+    let mut actuals = HashMap::<String, _>::with_capacity(rows.len());
     for row in rows {
         actuals.insert(row.get("uid"), exact::read_decimal(&row, "quantity")?);
     }
     if records.iter().any(|record| !actuals.contains_key(*record)) {
         return Err(StoreError::RowNotFound);
     }
-    let prepared = Prepared::load(&mut tx, records).await?;
+    let inputs = Inputs::load(&mut tx, &ids).await?;
+    let mut scope = inputs.scope(&mut tx, records).await?;
+    let mut balances = HashMap::with_capacity(actuals.len());
     for (record, actual) in actuals {
-        let balance = read_prepared_on(&mut tx, &record, actual, &prepared).await?;
+        let balance = scope.balance_on(&mut tx, &record, actual).await?;
         balances.insert(record, balance);
     }
     tx.rollback().await?;
     Ok(balances)
-}
-
-async fn read_prepared_on(
-    connection: &mut SqliteConnection,
-    record: &str,
-    actual: DecimalValue,
-    prepared: &Prepared,
-) -> Result<Balance, StoreError> {
-    let inputs = &prepared.records[record];
-    let mut previous_people = HashMap::<(&str, &str), Vec<&str>>::new();
-    for &index in &inputs.previous {
-        let (transfer, source, person, _) = &prepared.handoffs[index];
-        previous_people
-            .entry((transfer.as_str(), source.as_str()))
-            .or_default()
-            .push(person.as_str());
-    }
-    let mut selected: BTreeMap<(&str, &str, &str), &Promise> = BTreeMap::new();
-    for &index in &inputs.promises {
-        let promise = &prepared.promises[index];
-        let mut people = BTreeSet::new();
-        if promise.record.as_deref() == Some(record) {
-            people.insert(promise.owner.as_str());
-        }
-        let mapped = prepared
-            .mapped_people
-            .get(&promise.transfer)
-            .and_then(|exchanges| exchanges.get(&promise.exchange))
-            .map_or(&[][..], Vec::as_slice);
-        for &index in mapped {
-            let (_, _, person, target) = &prepared.mappings[index];
-            if target == record {
-                people.insert(person.as_str());
-            }
-        }
-        if let Some(previous) =
-            previous_people.get(&(promise.transfer.as_str(), promise.uid.as_str()))
-        {
-            people.extend(previous.iter().copied());
-        }
-        for person in people {
-            if person != promise.owner
-                && promise.giver.as_deref() != Some(person)
-                && promise.receiver.as_deref() != Some(person)
-            {
-                continue;
-            }
-            if mapped
-                .iter()
-                .any(|&index| prepared.mappings[index].2 == person)
-                && !mapped.iter().any(|&index| {
-                    prepared.mappings[index].2 == person && prepared.mappings[index].3 == record
-                })
-            {
-                continue;
-            }
-            let key = (promise.transfer.as_str(), promise.exchange.as_str(), person);
-            let replace = selected.get(&key).is_none_or(|current| {
-                promise.revision > current.revision
-                    || (current.owner != person && promise.owner == person)
-            });
-            if replace {
-                selected.insert(key, promise);
-            }
-        }
-    }
-    let mut commitments = Vec::new();
-    let mut incomplete = Vec::new();
-    for &index in &inputs.mappings {
-        let (transfer, exchange, person, _) = &prepared.mappings[index];
-        if !selected.contains_key(&(transfer.as_str(), exchange.as_str(), person.as_str())) {
-            incomplete.push(format!(
-                "{transfer}: a private commitment has no available current terms"
-            ));
-        }
-    }
-    for ((_, _, person), promise) in selected {
-        if matches!(
-            promise.state.as_str(),
-            "open" | "withdrawn" | "broken" | "expired"
-        ) {
-            continue;
-        }
-        if promise.unavailable {
-            incomplete.push(format!(
-                "{}: delivery access is unavailable",
-                promise.transfer
-            ));
-        }
-        let occurrences = promise.remote_occurrences.as_deref().unwrap_or_else(|| {
-            prepared
-                .occurrences
-                .get(&promise.transfer)
-                .and_then(|exchanges| exchanges.get(&promise.exchange))
-                .map_or(&[][..], Vec::as_slice)
-        });
-        let mut paths: BTreeMap<&str, &Value> = BTreeMap::new();
-        for occurrence in occurrences
-            .iter()
-            .filter(|row| row["exchange"] == promise.exchange || row["promise"] == promise.uid)
-        {
-            let Some(uid) = occurrence["uid"].as_str() else {
-                continue;
-            };
-            let path = occurrence["exchange_path"].as_str().unwrap_or(uid);
-            if !paths.contains_key(path) || occurrence["promise"] == promise.uid {
-                paths.insert(path, occurrence);
-            }
-        }
-        if paths.is_empty() && promise.state == "kept" {
-            continue;
-        }
-        let amounts: Vec<(Option<String>, f64, Option<String>)> = if paths.is_empty() {
-            vec![(None, promise.quantity.abs(), promise.due.clone())]
-        } else {
-            paths
-                .values()
-                .map(|row| {
-                    (
-                        field(row, "uid"),
-                        row["quantity"].as_f64().unwrap_or(0.0),
-                        field(row, "window_end"),
-                    )
-                })
-                .collect()
-        };
-        for (occurrence, total, due) in amounts {
-            let result = commitment(
-                connection,
-                record,
-                person,
-                promise,
-                occurrence.as_deref(),
-                total,
-                due,
-                &prepared.loans,
-                prepared.scenario_table,
-            )
-            .await;
-            match result {
-                Ok(Some(commitment)) => commitments.push(commitment),
-                Ok(None) => {}
-                Err(error) => incomplete.push(format!("{}: {error}", promise.transfer)),
-            }
-        }
-    }
-    let reserved = reserved_for(&commitments)?;
-    let loan = prepared.loans.get(record);
-    let loan_unit_changed = loan.is_some_and(|loan| loan.unit_changed);
-    if loan_unit_changed {
-        incomplete.push("Loan availability needs the original Record unit".into());
-    }
-    let available = exact::sum_exact([actual, loan.map_or_else(exact::zero, |loan| loan.delta)])?;
-    let surplus = exact::difference(available, reserved)?;
-    let can_offer = if loan_unit_changed || surplus.is_negative() {
-        exact::zero()
-    } else {
-        surplus
-    };
-    Ok(Balance {
-        actual,
-        available,
-        reserved,
-        surplus,
-        can_offer,
-        commitments,
-        incomplete,
-    })
-}
-
-async fn commitment(
-    connection: &mut SqliteConnection,
-    record: &str,
-    person: &str,
-    promise: &Promise,
-    occurrence: Option<&str>,
-    total: f64,
-    due: Option<String>,
-    loans: &HashMap<String, crate::transfer_loans::Adjustment>,
-    scenario_table: bool,
-) -> Result<Option<Commitment>, StoreError> {
-    if total <= 0.0 {
-        return Err(StoreError::Protocol(
-            "the agreed quantity is unavailable".into(),
-        ));
-    }
-    let mut applied = match occurrence {
-        Some(occurrence) => accounting::applied_on(connection, occurrence, person).await?,
-        None => accounting::Applied {
-            canonical: exact::zero(),
-            local: exact::zero(),
-        },
-    };
-    if scenario_table {
-        let effects = sqlx::query("SELECT canonical_mantissa, canonical_scale, local_mantissa, local_scale FROM simulation_assumed_transfer_effect WHERE transfer_uid = ? AND exchange_uid = ? AND person_uid = ? AND record_uid = ? AND (occurrence_uid IS ? OR occurrence_uid IS NULL)")
-            .bind(&promise.transfer).bind(&promise.exchange).bind(person).bind(record).bind(occurrence).fetch_all(&mut *connection).await?;
-        for effect in effects {
-            applied.canonical = exact::sum_exact([
-                applied.canonical,
-                exact::read_decimal(&effect, "canonical")?,
-            ])?;
-            applied.local =
-                exact::sum_exact([applied.local, exact::read_decimal(&effect, "local")?])?;
-        }
-    }
-    let total = accounting::amount(total)?;
-    let cancelled = if let Some(occurrence) = occurrence {
-        if let Some(remote) = &promise.remote_occurrences {
-            let row = remote.iter().find(|row| row["uid"] == occurrence);
-            match row
-                .and_then(|row| row["settlement_progress"]["cancelled_quantity_exact"].as_str())
-            {
-                Some(value) => DecimalValue::parse_inferred(value)
-                    .map_err(|error| StoreError::Protocol(error.to_string()))?,
-                None => accounting::amount(
-                    row.and_then(|row| row["settlement_progress"]["cancelled_quantity"].as_f64())
-                        .unwrap_or(0.0),
-                )?,
-            }
-        } else {
-            crate::transfer_cancellations::cancelled_on(connection, occurrence).await?
-        }
-    } else {
-        exact::zero()
-    };
-    let total = exact::difference(total, cancelled)?;
-    let remaining = exact::difference(total, applied.canonical)?;
-    if !remaining.is_positive() {
-        return Ok(None);
-    }
-    let policy =
-        accounting::policy_on(connection, &promise.transfer, &promise.exchange, person).await?;
-    let policy_record = policy
-        .as_ref()
-        .map_or_else(|| record.to_owned(), |policy| policy.record.clone());
-    let binding = accounting::Binding {
-        transfer: &promise.transfer,
-        exchange: &promise.exchange,
-        occurrence,
-        person,
-        record: Some(&policy_record),
-        unit: promise.unit.as_deref(),
-        outgoing: promise.outgoing(person),
-    };
-    let policy = accounting::effective_with_policy_on(connection, &binding, policy).await?;
-    let private_remaining = if let Some(group) =
-        crate::transfer_effects::quote_prepared_on(connection, &binding, total, &policy, loans)
-            .await?
-    {
-        group
-            .effects
-            .iter()
-            .find(|effect| effect.record == record)
-            .ok_or_else(|| {
-                StoreError::Protocol("private Record is outside the effect group".into())
-            })?
-            .delta
-    } else {
-        accounting::calculate(&policy.formula, total, applied.local)?.0
-    };
-    let reserved = if promise.reserves() && private_remaining.is_negative() {
-        exact::negate(private_remaining)?
-    } else {
-        exact::zero()
-    };
-    Ok(Some(Commitment {
-        transfer: promise.transfer.clone(),
-        title: promise.title.clone(),
-        revision: promise.revision,
-        promise: promise.uid.clone(),
-        exchange: promise.exchange.clone(),
-        occurrence: occurrence.map(str::to_string),
-        person: person.into(),
-        record: record.into(),
-        application_record: policy_record,
-        unit: promise.unit.clone(),
-        canonical_remaining: remaining,
-        private_remaining,
-        outgoing: promise.outgoing(person),
-        reserved,
-        state: promise.state.clone(),
-        due,
-        alternative_group: promise.alternative.clone(),
-    }))
 }

@@ -15,7 +15,8 @@ image = { workspace = true, optional = true }
 reqwest = { workspace = true }
 sha2 = { workspace = true }
 serde = { workspace = true }
-lince-interface = { workspace = true, default-features = false, features = ["test-driver"] }
+lince-host = { workspace = true, features = ["test-driver"] }
+lince-presentation-models = { workspace = true, features = ["tokens"] }
 quick-xml = "=0.42.0"
 axum = { workspace = true, optional = true }
 tokio = { workspace = true, features = ["net"] }

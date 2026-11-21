@@ -1,33 +1,23 @@
-// non-lean-yet
-// Scope: fn component_state_is_typed_and_round_trips_through_the_rule_editor, fn
-//   invalid_component_and_call_configuration_is_refused, fn
-//   automatic_call_defaults_to_audio_and_exposes_all_record_references.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
-//   Sites 62.
-// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 63, 71.
-
 use nucleus::{
-    component::{ComponentState, RecordMode},
+    component::{CallMedia, ComponentState, RecordMode},
     karma::{Consequence, rule_field::RuleConsequence},
 };
 
 #[test]
-fn component_state_is_typed_and_round_trips_through_the_rule_editor() {
+fn component_state_is_typed_and_round_trips_through_the_rule_editor() -> Result<(), String> {
     for source in [
-        "@room: show({\"kind\":\"record\",\"mode\":\"call\"})",
-        "@room: show({\"kind\":\"record\",\"mode\":\"call\",\"start_call\":{\"thread\":\"conversation\",\"person\":\"me\"}})",
-        "@room: show({\"kind\":\"record\",\"mode\":\"call\",\"start_call\":{\"thread\":\"conversation\",\"person\":\"me\",\"media\":\"video\"}})",
-        "@room: show({\"kind\":\"text\",\"text\":\"Clean room\"})",
-        "@room: show({\"kind\":\"karma\",\"search\":\"clean\"})",
-        "@room: show({\"kind\":\"frequency\",\"search\":\"daily\"})",
+        r#"@room: show({"kind":"record","mode":"call"})"#,
+        r#"@room: show({"kind":"record","mode":"call","start_call":{"thread":"conversation","person":"me"}})"#,
+        r#"@room: show({"kind":"record","mode":"call","start_call":{"thread":"conversation","person":"me","media":"video"}})"#,
+        r#"@room: show({"kind":"text","text":"Clean room"})"#,
+        r#"@room: show({"kind":"karma","search":"clean"})"#,
+        r#"@room: show({"kind":"frequency","search":"daily"})"#,
     ] {
-        let parsed = RuleConsequence::parse(source).unwrap();
-        let restored = RuleConsequence::parse(&parsed.as_text()).unwrap();
+        let parsed = RuleConsequence::parse(source)?;
+        let restored = RuleConsequence::parse(&parsed.as_text())?;
         assert_eq!(parsed.consequences, restored.consequences);
     }
-    let parsed =
-        RuleConsequence::parse("@room: show({\"kind\":\"record\",\"mode\":\"call\"})").unwrap();
+    let parsed = RuleConsequence::parse(r#"@room: show({"kind":"record","mode":"call"})"#)?;
     assert_eq!(
         parsed.consequences,
         vec![Consequence::ShowComponent {
@@ -38,21 +28,22 @@ fn component_state_is_typed_and_round_trips_through_the_rule_editor() {
             }
         }]
     );
+    Ok(())
 }
 
 #[test]
 fn invalid_component_and_call_configuration_is_refused() {
     for state in [
-        "{\"kind\":\"record\",\"mode\":\"started\"}",
-        "{\"kind\":\"record\",\"mode\":\"call\",\"call_started\":true}",
-        "{\"kind\":\"record\",\"start_call\":{\"thread\":\"conversation\",\"person\":\"me\"}}",
-        "{\"kind\":\"record\",\"mode\":\"call\",\"start_call\":true}",
-        "{\"kind\":\"record\",\"mode\":\"call\",\"start_call\":{\"thread\":\"\",\"person\":\"me\"}}",
-        "{\"kind\":\"record\",\"mode\":\"call\",\"start_call\":{\"thread\":\"conversation\"}}",
-        "{\"kind\":\"record\",\"mode\":\"call\",\"start_call\":{\"thread\":\"conversation\",\"person\":\"me\",\"media\":\"screen\"}}",
-        "{\"kind\":\"record\",\"mode\":\"call\",\"start_call\":{\"thread\":\"conversation\",\"person\":\"me\",\"extra\":true}}",
-        "{\"kind\":\"unknown\"}",
-        "{\"kind\":\"text\",\"text\":3}",
+        r#"{"kind":"record","mode":"started"}"#,
+        r#"{"kind":"record","mode":"call","call_started":true}"#,
+        r#"{"kind":"record","start_call":{"thread":"conversation","person":"me"}}"#,
+        r#"{"kind":"record","mode":"call","start_call":true}"#,
+        r#"{"kind":"record","mode":"call","start_call":{"thread":"","person":"me"}}"#,
+        r#"{"kind":"record","mode":"call","start_call":{"thread":"conversation"}}"#,
+        r#"{"kind":"record","mode":"call","start_call":{"thread":"conversation","person":"me","media":"screen"}}"#,
+        r#"{"kind":"record","mode":"call","start_call":{"thread":"conversation","person":"me","extra":true}}"#,
+        r#"{"kind":"unknown"}"#,
+        r#"{"kind":"text","text":3}"#,
     ] {
         assert!(RuleConsequence::parse(&format!("@room: show({state})")).is_err());
     }
@@ -66,20 +57,52 @@ fn invalid_component_and_call_configuration_is_refused() {
 }
 
 #[test]
-fn automatic_call_defaults_to_audio_and_exposes_all_record_references() {
-    let parsed = RuleConsequence::parse(
-        "@room: show({\"kind\":\"record\",\"mode\":\"call\",\"start_call\":{\"thread\":\"conversation\",\"person\":\"me\"}})",
-    ).unwrap();
-    let Consequence::ShowComponent { component } = &parsed.consequences[0] else {
-        panic!()
+fn automatic_call_defaults_to_audio_and_preserves_reference_order() -> Result<(), String> {
+    let mut parsed = RuleConsequence::parse(
+        r#"@room: show({
+            "kind":"composition",
+            "composition":{
+                "name":"Calls",
+                "parts":[
+                    {"id":"call","size":[1,1],"component":{
+                        "kind":"record","record":"room","mode":"call",
+                        "start_call":{"thread":"conversation","person":"me"}
+                    }},
+                    {"id":"notes","size":[1,1],"component":{"kind":"record","record":"notes"}}
+                ]
+            }
+        })"#,
+    )?;
+    let [Consequence::ShowComponent { component }] = parsed.consequences.as_mut_slice() else {
+        return Err("Expected one ShowComponent consequence".into());
     };
-    assert_eq!(component.records(), ["room", "conversation", "me"]);
+    let ComponentState::Composition { composition } = &*component else {
+        return Err("Expected a composition".into());
+    };
+    let [first, _] = composition.parts.as_slice() else {
+        return Err("Expected two component parts".into());
+    };
     let ComponentState::Record {
         start_call: Some(start),
         ..
-    } = component
+    } = &first.component
     else {
-        panic!()
+        return Err("Expected the first part to start a call".into());
     };
-    assert_eq!(start.media, nucleus::component::CallMedia::Audio);
+    assert_eq!(start.media, CallMedia::Audio);
+
+    let references = component.records_mut();
+    assert_eq!(
+        references
+            .iter()
+            .map(|reference| reference.as_str())
+            .collect::<Vec<_>>(),
+        ["room", "conversation", "me", "notes"]
+    );
+    let updated = ["office", "team", "owner", "new-notes"];
+    for (reference, updated) in references.into_iter().zip(updated) {
+        updated.clone_into(reference);
+    }
+    assert_eq!(component.records(), updated);
+    Ok(())
 }

@@ -6,7 +6,7 @@
 
 use std::time::{Duration, Instant};
 
-use lince_interface::host::display::{
+use lince_host::display::{
     DisplayAction, DisplayConfiguration, DisplayIdentification, DisplayOutcome, DisplayPreview,
     DisplayRequest, DisplayResponse, DisplaySnapshot,
 };
@@ -227,7 +227,7 @@ impl Server {
                             "These display changes are no longer awaiting confirmation.".into(),
                         ),
                     );
-                } else if !lince_interface::host::display::color_confirmation_ready(
+                } else if !lince_host::display::color_confirmation_ready(
                     &self.state.output_control.catalog,
                     &self.state.output_control.color,
                 ) {

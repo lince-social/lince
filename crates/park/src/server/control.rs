@@ -16,8 +16,8 @@ use std::{
 };
 
 #[cfg(feature = "native-presentation")]
-use lince_interface::host::DesktopAction;
-use lince_interface::host::control::{
+use lince_host::DesktopAction;
+use lince_host::control::{
     self as contract, Catalog, Disposition, Entry, Error, Failure, Invocation, Response,
 };
 use smithay::wayland::input_method::InputMethodSeat;
@@ -96,7 +96,7 @@ impl Guard {
 pub(crate) enum Effect {
     Launch(DesktopAction),
     Close(SurfaceId),
-    Magnification(lince_interface::host::magnification::Request),
+    Magnification(lince_host::magnification::Request),
 }
 enum Step {
     Complete(Result<Disposition, Failure>),

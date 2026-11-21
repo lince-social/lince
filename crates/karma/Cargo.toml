@@ -1,0 +1,21 @@
+[package]
+name = "lince-karma"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Karma program validation, evaluation, and scheduling."
+
+[dependencies]
+chrono.workspace = true
+schemars.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+
+[build-dependencies]
+sensei.workspace = true
+
+[lints]
+workspace = true

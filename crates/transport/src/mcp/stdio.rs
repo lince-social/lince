@@ -1,18 +1,7 @@
-// non-lean-yet
-// Scope: struct Proxy, fn endpoint, fn bridge_stdio, mod tests.
-// BeautifulRust (baseline lines):
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 37, 96, 108.
-// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 51, 61, 80,
-//   84, 93, 101, 105, 114, 117, 121.
-// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites bridge_stdio:
-//   String (78).
-// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
-//   Sites 51, 61, 80, 84, 93, 101, 105, 114, 117, 121.
-// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
-//   functions. Sites 78.
-// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
-//   78.
+use std::{env::var, time::Duration};
 
+use fiote::config::Secret;
+use reqwest::{Client, Url, redirect::Policy};
 use rmcp::{
     ErrorData, Peer, RoleClient, RoleServer, ServerHandler, ServiceExt,
     model::{
@@ -27,6 +16,11 @@ use rmcp::{
         },
     },
 };
+
+use super::MCP_PATH;
+
+const MAX_TOKEN_BYTES: usize = 256;
+const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
 
 struct Proxy {
     peer: Peer<RoleClient>,
@@ -73,11 +67,11 @@ impl ServerHandler for Proxy {
 }
 
 fn endpoint(value: &str) -> Result<String, String> {
-    let url = reqwest::Url::parse(value).map_err(|_| "Invalid local Lince tool endpoint.")?;
+    let url = Url::parse(value).map_err(|_| "Invalid local Lince tool endpoint.")?;
     if url.scheme() != "http"
         || url.host_str() != Some("127.0.0.1")
         || url.port().is_none()
-        || url.path() != "/mcp"
+        || url.path() != MCP_PATH
         || !url.username().is_empty()
         || url.password().is_some()
         || url.query().is_some()
@@ -90,26 +84,33 @@ fn endpoint(value: &str) -> Result<String, String> {
     Ok(url.to_string())
 }
 
+/// Connects stdio to the local MCP endpoint selected by the launcher.
+///
+/// # Errors
+/// Returns a diagnostic if the endpoint or token is invalid, or if either
+/// connection fails to open, serve requests, or close.
 pub async fn bridge_stdio() -> Result<(), String> {
-    let url = endpoint(
-        &std::env::var("LINCE_MCP_URL").map_err(|_| "A scoped Lince tool endpoint is required.")?,
-    )?;
-    let token = fiote::config::Secret(
-        std::env::var("LINCE_MCP_TOKEN")
-            .map_err(|_| "A scoped Lince connection token is required.")?,
-    );
-    if token.0.is_empty() || token.0.len() > 256 || token.0.chars().any(char::is_control) {
+    let url =
+        endpoint(&var("LINCE_MCP_URL").map_err(|_| "A scoped Lince tool endpoint is required.")?)?;
+    let token =
+        Secret(var("LINCE_MCP_TOKEN").map_err(|_| "A scoped Lince connection token is required.")?);
+    if token.0.is_empty()
+        || token.0.len() > MAX_TOKEN_BYTES
+        || token.0.chars().any(char::is_control)
+    {
         return Err("Invalid Lince tool connection token.".into());
     }
-    let client = reqwest::Client::builder()
-        .redirect(reqwest::redirect::Policy::none())
-        .connect_timeout(std::time::Duration::from_secs(10))
+    let client = Client::builder()
+        .redirect(Policy::none())
+        .connect_timeout(CONNECT_TIMEOUT)
         .build()
         .map_err(|_| "Cannot create the local tool connection.")?;
+    // The transport owns its header copy. Zeroize the original before any I/O.
     let transport = StreamableHttpClientTransport::with_client(
         client,
         StreamableHttpClientTransportConfig::with_uri(url).auth_header(token.0.clone()),
     );
+    drop(token);
     let service = ()
         .serve(transport)
         .await

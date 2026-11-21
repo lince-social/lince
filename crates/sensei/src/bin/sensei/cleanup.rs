@@ -49,9 +49,11 @@ impl Options {
                 _ => return Err(io::Error::other(format!("unknown fix option {arg:?}"))),
             }
         }
-        if options.workspace && (!options.compiler || options.manifest.is_some()) {
+        if options.workspace
+            && (options.manifest.is_some() || !options.compiler && !options.shorten_paths)
+        {
             return Err(io::Error::other(
-                "--workspace selects packages for --compiler",
+                "--workspace selects packages for --compiler or --shorten-paths",
             ));
         }
         if options.compiler && options.manifest.is_none() && !options.workspace {
@@ -132,6 +134,64 @@ fn package_manifest(source: &str) -> bool {
     source.lines().any(|line| line.trim() == "[package]")
 }
 
+fn analyzer_projects(root: &Path, manifest: &Path) -> io::Result<BTreeSet<PathBuf>> {
+    let mut projects = BTreeSet::from([manifest.to_owned()]);
+    if manifest != root.join("Cargo.toml") {
+        return Ok(projects);
+    }
+    let metadata = Command::new("cargo")
+        .current_dir(root)
+        .args([
+            "metadata",
+            "--no-deps",
+            "--format-version",
+            "1",
+            "--locked",
+            "--offline",
+        ])
+        .output()?;
+    if !metadata.status.success() {
+        return Err(io::Error::other(format!(
+            "could not list workspace packages: {}",
+            String::from_utf8_lossy(&metadata.stderr).trim()
+        )));
+    }
+    let metadata: serde_json::Value = serde_json::from_slice(&metadata.stdout)?;
+    let members = metadata["packages"]
+        .as_array()
+        .ok_or_else(|| io::Error::other("cargo metadata omitted workspace packages"))?
+        .iter()
+        .filter_map(|package| package["manifest_path"].as_str().map(PathBuf::from))
+        .collect::<BTreeSet<_>>();
+    for package in package_manifests(root)? {
+        if members.contains(&package) {
+            continue;
+        }
+        let project = Command::new("cargo")
+            .current_dir(root)
+            .args([
+                "locate-project",
+                "--workspace",
+                "--message-format",
+                "plain",
+                "--manifest-path",
+            ])
+            .arg(&package)
+            .output()?;
+        if project.status.success() {
+            let path = String::from_utf8(project.stdout).map_err(io::Error::other)?;
+            projects.insert(PathBuf::from(path.trim()));
+        } else {
+            eprintln!(
+                "sensei: analyzer skipped {}: {}",
+                package.display(),
+                String::from_utf8_lossy(&project.stderr).trim()
+            );
+        }
+    }
+    Ok(projects)
+}
+
 fn fix_scope(root: &Path, options: &Options) -> io::Result<BTreeSet<Problem>> {
     let scope = match options.manifest.as_deref() {
         Some(path)
@@ -150,13 +210,9 @@ fn fix_scope(root: &Path, options: &Options) -> io::Result<BTreeSet<Problem>> {
     let mut analysis = options
         .shorten_paths
         .then(|| {
-            Client::start(
-                root,
-                options
-                    .manifest
-                    .as_deref()
-                    .unwrap_or(&root.join("Cargo.toml")),
-            )
+            let workspace = root.join("Cargo.toml");
+            let manifest = options.manifest.as_deref().unwrap_or(&workspace);
+            Client::start(root, manifest, analyzer_projects(root, manifest)?)
         })
         .transpose()?;
     let compiler_manifest = options.manifest.as_deref().filter(|_| options.compiler);
@@ -381,7 +437,7 @@ fn generated(source: &str) -> bool {
 fn format(root: &Path, path: &Path, source: &str) -> io::Result<String> {
     let mut child = Command::new("rustfmt")
         .current_dir(root)
-        .args(["--edition", "2024", "--emit", "stdout"])
+        .args(["--edition", "2024"])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -586,21 +642,77 @@ mod tests {
                 "    note.len() + first + std::env::args_os().count() + std::env::args_os().count()\n",
                 "}\n",
                 "pub fn current_dir() -> std::io::Result<std::path::PathBuf> { std::env::current_dir() }\n",
+                "pub mod helpers {\n",
+                "    pub fn never_seen<T>(input: T) -> T { input }\n",
+                "    pub fn competing_name() -> u32 { 1 }\n",
+                "}\n",
+                "pub const LITERAL: &str = \"crate::paths::helpers::never_seen::<u32>(7)\";\n",
+                "pub fn once() -> u32 { crate::paths::helpers::never_seen::<u32>(7) }\n",
+                "mod collision {\n",
+                "    fn competing_name() -> u32 { 2 }\n",
+                "    pub fn both() -> u32 { competing_name() + crate::paths::helpers::competing_name() }\n",
+                "}\n",
+                "#[cfg(unix)] pub mod platform { pub fn platform_only() {} }\n",
+                "#[cfg(unix)] pub fn platform_call() { crate::paths::platform::platform_only(); }\n",
             );
             fs::write(&calls, original)?;
-            let analyzer = [
-                OsString::from("--shorten-paths"),
-                OsString::from("--manifest-path"),
-                manifest.into_os_string(),
-            ];
+            let standalone = root.join("standalone");
+            fs::create_dir_all(standalone.join("src"))?;
+            fs::write(
+                standalone.join("Cargo.toml"),
+                "[package]\nname = \"standalone-fixture\"\nversion = \"0.0.0\"\nedition = \"2024\"\n[workspace]\n",
+            )?;
+            let standalone_source = standalone.join("src/lib.rs");
+            let standalone_original = concat!(
+                "mod details { pub fn from_another_manifest() {} }\n",
+                "pub fn example() { crate::details::from_another_manifest(); }\n",
+            )
+            .replace('\n', "\r\n");
+            fs::write(&standalone_source, &standalone_original)?;
+            run(Command::new("cargo")
+                .current_dir(&standalone)
+                .args(["generate-lockfile", "--offline"]))?;
+            let analyzer = ["--shorten-paths".into(), "--workspace".into()];
             fix(&root, analyzer.iter().cloned().chain(["--preview".into()]))?;
             assert_eq!(fs::read_to_string(&calls)?, original);
-            fix(&root, analyzer.into_iter())?;
-            let result = fs::read_to_string(calls)?;
+            assert_eq!(fs::read_to_string(&standalone_source)?, standalone_original);
+            fix(&root, analyzer.iter().cloned())?;
+            let result = fs::read_to_string(&calls)?;
             assert!(result.contains("use std::env::args_os;"), "{result}");
             assert_eq!(result.matches("args_os().count()").count(), 3, "{result}");
             assert_eq!(result.matches("std::env::args_os").count(), 1, "{result}");
             assert!(result.contains("std::env::current_dir()"), "{result}");
+            assert!(
+                result.contains("use crate::paths::helpers::never_seen;"),
+                "{result}"
+            );
+            assert!(result.contains("    never_seen::<u32>(7)"), "{result}");
+            assert!(
+                result.contains("    crate::paths::platform::platform_only();"),
+                "{result}"
+            );
+            assert!(
+                result.contains("\"crate::paths::helpers::never_seen::<u32>(7)\""),
+                "{result}"
+            );
+            assert!(
+                result.contains("competing_name() + crate::paths::helpers::competing_name()"),
+                "{result}"
+            );
+            let shortened_standalone = fs::read_to_string(&standalone_source)?;
+            assert!(
+                shortened_standalone.contains("use crate::details::from_another_manifest;"),
+                "{shortened_standalone}"
+            );
+            assert!(
+                shortened_standalone.contains("    from_another_manifest();"),
+                "{shortened_standalone}"
+            );
+            fix(&root, analyzer.into_iter())?;
+            assert_eq!(fs::read_to_string(calls)?, result);
+            assert_eq!(fs::read_to_string(standalone_source)?, shortened_standalone);
+            run(&mut compiler::check(&root, &manifest))?;
+            run(&mut compiler::check(&root, &standalone.join("Cargo.toml")))?;
             let result = fs::read_to_string(imported)?;
             assert!(result.contains("var_os(\"A\")"), "{result}");
             assert_eq!(result.matches("std::env::var_os").count(), 1, "{result}");

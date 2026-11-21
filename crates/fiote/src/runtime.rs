@@ -18,6 +18,7 @@
 
 use std::{collections::HashSet, time::Duration};
 
+use serde_json::Value;
 use tokio::sync::watch;
 
 use crate::{
@@ -287,10 +288,20 @@ async fn turn(
                 );
             }
             output.tool_pending(&call).await?;
-            let result = tokio::select! {
+            let mut result = tokio::select! {
                 biased;
                 _ = stop.changed() => return Err("Stopped by you. Completed Record, file and command operations remain saved.".into()),
                 result = tools.run(&call.name, call.arguments) => result,
+            };
+            let diff = if matches!(
+                call.name.as_str(),
+                "create_file" | "write_file" | "edit_file" | "run_command"
+            ) {
+                result.get_mut("result")
+                    .and_then(Value::as_object_mut)
+                    .and_then(|result| result.remove("diff"))
+            } else {
+                None
             };
             if receipts.len() == 64 {
                 receipts.remove(0);
@@ -311,6 +322,11 @@ async fn turn(
                 result,
             });
             output.context(&messages).await?;
+            if let Some(Message::Tool { id, result, .. }) = messages.last() {
+                output
+                    .tool_finished(id, result, diff.as_ref().and_then(Value::as_str))
+                    .await;
+            }
         }
     }
 }

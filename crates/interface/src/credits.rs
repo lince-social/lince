@@ -1,6 +1,4 @@
-// non-lean-yet
-// Scope: const CHRONO_LICENSE, const BEVY_LICENSE, const SYMBOLS_LICENSE, const LATO_LICENSE.
-// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+//! Attribution and license text for the bundled UI dependencies and fonts.
 
 pub const CHRONO_LICENSE: &str = include_str!("../licenses/chrono.txt");
 pub const BEVY_LICENSE: &str = include_str!("../licenses/bevy-MIT.txt");
@@ -18,6 +16,7 @@ pub const CJK: Attribution = Attribution {
     ),
 };
 
+/// Credit displayed to users, with the included license notice.
 pub struct Attribution {
     pub name: &'static str,
     pub author: &'static str,

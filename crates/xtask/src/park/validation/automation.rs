@@ -4,7 +4,7 @@
 // - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 67, 69, 86, 109,
 //   111.
 
-use lince_interface::host::control::{
+use lince_host::control::{
     Context, Disposition, Entry, Error as ControlError, Invocation, Response,
 };
 
@@ -222,9 +222,9 @@ fn validate(
     if subscription["revision"]
         .as_u64()
         .is_none_or(|revision| revision == 0 || revision > before_revision)
-        || subscription["scope"].as_u64().is_none_or(|scope| {
-            scope & u64::from(lince_interface::host::control::CHANGE_RESYNC) == 0
-        })
+        || subscription["scope"]
+            .as_u64()
+            .is_none_or(|scope| scope & u64::from(lince_host::control::CHANGE_RESYNC) == 0)
     {
         return Err(
             "The automation probe did not consume its initial snapshot-resync event".into(),
@@ -257,7 +257,7 @@ fn validate(
         if call["tag"] != tag
             || invocation.command != command
             || &invocation.context != context
-            || invocation.arguments != lince_interface::host::control::Arguments::None
+            || invocation.arguments != lince_host::control::Arguments::None
             || call["outcome_unknown"] == true
             || call.get("transport_error").is_some()
             || call["elapsed_ms"]
@@ -437,7 +437,7 @@ pub(super) fn collect(
 
 #[cfg(test)]
 mod tests {
-    use lince_interface::host::{
+    use lince_host::{
         control::{Arguments, Mode},
         mapping::QuarterTurn,
     };
@@ -512,14 +512,14 @@ mod tests {
             },
         ];
         let calls = [("toggle", "layout.toggle-tiling", false), ("restore", "layout.toggle-tiling", false), ("deny-launch", "launch.launcher", true), ("deny-output", "focus.monitor-left", true)].into_iter().map(|(tag, command, denied)| {
-            let response = if denied { Response::Failed { failure: lince_interface::host::control::Failure::new(ControlError::Denied, "The fixture did not grant this permission") } }
+            let response = if denied { Response::Failed { failure: lince_host::control::Failure::new(ControlError::Denied, "The fixture did not grant this permission") } }
                 else { Response::Complete { outcome: Disposition::Applied } };
             serde_json::json!({"tag":tag,"elapsed_ms":10,"invocation":Invocation { command:command.into(), context:context.clone(), arguments:Arguments::None },"response":response})
         }).collect::<Vec<_>>();
         serde_json::json!({"status":"passed","compositor":{"pid":71,"start":100,"payload":"/fixture/compositor","sha256":HASH,"data_directory":"/fixture/data"},
             "probe":{"pid":72,"start":101,"payload":"/fixture/control-probe","sha256":HASH},"native":{"pid":73,"start":102,"payload":"/fixture/session-probe","sha256":HASH},
             "protocol_sha256":HASH,"native_exit":0,"socket":"/run/private/wayland-park-71","checks":CHECKS,
-            "subscription":{"revision":1,"scope":lince_interface::host::control::CHANGE_RESYNC},
+            "subscription":{"revision":1,"scope":lince_host::control::CHANGE_RESYNC},
             "before":{"revision":2,"entries":entries},"after_toggle":{"revision":3,"entries":entries},"after_restore":{"revision":4,"entries":entries},
             "after_close":{"revision":5,"entries":entries.iter().filter(|entry| !matches!(entry, Entry::Window { .. })).collect::<Vec<_>>()},"calls":calls})
     }

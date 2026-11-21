@@ -1,11 +1,4 @@
-// non-lean-yet
-// Scope: const MAX_ROOMS, const MAX_MEMBERS, const MAX_DEPTH, mod projection.
-// BeautifulRust (baseline lines):
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 171, 182.
-// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
-//   Sites 56.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 7,
-//   8, 14, 21, 29, 30, 31, 32, 46, 56, 58, 59, 60, 61, 62, 67, 68, 69, 70, 71, 75.
+//! Room membership, local poses, and placement hierarchy validation.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -14,14 +7,18 @@ use serde::{Deserialize, Serialize};
 
 use super::{Placement, Pose};
 
+/// Maximum rooms in one workspace.
 pub const MAX_ROOMS: usize = 16;
+/// Maximum room members in one workspace.
 pub const MAX_MEMBERS: usize = 256;
+/// Maximum number of members in an ancestry path.
 pub const MAX_DEPTH: usize = 8;
 
 mod projection;
 pub use projection::{compose, relative};
 pub(super) use projection::{project, relocalize_move};
 
+/// Returns the pose with zero translation and identity rotation.
 pub fn identity_pose() -> Pose {
     Pose {
         position: [0.0; 3],
@@ -29,12 +26,14 @@ pub fn identity_pose() -> Pose {
     }
 }
 
+/// Checks finite coordinates and a unit quaternion within the rotation tolerance.
 pub fn valid_pose(pose: &Pose) -> bool {
     pose.position.iter().all(|value| value.is_finite())
         && pose.rotation.iter().all(|value| value.is_finite())
         && (pose.rotation.iter().map(|value| value * value).sum::<f64>() - 1.0).abs() < 1e-6
 }
 
+#[expect(missing_docs, reason = "Rustdoc feeds the published Room schema")]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Room {
@@ -54,6 +53,7 @@ impl Default for Room {
 }
 
 impl Room {
+    /// Checks the display name and home pose.
     pub fn valid(&self) -> bool {
         !self.name.trim().is_empty()
             && self.name.len() <= 256
@@ -62,6 +62,11 @@ impl Room {
     }
 }
 
+#[expect(
+    missing_docs,
+    clippy::exhaustive_enums,
+    reason = "Rustdoc feeds the published schema and callers match every role"
+)]
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum Role {
@@ -73,6 +78,7 @@ pub enum Role {
     Computer,
 }
 
+#[expect(missing_docs, reason = "Rustdoc feeds the published membership schema")]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Member {
@@ -83,12 +89,13 @@ pub struct Member {
 }
 
 impl Member {
+    /// Checks placement identifiers and the local pose.
     pub fn valid(&self) -> bool {
         super::placement_id(&self.room).is_ok()
             && self
                 .parent
-                .as_ref()
-                .is_none_or(|parent| super::placement_id(parent).is_ok() && parent != &self.room)
+                .as_deref()
+                .is_none_or(|parent| super::placement_id(parent).is_ok() && parent != self.room)
             && valid_pose(&self.local)
     }
 }
@@ -106,13 +113,14 @@ pub(super) fn validate(placements: &[Placement], complete: bool) -> Result<(), S
         .collect();
     let mut counts = BTreeMap::<u64, (usize, usize)>::new();
     let mut groups = BTreeMap::new();
+    let mut visited = Vec::new();
     for item in placements {
         if let Some(group) = &item.group {
             let parent = item
                 .metadata
                 .room_member
                 .as_ref()
-                .map(|member| (&member.room, &member.parent));
+                .map(|member| (member.room.as_str(), member.parent.as_deref()));
             let key = (item.workspace, group);
             if let Some(previous) = groups.insert(key, parent)
                 && previous != parent
@@ -120,10 +128,10 @@ pub(super) fn validate(placements: &[Placement], complete: bool) -> Result<(), S
                 return Err("Keep every Sand in a group under the same room parent.".into());
             }
         }
-        let count = counts.entry(item.workspace).or_default();
-        count.0 += usize::from(item.metadata.room.is_some());
-        count.1 += usize::from(item.metadata.room_member.is_some());
-        if count.0 > MAX_ROOMS || count.1 > MAX_MEMBERS {
+        let (rooms, members) = counts.entry(item.workspace).or_default();
+        *rooms += usize::from(item.metadata.room.is_some());
+        *members += usize::from(item.metadata.room_member.is_some());
+        if *rooms > MAX_ROOMS || *members > MAX_MEMBERS {
             return Err("A workspace supports sixteen rooms and 256 room members.".into());
         }
         let Some(member) = &item.metadata.room_member else {
@@ -138,12 +146,14 @@ pub(super) fn validate(placements: &[Placement], complete: bool) -> Result<(), S
         if room.workspace != item.workspace || room.metadata.room.is_none() {
             return Err("Room members need a room in the same workspace.".into());
         }
-        let mut visited = BTreeSet::from([item.id.as_str()]);
+        visited.clear();
+        visited.push(item.id.as_str());
         let mut parent = member.parent.as_deref();
         while let Some(id) = parent {
-            if !visited.insert(id) || visited.len() > MAX_DEPTH {
+            if visited.len() >= MAX_DEPTH || visited.contains(&id) {
                 return Err("Room parenting must be acyclic and at most eight levels deep.".into());
             }
+            visited.push(id);
             let Some(anchor) = by_id.get(id) else {
                 if complete {
                     return Err("The room anchor is missing.".into());
@@ -168,32 +178,42 @@ pub(super) fn validate(placements: &[Placement], complete: bool) -> Result<(), S
 }
 
 pub(super) fn detach_descendants(placements: &mut [Placement], removed: &str) -> Vec<String> {
-    let mut detached = BTreeSet::from([removed.to_string()]);
-    loop {
-        let previous = detached.len();
-        for item in placements.iter() {
-            if item.metadata.room_member.as_ref().is_some_and(|member| {
-                detached.contains(&member.room)
-                    || member
-                        .parent
-                        .as_ref()
-                        .is_some_and(|parent| detached.contains(parent))
-            }) {
-                detached.insert(item.id.clone());
+    let affected: Vec<_> = {
+        let mut detached = BTreeSet::from([removed]);
+        loop {
+            let previous = detached.len();
+            for item in placements.iter() {
+                if item.metadata.room_member.as_ref().is_some_and(|member| {
+                    detached.contains(member.room.as_str())
+                        || member
+                            .parent
+                            .as_deref()
+                            .is_some_and(|parent| detached.contains(parent))
+                }) {
+                    detached.insert(item.id.as_str());
+                }
+            }
+            if detached.len() == previous {
+                break;
             }
         }
-        if detached.len() == previous {
-            break;
+        if detached.len() == 1 {
+            return Vec::new();
         }
-    }
-    let mut affected = Vec::new();
-    for item in placements {
-        if item.id != removed && detached.contains(&item.id) {
+        placements
+            .iter()
+            .map(|item| item.id != removed && detached.contains(item.id.as_str()))
+            .collect()
+    };
+    placements
+        .iter_mut()
+        .zip(affected)
+        .filter(|(_, affected)| *affected)
+        .map(|(item, _)| {
             item.metadata.room_member = None;
-            affected.push(item.id.clone());
-        }
-    }
-    affected
+            item.id.clone()
+        })
+        .collect()
 }
 
 #[cfg(test)]

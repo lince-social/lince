@@ -1,37 +1,32 @@
-// non-lean-yet
-// Scope: mod restoration, const MAX_CONTENT_BYTES, const MAX_PARTS, const CHUNK_BYTES.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
-//   169.
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 182, 185, 187,
-//   189, 190, 201, 202.
-// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
-//   Sites 174.
-// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
-//   Sites 14, 37.
-// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
-//   199.
-// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
-//   73.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 67, 80, 169.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 8, 9,
-//   10, 14, 15, 16, 18, 19, 21, 22, 24, 25, 26, 27, 29, 30, 31, 37, 38, 39, 41, 42, 44, 45, 47, 48,
-//   49, 50, 51, 52, 54, 55, 56, 60, 67, 80, 169, 212.
-// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites decode: String
-//   (67), describe: String (169), validate: String (80).
-
 use base64::{Engine, prelude::BASE64_STANDARD};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-mod restoration;
-pub use restoration::{Restoration, RestoringPart};
+use crate::{
+    json::lowercase_hex,
+    performance::{self, Span},
+};
 
+mod restoration;
+mod validation;
+
+pub use restoration::{Restoration, RestoringPart};
+pub use validation::validate;
+
+use validation::{decode_attachment, validate_with_attachments};
+
+/// Maximum total size of message content, counting decoded attachment bytes.
 pub const MAX_CONTENT_BYTES: usize = 4 * 1024 * 1024;
+/// Maximum number of ordered content parts per message.
 pub const MAX_PARTS: usize = 16;
+/// Maximum number of Base64 characters per persisted attachment chunk.
 pub const CHUNK_BYTES: usize = 256 * 1024;
 
+#[expect(
+    missing_docs,
+    clippy::exhaustive_enums,
+    reason = "Rustdoc feeds the published schema and callers match every variant"
+)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum MessagePart {
@@ -55,6 +50,11 @@ pub enum MessagePart {
     },
 }
 
+#[expect(
+    missing_docs,
+    clippy::exhaustive_enums,
+    reason = "Rustdoc feeds the published schema and callers match every variant"
+)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum StoredPart {
@@ -80,13 +80,20 @@ pub enum StoredPart {
     },
 }
 
+/// Returns the lowercase hexadecimal SHA-256 digest of attachment bytes.
 pub fn digest(bytes: &[u8]) -> String {
-    Sha256::digest(bytes)
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect()
+    lowercase_hex(&Sha256::digest(bytes))
 }
 
+/// Decodes a standard Base64 attachment, limited to [`MAX_CONTENT_BYTES`].
+///
+/// # Errors
+///
+/// Returns a size or encoding diagnostic for an invalid attachment.
+#[expect(
+    clippy::map_err_ignore,
+    reason = "invalid Base64 uses one stable client diagnostic"
+)]
 pub fn decode(data: &str) -> Result<Vec<u8>, String> {
     if data.len() > MAX_CONTENT_BYTES.div_ceil(3) * 4 {
         return Err("Attachments exceed the 4 MiB message limit.".into());
@@ -100,138 +107,60 @@ pub fn decode(data: &str) -> Result<Vec<u8>, String> {
     Ok(bytes)
 }
 
-pub fn validate(parts: &[MessagePart]) -> Result<(), String> {
-    validate_with_attachments(parts, decode_attachment, |_| {})
-}
-
-fn decode_attachment(data: &str) -> Result<(usize, Vec<u8>), String> {
-    let decoded = decode(data)?;
-    Ok((decoded.len(), decoded))
-}
-
-fn validate_with_attachments<T>(
-    parts: &[MessagePart],
-    mut prepare: impl FnMut(&str) -> Result<(usize, T), String>,
-    mut attachment: impl FnMut(T),
-) -> Result<(), String> {
-    if parts.len() > MAX_PARTS {
-        return Err("Use at most 16 content parts per message.".into());
-    }
-    let mut bytes = 0;
-    for part in parts {
-        let decoded = match part {
-            MessagePart::Question { question } => {
-                question.validate()?;
-                bytes += question.text().len();
-                None
-            }
-            MessagePart::Steps { steps } => {
-                crate::operation::validate_steps(steps)?;
-                bytes += crate::operation::steps_text(steps).len();
-                None
-            }
-            MessagePart::Text { text } => {
-                if text.len() > 65_536 {
-                    return Err("A text part exceeds 64 KiB.".into());
-                }
-                bytes += text.len();
-                None
-            }
-            MessagePart::Attachment {
-                name,
-                mime_type,
-                data,
-            } => {
-                if name.is_empty()
-                    || name.len() > 255
-                    || name
-                        .chars()
-                        .any(|c| c.is_control() || c == '/' || c == '\\')
-                {
-                    return Err(
-                        "Choose a filename without a directory or control characters.".into(),
-                    );
-                }
-                if mime_type.len() > 128
-                    || !mime_type.contains('/')
-                    || !mime_type
-                        .bytes()
-                        .all(|c| c.is_ascii_alphanumeric() || b"/.-+".contains(&c))
-                {
-                    return Err("The attachment media type is invalid.".into());
-                }
-                let (length, decoded) = prepare(data)?;
-                bytes += length;
-                Some(decoded)
-            }
-            MessagePart::Reference { name, uri } => {
-                if name.is_empty()
-                    || name.len() > 512
-                    || uri.len() > 4096
-                    || uri.chars().any(char::is_control)
-                    || !["record:", "file:///", "https://", "http://"]
-                        .iter()
-                        .any(|prefix| uri.starts_with(prefix))
-                {
-                    return Err("Use a named Record, file, or HTTP resource reference.".into());
-                }
-                bytes += name.len() + uri.len();
-                None
-            }
-        };
-        if bytes > MAX_CONTENT_BYTES {
-            return Err("Message contents exceed 4 MiB.".into());
-        }
-        if let Some(decoded) = decoded {
-            attachment(decoded);
-        }
-    }
-    Ok(())
-}
-
+/// Validates content and produces descriptors in the same order for storage.
+///
+/// # Errors
+///
+/// Returns the first validation error when the content cannot be stored.
 pub fn describe(parts: &[MessagePart]) -> Result<Vec<StoredPart>, String> {
-    let _preparation = crate::performance::Span::new("message-content-description");
+    let _preparation = Span::new("message-content-description");
     let mut attachments = Vec::new();
     validate_with_attachments(parts, decode_attachment, |bytes| {
-        crate::performance::add("message-description-attachments-decoded", 1);
-        crate::performance::add("message-description-bytes-decoded", bytes.len() as u64);
+        performance::add("message-description-attachments-decoded", 1);
+        performance::add(
+            "message-description-bytes-decoded",
+            u64::try_from(bytes.len()).unwrap_or(u64::MAX),
+        );
         attachments.push((bytes.len(), digest(&bytes)));
     })?;
     let mut attachments = attachments.into_iter();
-    Ok(parts
+    parts
         .iter()
-        .map(|part| match part {
-            MessagePart::Question { question } => StoredPart::Question {
-                question: question.clone(),
-            },
-            MessagePart::Steps { steps } => StoredPart::Steps {
-                steps: steps.clone(),
-            },
-            MessagePart::Text { text } => StoredPart::Text { text: text.clone() },
-            MessagePart::Reference { name, uri } => StoredPart::Reference {
-                name: name.clone(),
-                uri: uri.clone(),
-            },
-            MessagePart::Attachment {
-                name,
-                mime_type,
-                data,
-            } => {
-                let (bytes, sha256) = attachments
-                    .next()
-                    .expect("each validated attachment has a descriptor");
-                StoredPart::Attachment {
+        .map(|part| {
+            Ok(match part {
+                MessagePart::Question { question } => StoredPart::Question {
+                    question: question.clone(),
+                },
+                MessagePart::Steps { steps } => StoredPart::Steps {
+                    steps: steps.clone(),
+                },
+                MessagePart::Text { text } => StoredPart::Text { text: text.clone() },
+                MessagePart::Reference { name, uri } => StoredPart::Reference {
                     name: name.clone(),
-                    mime_type: mime_type.clone(),
-                    bytes,
-                    sha256,
-                    chunks: data.len().div_ceil(CHUNK_BYTES).max(1),
+                    uri: uri.clone(),
+                },
+                MessagePart::Attachment {
+                    name,
+                    mime_type,
+                    data,
+                } => {
+                    let (bytes, sha256) = attachments
+                        .next()
+                        .ok_or("The validated attachment descriptor is missing.")?;
+                    StoredPart::Attachment {
+                        name: name.clone(),
+                        mime_type: mime_type.clone(),
+                        bytes,
+                        sha256,
+                        chunks: data.len().div_ceil(CHUNK_BYTES).max(1),
+                    }
                 }
-            }
+            })
         })
-        .collect())
+        .collect()
 }
 
+/// Returns the persisted namespace for the indexed part and attachment chunk.
 pub fn chunk_namespace(part: usize, chunk: usize) -> String {
     format!("lince.message-data.{part}.{chunk}")
 }

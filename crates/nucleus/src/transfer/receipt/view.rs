@@ -1,11 +1,20 @@
-// non-lean-yet
-// Scope: struct Publication, fn empty_slice, struct Bundle.
-// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+//! Borrowed document views for allocation-free serialization and shared validation.
+
+use std::collections::{BTreeMap, BTreeSet};
+
+use serde::Serialize;
 
 use super::{
-    Approval, Authority, BTreeMap, BTreeSet, Content, MAX_AUTHORITIES, MAX_BUNDLE_BYTES, MAX_BYTES,
-    MAX_EVENTS, PersonApproval, Scope, Serialize, SignedEvent, signature_shape,
+    Approval, Authority, Content, MAX_AUTHORITIES, MAX_BUNDLE_BYTES, MAX_BYTES, MAX_EVENTS,
+    PersonApproval, Scope, SignedEvent, signature_shape,
 };
+
+#[derive(Clone, Copy)]
+pub(super) enum Validation {
+    Review,
+    Fragment,
+    Complete,
+}
 
 #[derive(Clone, Copy, Serialize)]
 pub(super) struct Publication<'a> {
@@ -61,14 +70,12 @@ impl<'a> From<&'a super::Review> for Bundle<'a> {
 }
 
 impl Publication<'_> {
-    pub(super) fn validate_mode(
-        &self,
-        now: i64,
-        complete: bool,
-        dependencies: bool,
-    ) -> Result<(), String> {
+    pub(super) fn validate_mode(&self, now: i64, mode: Validation) -> Result<(), String> {
         self.scope.validate()?;
-        if self.scope.issued_at > now.saturating_add(300)
+        let complete = !matches!(mode, Validation::Review);
+        let dependencies = !matches!(mode, Validation::Fragment);
+        let latest = now.saturating_add(300);
+        if self.scope.issued_at > latest
             || self.approvals.len() > 3
             || (!complete && !self.events.is_empty())
             || self.events.len() > MAX_EVENTS
@@ -99,7 +106,7 @@ impl Publication<'_> {
             if !roles.insert(approval.role)
                 || approval.issued_at < self.scope.issued_at
                 || approval.issued_at >= self.scope.expires_at
-                || approval.issued_at > now.saturating_add(300)
+                || approval.issued_at > latest
             {
                 return Err(
                     "Receipt requires distinct origin, giver and receiver approvals".into(),
@@ -112,9 +119,14 @@ impl Publication<'_> {
             return Err("Receipt requires origin attestation and each party's exact-scope or signed upfront publication consent".into());
         }
         let mut events = BTreeMap::new();
+        let mut scope_id = None;
         for signed in self.events {
             signature_shape(&signed.key_id, &signed.signature)?;
-            signed.event.validate(self.scope, now)?;
+            let id = scope_id
+                .get_or_insert_with(|| self.scope.validated_id())
+                .as_ref()
+                .map_err(Clone::clone)?;
+            signed.event.validate_for_scope(self.scope, id, now)?;
             if signed.event.issued_at < latest_approval {
                 return Err("Public events must follow approval of their scope".into());
             }
@@ -179,14 +191,8 @@ impl Publication<'_> {
 }
 
 impl Bundle<'_> {
-    pub(super) fn validate_mode(
-        &self,
-        now: i64,
-        complete: bool,
-        dependencies: bool,
-    ) -> Result<(), String> {
-        self.publication
-            .validate_mode(now, complete, dependencies)?;
+    pub(super) fn validate_mode(&self, now: i64, mode: Validation) -> Result<(), String> {
+        self.publication.validate_mode(now, mode)?;
         if self.authorities.len() + self.publication.scope.original_authorities.len()
             > MAX_AUTHORITIES
             || crate::json::encoded_len(self).map_err(|error| error.to_string())? > MAX_BUNDLE_BYTES

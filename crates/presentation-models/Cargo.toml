@@ -1,0 +1,30 @@
+[package]
+name = "lince-presentation-models"
+version.workspace = true
+edition.workspace = true
+rust-version = "1.95"
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Renderer-independent presentation models and draft validation for Lince."
+
+[features]
+default = ["models"]
+models = ["dep:chrono", "dep:nucleus", "dep:protein-authority", "dep:pulldown-cmark", "dep:qrcode", "dep:serde_json"]
+tokens = ["dep:serde_json"]
+tokens-ui = ["tokens", "dep:bevy_color", "dep:bevy_ecs"]
+tokens-checks = ["tokens"]
+
+[dependencies]
+bevy_color = { version = "=0.20.1", default-features = false, features = ["std"], optional = true }
+bevy_ecs = { version = "=0.20.1", default-features = false, optional = true }
+chrono = { workspace = true, optional = true }
+nucleus = { workspace = true, optional = true }
+protein-authority = { workspace = true, optional = true }
+pulldown-cmark = { version = "=0.13.6", default-features = false, optional = true }
+qrcode = { version = "=0.14.1", default-features = false, optional = true }
+serde.workspace = true
+serde_json = { workspace = true, features = ["float_roundtrip"], optional = true }
+
+[lints]
+workspace = true

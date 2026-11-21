@@ -12,8 +12,12 @@
 
 use super::*;
 use crate::{
-    host::display::{DisplayAction, DisplayOutcome, DisplayRequest, DisplaySnapshot},
+    host::{
+        Direction,
+        display::{DisplayAction, DisplayOutcome, DisplayRequest, DisplaySnapshot},
+    },
     i18n::Token as Tr,
+    monitor_arrangement::Draft,
     native::{
         actions::{Action, ActionButton, KeyBinding, KeyBindings, Modifiers},
         edit_mode::label,
@@ -25,9 +29,6 @@ use bevy::{
     ui::InteractionDisabled,
 };
 use std::time::{Duration, Instant};
-
-mod model;
-use model::Draft;
 
 #[derive(Resource, Default)]
 struct Editor {
@@ -102,7 +103,7 @@ enum Change {
     AdaptiveSync,
     Color,
     Reference,
-    Align(u8),
+    Align(Direction),
     Test,
     Apply,
     Keep,
@@ -565,20 +566,17 @@ fn open(world: &mut World, root: Entity) {
     );
     editing.push(reference_button.0);
     world.entity_mut(reference_button.0).insert(NeedsReference);
-    for (direction, caption) in [
-        Tr::ParkMonitorLeft,
-        Tr::ParkMonitorRight,
-        Tr::ParkMonitorAbove,
-        Tr::ParkMonitorBelow,
-    ]
-    .into_iter()
-    .enumerate()
-    {
+    for (caption, direction) in [
+        (Tr::ParkMonitorLeft, Direction::Left),
+        (Tr::ParkMonitorRight, Direction::Right),
+        (Tr::ParkMonitorAbove, Direction::Up),
+        (Tr::ParkMonitorBelow, Direction::Down),
+    ] {
         let control = button(
             world,
             alignment,
             overlay,
-            Change::Align(direction as u8),
+            Change::Align(direction),
             caption.text(),
         )
         .0;
@@ -836,7 +834,9 @@ impl Action for Change {
                     .reference
                     .filter(|reference| *reference != modal.selected)
                 {
-                    modal.draft.align(modal.selected, reference, direction);
+                    if let Err(error) = modal.draft.align(modal.selected, reference, direction) {
+                        modal.message = error.to_string();
+                    }
                     write_fields(world, &modal);
                 }
             }
@@ -859,37 +859,31 @@ impl Action for Change {
             Self::DragEnd => {
                 modal.drag = None;
                 if let Err(error) = modal.draft.normalize() {
-                    modal.message = error;
+                    modal.message = error.to_string();
                 }
                 write_fields(world, &modal);
             }
-            Self::Test | Self::Apply => {
-                match modal
-                    .draft
-                    .normalize()
-                    .and_then(|_| modal.draft.normalized())
-                {
-                    Ok(heads) => {
-                        write_fields(world, &modal);
-                        let action = if matches!(self, Self::Apply) {
-                            DisplayAction::Preview {
-                                revision: modal.draft.origin.revision,
-                                heads,
-                            }
-                        } else {
-                            DisplayAction::Test {
-                                revision: modal.draft.origin.revision,
-                                heads,
-                            }
-                        };
-                        match send(world, action) {
-                            Ok(id) => modal.pending = Some((id, false)),
-                            Err(error) => modal.message = error,
+            Self::Test | Self::Apply => match modal.draft.normalize() {
+                Ok(heads) => {
+                    write_fields(world, &modal);
+                    let action = if matches!(self, Self::Apply) {
+                        DisplayAction::Preview {
+                            revision: modal.draft.origin.revision,
+                            heads,
                         }
+                    } else {
+                        DisplayAction::Test {
+                            revision: modal.draft.origin.revision,
+                            heads,
+                        }
+                    };
+                    match send(world, action) {
+                        Ok(id) => modal.pending = Some((id, false)),
+                        Err(error) => modal.message = error,
                     }
-                    Err(error) => modal.message = error,
                 }
-            }
+                Err(error) => modal.message = error.to_string(),
+            },
             Self::Keep | Self::Revert => {
                 if let Some(preview) = snapshot.preview {
                     let action = if matches!(self, Self::Keep) {
@@ -1201,7 +1195,7 @@ pub(crate) fn update(world: &mut World) {
     }
     let error = read_fields(world, &mut modal)
         .err()
-        .or_else(|| modal.draft.normalized().err());
+        .or_else(|| modal.draft.validate().err().map(|error| error.to_string()));
     let stale = modal.draft.origin.revision != snapshot.revision
         && snapshot.preview.is_none()
         && modal.pending.is_none();

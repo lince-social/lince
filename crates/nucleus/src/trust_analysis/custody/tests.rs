@@ -1,12 +1,9 @@
-// non-lean-yet
-// Scope: fn enabled_custody_requires_explicit_bounded_policies_and_exclusions_win, fn
-//   custody_signatures_bind_target_exact_bytes_expiry_and_reader_conditions.
-// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
-
 use super::{
-    super::{Condition, Identity, IdentityContext},
+    super::{Condition, Identity, IdentityContext, serving::SourceKind},
     *,
 };
+
+use crate::karma::canonical_hash;
 
 #[test]
 fn enabled_custody_requires_explicit_bounded_policies_and_exclusions_win() {

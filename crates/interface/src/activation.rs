@@ -1,23 +1,26 @@
-// non-lean-yet
-// Scope: struct InstanceGuard, struct InstanceEvents, fn claim, fn claim_session.
-// BeautifulRust (baseline lines):
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 28, 34, 84, 338.
-// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
-//   Sites unwrap (34, 39, 229, 286, 314, 315, 316, 321, 324, 327, 335, 336, 343, 348, 350, 355,
-//   356, 357, 358, 359, 363, 364, 371, 372, 375, 376, 378, 380).
+//! Data-directory ownership and activation of a running Lince instance.
+
+mod transport;
 
 use crate::host::WakeSignal;
 use std::{
-    fs::{File, OpenOptions},
+    error::Error,
+    fmt,
+    fs::{self, File, OpenOptions, TryLockError},
+    hash::{DefaultHasher, Hash, Hasher},
     io,
     path::{Path, PathBuf},
-    sync::{Arc, Mutex, mpsc},
+    sync::{Arc, Mutex, PoisonError, mpsc},
+    time::Duration,
 };
-use tokio::{
-    io::{AsyncReadExt, AsyncWriteExt},
-    task::JoinHandle,
-};
+use tokio::{task::JoinHandle, time::sleep};
+use transport::{listen, request_show};
 
+type WakeSlot = Arc<Mutex<Option<WakeSignal>>>;
+const ACTIVATION_ATTEMPTS: usize = 40;
+const ACTIVATION_RETRY_DELAY: Duration = Duration::from_millis(25);
+
+/// Keeps the data directory locked and its activation listener alive.
 pub struct InstanceGuard {
     _lock: File,
     pub(crate) endpoint: PathBuf,
@@ -25,67 +28,98 @@ pub struct InstanceGuard {
     events: InstanceEvents,
 }
 
+/// A cloneable reader of the current owner's activation events.
 #[derive(Clone)]
 pub struct InstanceEvents {
     receiver: Arc<Mutex<mpsc::Receiver<()>>>,
-    wake: Arc<Mutex<Option<WakeSignal>>>,
+    wake: WakeSlot,
 }
 
 impl InstanceGuard {
+    /// Shares access to the pending activation events.
     pub fn events(&self) -> InstanceEvents {
         self.events.clone()
     }
 }
 
 impl InstanceEvents {
+    /// Installs the host wake callback and rings it for any already pending events.
     pub fn attach(&self, wake: WakeSignal) {
-        *self.wake.lock().unwrap() = Some(wake.clone());
+        let previous = self
+            .wake
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .replace(wake.clone());
+        drop(previous);
         wake.ring();
     }
+
+    /// Drains pending show events, reporting whether any were received.
     pub fn take_show(&self) -> bool {
-        let mut show = false;
-        while self.receiver.lock().unwrap().try_recv().is_ok() {
-            show = true;
-        }
-        show
+        self.receiver
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .try_iter()
+            .last()
+            .is_some()
+    }
+}
+
+fn ring(wake: &WakeSlot) {
+    // A host callback can itself change the installed wake signal.
+    let signal = wake.lock().unwrap_or_else(PoisonError::into_inner).clone();
+    if let Some(signal) = signal {
+        signal.ring();
     }
 }
 
 impl Drop for InstanceGuard {
     fn drop(&mut self) {
         self.task.abort();
-        let _ = std::fs::remove_file(&self.endpoint);
+        let _ = fs::remove_file(&self.endpoint);
     }
 }
 
+/// Claims an unowned data directory or requests that the running owner show its window.
+///
+/// # Errors
+///
+/// Returns an error if ownership or the activation request fails.
 pub async fn claim(data_dir: &Path) -> io::Result<Option<InstanceGuard>> {
-    claim_with_policy(data_dir, true).await
+    claim_with_policy(data_dir, ClaimPolicy::ShowOwner).await
 }
 
+/// Claims a dedicated session without activating another instance.
+///
+/// # Errors
+///
+/// Returns an error if another instance owns the directory or the listener cannot start.
 pub async fn claim_session(data_dir: &Path) -> io::Result<InstanceGuard> {
-    claim_with_policy(data_dir, false)
+    claim_with_policy(data_dir, ClaimPolicy::RequireOwnership)
         .await?
         .ok_or_else(|| io::Error::other("Park must own its data directory"))
 }
 
-async fn claim_with_policy(data_dir: &Path, activate: bool) -> io::Result<Option<InstanceGuard>> {
+enum ClaimPolicy {
+    ShowOwner,
+    RequireOwnership,
+}
+
+async fn claim_with_policy(
+    data_dir: &Path,
+    policy: ClaimPolicy,
+) -> io::Result<Option<InstanceGuard>> {
     let (lock, endpoint) = instance_lock(data_dir)?;
     match lock.try_lock() {
         Ok(()) => {}
-        Err(std::fs::TryLockError::WouldBlock) if !activate => {
-            return Err(ownership_error(data_dir));
-        }
-        Err(std::fs::TryLockError::WouldBlock) => {
-            for attempt in 0..40 {
-                match request_show(&endpoint).await {
-                    Ok(()) => return Ok(None),
-                    Err(error) if attempt == 39 => return Err(error),
-                    Err(_) => tokio::time::sleep(std::time::Duration::from_millis(25)).await,
-                }
+        Err(TryLockError::WouldBlock) => match policy {
+            ClaimPolicy::RequireOwnership => return Err(ownership_error(data_dir)),
+            ClaimPolicy::ShowOwner => {
+                request_existing_owner(&endpoint).await?;
+                return Ok(None);
             }
-            unreachable!();
-        }
-        Err(std::fs::TryLockError::Error(error)) => return Err(error),
+        },
+        Err(TryLockError::Error(error)) => return Err(error),
     }
     let (sender, receiver) = mpsc::sync_channel(1);
     let wake = Arc::new(Mutex::new(None::<WakeSignal>));
@@ -103,6 +137,16 @@ async fn claim_with_policy(data_dir: &Path, activate: bool) -> io::Result<Option
     }))
 }
 
+async fn request_existing_owner(endpoint: &Path) -> io::Result<()> {
+    for _ in 1..ACTIVATION_ATTEMPTS {
+        if request_show(endpoint).await.is_ok() {
+            return Ok(());
+        }
+        sleep(ACTIVATION_RETRY_DELAY).await;
+    }
+    request_show(endpoint).await
+}
+
 fn ownership_error(data_dir: &Path) -> io::Error {
     io::Error::new(
         io::ErrorKind::WouldBlock,
@@ -114,13 +158,12 @@ fn ownership_error(data_dir: &Path) -> io::Error {
 }
 
 fn instance_lock(data_dir: &Path) -> io::Result<(File, PathBuf)> {
-    std::fs::create_dir_all(data_dir)
+    fs::create_dir_all(data_dir)
         .map_err(|error| path_error(error, "create application data directory", data_dir))?;
     let canonical = data_dir
         .canonicalize()
         .map_err(|error| path_error(error, "resolve application data directory", data_dir))?;
-    use std::hash::{Hash, Hasher};
-    let mut hash = std::collections::hash_map::DefaultHasher::new();
+    let mut hash = DefaultHasher::new();
     canonical.hash(&mut hash);
     let directory = control_directory(&canonical)?;
     let stem = format!("{:016x}", hash.finish());
@@ -141,19 +184,56 @@ fn instance_lock(data_dir: &Path) -> io::Result<(File, PathBuf)> {
     Ok((lock, endpoint))
 }
 
+/// Claims the directory for a process without a window or activation listener.
+///
+/// # Errors
+///
+/// Returns an error if the lock cannot be opened or acquired.
 pub fn claim_headless(data_dir: &Path) -> io::Result<File> {
     let (file, _) = instance_lock(data_dir)?;
     file.try_lock().map_err(|error| match error {
-        std::fs::TryLockError::WouldBlock => ownership_error(data_dir),
-        std::fs::TryLockError::Error(error) => error,
+        TryLockError::WouldBlock => ownership_error(data_dir),
+        TryLockError::Error(error) => error,
     })?;
     Ok(file)
 }
 
-fn path_error(error: io::Error, operation: &str, path: &Path) -> io::Error {
+#[derive(Debug)]
+struct PathError {
+    error: io::Error,
+    operation: &'static str,
+    path: PathBuf,
+}
+
+impl fmt::Display for PathError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let Self {
+            error,
+            operation,
+            path,
+        } = self;
+        write!(
+            formatter,
+            "Cannot {operation} at {}: {error}",
+            path.display()
+        )
+    }
+}
+
+impl Error for PathError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        Some(&self.error)
+    }
+}
+
+fn path_error(error: io::Error, operation: &'static str, path: &Path) -> io::Error {
     io::Error::new(
         error.kind(),
-        format!("Cannot {operation} at {}: {error}", path.display()),
+        PathError {
+            error,
+            operation,
+            path: path.to_path_buf(),
+        },
     )
 }
 
@@ -165,7 +245,7 @@ fn control_directory(_: &Path) -> io::Result<PathBuf> {
         .map(PathBuf::from)
         .unwrap_or_else(std::env::temp_dir);
     let path = base.join(format!("lince-ui-{uid}"));
-    match std::fs::DirBuilder::new().mode(0o700).create(&path) {
+    match fs::DirBuilder::new().mode(0o700).create(&path) {
         Ok(()) => {}
         Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {}
         Err(error) => {
@@ -176,7 +256,7 @@ fn control_directory(_: &Path) -> io::Result<PathBuf> {
             ));
         }
     }
-    let metadata = std::fs::symlink_metadata(&path).map_err(|error| {
+    let metadata = fs::symlink_metadata(&path).map_err(|error| {
         path_error(
             error,
             "inspect private application control directory",
@@ -197,116 +277,12 @@ fn control_directory(data_dir: &Path) -> io::Result<PathBuf> {
     Ok(data_dir.to_path_buf())
 }
 
-#[cfg(unix)]
-async fn request_show(path: &Path) -> io::Result<()> {
-    tokio::time::timeout(std::time::Duration::from_secs(2), async {
-        let mut stream = tokio::net::UnixStream::connect(path).await?;
-        stream.write_all(b"show\n").await?;
-        let mut ack = [0; 2];
-        stream.read_exact(&mut ack).await?;
-        if &ack != b"ok" {
-            return Err(io::Error::other("Invalid Lince control reply"));
-        }
-        Ok(())
-    })
-    .await
-    .map_err(io::Error::other)?
-}
-
-#[cfg(unix)]
-async fn listen(
-    path: &Path,
-    sender: mpsc::SyncSender<()>,
-    wake: Arc<Mutex<Option<WakeSignal>>>,
-) -> io::Result<JoinHandle<()>> {
-    use std::os::unix::fs::FileTypeExt;
-    match std::fs::symlink_metadata(path) {
-        Ok(metadata) if metadata.file_type().is_socket() => std::fs::remove_file(path)?,
-        Ok(_) => return Err(io::Error::other("Lince control endpoint is not a socket")),
-        Err(error) if error.kind() == io::ErrorKind::NotFound => {}
-        Err(error) => return Err(error),
-    }
-    let listener = tokio::net::UnixListener::bind(path)?;
-    Ok(tokio::spawn(async move {
-        while let Ok((mut stream, _)) = listener.accept().await {
-            let _ = tokio::time::timeout(std::time::Duration::from_millis(500), async {
-                let mut message = [0; 5];
-                stream.read_exact(&mut message).await?;
-                if &message == b"show\n" {
-                    let _ = sender.try_send(());
-                    if let Some(wake) = wake.lock().unwrap().as_ref() {
-                        wake.ring();
-                    }
-                    stream.write_all(b"ok").await?;
-                }
-                Ok::<_, io::Error>(())
-            })
-            .await;
-        }
-    }))
-}
-
-#[cfg(not(unix))]
-async fn request_show(path: &Path) -> io::Result<()> {
-    let address = std::fs::read_to_string(path)?;
-    let (address, token) = address
-        .split_once('\n')
-        .ok_or_else(|| io::Error::other("Invalid control endpoint"))?;
-    let address: std::net::SocketAddr = address.parse().map_err(io::Error::other)?;
-    if !address.ip().is_loopback() {
-        return Err(io::Error::other("Control endpoint must be local"));
-    }
-    tokio::time::timeout(std::time::Duration::from_secs(2), async {
-        let mut stream = tokio::net::TcpStream::connect(address).await?;
-        stream.write_all(token.as_bytes()).await?;
-        let mut ack = [0; 2];
-        stream.read_exact(&mut ack).await?;
-        if &ack != b"ok" {
-            return Err(io::Error::other("Invalid Lince control reply"));
-        }
-        Ok(())
-    })
-    .await
-    .map_err(io::Error::other)?
-}
-
-#[cfg(not(unix))]
-async fn listen(
-    path: &Path,
-    sender: mpsc::SyncSender<()>,
-    wake: Arc<Mutex<Option<WakeSignal>>>,
-) -> io::Result<JoinHandle<()>> {
-    let listener = tokio::net::TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0)).await?;
-    let mut random = [0; 32];
-    getrandom::fill(&mut random).map_err(io::Error::other)?;
-    let token = random
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect::<String>();
-    std::fs::write(path, format!("{}\n{token}", listener.local_addr()?))?;
-    Ok(tokio::spawn(async move {
-        while let Ok((mut stream, _)) = listener.accept().await {
-            let _ = tokio::time::timeout(std::time::Duration::from_millis(500), async {
-                let mut message = [0; 64];
-                stream.read_exact(&mut message).await?;
-                if message == token.as_bytes() {
-                    let _ = sender.try_send(());
-                    if let Some(wake) = wake.lock().unwrap().as_ref() {
-                        wake.ring();
-                    }
-                    stream.write_all(b"ok").await?;
-                }
-                Ok::<_, io::Error>(())
-            })
-            .await;
-        }
-    }))
-}
-
 #[cfg(any(test, feature = "native-presentation"))]
 pub(crate) mod tests {
     use super::*;
     use std::sync::atomic::{AtomicUsize, Ordering};
+    #[cfg(unix)]
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
     #[test]
     fn headless_claim_excludes_another_owner_without_opening_a_socket() {
@@ -315,6 +291,28 @@ pub(crate) mod tests {
         assert!(claim_headless(directory.path()).is_err());
         drop(first);
         assert!(claim_headless(directory.path()).is_ok());
+    }
+
+    #[test]
+    fn failed_claim_preserves_the_filesystem_cause() {
+        let directory = tempfile::tempdir().expect("temporary data directory");
+        let path = directory.path().join("regular-file");
+        fs::write(&path, []).expect("occupy the data directory path with a regular file");
+
+        let error = claim_headless(&path).expect_err("claim should reject a regular file");
+        let cause = error
+            .source()
+            .and_then(|source| source.downcast_ref::<io::Error>())
+            .expect("original filesystem error");
+        assert_eq!(error.kind(), cause.kind());
+        assert!(cause.raw_os_error().is_some());
+        assert_eq!(
+            error.to_string(),
+            format!(
+                "Cannot create application data directory at {}: {cause}",
+                path.display()
+            )
+        );
     }
 
     #[cfg_attr(test, tokio::test)]
@@ -345,7 +343,9 @@ pub(crate) mod tests {
         let wakes = Arc::new(AtomicUsize::new(0));
         let counter = wakes.clone();
         let events = first.events();
+        let wake = Arc::downgrade(&events.wake);
         events.attach(WakeSignal::new(move || {
+            assert!(wake.upgrade().unwrap().try_lock().is_ok());
             counter.fetch_add(1, Ordering::SeqCst);
         }));
         assert!(claim(directory.path()).await.unwrap().is_none());

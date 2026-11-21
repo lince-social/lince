@@ -1,6 +1,7 @@
 use std::{
+    collections::BTreeSet,
     io::{self, BufRead, BufReader, Write},
-    path::Path,
+    path::{Path, PathBuf},
     process::{Child, ChildStdin, Command, Stdio},
     sync::mpsc::{self, Receiver},
     time::Duration,
@@ -16,7 +17,11 @@ pub(super) struct Client {
 }
 
 impl Client {
-    pub(super) fn start(root: &Path, manifest: &Path) -> io::Result<Self> {
+    pub(super) fn start(
+        root: &Path,
+        manifest: &Path,
+        projects: BTreeSet<PathBuf>,
+    ) -> io::Result<Self> {
         let mut child = Command::new("rust-analyzer")
             .current_dir(manifest.parent().unwrap_or(root))
             .stdin(Stdio::piped())
@@ -50,7 +55,7 @@ impl Client {
                 }}}
             },
             "initializationOptions": {
-                "linkedProjects": [manifest],
+                "linkedProjects": projects,
                 "cachePriming": { "enable": false },
                 "checkOnSave": false,
                 "procMacro": { "enable": false },

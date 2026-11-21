@@ -5,8 +5,10 @@ mod expression;
 mod include;
 mod order;
 mod predicate;
+pub mod record_schema;
 pub mod relation_context;
 pub mod shader_inputs;
+mod validation;
 
 pub use expression::{Aggregate, AggregateOp, GroupBy, Protein, Source};
 pub use include::{
@@ -15,3 +17,4 @@ pub use include::{
 };
 pub use order::{LinkEndpoint, LinkOrder, Order};
 pub use predicate::{DateComparison, Predicate, WorkDateField};
+pub use validation::{ValidationError, validate};

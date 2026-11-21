@@ -1,15 +1,11 @@
-// non-lean-yet
-// Scope: fn at, fn rolling_windows_follow_local_dates_and_daylight_saving, fn
-//   rolling_windows_bound_history_future_and_timezones.
-// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
-
 #![cfg(test)]
 
-use nucleus::projection::RollingWindow;
+use chrono::{DateTime, Utc};
+use nucleus::projection::{RollingWindow, Window};
 
 fn at(value: &str) -> i64 {
-    chrono::DateTime::parse_from_rfc3339(value)
-        .unwrap()
+    DateTime::parse_from_rfc3339(value)
+        .expect("test dates use RFC 3339")
         .timestamp_millis()
 }
 
@@ -60,4 +56,36 @@ fn rolling_windows_bound_history_future_and_timezones() {
     .resolve(now)
     .unwrap();
     assert_eq!(window.until_ms - window.from_ms, 37 * 86_400_000);
+}
+
+#[test]
+fn window_boundaries_pick_the_first_available_local_time() {
+    let rolling = RollingWindow {
+        past_days: 0,
+        future_days: 1,
+        timezone: "America/Havana".into(),
+    };
+    for (year, month, now, first) in [
+        (2012, 4, "2012-04-01T12:00:00Z", "2012-04-01T05:00:00Z"),
+        (2015, 11, "2015-11-01T12:00:00Z", "2015-11-01T04:00:00Z"),
+    ] {
+        let day = rolling.resolve(at(now)).expect("local day is available");
+        let month =
+            Window::month(year, month, rolling.timezone.clone()).expect("local month is available");
+        assert_eq!(day.from_ms, at(first), "rolling window at {now}");
+        assert_eq!(month.from_ms, at(first), "calendar month at {now}");
+    }
+}
+
+#[test]
+fn rolling_windows_report_current_time_outside_the_local_date_range() {
+    let window = RollingWindow {
+        past_days: 0,
+        future_days: 1,
+        timezone: "Asia/Tokyo".into(),
+    };
+    assert_eq!(
+        window.resolve(DateTime::<Utc>::MAX_UTC.timestamp_millis()),
+        Err("Invalid current time".into())
+    );
 }

@@ -1393,18 +1393,18 @@ fn native_text_input_transports_unicode_preedit_deletion_and_secret_context_with
     popup_context.from_ime = true;
     popup_context.caret = [620, 450, 2, 20];
     harness.server.native_editor(Some(popup_context));
-    let bounds = lince_interface::host::Rectangle::new([0.0; 2], [640.0, 480.0]).unwrap();
-    harness.server.state.presented_geometry = Some(lince_interface::host::GeometrySnapshot {
+    let bounds = lince_host::Rectangle::new([0.0; 2], [640.0, 480.0]).unwrap();
+    harness.server.state.presented_geometry = Some(lince_host::GeometrySnapshot {
         revision: 1,
         items: Vec::new(),
         focused: None,
-        outputs: vec![lince_interface::host::OutputViewport {
+        outputs: vec![lince_host::OutputViewport {
             rotation: Default::default(),
             id: OutputId(1),
             bounds,
-            usable: lince_interface::host::Rectangle::new([0.0, 30.0], [640.0, 450.0]),
+            usable: lince_host::Rectangle::new([0.0, 30.0], [640.0, 450.0]),
             physical_size: [640, 480],
-            raster: lince_interface::host::raster::RasterMapping {
+            raster: lince_host::raster::RasterMapping {
                 origin: (bounds).origin(),
                 scale: [1.0; 2],
             },
@@ -1682,15 +1682,15 @@ fn visible_inhibitors_respect_reference_counts_input_idle_and_session_lock() {
     let window = harness.window();
     let _buffer = harness.attach(&window, [640, 480]);
     let id = harness.server.windows()[0].id;
-    let rectangle = lince_interface::host::Rectangle::new([0.0; 2], [640.0, 480.0]).unwrap();
-    harness.server.state.presented_geometry = Some(lince_interface::host::GeometrySnapshot {
+    let rectangle = lince_host::Rectangle::new([0.0; 2], [640.0, 480.0]).unwrap();
+    harness.server.state.presented_geometry = Some(lince_host::GeometrySnapshot {
         revision: 1,
         outputs: Vec::new(),
         focused: None,
-        items: vec![lince_interface::host::ItemGeometry {
-            id: lince_interface::host::ItemId::Application(id),
+        items: vec![lince_host::ItemGeometry {
+            id: lince_host::ItemId::Application(id),
             output: OutputId(1),
-            mapping: lince_interface::host::ContentMapping {
+            mapping: lince_host::ContentMapping {
                 corners: None,
                 canvas: rectangle,
                 surface: rectangle,
@@ -3046,7 +3046,7 @@ fn native_drop_completion_for(accept: Option<bool>, change: NativeDropChange) {
     }
     let target = Target {
         window: 1,
-        output: lince_interface::host::OutputId(1),
+        output: lince_host::OutputId(1),
         mapping_revision: None,
         pointer: [100.0, 100.0],
         destination: Destination::Editor {
@@ -3136,7 +3136,7 @@ fn native_drop_completion_for(accept: Option<bool>, change: NativeDropChange) {
         match change {
             NativeDropChange::Output => {
                 let mut replacement = target.clone();
-                replacement.output = lince_interface::host::OutputId(2);
+                replacement.output = lince_host::OutputId(2);
                 harness.server.native_drop_target(Some(replacement));
             }
             NativeDropChange::Target => harness.server.native_drop_target(None),

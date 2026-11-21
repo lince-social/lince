@@ -1,379 +1,198 @@
-// non-lean-yet
-// Scope: enum Expr, enum UnOp, enum BinOp, enum Value.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
-//   106.
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 149, 186, 190,
-//   191, 192, 193, 197, 261, 290, 322, 323, 337, 432.
-// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
-//   Sites 51, 557.
-// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
-//   557.
-// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
-//   Sites 6, 17, 23, 40.
-// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
-//   109.
-// - [Clippy: clippy::match_same_arms] these match arms have identical bodies. Sites 204, 205, 371,
-//   372.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 48, 63, 69, 125, 162, 314.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 7,
-//   8, 9, 10, 11, 12, 13, 17, 18, 19, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 40,
-//   41, 42, 43, 44, 48, 62, 63, 66, 67, 69, 98, 106, 113, 117, 125, 155, 156, 157, 158, 162, 251,
-//   314, 384, 385, 389, 546.
-
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
 use crate::error::NucleusError;
 
+mod parser;
+mod tokens;
+
+pub use parser::parse_duration;
+pub use tokens::{
+    ASSERTION, HAS_ASSERTION, assertion_binding, assertion_token, binding_reading, extension_parts,
+    extension_reading, extension_token,
+};
+use tokens::{assertion_references, joined_references};
+
+#[cfg(test)]
+mod tests;
+
+/// A parsed expression for numeric evaluation and Record reads.
+#[expect(
+    clippy::exhaustive_enums,
+    reason = "exhaustive matches are part of the public API"
+)]
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
+    /// Number in its original source spelling.
     Num(String),
+    /// Duration in seconds.
     Dur(i64),
+    /// Text literal.
     Text(String),
+    /// Record reference.
     Ref(String),
+    /// A resolver call with its name and arguments.
     Fn(String, Vec<Expr>),
+    /// A unary operation and operand.
     Unary(UnOp, Box<Expr>),
+    /// A binary operation and its left and right operands.
     Bin(BinOp, Box<Expr>, Box<Expr>),
 }
 
+/// Arithmetic or logical operation on one operand.
+#[expect(
+    clippy::exhaustive_enums,
+    reason = "exhaustive matches are part of the public API"
+)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum UnOp {
+    /// Arithmetic negation.
     Neg,
+    /// Logical negation, treating zero as false.
     Not,
 }
 
+/// Arithmetic, comparison, or short-circuit logical operation on two operands.
+#[expect(
+    clippy::exhaustive_enums,
+    reason = "exhaustive matches are part of the public API"
+)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum BinOp {
+    /// Addition.
     Add,
+    /// Subtraction.
     Sub,
+    /// Multiplication.
     Mul,
+    /// Division.
     Div,
+    /// Remainder.
     Rem,
+    /// Less than.
     Lt,
+    /// Less than or equal.
     Le,
+    /// Greater than.
     Gt,
+    /// Greater than or equal.
     Ge,
+    /// Equal.
     Eq,
+    /// Not equal.
     Ne,
+    /// Logical AND, evaluating the right operand only when the left is nonzero.
     And,
+    /// Logical OR, evaluating the right operand only when the left is zero.
     Or,
 }
 
+/// A value passed to or returned by a reading resolver.
+#[expect(
+    clippy::exhaustive_enums,
+    reason = "exhaustive matches are part of the public API"
+)]
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
+    /// Floating-point number.
     Num(f64),
+    /// Duration in seconds.
     Dur(i64),
+    /// An unresolved Record reference.
     Ref(String),
+    /// Text value.
     Text(String),
 }
 
 impl Value {
+    /// Returns a number or rounds a duration in seconds to the nearest `f64`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an evaluation error for a Record reference or text.
+    #[expect(
+        clippy::as_conversions,
+        clippy::cast_precision_loss,
+        reason = "duration seconds follow the evaluator's existing f64 rounding"
+    )]
     pub fn as_num(&self) -> Result<f64, NucleusError> {
         match self {
-            Value::Num(n) => Ok(*n),
-            Value::Dur(s) => Ok(*s as f64),
-            Value::Ref(r) => Err(NucleusError::Eval(format!(
+            Self::Num(n) => Ok(*n),
+            Self::Dur(s) => Ok(*s as f64),
+            Self::Ref(r) => Err(NucleusError::Eval(format!(
                 "reference @{r} used where a number was expected"
             ))),
-            Value::Text(_) => Err(NucleusError::Eval(
+            Self::Text(_) => Err(NucleusError::Eval(
                 "text used where a number was expected".into(),
             )),
         }
     }
 }
 
+/// Supplies the value of a named reading during evaluation.
 pub trait Resolver {
+    /// Resolves a call with the provided argument values.
+    ///
+    /// # Errors
+    ///
+    /// Returns the resolver's error for an invalid or unavailable reading.
     fn call(&mut self, name: &str, args: &[Value]) -> Result<Value, NucleusError>;
 }
 
-pub const ASSERTION: &str = "assertion";
-pub const HAS_ASSERTION: &str = "has_assertion";
-
-pub fn assertion_token(args: &[Expr]) -> Result<TokenKey, NucleusError> {
-    if !(2..=3).contains(&args.len()) {
-        return Err(NucleusError::Parse(
-            "Use has_assertion(@record, #predicate, @object) or omit @object".into(),
-        ));
-    }
-    let mut references = Vec::new();
-    for (position, argument) in args.iter().enumerate() {
-        let reference = match argument {
-            Expr::Ref(reference) => reference,
-            Expr::Fn(name, inner) if position == 1 && name == ASSERTION => match inner.as_slice() {
-                [Expr::Ref(reference)] => reference,
-                _ => return Err(NucleusError::Parse("Choose an assertion predicate".into())),
-            },
-            _ => {
-                return Err(NucleusError::Parse(
-                    "Use Record references and an assertion predicate".into(),
-                ));
-            }
-        };
-        references.push(reference.as_str());
-    }
-    Ok(TokenKey {
-        func: HAS_ASSERTION.into(),
-        slug: references.join("|"),
-        dur_secs: None,
-    })
-}
-
-pub fn assertion_binding(position: usize) -> &'static str {
-    match position {
-        0 => "has_assertion.subject",
-        1 => "has_assertion.predicate",
-        _ => "has_assertion.object",
-    }
-}
-
-pub fn extension_reading(namespace: &str, property: &str) -> String {
-    format!(
-        "extension:{}",
-        serde_json::to_string(&(namespace, property)).expect("the token key contains only strings")
-    )
-}
-
-pub fn extension_parts(reading: &str) -> Option<(String, String)> {
-    serde_json::from_str(reading.strip_prefix("extension:")?).ok()
-}
-
-pub fn binding_reading(reading: &str) -> &str {
-    if reading.starts_with("extension:") {
-        "extension"
-    } else {
-        reading
-    }
-}
-
-pub fn extension_token(args: &[Expr]) -> Result<TokenKey, NucleusError> {
-    let [
-        Expr::Ref(record),
-        Expr::Text(namespace),
-        Expr::Text(property),
-    ] = args
-    else {
-        return Err(NucleusError::Parse(
-            "Use extension(@record, \"namespace\", \"property\")".into(),
-        ));
-    };
-    if [namespace, property].iter().any(|name| {
-        name.is_empty()
-            || name.trim() != name.as_str()
-            || name.len() > 200
-            || name.chars().any(char::is_control)
-    }) || property.contains('.')
-    {
-        return Err(NucleusError::Parse(
-            "Choose a valid extension namespace and property".into(),
-        ));
-    }
-    Ok(TokenKey {
-        func: extension_reading(namespace, property),
-        slug: record.clone(),
-        dur_secs: None,
-    })
-}
-
+/// Identifies a reading by function, reference arguments and optional duration.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct TokenKey {
+    /// Function name or encoded extension reading.
     pub func: String,
+    /// Reference arguments in call order, joined with `|`.
     pub slug: String,
+    /// Duration argument in seconds, when supplied.
     pub dur_secs: Option<i64>,
 }
 
 impl Expr {
-    pub fn parse(src: &str) -> Result<Expr, NucleusError> {
-        let expression =
-            anicca::expression::parse(src).map_err(|error| NucleusError::Parse(error.message))?;
-        Self::from_lingua(&expression, 0)
-    }
-
-    fn from_lingua(
-        value: &anicca::grammar::grammar::Expression,
-        depth: usize,
-    ) -> Result<Self, NucleusError> {
-        use anicca::grammar::grammar as ast;
-        use ast::ExpressionKind as E;
-        if depth > 128 {
-            return Err(NucleusError::Parse("Expression nesting exceeds 128".into()));
-        }
-        let convert = |value: &ast::Expression| Self::from_lingua(value, depth + 1);
-        let binary = |left: &ast::Expression, operator, right: &ast::Expression| {
-            Ok(Self::Bin(
-                operator,
-                Box::new(convert(left)?),
-                Box::new(convert(right)?),
-            ))
-        };
-        match &value.node.value {
-            E::Number(value) => Ok(Self::Num(value.0.clone())),
-            E::Duration(value) => parse_duration(&value.0)
-                .map(Self::Dur)
-                .ok_or_else(|| NucleusError::Parse("Invalid duration".into())),
-            E::Text(value) => Ok(Self::Text(value.0.clone())),
-            E::Body(value) => Ok(Self::Text(value.0.clone())),
-            E::Reference(value) => Ok(Self::Ref(value.0.clone())),
-            E::Concept(value) => Ok(Self::Fn(ASSERTION.into(), vec![Self::Ref(value.0.clone())])),
-            E::True(_) => Ok(Self::Num("1".into())),
-            E::False(_) => Ok(Self::Num("0".into())),
-            E::Call(value) => Ok(Self::Fn(
-                value.name.0.clone(),
-                value
-                    .arguments
-                    .iter()
-                    .map(convert)
-                    .collect::<Result<_, _>>()?,
-            )),
-            E::Parenthesized(_, value, _) => convert(value),
-            E::Unary(ast::UnaryOperator::Positive(_), value) => convert(value),
-            E::Unary(operator, value) => Ok(Self::Unary(
-                match operator {
-                    ast::UnaryOperator::Negative(_) => UnOp::Neg,
-                    ast::UnaryOperator::Not(_) => UnOp::Not,
-                    ast::UnaryOperator::Positive(_) => unreachable!(),
-                },
-                Box::new(convert(value)?),
-            )),
-            E::Sum(left, operator, right) => binary(
-                left,
-                match operator {
-                    ast::SumOperator::Add(_) => BinOp::Add,
-                    ast::SumOperator::Subtract(_) => BinOp::Sub,
-                },
-                right,
-            ),
-            E::Product(left, operator, right) => binary(
-                left,
-                match operator {
-                    ast::ProductOperator::Multiply(_) => BinOp::Mul,
-                    ast::ProductOperator::Divide(_) => BinOp::Div,
-                    ast::ProductOperator::Remainder(_) => BinOp::Rem,
-                },
-                right,
-            ),
-            E::Compare(left, operator, right) => binary(
-                left,
-                match operator {
-                    ast::CompareOperator::Less(_) => BinOp::Lt,
-                    ast::CompareOperator::LessEqual(_) => BinOp::Le,
-                    ast::CompareOperator::Greater(_) => BinOp::Gt,
-                    ast::CompareOperator::GreaterEqual(_) => BinOp::Ge,
-                    ast::CompareOperator::Equal(_) => BinOp::Eq,
-                    ast::CompareOperator::NotEqual(_) => BinOp::Ne,
-                },
-                right,
-            ),
-            E::And(left, _, right) => binary(left, BinOp::And, right),
-            E::Or(left, _, right) => binary(left, BinOp::Or, right),
-            E::Name(_) | E::Null(_) | E::List(_) | E::Object(_) => Err(NucleusError::Parse(
-                "This value is only supported in scripts".into(),
-            )),
-        }
-    }
-
-    pub fn tokens(&self) -> Vec<TokenKey> {
-        let mut out = Vec::new();
-        self.collect_tokens(&mut out);
-        out
-    }
-
-    fn collect_tokens(&self, out: &mut Vec<TokenKey>) {
-        match self {
-            Expr::Ref(slug) => out.push(TokenKey {
-                func: "quantity".into(),
-                slug: slug.clone(),
-                dur_secs: None,
-            }),
-            Expr::Fn(name, args) => {
-                if name == HAS_ASSERTION {
-                    if let Ok(token) = assertion_token(args) {
-                        out.push(token);
-                    }
-                    return;
-                }
-                if name == "extension" {
-                    if let Ok(token) = extension_token(args) {
-                        out.push(token);
-                    }
-                    return;
-                }
-                let dur = args.iter().find_map(|a| match a {
-                    Expr::Dur(s) => Some(*s),
-                    _ => None,
-                });
-                let refs: Vec<&String> = args
-                    .iter()
-                    .filter_map(|a| match a {
-                        Expr::Ref(slug) => Some(slug),
-                        _ => None,
-                    })
-                    .collect();
-                if !refs.is_empty() {
-                    out.push(TokenKey {
-                        func: name.clone(),
-                        slug: refs
-                            .iter()
-                            .map(|s| s.as_str())
-                            .collect::<Vec<_>>()
-                            .join("|"),
-                        dur_secs: dur,
-                    });
-                }
-                for a in args {
-                    if !matches!(a, Expr::Ref(_)) {
-                        a.collect_tokens(out);
-                    }
-                }
-            }
-            Expr::Unary(_, e) => e.collect_tokens(out),
-            Expr::Bin(_, a, b) => {
-                a.collect_tokens(out);
-                b.collect_tokens(out);
-            }
-            Expr::Num(_) | Expr::Dur(_) | Expr::Text(_) => {}
-        }
-    }
-
+    /// Evaluates numerically against the given resolver.
+    ///
+    /// # Errors
+    ///
+    /// Returns a resolver error or an evaluation error for an incompatible value.
     pub fn eval(&self, r: &mut dyn Resolver) -> Result<f64, NucleusError> {
         self.eval_value(r)?.as_num()
     }
 
     fn eval_value(&self, r: &mut dyn Resolver) -> Result<Value, NucleusError> {
         Ok(match self {
-            Expr::Num(text) => Value::Num(text.parse().unwrap_or(0.0)),
-            Expr::Dur(s) => Value::Dur(*s),
-            Expr::Text(text) => Value::Text(text.clone()),
-            Expr::Ref(slug) => r.call("quantity", &[Value::Ref(slug.clone())])?,
-            Expr::Fn(name, args) => {
-                let mut vals = Vec::with_capacity(args.len());
+            Self::Num(text) => Value::Num(text.parse().unwrap_or(0.0)),
+            Self::Dur(s) => Value::Dur(*s),
+            Self::Text(text) => Value::Text(text.clone()),
+            Self::Ref(slug) => r.call("quantity", &[Value::Ref(slug.clone())])?,
+            Self::Fn(name, args) => {
                 if name == HAS_ASSERTION {
-                    let token = assertion_token(args)?;
-                    let arguments = token
-                        .slug
-                        .split('|')
+                    // Directly constructed expressions can contain the token separator.
+                    let arguments = assertion_references(args)?
+                        .flat_map(|reference| reference.split('|'))
                         .map(|reference| Value::Ref(reference.into()))
                         .collect::<Vec<_>>();
                     return r.call(name, &arguments);
                 }
-                for a in args {
-                    vals.push(match a {
-                        Expr::Ref(slug) => Value::Ref(slug.clone()),
-                        other => other.eval_value(r)?,
-                    });
-                }
-                r.call(name, &vals)?
+                let values = args
+                    .iter()
+                    .map(|arg| match arg {
+                        Self::Ref(slug) => Ok(Value::Ref(slug.clone())),
+                        other => other.eval_value(r),
+                    })
+                    .collect::<Result<Vec<_>, _>>()?;
+                r.call(name, &values)?
             }
-            Expr::Unary(op, e) => {
+            Self::Unary(op, e) => {
                 let v = e.eval(r)?;
                 Value::Num(match op {
                     UnOp::Neg => -v,
                     UnOp::Not => bool_num(v == 0.0),
                 })
             }
-            Expr::Bin(op, a, b) => {
+            Self::Bin(op, a, b) => {
                 let x = a.eval(r)?;
                 if *op == BinOp::And && x == 0.0 {
                     return Ok(Value::Num(0.0));
@@ -394,8 +213,7 @@ impl Expr {
                     BinOp::Ge => bool_num(x >= y),
                     BinOp::Eq => bool_num(x == y),
                     BinOp::Ne => bool_num(x != y),
-                    BinOp::And => bool_num(y != 0.0),
-                    BinOp::Or => bool_num(y != 0.0),
+                    BinOp::And | BinOp::Or => bool_num(y != 0.0),
                 })
             }
         })
@@ -406,12 +224,15 @@ fn bool_num(b: bool) -> f64 {
     if b { 1.0 } else { 0.0 }
 }
 
+/// Resolves readings from an in-memory token map.
 #[derive(Debug, Default, Clone)]
 pub struct MapResolver {
+    /// Numbers keyed by reading token.
     pub values: HashMap<TokenKey, f64>,
 }
 
 impl MapResolver {
+    /// Inserts or replaces a reading value.
     pub fn set(&mut self, func: &str, slug: &str, dur_secs: Option<i64>, value: f64) {
         self.values.insert(
             TokenKey {
@@ -436,170 +257,26 @@ impl Resolver for MapResolver {
         } else {
             name.into()
         };
-        let refs: Vec<&str> = args
-            .iter()
-            .filter_map(|a| match a {
-                Value::Ref(s) => Some(s.as_str()),
-                _ => None,
-            })
-            .collect();
-        if refs.is_empty() {
-            return Err(NucleusError::Eval(format!(
-                "function {name} needs a @reference argument"
-            )));
-        }
-        let slug = refs.join("|");
+        let references = args.iter().filter_map(|arg| match arg {
+            Value::Ref(slug) => Some(slug.as_str()),
+            _ => None,
+        });
+        let slug = joined_references(references).ok_or_else(|| {
+            NucleusError::Eval(format!("function {name} needs a @reference argument"))
+        })?;
         let dur = args.iter().find_map(|a| match a {
             Value::Dur(s) => Some(*s),
             _ => None,
         });
         let key = TokenKey {
             func: reading,
-            slug: slug.clone(),
+            slug,
             dur_secs: dur,
         };
         self.values
             .get(&key)
             .copied()
             .map(Value::Num)
-            .ok_or(NucleusError::UnknownToken(format!("{name}(@{slug})")))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn eval(src: &str, setup: impl FnOnce(&mut MapResolver)) -> f64 {
-        let e = Expr::parse(src).unwrap();
-        let mut r = MapResolver::default();
-        setup(&mut r);
-        e.eval(&mut r).unwrap()
-    }
-
-    #[test]
-    fn plain_math() {
-        assert_eq!(eval("1 + 2 * 3", |_| {}), 7.0);
-        assert_eq!(eval("-(2 + 3) * 2", |_| {}), -10.0);
-        assert_eq!(eval("10 % 3", |_| {}), 1.0);
-    }
-
-    #[test]
-    fn booleans_are_numbers_no_times_one_workaround() {
-        assert_eq!(
-            eval("(@apples.stock < 3) + 2", |r| r.set(
-                "quantity",
-                "apples.stock",
-                None,
-                2.0
-            )),
-            3.0
-        );
-        assert_eq!(eval("!0", |_| {}), 1.0);
-        assert_eq!(eval("1 && 0 || 1", |_| {}), 1.0);
-    }
-
-    #[test]
-    fn bare_ref_is_quantity_sugar() {
-        assert_eq!(
-            eval("@apples.stock + quantity(@apples.stock)", |r| {
-                r.set("quantity", "apples.stock", None, 4.0)
-            }),
-            8.0
-        );
-    }
-
-    #[test]
-    fn full_math_composition_from_the_blueprint() {
-        assert_eq!(
-            eval("-1 * freq(@daily-7am)", |r| r.set(
-                "freq",
-                "daily-7am",
-                None,
-                1.0
-            )),
-            -1.0
-        );
-        assert_eq!(
-            eval("(@checking - value(@rules.monthly-burn)) < 500", |r| {
-                r.set("quantity", "checking", None, 900.0);
-                r.set("value", "rules.monthly-burn", None, 600.0);
-            }),
-            1.0
-        );
-    }
-
-    #[test]
-    fn durations() {
-        assert_eq!(
-            eval("sum(@checking, 30d) / 30", |r| {
-                r.set("sum", "checking", Some(30 * 86400), 900.0)
-            }),
-            30.0
-        );
-        assert_eq!(eval("90s + 1m", |_| {}), 150.0);
-    }
-
-    #[test]
-    fn token_extraction() {
-        let e = Expr::parse("freq(@weekly) * @books + sum(@reading.log, 7d)").unwrap();
-        let t = e.tokens();
-        assert!(t.contains(&TokenKey {
-            func: "freq".into(),
-            slug: "weekly".into(),
-            dur_secs: None
-        }));
-        assert!(t.contains(&TokenKey {
-            func: "quantity".into(),
-            slug: "books".into(),
-            dur_secs: None
-        }));
-        assert!(t.contains(&TokenKey {
-            func: "sum".into(),
-            slug: "reading.log".into(),
-            dur_secs: Some(7 * 86400)
-        }));
-    }
-
-    #[test]
-    fn unknown_token_errors() {
-        let e = Expr::parse("@ghost").unwrap();
-        let mut r = MapResolver::default();
-        assert!(matches!(e.eval(&mut r), Err(NucleusError::UnknownToken(_))));
-    }
-}
-
-pub fn parse_duration(text: &str) -> Option<i64> {
-    let text = text.trim();
-    let (number, unit) = text.split_at(text.len().checked_sub(1)?);
-    let count: f64 = number.parse().ok()?;
-    let seconds = match unit {
-        "s" => 1,
-        "m" => 60,
-        "h" => 3600,
-        "d" => 86400,
-        _ => return None,
-    };
-    Some((count * seconds as f64) as i64)
-}
-
-#[cfg(test)]
-mod duration_tests {
-    use super::parse_duration;
-
-    #[test]
-    fn the_four_units_read_as_seconds() {
-        assert_eq!(parse_duration("90s"), Some(90));
-        assert_eq!(parse_duration("5m"), Some(300));
-        assert_eq!(parse_duration("2h"), Some(7_200));
-        assert_eq!(parse_duration("30d"), Some(2_592_000));
-    }
-
-    #[test]
-    fn anything_that_is_not_a_duration_is_refused_rather_than_guessed() {
-        assert_eq!(parse_duration(""), None);
-        assert_eq!(parse_duration("30"), None);
-        assert_eq!(parse_duration("30w"), None, "weeks are not in this grammar");
-        assert_eq!(parse_duration("d"), None);
+            .ok_or_else(|| NucleusError::UnknownToken(format!("{name}(@{})", key.slug)))
     }
 }

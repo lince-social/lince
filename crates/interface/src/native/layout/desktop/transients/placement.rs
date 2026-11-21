@@ -1,16 +1,19 @@
-// non-lean-yet
-// Scope: struct Pending, fn place_with.
-// BeautifulRust (baseline lines):
-// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
-//   99, 105, 106, 107, 111, 112, 113, 117, 118, 126.
-
-use super::*;
+use super::{
+    Geometry, LayoutBox, Placement, PlacementId, Rectangle, Solution, TransientParent, Workspace,
+    WorkspaceLayout, minimized,
+};
 use crate::layout::desktop::SolvedItem;
+use bevy::{math::DVec2, prelude::*};
+use engine::performance::{Span, add};
+use std::{
+    array::from_fn,
+    collections::{BTreeMap, BTreeSet},
+};
 
 struct Pending {
     id: PlacementId,
     parent: PlacementId,
-    offset: bevy::math::DVec2,
+    offset: DVec2,
 }
 
 pub(super) fn place_with(
@@ -21,7 +24,7 @@ pub(super) fn place_with(
     usable: Rectangle,
     preview: Option<(Entity, Placement)>,
 ) {
-    let _placement = engine::performance::Span::new("desktop-transient-placement");
+    let _placement = Span::new("desktop-transient-placement");
     let bounded = model.mode() != WorkspaceLayout::Free
         || model.fullscreen().is_some()
         || model
@@ -45,8 +48,7 @@ pub(super) fn place_with(
             continue;
         };
         let offset = preview
-            .filter(|(target, _)| *target == entity)
-            .map(|(_, placement)| placement)
+            .and_then(|(target, placement)| (target == entity).then_some(placement))
             .or_else(|| world.get::<Placement>(entity).copied())
             .filter(|placement| placement.parent == parent)
             .map(|placement| placement.offset)
@@ -61,8 +63,8 @@ pub(super) fn place_with(
     if !hidden.is_empty() {
         solution.items.retain(|item| !hidden.contains(&item.id));
     }
-    engine::performance::add("desktop-transient-ancestry-checks", entities.len() as u64);
-    engine::performance::add(
+    add("desktop-transient-ancestry-checks", entities.len() as u64);
+    add(
         "desktop-transient-hidden-rows-removed",
         (previous - solution.items.len()) as u64,
     );
@@ -88,8 +90,8 @@ pub(super) fn place_with(
             }
         }
     }
-    engine::performance::add("desktop-transient-solution-rows-examined", examined);
-    engine::performance::add(
+    add("desktop-transient-solution-rows-examined", examined);
+    add(
         "desktop-transient-solution-lookup-ids",
         positions.len() as u64,
     );
@@ -99,21 +101,21 @@ pub(super) fn place_with(
         let previous = remaining.len();
         remaining.retain(|pending| {
             attempts += 1;
-            let Some(parent_index) = positions.get(&pending.parent).copied().flatten() else {
+            let index_of = |id| positions.get(&id).copied().flatten();
+            let Some(parent) = index_of(pending.parent).and_then(|index| solution.items.get(index))
+            else {
                 return true;
             };
-            let bounds = solution.items[parent_index].rectangle;
-            let id = &pending.id;
-            let Some(item) = model.items().iter().find(|item| item.id == *id) else {
+            let bounds = parent.rectangle;
+            let id = pending.id;
+            let Some(item) = model.items().iter().find(|item| item.id == id) else {
                 return false;
             };
-            let size = std::array::from_fn(|axis| {
-                item.free.size[axis].clamp(
-                    f64::from(item.rules.axes[axis].min),
-                    f64::from(item.rules.axes[axis].max),
-                )
+            let size = from_fn(|axis| {
+                let rule = &item.rules.axes[axis];
+                item.free.size[axis].clamp(f64::from(rule.min), f64::from(rule.max))
             });
-            let origin = std::array::from_fn(|axis| {
+            let origin = from_fn(|axis| {
                 let origin = bounds.origin()[axis]
                     + (bounds.size()[axis] - size[axis]) * 0.5
                     + pending.offset[axis];
@@ -127,22 +129,22 @@ pub(super) fn place_with(
             let Some(rectangle) = Rectangle::new(origin, size) else {
                 return false;
             };
-            let _ = model.set_free_geometry(*id, Geometry { origin, size });
-            if let Some(index) = positions.get(id).copied().flatten() {
-                let item = &mut solution.items[index];
+            // A valid solved rectangle can exceed the workspace's stored geometry limits.
+            let _ = model.set_free_geometry(id, Geometry { origin, size });
+            if let Some(item) = index_of(id).and_then(|index| solution.items.get_mut(index)) {
                 item.rectangle = rectangle;
                 item.floating = true;
             } else {
-                positions.insert(*id, Some(solution.items.len()));
+                positions.insert(id, Some(solution.items.len()));
                 solution.items.push(SolvedItem {
-                    id: *id,
+                    id,
                     rectangle,
                     floating: true,
                 });
             }
             placed += 1;
-            if model.focused() == Some(*id) {
-                solution.focused = Some(*id);
+            if model.focused() == Some(id) {
+                solution.focused = Some(id);
             }
             false
         });
@@ -150,6 +152,6 @@ pub(super) fn place_with(
             break;
         }
     }
-    engine::performance::add("desktop-transient-placement-attempts", attempts);
-    engine::performance::add("desktop-transient-items-placed", placed);
+    add("desktop-transient-placement-attempts", attempts);
+    add("desktop-transient-items-placed", placed);
 }

@@ -12,7 +12,10 @@
 // - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
 //   making lifetimes explicit. Sites 66, 94, 160, 174, 229.
 
-use crate::native::{token_style::Tokens, tokens::Token};
+use crate::{
+    native::{token_style::Tokens, tokens::Token},
+    pixel_scale::PixelScale,
+};
 use bevy::{
     ecs::{entity::EntityHashSet, query::QueryData},
     prelude::*,
@@ -24,25 +27,9 @@ pub(crate) struct WidthToken(pub Token, pub bool);
 #[derive(Component, Clone, Copy)]
 pub(crate) struct RadiusToken(pub Token);
 
-#[derive(Clone, Copy, Default, PartialEq)]
-struct Metric {
-    base: f32,
-    applied: f32,
-    ready: bool,
-}
-
-impl Metric {
-    fn needed(&self, current: Val) -> bool {
-        matches!(current, Val::Px(value) if value != 0.0 || self.base != 0.0)
-    }
-
-    fn scale(&mut self, current: f32, ratio: f32) -> f32 {
-        if !self.ready || current != self.applied {
-            self.base = current;
-            self.ready = true;
-        }
-        self.applied = self.base * ratio;
-        self.applied
+impl PixelScale {
+    fn needs_length(&self, current: Val) -> bool {
+        matches!(current, Val::Px(value) if self.needed(value))
     }
 
     fn length(&mut self, current: Val, ratio: f32) -> Val {
@@ -55,13 +42,13 @@ impl Metric {
 
 #[derive(Component, Clone, Copy, Default, PartialEq)]
 pub(super) struct Metrics {
-    spacing: [Metric; 2],
-    padding: [Metric; 4],
-    font: Metric,
+    spacing: [PixelScale; 2],
+    padding: [PixelScale; 4],
+    font: PixelScale,
 }
 
 #[derive(Component, Clone, Copy, Default, PartialEq)]
-pub(super) struct IconMetrics([Metric; 2]);
+pub(super) struct IconMetrics([PixelScale; 2]);
 
 pub(crate) fn install(app: &mut App) {
     app.register_required_components::<Node, Metrics>()
@@ -159,9 +146,22 @@ struct RequiredMetrics {
 impl RequiredMetrics {
     fn new(node: &Node, metrics: &Metrics, font: Option<&TextFont>, icon: bool) -> Self {
         Self {
-            spacing: !icon && (metrics.spacing[0].needed(node.column_gap) || metrics.spacing[1].needed(node.row_gap)),
-            padding: !icon && [node.padding.left, node.padding.right, node.padding.top, node.padding.bottom].into_iter().zip(&metrics.padding).any(|(value, metric)| metric.needed(value)),
-            font: font.is_some_and(|font| matches!(font.font_size, FontSize::Px(value) if value != 0.0 || metrics.font.base != 0.0)),
+            spacing: !icon
+                && (metrics.spacing[0].needs_length(node.column_gap)
+                    || metrics.spacing[1].needs_length(node.row_gap)),
+            padding: !icon
+                && [
+                    node.padding.left,
+                    node.padding.right,
+                    node.padding.top,
+                    node.padding.bottom,
+                ]
+                .into_iter()
+                .zip(&metrics.padding)
+                .any(|(value, metric)| metric.needs_length(value)),
+            font: font.is_some_and(
+                |font| matches!(font.font_size, FontSize::Px(value) if metrics.font.needed(value)),
+            ),
         }
     }
 

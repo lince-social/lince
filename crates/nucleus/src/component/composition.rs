@@ -1,28 +1,27 @@
-// non-lean-yet
-// Scope: const FORMAT, const MAX_BYTES, enum Immunity, struct Part.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
-//   Sites 110.
-// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
-//   Sites 11.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 59, 147, 159.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 5,
-//   11, 13, 14, 15, 16, 17, 18, 23, 25, 26, 28, 29, 30, 32, 37, 38, 39, 44, 45, 46, 48, 53, 54, 55,
-//   59, 141, 142, 143, 147, 159.
-// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites decode: String
-//   (147), encode: String (159), validate: String (59).
+//! Standalone composition documents, part settings, and event bindings.
 
+use std::collections::{BTreeMap, BTreeSet};
+
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use serde_json::{Value, from_str, to_string};
+
+use crate::{json::encoded_len, valid_uid};
 
 use super::ComponentState;
 
+/// Serialization format identifier for a standalone component composition.
 pub const FORMAT: &str = "lince.custom_component";
+/// Maximum serialized size of a composition or its enclosing document.
 pub const MAX_BYTES: usize = 256 * 1024;
 
-#[derive(
-    Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema,
-)]
+const MAX_DEPTH: usize = 8;
+const MAX_PARTS: usize = 256;
+const MAX_NAME_CHARACTERS: usize = 80;
+const MAX_SETTING_CHARACTERS: usize = 4096;
+const SIZE_ERROR: &str = "Composition exceeds 256 KiB";
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum Immunity {
     #[default]
@@ -34,11 +33,11 @@ pub enum Immunity {
     Isolation,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Part {
     #[serde(default)]
-    pub settings: std::collections::BTreeMap<String, serde_json::Value>,
+    pub settings: BTreeMap<String, Value>,
     pub id: String,
     #[serde(default)]
     pub position: [i32; 2],
@@ -48,14 +47,14 @@ pub struct Part {
     pub events: Vec<EventBinding>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct EventBinding {
     pub event: String,
-    pub action: serde_json::Value,
+    pub action: Value,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Composition {
     pub name: String,
@@ -64,7 +63,7 @@ pub struct Composition {
     pub origin: Option<Origin>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Origin {
     pub agent: String,
@@ -72,31 +71,41 @@ pub struct Origin {
 }
 
 impl Composition {
+    /// Checks serialized size and the layout, settings, and events of every part.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error for an invalid part, exceeded limit, or serialization failure.
     pub fn validate(&self) -> Result<(), String> {
-        if crate::json::encoded_len(self).map_err(|e| e.to_string())? > MAX_BYTES {
-            return Err("Composition exceeds 256 KiB".into());
+        if encoded_len(self).map_err(|error| error.to_string())? > MAX_BYTES {
+            return Err(SIZE_ERROR.into());
         }
         self.validate_tree(0, &mut 0)
     }
 
     fn validate_tree(&self, depth: usize, total: &mut usize) -> Result<(), String> {
-        if self.origin.as_ref().is_some_and(|origin| {
-            !crate::valid_uid(&origin.agent, "r") || !crate::valid_uid(&origin.thread, "r")
-        }) {
+        if self
+            .origin
+            .as_ref()
+            .is_some_and(|origin| !valid_uid(&origin.agent, "r") || !valid_uid(&origin.thread, "r"))
+        {
             return Err("Composition origin requires stable Agent and conversation UIDs".into());
         }
-        if depth >= 8
-            || self.name.trim().is_empty()
-            || self.name.chars().count() > 80
-            || self.name.chars().any(char::is_control)
+        if depth >= MAX_DEPTH
             || self.parts.is_empty()
+            || self.name.trim().is_empty()
+            || self
+                .name
+                .chars()
+                .enumerate()
+                .any(|(index, character)| index >= MAX_NAME_CHARACTERS || character.is_control())
         {
             return Err(
                 "Use a name of 1–80 characters, nonempty parts and at most 8 nested compositions"
                     .into(),
             );
         }
-        let mut ids = std::collections::BTreeSet::new();
+        let mut ids = BTreeSet::new();
         for part in &self.parts {
             if part.settings.len() > 32
                 || part.settings.iter().any(|(id, value)| {
@@ -106,8 +115,10 @@ impl Composition {
                             .bytes()
                             .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
                         || match value {
-                            serde_json::Value::Bool(_) | serde_json::Value::Number(_) => false,
-                            serde_json::Value::String(value) => value.chars().count() > 4096,
+                            Value::Bool(_) | Value::Number(_) => false,
+                            Value::String(value) => {
+                                value.chars().nth(MAX_SETTING_CHARACTERS).is_some()
+                            }
                             _ => true,
                         }
                 })
@@ -122,8 +133,7 @@ impl Composition {
                     binding.event.trim().is_empty()
                         || binding.event.len() > 128
                         || binding.event.chars().any(char::is_control)
-                        || !binding.action.is_object()
-                        || binding.action["action"].as_str().is_none()
+                        || !binding.action.get("action").is_some_and(Value::is_string)
                 })
             {
                 return Err(
@@ -131,7 +141,7 @@ impl Composition {
                 );
             }
             *total += 1;
-            if *total > 256
+            if *total > MAX_PARTS
                 || part.id.is_empty()
                 || part.id.len() > 80
                 || part.id.chars().any(char::is_control)
@@ -152,6 +162,7 @@ impl Composition {
     }
 }
 
+/// A versioned composition document.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Document {
@@ -160,11 +171,16 @@ pub struct Document {
 }
 
 impl Document {
+    /// Decodes a document and validates its format and composition.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error for malformed JSON, an incompatible format, or an invalid composition.
     pub fn decode(body: &str) -> Result<Self, String> {
         if body.len() > MAX_BYTES {
-            return Err("Composition exceeds 256 KiB".into());
+            return Err(SIZE_ERROR.into());
         }
-        let document: Self = serde_json::from_str(body).map_err(|e| e.to_string())?;
+        let document: Self = from_str(body).map_err(|error| error.to_string())?;
         if document.format != FORMAT {
             return Err("Invalid composition format".into());
         }
@@ -172,15 +188,20 @@ impl Document {
         Ok(document)
     }
 
+    /// Validates a composition and encodes its document.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error for an invalid composition or a document that cannot fit within the limit.
     pub fn encode(composition: Composition) -> Result<String, String> {
         composition.validate()?;
-        let body = serde_json::to_string(&Self {
+        let body = to_string(&Self {
             format: FORMAT.into(),
             composition,
         })
-        .map_err(|e| e.to_string())?;
+        .map_err(|error| error.to_string())?;
         if body.len() > MAX_BYTES {
-            return Err("Composition exceeds 256 KiB".into());
+            return Err(SIZE_ERROR.into());
         }
         Ok(body)
     }

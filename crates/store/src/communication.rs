@@ -1,34 +1,42 @@
-// non-lean-yet
-// Scope: const NAMESPACE, const SESSION_NAMESPACE, const KIND_PARTICIPANT, const KIND_GROUP_OF.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value. Sites
-//   300.
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 261, 303, 305,
-//   306, 364.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 127, 136, 146, 155, 172, 194, 216, 226, 237, 316, 370, 393.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 10, 11,
-//   13, 14, 15, 16, 17, 18, 37, 39, 41, 43, 45, 60, 62, 64, 66, 68, 70, 86, 88, 100, 101, 103, 105,
-//   107, 109, 113, 114, 115, 116, 117, 121, 122, 123, 124, 127, 136, 146, 155, 172, 194, 216, 226,
-//   237, 316, 370, 393.
+//! Conversation extensions, relation lookups, and Call Session state.
+
+mod listing;
+mod sessions;
 
 use nucleus::RecordKind;
 use serde::{Deserialize, Serialize};
+use serde_json::{from_value, to_value};
 use sqlx::SqlitePool;
 
-use crate::{
-    StoreError, assertions,
-    records::{self, NewRecord, RecordRow},
+pub use listing::{ConversationSummary, MessagePreview, conversations_by_tag};
+pub use sessions::{
+    RecordingState, SessionSidecar, close_session, get_session, open_session, sessions_of,
 };
 
+use crate::{
+    StoreError,
+    assertions::{AssertionRole, NewAssertion, assert, object_exists, objects_from_subject},
+    exact::one,
+    records::{self, NewRecord, RecordRow},
+    vocabulary::{feature_read, feature_write},
+};
+
+/// Extension namespace for Conversation room state.
 pub const NAMESPACE: &str = "communication.v1";
+/// Extension namespace for the Call Session sidecar.
 pub const SESSION_NAMESPACE: &str = "communication.session.v1";
 
+/// Stored Vocabulary key for linking a participant.
 pub const KIND_PARTICIPANT: &str = "participant";
+/// Stored Vocabulary key for the group relation.
 pub const KIND_GROUP_OF: &str = "group-of";
+/// Stored Vocabulary key for the Call Session relation.
 pub const KIND_CALL_SESSION_OF: &str = "call-session-of";
+/// Stored Vocabulary key for marking a Conversation with a tag.
 pub const KIND_TAGGED: &str = "tagged";
+/// Stored Vocabulary key for linking a call recording.
 pub const KIND_CALL_RECORDING: &str = "call-recording";
+/// Stored Vocabulary key for linking a call transcript.
 pub const KIND_CALL_TRANSCRIPT: &str = "call-transcript";
 
 fn provider_native() -> String {
@@ -37,32 +45,34 @@ fn provider_native() -> String {
 fn media_audio() -> String {
     "audio".to_string()
 }
-fn room_idle() -> String {
+fn idle() -> String {
     "idle".to_string()
 }
 fn recording_manual() -> String {
     "manual".to_string()
 }
-fn recording_idle() -> String {
-    "idle".to_string()
-}
 
+/// Persisted state of the Conversation room.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct RoomState {
-    #[serde(default = "room_idle")]
+    #[serde(default = "idle")]
+    /// Room lifecycle state.
     pub state: String,
     #[serde(default = "media_audio")]
+    /// Current media selection.
     pub media: String,
     #[serde(default)]
+    /// People occupying the room.
     pub occupants: Vec<String>,
     #[serde(default)]
+    /// Record identity of the current Call Session.
     pub session_record_id: Option<String>,
 }
 
 impl Default for RoomState {
     fn default() -> Self {
         Self {
-            state: room_idle(),
+            state: idle(),
             media: media_audio(),
             occupants: Vec::new(),
             session_record_id: None,
@@ -70,17 +80,23 @@ impl Default for RoomState {
     }
 }
 
+/// Persisted Communication extension for a Conversation.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct CommunicationExt {
     #[serde(default = "provider_native")]
+    /// Configured media provider.
     pub provider: String,
     #[serde(default)]
+    /// Identifier recognized by the media provider.
     pub room_id: String,
     #[serde(default)]
+    /// Current room state.
     pub room: RoomState,
     #[serde(default)]
+    /// Sand controlling the Conversation, when set.
     pub controller_sand_uid: Option<String>,
     #[serde(default = "recording_manual")]
+    /// Configured recording policy.
     pub recording_policy: String,
 }
 
@@ -96,76 +112,34 @@ impl Default for CommunicationExt {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct RecordingState {
-    #[serde(default = "recording_idle")]
-    pub state: String,
-}
-
-impl Default for RecordingState {
-    fn default() -> Self {
-        Self {
-            state: recording_idle(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct SessionSidecar {
-    pub started_at: String,
-    #[serde(default)]
-    pub ended_at: Option<String>,
-    #[serde(default = "media_audio")]
-    pub media: String,
-    #[serde(default)]
-    pub peak_participants: i64,
-    #[serde(default)]
-    pub recording: RecordingState,
-}
-
-#[derive(Debug, Clone)]
-pub struct ConversationSummary {
-    pub record: RecordRow,
-    pub participants: Vec<RecordRow>,
-    pub last_message: Option<MessagePreview>,
-    pub last_activity_at: Option<String>,
-}
-
-#[derive(Debug, Clone)]
-pub struct MessagePreview {
-    pub uid: String,
-    pub body: String,
-    pub created_at: Option<String>,
-}
-
+/// Reads the Communication extension when present and decodable.
+/// # Errors
+/// Returns an error if the Record extension cannot be read.
 pub async fn get_ext(
     pool: &SqlitePool,
     record_uid: &str,
 ) -> Result<Option<CommunicationExt>, StoreError> {
     Ok(records::get_extension(pool, record_uid, NAMESPACE)
         .await?
-        .and_then(|fds| serde_json::from_value(fds).ok()))
+        .and_then(|fds| from_value(fds).ok()))
 }
 
+/// Stores the Communication extension on a Record.
+/// # Errors
+/// Returns an error if the extension cannot be encoded or saved.
 pub async fn set_ext(
     pool: &SqlitePool,
     record_uid: &str,
     ext: &CommunicationExt,
 ) -> Result<(), StoreError> {
-    let fds = serde_json::to_value(ext)
-        .map_err(|e| sqlx::Error::Protocol(format!("serialize communication.v1: {e}")))?;
+    let fds = to_value(ext)
+        .map_err(|error| StoreError::Protocol(format!("serialize communication.v1: {error}")))?;
     records::set_extension(pool, record_uid, NAMESPACE, &fds).await
 }
 
-pub async fn get_session(
-    pool: &SqlitePool,
-    session_uid: &str,
-) -> Result<Option<SessionSidecar>, StoreError> {
-    Ok(records::get_extension(pool, session_uid, SESSION_NAMESPACE)
-        .await?
-        .and_then(|fds| serde_json::from_value(fds).ok()))
-}
-
+/// Resolves or creates the active Record used as a tag.
+/// # Errors
+/// Returns an error if the name cannot be resolved or the Record cannot be created.
 pub async fn ensure_tag_record(pool: &SqlitePool, slug: &str) -> Result<RecordRow, StoreError> {
     if let Some(existing) = records::resolve(pool, slug).await? {
         return Ok(existing);
@@ -177,47 +151,48 @@ pub async fn ensure_tag_record(pool: &SqlitePool, slug: &str) -> Result<RecordRo
             kind: RecordKind::Plain,
             head: slug,
             body: "",
-            quantity: crate::exact::one(),
+            quantity: one(),
         },
     )
     .await
 }
 
+/// Applies a tag to the Conversation through its active Vocabulary relation.
+/// # Errors
+/// Returns an error if the relation cannot be resolved or saved.
 pub async fn tag(
     pool: &SqlitePool,
     conversation_uid: &str,
     tag_uid: &str,
 ) -> Result<(), StoreError> {
-    let kind = crate::vocabulary::feature_write(pool, "tagging").await?;
-    assertions::assert(
-        pool,
-        assertions::NewAssertion {
-            subject_uid: conversation_uid,
-            predicate_uid: &kind,
-            object_uid: Some(tag_uid),
-            role: assertions::AssertionRole::Ordinary,
-            quantity: None,
-            unit_uid: None,
-            asserted_by: None,
-        },
-    )
-    .await?;
-    Ok(())
+    assert_relation(pool, "tagging", conversation_uid, tag_uid).await
 }
 
+/// Adds the Person to the Conversation through its active Vocabulary relation.
+/// # Errors
+/// Returns an error if the relation cannot be resolved or saved.
 pub async fn add_participant(
     pool: &SqlitePool,
     conversation_uid: &str,
     person_uid: &str,
 ) -> Result<(), StoreError> {
-    let kind = crate::vocabulary::feature_write(pool, "participant").await?;
-    assertions::assert(
+    assert_relation(pool, "participant", conversation_uid, person_uid).await
+}
+
+async fn assert_relation(
+    pool: &SqlitePool,
+    feature: &str,
+    subject_uid: &str,
+    object_uid: &str,
+) -> Result<(), StoreError> {
+    let predicate_uid = feature_write(pool, feature).await?;
+    assert(
         pool,
-        assertions::NewAssertion {
-            subject_uid: conversation_uid,
-            predicate_uid: &kind,
-            object_uid: Some(person_uid),
-            role: assertions::AssertionRole::Ordinary,
+        NewAssertion {
+            subject_uid,
+            predicate_uid: &predicate_uid,
+            object_uid: Some(object_uid),
+            role: AssertionRole::Ordinary,
             quantity: None,
             unit_uid: None,
             asserted_by: None,
@@ -227,191 +202,29 @@ pub async fn add_participant(
     Ok(())
 }
 
+/// Lists the participants using the active Vocabulary relation.
+/// # Errors
+/// Returns an error if the relation or participants cannot be read.
 pub async fn participants(
     pool: &SqlitePool,
     conversation_uid: &str,
 ) -> Result<Vec<RecordRow>, StoreError> {
-    match crate::vocabulary::feature_read(pool, "participant").await? {
-        Some(kind) => assertions::objects_from_subject(pool, conversation_uid, &kind).await,
+    match feature_read(pool, "participant").await? {
+        Some(kind) => objects_from_subject(pool, conversation_uid, &kind).await,
         None => Ok(Vec::new()),
     }
 }
 
+/// Checks for an active Conversation participant relation to the Person.
+/// # Errors
+/// Returns an error if the relation or assertion cannot be read.
 pub async fn is_participant(
     pool: &SqlitePool,
     conversation_uid: &str,
     person_uid: &str,
 ) -> Result<bool, StoreError> {
-    match crate::vocabulary::feature_read(pool, "participant").await? {
-        Some(kind) => {
-            assertions::object_exists(pool, conversation_uid, &kind, Some(person_uid)).await
-        }
+    match feature_read(pool, "participant").await? {
+        Some(kind) => object_exists(pool, conversation_uid, &kind, Some(person_uid)).await,
         None => Ok(false),
-    }
-}
-
-pub async fn conversations_by_tag(
-    pool: &SqlitePool,
-    tag_uid: &str,
-) -> Result<Vec<ConversationSummary>, StoreError> {
-    let Some(tagged) = crate::vocabulary::feature_read(pool, "tagging").await? else {
-        return Ok(Vec::new());
-    };
-    let participant = crate::vocabulary::feature_read(pool, "participant").await?;
-    let thread_of = crate::vocabulary::feature_read(pool, "thread").await?;
-    let message_in = crate::vocabulary::feature_read(pool, "message").await?;
-
-    let mut out = Vec::new();
-    for conv in assertions::subjects_pointing_to(pool, &tagged, tag_uid).await? {
-        if !conv.quantity.is_positive() {
-            continue;
-        }
-        let participants = match &participant {
-            Some(kind) => assertions::objects_from_subject(pool, &conv.uid, kind).await?,
-            None => Vec::new(),
-        };
-        let last_message =
-            newest_message(pool, &conv.uid, thread_of.as_deref(), message_in.as_deref()).await?;
-        let conv_created = records::created_at(pool, &conv.uid).await?;
-        let last_activity_at = [
-            last_message.as_ref().and_then(|m| m.created_at.clone()),
-            conv_created,
-        ]
-        .into_iter()
-        .flatten()
-        .max();
-        out.push(ConversationSummary {
-            record: conv,
-            participants,
-            last_message,
-            last_activity_at,
-        });
-    }
-
-    out.sort_by(|a, b| b.last_activity_at.cmp(&a.last_activity_at));
-    Ok(out)
-}
-
-async fn newest_message(
-    pool: &SqlitePool,
-    conversation_uid: &str,
-    thread_of: Option<&str>,
-    message_in: Option<&str>,
-) -> Result<Option<MessagePreview>, StoreError> {
-    let (Some(thread_of), Some(message_in)) = (thread_of, message_in) else {
-        return Ok(None);
-    };
-    let mut best: Option<(String, MessagePreview)> = None;
-    for thread in assertions::subjects_pointing_to(pool, thread_of, conversation_uid).await? {
-        if thread.kind != RecordKind::Thread.as_str() || !thread.quantity.is_positive() {
-            continue;
-        }
-        for message in assertions::subjects_pointing_to(pool, message_in, &thread.uid).await? {
-            if message.kind != RecordKind::Message.as_str() || !message.quantity.is_positive() {
-                continue;
-            }
-            let Some(created) = records::created_at(pool, &message.uid).await? else {
-                continue;
-            };
-            let newer = best.as_ref().map(|(at, _)| created > *at).unwrap_or(true);
-            if newer {
-                best = Some((
-                    created.clone(),
-                    MessagePreview {
-                        uid: message.uid.clone(),
-                        body: message.body.clone(),
-                        created_at: Some(created),
-                    },
-                ));
-            }
-        }
-    }
-    Ok(best.map(|(_, preview)| preview))
-}
-
-pub async fn open_session(
-    pool: &SqlitePool,
-    conversation_uid: &str,
-    media: &str,
-) -> Result<RecordRow, StoreError> {
-    let now = nucleus::execution::now().to_rfc3339();
-    let head = format!("Call · {now}");
-    let session = records::create(
-        pool,
-        NewRecord {
-            slug: None,
-            kind: RecordKind::CallSession,
-            head: &head,
-            body: "",
-            quantity: crate::exact::one(),
-        },
-    )
-    .await?;
-
-    let sidecar = SessionSidecar {
-        started_at: now,
-        ended_at: None,
-        media: media.to_string(),
-        peak_participants: 0,
-        recording: RecordingState::default(),
-    };
-    let fds = serde_json::to_value(&sidecar)
-        .map_err(|e| sqlx::Error::Protocol(format!("serialize session sidecar: {e}")))?;
-    records::set_extension(pool, &session.uid, SESSION_NAMESPACE, &fds).await?;
-
-    let kind = crate::vocabulary::feature_write(pool, "call_session").await?;
-    assertions::assert(
-        pool,
-        assertions::NewAssertion {
-            subject_uid: &session.uid,
-            predicate_uid: &kind,
-            object_uid: Some(conversation_uid),
-            role: assertions::AssertionRole::Ordinary,
-            quantity: None,
-            unit_uid: None,
-            asserted_by: None,
-        },
-    )
-    .await?;
-
-    let mut ext = get_ext(pool, conversation_uid).await?.unwrap_or_default();
-    ext.room.state = "active".to_string();
-    ext.room.media = media.to_string();
-    ext.room.session_record_id = Some(session.uid.clone());
-    set_ext(pool, conversation_uid, &ext).await?;
-
-    Ok(session)
-}
-
-pub async fn close_session(
-    pool: &SqlitePool,
-    conversation_uid: &str,
-    session_uid: &str,
-    peak_participants: i64,
-) -> Result<(), StoreError> {
-    if let Some(mut sidecar) = get_session(pool, session_uid).await? {
-        sidecar.ended_at = Some(nucleus::execution::now().to_rfc3339());
-        sidecar.peak_participants = peak_participants;
-        let fds = serde_json::to_value(&sidecar)
-            .map_err(|e| sqlx::Error::Protocol(format!("serialize session sidecar: {e}")))?;
-        records::set_extension(pool, session_uid, SESSION_NAMESPACE, &fds).await?;
-    }
-
-    if let Some(mut ext) = get_ext(pool, conversation_uid).await? {
-        ext.room.state = "idle".to_string();
-        ext.room.occupants.clear();
-        ext.room.session_record_id = None;
-        set_ext(pool, conversation_uid, &ext).await?;
-    }
-    Ok(())
-}
-
-pub async fn sessions_of(
-    pool: &SqlitePool,
-    conversation_uid: &str,
-) -> Result<Vec<RecordRow>, StoreError> {
-    match crate::vocabulary::feature_read(pool, "call_session").await? {
-        Some(kind) => assertions::subjects_pointing_to(pool, &kind, conversation_uid).await,
-        None => Ok(Vec::new()),
     }
 }

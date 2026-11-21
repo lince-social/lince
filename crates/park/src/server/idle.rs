@@ -144,7 +144,7 @@ impl State {
                     return self.windows.get(&id).is_some_and(|window| window.mapped)
                         && self.presented_geometry.as_ref().is_some_and(|geometry| {
                             geometry.items.iter().any(|item| {
-                                item.id == lince_interface::host::ItemId::Application(id)
+                                item.id == lince_host::ItemId::Application(id)
                                     && self.outputs.contains_key(&item.output)
                                     && item.clip.as_ref().is_none_or(|clip| !clip.is_empty())
                             })

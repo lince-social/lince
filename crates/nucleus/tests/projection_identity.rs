@@ -1,10 +1,3 @@
-// non-lean-yet
-// Scope: fn identity_preserves_key_encoding_and_actor_isolation, fn
-//   execution_identity_rejects_malformed_fingerprints.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::redundant_clone] Move or borrow at the marked sites and check later uses.
-//   Sites 22.
-
 use nucleus::{
     karma::{CanonicalHash, canonical_hash},
     projection::{Context, ExecutionIdentity, Window},
@@ -13,7 +6,7 @@ use nucleus::{
 #[test]
 fn identity_preserves_key_encoding_and_actor_isolation() {
     let build = format!("sha256:{}", "a".repeat(64));
-    let identity = ExecutionIdentity::parse(build.clone()).unwrap();
+    let identity = ExecutionIdentity::parse(build.as_str()).unwrap();
     let mut context = Context {
         actor: None,
         window: Window {
@@ -28,7 +21,6 @@ fn identity_preserves_key_encoding_and_actor_isolation() {
     )
     .unwrap();
     assert_eq!(context.key(&identity).unwrap(), expected);
-    assert_eq!(context.key(&identity.clone()).unwrap(), expected);
     context.window.until_ms = 120_000;
     assert_eq!(context.key(&identity).unwrap(), expected);
     context.actor = Some("visitor".into());
@@ -51,6 +43,9 @@ fn execution_identity_rejects_malformed_fingerprints() {
         format!("sha256:{}", "A".repeat(64)),
         format!("sha256:{}", "g".repeat(64)),
     ] {
-        assert!(ExecutionIdentity::parse(value).is_err());
+        assert!(
+            ExecutionIdentity::parse(value.as_str()).is_err(),
+            "{value:?}"
+        );
     }
 }

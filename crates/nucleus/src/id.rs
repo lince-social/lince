@@ -1,33 +1,29 @@
-// non-lean-yet
-// Scope: const ALPHABET, fn ulid_from, fn new_uid, fn valid_uid.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
-//   Sites 8.
-// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
-//   Sites 4, 8, 14.
-// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
-//   conversion. Sites 14.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 3, 13,
-//   19, 29.
+//! Lince slug validation and prefixed, sortable identifiers.
+
+pub use lince_karma::reference::valid_slug;
+
+use crate::execution::{now, uuid};
 
 const ALPHABET: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
+/// Encodes the low 48 timestamp bits and low 80 entropy bits as a Crockford ULID.
 pub fn ulid_from(millis: u64, entropy: u128) -> String {
-    let value: u128 = ((millis as u128 & 0xFFFF_FFFF_FFFF) << 80) | (entropy & ((1u128 << 80) - 1));
-    let mut out = String::with_capacity(26);
-    for i in 0..26 {
-        let shift = (25 - i) * 5;
-        out.push(ALPHABET[((value >> shift) & 0x1F) as usize] as char);
+    let value = (u128::from(millis) << 80) | (entropy & ((1 << 80) - 1));
+    let mut encoded = String::with_capacity(26);
+    for index in (0..26).rev() {
+        let digit = ((value >> (index * 5)) & 31) as usize;
+        encoded.push(char::from(ALPHABET[digit]));
     }
-    out
+    encoded
 }
 
+/// Creates a prefixed ULID using the current execution context's clock and entropy.
 pub fn new_uid(prefix: &str) -> String {
-    let millis = crate::execution::now().timestamp_millis().max(0) as u64;
-    let entropy = crate::execution::uuid().as_u128();
-    format!("{prefix}_{}", ulid_from(millis, entropy))
+    let millis = u64::try_from(now().timestamp_millis()).unwrap_or_default();
+    format!("{prefix}_{}", ulid_from(millis, uuid().as_u128()))
 }
 
+/// Checks a prefix, underscore, and 26 Crockford digits.
 pub fn valid_uid(uid: &str, prefix: &str) -> bool {
     let Some(body) = uid
         .strip_prefix(prefix)
@@ -36,22 +32,6 @@ pub fn valid_uid(uid: &str, prefix: &str) -> bool {
         return false;
     };
     body.len() == 26 && body.bytes().all(|byte| ALPHABET.contains(&byte))
-}
-
-pub fn valid_slug(slug: &str) -> bool {
-    if slug.is_empty() {
-        return false;
-    }
-    slug.split('.').all(|seg| {
-        !seg.is_empty()
-            && seg
-                .chars()
-                .next()
-                .is_some_and(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
-            && seg
-                .chars()
-                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
-    })
 }
 
 #[cfg(test)]
@@ -65,6 +45,7 @@ mod tests {
         assert_eq!(a.len(), 26);
         assert!(a < b, "later millis must sort after");
         assert_eq!(ulid_from(1, 42), a, "pure: same inputs, same ulid");
+        assert_eq!(ulid_from((1 << 48) + 1, (1 << 80) + 42), a);
     }
 
     #[test]

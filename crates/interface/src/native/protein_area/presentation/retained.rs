@@ -1,9 +1,15 @@
-// non-lean-yet
-// Scope: struct Observed, struct Revision, fn revision, fn unchanged.
-// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+//! Change-tick tracking for retained Protein row presentations.
 
-use super::*;
-use bevy::ecs::change_detection::Tick;
+use super::{State, fields::Original};
+use crate::native::{
+    area::InfluenceArea,
+    protein_area::{RecordBinding, rows::Row},
+    sand_settings::Declaration,
+};
+use bevy::{
+    ecs::change_detection::Tick,
+    prelude::{Children, Component, DetectChanges, Entity, EntityRef, World},
+};
 
 #[derive(Component)]
 struct Observed {
@@ -22,51 +28,55 @@ struct Revision {
     original: Option<Tick>,
 }
 
-fn revision(world: &World, row: Entity) -> Option<Revision> {
-    let entity = world.get_entity(row).ok()?;
+fn changed_at<T: Component>(entity: &EntityRef<'_>) -> Option<Tick> {
+    entity
+        .get_ref::<T>()
+        .map(|component| component.last_changed())
+}
+
+fn revision(world: &World, entity: EntityRef<'_>) -> Option<Revision> {
     let binding = entity.get_ref::<RecordBinding>()?;
     Some(Revision {
-        row: entity.get_ref::<super::super::rows::Row>()?.last_changed(),
+        row: changed_at::<Row>(&entity)?,
         binding: binding.last_changed(),
-        state: entity.get_ref::<State>().map(|state| state.last_changed()),
-        source: world
-            .get_entity(binding.area)
-            .ok()?
-            .get_ref::<InfluenceArea>()?
-            .last_changed(),
-        declaration: entity
-            .get_ref::<crate::native::sand_settings::Declaration>()
-            .map(|declaration| declaration.last_changed()),
-        children: entity
-            .get_ref::<Children>()
-            .map(|children| children.last_changed()),
-        original: entity
-            .get_ref::<super::fields::Original>()
-            .map(|original| original.last_changed()),
+        state: changed_at::<State>(&entity),
+        source: changed_at::<InfluenceArea>(&world.get_entity(binding.area).ok()?)?,
+        declaration: changed_at::<Declaration>(&entity),
+        children: changed_at::<Children>(&entity),
+        original: changed_at::<Original>(&entity),
     })
 }
 
 pub(super) fn unchanged(world: &World, row: Entity) -> bool {
-    world.get::<Observed>(row).is_some_and(|observed| {
+    let Ok(entity) = world.get_entity(row) else {
+        return false;
+    };
+    entity.get::<Observed>().is_some_and(|observed| {
+        // Another edit in the same tick can share the recorded change ticks.
         observed.at != world.read_change_tick()
-            && revision(world, row).as_ref() == Some(&observed.revision)
+            && revision(world, entity).as_ref() == Some(&observed.revision)
     })
 }
 
 pub(super) fn remember(world: &mut World, row: Entity) {
-    if let Some(revision) = revision(world, row) {
-        let at = world.read_change_tick();
+    let at = world.read_change_tick();
+    if let Ok(entity) = world.get_entity(row)
+        && let Some(revision) = revision(world, entity)
+        && let Ok(mut entity) = world.get_entity_mut(row)
+    {
         let next = Observed { at, revision };
-        if let Some(mut observed) = world.get_mut::<Observed>(row) {
+        if let Some(mut observed) = entity.get_mut::<Observed>() {
             *observed = next;
         } else {
-            world.entity_mut(row).insert(next);
+            entity.insert(next);
         }
     }
 }
 
 pub(super) fn forget(world: &mut World, row: Entity) {
-    if world.get::<Observed>(row).is_some() {
-        world.entity_mut(row).remove::<Observed>();
+    if let Ok(mut entity) = world.get_entity_mut(row)
+        && entity.contains::<Observed>()
+    {
+        entity.remove::<Observed>();
     }
 }

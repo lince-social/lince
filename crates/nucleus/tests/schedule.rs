@@ -1,12 +1,5 @@
-// non-lean-yet
-// Scope: fn scheduling_duration_and_point_rules, fn reversed_and_implicit_times_are_rejected, fn
-//   timezone_gaps_and_repeated_times_are_explicit, fn
-//   window_clipping_never_turns_a_point_into_a_range.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
-//   Sites 71.
-
-use nucleus::schedule::{TimeValue, civil_instants, range};
+use chrono::{DateTime, FixedOffset, NaiveDate, Utc};
+use nucleus::schedule::{Endpoints, TimeValue, civil_instants, on_date, range};
 
 #[test]
 fn scheduling_duration_and_point_rules() {
@@ -71,12 +64,11 @@ fn timezone_gaps_and_repeated_times_are_explicit() {
     );
     assert!(civil_instants("2026-03-08", "02:30", "America/New_York").is_err());
     let repeated = civil_instants("2026-11-01", "01:30", "America/New_York").unwrap();
-    assert_eq!(repeated.len(), 2);
-    let instants: Vec<_> = repeated
-        .iter()
-        .map(|value| TimeValue::parse(value).unwrap().instant_ms().unwrap())
-        .collect();
-    assert_eq!(instants[1] - instants[0], 3_600_000);
+    let [first, second] = repeated.as_slice() else {
+        panic!("expected two instants after a clock fold, got {repeated:?}");
+    };
+    let millis = |value: &str| TimeValue::parse(value).unwrap().instant_ms().unwrap();
+    assert_eq!(millis(second) - millis(first), 3_600_000);
 }
 
 #[test]
@@ -92,7 +84,7 @@ fn window_clipping_never_turns_a_point_into_a_range() {
 
 #[test]
 fn moving_a_date_preserves_precise_time_and_refuses_dst_ambiguity() {
-    let changed = nucleus::schedule::on_date(
+    let changed = on_date(
         "2026-10-03T10:30:12.125-03:00",
         "2026-10-04",
         "America/Sao_Paulo",
@@ -100,7 +92,7 @@ fn moving_a_date_preserves_precise_time_and_refuses_dst_ambiguity() {
     .unwrap();
     assert_eq!(changed, "2026-10-04T10:30:12.125-03:00");
     assert!(
-        nucleus::schedule::on_date(
+        on_date(
             "2026-10-31T01:30:00-04:00",
             "2026-11-01",
             "America/New_York"
@@ -108,11 +100,20 @@ fn moving_a_date_preserves_precise_time_and_refuses_dst_ambiguity() {
         .is_err()
     );
     assert!(
-        nucleus::schedule::on_date(
+        on_date(
             "2026-03-07T02:30:00-05:00",
             "2026-03-08",
             "America/New_York"
         )
         .is_err()
     );
+}
+
+#[test]
+fn mixed_endpoints_reject_an_unrepresentable_local_date() {
+    let offset = FixedOffset::east_opt(9 * 3600).unwrap();
+    let instant = TimeValue::Instant(DateTime::<Utc>::MAX_UTC.with_timezone(&offset));
+    let due = TimeValue::Date(NaiveDate::MAX);
+    let error = Endpoints::new(Some(&instant), Some(&due)).unwrap_err();
+    assert_eq!(error, "Scheduling timestamp is outside the supported range");
 }

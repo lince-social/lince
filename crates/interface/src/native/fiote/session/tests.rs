@@ -8,6 +8,7 @@ use super::*;
 pub(super) fn fixture_status(record: &str) -> FioteStatus {
     FioteStatus {
         assistant_reply: None,
+        tool_history: None,
         assistant_directory: None,
         assistant_request: None,
         intake: None,

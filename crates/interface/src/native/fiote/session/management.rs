@@ -87,6 +87,14 @@ impl Action for Open {
         if super::open_setup(world, owner) {
             return;
         }
+        if world.get::<super::dashboard::Dashboard>(owner).is_some()
+            && world
+                .get::<Panel>(owner)
+                .is_some_and(|panel| panel.step != Step::Closed)
+        {
+            super::Close.apply(world, owner);
+            return;
+        }
         super::show(world, owner, Step::Manage);
         let record = world.get::<Panel>(owner).unwrap().binding.uid.clone();
         request(world, owner, FioteRequest::Prepare { record });
@@ -95,119 +103,18 @@ impl Action for Open {
 
 pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Option<&FioteStatus>) {
     let Some(saved) = saved else { return };
-    crate::native::edit_mode::label(world, content, "Fiotes", 22.0);
-    crate::native::description::button(world, content, owner, "Ask Fiote", super::assistant::Open);
-    if let Some(intake) = &saved.intake {
-        crate::native::edit_mode::label(
-            world,
-            content,
-            &format!(
-                "Automatic assistant: {} · {} direct children · created {}{}",
-                intake.title,
-                intake.children,
-                intake.created_at,
-                if intake.enabled {
-                    ""
-                } else {
-                    " · connection needs setup"
-                },
-            ),
-            13.0,
-        );
-        crate::native::description::button(
-            world,
-            content,
-            owner,
-            "Open automatic assistant",
-            Select(intake.record.clone()),
-        );
-    }
-    let list = section(world, content);
-    for choice in &saved.fiotes {
-        crate::native::description::button(
-            world,
-            list,
-            owner,
-            &choice.title,
-            Select(choice.record.clone()),
-        );
-    }
-    crate::native::description::button(world, content, owner, "Create Fiote", Create);
-    let handoffs = collapsed(world, content, "Show delegated work");
-    for handoff in &saved.handoffs {
-        crate::native::edit_mode::label(
-            world,
-            handoffs,
-            &format!(
-                "{} · to {} · {}\n{}",
-                handoff.request_id, handoff.target, handoff.state, handoff.detail,
-            ),
-            13.0,
-        );
-        if let Some(thread) = &handoff.thread {
-            crate::native::description::button(
-                world,
-                handoffs,
-                owner,
-                "Open delegated conversation",
-                OpenConversation {
-                    target: handoff.target.clone(),
-                    thread: thread.clone(),
-                },
-            );
-            crate::native::description::button(
-                world,
-                handoffs,
-                owner,
-                "Stop delegated Fiote",
-                StopChild {
-                    record: saved.record.clone(),
-                    thread: thread.clone(),
-                },
-            );
-        }
-    }
-    crate::native::description::button(world, content, owner, "Run now", RunNow);
-    crate::native::description::button(
-        world,
-        content,
-        owner,
-        "Refresh activations",
-        RefreshActivations,
-    );
-    crate::native::description::button(
-        world,
-        content,
-        owner,
-        "Stop current and pending runs",
-        CancelActivations,
-    );
-    let activations = collapsed(world, content, "Show activations");
-    for activation in &saved.activations {
-        crate::native::edit_mode::label(
-            world,
-            activations,
-            &format!(
-                "{} · value {} · {}\n{}\n{}",
-                activation["request_id"].as_str().unwrap_or_default(),
-                activation["value"].as_str().unwrap_or_default(),
-                activation["state"].as_str().unwrap_or_default(),
-                activation["detail"].as_str().unwrap_or_default(),
-                activation["cause"]
-            ),
-            13.0,
-        );
-        if let Some(thread) = activation["thread"].as_str() {
-            crate::native::description::button(
-                world,
-                activations,
-                owner,
-                "Open activation thread",
-                OpenTask(thread.into()),
-            );
-        }
-    }
-    crate::native::edit_mode::label(world, content, "Selected Fiote", 18.0);
+
+    let profile = accordion(world, content, owner, "Profile and connection", true);
+    profile_settings(world, owner, profile, saved);
+    let work = accordion(world, content, owner, "Runs and assigned work", false);
+    run_settings(world, owner, work, saved);
+    let inheritance = accordion(world, content, owner, "Parent and instructions", false);
+    instruction_settings(world, owner, inheritance, saved);
+    let roster = accordion(world, content, owner, "Manage roster", false);
+    roster_settings(world, owner, roster, saved);
+}
+
+fn profile_settings(world: &mut World, owner: Entity, content: Entity, saved: &FioteStatus) {
     let binding = world.get::<Panel>(owner).unwrap().binding.clone();
     if let Some(source) = saved.instructions.last() {
         for (property, label, text) in [
@@ -226,16 +133,14 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
                 ))
                 .id();
             crate::native::accessibility::input(world, editor, label, property != "head");
-            if property == "head" {
-                world
-                    .get_mut::<EditableText>(editor)
-                    .unwrap()
-                    .allow_newlines = false;
+            if let Some(mut input) = world.get_mut::<EditableText>(editor) {
+                input.allow_newlines = property == "body";
+                input.visible_lines = Some(if property == "body" { 5.0 } else { 1.0 });
             }
             crate::native::record_binding::attach(world, editor, binding.clone(), property, None);
         }
     }
-    crate::native::description::button(
+    super::dashboard::button(
         world,
         content,
         owner,
@@ -268,16 +173,17 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
         summary,
         original,
     });
-    crate::native::description::button(
+    let directory_actions = super::dashboard::controls(world, content);
+    super::dashboard::button(
         world,
-        content,
+        directory_actions,
         owner,
         "Save working directory",
         SaveDirectory,
     );
-    crate::native::description::button(
+    super::dashboard::button(
         world,
-        content,
+        directory_actions,
         owner,
         if saved.behavior.prompt_parent.is_some() {
             "Use parent directory"
@@ -286,15 +192,93 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
         },
         InheritDirectory,
     );
-    crate::native::description::button(
+    super::dashboard::button(
         world,
-        content,
+        directory_actions,
         owner,
         "Open Record and conversation",
         OpenRecord,
     );
-    crate::native::description::button(world, content, owner, "Delete Fiote…", ConfirmDelete);
-    crate::native::description::button(
+}
+
+fn run_settings(world: &mut World, owner: Entity, content: Entity, saved: &FioteStatus) {
+    let handoffs = collapsed(world, content, owner, "Show delegated work");
+    for handoff in &saved.handoffs {
+        crate::native::edit_mode::label(
+            world,
+            handoffs,
+            &format!(
+                "{} · to {} · {}\n{}",
+                handoff.request_id, handoff.target, handoff.state, handoff.detail,
+            ),
+            13.0,
+        );
+        if let Some(thread) = &handoff.thread {
+            let actions = super::dashboard::controls(world, handoffs);
+            super::dashboard::button(
+                world,
+                actions,
+                owner,
+                "Open delegated conversation",
+                OpenConversation {
+                    target: handoff.target.clone(),
+                    thread: thread.clone(),
+                },
+            );
+            super::dashboard::button(
+                world,
+                actions,
+                owner,
+                "Stop delegated Fiote",
+                StopChild {
+                    record: saved.record.clone(),
+                    thread: thread.clone(),
+                },
+            );
+        }
+    }
+    let actions = super::dashboard::controls(world, content);
+    super::dashboard::button(world, actions, owner, "Run now", RunNow);
+    super::dashboard::button(
+        world,
+        actions,
+        owner,
+        "Refresh activations",
+        RefreshActivations,
+    );
+    super::dashboard::button(
+        world,
+        actions,
+        owner,
+        "Stop current and pending runs",
+        CancelActivations,
+    );
+    let activations = collapsed(world, content, owner, "Show activations");
+    for activation in &saved.activations {
+        crate::native::edit_mode::label(
+            world,
+            activations,
+            &format!(
+                "{} · value {} · {}\n{}\n{}",
+                activation["request_id"].as_str().unwrap_or_default(),
+                activation["value"].as_str().unwrap_or_default(),
+                activation["state"].as_str().unwrap_or_default(),
+                activation["detail"].as_str().unwrap_or_default(),
+                activation["cause"]
+            ),
+            13.0,
+        );
+        if let Some(thread) = activation["thread"].as_str() {
+            super::dashboard::button(
+                world,
+                activations,
+                owner,
+                "Open activation thread",
+                OpenTask(thread.into()),
+            );
+        }
+    }
+    super::dashboard::button(
         world,
         content,
         owner,
@@ -305,6 +289,40 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
         },
         ToggleAssignments,
     );
+    let tasks = collapsed(world, content, owner, "Show assigned work");
+    let view_uid = world.get::<Panel>(owner).unwrap().view_uid.clone();
+    for task in saved
+        .tasks
+        .iter()
+        .filter(|task| view_uid == saved.record || task.task == view_uid)
+    {
+        crate::native::edit_mode::label(
+            world,
+            tasks,
+            &format!("{} · {}\n{}", task.title, task.state, task.detail),
+            14.0,
+        );
+        let actions = super::dashboard::controls(world, tasks);
+        super::dashboard::button(
+            world,
+            actions,
+            owner,
+            "Open task thread",
+            OpenTask(task.thread.clone()),
+        );
+        if matches!(task.state.as_str(), "failed" | "interrupted" | "finished") {
+            super::dashboard::button(
+                world,
+                actions,
+                owner,
+                "Retry task after inspecting changes",
+                Retry(task.thread.clone()),
+            );
+        }
+    }
+}
+
+fn instruction_settings(world: &mut World, owner: Entity, content: Entity, saved: &FioteStatus) {
     let parent = saved
         .behavior
         .prompt_parent
@@ -319,16 +337,17 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
         ),
         14.0,
     );
-    let parents = collapsed(world, content, "Change parent Fiote");
-    crate::native::description::button(world, parents, owner, "No parent Fiote", Parent(None));
+    let parents = collapsed(world, content, owner, "Change parent Fiote");
+    super::dashboard::button(world, parents, owner, "No parent Fiote", Parent(None));
+    let parent_choices = super::dashboard::controls(world, parents);
     for choice in saved
         .fiotes
         .iter()
         .filter(|choice| choice.record != saved.record)
     {
-        crate::native::description::button(
+        super::dashboard::button(
             world,
-            parents,
+            parent_choices,
             owner,
             &choice.title,
             Parent(Some(choice.record.clone())),
@@ -346,7 +365,7 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
         "Sessions pin these descriptions. After editing a prompt, apply it to an idle thread or start a new thread. Compaction reloads the pinned instructions.",
         14.0,
     );
-    let instructions = collapsed(world, content, "View effective instructions");
+    let instructions = collapsed(world, content, owner, "View effective instructions");
     if let Some(error) = &saved.instruction_error {
         crate::native::edit_mode::label(world, instructions, error, 14.0);
     }
@@ -363,37 +382,47 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
             14.0,
         );
     }
-    crate::native::edit_mode::label(world, content, "Assigned work", 16.0);
-    let tasks = collapsed(world, content, "Show assigned work");
-    let view_uid = world.get::<Panel>(owner).unwrap().view_uid.clone();
-    for task in saved
-        .tasks
-        .iter()
-        .filter(|task| view_uid == saved.record || task.task == view_uid)
-    {
+}
+
+fn roster_settings(world: &mut World, owner: Entity, content: Entity, saved: &FioteStatus) {
+    super::dashboard::button(world, content, owner, "Ask Fiote", super::assistant::Open);
+    if let Some(intake) = &saved.intake {
         crate::native::edit_mode::label(
             world,
-            tasks,
-            &format!("{} · {}\n{}", task.title, task.state, task.detail),
-            14.0,
+            content,
+            &format!(
+                "Automatic assistant: {} · {} direct children · created {}{}",
+                intake.title,
+                intake.children,
+                intake.created_at,
+                if intake.enabled {
+                    ""
+                } else {
+                    " · connection needs setup"
+                },
+            ),
+            13.0,
         );
-        crate::native::description::button(
+        super::dashboard::button(
             world,
-            tasks,
+            content,
             owner,
-            "Open task thread",
-            OpenTask(task.thread.clone()),
+            "Open automatic assistant",
+            Select(intake.record.clone()),
         );
-        if matches!(task.state.as_str(), "failed" | "interrupted" | "finished") {
-            crate::native::description::button(
-                world,
-                tasks,
-                owner,
-                "Retry task after inspecting changes",
-                Retry(task.thread.clone()),
-            );
-        }
     }
+    let list = super::dashboard::controls(world, content);
+    for choice in &saved.fiotes {
+        super::dashboard::button(
+            world,
+            list,
+            owner,
+            &choice.title,
+            Select(choice.record.clone()),
+        );
+    }
+    super::dashboard::button(world, content, owner, "Create Fiote", Create);
+    super::dashboard::button(world, content, owner, "Delete Fiote…", ConfirmDelete);
 }
 
 #[derive(Clone)]
@@ -429,23 +458,6 @@ impl Action for CancelActivations {
         let record = world.get::<Panel>(owner).unwrap().binding.uid.clone();
         request(world, owner, FioteRequest::CancelActivations { record });
     }
-}
-
-fn section(world: &mut World, parent: Entity) -> Entity {
-    let entity = world
-        .spawn((
-            Node {
-                flex_direction: FlexDirection::Column,
-                max_height: px(240),
-                flex_shrink: 0.0,
-                row_gap: px(4),
-                ..default()
-            },
-            ChildOf(parent),
-        ))
-        .id();
-    crate::native::scroll_sand::attach(world, entity);
-    entity
 }
 
 #[derive(Clone)]
@@ -742,12 +754,19 @@ pub(super) fn instructions(world: &mut World, saved: &FioteStatus) {
 pub(super) struct Select(pub(super) String);
 impl Action for Select {
     fn apply(&self, world: &mut World, owner: Entity) {
+        if world.get::<super::dashboard::Dashboard>(owner).is_some()
+            && world.get::<Panel>(owner).is_some_and(|panel| panel.binding.uid == self.0)
+        {
+            super::show(world, owner, Step::Closed);
+            super::dashboard::open_current(world, owner);
+            return;
+        }
         world.entity_mut(owner).remove::<DirectoryEditor>();
         let area = world.get::<Panel>(owner).unwrap().binding.area;
         if let Some(mut area) = world.get_mut::<crate::native::area::InfluenceArea>(area) {
             if let Some(config) = &mut area.protein {
                 if config.fiote {
-                    config.draft.query["where"] = serde_json::json!([{"uid_eq": self.0}]);
+                    config.draft.query["where"] = serde_json::json!([{"all":[{"uid_eq": self.0}]}]);
                     return;
                 }
             }
@@ -793,7 +812,7 @@ impl Action for ConfirmDelete {
             "Delete this Fiote Record? Its conversations are retained.",
             14.0,
         );
-        crate::native::description::button(world, content, owner, "Confirm deletion", Delete);
+        super::dashboard::button(world, content, owner, "Confirm deletion", Delete);
     }
 }
 #[derive(Clone)]
@@ -806,22 +825,92 @@ impl Action for Delete {
     }
 }
 
-fn collapsed(world: &mut World, parent: Entity, label: &str) -> Entity {
-    let content = section(world, parent);
-    world.get_mut::<Node>(content).unwrap().display = Display::None;
-    crate::native::description::button(world, parent, parent, label, ToggleSection(content));
+fn collapsed(world: &mut World, parent: Entity, owner: Entity, label: &str) -> Entity {
+    accordion(world, parent, owner, label, false)
+}
+
+#[derive(Component, Default)]
+struct ExpandedSections(std::collections::HashMap<String, bool>);
+
+pub(super) fn accordion(
+    world: &mut World,
+    parent: Entity,
+    owner: Entity,
+    label: &str,
+    default_open: bool,
+) -> Entity {
+    let open = world
+        .get::<ExpandedSections>(owner)
+        .and_then(|sections| sections.0.get(label))
+        .copied()
+        .unwrap_or(default_open);
+    let group = world
+        .spawn((
+            Node {
+                flex_direction: FlexDirection::Column,
+                row_gap: px(6),
+                min_width: px(0),
+                flex_shrink: 0.0,
+                ..default()
+            },
+            ChildOf(parent),
+        ))
+        .id();
+    let content = world
+        .spawn(Node {
+            display: if open { Display::Flex } else { Display::None },
+            flex_direction: FlexDirection::Column,
+            row_gap: px(6),
+            min_width: px(0),
+            padding: UiRect::left(px(10)),
+            ..default()
+        })
+        .id();
+    let toggle = super::dashboard::button(
+        world,
+        group,
+        group,
+        label,
+        ToggleSection {
+            content,
+            owner,
+            label: label.into(),
+        },
+    );
+    if let Some(mut accessibility) = world.get_mut::<bevy::a11y::AccessibilityNode>(toggle) {
+        accessibility.set_expanded(open);
+    }
+    world.entity_mut(content).insert(ChildOf(group));
     content
 }
 #[derive(Clone)]
-struct ToggleSection(Entity);
+struct ToggleSection {
+    content: Entity,
+    owner: Entity,
+    label: String,
+}
 impl Action for ToggleSection {
-    fn apply(&self, world: &mut World, _: Entity) {
-        if let Some(mut node) = world.get_mut::<Node>(self.0) {
-            node.display = if node.display == Display::None {
-                Display::Flex
-            } else {
-                Display::None
-            };
+    fn apply(&self, world: &mut World, group: Entity) {
+        let Some(mut node) = world.get_mut::<Node>(self.content) else {
+            return;
+        };
+        let open = node.display == Display::None;
+        node.display = if open { Display::Flex } else { Display::None };
+        if let Ok(mut owner) = world.get_entity_mut(self.owner) {
+            owner
+                .entry::<ExpandedSections>()
+                .or_default()
+                .into_mut()
+                .0
+                .insert(self.label.clone(), open);
+        }
+        if let Some(toggle) = world
+            .get::<Children>(group)
+            .and_then(|children| children.first())
+            .copied()
+            && let Some(mut accessibility) = world.get_mut::<bevy::a11y::AccessibilityNode>(toggle)
+        {
+            accessibility.set_expanded(open);
         }
     }
 }

@@ -1,11 +1,18 @@
-// non-lean-yet
-// Scope: struct Discovery, fn default_limit.
-// BeautifulRust (baseline lines):
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 60, 62, 63, 64.
-// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
-//   test conventions. Sites 1.
+//! Local assistant discovery, handoff, and receipt inspection.
 
-use super::*;
+use std::{
+    fmt::Display,
+    sync::{PoisonError, atomic::Ordering::Acquire},
+};
+
+use engine::EngineError::{self, Consequence, Forbidden};
+use fiote::assistant::Source;
+use serde::Deserialize;
+use serde_json::{Value, from_value, to_value};
+
+use super::{Empty, Kind, NativeTool, error};
+
+pub(super) const MAX_DISCOVERY_PAGE: usize = 30;
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -22,77 +29,75 @@ fn default_limit() -> usize {
 
 impl NativeTool {
     pub(super) async fn run_assistant(&self, arguments: Value) -> Result<Value, String> {
+        let native = &self.native;
         let write = matches!(self.kind, Kind::Delegate);
-        self.native
+        native
             .engine
             .access_scope(write, async {
                 {
-                    let state = self.native.state.lock().await;
+                    let state = native.state.lock().await;
                     if state.closed
-                        || self.native.closed.load(Ordering::Acquire)
+                        || native.closed.load(Acquire)
                         || !state.session.local_authority()
                         || !state.session.subject_may_act().await
                     {
-                        return Err(engine::EngineError::Forbidden(
+                        return Err(Forbidden(
                             "Native Fiote handoff requires an active local authorized session."
                                 .into(),
                         ));
                     }
                 }
-                let service = self.native.assistant.as_ref().ok_or_else(|| {
-                    engine::EngineError::Consequence("Fiote service is unavailable.".into())
-                })?;
+                let service = native
+                    .assistant
+                    .as_ref()
+                    .ok_or_else(|| consequence("Fiote service is unavailable."))?;
                 let result = match self.kind {
                     Kind::Fiotes => {
-                        let input: Discovery = serde_json::from_value(arguments)
-                            .map_err(|e| engine::EngineError::Consequence(error(e)))?;
-                        if !(1..=30).contains(&input.limit) {
-                            return Err(engine::EngineError::Consequence(
-                                "Discover between one and thirty Fiotes per page.".into(),
+                        let Discovery { offset, limit } =
+                            from_value(arguments).map_err(consequence)?;
+                        if !(1..=MAX_DISCOVERY_PAGE).contains(&limit) {
+                            return Err(consequence(
+                                "Discover between one and thirty Fiotes per page.",
                             ));
                         }
-                        service
-                            .discover(input.offset, input.limit)
-                            .await
-                            .and_then(|value| serde_json::to_value(value).map_err(error))
+                        to_value(service.discover(offset, limit).await.map_err(Consequence)?)
                     }
                     Kind::Delegate => {
-                        let input = serde_json::from_value(arguments)
-                            .map_err(|e| engine::EngineError::Consequence(error(e)))?;
-                        let message = self
-                            .native
+                        let input = from_value(arguments).map_err(consequence)?;
+                        let message = native
                             .source_message
                             .read()
-                            .unwrap_or_else(std::sync::PoisonError::into_inner)
-                            .clone();
-                        let source = fiote::assistant::Source {
-                            fiote: self.native.context.record.clone(),
-                            author: self.native.context.agent.clone(),
-                            thread: self.native.context.thread.clone(),
-                            message: message.ok_or_else(|| {
-                                engine::EngineError::Consequence(
-                                    "This turn has no source Message for handoff.".into(),
-                                )
-                            })?,
+                            .unwrap_or_else(PoisonError::into_inner)
+                            .clone()
+                            .ok_or_else(|| {
+                                consequence("This turn has no source Message for handoff.")
+                            })?;
+                        let source = Source {
+                            fiote: native.context.record.clone(),
+                            author: native.context.agent.clone(),
+                            thread: native.context.thread.clone(),
+                            message: message.to_string(),
                         };
-                        service
-                            .delegate(source, input)
-                            .await
-                            .and_then(|value| serde_json::to_value(value).map_err(error))
+                        to_value(service.delegate(source, input).await.map_err(Consequence)?)
                     }
                     Kind::Handoffs => {
-                        serde_json::from_value::<Empty>(arguments)
-                            .map_err(|e| engine::EngineError::Consequence(error(e)))?;
-                        service
-                            .handoffs(&self.native.context.thread)
-                            .await
-                            .and_then(|value| serde_json::to_value(value).map_err(error))
+                        from_value::<Empty>(arguments).map_err(consequence)?;
+                        to_value(
+                            service
+                                .handoffs(&native.context.thread)
+                                .await
+                                .map_err(Consequence)?,
+                        )
                     }
-                    _ => Err("Unknown assistant operation.".into()),
+                    _ => return Err(consequence("Unknown assistant operation.")),
                 };
-                result.map_err(engine::EngineError::Consequence)
+                result.map_err(consequence)
             })
             .await
             .map_err(error)
     }
+}
+
+fn consequence(cause: impl Display) -> EngineError {
+    Consequence(error(cause))
 }

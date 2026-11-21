@@ -1,25 +1,20 @@
-// non-lean-yet
-// Scope: struct Draft, struct Review, enum Command.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
-//   Sites 43.
-// - [Clippy: clippy::large_enum_variant] large size difference between variants. Sites 43.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 25.
-// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
-//   conventions. Sites 1.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 6,
-//   7, 8, 9, 10, 11, 12, 17, 18, 19, 20, 21, 25, 43, 44, 45, 47, 48, 49, 51, 52, 54, 55, 57, 58,
-//   59, 60, 62, 63, 68.
-// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites hash: String
-//   (25).
+//! Generated-claim recipe commands and their review commitments.
 
-use super::*;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+
+use super::{Mode, Recipe};
+use crate::{
+    karma::{CanonicalHash, canonical_hash},
+    trust_analysis::{
+        claims::commands::Draft as ClaimDraft, commands::ProfileVersion, query::Query,
+    },
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Draft {
-    pub claim: super::super::commands::Draft,
+    pub claim: ClaimDraft,
     pub recipe: Option<String>,
     pub expected_revision: u64,
     pub inputs: Query,
@@ -34,17 +29,17 @@ pub struct Review {
     pub recipe: Recipe,
     pub expected_revision: u64,
     pub reviewed_at: i64,
-    pub profiles: Vec<crate::trust_analysis::commands::ProfileVersion>,
+    pub profiles: Vec<ProfileVersion>,
 }
 
 impl Review {
     pub fn hash(&self) -> Result<CanonicalHash, String> {
-        self.recipe.validate_unsigned()?;
+        let permit = self.recipe.checked_permit()?;
         canonical_hash(
             "lince.profile-claim.recipe-review.v1",
             &(
                 &self.recipe.definition,
-                self.recipe.permit.signing_bytes()?,
+                permit,
                 self.expected_revision,
                 self.reviewed_at,
                 &self.profiles,

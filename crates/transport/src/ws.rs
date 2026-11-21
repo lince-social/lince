@@ -1,20 +1,24 @@
-// non-lean-yet
-// Scope: fn serve, fn send_terminal_error, fn spawn_lane_forwarder.
-// BeautifulRust (baseline lines):
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 23, 46, 47, 191.
+//! WebSocket driver for a first-party Transport session.
 
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use axum::extract::ws::{Message, WebSocket};
 use engine::Engine;
 use futures::{SinkExt, StreamExt};
-use tokio::sync::mpsc;
+use nucleus::sync::{Instance, Queue};
+use serde_json::{from_str, to_string};
+use tokio::sync::{broadcast, mpsc};
 
-use crate::lane::LaneHub;
-use crate::protocol::{ClientMessage, ServerMessage};
-use crate::session::Session;
-use crate::terminal::{TerminalHost, pty_size};
+use crate::{
+    ClientMessage, LaneEvent, LaneHub, ServerMessage, Session, SyncEvents,
+    connection_task::ConnectionTask,
+    terminal::{TerminalHost, pty_size},
+};
 
+const OUTGOING_CAPACITY: usize = 256;
+const TERMINAL_DONE_CAPACITY: usize = 32;
+
+/// Drives an upgraded connection for the supplied session identity.
 pub async fn serve(
     engine: Arc<Engine>,
     hub: Arc<LaneHub>,
@@ -23,23 +27,22 @@ pub async fn serve(
     socket: WebSocket,
 ) {
     let (mut sink, mut stream) = socket.split();
-    let (out_tx, mut out_rx) = mpsc::channel::<ServerMessage>(256);
+    let (out_tx, mut out_rx) = mpsc::channel::<ServerMessage>(OUTGOING_CAPACITY);
     let queued = out_tx.downgrade();
-    let queue_connection = connection_id.clone();
-    let _sync_queue = engine
-        .sync_service
-        .observe_queue(move || nucleus::sync::Queue {
-            instance: nucleus::sync::Instance::interface(&queue_connection, "websocket"),
-            incoming: 0,
-            outgoing: queued.upgrade().map_or(0, |sender| {
-                (sender.max_capacity() - sender.capacity()) as u64
-            }),
-        });
-    let (terminal_done_tx, mut terminal_done_rx) = mpsc::channel::<String>(32);
+    let relay_connection = Arc::<str>::from(connection_id.as_str());
+    let queue_connection = Arc::clone(&relay_connection);
+    let _sync_queue = engine.sync_service.observe_queue(move || Queue {
+        instance: Instance::interface(&queue_connection, "websocket"),
+        incoming: 0,
+        outgoing: queued.upgrade().map_or(0, |sender| {
+            u64::try_from(sender.max_capacity() - sender.capacity()).unwrap_or_default()
+        }),
+    });
+    let (terminal_done_tx, mut terminal_done_rx) = mpsc::channel::<String>(TERMINAL_DONE_CAPACITY);
 
-    let writer = tokio::spawn(async move {
+    let writer = ConnectionTask::spawn(async move {
         while let Some(msg) = out_rx.recv().await {
-            let Ok(text) = serde_json::to_string(&msg) else {
+            let Ok(text) = to_string(&msg) else {
                 continue;
             };
             if sink.send(Message::Text(text.into())).await.is_err() {
@@ -48,29 +51,33 @@ pub async fn serve(
         }
     });
 
-    let viewer = subject.clone();
-    let mut session = Session::new(engine.clone(), hub.clone(), connection_id.clone(), subject);
+    let viewer = subject.as_deref().map(Arc::<str>::from);
+    let mut session = Session::new(
+        Arc::clone(&engine),
+        Arc::clone(&hub),
+        connection_id,
+        subject,
+    );
     let challenge = session.initialize_action_intent().await;
     if out_tx.send(challenge).await.is_err() {
-        writer.abort();
         return;
     }
     let mut notifications = engine.watch_notifications();
-    if let Ok(items) = engine.notifications().await {
-        if out_tx
+    if let Ok(items) = engine.notifications().await
+        && out_tx
             .send(ServerMessage::Notifications { items })
             .await
             .is_err()
-        {
-            writer.abort();
-            return;
-        }
+    {
+        return;
     }
     let mut terminals = TerminalHost::new();
-    let mut sync_events = crate::SyncEvents::new(&engine).with_presence(session.presence_changes());
+    let mut sync_events = SyncEvents::new(&engine).with_presence(session.presence_changes());
+    let mut lane_tasks = HashMap::<String, ConnectionTask>::new();
 
     loop {
         tokio::select! {
+            () = out_tx.closed() => break,
             incoming = stream.next() => {
                 let Some(Ok(message)) = incoming else { break };
                 let text = match message {
@@ -79,17 +86,30 @@ pub async fn serve(
                     _ => continue,
                 };
                 if !session.subject_may_act().await { break; }
-                match serde_json::from_str::<ClientMessage>(&text) {
+                match from_str::<ClientMessage>(&text) {
                     Ok(ClientMessage::LaneJoin { room }) => {
-                        session.handle(ClientMessage::LaneJoin { room: room.clone() }).await;
-                        spawn_lane_forwarder(
-                            &hub,
-                            &room,
-                            &connection_id,
-                            out_tx.clone(),
-                            engine.clone(),
-                            viewer.clone(),
-                        );
+                        let replies = session.handle(ClientMessage::LaneJoin { room: room.clone() }).await;
+                        if replies.is_empty()
+                            && session.joined_rooms().contains(&room)
+                            && lane_tasks.get(&room).is_none_or(ConnectionTask::is_finished)
+                        {
+                            let receiver = hub.join(&room);
+                            lane_tasks.insert(room, spawn_lane_forwarder(
+                                receiver,
+                                Arc::clone(&relay_connection),
+                                out_tx.clone(),
+                                Arc::clone(&engine),
+                                viewer.clone(),
+                            ));
+                        }
+                        if !send_replies(&out_tx, replies).await { break; }
+                    }
+                    Ok(ClientMessage::LaneLeave { room }) => {
+                        if let Some(task) = lane_tasks.remove(&room) {
+                            task.cancel().await;
+                        }
+                        let replies = session.handle(ClientMessage::LaneLeave { room }).await;
+                        if !send_replies(&out_tx, replies).await { break; }
                     }
                     Ok(ClientMessage::TerminalOpen {
                         id,
@@ -129,9 +149,7 @@ pub async fn serve(
                         send_terminal_error(result, id, &out_tx).await;
                     }
                     Ok(msg) => {
-                        for reply in session.handle(msg).await {
-                            if out_tx.send(reply).await.is_err() { break; }
-                        }
+                        if !send_replies(&out_tx, session.handle(msg).await).await { break; }
                     }
                     Err(e) => {
                         let _ = out_tx
@@ -143,9 +161,7 @@ pub async fn serve(
             event = sync_events.next(session.has_ephemeral_subscriptions()) => {
                 let Some(event) = event else { break };
                 if !session.subject_may_act().await { break; }
-                for update in session.on_sync_event(event).await {
-                    if out_tx.send(update).await.is_err() { break; }
-                }
+                if !send_replies(&out_tx, session.on_sync_event(event).await).await { break; }
             }
             Ok(()) = notifications.changed() => {
                 let Ok(items) = engine.notifications().await else { continue };
@@ -156,8 +172,21 @@ pub async fn serve(
             }
         }
     }
+    for (room, task) in lane_tasks {
+        task.cancel().await;
+        hub.prune(&room);
+    }
     terminals.shutdown().await;
-    writer.abort();
+    drop(writer);
+}
+
+async fn send_replies(out_tx: &mpsc::Sender<ServerMessage>, replies: Vec<ServerMessage>) -> bool {
+    for reply in replies {
+        if out_tx.send(reply).await.is_err() {
+            return false;
+        }
+    }
+    true
 }
 
 async fn send_terminal_error(
@@ -177,26 +206,32 @@ async fn send_terminal_error(
 }
 
 fn spawn_lane_forwarder(
-    hub: &Arc<LaneHub>,
-    room: &str,
-    connection_id: &str,
+    mut rx: broadcast::Receiver<LaneEvent>,
+    connection_id: Arc<str>,
     out_tx: mpsc::Sender<ServerMessage>,
     engine: Arc<Engine>,
-    viewer: Option<String>,
-) {
-    let mut rx = hub.join(room);
-    let me = connection_id.to_string();
-    tokio::spawn(async move {
+    viewer: Option<Arc<str>>,
+) -> ConnectionTask {
+    ConnectionTask::spawn(async move {
         while let Ok(event) = rx.recv().await {
-            if event.from == me {
+            if event.from == connection_id.as_ref() {
                 continue;
             }
-            let identity = match &event.from_subject {
-                Some(subject) => match engine.may_read_record(viewer.as_deref(), subject).await {
-                    Ok(true) => Some(subject.clone()),
-                    _ => None,
-                },
-                None => None,
+            if engine
+                .require_permission(viewer.as_deref(), "view:stream")
+                .await
+                .is_err()
+            {
+                break;
+            }
+            let identity = if let Some(subject) = event.from_subject
+                && matches!(
+                    engine.may_read_record(viewer.as_deref(), &subject).await,
+                    Ok(true)
+                ) {
+                Some(subject)
+            } else {
+                None
             };
             let msg = ServerMessage::LaneEvent {
                 room: event.room,
@@ -209,5 +244,5 @@ fn spawn_lane_forwarder(
                 break;
             }
         }
-    });
+    })
 }

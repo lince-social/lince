@@ -208,10 +208,10 @@ fn run(
             };
             if !input.is_empty() {
                 let mut output = output.lock().map_err(|e| e.to_string())?;
-                if !output.input.fits(input.len()) {
-                    return Err("Terminal input queue is full".into());
-                }
-                output.input.push_back(input);
+                output
+                    .input
+                    .push_back(input)
+                    .map_err(|_| "Terminal input queue is full".to_owned())?;
                 input_ready = true;
             }
             if began.elapsed().as_millis() >= 16 {

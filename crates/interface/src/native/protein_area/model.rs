@@ -248,12 +248,17 @@ impl Config {
             fields.retain(|field| field != "work_timer");
             fields.extend(["work_logs", "spent_seconds", "running_since"].map(str::to_string));
         }
-        if self
-            .bindings
-            .iter()
-            .any(|binding| binding.property == "threads")
+        if self.fiote
+            || self
+                .bindings
+                .iter()
+                .any(|binding| binding.property == "threads")
         {
+            if !fields.iter().any(|field| field == "threads") {
+                fields.push("threads".into());
+            }
             query.include.threads = Some(protein::ThreadsInclude {
+                fiote_sessions: self.fiote && self.source == Source::Local,
                 messages_limit: 50,
                 ..Default::default()
             });

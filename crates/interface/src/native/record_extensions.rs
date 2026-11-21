@@ -372,14 +372,6 @@ fn draft_values(world: &mut World, owner: Entity, schema: &str) {
     });
 }
 
-fn changes(draft: &ValueDraft) -> BTreeMap<String, Value> {
-    let mut fields = (*draft.fields).clone();
-    for key in draft.fields.original().keys() {
-        fields.entry(key.clone()).or_insert(Value::Null);
-    }
-    fields
-}
-
 fn search_picker(world: &mut World, owner: Entity) -> Result<(), String> {
     let settings = world
         .get::<Settings>(owner)
@@ -1035,7 +1027,7 @@ fn apply(world: &mut World, owner: Entity, command: &Command) -> Result<(), Stri
             let values = if remove {
                 BTreeMap::new()
             } else {
-                changes(draft)
+                draft.fields.apply_values()
             };
             let request = Request::Apply {
                 id: nucleus::new_uid("op"),
@@ -1300,16 +1292,10 @@ pub(crate) fn receive(world: &mut World, source: &Source, message: &ServerMessag
                     } else if let Some(schema) = applied_schema {
                         let revision = data["revision"].as_u64().unwrap_or(0);
                         if let Some(draft) = &view.values {
-                            let mut fields = draft.fields.original_snapshot();
-                            for key in draft.fields.keys() {
-                                if !fields.contains_key(key) {
-                                    drafts::edit(&mut fields).insert(key.clone(), Value::Null);
-                                }
-                            }
                             view.undo = Some(Undo {
                                 schema,
                                 schema_revision: draft.schema_revision,
-                                fields,
+                                fields: draft.fields.undo_values(),
                                 attached: draft.attached,
                                 revision,
                             });

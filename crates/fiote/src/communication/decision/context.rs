@@ -1,42 +1,42 @@
-// non-lean-yet
-// Scope: struct Context, struct Dialogue, mod tests.
-// BeautifulRust (baseline lines):
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 71, 100.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 36, 61, 69.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 7,
-//   9, 14, 15, 16, 20, 36, 61, 69.
-// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites admission_text:
-//   String (69), dialogue: String (61), encode: String (36).
-// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
-//   26, 82, 90.
+//! Bounded context and spoken addresses for admission decisions.
 
+use nucleus::json::encoded_len;
 use serde::{Deserialize, Serialize};
+use serde_json::{from_str, to_string};
 
 use super::Input;
 
+const MAX_DIALOGUE_BYTES: usize = 1_000;
+const MAX_CONTEXT_BYTES: usize = 4_096;
+const MAX_NAME_BYTES: usize = 256;
+const MAX_NAMES: usize = 32;
+
+/// Known spoken addresses and the optional preceding exchange.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Context {
+    /// Names authorized to address an assistant directly.
     pub assistant_names: Vec<String>,
+    /// Previous request and reply for follow-up speech.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub dialogue: Option<Dialogue>,
 }
 
+/// Text of the preceding exchange used for follow-up admission.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Dialogue {
+    /// The user's preceding request.
     pub request: String,
+    /// The assistant's reply to that request.
     pub reply: String,
 }
 
 impl Dialogue {
+    /// Keeps the last complete UTF-8 characters that fit each field's byte limit.
     pub fn bounded(request: &str, reply: &str) -> Self {
         fn tail(text: &str) -> String {
-            let mut start = text.len().saturating_sub(1000);
-            while !text.is_char_boundary(start) {
-                start += 1;
-            }
+            let start = text.ceil_char_boundary(text.len().saturating_sub(MAX_DIALOGUE_BYTES));
             text[start..].into()
         }
         Self {
@@ -47,71 +47,89 @@ impl Dialogue {
 }
 
 impl Context {
+    /// Encodes validated context as compact JSON.
+    ///
+    /// # Errors
+    /// Reports invalid names, context over a byte limit, or a serialization error.
     pub fn encode(&self) -> Result<String, String> {
-        if self
-            .dialogue
-            .as_ref()
-            .is_some_and(|dialogue| dialogue.request.len() > 1000 || dialogue.reply.len() > 1000)
-        {
+        self.validate_fields()?;
+        let text = to_string(self).map_err(|error| error.to_string())?;
+        check_encoded_len(text.len())?;
+        Ok(text)
+    }
+
+    pub(super) fn decode(text: &str) -> Result<Option<Self>, String> {
+        let Ok(context) = from_str::<Self>(text) else {
+            return Ok(None);
+        };
+        context.validate_fields()?;
+        check_encoded_len(encoded_len(&context).map_err(|error| error.to_string())?)?;
+        Ok(Some(context))
+    }
+
+    fn validate_fields(&self) -> Result<(), String> {
+        if self.dialogue.as_ref().is_some_and(|dialogue| {
+            dialogue.request.len() > MAX_DIALOGUE_BYTES || dialogue.reply.len() > MAX_DIALOGUE_BYTES
+        }) {
             return Err("Conversation context exceeds its supported bounds.".into());
         }
-        if self.assistant_names.len() > 32
+        if self.assistant_names.len() > MAX_NAMES
             || self
                 .assistant_names
                 .iter()
-                .any(|name| name.trim().is_empty() || name.len() > 256)
+                .any(|name| name.trim().is_empty() || name.len() > MAX_NAME_BYTES)
         {
             return Err("Assistant names exceed their supported bounds.".into());
         }
-        let text = serde_json::to_string(self).map_err(|error| error.to_string())?;
-        if text.len() > 4096 {
-            return Err("Assistant context exceeds its supported bounds.".into());
-        }
-        Ok(text)
+        Ok(())
     }
 }
 
+fn check_encoded_len(bytes: usize) -> Result<(), String> {
+    if bytes > MAX_CONTEXT_BYTES {
+        return Err("Assistant context exceeds its supported bounds.".into());
+    }
+    Ok(())
+}
+
+fn after_prefix<'a>(text: &'a str, prefix: &str) -> Option<&'a str> {
+    let (head, tail) = text.split_at_checked(prefix.len())?;
+    head.eq_ignore_ascii_case(prefix).then_some(tail)
+}
+
 impl Input {
+    /// Reads the preceding exchange when context contains decodable JSON.
+    ///
+    /// # Errors
+    /// Reports a validation error when decoded context exceeds its bounds.
     pub fn dialogue(&self) -> Result<Option<Dialogue>, String> {
-        let Ok(context) = serde_json::from_str::<Context>(&self.context) else {
-            return Ok(None);
-        };
-        context.encode()?;
-        Ok(context.dialogue)
+        Ok(Context::decode(&self.context)?.and_then(|context| context.dialogue))
     }
 
+    /// Normalizes the longest authorized leading address for the admission model.
+    ///
+    /// # Errors
+    /// Reports a validation error when decoded context exceeds its bounds.
     pub fn admission_text(&self) -> Result<String, String> {
-        let Ok(context) = serde_json::from_str::<Context>(&self.context) else {
+        let Some(context) = Context::decode(&self.context)? else {
             return Ok(self.text.clone());
         };
-        context.encode()?;
-        let mut names = context.assistant_names.iter().collect::<Vec<_>>();
-        names.sort_by_key(|name| std::cmp::Reverse(name.len()));
         let text = self.text.trim_start();
         let address = ["hello ", "hey ", "hi "]
-            .iter()
-            .find_map(|greeting| {
-                text.get(..greeting.len())
-                    .filter(|prefix| prefix.eq_ignore_ascii_case(greeting))
-                    .map(|_| &text[greeting.len()..])
-            })
+            .into_iter()
+            .find_map(|greeting| after_prefix(text, greeting))
             .unwrap_or(text);
-        for name in names {
-            if address
-                .get(..name.len())
-                .is_some_and(|prefix| prefix.eq_ignore_ascii_case(name))
-            {
-                let rest = &address[name.len()..];
-                if rest.is_empty()
-                    || rest.chars().next().is_some_and(|character| {
-                        character.is_whitespace() || ",:;.!?".contains(character)
-                    })
-                {
-                    return Ok(format!("AI assistant{rest}"));
-                }
-            }
-        }
-        Ok(self.text.clone())
+        let suffix = context
+            .assistant_names
+            .iter()
+            .filter_map(|name| after_prefix(address, name))
+            .filter(|rest| {
+                rest.chars().next().is_none_or(|character| {
+                    character.is_whitespace() || ",:;.!?".contains(character)
+                })
+            })
+            .min_by_key(|rest| rest.len());
+        Ok(suffix.map_or_else(|| self.text.clone(), |rest| format!("AI assistant{rest}")))
     }
 }
 

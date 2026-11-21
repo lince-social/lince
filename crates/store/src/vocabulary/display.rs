@@ -1,23 +1,12 @@
-// non-lean-yet
-// Scope: struct DisplayTerm, struct SourceName, fn display_names, fn display_terms.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value. Sites
-//   65.
-// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 63.
-// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
-//   Sites 59, 73, 89.
-// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
-//   98.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 19.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 19.
+//! Selection of displayed vocabulary terms and source labels.
 
 use std::collections::{HashMap, HashSet};
 
-use sqlx::{Row, SqlitePool};
+use nucleus::performance::{Span, add};
+use sqlx::{Row, SqlitePool, query, query_as, query_scalar};
 
-use super::{language_tag, preferences};
-use crate::StoreError;
+use super::{language_tag, preferences::preferences};
+use crate::{StoreError, concepts::canonical_names, config};
 
 struct DisplayTerm {
     uid: String,
@@ -32,21 +21,23 @@ struct SourceName {
     original_language: String,
 }
 
+/// Selects display labels for all concepts using the optional person's terminology and language.
+///
+/// # Errors
+/// Returns an error if the terms, definitions, or preferences cannot be read or decoded.
 pub async fn display_names(
     pool: &SqlitePool,
     person: Option<&str>,
 ) -> Result<HashMap<String, String>, StoreError> {
-    let _display = nucleus::performance::Span::new("store-vocabulary-display-await");
+    let _display = Span::new("store-vocabulary-display-await");
     let personal_language: Option<String> =
-        sqlx::query_scalar("SELECT language FROM person_terminology WHERE person_uid=?")
+        query_scalar("SELECT language FROM person_terminology WHERE person_uid=?")
             .bind(person)
             .fetch_optional(pool)
             .await?;
     let language = match personal_language {
         Some(language) => language,
-        None => crate::config::language(pool)
-            .await?
-            .unwrap_or_else(|| "en".into()),
+        None => config::language(pool).await?.unwrap_or_else(|| "en".into()),
     };
     let language = language_tag(&language).unwrap_or_else(|_| "en".into());
     let mut locales = vec![language.as_str()];
@@ -57,11 +48,11 @@ pub async fn display_names(
     }
     let mut grouped = display_terms(pool, person).await?;
     let mut sources = source_names(pool).await?;
-    let (mut choices, hidden) = preferences::preferences(pool, person).await?;
-    let concepts = crate::concepts::canonical_names(pool).await?;
-    let _selection = nucleus::performance::Span::new("store-vocabulary-display-select");
-    let mut out = HashMap::new();
-    let mut considered = 0;
+    let (mut choices, hidden) = preferences(pool, person).await?;
+    let concepts = canonical_names(pool).await?;
+    let _selection = Span::new("store-vocabulary-display-select");
+    let mut out = HashMap::with_capacity(concepts.len());
+    let mut considered = 0_u64;
     for (uid, canonical_name) in concepts {
         let source = sources.remove(&uid);
         if let Some(wording) = choices.remove(&uid) {
@@ -72,21 +63,19 @@ pub async fn display_names(
             continue;
         }
         let terms = grouped.remove(&uid).unwrap_or_default();
-        considered += terms.len() as u64;
+        considered = considered.saturating_add(count(terms.len()));
         let (selected, has_hidden) = select_name(terms, source.as_ref(), &locales, &hidden);
         let name = selected.unwrap_or_else(|| {
             if has_hidden {
                 uid.clone()
             } else {
-                source
-                    .map(|source| source.original_name)
-                    .unwrap_or(canonical_name)
+                source.map_or(canonical_name, |source| source.original_name)
             }
         });
         out.insert(uid, name);
     }
-    nucleus::performance::add("store-vocabulary-display-terms-considered", considered);
-    nucleus::performance::add("store-vocabulary-display-labels", out.len() as u64);
+    add("store-vocabulary-display-terms-considered", considered);
+    add("store-vocabulary-display-labels", count(out.len()));
     Ok(out)
 }
 
@@ -94,7 +83,7 @@ async fn display_terms(
     pool: &SqlitePool,
     person: Option<&str>,
 ) -> Result<HashMap<String, Vec<DisplayTerm>>, StoreError> {
-    let rows = sqlx::query(
+    let rows = query(
         "SELECT uid,concept_uid,language,name,owner_uid IS NOT NULL AS personal,preferred
          FROM concept_term WHERE retired=0 AND (owner_uid IS NULL OR owner_uid=?)
          ORDER BY concept_uid,language,name,uid",
@@ -102,45 +91,46 @@ async fn display_terms(
     .bind(person)
     .fetch_all(pool)
     .await?;
-    nucleus::performance::add("store-vocabulary-display-terms-read", rows.len() as u64);
+    add("store-vocabulary-display-terms-read", count(rows.len()));
     let mut groups: Vec<(String, Vec<DisplayTerm>)> = Vec::new();
     for row in rows {
-        let concept = row.get::<&str, _>("concept_uid");
-        if groups.last().is_none_or(|(uid, _)| uid != concept) {
-            groups.push((concept.to_owned(), Vec::new()));
+        let concept: &str = row.try_get("concept_uid")?;
+        let term = DisplayTerm {
+            uid: row.try_get("uid")?,
+            language: row.try_get("language")?,
+            name: row.try_get("name")?,
+            personal: row.try_get("personal")?,
+            preferred: row.try_get("preferred")?,
+        };
+        match groups.last_mut() {
+            Some((uid, terms)) if uid.as_str() == concept => terms.push(term),
+            _ => groups.push((concept.to_owned(), vec![term])),
         }
-        groups
-            .last_mut()
-            .expect("the current concept group has been created")
-            .1
-            .push(DisplayTerm {
-                uid: row.get("uid"),
-                language: row.get("language"),
-                name: row.get("name"),
-                personal: row.get("personal"),
-                preferred: row.get("preferred"),
-            });
     }
     Ok(groups.into_iter().collect())
 }
 
 async fn source_names(pool: &SqlitePool) -> Result<HashMap<String, SourceName>, StoreError> {
     Ok(
-        sqlx::query("SELECT concept_uid,original_name,original_language FROM concept_source")
+        query_as("SELECT concept_uid,original_name,original_language FROM concept_source")
             .fetch_all(pool)
             .await?
             .into_iter()
-            .map(|row| {
+            .map(|(uid, original_name, original_language)| {
                 (
-                    row.get("concept_uid"),
+                    uid,
                     SourceName {
-                        original_name: row.get("original_name"),
-                        original_language: row.get("original_language"),
+                        original_name,
+                        original_language,
                     },
                 )
             })
             .collect(),
     )
+}
+
+fn count(length: usize) -> u64 {
+    u64::try_from(length).unwrap_or(u64::MAX)
 }
 
 fn select_name(

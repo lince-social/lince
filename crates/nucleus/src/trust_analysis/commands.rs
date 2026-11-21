@@ -1,96 +1,39 @@
-// non-lean-yet
-// Scope: struct ContactDraft, struct ProfileVersion, struct ContactReview, enum Command.
-// BeautifulRust (baseline lines):
-// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
-//   Sites 63.
-// - [Clippy: clippy::large_enum_variant] large size difference between variants. Sites 63.
-// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
-//   Sites 45.
-// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 12, 13,
-//   14, 16, 17, 18, 20, 22, 24, 29, 30, 31, 36, 37, 38, 39, 40, 41, 45, 63, 64, 65, 67, 68, 70, 71,
-//   73, 74, 76, 77, 79, 80, 81, 83, 84, 85, 87, 88, 90, 92, 93, 95, 97, 98, 100, 102, 103, 105,
-//   107, 108, 110, 112, 113, 114, 116, 117, 119, 120, 122, 123, 125, 130, 151.
-// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites hash: String
-//   (45).
+//! Public Trust Analysis commands and their permission classification.
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    Identity,
-    contacts::{Audience, Document},
+    claims::{commands::Command as ClaimCommand, recipes::commands::Command as RecipeCommand},
+    custody::Command as CustodyCommand,
     paths,
+    query::Query,
+    remote::Command as RemoteCommand,
+    serving::Command as ServingCommand,
 };
-use crate::karma::{CanonicalHash, canonical_hash};
+use crate::{karma::CanonicalHash, transfer::matching};
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-#[serde(deny_unknown_fields)]
-pub struct ContactDraft {
-    pub issuer: Identity,
-    pub contact: Identity,
-    #[serde(default)]
-    pub audience: Audience,
-    pub lifetime_seconds: u32,
-    pub expected_revision: u64,
-    #[serde(default)]
-    pub withdrawn: bool,
-    #[serde(default)]
-    pub key_id: String,
-    #[serde(default)]
-    pub public_key: String,
-}
+mod contact;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
-#[serde(deny_unknown_fields)]
-pub struct ProfileVersion {
-    pub identity: Identity,
-    pub revision: i64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-#[serde(deny_unknown_fields)]
-pub struct ContactReview {
-    pub person: String,
-    pub document: Document,
-    pub expected_revision: u64,
-    pub reviewed_at: i64,
-    pub profiles: Vec<ProfileVersion>,
-}
-
-impl ContactReview {
-    pub fn hash(&self) -> Result<CanonicalHash, String> {
-        let unsigned = self.document.signing_bytes()?;
-        canonical_hash(
-            "lince.contact-disclosure.review.v1",
-            &(
-                &self.person,
-                unsigned,
-                self.expected_revision,
-                self.reviewed_at,
-                &self.profiles,
-            ),
-        )
-        .map_err(|error| error.to_string())
-    }
-}
+pub use contact::{ContactDraft, ContactReview, ProfileVersion};
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Command {
     MatchSuppliers {
-        request: crate::transfer::matching::Request,
+        request: matching::Request,
     },
     Remote {
-        request: super::remote::Command,
+        request: RemoteCommand,
     },
     Serving {
-        request: super::serving::Command,
+        request: ServingCommand,
     },
     Custody {
-        request: super::custody::Command,
+        request: CustodyCommand,
     },
     Claims {
-        request: super::claims::commands::Command,
+        request: ClaimCommand,
     },
     Context,
     PreviewContact {
@@ -127,7 +70,7 @@ pub enum Command {
     },
     SaveQuery {
         name: String,
-        query: super::query::Query,
+        query: Query,
     },
     LoadQuery {
         record: String,
@@ -136,7 +79,7 @@ pub enum Command {
         before: Option<String>,
     },
     AnalyzeQuery {
-        query: super::query::Query,
+        query: Query,
         #[serde(default)]
         as_organ: bool,
     },
@@ -144,55 +87,31 @@ pub enum Command {
 
 impl Command {
     pub fn is_mutation(&self) -> bool {
-        if let Self::Custody { request } = self {
-            return matches!(
-                request,
-                super::custody::Command::SetPolicy { .. }
-                    | super::custody::Command::Cleanup
-                    | super::custody::Command::CancelDelivery { .. }
-            );
-        }
-        if let Self::Serving { request } = self {
-            return matches!(request, super::serving::Command::Publish { .. });
-        }
-        if let Self::Claims { request } = self {
-            return request.is_mutation();
-        }
-        matches!(
-            self,
-            Self::PublishContact { .. } | Self::ImportContact { .. } | Self::SaveQuery { .. }
-        )
+        self.permission() != "record:read"
     }
 
     pub fn permission(&self) -> &'static str {
-        if matches!(
-            self,
+        match self {
             Self::Custody {
-                request: super::custody::Command::CancelDelivery { .. }
+                request: CustodyCommand::CancelDelivery { .. },
             }
-        ) {
-            return "record:update";
-        }
-        if let Self::Custody {
-            request: super::custody::Command::SetPolicy { .. } | super::custody::Command::Cleanup,
-        } = self
-        {
-            return "organ:update";
-        }
-        if matches!(
-            self,
-            Self::Claims {
-                request: super::claims::commands::Command::Recipes {
-                    request: super::claims::recipes::commands::Command::Control { .. }
-                }
+            | Self::Claims {
+                request:
+                    ClaimCommand::Recipes {
+                        request: RecipeCommand::Control { .. },
+                    },
+            } => "record:update",
+            Self::Custody {
+                request: CustodyCommand::SetPolicy { .. } | CustodyCommand::Cleanup,
+            } => "organ:update",
+            Self::Serving {
+                request: ServingCommand::Publish { .. },
             }
-        ) {
-            return "record:update";
-        }
-        if self.is_mutation() {
-            "record:create"
-        } else {
-            "record:read"
+            | Self::PublishContact { .. }
+            | Self::ImportContact { .. }
+            | Self::SaveQuery { .. } => "record:create",
+            Self::Claims { request } if request.is_mutation() => "record:create",
+            _ => "record:read",
         }
     }
 }

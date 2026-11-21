@@ -220,7 +220,7 @@ fn management_observation_tracks_real_mode_refresh_disable_reenable_hotplug_and_
             .control
             .updates
             .iter()
-            .any(|(_, scope)| scope & lince_interface::host::control::CHANGE_OUTPUT != 0)
+            .any(|(_, scope)| scope & lince_host::control::CHANGE_OUTPUT != 0)
     );
     assert_eq!(harness.server.control_status().pending, 0);
     assert!(harness.server.control_work().is_empty());

@@ -1,6 +1,14 @@
-use super::shortcuts::{capture, capture_button, click, key, named_button, settle};
-use super::*;
+// non-lean-yet
+// Scope: struct Presses, fn start, fn press, fn
+//   mouse_binding_capture_shares_conflict_resolution_save_and_plain_click_isolation.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use native::actions::Action;
+
+use super::{
+    shortcuts::{capture, capture_button, click, key, named_button, settle},
+    *,
+};
 
 #[derive(Resource, Default)]
 struct Presses(usize);

@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Disabled, struct Snapshot, struct Metrics, fn changed.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 55.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (109, 215, 367, 371, 374, 389, 399).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 44.
+
 use super::*;
 use bevy::{
     input_focus::{InputFocus, tab_navigation::TabIndex},

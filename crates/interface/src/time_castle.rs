@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: mod geometry, mod layout, const RECORD_SELECTED, const COVERAGE_PADDING_MS.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 188, 276, 451,
+//   486, 567, 648, 660, 670.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 134.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites query: String
+//   (126).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   90, 110, 206.
+
 use nucleus::schedule::{MAX_DURATION_MS, TimeRange, Tz};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;

@@ -1,5 +1,10 @@
-use super::*;
+// non-lean-yet
+// Scope: fn source, fn resize, fn replace.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use wayland_protocols_misc::zwp_input_method_v2::client::zwp_input_method_v2::ZwpInputMethodV2;
+
+use super::*;
 
 fn source(fixture: &mut Fixture, owner: u64) -> (Vec2, UVec2) {
     super::super::super::recovery::inspect(fixture, move |canvas| {

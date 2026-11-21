@@ -1,9 +1,36 @@
+// non-lean-yet
+// Scope: enum CycleKind, struct RuleChange, struct TransferChange, struct RuleStep.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 98, 147, 149, 156, 228, 229, 234, 239, 269, 287, 292, 304, 334, 340, 384, 387, 393, 395,
+//   402, 403, 447, 490, 524.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 92.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 104, 108, 125,
+//   126, 170, 171, 191, 192, 193, 207, 210, 222, 224, 247, 270, 272, 287, 289, 299, 304, 312, 326,
+//   340.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 99, 201.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 10.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   99, 201.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 116, 135, 189.
+// - [Clippy: clippy::needless_collect] avoid using `collect()` when not needed. Sites 335.
+// - [Clippy: clippy::result_unit_err] this returns a `Result<_, ()>`. Sites 116, 135, 189.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 10, 11,
+//   12, 13, 18, 19, 20, 21, 22, 27, 28, 29, 30, 31, 32, 37, 38, 39, 40, 42, 43, 44, 45, 50, 51, 52,
+//   53, 54, 55, 56, 57, 71, 116, 135, 167, 181, 189, 316, 325, 329.
+
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
 
-use crate::karma::TypedUid;
-use crate::simulation::{FactId, Quantity, RuleOccurrence};
+use crate::{
+    karma::TypedUid,
+    simulation::{FactId, Quantity, RuleOccurrence},
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case")]

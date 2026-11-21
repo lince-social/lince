@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn pixels.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites pixels: String
+//   (1).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   9, 15.
+
 pub fn pixels(text: &str) -> Result<(u32, Vec<u8>), String> {
     let code = qrcode::QrCode::new(text.as_bytes()).map_err(|e| e.to_string())?;
     let modules = code.width();

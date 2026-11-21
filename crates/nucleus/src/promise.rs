@@ -1,5 +1,16 @@
-use crate::error::NucleusError;
+// non-lean-yet
+// Scope: enum PromiseState, mod tests.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 7.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 71.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 8,
+//   9, 10, 11, 12, 13, 14, 18, 30, 43, 55, 71.
+
 use serde::{Deserialize, Serialize};
+
+use crate::error::NucleusError;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -82,8 +93,7 @@ impl PromiseState {
 
 #[cfg(test)]
 mod tests {
-    use super::PromiseState::*;
-    use super::*;
+    use super::{PromiseState::*, *};
 
     #[test]
     fn happy_path() {

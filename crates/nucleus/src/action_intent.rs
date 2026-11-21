@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: const ACTION_DOMAIN, const SESSION_DOMAIN, struct ActionIntentSessionProof, struct
+//   SignedActionIntent.
+// BeautifulRust (baseline lines):
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 8,
+//   9, 10, 11, 12, 13, 17, 29, 30, 31, 32, 33, 34, 35, 39, 50, 63.
+
 use serde::{Deserialize, Serialize};
 
 const ACTION_DOMAIN: &str = "lince.action-intent.v1";

@@ -1,3 +1,23 @@
+// non-lean-yet
+// Scope: struct TextScroll, struct EditableTextLayoutState, struct TextInputMeasure, struct
+//   EditableTextContentSizeState.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 555.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   321.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 411, 456, 565, 603.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 169, 434, 447, 454, 470, 482, 633, 634, 637, 638.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   434, 447, 470, 482, 633, 634, 637, 638.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 101, 102, 103, 212, 213, 214, 215, 310, 331, 332, 333, 338, 339.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 41, 48, 55.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 37, 48.
+
 use core::hash::BuildHasher;
 use core::time::Duration;
 

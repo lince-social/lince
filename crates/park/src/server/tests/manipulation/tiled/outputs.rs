@@ -1,6 +1,12 @@
-use super::*;
+// non-lean-yet
+// Scope: const COLOR, struct Companion, fn configure, fn
+//   offset_secondary_output_preserves_partial_tile_claims_destination_pixels_and_input.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use lince_interface::host::Direction;
 use smithay::backend::winit::WinitEvent;
+
+use super::*;
 
 pub(super) const COLOR: [u8; 4] = [220, 180, 20, 255];
 

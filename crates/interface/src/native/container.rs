@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct BoxRoot, fn viewport.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use crate::native::canvas::CanvasView;
 use bevy::{input_focus::tab_navigation::TabGroup, prelude::*};
 

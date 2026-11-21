@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: const THREAD_OF_PREDICATE, const MESSAGE_IN_PREDICATE.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 10, 35, 61, 113, 122, 137, 155.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   6, 7, 10, 35, 61, 113, 122, 137, 155.
+
 use nucleus::RecordKind;
 
 use crate::Engine;

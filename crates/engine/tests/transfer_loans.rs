@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: mod support, fn draft, fn receive, fn
+//   accepted_deadline_survives_extension_proposal_and_returns_do_not_debit_twice.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 mod support;
 
 use engine::{

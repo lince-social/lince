@@ -1,6 +1,18 @@
-use crate::expr::Expr;
+// non-lean-yet
+// Scope: fn level, fn reference, fn duration, fn parse.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 125, 126.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 20, 133.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 5, 35.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 35,
+//   164.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites level: String
+//   (5), parse: String (35).
 
 use super::{Consequence, DecimalValue, DurationMs};
+use crate::expr::Expr;
 
 pub fn level(value: DecimalValue) -> Result<u8, String> {
     let factor = 10_i128

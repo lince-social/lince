@@ -1,14 +1,36 @@
+// non-lean-yet
+// Scope: mod meal, mod production, mod reference, fn date.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 147.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 26, 94, 111.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   17.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 13, 20, 35, 46, 75, 137, 157.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 2, 13,
+//   20, 26, 27, 28, 29, 30, 31, 35, 46, 69, 70, 71, 75, 94, 95, 96, 97, 102, 103, 104, 111, 113,
+//   114, 119, 120, 122, 124, 125, 129, 130, 131, 132, 133, 137, 157, 171, 172, 173, 174, 175, 176,
+//   177, 178, 179, 180, 185, 186, 187, 188, 189, 190, 195, 196, 197, 198, 199, 204, 205, 206, 207,
+//   208, 209, 210, 211, 212, 213.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites coefficient:
+//   String (157), date: String (13), exact: String (20), factor: String (46), for_field: String
+//   (35), from_nutrition: String (137), validate: String (75).
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 5, 6.
+
 mod meal;
 pub mod production;
 mod reference;
 
+use std::collections::BTreeMap;
+
+use chrono::NaiveDate;
 pub use meal::*;
 pub use reference::*;
+use serde::{Deserialize, Serialize};
 
 use crate::DecimalValue;
-use chrono::NaiveDate;
-use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
 
 pub fn date(value: &str) -> Result<NaiveDate, String> {
     if value.len() != 10 {

@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: struct Runner, fn install, fn shifted, fn shift_checks.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 136, 137, 183,
+//   232, 250, 251, 267, 304, 335, 434.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   223.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 325, 340, 349.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on a `Result`
+//   value. Sites 34.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 18, 49, 156.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   18, 49, 156.
+
 use std::sync::Arc;
 
 use chrono::{DateTime, Utc};

@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: enum Error, struct GbmFramebufferExporter.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (102).
+
 //! Implementation for ExportFramebuffer and related utilizes for gbm types
 
 use std::os::unix::io::AsFd;

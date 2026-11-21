@@ -1,7 +1,22 @@
-use crate::karma::{CanonicalHash, canonical_hash, canonical_json_bytes};
+// non-lean-yet
+// Scope: const NAMESPACE, const MAX_ROOTS, const MAX_PROOF_BYTES, struct Proof.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   27, 56.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 21, 49, 63, 72, 77, 109.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 7,
+//   8, 12, 13, 14, 15, 16, 17, 21, 49, 63, 72, 77, 84, 85, 86, 91, 92, 93, 94, 95, 100, 101, 102,
+//   103, 104, 105, 109.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites fingerprint:
+//   String (72, 77), hash: String (109), parse: String (63), signing_bytes: String (21), validate:
+//   String (49).
+
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
+use crate::karma::{CanonicalHash, canonical_hash, canonical_json_bytes};
 
 pub const NAMESPACE: &str = "lince.identity.organ-root";
 pub const MAX_ROOTS: u64 = 64;

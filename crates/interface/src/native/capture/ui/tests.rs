@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn fixture, fn
+//   exclusion_edit_keeps_its_captured_profile_and_preserves_a_failed_draft_for_retry, fn
+//   concurrent_profile_changes_require_refresh_and_cancel_does_not_write, fn
+//   queued_edits_cannot_outlive_their_original_canvas_or_control.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn fixture() -> (World, Entity, Entity, [u8; 16], String) {

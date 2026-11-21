@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn read, fn read_on, fn check_on, fn check_participant_on.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 9, 16, 64, 80.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 9, 16,
+//   64, 80.
+
 use nucleus::transfer::{
     AgreementGuard,
     karma::{Guard, Participant, Snapshot},

@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: impl Engine.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 42.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 196.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 21.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 196.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 8, 93, 133.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   8, 93, 133.
+
 use super::{VerifiedTransferReceipt, invalid, proof_shape_error, withheld};
 use crate::{Engine, EngineError};
 use chrono::{DateTime, Utc};

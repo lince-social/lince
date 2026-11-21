@@ -1,18 +1,33 @@
-pub mod contacts;
-pub mod paths;
-pub mod commands;
-pub mod query;
+// non-lean-yet
+// Scope: mod contacts, mod paths, mod commands, mod query.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 31.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 50, 109.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 1, 2,
+//   3, 4, 5, 6, 7, 8, 9, 10, 17, 18, 19, 20, 31, 32, 33, 37, 44, 50, 60, 61, 62, 63, 64, 103, 104,
+//   105, 109, 119, 133, 134, 135, 136, 137.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites validate:
+//   String (50, 109).
+
 pub mod claims;
-pub mod serving;
+pub mod commands;
+pub mod contacts;
 pub mod custody;
 pub mod discovery;
-pub mod remote;
 pub mod evidence;
+pub mod paths;
+pub mod query;
+pub mod remote;
+pub mod serving;
 
-use crate::visibility::Bound;
+use std::collections::BTreeSet;
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
+
+use crate::visibility::Bound;
 
 pub const MAX_IDENTITIES: usize = 1024;
 pub const MAX_DEPTH: u8 = 6;

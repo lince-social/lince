@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: const ARGUMENT_LIMIT, const IN_FLIGHT_LIMIT, const EVENT_LIMIT, const REQUESTS_PER_SECOND.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   167.
+
 use serde::{Deserialize, Serialize};
 
 pub const ARGUMENT_LIMIT: usize = 16 * 1024;

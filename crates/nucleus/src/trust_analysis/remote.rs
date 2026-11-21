@@ -1,8 +1,31 @@
-use super::{Identity, commands::ProfileVersion, discovery::Question, query::Query};
-use crate::karma::{CanonicalHash, canonical_hash};
+// non-lean-yet
+// Scope: const MAX_PEERS, const MAX_JOBS, const MAX_REVIEWS, const LEASE_SECONDS.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 279, 285, 321, 324.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 53, 72, 74, 86,
+//   87, 92, 97, 98, 103.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 184, 212, 222.
+// - [Clippy: clippy::large_enum_variant] large size difference between variants. Sites 184.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 43, 139.
+// - [Clippy: clippy::redundant_clone] Move or borrow at the marked sites and check later uses.
+//   Sites 287.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 8,
+//   9, 10, 11, 15, 16, 17, 19, 24, 25, 26, 27, 28, 30, 32, 37, 38, 39, 43, 119, 120, 121, 122, 123,
+//   128, 129, 130, 131, 132, 133, 134, 135, 139, 184, 185, 186, 188, 189, 190, 192, 193, 195, 196,
+//   198, 199, 201, 202, 203, 205, 206, 212, 213, 214, 215, 216, 217, 222, 223, 224, 225, 226, 227.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites hash: String
+//   (139), questions: String (43).
+
+use std::collections::BTreeSet;
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
+
+use super::{Identity, commands::ProfileVersion, discovery::Question, query::Query};
+use crate::karma::{CanonicalHash, canonical_hash};
 
 pub const MAX_PEERS: usize = 32;
 pub const MAX_JOBS: usize = 8;
@@ -78,8 +101,12 @@ impl Draft {
         for series in &self.linked_claims {
             if let Some(document) = &series.snapshot {
                 document.validate()?;
-                if document.statement.issuer != series.issuer || document.statement.claim != series.claim {
-                    return Err("The reviewed claim snapshot differs from its requested series".into());
+                if document.statement.issuer != series.issuer
+                    || document.statement.claim != series.claim
+                {
+                    return Err(
+                        "The reviewed claim snapshot differs from its requested series".into(),
+                    );
                 }
             }
             questions.push(Question::ClaimSeries {

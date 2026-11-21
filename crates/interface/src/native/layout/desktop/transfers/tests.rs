@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod captured, mod projection, mod unmanaged, fn fixture.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::actions::Action;
 

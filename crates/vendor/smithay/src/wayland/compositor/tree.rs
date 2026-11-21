@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: type CommitHook, type DestructionHook, struct PrivateSurfaceData, struct AlreadyHasRole.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 122, 157, 217,
+//   227, 237, 244, 252, 274, 312, 344, 380, 383, 403.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   map_tree:reverse (471).
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites reorder: ()
+//   (419).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (128, 131, 132, 137, 140, 146, 167, 321, 432).
+
 use crate::{
     utils::{
         hook::{Hook, HookId},

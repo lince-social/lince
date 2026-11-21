@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: type OutputUserdata, fn set_output_location, fn output_location.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (17, 19, 23, 25, 35, 37).
+
 use crate::{
     output::Output,
     utils::{Logical, Point},

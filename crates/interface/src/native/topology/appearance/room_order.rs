@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct RoomLayer, struct Layer, struct Foreground, struct Layers.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   54, 65, 241.
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 119.
+
 use super::*;
 use bevy::{
     core_pipeline::core_3d::{Transparent3d, TransparentSortingInfo3d},

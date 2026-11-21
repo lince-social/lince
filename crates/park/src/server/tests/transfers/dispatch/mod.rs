@@ -1,9 +1,8 @@
-use super::*;
-use crate::{
-    desktop::{Desktop, renderer},
-    presentation::Presentation,
-    runtime::{CanvasWorker, Configuration, Input},
-};
+// non-lean-yet
+// Scope: mod ready, mod tiling, mod control, mod privacy.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 109, 112.
+
 use lince_interface::host::WakeSignal;
 use smithay::{
     backend::{
@@ -17,31 +16,38 @@ use smithay::{
     utils::Transform,
 };
 
-mod ready;
-mod tiling;
-mod control;
-mod privacy;
-mod hover_lifetime;
-mod ime;
-mod workspace_history;
+use super::*;
+use crate::{
+    desktop::{Desktop, renderer},
+    presentation::Presentation,
+    runtime::{CanvasWorker, Configuration, Input},
+};
+
 mod affinity;
-mod focus_policy;
-mod opening;
-mod configuration;
-mod magnification;
-mod native_pointer;
-mod outputs;
 mod appearance;
 mod capture_lifetime;
-mod windowed_fullscreen;
 mod compact;
-mod scratch;
-mod ordinary;
-mod pacing;
+mod configuration;
+mod control;
+mod focus_policy;
+mod hover_lifetime;
+mod ime;
+mod magnification;
 mod motion;
-mod providers;
+mod native_pointer;
+mod opening;
+mod ordinary;
+mod outputs;
+mod pacing;
 #[cfg(feature = "session")]
 mod power;
+mod privacy;
+mod providers;
+mod ready;
+mod scratch;
+mod tiling;
+mod windowed_fullscreen;
+mod workspace_history;
 
 struct Fixture {
     size: [u32; 2],
@@ -57,7 +63,12 @@ struct Fixture {
 impl Fixture {
     fn listen(&mut self, socket: &std::path::Path) {
         assert!(self.desktop.server.listener.is_none());
-        self.desktop.server.listener = Some(smithay::reexports::wayland_server::ListeningSocket::bind_absolute(socket.to_path_buf()).unwrap());
+        self.desktop.server.listener = Some(
+            smithay::reexports::wayland_server::ListeningSocket::bind_absolute(
+                socket.to_path_buf(),
+            )
+            .unwrap(),
+        );
     }
 
     fn new(
@@ -68,21 +79,53 @@ impl Fixture {
         Self::with_size(harness, runtime, directory, [1000, 720])
     }
 
-    fn with_size(harness: Harness, runtime: &tokio::runtime::Runtime, directory: &std::path::Path, size: [u32; 2]) -> Self {
+    fn with_size(
+        harness: Harness,
+        runtime: &tokio::runtime::Runtime,
+        directory: &std::path::Path,
+        size: [u32; 2],
+    ) -> Self {
         Self::with_connection(harness, runtime, directory, size, None)
     }
 
-    fn with_cell(harness: Harness, runtime: &tokio::runtime::Runtime, directory: &std::path::Path, size: [u32; 2], cell: lince_interface::native::app::CellHandle) -> Self {
+    fn with_cell(
+        harness: Harness,
+        runtime: &tokio::runtime::Runtime,
+        directory: &std::path::Path,
+        size: [u32; 2],
+        cell: lince_interface::native::app::CellHandle,
+    ) -> Self {
         Self::with_connection(harness, runtime, directory, size, Some(cell))
     }
 
-    fn with_linear_output(harness: Harness, runtime: &tokio::runtime::Runtime, directory: &std::path::Path, size: [u32; 2]) -> Self {
-        let worker = CanvasWorker::spawn_for_compositor(Configuration { showoff: false, size, directory: directory.into(), runtime: runtime.handle().clone(), cell: None },
-            WakeSignal::new(|| {}), true).unwrap();
+    fn with_linear_output(
+        harness: Harness,
+        runtime: &tokio::runtime::Runtime,
+        directory: &std::path::Path,
+        size: [u32; 2],
+    ) -> Self {
+        let worker = CanvasWorker::spawn_for_compositor(
+            Configuration {
+                showoff: false,
+                size,
+                directory: directory.into(),
+                runtime: runtime.handle().clone(),
+                cell: None,
+            },
+            WakeSignal::new(|| {}),
+            true,
+        )
+        .unwrap();
         Self::with_worker(harness, size, worker)
     }
 
-    fn with_connection(harness: Harness, runtime: &tokio::runtime::Runtime, directory: &std::path::Path, size: [u32; 2], cell: Option<lince_interface::native::app::CellHandle>) -> Self {
+    fn with_connection(
+        harness: Harness,
+        runtime: &tokio::runtime::Runtime,
+        directory: &std::path::Path,
+        size: [u32; 2],
+        cell: Option<lince_interface::native::app::CellHandle>,
+    ) -> Self {
         let worker = CanvasWorker::spawn(Configuration {
             showoff: false,
             size,
@@ -141,77 +184,155 @@ impl Fixture {
         self.exchange();
         self.desktop.dispatch().unwrap();
         for request in self.desktop.server.output_requests() {
-            let accepted = self.desktop.server.apply_virtual_output_configuration(&request, self.desktop.size).unwrap();
-            self.desktop.server.output_configuration_finished(request.token, accepted);
-            if accepted && !request.test { self.desktop.invalidate_outputs().unwrap(); }
+            let accepted = self
+                .desktop
+                .server
+                .apply_virtual_output_configuration(&request, self.desktop.size)
+                .unwrap();
+            self.desktop
+                .server
+                .output_configuration_finished(request.token, accepted);
+            if accepted && !request.test {
+                self.desktop.invalidate_outputs().unwrap();
+            }
         }
         assert!(self.desktop.worker.failure().is_none());
         self.desktop
             .accept(&mut self.composition, &mut self.renderer)
             .unwrap();
-        if let Some(frame) = self.desktop.pending.as_ref().or(self.desktop.current.as_ref()) {
-            self.composition.enable_client_formats(&self.renderer, &mut self.desktop.server, &frame.frame).unwrap();
+        if let Some(frame) = self
+            .desktop
+            .pending
+            .as_ref()
+            .or(self.desktop.current.as_ref())
+        {
+            self.composition
+                .enable_client_formats(&self.renderer, &mut self.desktop.server, &frame.frame)
+                .unwrap();
         }
         if self
             .desktop
             .pending
             .as_ref()
             .is_some_and(|frame| frame.frame.ready().unwrap())
-            || self.desktop.pending.is_none() && self.desktop.current.is_some() && self.desktop.redraw
+            || self.desktop.pending.is_none()
+                && self.desktop.current.is_some()
+                && self.desktop.redraw
         {
-            let independent = self.desktop.pending.as_ref().or(self.desktop.current.as_ref()).and_then(|frame| {
-                let outputs = &frame.frame.geometry.as_ref()?.outputs;
-                (outputs.iter().any(|output| output.rotation != Default::default())
-                    || outputs.len() == 1 && outputs[0].source_size() != self.size
-                    || outputs.len() > 1 && outputs.iter().any(|output| output.raster.scale != [1.0; 2]))
+            let independent = self
+                .desktop
+                .pending
+                .as_ref()
+                .or(self.desktop.current.as_ref())
+                .and_then(|frame| {
+                    let outputs = &frame.frame.geometry.as_ref()?.outputs;
+                    (outputs
+                        .iter()
+                        .any(|output| output.rotation != Default::default())
+                        || outputs.len() == 1 && outputs[0].source_size() != self.size
+                        || outputs.len() > 1
+                            && outputs.iter().any(|output| output.raster.scale != [1.0; 2]))
                     .then(|| (frame.clone(), outputs.clone()))
-            });
+                });
             if let Some((frame, outputs)) = independent {
                 let mut protected = true;
-                for output in outputs { protected &= self.draw_output(&frame, &output, false).1; }
-                if protected { self.desktop.server.lock_presented(); }
+                for output in outputs {
+                    protected &= self.draw_output(&frame, &output, false).1;
+                }
+                if protected {
+                    self.desktop.server.lock_presented();
+                }
                 self.desktop.redraw = false;
                 self.exchange();
                 return;
             }
             let presented = {
                 let mut target = self.renderer.bind(&mut self.texture).unwrap();
-                let frame = self.desktop.pending.as_deref().or(self.desktop.current.as_deref());
-                let output = frame.and_then(|frame| frame.frame.geometry.as_ref()).filter(|geometry| geometry.outputs.len() == 1)
-                    .and_then(|geometry| geometry.outputs.first()).filter(|output| output.raster.scale != [1.0; 2]);
+                let frame = self
+                    .desktop
+                    .pending
+                    .as_deref()
+                    .or(self.desktop.current.as_deref());
+                let output = frame
+                    .and_then(|frame| frame.frame.geometry.as_ref())
+                    .filter(|geometry| geometry.outputs.len() == 1)
+                    .and_then(|geometry| geometry.outputs.first())
+                    .filter(|output| output.raster.scale != [1.0; 2]);
                 if let Some(output) = output {
-                    self.composition.render_output(&mut self.renderer, &mut target, output, &mut self.desktop.server, frame, self.desktop.pointer, Default::default()).unwrap()
-                } else { self.composition.render(
-                        &mut self.renderer,
-                        &mut target,
-                        (self.size[0] as i32, self.size[1] as i32).into(),
-                        Transform::Normal,
-                        &mut self.desktop.server,
-                        frame,
-                        self.desktop.pointer,
-                    )
-                    .unwrap() }
+                    self.composition
+                        .render_output(
+                            &mut self.renderer,
+                            &mut target,
+                            output,
+                            &mut self.desktop.server,
+                            frame,
+                            self.desktop.pointer,
+                            Default::default(),
+                        )
+                        .unwrap()
+                } else {
+                    self.composition
+                        .render(
+                            &mut self.renderer,
+                            &mut target,
+                            (self.size[0] as i32, self.size[1] as i32).into(),
+                            Transform::Normal,
+                            &mut self.desktop.server,
+                            frame,
+                            self.desktop.pointer,
+                        )
+                        .unwrap()
+                }
             };
             presented.sync.wait().unwrap();
-            if presented.locked { self.desktop.server.lock_presented(); }
+            if presented.locked {
+                self.desktop.server.lock_presented();
+            }
             self.desktop.presented(presented, 0).unwrap();
             self.desktop.redraw = false;
         }
         self.exchange();
     }
 
-    fn draw_output(&mut self, frame: &Arc<crate::runtime::Completed>, output: &lince_interface::host::OutputViewport, read: bool) -> (Vec<u8>, bool) {
+    fn draw_output(
+        &mut self,
+        frame: &Arc<crate::runtime::Completed>,
+        output: &lince_interface::host::OutputViewport,
+        read: bool,
+    ) -> (Vec<u8>, bool) {
         use smithay::backend::renderer::ExportMem;
-        let size = output.source_size().map(|value| i32::try_from(value).unwrap());
-        let mut texture: GlesTexture = self.renderer.create_buffer(Fourcc::Argb8888, (size[0], size[1]).into()).unwrap();
+        let size = output
+            .source_size()
+            .map(|value| i32::try_from(value).unwrap());
+        let mut texture: GlesTexture = self
+            .renderer
+            .create_buffer(Fourcc::Argb8888, (size[0], size[1]).into())
+            .unwrap();
         let (presented, pixels) = {
             let mut target = self.renderer.bind(&mut texture).unwrap();
-            let presented = self.composition.render_output(&mut self.renderer, &mut target, output, &mut self.desktop.server,
-                Some(frame.as_ref()), self.desktop.pointer, Default::default()).unwrap();
+            let presented = self
+                .composition
+                .render_output(
+                    &mut self.renderer,
+                    &mut target,
+                    output,
+                    &mut self.desktop.server,
+                    Some(frame.as_ref()),
+                    self.desktop.pointer,
+                    Default::default(),
+                )
+                .unwrap();
             presented.sync.wait().unwrap();
             let mut pixels = Vec::new();
             if read {
-                let mapping = self.renderer.copy_framebuffer(&target, smithay::utils::Rectangle::from_size((size[0], size[1]).into()), Fourcc::Abgr8888).unwrap();
+                let mapping = self
+                    .renderer
+                    .copy_framebuffer(
+                        &target,
+                        smithay::utils::Rectangle::from_size((size[0], size[1]).into()),
+                        Fourcc::Abgr8888,
+                    )
+                    .unwrap();
                 let source = self.renderer.map_texture(&mapping).unwrap();
                 let stride = size[0] as usize * 4;
                 pixels.reserve(source.len());
@@ -222,13 +343,31 @@ impl Fixture {
             (Arc::new(presented), pixels)
         };
         let protected = presented.locked;
-        self.desktop.output_presented(output.id, frame.clone(), presented, renderer::capture::monotonic(), 0, false).unwrap();
+        self.desktop
+            .output_presented(
+                output.id,
+                frame.clone(),
+                presented,
+                renderer::capture::monotonic(),
+                0,
+                false,
+            )
+            .unwrap();
         (pixels, protected)
     }
 
     fn output_pixels(&mut self, id: OutputId) -> (lince_interface::host::OutputViewport, Vec<u8>) {
         let frame = self.desktop.current.as_ref().unwrap().clone();
-        let output = frame.frame.geometry.as_ref().unwrap().outputs.iter().find(|output| output.id == id).unwrap().clone();
+        let output = frame
+            .frame
+            .geometry
+            .as_ref()
+            .unwrap()
+            .outputs
+            .iter()
+            .find(|output| output.id == id)
+            .unwrap()
+            .clone();
         let pixels = self.draw_output(&frame, &output, true).0;
         (output, pixels)
     }
@@ -257,7 +396,12 @@ impl Fixture {
                 self.desktop.pointer,
                 self.desktop.pointer_sent,
                 self.desktop.native_keyboard,
-                (self.client.drop_performed, self.client.drop_finished, self.client.drop_cancelled, self.client.drop_held.len()),
+                (
+                    self.client.drop_performed,
+                    self.client.drop_finished,
+                    self.client.drop_cancelled,
+                    self.client.drop_held.len()
+                ),
             );
             std::thread::sleep(Duration::from_millis(2));
         }
@@ -277,11 +421,16 @@ impl Fixture {
                 Ok(serial) => break serial,
                 Err(std::sync::mpsc::TrySendError::Full(returned)) => {
                     event = returned;
-                    assert!(Instant::now() < deadline, "The actual worker did not admit its inspection after queue pressure");
+                    assert!(
+                        Instant::now() < deadline,
+                        "The actual worker did not admit its inspection after queue pressure"
+                    );
                     self.tick();
                     std::thread::sleep(Duration::from_millis(2));
                 }
-                Err(std::sync::mpsc::TrySendError::Disconnected(_)) => panic!("The actual worker disconnected before its inspection"),
+                Err(std::sync::mpsc::TrySendError::Disconnected(_)) => {
+                    panic!("The actual worker disconnected before its inspection")
+                }
             }
         };
         self.until(|fixture| {
@@ -390,7 +539,8 @@ fn real_file_hover_survives_pending_presentation_and_uses_the_dispatcher_for_act
             .0;
         entity
     });
-    let point = opening::point(&mut fixture, preview).expect("The workspace preview needs a presented native input target");
+    let point = opening::point(&mut fixture, preview)
+        .expect("The workspace preview needs a presented native input target");
     let surface = fixture.desktop.server.windows()[0].surface.clone();
     fixture.desktop.server.focus_surface(
         Some(surface.clone()),
@@ -478,7 +628,9 @@ fn real_file_hover_survives_pending_presentation_and_uses_the_dispatcher_for_act
     release.send(()).unwrap();
     fixture.until(|fixture| {
         fixture.desktop.current.as_ref().is_some_and(|current| {
-            !fixture.desktop.input_pending() && !current.frame.input.keyboard_modal && current.frame.input.drop_target.is_some()
+            !fixture.desktop.input_pending()
+                && !current.frame.input.keyboard_modal
+                && current.frame.input.drop_target.is_some()
         })
     });
     assert_eq!(
@@ -515,26 +667,21 @@ fn real_file_hover_survives_pending_presentation_and_uses_the_dispatcher_for_act
         canvas
             .world_mut()
             .entity_mut(choice)
-            .observe(
-                move |_: On<PointerPress>| {
-                    press.lock().unwrap().push("press");
-                },
-            )
-            .observe(
-                move |_: On<PointerRelease>| {
-                    release.lock().unwrap().push("release");
-                },
-            )
-            .observe(
-                move |_: On<PointerClick>| {
-                    click.lock().unwrap().push("click");
-                },
-            )
+            .observe(move |_: On<PointerPress>| {
+                press.lock().unwrap().push("press");
+            })
+            .observe(move |_: On<PointerRelease>| {
+                release.lock().unwrap().push("release");
+            })
+            .observe(move |_: On<PointerClick>| {
+                click.lock().unwrap().push("click");
+            })
             .observe(move |_: On<bevy::ui_widgets::Activate>| {
                 trace.lock().unwrap().push("activate");
             });
     });
-    let point = opening::point(&mut fixture, choice).expect("The import choice needs a presented native input target");
+    let point = opening::point(&mut fixture, choice)
+        .expect("The import choice needs a presented native input target");
     fixture.desktop.move_pointer(point, 7).unwrap();
     fixture.tick();
     assert!(

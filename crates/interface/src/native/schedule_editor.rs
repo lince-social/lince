@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Editor, fn pending, fn local_timezone, fn attach.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 121, 191, 275,
+//   288.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (81, 178, 191, 197, 382, 383, 385, 388, 390, 402).
+
 use crate::native::actions::Action;
 use bevy::{prelude::*, text::EditableText};
 

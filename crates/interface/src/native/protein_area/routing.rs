@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: enum Target, struct Batch, fn deliver.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   113.
+
 use super::*;
 use crate::host::performance::{self, Count, Stage};
 use crate::native::cell_bridge::replies::{Index, Target as IndexedTarget};

@@ -1,3 +1,25 @@
+// non-lean-yet
+// Scope: struct Work, struct Recovered, struct Loaded, struct Write.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 151, 216, 247,
+//   256.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 71, 75, 81,
+//   84, 89, 92, 154, 182, 259, 283.
+// - [review: §5 Panics] Verify panic isolation boundary and preserve the failure contract. Sites
+//   68.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 112.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 148, 253.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 71, 75, 81, 84, 89, 92, 154, 182, 259, 283.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 130, 189, 296.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 25, 31, 36.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   25, 26, 27, 28, 31, 32, 33, 36, 37, 38, 39, 40, 41, 42, 130, 189, 296.
+
 use std::{
     collections::HashSet,
     panic::{AssertUnwindSafe, catch_unwind},

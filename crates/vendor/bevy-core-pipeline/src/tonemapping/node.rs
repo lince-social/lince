@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: struct TonemappingBindGroupCache, fn tonemapping.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   26.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 59.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 27, 41.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 21.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 26.
+
 use crate::tonemapping::{TonemappingLuts, TonemappingPipeline, ViewTonemappingPipeline};
 
 use bevy_ecs::prelude::*;

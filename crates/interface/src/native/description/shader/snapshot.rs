@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct Frame, struct Snapshot, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 26, 40.
+
 use super::ShaderInputs;
 use bevy::prelude::*;
 use std::sync::Arc;

@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod screenshot, enum Action, struct Command, struct Settings.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   command:locked (220).
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites command: String
+//   (217), validate: String (169, 208).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (148).
+
 use super::{
     input::{InputRequest, InputResponse},
     launch::{Capability, Description},

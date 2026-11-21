@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn samples, fn
+//   frozen_keyword_requests_and_quotes_use_the_native_gate_without_spurious_delivery.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use std::{collections::BTreeMap, path::Path};
 

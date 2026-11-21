@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod geometry, mod signaling, mod x11rb, mod ids.
+// BeautifulRust (baseline lines):
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 19, 31, 34.
+
 //! Various utilities functions and types
 
 mod geometry;

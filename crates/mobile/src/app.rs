@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: mod tests, struct Mobile, struct Pending, struct DraftRecovery.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 92, 353, 358,
+//   362, 364, 365, 374, 411, 429, 430, 494, 562, 567, 573, 623, 624, 658, 691, 721, 730, 823, 878,
+//   879, 888, 898, 899, 943, 985, 1012, 1020, 1029, 1031, 1032, 1033, 1034, 1037, 1038, 1039, 1052,
+//   1178, 1218, 1228, 1245, 1256, 1262, 1301, 1406, 1414, 1491, 1540, 1590, 1620, 1623, 1832, 1847,
+//   1853, 1858, 1875, 2039, 2044, 2080, 2086, 2167, 2177, 2203.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   input:multiline (2259).
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 1492, 1743.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites act: String
+//   (476), send: String (466).
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (2305).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   1227, 1256, 1414, 1696, 1782.
+
 use crate::{
     connection::{Connection, Event},
     navigation::{Navigation, Page},

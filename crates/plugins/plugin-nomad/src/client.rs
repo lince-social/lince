@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: const MAX_RESPONSE_BYTES, struct Nomad.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites new: String
+//   (14), snapshot: String (71).
+
 use crate::{schema::*, settings::Settings};
 use reqwest::Client;
 use serde::de::DeserializeOwned;

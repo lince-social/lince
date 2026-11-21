@@ -1,3 +1,23 @@
+// non-lean-yet
+// Scope: mod actions, struct SessionConnection, fn read, fn write.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 100, 101, 103,
+//   140, 141, 142.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 19, 27, 45,
+//   67, 80, 136, 145.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites drive: String
+//   (48).
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 20, 37.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 37.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 19, 27, 45, 67, 80, 136, 145, 157, 171.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 48.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   48.
+
 use crate::{ClientMessage, ServerMessage};
 use iroh::endpoint::{Connection, RecvStream, SendStream};
 use tokio::sync::mpsc;

@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: const PERMS, fn seed_is_idempotent_and_grants_admin_everything, fn
+//   an_explicit_admin_revoke_survives_seed_restart, fn admin_bootstrap_flips_admin_exists.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use store::Store;
 
 const PERMS: &[(&str, &str)] = &[

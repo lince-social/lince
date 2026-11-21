@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: const REQUEST, struct SyncState, struct SyncPanel, struct SyncPlugin.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 178, 190, 197,
+//   410, 608.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (498, 528, 545, 644, 673, 707, 709, 718, 727, 740, 741, 748, 758, 762, 773, 782,
+//   783, 788, 793, 795).
+
 use crate::native::{
     actions::Action,
     cell_bridge::{CellBridge, CellMessage},

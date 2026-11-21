@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn prepare.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 15.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (15).
+
 use super::*;
 use crate::native::sound::{device::Capture, library::Clip};
 use cell::fiote_communication::speech::input::Startup;

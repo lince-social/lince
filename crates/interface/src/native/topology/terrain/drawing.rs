@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct GroundMaterial, fn install, mod materials, struct GroundView.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   128, 130, 159, 166, 174.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (69, 262, 339, 342).
+
 use super::*;
 use bevy::{
     asset::{RenderAssetUsages, embedded_asset},

@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: mod validation, struct Assertion, struct Draft, fn invalid.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 252, 293, 299,
+//   374, 375.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 359.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 204.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 359.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 119.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   15, 16, 17, 18, 19, 24, 25, 26, 27, 28, 29, 30, 31, 33, 119.
+
 use std::collections::{BTreeSet, HashSet};
 
 use chrono::{DateTime, Utc};

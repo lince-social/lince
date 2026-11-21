@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn live_catalogue_updates_preserve_chips_and_only_change_resolved_names, fn
+//   draft_tokens_wrap_remove_in_place_and_keep_unfinished_text, fn
+//   saved_assertions_support_links_live_completion_removal_and_failed_drafts.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::protein_area::{
     Config, Source,

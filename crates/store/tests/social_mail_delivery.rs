@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: fn database, fn bundle, fn concurrent_deposits_cannot_overrun_recipient_or_global_quota,
+//   fn response_loss_retries_use_one_slot_even_when_the_quota_is_full.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 22, 280, 452, 453, 492, 512, 589.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 30, 148, 192, 532, 583.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites 41,
+//   391.
+
 #![cfg(test)]
 
 use std::sync::Arc;

@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: const ACTIVITIES, fn activity, fn bind, fn alternative.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 48, 65, 98, 106,
+//   107.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (95, 103).
+
 use super::{self as model, Form};
 use serde_json::{Value, json};
 

@@ -5,9 +5,10 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 homepage.workspace = true
-description = "The codebase's own standards, enforced at build time. One rule today: Lince source carries no comments."
+description = "The codebase's own standards, enforced at build time."
 
 [dependencies]
+serde_json.workspace = true
 
 [lints]
 workspace = true

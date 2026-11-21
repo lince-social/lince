@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: const NOTE, struct Paths, struct State, fn prepare.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 139, 142, 160.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (22, 37, 39, 41, 49, 108, 121, 125, 128, 138, 139).
+
 use super::*;
 use std::path::PathBuf;
 

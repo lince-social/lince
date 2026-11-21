@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: enum Val, enum ValParseError, enum ValArithmeticError, trait ValNum.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 576, 1590.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   576.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 32, 71, 476.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   112.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 342, 368, 488.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 71, 72,
+//   73, 74, 75, 168, 476, 478, 480, 705, 706, 707.
+
 use bevy_math::{MismatchedUnitsError, StableInterpolate as _, TryStableInterpolate, Vec2};
 use bevy_reflect::{std_traits::ReflectDefault, Reflect};
 use bevy_text::{EmSize, FontSize, RemSize};

@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn cell_with_local_organ, fn plain, fn tmp_dir, fn
+//   mirror_writes_head_as_filename_and_body_as_content.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 219, 230, 241, 254.
+
 #![cfg(test)]
 
 use std::sync::Arc;

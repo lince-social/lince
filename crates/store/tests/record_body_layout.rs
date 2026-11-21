@@ -1,6 +1,14 @@
+// non-lean-yet
+// Scope: fn snapshot, fn body_is_last, fn
+//   migration_preserves_every_table_and_rolls_back_without_fake_edits.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 171, 176, 181.
+
 #![cfg(test)]
 
 use std::collections::BTreeMap;
+
 use store::sqlx::Row;
 
 async fn snapshot(pool: &store::sqlx::SqlitePool) -> BTreeMap<String, Vec<Vec<String>>> {
@@ -27,7 +35,10 @@ async fn snapshot(pool: &store::sqlx::SqlitePool) -> BTreeMap<String, Vec<Vec<St
             "SELECT {expressions} FROM \"{}\"",
             table.replace('"', "\"\"")
         );
-        let rows = store::sqlx::query(store::sqlx::AssertSqlSafe(sql)).fetch_all(pool).await.unwrap();
+        let rows = store::sqlx::query(store::sqlx::AssertSqlSafe(sql))
+            .fetch_all(pool)
+            .await
+            .unwrap();
         let mut values: Vec<Vec<String>> = rows
             .iter()
             .map(|row| (0..columns.len()).map(|index| row.get(index)).collect())

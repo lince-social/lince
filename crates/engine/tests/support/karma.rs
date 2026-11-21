@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn authorize, fn engine.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::missing_assert_message] assert without any message. Sites 45.
+// - [rustc probe: unreachable_pub] unreachable `pub` item. Sites 7, 54.
+
 use engine::{
     Engine,
     roster::{CellEntry, ROOT_KEY_ID},

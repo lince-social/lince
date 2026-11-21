@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct ProgramExecutionRow, fn executes, fn set_executes, fn list.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   set_executes:executes (27).
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 15, 24, 63.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 8,
+//   9, 10, 11, 12, 15, 24, 63.
+
 use chrono::{DateTime, Utc};
 use sqlx::{Row, SqlitePool};
 

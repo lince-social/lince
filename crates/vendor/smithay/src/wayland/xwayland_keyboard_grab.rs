@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: const MANAGER_VERSION, trait XWaylandKeyboardGrabHandler, struct XWaylandKeyboardGrab,
+//   struct XWaylandKeyboardGrabState.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 100, 101, 117,
+//   168.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (217).
+
 //! Utilities for handling the xwayland keyboard grab protocol
 //!
 //! ```

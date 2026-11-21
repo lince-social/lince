@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn title, fn select, fn container, fn render.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 54, 59, 129, 137,
+//   187.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (195).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (97, 119, 122, 139, 192, 209).
+
 use super::*;
 
 impl Rendered {

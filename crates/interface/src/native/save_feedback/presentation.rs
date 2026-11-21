@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Presentation, fn schedule, fn borders.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (122, 128).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (63, 74, 108).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 165.
+
 use super::*;
 
 #[derive(Resource)]

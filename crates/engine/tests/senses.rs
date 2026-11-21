@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn engine, fn concept, fn open_need, fn matches_complementary_promises_within_proximity.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use engine::Engine;

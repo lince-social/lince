@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod window, struct RecordCard, fn config, fn open.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 152, 199, 249,
+//   304, 329.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 252.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (188, 190, 236, 239, 344, 345, 389, 395, 416).
+
 use crate::native::{
     actions::Action,
     protein_area::{Config, RecordBinding, Source},

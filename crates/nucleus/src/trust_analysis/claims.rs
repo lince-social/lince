@@ -1,3 +1,32 @@
+// non-lean-yet
+// Scope: const NAMESPACE, const MAX_DOCUMENT_BYTES, mod commands, mod recipes.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 69, 70, 72, 416.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 157, 392.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 23, 31, 88, 101, 334.
+// - [Clippy: clippy::manual_is_variant_and] manual implementation of `Option::is_none_or`. Sites
+//   265, 278.
+// - [Clippy: clippy::match_same_arms] these match arms have identical bodies. Sites 403, 407.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 50, 67, 139, 203, 212, 218, 290, 308, 317, 326, 353.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 16, 17,
+//   18, 19, 23, 24, 25, 26, 31, 32, 33, 38, 39, 40, 41, 42, 43, 44, 45, 46, 50, 67, 88, 89, 90, 91,
+//   92, 93, 94, 95, 101, 103, 104, 105, 109, 120, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131,
+//   132, 133, 134, 135, 139, 203, 212, 218, 253, 254, 255, 256, 257, 290, 308, 317, 326, 334, 335,
+//   336, 337, 338, 339, 340, 344, 345, 346, 347, 348, 349, 350, 353.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites checking_query:
+//   String (67), compare: String (353), id: String (212, 326), parse: String (317), series: String
+//   (203), signing_bytes: String (290), trusted_issuer_for_activity: String (218), validate: String
+//   (50, 139, 308).
+
+use std::collections::BTreeSet;
+
+use base64::{Engine as _, engine::general_purpose::STANDARD};
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+
 use super::{
     Identity,
     contacts::{Audience, MAX_TERM_SECONDS},
@@ -8,10 +37,6 @@ use crate::{
     karma::{CanonicalHash, canonical_hash, canonical_json_bytes},
     transfer::{outcome::Role, receipt::Measurement},
 };
-use base64::{Engine as _, engine::general_purpose::STANDARD};
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
 
 pub const NAMESPACE: &str = "lince.profile-claim";
 pub const MAX_DOCUMENT_BYTES: usize = 32768;

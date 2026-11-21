@@ -1,3 +1,53 @@
+// non-lean-yet
+// Scope: mod draw, mod draw_state, mod rangefinder, struct ViewBinnedRenderPhases.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 303, 307, 313, 316, 348, 349, 351, 570, 571, 588, 610, 630, 632, 694, 702, 706, 710, 748,
+//   752, 1324, 1351, 2495, 2504, 2675, 2710, 2717, 2762, 2774, 2785, 2810.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   1980.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 296, 2651,
+//   2654, 2662, 2673, 2736, 2757.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 588, 610, 694, 2003.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 820, 831, 832,
+//   1081, 1085, 1089, 1112, 1217, 1218, 1220, 1221, 1241, 1242, 1244, 1245, 1279, 1280, 1282, 1324,
+//   1351, 1356, 1357, 1393, 1394, 1467, 1484, 1485, 1498, 1499, 1512, 1513.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   mesh:batchable (2301).
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 286, 304, 307, 313, 316, 348, 349, 351, 359, 369, 373, 542, 564, 567, 570, 571, 580, 588,
+//   595, 610, 625, 631, 632, 648, 665, 669, 676, 694, 702, 708, 712, 718, 735, 746, 751, 753, 1335,
+//   1341, 1560, 1587, 1854, 2495, 2504, 2644, 2678, 2708, 2711, 2717, 2762, 2775, 2785, 2803, 2810,
+//   2828.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   286, 373, 564, 580, 625, 648, 665, 669, 676, 1335, 1341, 1560, 1854, 2644, 2708, 2803, 2810,
+//   2828.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 852, 979, 2086.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   345, 531, 609, 627, 634, 1990.
+// - [Clippy: clippy::missing_assert_message] assert without any message. Sites 315, 350, 570, 594,
+//   623, 646, 651, 719, 736, 1210.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 1169, 1970, 1980.
+// - [Clippy: clippy::redundant_clone] Move or borrow at the marked sites and check later uses.
+//   Sites 1098, 1132.
+// - [Clippy: clippy::unimplemented] `unimplemented` should not be present in production code. Sites
+//   2405, 2409, 2413, 2417, 2421, 2425, 2431.
+// - [Clippy: clippy::uninlined_format_args] variables can be used directly in the `format!` string.
+//   Sites 296, 2651, 2654, 2736, 2757.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 91, 109, 175, 184, 227, 476, 776,
+//   792, 801, 852, 872, 917, 926, 1598, 1678, 1719, 1893, 2256.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 1027,
+//   1412, 1419, 1613, 1734, 2055, 2300.
+// - [rustc: unreachable_pub] unreachable `pub` item. Sites 1785.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   304, 631, 708, 712, 751, 753, 1998.
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 37, 38, 43.
+
 //! The modular rendering abstraction responsible for queuing, preparing, sorting and drawing
 //! entities as part of separate render phases.
 //!

@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: mod creation, mod editing, const MAX_AREAS, const MAX_POINTS.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 594, 615, 677,
+//   680.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (121, 592,
+//   613).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   676, 875.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (569, 570, 571, 572, 575, 577, 578, 579, 580, 583, 585, 587, 594, 597, 607, 608,
+//   609, 610, 615, 617, 621, 622, 623, 624, 625, 661, 719, 793, 813, 837, 862, 866, 871, 878, 887,
+//   892, 899, 905, 912, 925, 929, 930, 931, 946, 950, 958, 967, 972, 978, 984, 987, 990, 994, 999,
+//   1031).
+
 use crate::native::{canvas::CanvasItem, workspace::WorkspaceMember};
 use bevy::{math::DVec2, prelude::*};
 use serde::{Deserialize, Serialize};

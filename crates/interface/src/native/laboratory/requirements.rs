@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: const SOURCE_PATH, const SOURCE, const PROTEIN_FILTER_CASE, const MAPPINGS.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 45, 96.
+
 use super::Case;
 use anicca::requirements::Requirement;
 use serde::Serialize;

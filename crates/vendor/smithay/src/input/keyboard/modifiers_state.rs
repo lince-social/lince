@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct ModifiersState, struct SerializedMods, fn serialize_modifiers.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use xkbcommon::xkb;
 
 /// Represents the current state of the keyboard modifiers

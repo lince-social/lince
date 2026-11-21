@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct InstanceInner, struct DebugState.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check SAFETY proof and trait invariants. Sites 22, 23.
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 42, 47, 56, 67, 72.
+
 use std::{
     ffi::{CStr, CString},
     fmt,

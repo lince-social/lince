@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Fixture, fn window, fn pointer, fn press.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 80.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (205).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (41, 181, 200, 216, 217, 227, 233, 235, 238, 245).
+
 use bevy::{
     diagnostic::FrameCount,
     input::{

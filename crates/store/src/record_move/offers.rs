@@ -1,10 +1,38 @@
+// non-lean-yet
+// Scope: const MAX_RECORDS, const MAX_BYTES, const TABLES, struct Item.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 447, 454, 491, 498.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   487.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 325.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 105, 137.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 526, 562.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   526, 562.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 526, 562.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   504.
+// - [Clippy: clippy::manual_let_else] this could be rewritten as `let...else`. Sites 447.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 82, 135, 155, 285, 340, 349, 358, 378, 387, 393, 401, 487.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 9, 10,
+//   11, 33, 34, 35, 36, 40, 41, 42, 43, 44, 45, 46, 47, 51, 52, 53, 54, 55, 59, 60, 61, 62, 66, 67,
+//   68, 69, 70, 71, 72, 73, 74, 75, 82, 102, 135, 155, 205, 217, 225, 285, 340, 349, 358, 378, 387,
+//   393, 401, 487.
+
+use std::collections::BTreeSet;
+
+use serde::{Deserialize, Serialize};
+use sqlx::{Column, Row, SqlitePool, TypeInfo, ValueRef};
+
 use crate::{
     StoreError,
     snapshot::{Table, Value},
 };
-use serde::{Deserialize, Serialize};
-use sqlx::{Column, Row, SqlitePool, TypeInfo, ValueRef};
-use std::collections::BTreeSet;
 
 pub const MAX_RECORDS: usize = 128;
 pub const MAX_BYTES: usize = 8 * 1024 * 1024;

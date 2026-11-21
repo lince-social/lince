@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct Captions, struct Slot, struct Preparation, fn update.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 262.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (31).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   78, 141, 154.
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 37, 38.
+
 use super::*;
 use bevy::ecs::system::InRef;
 

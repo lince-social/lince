@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn tasks_create_complete_undo_and_preserve_later_typing, fn
+//   long_queues_have_bounded_rows_and_reject_stale_updates, fn
+//   drafts_preferences_and_query_restore_without_starting_a_subscription.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::sand_panel::tests::{app, connect, settle};
 

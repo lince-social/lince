@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: mod persistence, struct PracticeCells, fn resume_audio, struct Worker.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 73, 82, 105, 113,
+//   189, 196.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 129, 191.
+
 use bevy::prelude::*;
 use cell::{ClientMessage, ServerMessage};
 use std::collections::{HashMap, HashSet};

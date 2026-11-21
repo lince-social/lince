@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn fixture, fn preview, fn change, fn
+//   quantity_arithmetic_is_exact_replay_safe_and_checks_current_state.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use engine::{

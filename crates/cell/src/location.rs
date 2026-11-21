@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: struct LoginTask, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 423, 469.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 450, 459,
+//   460, 466, 492.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites
+//   authenticate_location_device: String (399).
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 247, 320, 321, 368.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 450, 459, 460, 466, 492.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 399.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   399.
+
 use crate::{CellRuntime, ClientMessage, ServerMessage};
 
 struct LoginTask(tokio::task::JoinHandle<()>);

@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Entry, struct Caption, fn caption, fn reconcile.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 27, 47, 121, 129,
+//   139, 164.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (76, 105, 123, 131, 137, 152, 158, 175, 185, 189, 192).
+
 use super::*;
 
 pub(super) struct Entry {

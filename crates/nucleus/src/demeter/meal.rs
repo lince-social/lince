@@ -1,11 +1,39 @@
-use super::*;
-use crate::optimization::{self, Constraint, Model, Options, Status, Term, Variable, decimal};
-use chrono::Days;
-use serde::{Deserialize, Serialize};
+// non-lean-yet
+// Scope: enum SourceKind, struct Allocation, struct Compiled, struct MissingMeasurement.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 372, 397, 423, 513.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 138, 163, 185,
+//   204, 470, 514, 517, 520, 533, 552, 553.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 554.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   554.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 554.
+// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 172.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 12.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 69, 115, 231, 479.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 1.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 12, 13,
+//   14, 15, 19, 20, 21, 22, 23, 27, 28, 29, 33, 34, 35, 36, 40, 41, 42, 43, 47, 48, 49, 50, 51, 52,
+//   53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 69, 115, 231, 449, 479.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites compile: String
+//   (231), fingerprint: String (69), solve: String (479), validate: String (115).
+
 use std::{
     collections::{BTreeMap, BTreeSet},
     sync::atomic::AtomicBool,
 };
+
+use chrono::Days;
+use serde::{Deserialize, Serialize};
+
+use super::*;
+use crate::optimization::{self, Constraint, Model, Options, Status, Term, Variable, decimal};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -108,7 +136,10 @@ fn eligible(day: chrono::NaiveDate, from: &str, until: Option<&str>) -> Result<b
     if day < date(from)? {
         return Ok(false);
     }
-    Ok(until.map(date).transpose()?.is_none_or(|until| day <= until))
+    Ok(until
+        .map(date)
+        .transpose()?
+        .is_none_or(|until| day <= until))
 }
 
 impl Input {
@@ -169,10 +200,10 @@ impl Input {
             nonnegative(offer.price)?;
             positive(offer.package_g)?;
             positive(offer.usable_yield)?;
-            if let Some(max) = offer.max_packages {
-                if nonnegative(max)?.fract() != 0.0 {
-                    return Err("Package availability must be a whole count".into());
-                }
+            if let Some(max) = offer.max_packages
+                && nonnegative(max)?.fract() != 0.0
+            {
+                return Err("Package availability must be a whole count".into());
             }
             valid_window(&offer.available_on, offer.valid_until.as_deref())?;
         }

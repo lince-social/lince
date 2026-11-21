@@ -1,22 +1,36 @@
-use crate::presentation::{Frame, Output, Presentation};
-use bevy::{
-    input::keyboard::{Key, KeyCode},
-    input_focus::InputFocus,
-    math::DVec2,
-    prelude::*,
-};
-use lince_interface::host::performance::{self, Phase};
-use lince_interface::{
-    host::{DesktopAction, OutputId, OutputViewport, Rectangle, WorkspaceLayout},
-    native::{self, app::CellHandle},
-};
-use serde_json::{Value, json};
+// non-lean-yet
+// Scope: mod projection, mod record_edits, fn error, fn completed.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 269, 356, 768.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 809.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   63, 66, 92, 99, 208, 441.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (112, 113, 114, 248, 324, 389, 460, 581, 610, 628, 640, 659, 679, 697, 716, 724).
+
 use std::{
     io::{self, BufRead},
     path::Path,
     sync::Arc,
     time::{Duration, Instant},
 };
+
+use bevy::{
+    input::keyboard::{Key, KeyCode},
+    input_focus::InputFocus,
+    math::DVec2,
+    prelude::*,
+};
+use lince_interface::{
+    host::{
+        DesktopAction, OutputId, OutputViewport, Rectangle, WorkspaceLayout,
+        performance::{self, Phase},
+    },
+    native::{self, app::CellHandle},
+};
+use serde_json::{Value, json};
+
+use crate::presentation::{Frame, Output, Presentation};
 
 mod projection;
 pub use projection::run as projection_reveal;
@@ -195,8 +209,12 @@ fn measurement_coverage(reports: &[Value]) -> Value {
             })
     });
     let mut loss = serde_json::Map::new();
-    let dropped_reports = reports.iter().map(|report| report["dropped_reports"].as_u64())
-        .try_fold(0u64, |largest, current| current.map(|count| largest.max(count)));
+    let dropped_reports = reports
+        .iter()
+        .map(|report| report["dropped_reports"].as_u64())
+        .try_fold(0u64, |largest, current| {
+            current.map(|count| largest.max(count))
+        });
     loss.insert("dropped_reports".into(), json!(dropped_reports));
     for name in [
         "dropped_system_samples",
@@ -208,9 +226,13 @@ fn measurement_coverage(reports: &[Value]) -> Value {
             .try_fold(0u64, |sum, report| sum.checked_add(report[name].as_u64()?));
         loss.insert(name.into(), json!(total));
     }
-    if reports.iter().any(|report| report.get("dropped_park_frames").is_some()) {
-        let total: Option<u64> = reports.iter()
-            .try_fold(0u64, |sum, report| sum.checked_add(report["dropped_park_frames"].as_u64()?));
+    if reports
+        .iter()
+        .any(|report| report.get("dropped_park_frames").is_some())
+    {
+        let total: Option<u64> = reports.iter().try_fold(0u64, |sum, report| {
+            sum.checked_add(report["dropped_park_frames"].as_u64()?)
+        });
         loss.insert("dropped_park_frames".into(), json!(total));
     }
     let final_report = reports
@@ -731,7 +753,9 @@ fn scene(
             && motion.iter().filter(|ms| **ms > 1000.0 / 60.0).count() as f64
                 / motion.len() as f64
                 <= 0.01);
-    let passed = observed.is_ok() && focus_error.is_none() && passes(&samples)
+    let passed = observed.is_ok()
+        && focus_error.is_none()
+        && passes(&samples)
         && (!mixed || (passes(&typing) && passes(&scrolling) && passes(&dragging)))
         && motion_gate;
     let partial = |samples: &[f64]| (!samples.is_empty()).then(|| summary(samples));

@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct App, fn main, struct ClientState.
+// BeautifulRust (baseline lines):
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 26.
+// - [review: dbg_macro] Check whether dbg! evaluation or output is contractual before removal.
+//   Sites 28.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (22, 40, 45, 51).
+
 use std::sync::Arc;
 
 use smithay::delegate_compositor;

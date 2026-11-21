@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn entry, fn outstanding_cards_retain_updated_estimates, fn
+//   ranges_rest_outside_the_rim_and_descend_after_the_supporting_range_ends, fn
+//   original_starts_and_longer_equal_start_ranges_keep_priority_after_clipping.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(feature = "models")]
 
 use lince_interface::time_castle::{Category, Entry, MAX_STACKS, Settings, stacks, tick_interval};

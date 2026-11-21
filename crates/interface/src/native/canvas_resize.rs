@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Edges, struct Resize, struct ResizeCursor, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 133.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   75, 103, 104, 105, 106, 184, 185, 186, 234, 235, 236, 237, 240, 241, 313, 314, 316, 319.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (179, 232, 272, 276, 279, 311).
+
 use crate::native::canvas::CanvasItem;
 use bevy::{
     prelude::*,

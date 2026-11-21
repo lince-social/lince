@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: enum Edit, fn valid.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   65.
+
 use super::*;
 use crate::native::area_effects::{ForceMode, Immunity, Sorting};
 use engine::area_transition::RecordChanges;

@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn setup, fn activate, fn prepared, fn
+//   invitation_buttons_require_review_and_send_only_the_unchanged_scope.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 31, 32, 35, 36.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (5, 20, 22, 29, 32).
+
 use super::*;
 
 fn setup() -> (World, Entity) {

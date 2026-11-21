@@ -1,3 +1,24 @@
+// non-lean-yet
+// Scope: struct DirectorySync, enum Request, struct Status, fn invalid.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 196, 309, 325,
+//   326, 327.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 325.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 189.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 26.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 252, 263.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 189.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 258.
+// - [Clippy probe: clippy::missing_panics_doc] State the panic conditions for exported functions.
+//   Sites 258.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   15, 16, 17, 18, 19, 20, 21, 26, 27, 28, 29, 30, 32, 33, 34, 36, 37, 42, 51, 52, 53, 54, 258.
+
 use super::{DEFAULT_INTERVAL, Engine, EngineError, FileConflict, FileFormat, FileSyncState};
 use nucleus::sync::{PERSONAL_FILE_ORIGIN, valid_file_origin};
 use serde::{Deserialize, Serialize};

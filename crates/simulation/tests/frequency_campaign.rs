@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn run, fn small, fn
+//   random_frequency_cases_are_serializable_reproducible_and_in_the_campaign, fn
+//   rewinding_an_applied_daily_boundary_resets_completed_tasks_and_replays_exactly.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use nucleus::simulation::{Predicate, ReplayStatus, Verdict};

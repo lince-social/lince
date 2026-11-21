@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod display, mod color, mod control, mod capture.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 49.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   216, 217, 218, 245, 271, 277, 297, 301, 324, 328, 337, 413, 416, 420, 421, 423, 425, 426, 429,
+//   432.
+
 use serde::{Deserialize, Serialize};
 use std::{
     num::NonZeroUsize,

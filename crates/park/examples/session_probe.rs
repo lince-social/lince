@@ -1,8 +1,23 @@
+// non-lean-yet
+// Scope: fn main, fn main, mod client.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 85, 87, 88, 89, 91, 92, 94, 100, 101, 102, 103, 186, 205, 236.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 191, 214.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 214.
+
 #[cfg(target_os = "linux")]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let arguments = std::env::args_os().skip(1).collect::<Vec<_>>();
-    if arguments.first().is_some_and(|argument| argument == "--help") {
-        println!("session_probe [--hold-until RELEASE_FILE]: bounded native window lifecycle acceptance on WAYLAND_DISPLAY");
+    if arguments
+        .first()
+        .is_some_and(|argument| argument == "--help")
+    {
+        println!(
+            "session_probe [--hold-until RELEASE_FILE]: bounded native window lifecycle acceptance on WAYLAND_DISPLAY"
+        );
         return Ok(());
     }
     let release = match arguments.as_slice() {
@@ -19,10 +34,19 @@ fn main() {}
 
 #[cfg(target_os = "linux")]
 mod client {
-    use std::{fs::File, io::{self, Write}, os::fd::AsFd, time::{Duration, Instant}};
-    use wayland_client::{Connection, Dispatch, EventQueue, QueueHandle, delegate_noop, protocol::{
-        wl_buffer, wl_callback, wl_compositor, wl_registry, wl_shm, wl_shm_pool, wl_surface,
-    }};
+    use std::{
+        fs::File,
+        io::{self, Write},
+        os::fd::AsFd,
+        time::{Duration, Instant},
+    };
+
+    use wayland_client::{
+        Connection, Dispatch, EventQueue, QueueHandle, delegate_noop,
+        protocol::{
+            wl_buffer, wl_callback, wl_compositor, wl_registry, wl_shm, wl_shm_pool, wl_surface,
+        },
+    };
     use wayland_protocols::xdg::shell::client::{xdg_surface, xdg_toplevel, xdg_wm_base};
 
     #[derive(Default)]
@@ -57,9 +81,17 @@ mod client {
         let qh = queue.handle();
         connection.display().get_registry(&qh, ());
         let mut state = State::default();
-        until(&connection, &mut queue, &mut state, |state| state.compositor.is_some() && state.shell.is_some() && state.shm.is_some())?;
-        let compositor = state.compositor.as_ref().ok_or_else(|| io::Error::other("The probe compositor is unavailable"))?;
-        let shell = state.shell.as_ref().ok_or_else(|| io::Error::other("The probe window shell is unavailable"))?;
+        until(&connection, &mut queue, &mut state, |state| {
+            state.compositor.is_some() && state.shell.is_some() && state.shm.is_some()
+        })?;
+        let compositor = state
+            .compositor
+            .as_ref()
+            .ok_or_else(|| io::Error::other("The probe compositor is unavailable"))?;
+        let shell = state
+            .shell
+            .as_ref()
+            .ok_or_else(|| io::Error::other("The probe window shell is unavailable"))?;
         for index in 0..2 {
             let surface = compositor.create_surface(&qh, ());
             let xdg = shell.get_xdg_surface(&surface, &qh, index);
@@ -67,40 +99,82 @@ mod client {
             role.set_title(format!("Park validation {}", index + 1));
             role.set_app_id("social.lince.park.validation".into());
             surface.commit();
-            state.windows.push(Window { surface, xdg, role, size: [320, 200], fullscreen: false, frames: 0, buffers: Vec::new() });
+            state.windows.push(Window {
+                surface,
+                xdg,
+                role,
+                size: [320, 200],
+                fullscreen: false,
+                frames: 0,
+                buffers: Vec::new(),
+            });
         }
-        until(&connection, &mut queue, &mut state, |state| state.windows.iter().all(|window| !window.buffers.is_empty()) && state.windows.iter().any(|window| window.frames > 0))?;
-        println!("PASS: two native windows configured and a visible window received a presentation callback");
+        until(&connection, &mut queue, &mut state, |state| {
+            state
+                .windows
+                .iter()
+                .all(|window| !window.buffers.is_empty())
+                && state.windows.iter().any(|window| window.frames > 0)
+        })?;
+        println!(
+            "PASS: two native windows configured and a visible window received a presentation callback"
+        );
         if let Some(release) = release {
             use std::os::unix::fs::OpenOptionsExt;
-            if !release.is_absolute() || release.exists() || release.with_extension("ready").exists() {
-                return Err(io::Error::other("The native-window hold needs a new absolute private release path"));
+            if !release.is_absolute()
+                || release.exists()
+                || release.with_extension("ready").exists()
+            {
+                return Err(io::Error::other(
+                    "The native-window hold needs a new absolute private release path",
+                ));
             }
-            let mut ready = std::fs::OpenOptions::new().create_new(true).write(true).mode(0o600).open(release.with_extension("pending"))?;
+            let mut ready = std::fs::OpenOptions::new()
+                .create_new(true)
+                .write(true)
+                .mode(0o600)
+                .open(release.with_extension("pending"))?;
             ready.write_all(std::process::id().to_string().as_bytes())?;
             ready.sync_all()?;
-            std::fs::rename(release.with_extension("pending"), release.with_extension("ready"))?;
-            until_before(&connection, &mut queue, &mut state, |_| release.is_file(), Instant::now() + Duration::from_secs(60))?;
+            std::fs::rename(
+                release.with_extension("pending"),
+                release.with_extension("ready"),
+            )?;
+            until_before(
+                &connection,
+                &mut queue,
+                &mut state,
+                |_| release.is_file(),
+                Instant::now() + Duration::from_secs(60),
+            )?;
         }
         let before = state.windows[0].frames;
         eprintln!("Checking fullscreen entry on the first window while the second is focused");
         state.windows[0].role.set_fullscreen(None);
-        until(&connection, &mut queue, &mut state, |state| state.windows[0].fullscreen && state.windows[0].frames > before)?;
+        until(&connection, &mut queue, &mut state, |state| {
+            state.windows[0].fullscreen && state.windows[0].frames > before
+        })?;
         let before = state.windows[0].frames;
         eprintln!("Checking fullscreen restore");
         state.windows[0].role.unset_fullscreen();
-        until(&connection, &mut queue, &mut state, |state| !state.windows[0].fullscreen && state.windows[0].frames > before)?;
+        until(&connection, &mut queue, &mut state, |state| {
+            !state.windows[0].fullscreen && state.windows[0].frames > before
+        })?;
         println!("PASS: fullscreen state entered and restored with new content callbacks");
         let window = &state.windows[1];
         window.surface.attach(None, 0, 0);
         window.surface.commit();
         state.synchronized = false;
         connection.display().sync(&qh, Callback::Sync);
-        until(&connection, &mut queue, &mut state, |state| state.synchronized)?;
+        until(&connection, &mut queue, &mut state, |state| {
+            state.synchronized
+        })?;
         let before = state.windows[1].frames;
         state.windows[1].surface.commit();
         state.windows[1].role.set_fullscreen(None);
-        until(&connection, &mut queue, &mut state, |state| state.windows[1].fullscreen && state.windows[1].frames > before)?;
+        until(&connection, &mut queue, &mut state, |state| {
+            state.windows[1].fullscreen && state.windows[1].frames > before
+        })?;
         println!("PASS: native window unmapped and remapped");
         for window in &state.windows {
             window.role.destroy();
@@ -109,16 +183,35 @@ mod client {
         }
         state.synchronized = false;
         connection.display().sync(&qh, Callback::Sync);
-        until(&connection, &mut queue, &mut state, |state| state.synchronized)?;
+        until(&connection, &mut queue, &mut state, |state| {
+            state.synchronized
+        })?;
         println!("PASS: both native windows destroyed; display still responds");
         Ok(())
     }
 
-    fn until(connection: &Connection, queue: &mut EventQueue<State>, state: &mut State, finished: impl Fn(&State) -> bool) -> io::Result<()> {
-        until_before(connection, queue, state, finished, Instant::now() + Duration::from_secs(12))
+    fn until(
+        connection: &Connection,
+        queue: &mut EventQueue<State>,
+        state: &mut State,
+        finished: impl Fn(&State) -> bool,
+    ) -> io::Result<()> {
+        until_before(
+            connection,
+            queue,
+            state,
+            finished,
+            Instant::now() + Duration::from_secs(12),
+        )
     }
 
-    fn until_before(connection: &Connection, queue: &mut EventQueue<State>, state: &mut State, finished: impl Fn(&State) -> bool, deadline: Instant) -> io::Result<()> {
+    fn until_before(
+        connection: &Connection,
+        queue: &mut EventQueue<State>,
+        state: &mut State,
+        finished: impl Fn(&State) -> bool,
+        deadline: Instant,
+    ) -> io::Result<()> {
         loop {
             queue.dispatch_pending(state).map_err(io::Error::other)?;
             if let Some(error) = state.failure.take() {
@@ -131,13 +224,24 @@ mod client {
                 return Err(io::Error::other("Native session probe phase timed out"));
             }
             if let Err(error) = connection.flush()
-                && !matches!(&error, wayland_client::backend::WaylandError::Io(error) if error.kind() == io::ErrorKind::WouldBlock) {
+                && !matches!(&error, wayland_client::backend::WaylandError::Io(error) if error.kind() == io::ErrorKind::WouldBlock)
+            {
                 return Err(io::Error::other(error));
             }
             if let Some(read) = queue.prepare_read() {
                 let fd = read.connection_fd();
-                let mut descriptors = [rustix::event::PollFd::new(&fd, rustix::event::PollFlags::IN)];
-                rustix::event::poll(&mut descriptors, Some(&rustix::time::Timespec { tv_sec: 0, tv_nsec: 100_000_000 })).map_err(io::Error::other)?;
+                let mut descriptors = [rustix::event::PollFd::new(
+                    &fd,
+                    rustix::event::PollFlags::IN,
+                )];
+                rustix::event::poll(
+                    &mut descriptors,
+                    Some(&rustix::time::Timespec {
+                        tv_sec: 0,
+                        tv_nsec: 100_000_000,
+                    }),
+                )
+                .map_err(io::Error::other)?;
                 let flags = descriptors[0].revents();
                 if flags.intersects(rustix::event::PollFlags::ERR | rustix::event::PollFlags::HUP) {
                     return Err(io::Error::other("Park disconnected the session probe"));
@@ -145,7 +249,8 @@ mod client {
                 if flags.contains(rustix::event::PollFlags::IN) {
                     match read.read() {
                         Ok(_) => {}
-                        Err(wayland_client::backend::WaylandError::Io(error)) if error.kind() == io::ErrorKind::WouldBlock => {}
+                        Err(wayland_client::backend::WaylandError::Io(error))
+                            if error.kind() == io::ErrorKind::WouldBlock => {}
                         Err(error) => return Err(io::Error::other(error)),
                     }
                 }
@@ -154,11 +259,27 @@ mod client {
     }
 
     impl Dispatch<wl_registry::WlRegistry, ()> for State {
-        fn event(state: &mut Self, registry: &wl_registry::WlRegistry, event: wl_registry::Event, _: &(), _: &Connection, qh: &QueueHandle<Self>) {
-            if let wl_registry::Event::Global { name, interface, version } = event {
+        fn event(
+            state: &mut Self,
+            registry: &wl_registry::WlRegistry,
+            event: wl_registry::Event,
+            _: &(),
+            _: &Connection,
+            qh: &QueueHandle<Self>,
+        ) {
+            if let wl_registry::Event::Global {
+                name,
+                interface,
+                version,
+            } = event
+            {
                 match interface.as_str() {
-                    "wl_compositor" => state.compositor = Some(registry.bind(name, version.min(4), qh, ())),
-                    "xdg_wm_base" => state.shell = Some(registry.bind(name, version.min(6), qh, ())),
+                    "wl_compositor" => {
+                        state.compositor = Some(registry.bind(name, version.min(4), qh, ()))
+                    }
+                    "xdg_wm_base" => {
+                        state.shell = Some(registry.bind(name, version.min(6), qh, ()))
+                    }
                     "wl_shm" => state.shm = Some(registry.bind(name, 1, qh, ())),
                     _ => {}
                 }
@@ -167,7 +288,14 @@ mod client {
     }
 
     impl Dispatch<xdg_wm_base::XdgWmBase, ()> for State {
-        fn event(_: &mut Self, shell: &xdg_wm_base::XdgWmBase, event: xdg_wm_base::Event, _: &(), _: &Connection, _: &QueueHandle<Self>) {
+        fn event(
+            _: &mut Self,
+            shell: &xdg_wm_base::XdgWmBase,
+            event: xdg_wm_base::Event,
+            _: &(),
+            _: &Connection,
+            _: &QueueHandle<Self>,
+        ) {
             if let xdg_wm_base::Event::Ping { serial } = event {
                 shell.pong(serial);
             }
@@ -175,30 +303,54 @@ mod client {
     }
 
     impl Dispatch<xdg_toplevel::XdgToplevel, usize> for State {
-        fn event(state: &mut Self, _: &xdg_toplevel::XdgToplevel, event: xdg_toplevel::Event, index: &usize, _: &Connection, _: &QueueHandle<Self>) {
+        fn event(
+            state: &mut Self,
+            _: &xdg_toplevel::XdgToplevel,
+            event: xdg_toplevel::Event,
+            index: &usize,
+            _: &Connection,
+            _: &QueueHandle<Self>,
+        ) {
             match event {
-                xdg_toplevel::Event::Configure { width, height, states } => {
+                xdg_toplevel::Event::Configure {
+                    width,
+                    height,
+                    states,
+                } => {
                     eprintln!("Window {index}: configure {width}x{height}, states {states:?}");
                     if width > 8192 || height > 8192 || width < 0 || height < 0 {
                         state.failure = Some("Invalid or oversized configure".into());
                         return;
                     }
                     let window = &mut state.windows[*index];
-                    if width > 0 { window.size[0] = width; }
-                    if height > 0 { window.size[1] = height; }
+                    if width > 0 {
+                        window.size[0] = width;
+                    }
+                    if height > 0 {
+                        window.size[1] = height;
+                    }
                     let (states, _) = states.as_chunks::<4>();
                     window.fullscreen = states.iter().any(|&bytes| {
                         u32::from_ne_bytes(bytes) == xdg_toplevel::State::Fullscreen as u32
                     });
                 }
-                xdg_toplevel::Event::Close => state.failure = Some("A probe window was unexpectedly closed".into()),
+                xdg_toplevel::Event::Close => {
+                    state.failure = Some("A probe window was unexpectedly closed".into())
+                }
                 _ => {}
             }
         }
     }
 
     impl Dispatch<xdg_surface::XdgSurface, usize> for State {
-        fn event(state: &mut Self, surface: &xdg_surface::XdgSurface, event: xdg_surface::Event, index: &usize, _: &Connection, qh: &QueueHandle<Self>) {
+        fn event(
+            state: &mut Self,
+            surface: &xdg_surface::XdgSurface,
+            event: xdg_surface::Event,
+            index: &usize,
+            _: &Connection,
+            qh: &QueueHandle<Self>,
+        ) {
             if let xdg_surface::Event::Configure { serial } = event {
                 surface.ack_configure(serial);
                 let result = (|| -> io::Result<()> {
@@ -207,15 +359,35 @@ mod client {
                         return Err(io::Error::other("Probe configure/buffer limit exceeded"));
                     }
                     let [width, height] = window.size;
-                    let length = width.checked_mul(height).and_then(|pixels| pixels.checked_mul(4)).filter(|length| *length <= 256 * 1024 * 1024)
+                    let length = width
+                        .checked_mul(height)
+                        .and_then(|pixels| pixels.checked_mul(4))
+                        .filter(|length| *length <= 256 * 1024 * 1024)
                         .ok_or_else(|| io::Error::other("Probe buffer size limit exceeded"))?;
                     let mut file = tempfile::tempfile()?;
-                    let pixel = if *index == 0 { [0x40, 0x90, 0xe0, 0xff] } else { [0x90, 0xd0, 0x40, 0xff] };
+                    let pixel = if *index == 0 {
+                        [0x40, 0x90, 0xe0, 0xff]
+                    } else {
+                        [0x90, 0xd0, 0x40, 0xff]
+                    };
                     let row = pixel.repeat(width as usize);
-                    for _ in 0..height { file.write_all(&row)?; }
-                    let shm = state.shm.as_ref().ok_or_else(|| io::Error::other("Probe shared memory is unavailable"))?;
+                    for _ in 0..height {
+                        file.write_all(&row)?;
+                    }
+                    let shm = state
+                        .shm
+                        .as_ref()
+                        .ok_or_else(|| io::Error::other("Probe shared memory is unavailable"))?;
                     let pool = shm.create_pool(file.as_fd(), length, qh, ());
-                    let buffer = pool.create_buffer(0, width, height, width * 4, wl_shm::Format::Argb8888, qh, ());
+                    let buffer = pool.create_buffer(
+                        0,
+                        width,
+                        height,
+                        width * 4,
+                        wl_shm::Format::Argb8888,
+                        qh,
+                        (),
+                    );
                     pool.destroy();
                     window.surface.attach(Some(&buffer), 0, 0);
                     window.surface.damage_buffer(0, 0, width, height);
@@ -224,13 +396,22 @@ mod client {
                     window.buffers.push((buffer, file));
                     Ok(())
                 })();
-                if let Err(error) = result { state.failure = Some(error.to_string()); }
+                if let Err(error) = result {
+                    state.failure = Some(error.to_string());
+                }
             }
         }
     }
 
     impl Dispatch<wl_callback::WlCallback, Callback> for State {
-        fn event(state: &mut Self, _: &wl_callback::WlCallback, event: wl_callback::Event, callback: &Callback, _: &Connection, _: &QueueHandle<Self>) {
+        fn event(
+            state: &mut Self,
+            _: &wl_callback::WlCallback,
+            event: wl_callback::Event,
+            callback: &Callback,
+            _: &Connection,
+            _: &QueueHandle<Self>,
+        ) {
             if let wl_callback::Event::Done { .. } = event {
                 match callback {
                     Callback::Frame(index) => state.windows[*index].frames += 1,

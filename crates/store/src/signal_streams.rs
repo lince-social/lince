@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Configuration, fn get_on, fn save_on, fn remove_on.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 12, 22, 32.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 6,
+//   7, 8, 9, 12, 22, 32.
+
 use serde::{Deserialize, Serialize};
 use sqlx::SqliteConnection;
 

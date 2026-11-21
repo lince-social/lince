@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct Report, fn main.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 71.
+
 use lince_interface::native::laboratory::{CaseResult, catalogue};
 use serde::Serialize;
 use std::{fs::OpenOptions, io::Error};

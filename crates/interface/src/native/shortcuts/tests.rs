@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn recent_window_pair_validates_a_shared_hold_modifier_and_can_be_unbound, fn
+//   dedicated_hardware_keys_capture_round_trip_and_match_the_linux_input_converter, fn
+//   hardware_binding_conflicts_do_not_make_other_commands_lock_eligible, fn
+//   park_only_commands_do_not_intercept_sandbox_input_without_a_host.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[test]

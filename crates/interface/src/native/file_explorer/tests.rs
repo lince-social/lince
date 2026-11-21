@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn fixture, fn explorer_keyboard_selects_without_opening_and_scrolls_to_the_selection, fn
+//   returning_focus_invalidates_cached_directory_contents, fn
+//   tree_and_grid_only_spawn_the_visible_rows.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::actions::Action;
 use bevy::text::EditableText;

@@ -1,5 +1,10 @@
-use super::*;
-use crate::runtime::{CanvasWorker, Completed, Configuration, Input};
+// non-lean-yet
+// Scope: fn wait, fn
+//   controlled_typing_changes_pixels_after_editor_application_and_keeps_its_input_origin.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
+use std::sync::mpsc;
+
 use bevy::{
     ecs::schedule::Schedules,
     input::keyboard::{Key, KeyCode},
@@ -10,7 +15,9 @@ use lince_interface::{
     host::{OutputViewport, Rectangle, raster::RasterMapping},
     native,
 };
-use std::sync::mpsc;
+
+use super::*;
+use crate::runtime::{CanvasWorker, Completed, Configuration, Input};
 
 fn wait(worker: &CanvasWorker, serial: u64, length: Option<usize>) -> Completed {
     let deadline = Instant::now() + Duration::from_secs(30);
@@ -217,5 +224,8 @@ fn controlled_typing_changes_pixels_after_editor_application_and_keeps_its_input
         )
         .unwrap();
     }
-    assert!(performance::finish(Duration::from_secs(2)), "Final input diagnostic report was not delivered");
+    assert!(
+        performance::finish(Duration::from_secs(2)),
+        "Final input diagnostic report was not delivered"
+    );
 }

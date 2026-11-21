@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: mod files, mod network, mod tests, mod worker.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 48, 176.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 113, 147.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 113, 147.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 31, 64, 79, 117, 133, 137, 211, 246.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 19.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   16, 17, 19, 31, 55, 59, 64, 79, 117, 133, 137, 211, 246.
+
 mod files;
 mod network;
 #[cfg(test)]

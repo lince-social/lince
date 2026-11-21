@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct HeadlessReport, fn run_headless, fn stress_app.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 61.
+
 use super::{CaseResult, StressConfig, StressReport, catalogue, stress::StressRun};
 use bevy::{prelude::*, time::TimeUpdateStrategy};
 use serde::Serialize;

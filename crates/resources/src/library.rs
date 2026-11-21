@@ -1,5 +1,25 @@
-use crate::{Resource, Result, address, fingerprint};
-use serde::{Deserialize, Serialize};
+// non-lean-yet
+// Scope: static CATALOG, struct Entry, struct Library.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 242, 244.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 86, 291, 292,
+//   313, 314, 315, 320, 357, 379, 453.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   source_text:refresh (395).
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 247, 281, 285, 411.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   281.
+// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 261.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   349, 405.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 68, 101, 144, 154, 185, 189, 310, 383, 395, 446.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 14, 15,
+//   16, 17, 18, 19, 21, 23, 27, 36, 48, 52, 56, 60, 64, 68, 101, 144, 154, 185, 189, 310, 383, 395,
+//   438, 446.
+
 use std::{
     collections::BTreeMap,
     fs::{self, File},
@@ -7,6 +27,10 @@ use std::{
     path::{Path, PathBuf},
     sync::{Arc, Mutex, OnceLock},
 };
+
+use serde::{Deserialize, Serialize};
+
+use crate::{Resource, Result, address, fingerprint};
 
 static CATALOG: OnceLock<Mutex<()>> = OnceLock::new();
 
@@ -258,12 +282,11 @@ impl Library {
             .as_file()
             .sync_all()
             .map_err(|error| error.to_string())?;
-        if !destination.exists() {
-            if let Err(error) = temporary.persist_noclobber(&destination)
-                && error.error.kind() != std::io::ErrorKind::AlreadyExists
-            {
-                return Err(error.to_string());
-            }
+        if !destination.exists()
+            && let Err(error) = temporary.persist_noclobber(&destination)
+            && error.error.kind() != std::io::ErrorKind::AlreadyExists
+        {
+            return Err(error.to_string());
         }
         let entry = Entry {
             hash,

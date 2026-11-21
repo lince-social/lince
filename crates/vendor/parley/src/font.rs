@@ -1,6 +1,10 @@
 // Copyright 2021 the Parley Authors
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+// non-lean-yet
+// Scope: struct FontContext.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use fontique::Collection;
 
 use fontique::SourceCache;

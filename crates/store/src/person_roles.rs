@@ -1,6 +1,18 @@
-use crate::StoreError;
-use sqlx::{SqliteConnection, SqlitePool};
+// non-lean-yet
+// Scope: const MAX_ROLES, const RECOVERY_PERMISSIONS, fn ids_on, fn ids.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   require_recovery_on:was_recoverable (124).
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 13, 27, 31, 42, 56, 101, 122.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 6,
+//   13, 27, 31, 42, 56, 95, 101, 122.
+
 use std::collections::BTreeSet;
+
+use sqlx::{SqliteConnection, SqlitePool};
+
+use crate::StoreError;
 
 pub const MAX_ROLES: usize = 64;
 pub const RECOVERY_PERMISSIONS: &[&str] = &[

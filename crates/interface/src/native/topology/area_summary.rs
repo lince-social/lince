@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod hover_checks, enum Behavior, struct Summary, struct SummaryAtBottom.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 61, 359, 543,
+//   661.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   302, 303, 307, 308.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (61, 390, 502, 520, 531, 543, 561).
+
 use crate::native::area::{AreaShape, Direction, InfluenceArea};
 use bevy::{math::DVec2, prelude::*};
 use serde_json::Value;

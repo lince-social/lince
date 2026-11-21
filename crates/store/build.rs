@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: mod migration_guard, fn main.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 10.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   8.
+
 #[path = "build_support/migration_guard.rs"]
 mod migration_guard;
 

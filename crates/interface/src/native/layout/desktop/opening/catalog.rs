@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn sender, fn query, fn read_entry, fn retire.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 56, 64, 65, 82,
+//   94, 115, 142, 151, 177, 179, 182, 183, 193, 218, 248, 253, 271, 281.
+
 use super::*;
 use bevy::ecs::message::Messages;
 use cell::{ClientMessage, ServerMessage};

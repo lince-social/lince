@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: fn invalid, fn command_uid.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 85, 88.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 83.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 83.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 123, 177.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 7.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   123, 177.
+
 use base64::{Engine as _, engine::general_purpose::STANDARD as B64};
 use chrono::{DateTime, Utc};
 use store::karma_commands;

@@ -1,3 +1,26 @@
+// non-lean-yet
+// Scope: mod main_opaque_pass_3d_node, mod main_transparent_pass_3d_node, const
+//   CORE_3D_DEPTH_FORMAT, const DEPTH_PREPASS_TEXTURE_SUPPORTED.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   541, 667.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 267, 344, 422,
+//   688, 700, 703, 720, 833, 849, 854, 870, 875, 892, 897, 919, 924, 941, 946, 963, 968, 985.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 471.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   622, 704.
+// - [Clippy: clippy::if_not_else] unnecessary boolean `not` operation. Sites 518, 588.
+// - [Clippy: clippy::unnecessary_semicolon] unnecessary semicolon. Sites 763, 823.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 547.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 100, 173, 197, 232, 304, 382, 471.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 100,
+//   304, 312, 313, 314, 382, 383, 384, 385, 386, 387, 388, 389, 501, 541, 667, 755, 768.
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 47, 48.
+
 mod main_opaque_pass_3d_node;
 mod main_transparent_pass_3d_node;
 

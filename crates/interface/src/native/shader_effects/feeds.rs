@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: type Map, struct Key, enum Owner, struct Demands.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 24, 94, 105, 137,
+//   155, 158, 247.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (225).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (121).
+
 use super::*;
 use bevy::platform::collections::{Equivalent, HashMap as BorrowedMap};
 use std::collections::hash_map::RandomState;

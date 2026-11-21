@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: enum DateInput, enum Purpose, struct BoundaryInput.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 7, 25.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 8,
+//   9, 11, 12, 14, 15, 16, 17, 18, 19, 25, 26, 27, 28, 32, 42, 43, 44, 45, 46.
+
 use serde::{Deserialize, Serialize};
 
 use super::{CivilDateTime, Consequence, FoldPolicy, GapPolicy, TimeZoneId, TzdbRevision};

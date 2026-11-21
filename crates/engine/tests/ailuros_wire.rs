@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Fixture, fn settings, struct Stream, fn
+//   custom_builder_keeps_auth_identity_and_socket_scope.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 445.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 101, 115.
+
 #![cfg(test)]
 
 use ailuros_protocol::{Codec, Frame, HEADER_BYTES, Kind, Phase};

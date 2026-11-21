@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: fn validate, fn actor_key, fn prune_on.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 310.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 311.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 223.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 312, 317.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 311.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 284.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   284.
+
 use super::*;
 use nucleus::social::reports::{MAX_REPORT_BYTES, REPORT_LIFETIME, Report};
 use store::sqlx::Row;

@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn windows_save_settings_without_creating_binding_or_relaunching_records, fn
+//   capture_exclusion_is_bound_to_placement_without_a_record.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[tokio::test]

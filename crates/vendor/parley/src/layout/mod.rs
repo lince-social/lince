@@ -3,6 +3,10 @@
 
 //! Layout types.
 
+// non-lean-yet
+// Scope: mod accessibility, mod alignment, mod cluster, mod glyph.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #[cfg(feature = "accesskit")]
 mod accessibility;
 mod alignment;

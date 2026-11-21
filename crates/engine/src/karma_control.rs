@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: impl Engine.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 48, 50, 51, 76,
+//   94, 97, 103, 113, 116, 129, 132, 145, 148, 161, 164, 177, 180, 193, 196, 213, 216, 241, 244,
+//   266, 269, 286, 289, 361, 381.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 89, 108, 124, 140, 156, 172, 188, 204, 228, 256, 281.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   89, 108, 124, 140, 156, 172, 188, 204, 228, 256, 281.
+
 use std::collections::BTreeMap;
 
 use chrono::{DateTime, Utc};

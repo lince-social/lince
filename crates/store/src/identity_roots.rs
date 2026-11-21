@@ -1,4 +1,23 @@
-use crate::StoreError;
+// non-lean-yet
+// Scope: fn invalid, struct Saved, fn get_on, fn current_on.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 11.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 77, 78, 204, 207,
+//   209, 237.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 34, 49, 107, 226.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   107.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 34, 49.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 25, 56, 67, 102, 125, 151.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 143.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 16, 17,
+//   18, 19, 20, 21, 22, 25, 56, 67, 102, 125, 143, 144, 145, 146, 147, 148, 151.
+
 use chrono::{DateTime, Utc};
 use nucleus::{
     Cause, Fact, NewFact, RecordKind,
@@ -7,6 +26,8 @@ use nucleus::{
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sqlx::{Sqlite, SqliteConnection, Transaction};
+
+use crate::StoreError;
 
 fn invalid(error: impl ToString) -> StoreError {
     StoreError::Protocol(error.to_string())

@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn deletion_preferences_default_to_confirmation_and_are_independent.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use store::{Store, config};
 
 #[tokio::test]

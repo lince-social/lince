@@ -1,4 +1,10 @@
-use super::{Server, State};
+// non-lean-yet
+// Scope: fn valid_delta.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   gesture_hold_end:cancelled (138), gesture_pinch_end:cancelled (107),
+//   gesture_swipe_end:cancelled (51).
+
 use smithay::{
     input::pointer::{
         GestureHoldBeginEvent, GestureHoldEndEvent, GesturePinchBeginEvent, GesturePinchEndEvent,
@@ -7,6 +13,8 @@ use smithay::{
     },
     utils::SERIAL_COUNTER,
 };
+
+use super::{Server, State};
 
 fn valid_delta(delta: [f64; 2]) -> bool {
     delta

@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: mod launch, mod power_client, mod environment, mod clipboard.
+// BeautifulRust (baseline lines):
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 1, 2.
+
 #[cfg(target_os = "linux")]
 pub mod launch;
 
@@ -46,7 +51,11 @@ mod launch_programs;
 #[cfg(all(target_os = "linux", feature = "nested"))]
 mod magnification;
 
-#[cfg(all(target_os = "linux", feature = "nested", any(feature = "session", test)))]
+#[cfg(all(
+    target_os = "linux",
+    feature = "nested",
+    any(feature = "session", test)
+))]
 mod input_settings;
 
 #[cfg(all(target_os = "linux", feature = "session"))]

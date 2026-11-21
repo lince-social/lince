@@ -1,3 +1,32 @@
+// non-lean-yet
+// Scope: mod windows_keeper, const FALLBACK_FORMAT, fn cpal_default_host, struct CpalMicBackend.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 365, 447.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 390, 422.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 174, 175, 176.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 105, 129.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 288, 289, 357, 359, 364, 384, 412, 433.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   357.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   128.
+// - [Clippy: clippy::manual_let_else] this could be rewritten as `let...else`. Sites 87.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   55, 249.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 78.
+// - [Clippy: clippy::unnecessary_wraps] this function's return value is unnecessarily wrapped by
+//   `Result`. Sites 19.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 26.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 1, 26,
+//   34, 78.
+// - [review: §5 Panics] Verify panic isolation boundary and preserve the failure contract. Sites
+//   297.
+
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;

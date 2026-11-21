@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn main.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (39, 46, 51,
+//   57).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (20, 24, 26, 37, 42).
+
 use drm_fourcc::{DrmFourcc, DrmModifier};
 use smithay::backend::{
     allocator::{

@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: type BlockerQuery, struct Source, struct Blocker, struct Blockers.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::{contains, spatial};
 use crate::native::{
     area::{InfluenceArea, RecordProperties},

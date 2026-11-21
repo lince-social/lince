@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Loaded, struct Reload, fn delivered, struct Status.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 90, 91, 97, 159,
+//   169, 171, 188, 221, 226, 227, 229.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (69).
+
 use super::*;
 use crate::native::{actions::Action, layout::desktop::input_settings::{button, text}};
 use lince_editor::watch::{Changes, Watch};

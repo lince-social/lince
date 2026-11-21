@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: const SIZE, fn offscreen_plugins, fn capture, fn capture_target.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 59, 111.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 133.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (189, 264, 267, 268, 270, 277, 281, 282, 285, 286).
+
 use crate::native::{self, app::OutputTarget};
 use bevy::{
     app::PluginGroupBuilder,

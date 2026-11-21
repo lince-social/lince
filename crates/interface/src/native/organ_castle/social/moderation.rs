@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn controls, fn settings, fn view, mod tests.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 pub(super) fn controls(

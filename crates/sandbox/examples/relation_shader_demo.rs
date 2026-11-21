@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod control_review, struct Demo, struct DemoLabel, fn exercise.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 113, 132, 168,
+//   233, 236, 241, 371, 414, 457, 479, 510, 525, 540, 628, 670, 687, 691, 701.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (104, 112, 116, 117, 124, 127, 130, 133, 136, 138, 162, 179, 180, 237, 240, 324,
+//   327, 367, 369, 401, 403, 411, 414, 438, 443, 457, 486, 490, 499, 513, 523, 528, 537, 539, 541,
+//   631, 659, 662, 663, 664, 665, 668, 670, 687, 691, 739).
+
 use bevy::{
     math::DVec2,
     prelude::*,

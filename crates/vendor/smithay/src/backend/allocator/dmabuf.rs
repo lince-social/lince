@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: const MAX_PLANES, struct DmabufInternal, struct Plane, struct Dmabuf.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check SAFETY proof and trait invariants. Sites 440, 441.
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 314, 338, 445.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 290, 291, 479,
+//   628.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 411.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   104, 631, 666, 672.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (270, 278).
+
 //! Module for [dmabuf](https://docs.kernel.org/driver-api/dma-buf.html) buffers.
 //!
 //! `Dmabuf`s act alike to smart pointers and can be freely cloned and passed around.

@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct Draft, enum Field, enum Toggle, fn capture.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 165, 167, 208,
+//   216, 260, 282, 288, 291, 354, 355.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 134, 145,
+//   215.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   190, 466, 489, 499.
+
 use super::*;
 use nucleus::{
     DecimalValue,

@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn unmap_remap_and_destroy_replace_do_not_resume_a_drag_or_redirect_its_release, fn
+//   changing_workspace_cancels_both_resize_entry_paths_and_return_restores_committed_geometry, fn
+//   output_geometry_changes_cancel_both_resize_entry_paths_without_committing_the_preview.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 impl Fixture {

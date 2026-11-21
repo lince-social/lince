@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: mod support, fn preview, fn accept, fn
+//   key_recognition_is_reviewed_immutable_and_does_not_change_profiles_or_quantities.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 pub mod support;

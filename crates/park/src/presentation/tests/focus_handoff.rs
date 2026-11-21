@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct Count, struct Increment, fn key, fn
+//   a_fresh_chord_after_an_ordered_focus_loss_does_not_need_an_intermediate_frame.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[derive(Component, Default)]

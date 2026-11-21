@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: struct WidthToken, struct RadiusToken, struct Metric, struct Metrics.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (344, 345, 352, 353, 356, 362, 365, 371, 372, 374, 375, 376, 377, 378, 394, 396,
+//   397, 402, 405, 418, 419, 421, 425, 429, 430, 432, 436, 442, 444, 477, 487, 489, 491, 495, 498,
+//   500, 503, 504, 505, 514, 515, 517, 521, 524, 526, 550, 558, 560, 562, 566, 569, 570, 571, 573,
+//   574, 576, 605, 607, 610, 612, 616, 617, 622, 629, 633, 635, 639, 647, 649, 655, 657, 673, 674,
+//   683, 685, 690, 697, 704, 708, 714, 716, 720, 725, 729).
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 302.
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 66, 94, 160, 174, 229.
+
 use crate::native::{token_style::Tokens, tokens::Token};
 use bevy::{
     ecs::{entity::EntityHashSet, query::QueryData},

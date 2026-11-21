@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn size, fn state.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   state:incoming (15).
+
 pub fn size(bytes: u64) -> String {
     for (unit, divisor) in [
         ("TiB", 1u64 << 40),

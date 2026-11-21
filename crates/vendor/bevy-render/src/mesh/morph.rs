@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: struct MorphTargetImage, enum RenderMorphTargetAllocator, enum MorphTargetsResource,
+//   struct Rect.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 57, 67, 77, 85.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   57, 85.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 119, 150.
+// - [Clippy: clippy::missing_assert_message] assert without any message. Sites 78.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 46.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 119, 150.
+
 use bevy_asset::AssetId;
 use bevy_ecs::{
     resource::Resource,

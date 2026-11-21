@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct RecordPresentation, struct Saved, fn restore, fn save.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 86, 87, 92, 97,
+//   102, 128, 131, 134, 137, 176, 178, 182, 185, 188, 191.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (226).
+
 use crate::native::{area::InfluenceArea, protein_area::RecordBinding};
 use bevy::{math::DVec3, prelude::*};
 use serde::{Deserialize, Serialize};

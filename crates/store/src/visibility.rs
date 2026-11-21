@@ -1,5 +1,16 @@
-use sqlx::{Row, SqlitePool};
+// non-lean-yet
+// Scope: struct VisibilityRuleRow, fn grant, fn visible_targets, fn rules_for_target.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   set_hidden_from_organ:hidden (165).
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 16, 36, 71, 95, 103, 143, 161, 198, 224, 260, 295.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 8,
+//   9, 10, 11, 12, 13, 16, 36, 71, 95, 103, 143, 161, 192, 193, 194, 195, 198, 224, 260, 295.
+
 use std::collections::HashSet;
+
+use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;
 

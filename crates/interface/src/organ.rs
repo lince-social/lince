@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn delivery_label, fn peer_network_label, enum FieldKind, fn scope_text.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 104.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites parse: String
+//   (76), scope: String (134).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   41.
+
 use serde_json::{Value, json};
 
 pub fn delivery_label(cell: &Value) -> String {

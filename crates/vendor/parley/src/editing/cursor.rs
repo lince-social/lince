@@ -1,6 +1,13 @@
 // Copyright 2025 the Parley Authors
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+// non-lean-yet
+// Scope: struct Cursor, fn affinity_for_dir, fn cursor_rect, fn last_line_cursor_rect.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 256, 339, 352.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (421).
+
 use crate::BoundingBox;
 #[cfg(feature = "accesskit")]
 use crate::analysis::cluster::Whitespace;

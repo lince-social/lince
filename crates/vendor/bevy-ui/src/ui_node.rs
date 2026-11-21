@@ -1,3 +1,27 @@
+// non-lean-yet
+// Scope: struct ComputedNode, struct ScrollPosition, struct IgnoreScroll, struct Node.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 2794.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 2129, 2135.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   2129, 2135.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 2129.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 875, 900, 998, 1076, 1174, 1252, 1358, 1457, 1491, 1516, 1657, 1745, 1763, 1788, 1822,
+//   1850, 1883, 2107, 2559, 2776.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   2424, 2435, 2447, 2459, 2461, 2472, 2473, 2486, 2487, 2497, 2507, 2517.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 2861, 3465, 3468, 3554.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 211,
+//   376, 414, 815, 932, 1020, 1108, 1196, 1288, 1394, 1472, 1499, 1528, 1553, 1619, 1669, 1700,
+//   1771, 1798, 1834, 1850, 1883, 1933, 2404, 2561, 2563, 2604, 2605, 2606, 2607, 2790, 2992, 3011,
+//   3031, 3282, 3283, 3284, 3285, 3289, 3360, 3421, 3426, 3468, 3475, 3532.
+// - [review: §5 Panics] Verify panic isolation boundary and preserve the failure contract. Sites
+//   3568, 3569, 3570, 3571, 3572, 3573, 3574, 3575, 3576, 3577, 3578, 3579.
+
 use crate::{
     ui_transform::{UiGlobalTransform, UiTransform},
     ComputedStackIndex, ContentSize, CornerRadius, FocusPolicy, UiRect, Val,

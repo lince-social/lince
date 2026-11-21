@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct Application, fn display_name, fn restore_graphics_environment, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 170.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 77, 109, 148.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 29.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 29, 77,
+//   93, 98, 109, 148.
+
 use std::{
     ffi::{OsStr, OsString},
     io,
@@ -179,8 +190,9 @@ impl Application {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::{collections::BTreeMap, ffi::OsStr};
+
+    use super::*;
 
     #[test]
     fn graphics_environment_preserves_unset_empty_and_literal_overrides() {

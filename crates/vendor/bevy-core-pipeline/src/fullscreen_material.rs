@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: struct FullscreenMaterialPlugin, trait FullscreenMaterial, struct
+//   FullscreenMaterialPipeline, struct FullscreenMaterialPipelineSpecializer.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 168, 274, 338.
+// - [Clippy: clippy::unimplemented] `unimplemented` should not be present in production code. Sites
+//   157.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 294, 301.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 49, 104, 191, 230.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 49,
+//   104, 191, 293.
+
 //! This is mostly a pluginified version of the `custom_post_processing` example
 //!
 //! The plugin will create a new system that runs a fullscreen triangle.

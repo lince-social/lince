@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod karma, fn native_enrollment_access_edits_and_disable_wait_for_confirmed_responses.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 3.
+
 use super::*;
 
 #[allow(dead_code, reason = "Each test target uses a different subset of the included Karma fixtures")]

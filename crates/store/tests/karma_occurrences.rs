@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn ingress_assigns_one_cell_order_replays_and_reopens_without_sequence_gaps, fn schedule,
+//   fn timestamp, fn digest.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 87.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 40, 46, 58.
+
 #![cfg(test)]
 
 use std::num::NonZeroU32;
@@ -8,8 +16,10 @@ use nucleus::karma::{
     OccurrenceBatch, OccurrenceRange, OverloadPolicy, RephasePolicy, ScheduleEmission, TimerPolicy,
     TimestampMs,
 };
-use store::Store;
-use store::karma::occurrences::{KarmaOccurrenceCommit, ingest, list};
+use store::{
+    Store,
+    karma::occurrences::{KarmaOccurrenceCommit, ingest, list},
+};
 
 #[tokio::test]
 async fn ingress_assigns_one_cell_order_replays_and_reopens_without_sequence_gaps() {

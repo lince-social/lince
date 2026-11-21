@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct ExtDataControlSourceUserData, struct SourceMetadata.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (52, 73).
+
 use std::sync::Mutex;
 
 use wayland_server::backend::ClientId;

@@ -1,5 +1,26 @@
-use std::collections::BTreeSet;
-use std::io::{self, Write};
+// non-lean-yet
+// Scope: const MAX_OUTCOME_BYTES, const MAX_AFFECTED_RECORDS, const MAX_AFFECTED_RECORD_BYTES,
+//   const MAX_ACCEPTED_AT_BYTES.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   294.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 195, 446.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 43.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   332, 333.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   234, 236, 238, 351, 361, 371.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 294, 394.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 10, 11,
+//   12, 13, 16, 17, 18, 19, 23, 24, 25, 26, 27, 28, 32, 33, 34, 35, 36, 37, 38, 39, 43, 44, 45,
+//   294, 394.
+
+use std::{
+    collections::BTreeSet,
+    io::{self, Write},
+};
 
 use chrono::{DateTime, SecondsFormat, Utc};
 use serde_json::Value;

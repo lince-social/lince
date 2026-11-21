@@ -1,3 +1,32 @@
+// non-lean-yet
+// Scope: const MAX_WORKER_ID_BYTES, struct ScheduleCursorRow, struct ScheduleDemandPolicy, enum
+//   StoredScheduleCursor.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   674, 774, 1090, 1248, 1402.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 1794, 1954, 2040, 2193, 2240, 2244.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 350, 351, 465,
+//   481, 522, 552, 692, 703, 801, 1302, 1309, 1315, 1363, 1460, 1465, 1491, 1497, 1874, 2133, 2156.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   record_deadline_admission:degraded (1663).
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 54, 106, 120, 136, 245.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   220, 755, 879, 1198, 1300, 1393, 1595.
+// - [Clippy: clippy::large_enum_variant] large size difference between variants. Sites 120, 245.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   226, 228, 2224, 2228, 2233.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 576, 627, 674, 774, 896, 914, 934, 965, 1004, 1028, 1053, 1064, 1076, 1090, 1208, 1232,
+//   1248, 1402, 1604, 1630, 1658.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 24, 25,
+//   26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 47, 48, 49, 54, 55, 56,
+//   58, 59, 61, 63, 65, 67, 69, 70, 72, 96, 106, 107, 108, 112, 113, 114, 115, 116, 120, 121, 122,
+//   123, 124, 128, 129, 130, 131, 136, 137, 138, 140, 141, 146, 174, 245, 246, 247, 248, 250, 254,
+//   255, 256, 257, 258, 262, 263, 264, 265, 266, 576, 627, 674, 774, 896, 914, 934, 965, 1004,
+//   1028, 1053, 1064, 1076, 1090, 1208, 1232, 1248, 1402, 1604, 1630, 1658.
+
 use std::num::NonZeroU32;
 
 use chrono::{DateTime, Utc};

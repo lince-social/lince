@@ -1,6 +1,16 @@
-use super::*;
+// non-lean-yet
+// Scope: fn client_probe.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 33.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   60, 81, 102.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (44, 106, 115).
+
 use lince_interface::host::{ItemId, SurfaceId};
 use native::actions::Action;
+
+use super::*;
 
 pub fn client_probe() -> Result<(), ProbeFailure> {
     let runtime =
@@ -41,7 +51,13 @@ pub fn client_probe() -> Result<(), ProbeFailure> {
         for _ in 0..8 {
             frame = Some(canvas.probe_frame()?);
         }
-        let pixels = probe_pixels(frame.as_ref().unwrap().dmabuf().ok_or_else(|| input_failure("The probe output image is unavailable"))?)?;
+        let pixels = probe_pixels(
+            frame
+                .as_ref()
+                .unwrap()
+                .dmabuf()
+                .ok_or_else(|| input_failure("The probe output image is unavailable"))?,
+        )?;
         let geometry = canvas
             .geometry()
             .ok_or_else(|| input_failure("no published application geometry"))?;
@@ -100,23 +116,59 @@ pub fn client_probe() -> Result<(), ProbeFailure> {
             return Err(input_failure("application content covered the native Sand"));
         }
         let entity = canvas.windows[&surface].entity;
-        canvas.window_request(surface, lince_interface::host::WindowRequest { minimized: Some(true), ..Default::default() });
+        canvas.window_request(
+            surface,
+            lince_interface::host::WindowRequest {
+                minimized: Some(true),
+                ..Default::default()
+            },
+        );
         let mut minimized = None;
-        for _ in 0..8 { minimized = Some(canvas.probe_frame()?); }
+        for _ in 0..8 {
+            minimized = Some(canvas.probe_frame()?);
+        }
         let minimized = minimized.unwrap();
-        if minimized.geometry.as_ref().is_some_and(|geometry| geometry.items.iter().any(|item| item.id == ItemId::Application(surface)))
-            || !minimized.windows.iter().any(|window| window.surface == surface && window.state.minimized)
-            || canvas.windows.get(&surface).is_none_or(|window| window.entity != entity) {
-            return Err(input_failure("minimizing did not hide the retained application or report its policy state"));
+        if minimized.geometry.as_ref().is_some_and(|geometry| {
+            geometry
+                .items
+                .iter()
+                .any(|item| item.id == ItemId::Application(surface))
+        }) || !minimized
+            .windows
+            .iter()
+            .any(|window| window.surface == surface && window.state.minimized)
+            || canvas
+                .windows
+                .get(&surface)
+                .is_none_or(|window| window.entity != entity)
+        {
+            return Err(input_failure(
+                "minimizing did not hide the retained application or report its policy state",
+            ));
         }
         canvas.activate_application(surface)?;
         let mut restored = None;
-        for _ in 0..8 { restored = Some(canvas.probe_frame()?); }
+        for _ in 0..8 {
+            restored = Some(canvas.probe_frame()?);
+        }
         let restored = restored.unwrap();
-        if !restored.geometry.as_ref().is_some_and(|geometry| geometry.items.iter().any(|item| item.id == ItemId::Application(surface)))
-            || !restored.windows.iter().any(|window| window.surface == surface && !window.state.minimized)
-            || canvas.windows.get(&surface).is_none_or(|window| window.entity != entity) {
-            return Err(input_failure("activation did not restore the retained minimized application"));
+        if !restored.geometry.as_ref().is_some_and(|geometry| {
+            geometry
+                .items
+                .iter()
+                .any(|item| item.id == ItemId::Application(surface))
+        }) || !restored
+            .windows
+            .iter()
+            .any(|window| window.surface == surface && !window.state.minimized)
+            || canvas
+                .windows
+                .get(&surface)
+                .is_none_or(|window| window.entity != entity)
+        {
+            return Err(input_failure(
+                "activation did not restore the retained minimized application",
+            ));
         }
         Ok(())
     })?;

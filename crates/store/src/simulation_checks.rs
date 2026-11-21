@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: fn list, fn save, fn remove.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 17, 37, 54, 61.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 17, 54.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 6, 25, 71.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 25,
+//   71.
+
 use nucleus::simulation::{CheckDefinition, CheckSet};
 use sqlx::{Row, SqlitePool};
 

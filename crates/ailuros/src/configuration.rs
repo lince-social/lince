@@ -1,5 +1,24 @@
-use crate::Result;
+// non-lean-yet
+// Scope: struct Setup, fn uid, struct CameraPins, enum Workflow.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 445, 446.
+// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 279.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 88, 109.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   131, 244, 256.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 23, 54, 115, 171.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 160.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 7,
+//   8, 9, 10, 23, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 54, 88, 89, 90, 91, 92, 93, 94, 96, 97,
+//   98, 100, 101, 102, 103, 109, 110, 111, 115, 160, 161, 162, 163, 164, 165, 166, 167, 171.
+
 use serde::{Deserialize, Serialize};
+
+use crate::Result;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -276,13 +295,12 @@ fn canonical_decimal(value: &str) -> bool {
     {
         return false;
     }
-    if let Some(fraction) = parts.next() {
-        if fraction.is_empty()
+    if let Some(fraction) = parts.next()
+        && (fraction.is_empty()
             || fraction.len() > 18
-            || !fraction.bytes().all(|b| b.is_ascii_digit())
-        {
-            return false;
-        }
+            || !fraction.bytes().all(|b| b.is_ascii_digit()))
+    {
+        return false;
     }
     let Ok(mantissa) = value.replace('.', "").parse::<i128>() else {
         return false;

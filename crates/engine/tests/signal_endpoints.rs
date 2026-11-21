@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod support, fn signing_key, fn public_key, fn inspect.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::redundant_clone] Move or borrow at the marked sites and check later
+//   uses. Sites 984.
+
 #![cfg(test)]
 
 use engine::{

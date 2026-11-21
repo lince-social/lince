@@ -3,6 +3,12 @@
 
 //! Resolution of dynamic properties within a context.
 
+// non-lean-yet
+// Scope: mod range, mod tree, struct RangedStyle, struct StyleRun.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 152, 156, 162,
+//   187, 192, 198, 493, 523.
+
 pub(crate) mod range;
 pub(crate) mod tree;
 

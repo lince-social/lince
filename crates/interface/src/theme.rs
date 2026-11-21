@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: mod cjk, const PAPER, const INK, const PURPLE.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 33.
+
 use bevy::prelude::*;
 
 mod cjk;

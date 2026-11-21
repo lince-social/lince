@@ -1,10 +1,34 @@
+// non-lean-yet
+// Scope: struct KarmaCandidateRow, struct KarmaCandidateStateRow, struct RespondCandidateInput,
+//   enum CandidateReviewCommit.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   84.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 394, 419, 503, 507.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 103, 183, 184,
+//   185, 188, 207, 210, 213, 215.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 41.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   280.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   496, 500.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 55, 64, 75, 84.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 14, 15,
+//   16, 17, 21, 22, 23, 24, 25, 26, 27, 28, 32, 33, 34, 35, 36, 37, 41, 42, 43, 44, 46, 47, 48, 50,
+//   51, 55, 64, 75, 84.
+
 use chrono::{DateTime, TimeZone, Utc};
-use nucleus::karma::{
-    CandidateReviewAction, CandidateReviewEvidence, CandidateReviewEvidenceSchema, CandidateRoute,
-    CandidateStatus, CanonicalHash, KarmaCandidateProposal, ReferenceKind, TimestampMs, TypedUid,
-    canonical_hash, canonical_json_bytes,
+use nucleus::{
+    Cause, CauseKind, Fact, NewFact,
+    karma::{
+        CandidateReviewAction, CandidateReviewEvidence, CandidateReviewEvidenceSchema,
+        CandidateRoute, CandidateStatus, CanonicalHash, KarmaCandidateProposal, ReferenceKind,
+        TimestampMs, TypedUid, canonical_hash, canonical_json_bytes,
+    },
 };
-use nucleus::{Cause, CauseKind, Fact, NewFact};
 use serde::{Deserialize, Serialize};
 use sqlx::{Row, Sqlite, SqlitePool, Transaction};
 

@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn view.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 19, 65, 71, 77.
+
 use super::*;
 
 pub(super) fn view(world: &mut World, owner: Entity, parent: Entity, asks: &Value, can_edit: bool) {

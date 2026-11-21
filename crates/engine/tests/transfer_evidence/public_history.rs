@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn scope_request, fn act, fn
+//   upfront_history_is_signed_before_agreement_and_never_replaces_origin_attestation, fn
+//   changing_public_history_terms_advances_signed_revision_and_rejects_old_participation.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 47, 55.
+
 use super::*;
 use nucleus::transfer::{public_history::Terms, receipt::{self, ApprovalRole, Document, ScopeRequest, Stage}};
 use nucleus::trust_analysis::{Identity, contacts::Audience, serving::Artifact};

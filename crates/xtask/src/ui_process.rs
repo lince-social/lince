@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn output, fn output, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 76, 78, 98.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   48.
+
 use std::{
     process::{Command, Output},
     time::Duration,
@@ -134,8 +141,9 @@ pub(super) fn output(
 
 #[cfg(all(test, unix))]
 mod tests {
-    use super::*;
     use std::time::Instant;
+
+    use super::*;
 
     #[test]
     fn command_deadline_kills_descendants_holding_output_pipes() {

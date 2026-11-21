@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn world, fn inline_scrolling_crosses_sections_and_releases_the_outer_page_at_the_end, fn
+//   restores_two_books_positions_modes_zoom_and_placement, fn
+//   invalid_saved_positions_do_not_enter_workspace.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::actions::Action;
 

@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: fn calc_label, fn sync_bounds_and_transforms, fn button_changed, fn image_changed.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 101, 135.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 224.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 74, 75, 76, 77.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 34, 56, 57, 101, 102, 135, 136, 162, 222, 231.
+
 #[expect(
     deprecated,
     reason = "Should be removed after 0.20 is released when Button is removed."

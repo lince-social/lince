@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn sources_first, mod tests.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy::prelude::Entity;
 use std::collections::{BTreeMap, BTreeSet};
 

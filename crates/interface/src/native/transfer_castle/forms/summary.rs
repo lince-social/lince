@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct Summary, fn entry, fn visit, fn render.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 pub(super) struct Summary(Vec<(String, f32)>);

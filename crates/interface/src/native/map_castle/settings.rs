@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct Sources, fn initialize, fn navigation_path, struct Form.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 64, 74, 183, 321,
+//   323, 327, 328, 341, 342, 344, 345, 360, 362, 363, 368, 466.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 297, 331.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (538, 550, 553, 554, 557, 565, 573, 575, 577, 586).
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 494.
+
 use super::*;
 use lince_map::Settings;
 use std::{fs, path::PathBuf};

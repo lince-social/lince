@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: fn agreed, fn activate_promises, fn eval_promise_condition.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value.
+//   Sites 85.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 8, 15, 28, 32, 39, 53.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   8, 15, 28, 32, 39, 53.
+
 use chrono::{DateTime, Utc};
 use nucleus::expr::Expr;
 use nucleus::{Fact, PromiseState};

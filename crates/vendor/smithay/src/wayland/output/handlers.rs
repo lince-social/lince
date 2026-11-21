@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct XdgOutputUserData.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 79, 80, 100, 186.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (48, 129, 180, 181, 199, 239).
+
 use std::sync::{atomic::Ordering, Arc};
 
 use atomic_float::AtomicF64;

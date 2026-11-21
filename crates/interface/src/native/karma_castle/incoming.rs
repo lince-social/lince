@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn publish_rows, enum Reply, struct Routes.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 20.
+
 use super::*;
 
 pub(super) fn publish_rows(previous: &mut Arc<Vec<Arc<Value>>>, rows: &[Value]) -> bool {

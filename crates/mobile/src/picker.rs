@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: enum Kind, struct Picker, fn search, fn close.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites close: String
+//   (37), search: String (18).
+
 use crate::app::{Intent, Mobile, button, input, label};
 use bevy::prelude::*;
 

@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: static MESH_ALLOCATOR_SLABS, static MESH_ALLOCATOR_SLABS_SIZE, static
+//   MESH_ALLOCATOR_ALLOCATIONS, struct MeshAllocatorDiagnosticPlugin.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 39, 42, 45.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 68, 71, 74.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 64.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 19.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 19.
+
 use bevy_app::{Plugin, PreUpdate};
 use bevy_diagnostic::{Diagnostic, DiagnosticPath, Diagnostics, RegisterDiagnostic};
 use bevy_ecs::{resource::Resource, system::Res};

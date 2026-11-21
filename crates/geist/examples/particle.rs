@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn trajectories, fn main.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 6, 9.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   41.
+
 use geist::{Config, Transition, WorldModel};
 
 fn trajectories(first: usize, count: usize) -> Vec<Transition<2, 1>> {
@@ -38,7 +46,9 @@ fn main() -> Result<(), geist::Error> {
         }
     }
     let rollout = model.rollout(&[0.3, 0.0], &[[0.2]; 8])?;
-    let final_latent = rollout.last().expect("eight actions produce eight predictions");
+    let final_latent = rollout
+        .last()
+        .expect("eight actions produce eight predictions");
     println!("eight_step_predicted_latent={final_latent:?}");
     Ok(())
 }

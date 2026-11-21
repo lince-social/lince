@@ -1,13 +1,25 @@
+// non-lean-yet
+// Scope: impl Desktop.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 51, 61.
+
+use lince_interface::host::{
+    control::{Disposition, Error, Failure, Item},
+    launch::Capability,
+};
+
 use super::*;
 use crate::server::control::Effect;
-use lince_interface::host::{control::{Disposition, Error, Failure, Item}, launch::Capability};
 
 impl Desktop {
     pub(super) fn control(&mut self) -> io::Result<()> {
         use std::sync::mpsc::TrySendError;
         for work in self.server.control_work() {
             if !self.focused {
-                work.complete(Err(Failure::new(Error::Unavailable, "The Park seat or nested view is inactive.")));
+                work.complete(Err(Failure::new(
+                    Error::Unavailable,
+                    "The Park seat or nested view is inactive.",
+                )));
                 continue;
             }
             match self.worker.input(Input::Control(work)) {
@@ -15,9 +27,18 @@ impl Desktop {
                     self.pending_output = Some((serial, None));
                     self.native_keyboard = false;
                 }
-                Err(TrySendError::Full(Input::Control(work))) => work.complete(Err(Failure::new(Error::Busy, "The desktop input queue is busy. Retry after refreshing its state."))),
-                Err(TrySendError::Disconnected(Input::Control(work))) => work.complete(Err(Failure::new(Error::Cancelled, "The desktop worker is unavailable."))),
-                Err(_) => return Err(io::Error::other("The management input returned an incompatible message")),
+                Err(TrySendError::Full(Input::Control(work))) => work.complete(Err(Failure::new(
+                    Error::Busy,
+                    "The desktop input queue is busy. Retry after refreshing its state.",
+                ))),
+                Err(TrySendError::Disconnected(Input::Control(work))) => work.complete(Err(
+                    Failure::new(Error::Cancelled, "The desktop worker is unavailable."),
+                )),
+                Err(_) => {
+                    return Err(io::Error::other(
+                        "The management input returned an incompatible message",
+                    ));
+                }
             }
         }
         for command in self.server.control_hosts() {
@@ -58,8 +79,13 @@ impl Desktop {
         }
         let status = self.server.control_status();
         if self.control_status.as_ref() != Some(&status)
-            && self.worker.input(Input::ControlStatus(status.clone())).is_ok()
-        { self.control_status = Some(status); }
+            && self
+                .worker
+                .input(Input::ControlStatus(status.clone()))
+                .is_ok()
+        {
+            self.control_status = Some(status);
+        }
         Ok(())
     }
 }

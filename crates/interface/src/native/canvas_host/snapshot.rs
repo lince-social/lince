@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn follows_native_state, fn json_text, fn capture_content, fn capture_base_content.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 25, 26, 45, 54,
+//   60, 119, 163, 172, 178, 183, 317, 320, 323, 356, 388.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 326.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites capture: String
+//   (284).
+
 use super::*;
 use serde_json::Value;
 

@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn record, fn move_refuses_without_partial_changes, fn
+//   assertion_move_old_max_revision_aborts_entire_statement, fn
+//   assertion_move_old_missing_revision_aborts_entire_statement.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use nucleus::RecordKind;

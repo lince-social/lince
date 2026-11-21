@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn prepare.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 56, 64, 69.
+
 use super::*;
 use crate::native::protein_area::{RecordBinding, Source, filter::Matches};
 use std::sync::Arc;

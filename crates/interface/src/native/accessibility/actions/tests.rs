@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn fixture, fn request, fn
+//   accessibility_value_uses_normal_editor_limits_unicode_and_keyboard_ownership, fn
+//   activity_loss_and_return_retire_captured_accessibility_edits_before_a_delayed_host_status_and_fresh_edits_recover.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use accesskit::{NodeId, Role, TreeId, TreeUpdate};
 use bevy::ecs::system::RunSystemOnce;

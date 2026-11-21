@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: impl Wire.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 47, 84.
+
 use super::{ALPN_THREAD, EndpointAddr, Wire, WireRequest, WireResponse};
 use crate::EngineError;
 

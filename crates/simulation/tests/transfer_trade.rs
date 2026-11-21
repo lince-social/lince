@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn invocation, fn add, fn command, fn send.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use simulation::fixtures::transfer::{trade, counteroffer, open_offer, private_trade};

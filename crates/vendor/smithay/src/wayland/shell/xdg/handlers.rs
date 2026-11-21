@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod wm_base, mod positioner, mod surface.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::{
     PopupConfigure, PositionerState, ShellClient, ShellClientData, SurfaceCachedState, ToplevelConfigure,
     XdgPopupSurfaceRoleAttributes, XdgShellHandler, XdgShellState, XdgToplevelSurfaceRoleAttributes,

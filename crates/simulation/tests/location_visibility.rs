@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn run, fn four_linces_share_record_locations_during_a_map_free_transfer, fn
+//   four_linces_transport_with_address_and_configurable_geographic_areas.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 fn run(transport: bool) {

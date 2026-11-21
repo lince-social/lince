@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn peer, fn command, fn review, fn approve.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use nucleus::{
     social::{Command as Social, PublicRequest, ask::ContactConsent},

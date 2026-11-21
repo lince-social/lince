@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn sibling_cells_receive_loan_terms_and_private_effects_after_offline_recovery.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use nucleus::simulation::{
     CheckDefinition, Comparison, Predicate, Quantity, QuantityBasis, ReplayStatus, Verdict,
 };

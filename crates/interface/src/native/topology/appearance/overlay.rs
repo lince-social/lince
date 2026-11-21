@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Overlay, fn unmark, fn release, fn update.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 49, 53, 60, 114,
+//   117, 132, 134, 138.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (44, 49, 73, 112, 136, 137, 142, 146).
+
 use super::*;
 use bevy::ui_render::SuppressUiImage;
 

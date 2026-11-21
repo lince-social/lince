@@ -1,7 +1,15 @@
-use super::shortcuts::{capture_button, key, named_button, settle};
-use super::*;
+// non-lean-yet
+// Scope: fn outputs, fn activate, fn snapshot, fn
+//   removing_every_output_retains_workspaces_and_the_settings_draft_and_allows_headless_save.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use lince_interface::host::{DesktopAction, OutputId, OutputViewport, Rectangle};
 use native::actions::Action;
+
+use super::{
+    shortcuts::{capture_button, key, named_button, settle},
+    *,
+};
 
 fn outputs() -> Vec<Output> {
     [0.0, 640.0]
@@ -11,7 +19,8 @@ fn outputs() -> Vec<Output> {
             let bounds = Rectangle::new([x, 0.0], [640.0, 480.0]).unwrap();
             Output {
                 name: format!("Suspension-{}", index + 1),
-                viewport: OutputViewport { rotation: Default::default(),
+                viewport: OutputViewport {
+                    rotation: Default::default(),
                     id: OutputId(index as u64 + 1),
                     bounds,
                     usable: Some(bounds),
@@ -124,7 +133,13 @@ fn removing_every_output_retains_workspaces_and_the_settings_draft_and_allows_he
 
     canvas.outputs(Vec::new()).unwrap();
     let frame = settle(&mut canvas);
-    assert!(canvas.app.world().get_resource::<native::output_views::OutputViews>().is_none());
+    assert!(
+        canvas
+            .app
+            .world()
+            .get_resource::<native::output_views::OutputViews>()
+            .is_none()
+    );
     assert!(frame.dmabuf().is_none());
     assert!(frame.output.is_none());
     assert!(frame.outputs.is_empty());

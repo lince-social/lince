@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn schedule_drafts_keep_the_window_outside_filter_groups, fn
+//   query_drafts_preserve_sort_precedence_and_exact_quantities_across_hosts, fn
+//   malformed_queries_remain_drafts_and_cannot_be_subscribed, fn
+//   sharing_limits_do_not_turn_empty_named_fields_into_unrestricted_access.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(feature = "models")]
 
 use lince_interface::{calendar, frequency, karma, organ, queries::ProteinDraft, records};

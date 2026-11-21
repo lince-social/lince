@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: mod atomic, mod fd, mod legacy, struct PlaneClaimInner.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 583.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 96, 225, 354,
+//   362, 363, 368, 373, 383, 398.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   activate:disable_connectors (434), new:disable_connectors (185).
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 135.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   472.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (84, 105, 588, 599).
+
 use std::collections::HashMap;
 use std::io;
 use std::os::unix::io::{AsFd, BorrowedFd};

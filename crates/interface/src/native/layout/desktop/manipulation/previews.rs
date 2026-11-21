@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct Members, struct Previews, fn remove.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use std::collections::HashSet;
 

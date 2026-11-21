@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: mod wayland, enum RenderZindex, trait SpaceElement, enum SpaceElements.
+// BeautifulRust (baseline lines):
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 491.
+// - [review: §5 Panics] Check unimplemented! reachability and caller contract. Sites 502, 505, 513.
+
 use std::hash::Hash;
 
 #[cfg(feature = "wayland_frontend")]

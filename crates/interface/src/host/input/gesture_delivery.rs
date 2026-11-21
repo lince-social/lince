@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct GestureContext, enum GestureDelivery, struct Pending, struct GestureDeliveryBuffer.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (142).
+
 use super::{GestureCompletion, GestureProgress, GestureResult};
 use crate::host::OutputId;
 

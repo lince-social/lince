@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn command, fn buttons.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 26.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (24).
+
 use crate::app::{ButtonIntent, Input, Mobile};
 use bevy::{prelude::*, text::EditableText};
 

@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: struct Envelope, fn map, fn get, fn scope.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 16.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 125.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 114, 160, 163.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 28, 36, 41, 79, 128, 133, 153, 167, 173, 181.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 7,
+//   8, 9, 10, 11, 12, 13, 28, 36, 41, 79, 128, 133, 153, 167, 173, 181.
+
 use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;

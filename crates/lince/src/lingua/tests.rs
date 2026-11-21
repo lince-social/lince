@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn pure_scripts_ignore_unavailable_database_directories, fn
+//   script_paths_resolve_directory_literals_beside_the_script, fn
+//   missing_or_invalid_database_errors_name_the_effective_path, fn
+//   extension_reads_keep_proteins_private_namespace_restrictions.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[test]

@@ -1,6 +1,23 @@
+// non-lean-yet
+// Scope: const REVISION, fn download, fn download_url, fn save.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 196, 204, 219, 229, 236, 251, 260, 267, 275, 276, 322, 369, 372, 461.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 195, 267, 408.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 90, 117, 133, 135, 155, 187.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   90, 117, 155.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   234, 296.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   206.
+
+use std::{io::Write, path::Path, time::Duration};
+
 use fiote::communication::models;
 use serde_json::json;
-use std::{io::Write, path::Path, time::Duration};
 
 const REVISION: &str = "f20ff1b7a5db64c5e892a798479e20df86e79a35";
 

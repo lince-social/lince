@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct GlobalsPlugin, fn extract_frame_count, fn extract_time, struct GlobalsUniform.
+// BeautifulRust (baseline lines):
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 14, 45, 61.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 14, 62.
+
 use crate::{
     extract_resource::ExtractResource,
     render_resource::{ShaderType, UniformBuffer},

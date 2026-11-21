@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: mod model, struct Editor, struct Modal, struct Diagram.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 349, 787, 797,
+//   1011, 1012, 1031, 1051, 1152, 1165, 1184, 1379.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 242, 245,
+//   249, 338.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   659, 750, 813, 838.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (157, 164, 181, 185, 187).
+
 use super::*;
 use crate::{
     host::display::{DisplayAction, DisplayOutcome, DisplayRequest, DisplaySnapshot},

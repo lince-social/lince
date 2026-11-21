@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct PopupManager, fn find_popup_root_surface, fn get_popup_toplevel_coords, struct
+//   PopupTree.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 102, 109, 146,
+//   152, 294, 302, 369.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   314, 393.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (83, 85, 102, 117, 149, 226, 228, 254, 256, 265, 267, 271, 291, 300, 310, 326,
+//   335, 363).
+
 use crate::{
     input::{Seat, SeatHandler},
     utils::{DeadResource, IsAlive, Logical, Point, Serial},

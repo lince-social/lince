@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: enum Command, enum Field, struct Input, struct Status.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 245, 280, 410,
+//   713, 775, 799.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (456).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   328.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (122, 174, 327, 394, 446, 482, 491, 497).
+
 use super::*;
 use crate::host::performance::{self, Count, Stage};
 use crate::native::{

@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn fixture, fn event, fn move_to, fn
+//   modifier_move_is_owned_until_release_and_preserves_the_authored_preview_baseline.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::shortcuts::{Settings, Shortcut};
 use bevy::{camera::RenderTarget, input::ButtonState, window::WindowRef};

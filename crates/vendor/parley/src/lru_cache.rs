@@ -1,6 +1,12 @@
 // Copyright 2025 the Parley Authors
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+// non-lean-yet
+// Scope: struct Entry, struct LruCache, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   54, 83.
+
 use alloc::vec::Vec;
 use hashbrown::Equivalent;
 

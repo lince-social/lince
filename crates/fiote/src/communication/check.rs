@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: enum Stage, fn probe, fn probe_with_session.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   28.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 35, 42, 75.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 13.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   95.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 13, 15,
+//   16, 17, 18, 19, 20, 21, 24, 28.
+
+use serde::{Deserialize, Serialize};
+use serde_json::{Value, json};
+
 use super::{
     acp,
     adapters::{AuthKind, Catalog},
@@ -5,8 +21,6 @@ use super::{
     provider::{GenaiProvider, Provider},
 };
 use crate::config::Secret;
-use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
 
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]

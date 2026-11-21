@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn invalid, fn read_on.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 13.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 66.
+
 use std::collections::BTreeSet;
 
 use chrono::{DateTime, Utc};

@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct View, fn cell, fn grant, fn connect.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 492, 540.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 90, 212, 214, 446, 447, 463, 484, 694, 696.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 37.
+
 #![cfg(test)]
 
 use engine::trust::Signer;

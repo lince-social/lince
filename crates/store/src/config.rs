@@ -1,3 +1,25 @@
+// non-lean-yet
+// Scope: struct Configuration, struct InterfaceStorage, fn interface_storage, fn
+//   set_interface_storage.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   set_deletion_confirmation:enabled (283), set_deletion_confirmation:records (282),
+//   set_interface_close_suspends:enabled (167).
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 60, 61, 62, 74, 75, 76, 141, 142, 143.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   62, 143.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 60, 61, 62, 141, 142, 143.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 42, 55, 67, 82, 93, 103, 112, 121, 148, 156, 165, 180, 189, 210, 219, 241, 250, 271, 280.
+// - [Clippy: clippy::needless_question_mark] enclosing `Ok` and `?` operator are unneeded. Sites
+//   149, 158, 182.
+// - [Clippy: clippy::struct_excessive_bools] more than 3 bools in a struct. Sites 6.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 7,
+//   8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26, 27, 28, 42, 55, 67, 82, 93, 103,
+//   112, 121, 148, 156, 165, 180, 189, 210, 219, 241, 250, 271, 280.
+
 use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;

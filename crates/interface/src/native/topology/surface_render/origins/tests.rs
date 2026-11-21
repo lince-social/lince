@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn app, fn source, fn
+//   completion_records_actual_draw_order_and_keeps_sampled_provenance_after_an_input_changes, fn
+//   a_load_keeps_prior_sources_and_only_an_acknowledged_clear_replaces_them.
+// BeautifulRust (baseline lines):
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 112.
+
 use super::*;
 
 fn app() -> App {

@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn phase, fn app, fn
+//   unsupported_views_keep_every_original_item_and_restore_only_suppressed_quads_in_order, fn
+//   admitted_phase_restores_draw_functions_and_retained_items_without_changing_another_view.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use bevy::{core_pipeline::core_3d::TransparentSortingInfo3d, render::render_resource::CachedRenderPipelineId};
 

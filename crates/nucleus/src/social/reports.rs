@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: const MAX_REPORT_BYTES, const REPORT_LIFETIME, struct Report.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 1.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 3, 4,
+//   8, 9, 10, 11, 12, 13, 14, 15.
+
 use super::*;
 
 pub const MAX_REPORT_BYTES: usize = 16 * 1024;

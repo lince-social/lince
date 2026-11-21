@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: const MAX_LINKS, struct CaptureOrigins, struct Pending, struct State.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 80, 319, 346.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (76, 91, 107, 131, 156, 169).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 201, 202, 215, 216, 329.
+
 use bevy::render::view::ResolvedCompositingSpace;
 use super::*;
 use bevy::{

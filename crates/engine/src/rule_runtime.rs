@@ -1,3 +1,32 @@
+// non-lean-yet
+// Scope: mod dependencies, const VALUE_DEPENDENCY_LIMIT, fn execution_checkpoint, struct RuleIndex.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 115, 118, 168,
+//   220, 222, 244, 409, 424, 425, 519, 521, 567, 568, 609, 627, 694, 718, 727, 732, 742, 757, 759,
+//   782, 784, 785, 825, 827, 830, 839, 840, 841, 877, 902, 907, 909, 922, 934, 940, 942, 952, 961,
+//   963, 966, 1030, 1074, 1219, 1226, 1257, 1269.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 742, 1177.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   111, 406, 511.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 379, 463.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 463.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 877, 1074.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 111, 406, 511, 796, 817, 856.
+// - [Clippy probe: clippy::manual_is_multiple_of] manual implementation of `.is_multiple_of()`.
+//   Sites 252.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 742, 1177.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 80.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 31, 43.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   31, 43, 44, 45, 46, 47, 56, 80.
+
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::sync::Arc;
 

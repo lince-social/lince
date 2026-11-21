@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn source_snapshots_compare_sparse_dense_and_repeated_contributors.
+// BeautifulRust (baseline lines):
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 21.
+
 use super::*;
 use std::time::Instant;
 

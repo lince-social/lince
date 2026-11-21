@@ -1,8 +1,26 @@
-use crate::{
-    graphics::ProbeFailure,
-    presentation::{Frame, PixelSync, Presentation},
-    server::WindowSnapshot,
+// non-lean-yet
+// Scope: static NEXT_FRAME_SEQUENCE, const NATIVE, const SCENE, const UPDATE_INITIAL.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 267, 269, 271,
+//   273, 275, 276, 278, 282, 286, 294, 323, 493, 501, 503, 521, 523, 524, 526.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 351, 421,
+//   424, 464, 776, 925.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (870).
+// - [review: §5 Panics] Verify panic isolation boundary and preserve the failure contract. Sites
+//   970.
+
+use std::{
+    path::PathBuf,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, AtomicU8, AtomicU64, Ordering},
+        mpsc::{Receiver, SyncSender, TrySendError, sync_channel},
+    },
+    thread::{JoinHandle, Thread},
+    time::Instant,
 };
+
 use bevy::{
     input::{
         keyboard::Key,
@@ -18,15 +36,11 @@ use lince_interface::{
     },
     native::app::CellHandle,
 };
-use std::{
-    path::PathBuf,
-    sync::{
-        Arc,
-        atomic::{AtomicBool, AtomicU8, AtomicU64, Ordering},
-        mpsc::{Receiver, SyncSender, TrySendError, sync_channel},
-    },
-    thread::{JoinHandle, Thread},
-    time::Instant,
+
+use crate::{
+    graphics::ProbeFailure,
+    presentation::{Frame, PixelSync, Presentation},
+    server::WindowSnapshot,
 };
 
 static NEXT_FRAME_SEQUENCE: AtomicU64 = AtomicU64::new(1);
@@ -39,7 +53,11 @@ const UPDATE_IMPORT: u8 = 16;
 fn mark_wake(dirty: &AtomicU8, reason: u8) {
     use lince_interface::host::performance::{self, Count};
     if dirty.fetch_or(reason, Ordering::Release) & reason != 0 {
-        performance::count(if reason == SCENE { Count::SceneWakeCoalesced } else { Count::NativeWakeCoalesced });
+        performance::count(if reason == SCENE {
+            Count::SceneWakeCoalesced
+        } else {
+            Count::NativeWakeCoalesced
+        });
     }
 }
 
@@ -49,11 +67,15 @@ fn record_update(reasons: u8) {
         return;
     }
     for (reason, counter) in [
-        (UPDATE_INITIAL, Count::NativeUpdateInitial), (NATIVE, Count::NativeUpdateWake),
-        (SCENE, Count::NativeUpdateScene), (UPDATE_INPUT, Count::NativeUpdateInput),
+        (UPDATE_INITIAL, Count::NativeUpdateInitial),
+        (NATIVE, Count::NativeUpdateWake),
+        (SCENE, Count::NativeUpdateScene),
+        (UPDATE_INPUT, Count::NativeUpdateInput),
         (UPDATE_IMPORT, Count::NativeUpdateImport),
     ] {
-        if reasons & reason != 0 { performance::count(counter); }
+        if reasons & reason != 0 {
+            performance::count(counter);
+        }
     }
 }
 
@@ -72,9 +94,14 @@ pub(crate) fn trace_frame(stage: &str, started: std::time::Instant) {
         lince_interface::host::performance::record(stage, started.elapsed());
     }
     if tracing_frames() {
-        let timestamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)
-            .unwrap_or_default().as_secs_f64();
-        eprintln!("Park frame {stage}: {:.3} ms at {timestamp:.6}", started.elapsed().as_secs_f64() * 1000.0);
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs_f64();
+        eprintln!(
+            "Park frame {stage}: {:.3} ms at {timestamp:.6}",
+            started.elapsed().as_secs_f64() * 1000.0
+        );
     }
 }
 
@@ -109,7 +136,10 @@ pub enum Input {
     NativeDrop(crate::native_input::transfer::Request),
     FileDrag(Option<lince_interface::host::FileDragContext>),
     DragActive(bool),
-    OverviewHover { request: lince_interface::host::OverviewHoverRequest, accepted: bool },
+    OverviewHover {
+        request: lince_interface::host::OverviewHoverRequest,
+        accepted: bool,
+    },
     NativeEdit(crate::native_input::Edit),
     Pointer([f32; 2]),
     Touch(crate::native_input::TouchEvent),
@@ -120,7 +150,13 @@ pub enum Input {
     AbsoluteFocus(Box<crate::native_input::AbsoluteFocus>),
     CancelKeys,
     Button(MouseButton, bool, [f32; 2], u64),
-    CapturedButton(MouseButton, bool, [f32; 2], u64, crate::native_input::PointerTarget),
+    CapturedButton(
+        MouseButton,
+        bool,
+        [f32; 2],
+        u64,
+        crate::native_input::PointerTarget,
+    ),
     Key {
         physical: KeyCode,
         logical: Key,
@@ -129,7 +165,14 @@ pub enum Input {
         repeat: bool,
     },
     Scroll([f32; 2], MouseScrollUnit, TouchPhase, [f32; 2], u64),
-    CapturedScroll([f32; 2], MouseScrollUnit, TouchPhase, [f32; 2], u64, crate::native_input::PointerTarget),
+    CapturedScroll(
+        [f32; 2],
+        MouseScrollUnit,
+        TouchPhase,
+        [f32; 2],
+        u64,
+        crate::native_input::PointerTarget,
+    ),
     Focus(bool),
     Modifiers(Vec<(KeyCode, Key)>),
     Action(DesktopAction),
@@ -156,8 +199,13 @@ pub enum Input {
     Activate(SurfaceId),
     InitialActivate(SurfaceId),
     ReapplyOpening(lince_interface::host::OpeningRequest),
-    Workspace { owner: u64, id: u64 },
-    CreateWorkspace { owner: u64 },
+    Workspace {
+        owner: u64,
+        id: u64,
+    },
+    CreateWorkspace {
+        owner: u64,
+    },
     Window(SurfaceId, lince_interface::host::WindowRequest),
     Output(lince_interface::host::OutputId),
 }
@@ -179,9 +227,15 @@ pub(crate) struct InputProgress {
 }
 
 impl InputProgress {
-    pub(crate) fn queued(&self, serial: u64) { self.submitted.fetch_max(serial, Ordering::Release); }
-    pub(crate) fn watermark(&self) -> u64 { self.submitted.load(Ordering::Acquire) }
-    pub(crate) fn reached(&self, watermark: u64) -> bool { self.applied.load(Ordering::Acquire) >= watermark }
+    pub(crate) fn queued(&self, serial: u64) {
+        self.submitted.fetch_max(serial, Ordering::Release);
+    }
+    pub(crate) fn watermark(&self) -> u64 {
+        self.submitted.load(Ordering::Acquire)
+    }
+    pub(crate) fn reached(&self, watermark: u64) -> bool {
+        self.applied.load(Ordering::Acquire) >= watermark
+    }
 }
 
 pub struct CanvasWorker {
@@ -244,20 +298,36 @@ impl CanvasWorker {
     }
 
     #[cfg(feature = "nested")]
-    pub(crate) fn spawn_for_compositor(configuration: Configuration, notify: WakeSignal, linear_color: bool) -> std::io::Result<Self> {
+    pub(crate) fn spawn_for_compositor(
+        configuration: Configuration,
+        notify: WakeSignal,
+        linear_color: bool,
+    ) -> std::io::Result<Self> {
         Self::spawn_configured(configuration, Some(notify), linear_color)
     }
 
-    fn spawn_configured(configuration: Configuration, notify: Option<WakeSignal>, linear_color: bool) -> std::io::Result<Self> {
+    fn spawn_configured(
+        configuration: Configuration,
+        notify: Option<WakeSignal>,
+        linear_color: bool,
+    ) -> std::io::Result<Self> {
         Self::spawn_prepared(configuration, notify, linear_color, |_| {})
     }
 
     #[cfg(all(test, feature = "nested", feature = "server-tests"))]
-    pub(crate) fn spawn_with_setup(configuration: Configuration, prepare: impl FnOnce(&mut Presentation) + Send + 'static) -> std::io::Result<Self> {
+    pub(crate) fn spawn_with_setup(
+        configuration: Configuration,
+        prepare: impl FnOnce(&mut Presentation) + Send + 'static,
+    ) -> std::io::Result<Self> {
         Self::spawn_prepared(configuration, None, false, prepare)
     }
 
-    fn spawn_prepared(configuration: Configuration, notify: Option<WakeSignal>, linear_color: bool, prepare: impl FnOnce(&mut Presentation) + Send + 'static) -> std::io::Result<Self> {
+    fn spawn_prepared(
+        configuration: Configuration,
+        notify: Option<WakeSignal>,
+        linear_color: bool,
+        prepare: impl FnOnce(&mut Presentation) + Send + 'static,
+    ) -> std::io::Result<Self> {
         let (scene, scenes) = latest_channel();
         let (images, frames) = latest_channel();
         let (pointer, motion) = latest_channel();
@@ -349,7 +419,9 @@ impl CanvasWorker {
         self.scene
             .publish(scene)
             .map_err(|_| std::io::Error::other("the Park canvas has stopped"))?;
-        lince_interface::host::performance::count(lince_interface::host::performance::Count::ScenePublished);
+        lince_interface::host::performance::count(
+            lince_interface::host::performance::Count::ScenePublished,
+        );
         self.wake_for(SCENE);
         Ok(())
     }
@@ -360,7 +432,9 @@ impl CanvasWorker {
     }
 
     pub fn input(&self, input: Input) -> Result<u64, TrySendError<Input>> {
-        if let Input::Focus(focused) = &input { self.focus_native(*focused); }
+        if let Input::Focus(focused) = &input {
+            self.focus_native(*focused);
+        }
         let serial =
             match self
                 .next_input
@@ -387,7 +461,12 @@ impl CanvasWorker {
 
     pub(crate) fn focus_native(&self, focused: bool) {
         self.native_focus.set_active(focused);
-        if !focused { self.retired_input.fetch_max(self.next_input.load(Ordering::Acquire).saturating_sub(1), Ordering::AcqRel); }
+        if !focused {
+            self.retired_input.fetch_max(
+                self.next_input.load(Ordering::Acquire).saturating_sub(1),
+                Ordering::AcqRel,
+            );
+        }
         self.wake();
     }
 
@@ -396,7 +475,11 @@ impl CanvasWorker {
         let previous = self.input_activity.revision();
         self.input_activity.set_active(active);
         if self.input_activity.revision() != previous {
-            if !active { self.focus_native(false); } else { self.wake(); }
+            if !active {
+                self.focus_native(false);
+            } else {
+                self.wake();
+            }
         }
     }
 
@@ -405,11 +488,21 @@ impl CanvasWorker {
     }
 
     #[cfg(feature = "nested")]
-    pub(crate) fn pointer_with_epoch(&self, position: [f32; 2], epoch: u64, wake: bool) -> std::io::Result<u64> {
+    pub(crate) fn pointer_with_epoch(
+        &self,
+        position: [f32; 2],
+        epoch: u64,
+        wake: bool,
+    ) -> std::io::Result<u64> {
         self.publish_pointer(position, Some(epoch), wake)
     }
 
-    fn publish_pointer(&self, position: [f32; 2], epoch: Option<u64>, wake: bool) -> std::io::Result<u64> {
+    fn publish_pointer(
+        &self,
+        position: [f32; 2],
+        epoch: Option<u64>,
+        wake: bool,
+    ) -> std::io::Result<u64> {
         if position.iter().any(|value| !value.is_finite()) {
             return Err(std::io::Error::other("invalid Park pointer position"));
         }
@@ -420,10 +513,19 @@ impl CanvasWorker {
             })
             .map_err(|_| std::io::Error::other("Park pointer serials exhausted"))?;
         self.pointer
-            .publish((serial, position, epoch.unwrap_or(serial), wake.then(latency::Stamp::current).flatten()))
+            .publish((
+                serial,
+                position,
+                epoch.unwrap_or(serial),
+                wake.then(latency::Stamp::current).flatten(),
+            ))
             .map_err(|_| std::io::Error::other("the Park pointer receiver is unavailable"))?;
-        lince_interface::host::performance::count(lince_interface::host::performance::Count::PointerPublished);
-        if wake { self.wake(); }
+        lince_interface::host::performance::count(
+            lince_interface::host::performance::Count::PointerPublished,
+        );
+        if wake {
+            self.wake();
+        }
         Ok(serial)
     }
     pub fn request(&self) -> Option<HostRequest> {
@@ -431,25 +533,39 @@ impl CanvasWorker {
     }
     pub fn failure(&self) -> Option<ProbeFailure> {
         self.failures.try_recv().ok().or_else(|| {
-            self.join.as_ref().filter(|join| join.is_finished()).map(|_| ProbeFailure {
-                stage: "native_worker".into(),
-                detail: "The Park canvas worker stopped before shutdown".into(),
-            })
+            self.join
+                .as_ref()
+                .filter(|join| join.is_finished())
+                .map(|_| ProbeFailure {
+                    stage: "native_worker".into(),
+                    detail: "The Park canvas worker stopped before shutdown".into(),
+                })
         })
     }
     pub fn is_running(&self) -> bool {
         self.running.load(Ordering::Acquire)
     }
 
-    #[cfg(all(test, feature = "nested", any(feature = "server-tests", feature = "accessibility-gate")))]
-    pub(crate) fn test_activity(&self) -> (bool, u64) { (self.idle.load(Ordering::Acquire), self.publications.load(Ordering::Acquire)) }
+    #[cfg(all(
+        test,
+        feature = "nested",
+        any(feature = "server-tests", feature = "accessibility-gate")
+    ))]
+    pub(crate) fn test_activity(&self) -> (bool, u64) {
+        (
+            self.idle.load(Ordering::Acquire),
+            self.publications.load(Ordering::Acquire),
+        )
+    }
 
     pub fn wake(&self) {
         self.wake_for(NATIVE);
     }
 
     fn wake_for(&self, reason: u8) {
-        lince_interface::host::performance::count(lince_interface::host::performance::Count::CanvasExplicitWake);
+        lince_interface::host::performance::count(
+            lince_interface::host::performance::Count::CanvasExplicitWake,
+        );
         #[cfg(test)]
         self.idle.store(false, Ordering::Release);
         mark_wake(&self.dirty, reason);
@@ -503,9 +619,13 @@ fn run(
     let idle = active.idle.clone();
     let wake = WakeSignal::new(move || {
         if lince_interface::host::performance::enabled() {
-            lince_interface::host::performance::count(lince_interface::host::performance::Count::NativeWake);
+            lince_interface::host::performance::count(
+                lince_interface::host::performance::Count::NativeWake,
+            );
             if std::thread::current().id() == thread.id() {
-                lince_interface::host::performance::count(lince_interface::host::performance::Count::NativeInlineWake);
+                lince_interface::host::performance::count(
+                    lince_interface::host::performance::Count::NativeInlineWake,
+                );
             }
         }
         #[cfg(test)]
@@ -518,9 +638,13 @@ fn run(
         configuration.size,
         configuration.directory.join("interface-assets"),
         wake,
-        configuration.cell.map(|cell| (cell, configuration.directory.clone())),
+        configuration
+            .cell
+            .map(|cell| (cell, configuration.directory.clone())),
     )?;
-    canvas.world_mut().insert_resource(active.input_activity.clone());
+    canvas
+        .world_mut()
+        .insert_resource(active.input_activity.clone());
     canvas.world_mut().insert_resource(active.progress.clone());
     canvas.prepare_linear_output(linear_color)?;
     canvas.host_requests(commands.clone());
@@ -553,9 +677,14 @@ fn run(
     let mut last_sample = None;
     let mut pixel_work = false;
     let mut pixel_imports = false;
-    let synchronize_focus = |canvas: &mut Presentation, revision: &mut Option<(u64, u64)>| -> Result<(), ProbeFailure> {
+    let synchronize_focus = |canvas: &mut Presentation,
+                             revision: &mut Option<(u64, u64)>|
+     -> Result<(), ProbeFailure> {
         canvas.synchronize_input_activity()?;
-        let current = (active.input_activity.revision(), active.native_focus.revision());
+        let current = (
+            active.input_activity.revision(),
+            active.native_focus.revision(),
+        );
         if *revision != Some(current) {
             canvas.focus(current.0 & 1 != 0 && current.1 & 1 != 0)?;
             *revision = Some(current);
@@ -582,23 +711,46 @@ fn run(
             started = true;
         }
         if let Some(scene) = scenes.take() {
-            lince_interface::host::performance::count(lince_interface::host::performance::Count::SceneReceived);
-            let _timing = lince_interface::host::performance::Span::new(lince_interface::host::performance::Stage::SceneSync);
-            let pixels = !native_changed && !showoff && scene_revision == scene.revision && canvas.pixel_scene(&scene);
-            let synchronized = if pixels { canvas.sync_pixels(&scene.windows).ok() } else { None };
+            lince_interface::host::performance::count(
+                lince_interface::host::performance::Count::SceneReceived,
+            );
+            let _timing = lince_interface::host::performance::Span::new(
+                lince_interface::host::performance::Stage::SceneSync,
+            );
+            let pixels = !native_changed
+                && !showoff
+                && scene_revision == scene.revision
+                && canvas.pixel_scene(&scene);
+            let synchronized = if pixels {
+                canvas.sync_pixels(&scene.windows).ok()
+            } else {
+                None
+            };
             pixel_attempted = pixels;
             if tracing_frames() {
-                eprintln!("Park scene: native={native_changed}, update={update}, revision={scene_revision}/{}, retained={}, compatible={}, pixels={synchronized:?}", scene.revision, canvas.retains_frame(), canvas.pixel_scene(&scene));
+                eprintln!(
+                    "Park scene: native={native_changed}, update={update}, revision={scene_revision}/{}, retained={}, compatible={}, pixels={synchronized:?}",
+                    scene.revision,
+                    canvas.retains_frame(),
+                    canvas.pixel_scene(&scene)
+                );
             }
-            if matches!(synchronized, Some(PixelSync::Ready | PixelSync::Partial | PixelSync::Pending)) {
+            if matches!(
+                synchronized,
+                Some(PixelSync::Ready | PixelSync::Partial | PixelSync::Pending)
+            ) {
                 pending = synchronized != Some(PixelSync::Ready);
                 pixel_work |= synchronized != Some(PixelSync::Pending);
                 pixel_imports = true;
             } else {
-                if let Some(display) = scene.display { canvas.world_mut().insert_resource(display); }
+                if let Some(display) = scene.display {
+                    canvas.world_mut().insert_resource(display);
+                }
                 canvas.outputs(scene.outputs)?;
                 if showoff {
-                    canvas.world_mut().insert_resource(lince_interface::native::laboratory::showoff::Launch);
+                    canvas
+                        .world_mut()
+                        .insert_resource(lince_interface::native::laboratory::showoff::Launch);
                     showoff = false;
                 }
                 pending = canvas.sync_windows(&scene.windows)?;
@@ -611,34 +763,56 @@ fn run(
             windows = scene.windows;
         }
         let mut input = false;
-        if !button_pending && queued_event.is_none() { queued_event = events.pop_timed(); }
+        if !button_pending && queued_event.is_none() {
+            queued_event = events.pop_timed();
+        }
         let events_ready = queued_event.is_some();
-        let pointer = if button_pending || !(native_changed || update || events_ready) { None } else { motion.take() };
+        let pointer = if button_pending || !(native_changed || update || events_ready) {
+            None
+        } else {
+            motion.take()
+        };
         let pointer_applied = pointer.is_some() && active.input_activity.active();
-        if let Some((serial, point, epoch, stamp)) = pointer && active.input_activity.active() {
-            lince_interface::native::layout::desktop::focus::pointer_epoch(canvas.world_mut(), epoch);
+        if let Some((serial, point, epoch, stamp)) = pointer
+            && active.input_activity.active()
+        {
+            lince_interface::native::layout::desktop::focus::pointer_epoch(
+                canvas.world_mut(),
+                epoch,
+            );
             canvas.pointer(point)?;
             timing.accept(stamp, 0, serial);
             input = true;
         }
         let mut pointer_stamp = None;
         while !button_pending && events_ready {
-            let Some((serial, event, stamp)) = queued_event.take().or_else(|| events.pop_timed()) else {
+            let Some((serial, event, stamp)) = queued_event.take().or_else(|| events.pop_timed())
+            else {
                 break;
             };
             let absolute_focus = {
                 #[cfg(feature = "session")]
-                { matches!(&event, Input::AbsoluteFocus(_)) }
+                {
+                    matches!(&event, Input::AbsoluteFocus(_))
+                }
                 #[cfg(not(feature = "session"))]
-                { false }
+                {
+                    false
+                }
             };
             let inspecting = {
                 #[cfg(test)]
-                { matches!(&event, Input::Test(_)) }
+                {
+                    matches!(&event, Input::Test(_))
+                }
                 #[cfg(not(test))]
-                { false }
+                {
+                    false
+                }
             };
-            if keyboard_pending && (absolute_focus || inspecting || matches!(&event, Input::Control(_))) {
+            if keyboard_pending
+                && (absolute_focus || inspecting || matches!(&event, Input::Control(_)))
+            {
                 queued_event = Some((serial, event, stamp));
                 break;
             }
@@ -655,52 +829,105 @@ fn run(
             input = true;
             synchronize_focus(&mut canvas, &mut focus_revision)?;
             if serial <= active.retired_input.load(Ordering::Acquire)
-                && matches!(&event, Input::Pointer(_) | Input::Button(..) | Input::CapturedButton(..) | Input::Key { .. } | Input::Scroll(..) | Input::CapturedScroll(..) | Input::NativeEdit(_))
+                && matches!(
+                    &event,
+                    Input::Pointer(_)
+                        | Input::Button(..)
+                        | Input::CapturedButton(..)
+                        | Input::Key { .. }
+                        | Input::Scroll(..)
+                        | Input::CapturedScroll(..)
+                        | Input::NativeEdit(_)
+                )
             {
-                lince_interface::host::performance::count(lince_interface::host::performance::Count::NativeInputRetired);
+                lince_interface::host::performance::count(
+                    lince_interface::host::performance::Count::NativeInputRetired,
+                );
                 #[cfg(test)]
-                if matches!(&event, Input::Key { .. }) { eprintln!("Native key retired before delivery: serial={serial}, retired={}", active.retired_input.load(Ordering::Acquire)); }
+                if matches!(&event, Input::Key { .. }) {
+                    eprintln!(
+                        "Native key retired before delivery: serial={serial}, retired={}",
+                        active.retired_input.load(Ordering::Acquire)
+                    );
+                }
                 continue;
             }
-            let mut interactive = matches!(&event, Input::Manipulation(..) | Input::Pointer(_) | Input::Button(..)
-                | Input::CapturedButton(..) | Input::Key { .. } | Input::Scroll(..) | Input::CapturedScroll(..)
-                | Input::NativeEdit(_) | Input::Touch(_) | Input::Tablet(_) | Input::Action(_) | Input::Gesture(_));
-            keyboard_pending |= matches!(&event, Input::Key { .. } | Input::NativeEdit(_));
-            let button_edge = absolute_focus || inspecting
-                || matches!(&event, Input::Action(_) | Input::Control(_) | Input::Inspect(_) | Input::Application(_)
-                    | Input::Activate(_) | Input::InitialActivate(_) | Input::ReapplyOpening(_) | Input::Workspace { .. }
-                    | Input::CreateWorkspace { .. } | Input::Output(_) | Input::Window(..) | Input::Logout)
-                || matches!(&event, Input::Button(..) | Input::CapturedButton(..) | Input::Scroll(..) | Input::CapturedScroll(..) | Input::CancelTouch | Input::CancelTablet | Input::CancelKeys)
-                || matches!(&event, Input::Touch(touch) if !matches!(touch.phase, TouchPhase::Moved))
-                || matches!(&event, Input::Tablet(tablet) if tablet.event.phase != lince_interface::host::input::TabletPhase::Motion);
-            let absolute_press = absolute_focus || matches!(&event, Input::Touch(touch) if matches!(touch.phase, TouchPhase::Started))
-                || matches!(&event, Input::Tablet(tablet) if matches!(tablet.event.phase, lince_interface::host::input::TabletPhase::Tip(true) | lince_interface::host::input::TabletPhase::Button { pressed: true, .. }));
-            if absolute_press || matches!(
+            let mut interactive = matches!(
                 &event,
                 Input::Manipulation(..)
-                    | Input::NativeDrop(_)
-                    | Input::FileDrag(_)
-                    | Input::DragActive(_)
-                    | Input::OverviewHover { .. }
-                    | Input::NativeEdit(_)
+                    | Input::Pointer(_)
                     | Input::Button(..)
                     | Input::CapturedButton(..)
                     | Input::Key { .. }
                     | Input::Scroll(..)
                     | Input::CapturedScroll(..)
-                    | Input::Focus(false)
+                    | Input::NativeEdit(_)
+                    | Input::Touch(_)
+                    | Input::Tablet(_)
                     | Input::Action(_)
-                    | Input::Inspect(_)
-                    | Input::Logout
-                    | Input::Application(_)
-                    | Input::Activate(_)
-                    | Input::InitialActivate(_)
-                    | Input::ReapplyOpening(_)
-                    | Input::Workspace { .. }
-                    | Input::CreateWorkspace { .. }
-                    | Input::Window(..)
-                    | Input::Output(_)
-            ) {
+                    | Input::Gesture(_)
+            );
+            keyboard_pending |= matches!(&event, Input::Key { .. } | Input::NativeEdit(_));
+            let button_edge = absolute_focus
+                || inspecting
+                || matches!(
+                    &event,
+                    Input::Action(_)
+                        | Input::Control(_)
+                        | Input::Inspect(_)
+                        | Input::Application(_)
+                        | Input::Activate(_)
+                        | Input::InitialActivate(_)
+                        | Input::ReapplyOpening(_)
+                        | Input::Workspace { .. }
+                        | Input::CreateWorkspace { .. }
+                        | Input::Output(_)
+                        | Input::Window(..)
+                        | Input::Logout
+                )
+                || matches!(
+                    &event,
+                    Input::Button(..)
+                        | Input::CapturedButton(..)
+                        | Input::Scroll(..)
+                        | Input::CapturedScroll(..)
+                        | Input::CancelTouch
+                        | Input::CancelTablet
+                        | Input::CancelKeys
+                )
+                || matches!(&event, Input::Touch(touch) if !matches!(touch.phase, TouchPhase::Moved))
+                || matches!(&event, Input::Tablet(tablet) if tablet.event.phase != lince_interface::host::input::TabletPhase::Motion);
+            let absolute_press = absolute_focus
+                || matches!(&event, Input::Touch(touch) if matches!(touch.phase, TouchPhase::Started))
+                || matches!(&event, Input::Tablet(tablet) if matches!(tablet.event.phase, lince_interface::host::input::TabletPhase::Tip(true) | lince_interface::host::input::TabletPhase::Button { pressed: true, .. }));
+            if absolute_press
+                || matches!(
+                    &event,
+                    Input::Manipulation(..)
+                        | Input::NativeDrop(_)
+                        | Input::FileDrag(_)
+                        | Input::DragActive(_)
+                        | Input::OverviewHover { .. }
+                        | Input::NativeEdit(_)
+                        | Input::Button(..)
+                        | Input::CapturedButton(..)
+                        | Input::Key { .. }
+                        | Input::Scroll(..)
+                        | Input::CapturedScroll(..)
+                        | Input::Focus(false)
+                        | Input::Action(_)
+                        | Input::Inspect(_)
+                        | Input::Logout
+                        | Input::Application(_)
+                        | Input::Activate(_)
+                        | Input::InitialActivate(_)
+                        | Input::ReapplyOpening(_)
+                        | Input::Workspace { .. }
+                        | Input::CreateWorkspace { .. }
+                        | Input::Window(..)
+                        | Input::Output(_)
+                )
+            {
                 canvas.cancel_gesture();
             }
             match event {
@@ -711,13 +938,19 @@ fn run(
                     pointer_stamp = Some(stamp);
                 }
                 Input::Pointer(point) => canvas.pointer(point)?,
-                Input::Touch(event) => { canvas.touch(event)?; }
+                Input::Touch(event) => {
+                    canvas.touch(event)?;
+                }
                 Input::CancelTouch => canvas.cancel_touch(),
-                Input::Tablet(event) => { canvas.tablet(event)?; }
+                Input::Tablet(event) => {
+                    canvas.tablet(event)?;
+                }
                 Input::CancelTablet => canvas.cancel_tablet(),
                 #[cfg(feature = "session")]
                 Input::AbsoluteFocus(event) => canvas.absolute_focus(*event)?,
-                Input::CancelKeys => lince_interface::native::cancel_keyboard_input(canvas.world_mut()),
+                Input::CancelKeys => {
+                    lince_interface::native::cancel_keyboard_input(canvas.world_mut())
+                }
                 Input::Button(button, pressed, position, stamp) => {
                     canvas.pointer(position)?;
                     canvas.button(button, pressed)?;
@@ -730,7 +963,9 @@ fn run(
                     if canvas.native_pointer_current(&target) {
                         canvas.pointer(position)?;
                         canvas.button(button, pressed)?;
-                    } else { interactive = false; }
+                    } else {
+                        interactive = false;
+                    }
                     pointer_stamp = Some(stamp);
                 }
                 Input::Key {
@@ -747,7 +982,9 @@ fn run(
                 }
                 Input::CapturedScroll(delta, unit, phase, position, stamp, target) => {
                     pointer_stamp = Some(stamp);
-                    if !canvas.native_pointer_current(&target) { continue; }
+                    if !canvas.native_pointer_current(&target) {
+                        continue;
+                    }
                     canvas.pointer(position)?;
                     canvas.scroll(delta, unit, phase)?;
                 }
@@ -756,18 +993,31 @@ fn run(
                 Input::Action(action) => canvas.desktop_action(action)?,
                 Input::Control(work) => {
                     canvas.control(work);
-                    if let Some(notify) = notify { notify.ring(); }
+                    if let Some(notify) = notify {
+                        notify.ring();
+                    }
                 }
                 Input::ControlStatus(status) => {
-                    if status.available { canvas.accessibility_availability(status.active && !status.locked); }
+                    if status.available {
+                        canvas.accessibility_availability(status.active && !status.locked);
+                    }
                     if status.available && (status.locked || !status.active) {
-                        lince_interface::native::layout::desktop::cancel_scratch_interactions(canvas.world_mut());
+                        lince_interface::native::layout::desktop::cancel_scratch_interactions(
+                            canvas.world_mut(),
+                        );
                     }
                     canvas.world_mut().insert_resource(status);
                 }
-                Input::CapturePolicy(gate) => { canvas.world_mut().insert_resource(gate); canvas.publish_capture_policy(); }
-                Input::CaptureStatus(status) => { canvas.world_mut().insert_resource(status); }
-                Input::CaptureDemand(demand) => { canvas.world_mut().insert_resource(demand); }
+                Input::CapturePolicy(gate) => {
+                    canvas.world_mut().insert_resource(gate);
+                    canvas.publish_capture_policy();
+                }
+                Input::CaptureStatus(status) => {
+                    canvas.world_mut().insert_resource(status);
+                }
+                Input::CaptureDemand(demand) => {
+                    canvas.world_mut().insert_resource(demand);
+                }
                 Input::Inspect(target) => canvas.inspect_window(target)?,
                 Input::Logout => match canvas.finish() {
                     Ok(()) => {
@@ -791,20 +1041,44 @@ fn run(
                         );
                     }
                 },
-                Input::Keyboard(snapshot) => { canvas.world_mut().insert_resource(snapshot); }
-                Input::ExternalSettings(snapshot) => { canvas.world_mut().insert_resource(snapshot); }
-                Input::Programs(snapshot) => { canvas.world_mut().insert_resource(snapshot); }
-                Input::Magnification(snapshot) => { canvas.world_mut().insert_resource(snapshot); }
-                Input::MagnificationCaret(caret) => { canvas.magnification_caret(caret); }
-                Input::PointerSettings(snapshot) => { canvas.world_mut().insert_resource(snapshot); }
-                Input::AbsoluteSettings(snapshot) => { canvas.world_mut().insert_resource(snapshot); }
+                Input::Keyboard(snapshot) => {
+                    canvas.world_mut().insert_resource(snapshot);
+                }
+                Input::ExternalSettings(snapshot) => {
+                    canvas.world_mut().insert_resource(snapshot);
+                }
+                Input::Programs(snapshot) => {
+                    canvas.world_mut().insert_resource(snapshot);
+                }
+                Input::Magnification(snapshot) => {
+                    canvas.world_mut().insert_resource(snapshot);
+                }
+                Input::MagnificationCaret(caret) => {
+                    canvas.magnification_caret(caret);
+                }
+                Input::PointerSettings(snapshot) => {
+                    canvas.world_mut().insert_resource(snapshot);
+                }
+                Input::AbsoluteSettings(snapshot) => {
+                    canvas.world_mut().insert_resource(snapshot);
+                }
                 Input::Gesture(delivery) => canvas.gesture(delivery)?,
                 Input::GestureSupport(available) => {
-                    if !available { canvas.cancel_gesture(); }
-                    canvas.world_mut().insert_resource(lince_interface::native::layout::desktop::gestures::GestureSupport(available));
+                    if !available {
+                        canvas.cancel_gesture();
+                    }
+                    canvas.world_mut().insert_resource(
+                        lince_interface::native::layout::desktop::gestures::GestureSupport(
+                            available,
+                        ),
+                    );
                 }
                 Input::CursorWarpSupport(available) => {
-                    canvas.world_mut().insert_resource(lince_interface::native::layout::desktop::focus::CursorWarpSupport(available));
+                    canvas.world_mut().insert_resource(
+                        lince_interface::native::layout::desktop::focus::CursorWarpSupport(
+                            available,
+                        ),
+                    );
                 }
                 Input::PointerFocus(target, epoch) => canvas.pointer_focus(target, epoch)?,
                 Input::Feedback(message) => lince_interface::native::notifications::report(
@@ -813,7 +1087,9 @@ fn run(
                     &message,
                 ),
                 Input::NativeEdit(edit) => {
-                    if !canvas.suspended() { crate::native_input::enqueue(canvas.world_mut(), edit); }
+                    if !canvas.suspended() {
+                        crate::native_input::enqueue(canvas.world_mut(), edit);
+                    }
                 }
                 Input::NativeDrop(request) => {
                     if canvas.suspended() {
@@ -823,8 +1099,14 @@ fn run(
                     }
                 }
                 Input::FileDrag(context) => canvas.file_drag(context)?,
-                Input::DragActive(active) => { canvas.world_mut().insert_resource(lince_interface::host::input::DragActive(active)); }
-                Input::OverviewHover { request, accepted } => canvas.overview_hover(request, accepted)?,
+                Input::DragActive(active) => {
+                    canvas
+                        .world_mut()
+                        .insert_resource(lince_interface::host::input::DragActive(active));
+                }
+                Input::OverviewHover { request, accepted } => {
+                    canvas.overview_hover(request, accepted)?
+                }
                 Input::Application(surface) => canvas.focus_application(surface),
                 Input::Activate(surface) => canvas.activate_application(surface)?,
                 Input::InitialActivate(surface) => canvas.initial_activate_application(surface)?,
@@ -834,7 +1116,9 @@ fn run(
                 Input::Window(surface, request) => canvas.window_request(surface, request),
                 Input::Output(output) => canvas.focus_output(output)?,
             }
-            if interactive { timing.accept(stamp, serial, 0); }
+            if interactive {
+                timing.accept(stamp, serial, 0);
+            }
             if button_edge {
                 button_pending = true;
             }
@@ -842,17 +1126,26 @@ fn run(
         if let Some((serial, point, epoch, stamp)) = pointer
             && pointer_stamp.is_some_and(|stamp| stamp < serial)
         {
-            lince_interface::native::layout::desktop::focus::pointer_epoch(canvas.world_mut(), epoch);
+            lince_interface::native::layout::desktop::focus::pointer_epoch(
+                canvas.world_mut(),
+                epoch,
+            );
             canvas.pointer(point)?;
-            if !pointer_applied { timing.accept(stamp, 0, serial); }
+            if !pointer_applied {
+                timing.accept(stamp, 0, serial);
+            }
         }
         if stopping {
             break;
         }
         if input || native_changed {
             update = true;
-            if input { update_reasons |= UPDATE_INPUT; }
-            if native_changed { update_reasons |= NATIVE; }
+            if input {
+                update_reasons |= UPDATE_INPUT;
+            }
+            if native_changed {
+                update_reasons |= NATIVE;
+            }
             pixel_work = false;
             pixel_imports = false;
         }
@@ -863,25 +1156,42 @@ fn run(
         }
         if let Some(completed) = awaiting.as_ref() {
             if let Some(deadline) = completed.frame.pending_until()? {
-                lince_interface::host::performance::count(lince_interface::host::performance::Count::GpuPark);
+                lince_interface::host::performance::count(
+                    lince_interface::host::performance::Count::GpuPark,
+                );
                 std::thread::park_timeout(deadline.saturating_duration_since(Instant::now()));
                 continue;
             }
             let completed = awaiting.take().unwrap();
             let timing = completed.latency;
-            if let Some(timing) = timing { timing.ready(); }
-            if images.publish(completed).is_err() { return canvas.finish(); }
-            lince_interface::host::performance::count(lince_interface::host::performance::Count::FramePublished);
-            if let Some(timing) = timing { timing.published(); }
+            if let Some(timing) = timing {
+                timing.ready();
+            }
+            if images.publish(completed).is_err() {
+                return canvas.finish();
+            }
+            lince_interface::host::performance::count(
+                lince_interface::host::performance::Count::FramePublished,
+            );
+            if let Some(timing) = timing {
+                timing.published();
+            }
             #[cfg(test)]
             active.publications.fetch_add(1, Ordering::Release);
-            if let Some(notify) = notify { notify.ring(); }
+            if let Some(notify) = notify {
+                notify.ring();
+            }
             lince_interface::host::performance::flush_if_due();
         }
         if retry_pixels {
-            lince_interface::host::performance::count(lince_interface::host::performance::Count::ImportRetry);
+            lince_interface::host::performance::count(
+                lince_interface::host::performance::Count::ImportRetry,
+            );
             match canvas.sync_pixels(&windows) {
-                Ok(PixelSync::Ready) => { pending = false; pixel_work = true; }
+                Ok(PixelSync::Ready) => {
+                    pending = false;
+                    pixel_work = true;
+                }
                 Ok(PixelSync::Partial) => pixel_work = true,
                 Ok(PixelSync::Pending) => {}
                 _ => {
@@ -894,7 +1204,9 @@ fn run(
             }
         }
         if !update && !pixel_work {
-            lince_interface::host::performance::count(lince_interface::host::performance::Count::IdlePark);
+            lince_interface::host::performance::count(
+                lince_interface::host::performance::Count::IdlePark,
+            );
             #[cfg(test)]
             active.idle.store(true, Ordering::Release);
             std::thread::park();
@@ -902,40 +1214,68 @@ fn run(
         }
         let settling = !input && !changed && !pending;
         if pending && !pixel_imports {
-            lince_interface::host::performance::count(lince_interface::host::performance::Count::ImportRetry);
+            lince_interface::host::performance::count(
+                lince_interface::host::performance::Count::ImportRetry,
+            );
             pending = canvas.sync_windows(&windows)?;
         }
-        let pixels = pixel_work && !update && canvas.retains_frame() && dirty.load(Ordering::Acquire) & NATIVE == 0;
-        if settling && !pixels { lince_interface::host::performance::count(lince_interface::host::performance::Count::SettlingFrame); }
-        let frame = if pixels { canvas.try_pixel_frame()? } else {
+        let pixels = pixel_work
+            && !update
+            && canvas.retains_frame()
+            && dirty.load(Ordering::Acquire) & NATIVE == 0;
+        if settling && !pixels {
+            lince_interface::host::performance::count(
+                lince_interface::host::performance::Count::SettlingFrame,
+            );
+        }
+        let frame = if pixels {
+            canvas.try_pixel_frame()?
+        } else {
             pixel_imports = false;
             record_update(std::mem::take(&mut update_reasons));
             canvas.try_frame()?
         };
         pixel_work = false;
         let Some(frame) = frame else {
-            lince_interface::host::performance::count(lince_interface::host::performance::Count::NativeUpdateUnavailable);
+            lince_interface::host::performance::count(
+                lince_interface::host::performance::Count::NativeUpdateUnavailable,
+            );
             update = false;
             continue;
         };
-        lince_interface::host::performance::count(lince_interface::host::performance::Count::FramePrepared);
-        active.progress.applied.fetch_max(input_serial, Ordering::Release);
+        lince_interface::host::performance::count(
+            lince_interface::host::performance::Count::FramePrepared,
+        );
+        active
+            .progress
+            .applied
+            .fetch_max(input_serial, Ordering::Release);
         canvas.accessibility_input_completed();
-        let frame_sequence = NEXT_FRAME_SEQUENCE.try_update(Ordering::Relaxed, Ordering::Relaxed, |sequence| sequence.checked_add(1))
+        let frame_sequence = NEXT_FRAME_SEQUENCE
+            .try_update(Ordering::Relaxed, Ordering::Relaxed, |sequence| {
+                sequence.checked_add(1)
+            })
             .map_err(|_| failure("The completed frame sequence is exhausted.".into()))?;
-        if let Some(sample) = timing.finish(frame_sequence) { last_sample = Some(sample); }
-        if last_sample.is_some_and(|sample| sample.pointer_serial == 0 && sample.input_serial <= active.retired_input.load(Ordering::Acquire)) { last_sample = None; }
+        if let Some(sample) = timing.finish(frame_sequence) {
+            last_sample = Some(sample);
+        }
+        if last_sample.is_some_and(|sample| {
+            sample.pointer_serial == 0
+                && sample.input_serial <= active.retired_input.load(Ordering::Acquire)
+        }) {
+            last_sample = None;
+        }
         button_pending = false;
         keyboard_pending = false;
         awaiting = Some(Completed {
-                sequence: frame_sequence,
-                scene_revision,
-                frame,
-                windows: Arc::new(canvas.painted_windows()),
-                rejected: canvas.rejected_windows(),
-                input_serial,
-                latency: latency::Frame::new(frame_sequence, last_sample),
-            });
+            sequence: frame_sequence,
+            scene_revision,
+            frame,
+            windows: Arc::new(canvas.painted_windows()),
+            rejected: canvas.rejected_windows(),
+            input_serial,
+            latency: latency::Frame::new(frame_sequence, last_sample),
+        });
         update = false;
     }
     canvas.finish()
@@ -952,9 +1292,9 @@ fn failure(detail: String) -> ProbeFailure {
 mod tests {
     use super::*;
     mod availability;
-    mod logout;
-    mod hover;
     mod configuration;
+    mod hover;
+    mod logout;
     mod settling;
 
     #[test]

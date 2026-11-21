@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Fields, enum Edit, fn mount, struct Invoke.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 271, 301, 365,
+//   368.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (170, 176,
+//   194, 235, 402).
+
 use super::*;
 use engine::workspace_sync::RecordEdit;
 use std::{borrow::Cow, collections::BTreeMap, ops::ControlFlow};

@@ -1,3 +1,37 @@
+// non-lean-yet
+// Scope: struct Node, struct Message, enum Payload, enum Task.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 333, 345, 394,
+//   398, 420, 422, 437, 470, 564, 664, 694, 697, 790, 797, 800, 802, 803, 815, 816, 817, 818, 865,
+//   929, 956, 964, 967, 974, 979, 985, 993, 1036, 1037, 1060, 1078, 1104, 1113, 1135, 1152, 1187,
+//   1205, 1211, 1221, 1334, 1349, 1355, 1408, 1453, 1471, 1474, 1475, 1481, 1498, 1499, 1500, 1508,
+//   1509, 1536, 1540, 1543, 1550, 1577, 1613, 1621, 1630, 1662, 1667, 1690, 1698, 1707, 1720, 1744,
+//   1753, 1762, 1781, 1803, 1819, 1835, 1838, 1847, 1857, 1865, 1869, 1896, 1906, 1932, 1952, 1959,
+//   1989, 1993, 1999, 2016, 2177, 2178, 2182, 2211, 2311, 2348, 2399.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   441, 445, 487, 853, 958, 1080, 1102, 1233, 1235, 1361, 1365, 1429, 1434, 1565, 1588, 1917,
+//   2209, 2271, 2276.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 131, 138, 167, 332, 597, 610, 628, 658, 662, 720, 729, 1423, 1491, 1956, 2008,
+//   2408.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 441, 445, 487, 853, 958, 1080, 1102, 1233, 1235, 1361, 1365, 1429, 1434, 1565,
+//   1588, 1917, 2232, 2233, 2237, 2238, 2244, 2260.
+// - [Clippy probe: clippy::large_enum_variant] large size difference between variants. Sites 84.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 256, 285, 873, 1007, 2024, 2067, 2076.
+// - [Clippy probe: clippy::needless_borrows_for_generic_args] the borrowed expression implements
+//   the required traits. Sites 2192, 2193.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 1967, 1969.
+// - [Clippy probe: clippy::redundant_clone] Move or borrow at the marked sites and check later
+//   uses. Sites 1104.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 16, 90.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   16, 17, 18, 19, 20, 31, 35, 90, 91, 92, 93, 94, 95, 96, 97, 98, 100, 101, 102, 256, 285, 575,
+//   873, 997, 1007, 2024, 2059, 2067, 2076.
+
 use std::collections::{BTreeMap, BTreeSet};
 use std::io::Write;
 use std::path::{Path, PathBuf};

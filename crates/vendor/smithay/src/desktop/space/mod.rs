@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: mod element, mod output, mod utils, mod wayland.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 263, 350.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   map_element:activate (102), raise_element:activate (128).
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 106, 665.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (441).
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 31, 33.
+
 //! This module contains the [`Space`] helper class as well has related
 //! rendering helpers to add custom elements or different clients to a space.
 

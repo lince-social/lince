@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct LocalOriginal, struct LocalOriginals.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 67, 74, 77, 98.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 77, 98.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 77, 98.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use nucleus::trust_analysis::serving::SourceKind;
 

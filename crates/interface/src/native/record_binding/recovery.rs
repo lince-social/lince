@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn retry, mod tests.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 pub(crate) fn retry(world: &mut World, record: &RecordBinding) {

@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct TabletSeat, trait TabletSeatHandler, struct TabletSeatHandle, struct
+//   TabletSeatUserData.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 123, 138, 143,
+//   161, 201, 216, 221, 240.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (78, 118, 143, 148, 161, 166, 196, 221, 226, 240, 245, 275).
+
 use wayland_protocols::wp::tablet::zv2::server::{
     zwp_tablet_seat_v2::{self, ZwpTabletSeatV2},
     zwp_tablet_tool_v2::ZwpTabletToolV2,

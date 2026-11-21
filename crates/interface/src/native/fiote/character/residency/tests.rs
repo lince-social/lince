@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn playback, fn
+//   hiding_releases_target_demand_and_freezes_playback_and_transitions_until_restored.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use bevy::ecs::system::RunSystemOnce;
 

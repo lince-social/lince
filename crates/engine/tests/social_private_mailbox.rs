@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod protocol, mod stranger_flood, fn certified, fn delivery.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 89, 176.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 89, 176.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 1059, 1060.
+
 #![cfg(test)]
 
 use base64::{Engine as _, engine::general_purpose::STANDARD as B64};

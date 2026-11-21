@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct Prepared, struct Alarm, fn key, fn sort.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 97.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   85, 88, 90, 92.
+
 use super::*;
 use crate::host::performance::{self, Count, Stage};
 use chrono::{Local, NaiveDate};

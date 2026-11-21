@@ -1,8 +1,13 @@
-use super::*;
-use crate::{
-    desktop::{Desktop, renderer::Composition},
-    runtime::{CanvasWorker, Configuration, Input},
+// non-lean-yet
+// Scope: const COLORS, mod limits, mod editor, mod native.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 146, 149.
+
+use std::{
+    collections::BTreeMap,
+    path::{Path, PathBuf},
 };
+
 use lince_interface::host::{
     DesktopAction, ItemGeometry, ItemId, OutputViewport, Rectangle, WakeSignal, WorkspaceLayout,
 };
@@ -14,17 +19,19 @@ use smithay::backend::{
         gles::{GlesRenderer, GlesTexture},
     },
 };
-use std::{
-    collections::BTreeMap,
-    path::{Path, PathBuf},
+
+use super::*;
+use crate::{
+    desktop::{Desktop, renderer::Composition},
+    runtime::{CanvasWorker, Configuration, Input},
 };
 
 const COLORS: [[u8; 4]; 3] = [[240, 20, 230, 255], [20, 230, 20, 255], [20, 160, 240, 255]];
 
-#[path = "tiled/limits.rs"]
-mod limits;
 #[path = "tiled/editor.rs"]
 mod editor;
+#[path = "tiled/limits.rs"]
+mod limits;
 #[path = "tiled/native.rs"]
 mod native;
 #[path = "tiled/outputs.rs"]
@@ -646,7 +653,12 @@ impl Fixture {
             });
             if current.frame.input.modal
                 || current.frame.input.keyboard_modal
-                || current.frame.input.controls.iter().any(|control| control.contains(point))
+                || current
+                    .frame
+                    .input
+                    .controls
+                    .iter()
+                    .any(|control| control.contains(point))
             {
                 continue;
             }

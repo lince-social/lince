@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: const PERSON_UID, const OTHER_PERSON_UID, fn
+//   create_replay_and_reopen_preserve_the_exact_result, fn
+//   revise_activate_switch_and_pause_are_atomic_and_cas_controlled.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 215.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 368, 377.
+// - [Clippy: clippy::unnecessary_wraps] this function's return value is unnecessarily wrapped by
+//   `Option`. Sites 381.
+
 #![cfg(test)]
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -7,10 +18,12 @@ use nucleus::karma::{
     CapabilitySet, DefinitionStatus, ProgramAst, ProgramMutationAction, ProgramMutationEvidence,
     ProgramSchema, ProofStatus, Slug, prove_program,
 };
-use store::Store;
-use store::karma::programs::{
-    ActivateProgramInput, CreateProgramInput, PauseProgramInput, ProgramMutationCommit,
-    ReviseProgramInput, activate, create, get_handle, get_revision, pause, revise,
+use store::{
+    Store,
+    karma::programs::{
+        ActivateProgramInput, CreateProgramInput, PauseProgramInput, ProgramMutationCommit,
+        ReviseProgramInput, activate, create, get_handle, get_revision, pause, revise,
+    },
 };
 
 const PERSON_UID: &str = "r_01APS3NDEKTSV4RRFFQ69G5FAV";

@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod lifetime, fn fixture, fn until, fn set.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use std::{path::Path, sync::Arc};
 

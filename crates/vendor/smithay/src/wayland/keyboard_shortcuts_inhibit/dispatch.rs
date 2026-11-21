@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct KeyboardShortcutsInhibitorUserData.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 88, 100, 102,
+//   142.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (82).
+
 use std::{
     collections::hash_map::Entry,
     sync::atomic::{self, AtomicBool},

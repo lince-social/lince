@@ -1,14 +1,40 @@
+// non-lean-yet
+// Scope: mod checks, mod sharing, enum Version, struct FactId.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 27.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 14, 86, 107, 117, 225, 233, 251, 307, 367, 396, 405, 429, 471, 490.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 6,
+//   14, 16, 21, 58, 59, 60, 65, 66, 67, 68, 69, 70, 75, 76, 77, 78, 79, 80, 81, 86, 87, 88, 90, 91,
+//   92, 94, 95, 96, 98, 99, 101, 102, 107, 108, 109, 110, 111, 112, 117, 118, 119, 121, 122, 123,
+//   124, 125, 126, 128, 129, 130, 131, 133, 134, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145,
+//   147, 149, 150, 151, 152, 154, 155, 157, 158, 159, 161, 162, 163, 165, 166, 168, 169, 170, 171,
+//   172, 174, 175, 176, 177, 179, 180, 181, 182, 184, 185, 186, 188, 189, 190, 191, 193, 194, 195,
+//   196, 198, 199, 200, 202, 203, 204, 205, 207, 208, 209, 211, 212, 213, 215, 216, 218, 219, 225,
+//   226, 227, 228, 233, 234, 235, 236, 241, 242, 243, 244, 245, 246, 251, 252, 254, 256, 257, 258,
+//   259, 260, 262, 263, 264, 265, 266, 268, 269, 270, 271, 273, 274, 275, 277, 278, 279, 280, 281,
+//   282, 283, 285, 286, 287, 289, 290, 291, 292, 298, 299, 300, 301, 302, 307, 308, 309, 311, 312,
+//   313, 315, 316, 317, 318, 320, 321, 322, 323, 325, 326, 327, 328, 329, 330, 332, 333, 334, 335,
+//   337, 338, 339, 340, 342, 343, 344, 345, 347, 348, 349, 350, 352, 353, 355, 356, 357, 359, 360,
+//   361, 367, 368, 369, 370, 371, 376, 377, 378, 383, 384, 385, 386, 387, 388, 389, 390, 391, 396,
+//   397, 398, 399, 400, 405, 406, 407, 409, 410, 411, 412, 413, 414, 415, 416, 418, 419, 420, 421,
+//   422, 423, 429, 430, 431, 432, 433, 438, 439, 440, 441, 442, 443, 444, 445, 446, 447, 452, 453,
+//   454, 455, 456, 457, 458, 459, 460, 461, 462, 463, 464, 465, 466, 471, 472, 473, 474, 475, 477,
+//   478, 479, 480, 481, 483, 484, 490, 491, 492, 494, 495, 496, 497, 499, 500, 501, 503, 504, 505,
+//   507, 508.
+
 use serde::{Deserialize, Serialize};
 
 use crate::karma::{CanonicalHash, DecimalValue, TypedUid};
 
 pub mod checks;
 pub mod sharing;
-pub use crate::execution::causal::{CycleKind, RuleChange, RuleCycle, RuleStep, TransferChange};
 pub use checks::{
     CheckDefinition, CheckOptions, CheckSet, CheckStatus, Checking, Comparison, CoverageKind,
     CoverageReason, Evaluation, FailureMode, QuantityBasis, RunCost,
 };
+
+pub use crate::execution::causal::{CycleKind, RuleChange, RuleCycle, RuleStep, TransferChange};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 pub enum Version {

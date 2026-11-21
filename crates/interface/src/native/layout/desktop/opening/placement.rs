@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: fn width, fn bounds, fn configure, fn apply_initial.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 65, 102, 113,
+//   120.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 21, 27, 28,
+//   42, 43, 45, 47.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites commit: String
+//   (90), prepare_reapply: String (101).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   35, 36, 37, 38, 39.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (23, 69, 73, 120, 121).
+
 use super::*;
 use crate::layout::desktop::{Geometry, Width, Workspace as Model};
 

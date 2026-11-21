@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: trait PointerGrab, struct GrabStartData, struct DefaultGrab, struct ClickGrab.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 202, 364.
+
 use std::fmt;
 
 use downcast_rs::{impl_downcast, Downcast};

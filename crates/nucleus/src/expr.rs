@@ -1,6 +1,32 @@
-use crate::error::NucleusError;
-use serde::{Deserialize, Serialize};
+// non-lean-yet
+// Scope: enum Expr, enum UnOp, enum BinOp, enum Value.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   106.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 149, 186, 190,
+//   191, 192, 193, 197, 261, 290, 322, 323, 337, 432.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 51, 557.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   557.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 6, 17, 23, 40.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   109.
+// - [Clippy: clippy::match_same_arms] these match arms have identical bodies. Sites 204, 205, 371,
+//   372.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 48, 63, 69, 125, 162, 314.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 7,
+//   8, 9, 10, 11, 12, 13, 17, 18, 19, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 40,
+//   41, 42, 43, 44, 48, 62, 63, 66, 67, 69, 98, 106, 113, 117, 125, 155, 156, 157, 158, 162, 251,
+//   314, 384, 385, 389, 546.
+
 use std::collections::HashMap;
+
+use serde::{Deserialize, Serialize};
+
+use crate::error::NucleusError;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {

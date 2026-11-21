@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Form, enum Operation, struct State, struct Field.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 117, 227, 233,
+//   289, 307, 368, 456, 462, 544, 554, 557, 567, 574, 584, 620, 633, 650, 660, 665, 679, 686, 706.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (117, 148, 186, 232, 241, 326, 335, 383, 530, 551, 594, 633, 635, 666).
+
 use std::collections::HashMap;
 
 use bevy::{math::DVec2, prelude::*, text::EditableText};

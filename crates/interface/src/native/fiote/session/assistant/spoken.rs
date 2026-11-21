@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: const CREDITS, struct Spoken, struct PlaybackGuard, fn attach.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 53, 142, 218,
+//   227, 257, 348, 372, 419, 471, 478, 484, 489, 528, 538, 551, 557, 558, 573.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (182, 192, 227, 261, 354, 427, 428, 499, 506, 536, 577, 578, 599, 600, 622, 623,
+//   627, 628, 630, 631, 637, 639, 644, 645, 648).
+
 use super::*;
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 use bevy::ecs::{entity_disabling::Disabled, query::Allow};

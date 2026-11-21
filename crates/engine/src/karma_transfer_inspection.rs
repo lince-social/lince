@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: impl Engine.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option`
+//   value. Sites 85.
+
 use chrono::{DateTime, Utc};
 use nucleus::karma::Consequence;
 use serde_json::{Value, json};

@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn main, fn setup.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (22).
+
 use bevy::prelude::*;
 use lince_sandbox::communication::{MediaPreviewPlugin, populate};
 

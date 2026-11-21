@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod checks, mod editor, mod policy, mod publishing.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 170, 184, 187,
+//   193, 205, 206, 220, 257, 279, 363, 364, 379, 541, 567, 654, 671, 688, 698, 742, 971, 1035,
+//   1455, 1550, 1585, 1752, 1872, 1892, 1893, 1907, 1913, 1918, 1958, 2013, 2014.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (1164, 1319).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   1865, 2014.
+
 pub(crate) mod checks;
 mod editor;
 pub(crate) mod policy;

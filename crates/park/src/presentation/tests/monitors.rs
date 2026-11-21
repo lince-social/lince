@@ -1,18 +1,30 @@
-use super::shortcuts::{key, settle};
-use super::*;
+// non-lean-yet
+// Scope: fn monitor, fn
+//   monitor_chords_preserve_workspace_editor_follow_and_geometry_through_bar_changes_and_reconnect.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use lince_interface::host::{
     DesktopAction, Direction, HostRequest, OutputId, OutputViewport, Rectangle, WorkspaceLayout,
+};
+
+use super::{
+    shortcuts::{key, settle},
+    *,
 };
 
 fn monitor(id: u64, origin: [f64; 2]) -> Output {
     Output {
         name: format!("Display-{id}"),
-        viewport: OutputViewport { rotation: Default::default(),
+        viewport: OutputViewport {
+            rotation: Default::default(),
             id: OutputId(id),
             bounds: Rectangle::new(origin, [320.0, 240.0]).unwrap(),
             usable: Rectangle::new([origin[0], origin[1] + 20.0], [320.0, 220.0]),
             physical_size: [320, 240],
-            raster: lince_interface::host::raster::RasterMapping { origin: (Rectangle::new(origin, [320.0, 240.0]).unwrap()).origin(), scale: [1.0; 2] },
+            raster: lince_interface::host::raster::RasterMapping {
+                origin: (Rectangle::new(origin, [320.0, 240.0]).unwrap()).origin(),
+                scale: [1.0; 2],
+            },
             workspace: 1,
         },
     }
@@ -221,10 +233,31 @@ fn monitor_chords_preserve_workspace_editor_follow_and_geometry_through_bar_chan
         targets[&OutputId(40)].2
     );
     canvas.outputs(reserved).unwrap();
-    assert_eq!(canvas.app.world().resource::<bevy::input_focus::InputFocus>().get(), Some(targets[&OutputId(40)].1));
-    assert_eq!(canvas.output_state.assignments.pending_restorations().count(), 1);
+    assert_eq!(
+        canvas
+            .app
+            .world()
+            .resource::<bevy::input_focus::InputFocus>()
+            .get(),
+        Some(targets[&OutputId(40)].1)
+    );
+    assert_eq!(
+        canvas
+            .output_state
+            .assignments
+            .pending_restorations()
+            .count(),
+        1
+    );
     canvas.focus_output(OutputId(10)).unwrap();
-    assert_eq!(canvas.output_state.assignments.pending_restorations().count(), 0);
+    assert_eq!(
+        canvas
+            .output_state
+            .assignments
+            .pending_restorations()
+            .count(),
+        0
+    );
     canvas.focus_output(OutputId(40)).unwrap();
     settle(&mut canvas);
     assert!(native::layout::desktop::focus::following(

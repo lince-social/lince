@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct CursorWarpSupport, struct PointerEpoch, struct Warping, fn policy.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (117).
+
 use super::*;
 use crate::host::input::{CursorWarp, FocusPolicy, FocusTarget};
 

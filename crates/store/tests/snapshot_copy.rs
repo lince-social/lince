@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn url, fn file_snapshot_preserves_sparse_rowids_schema_and_independent_contents, fn
+//   concurrent_wal_writes_leave_a_single_consistent_snapshot, fn
+//   cancelling_a_queued_copy_releases_its_source_connection.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 85, 86.
+
 use sqlx::{Connection, SqliteConnection, sqlite::SqliteConnectOptions};
 use store::Store;
 

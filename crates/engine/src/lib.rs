@@ -1,3 +1,29 @@
+// non-lean-yet
+// Scope: mod sand_packages, mod fiote_activation, mod fiote_config, mod transfer_discard.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 425, 434, 449,
+//   450, 451, 478.
+// - [Clippy: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably fires.
+//   Sites 23.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 408, 421.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 212, 218.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 408, 421.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 224, 317, 321, 360, 401, 433, 482, 494.
+// - [Clippy probe: clippy::missing_panics_doc] State the panic conditions for exported functions.
+//   Sites 211, 215.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 145.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   1, 2, 4, 8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22, 24, 25, 26, 27, 28, 29, 31, 32,
+//   33, 34, 35, 36, 37, 38, 39, 40, 41, 43, 44, 45, 46, 48, 50, 58, 59, 60, 61, 62, 63, 64, 65, 66,
+//   67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 81, 82, 83, 84, 85, 86, 87, 90, 91, 92, 93, 94, 95,
+//   96, 97, 98, 99, 100, 102, 103, 105, 108, 111, 112, 113, 114, 115, 116, 145, 148, 149, 150, 151,
+//   152, 163, 165, 167, 168, 211, 215, 224, 317, 321, 325, 329, 333, 337, 342, 346, 350, 355, 360,
+//   392, 397, 401, 433, 482, 494, 510, 521.
+
 #![recursion_limit = "256"]
 pub mod sand_packages;
 

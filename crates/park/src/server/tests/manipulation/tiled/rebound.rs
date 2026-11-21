@@ -1,5 +1,7 @@
-use super::*;
-use crate::presentation::{Frame, Presentation};
+// non-lean-yet
+// Scope: fn settle, fn button, fn activate, fn capture.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy::{
     input::{keyboard::Key, mouse::MouseButton},
     prelude::{
@@ -9,6 +11,9 @@ use bevy::{
 };
 use lince_interface::{host::Manipulation, native};
 use native::actions::Action;
+
+use super::*;
+use crate::presentation::{Frame, Presentation};
 
 fn settle(canvas: &mut Presentation) -> Frame {
     let mut frame = canvas.probe_frame().unwrap();

@@ -1,3 +1,26 @@
+// non-lean-yet
+// Scope: mod catalog, mod messages, mod assistant, mod text.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 69, 108, 131,
+//   137, 221, 324, 432, 437, 444, 460, 577, 593, 647, 674, 700, 727, 748, 785, 803, 852, 857, 863.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites attach_message:
+//   String (163).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   641, 792.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 749, 808,
+//   816, 825, 840.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 865.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 406, 538, 541, 552, 574, 600, 601, 602, 616, 641, 659, 674, 677, 697, 792, 840.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 163.
+// - [Clippy probe: clippy::rc_buffer] Check whether a shared slice or str suffices. Sites 58.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 30, 54.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   30, 31, 32, 33, 54, 86, 91, 96, 118, 142, 163.
+
 mod catalog;
 mod messages;
 mod assistant;

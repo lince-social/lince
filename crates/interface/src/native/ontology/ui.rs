@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: fn populate, fn chooser, fn editor, fn reference.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 526, 534, 641,
+//   645, 646, 647, 648, 651, 654, 655, 656, 657, 658, 1092, 1171, 1292, 1293, 1509.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   509, 534, 544, 546, 549, 557, 582, 1561.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (47, 131, 137, 142, 152, 154, 169, 172, 189, 191, 215, 229, 260, 281, 292, 309,
+//   325, 351, 386, 416, 525, 528, 582, 597, 630, 644, 1088, 1092, 1167, 1171, 1247, 1250, 1291,
+//   1444, 1449, 1506, 1509, 1558, 1565, 1670).
+
 use super::catalog::title;
 use super::*;
 use crate::i18n::Token as Tr;

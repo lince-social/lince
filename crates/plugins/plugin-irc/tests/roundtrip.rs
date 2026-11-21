@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Server, fn install, fn enable, fn binding.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 43, 44, 49.
+
 #![cfg(test)]
 
 use engine::Engine;

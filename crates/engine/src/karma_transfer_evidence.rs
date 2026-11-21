@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: impl Engine.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 51.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 7, 29, 38, 47.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   7, 29, 38, 47.
+
 use chrono::{DateTime, Utc};
 use nucleus::transfer::karma::Snapshot;
 

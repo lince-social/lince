@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: impl Wire.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 26, 27, 52, 77.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 6.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   6.
+
 use super::{Wire, WireRequest, WireResponse};
 use crate::EngineError;
 use std::time::Duration;

@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct LocalDiscovery, struct State, struct Running.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 70, 109.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 36, 47, 54, 75, 108, 118.
+
 use super::{MDNS_SERVICE_NAME, Nearby, node_fingerprint};
 use iroh::EndpointId;
 use iroh::address_lookup::{AddressLookup, EndpointData, Error, Item};

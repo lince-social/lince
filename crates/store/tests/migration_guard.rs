@@ -1,10 +1,15 @@
+// non-lean-yet
+// Scope: mod migration_guard, fn fixture, fn entry, fn current_repository_migrations_are_locked.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 #[path = "../build_support/migration_guard.rs"]
 mod migration_guard;
 
-use sha2::{Digest, Sha384};
 use std::fs;
+
+use sha2::{Digest, Sha384};
 use tempfile::TempDir;
 
 fn fixture() -> TempDir {

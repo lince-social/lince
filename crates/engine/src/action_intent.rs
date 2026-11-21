@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: const MAX_IDENTIFIER_BYTES, const MAX_CHALLENGE_BYTES, const MAX_ACTION_BYTES, const
+//   MAX_ACTION_BASE64_BYTES.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 294, 307, 340,
+//   436, 439, 440, 450.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 152, 252,
+//   259, 488, 492, 496, 503, 507.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 152, 252, 259, 488, 492, 496, 503, 507.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 84, 105, 187, 317.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 26, 53.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   17, 26, 36, 40, 44, 48, 53, 55, 67, 70, 74, 78, 84, 105, 187, 317.
+
 use std::collections::HashSet;
 
 use base64::Engine as _;

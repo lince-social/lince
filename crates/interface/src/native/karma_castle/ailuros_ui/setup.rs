@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: const PORT, const PROJECT, const NAME, const SLUG.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 416, 444, 448,
+//   449, 462, 463, 465, 466, 468, 470, 471, 472, 492, 524, 540, 541, 546, 547, 620, 621, 661, 672,
+//   686, 701, 720, 728, 730, 743, 768, 813, 838, 1032, 1147.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 426, 434,
+//   451, 734, 792, 822, 917.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   234, 236, 320, 380, 386, 390, 424, 428, 433, 444, 448, 449, 450, 462, 463, 465, 466, 468, 504,
+//   507, 508, 546, 547, 621, 622, 643, 669, 728, 730, 732, 791, 919, 972, 1011, 1053, 1100, 1177,
+//   1180, 1186.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (204, 298, 352, 379, 421, 470, 496, 503, 542, 555, 570, 573, 620, 643, 646, 657,
+//   684, 694, 718, 743, 744, 745, 752, 782, 783, 794, 891, 894, 908, 918, 925, 972, 975, 979, 997,
+//   1024, 1049, 1053, 1056, 1090, 1100, 1103, 1118, 1128, 1176, 1183, 1186).
+
 use super::*;
 use crate::native::sand_panel as panel;
 use lince_ailuros::{

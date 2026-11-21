@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: struct Draft, struct Review, enum Command.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 54.
+// - [Clippy: clippy::large_enum_variant] large size difference between variants. Sites 54.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 37.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 1.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 8,
+//   9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 23, 28, 29, 30, 31, 32, 33, 37, 54, 55, 56, 58,
+//   59, 61, 62, 63, 65, 66, 68, 70, 71, 73, 75, 76, 78, 80, 81, 82, 84, 86, 87, 88, 90, 92, 93, 95,
+//   97, 98, 99, 101, 106.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites hash: String
+//   (37).
+
 use super::*;
 use crate::trust_analysis::commands::ProfileVersion;
 

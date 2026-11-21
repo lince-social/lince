@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: const MAX_FILE, const MAX_PACKAGE, mod room_tests, struct AssetDirectory.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 90, 202, 374,
+//   593, 618, 631, 683, 750, 797, 807, 936, 1074, 1090, 1371.
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites import_to:source → &Path (605).
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites import: String
+//   (561), import_into_room: String (565), restore: String (1308), snapshot: String (1353).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   253, 254, 255, 256, 260, 417, 539.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (140, 179, 254, 255, 260, 429, 552, 716, 721, 746, 909, 912, 913, 916, 917, 952,
+//   956, 1109, 1347).
+
 use super::Spatial;
 use crate::native::{canvas::CanvasItem, workspace::WorkspaceMember};
 use bevy::{gltf::Gltf, prelude::*};

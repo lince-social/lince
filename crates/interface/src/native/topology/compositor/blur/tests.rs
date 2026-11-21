@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn backdrop_readiness_is_bound_to_the_current_target_viewport_and_request_lifetime.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[test]

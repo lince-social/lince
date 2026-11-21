@@ -1,9 +1,17 @@
+// non-lean-yet
+// Scope: fn identity, fn projection_cache_requires_matching_explicit_identity_on_every_path, fn
+//   reopening_storage_does_not_implicitly_trust_a_persisted_projection.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 19.
+
 #![cfg(test)]
 
-use nucleus::karma::{ReferenceKind, TypedUid};
-use nucleus::projection::{Context, ExecutionIdentity, Scheduled, Window};
-use nucleus::schedule::TimeRange;
-use nucleus::simulation::{Cause, Quantity, RuleOccurrence};
+use nucleus::{
+    karma::{ReferenceKind, TypedUid},
+    projection::{Context, ExecutionIdentity, Scheduled, Window},
+    schedule::TimeRange,
+    simulation::{Cause, Quantity, RuleOccurrence},
+};
 use store::{Store, projection};
 
 fn identity(digit: &str) -> &'static ExecutionIdentity {

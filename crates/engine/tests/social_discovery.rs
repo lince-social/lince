@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod helper, mod search_execution, mod transport, struct DescriptorHost.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 190, 252, 255.
+
 #![cfg(test)]
 
 use engine::{Engine, EngineError, social::Network};

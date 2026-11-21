@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: mod support, fn deadline_director_recovers_from_file_backed_sqlite_contention, fn
+//   tickless_runner_reconciles_sleeps_claims_and_rearms_without_heartbeat, fn
+//   host_default_runtime_serves_utc_and_fires_without_any_configuration.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 658.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 67, 140, 270, 505, 524, 560, 658, 661, 991, 1056.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 476.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 376.
+
 #![cfg(test)]
 
 mod support;

@@ -1,11 +1,35 @@
-use crate::config::{Secret, Settings};
-use sha2::{Digest, Sha256};
+// non-lean-yet
+// Scope: const MAX_BYTES, struct Store, fn open_private, fn private.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 78, 116, 160,
+//   200.
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites write:slot → &str (111).
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 69, 133, 234.
+// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 122.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   33, 36, 60, 68, 74, 88, 121, 131, 137, 141, 144, 148, 152, 169, 175, 183, 188, 191, 223.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 77, 91, 95, 155, 159, 199.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 13.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 13, 18,
+//   77, 91, 95, 155, 159, 199, 256.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites
+//   import_if_missing: String (155), key: String (77), put: String (91), refresh_guard: String
+//   (199), refreshed: String (95), remove: String (159).
+
 use std::{
     fs::{self, File, OpenOptions},
     io::{Read, Write},
     path::{Path, PathBuf},
 };
+
+use sha2::{Digest, Sha256};
 use zeroize::Zeroizing;
+
+use crate::config::{Secret, Settings};
 
 const MAX_BYTES: u64 = 1024 * 1024;
 
@@ -119,10 +143,10 @@ impl Store {
             let lock = store.lock(&slot, "write.lock")?;
             lock.lock()
                 .map_err(|_| "Cannot lock local credential storage")?;
-            if let Some(previous) = previous {
-                if store.read(&slot)?.is_none_or(|saved| saved.0 != previous.0) {
-                    return Ok(false);
-                }
+            if let Some(previous) = previous
+                && store.read(&slot)?.is_none_or(|saved| saved.0 != previous.0)
+            {
+                return Ok(false);
             }
             if missing_only && store.read(&slot)?.is_some() {
                 return Ok(false);

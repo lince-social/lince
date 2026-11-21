@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct ExchangeRoute, fn validate_exchanges.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 81.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 17, 40.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 10, 11,
+//   12, 13, 17, 27, 31, 40.
+
 use std::collections::{BTreeMap, BTreeSet};
 
 use schemars::JsonSchema;
@@ -78,8 +87,8 @@ pub fn validate_exchanges(snapshot: &TransferRevisionSnapshot) -> Result<(), &'s
         if promises.len() > 2 {
             return Err("split contributions require separate exchange identities");
         }
-        if let [(left, left_item), (right, right_item)] = promises.as_slice() {
-            if left_item.exchange != right_item.exchange
+        if let [(left, left_item), (right, right_item)] = promises.as_slice()
+            && (left_item.exchange != right_item.exchange
                 || left_item.loan != right_item.loan
                 || left_item.return_of != right_item.return_of
                 || left_item.future_need_for != right_item.future_need_for
@@ -90,12 +99,11 @@ pub fn validate_exchanges(snapshot: &TransferRevisionSnapshot) -> Result<(), &'s
                 || left.unit_uid != right.unit_uid
                 || left.window_start != right.window_start
                 || left.window_end != right.window_end
-                || left.location != right.location
-            {
-                return Err(
-                    "both sides of an exchange must describe the same item, route, amount, unit and timing",
-                );
-            }
+                || left.location != right.location)
+        {
+            return Err(
+                "both sides of an exchange must describe the same item, route, amount, unit and timing",
+            );
         }
     }
     Ok(())

@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: fn grouped_needs.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 51.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   grouped_needs:assumed (9), grouped_needs:replicated (9), grouped_needs:ride_first (9).
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 19, 42, 44, 50, 121, 140.
+// - [Clippy probe: clippy::missing_panics_doc] State the panic conditions for exported functions.
+//   Sites 9.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   9.
+
 use engine::actions::Action;
 use nucleus::transfer::application::{EffectMode, PrivateEffect};
 

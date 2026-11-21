@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: mod support, fn run, fn fixture, fn fixture_parties.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 110, 111, 487, 670.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 110.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 110, 487, 670.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 146.
+
 #![cfg(test)]
 
 mod support;

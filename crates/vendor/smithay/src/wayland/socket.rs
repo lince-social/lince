@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct ListeningSocketSource.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (91).
+
 //! Wayland listening socket.
 //!
 //! This module provides an [`EventSource`] that invokes a callback when a new client has connected to the

@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct ManualTextureView, struct ManualTextureViews.
+// BeautifulRust (baseline lines):
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 54.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 13, 14,
+//   15, 19.
+
 use bevy_camera::ManualTextureViewHandle;
 use bevy_ecs::resource::Resource;
 use bevy_extract_macros::ExtractResource;

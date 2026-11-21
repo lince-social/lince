@@ -1,6 +1,26 @@
-use std::cell::RefCell;
-use std::future::{Future, poll_fn};
-use std::sync::{Arc, Mutex};
+// non-lean-yet
+// Scope: mod causal, mod control, struct State, struct Execution.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   56, 60, 66, 88.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 158.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 49, 57, 79, 121.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   57, 62, 67, 89, 97, 102, 108.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 29, 38, 60.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 9, 10,
+//   18, 19, 20, 21, 22, 26, 29, 38, 43, 48, 52, 56, 60, 66, 70, 83, 88, 120, 124, 128.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   131.
+// - [review: §5 Panics] Verify panic isolation boundary and preserve the failure contract. Sites
+//   158.
+
+use std::{
+    cell::RefCell,
+    future::{Future, poll_fn},
+    sync::{Arc, Mutex},
+};
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};

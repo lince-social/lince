@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: impl Engine.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 4, 9, 53, 63.
+// - [Clippy probe: clippy::redundant_pattern_matching] redundant pattern matching. Sites 31.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   4, 9, 53, 63.
+
 use super::*;
 
 impl Engine {

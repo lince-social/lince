@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod accessibility, mod accessibility_bounds, mod android, mod app.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![recursion_limit = "256"]
 
 #[cfg(target_os = "android")]

@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct Capture, fn capture, fn exercise, fn main.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (150).
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites
+//   133.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   79, 80.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (27, 29, 39, 50, 54, 65, 67, 76, 95, 142, 144, 158).
+
 use bevy::{
     a11y::AccessibilityNode,
     diagnostic::FrameCount,

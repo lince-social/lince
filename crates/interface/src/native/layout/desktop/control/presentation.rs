@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: enum Pause, enum MessageSource, struct Presentation, fn refresh.
+// BeautifulRust (baseline lines):
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 125.
+
 use super::*;
 use crate::host::control::Status;
 use std::fmt::Write;

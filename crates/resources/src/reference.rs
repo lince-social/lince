@@ -1,11 +1,27 @@
-use crate::{Library, Resource, Result, Url, address, resolve};
-use serde::{Deserialize, Serialize};
+// non-lean-yet
+// Scope: struct Reference, struct Address, fn record_uid, fn is_id.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 169, 170.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 92, 97, 115, 117,
+//   145, 150, 189, 190, 191, 193.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   70.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 68, 74, 225, 233, 237.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 12, 13,
+//   14, 15, 16, 17, 21, 22, 23, 24, 25, 28, 37, 41, 45, 53, 60, 68, 74, 225, 233, 237.
+
 use std::{
     collections::BTreeMap,
     fs,
     io::{BufWriter, Write},
     path::Path,
 };
+
+use serde::{Deserialize, Serialize};
+
+use crate::{Library, Resource, Result, Url, address, resolve};
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(default, deny_unknown_fields)]

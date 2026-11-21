@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct Stamp, struct Progress, struct VisibleDraft, struct Recovery.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 80, 96, 106, 200,
+//   214, 227, 280, 360, 365, 402, 405, 409, 415, 416, 429.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   407.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (192, 199, 256).
+
 use super::*;
 use lince_editor::recovery::{Draft, Store};
 use std::time::{Duration, Instant};

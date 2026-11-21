@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn changed, fn restart_preserves_unsaved_unicode_and_reconciles_new_disk_changes, fn
+//   unresolved_conflicts_survive_restarting_without_overwriting_local_text, fn
+//   corrupt_entries_are_retained_and_do_not_hide_valid_drafts.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 35, 36, 37, 78, 98.
+
 use super::*;
 use crate::{Buffer, Edit};
 

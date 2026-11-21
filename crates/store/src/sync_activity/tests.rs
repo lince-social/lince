@@ -1,12 +1,28 @@
+// non-lean-yet
+// Scope: const LEGACY_QUERY, type Entry, fn
+//   disabled_history_does_not_wait_for_the_writer_or_commit, fn
+//   enabled_history_does_not_prune_when_nothing_has_expired.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 248, 249.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 113, 114, 115, 131, 136.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   220.
+
+use std::{
+    collections::HashSet,
+    sync::{
+        Arc,
+        atomic::{AtomicU64, Ordering},
+    },
+    time::Instant,
+};
+
+use sqlx::Executor;
+
 use super::*;
 use crate::Store;
-use sqlx::Executor;
-use std::collections::HashSet;
-use std::sync::{
-    Arc,
-    atomic::{AtomicU64, Ordering},
-};
-use std::time::Instant;
 
 const LEGACY_QUERY: &str = "DELETE FROM sync_activity WHERE at <= ? - (SELECT seconds FROM sync_history_policy WHERE id = 1) OR seq NOT IN (SELECT seq FROM sync_activity ORDER BY seq DESC LIMIT (SELECT max_entries FROM sync_history_policy WHERE id = 1))";
 

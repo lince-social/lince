@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: const STEP, mod manipulation, fn collider, fn sleep_threshold.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 117.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (126, 594,
+//   673).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (742, 770, 778, 793, 798, 808, 812, 815, 825, 837, 839, 841, 859, 862, 866, 869,
+//   876, 1256, 1260, 1263, 1267, 1272, 1278, 1285, 1301, 1302, 1331, 1333, 1336, 1344, 1356, 1361,
+//   1370, 1373, 1381, 1413, 1415, 1419, 1422, 1423, 1425, 1434, 1462, 1463, 1467, 1479, 1501, 1505,
+//   1512, 1522, 1541, 1546, 1576, 1577, 1578, 1589, 1609, 1612, 1614, 1615, 1647, 1656, 1659, 1663,
+//   1666, 1673, 1676, 1680, 1685, 1687).
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 700.
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 169.
+
 use crate::native::{
     area::{InfluenceArea, RecordProperties},
     canvas::CanvasItem,

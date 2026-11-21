@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn item, fn resources_attribute_nested_sands_and_deduplicate_shared_images, fn
+//   missing_assets_report_loader_errors_and_clear_after_replacement, fn
+//   failure_priority_sorting_and_paging_keep_every_sand_reachable.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 40, 41, 130.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (21, 24, 81, 99, 105, 112, 117, 154).
+
 use super::resources::*;
 use crate::native::{canvas::CanvasItem, workspace::WorkspaceMember};
 use bevy::{ecs::entity_disabling::Disabled, math::DVec2, prelude::*, text::EditableText};

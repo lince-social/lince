@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn payload_hash, fn payload_identity, fn validate_payload.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 171, 185, 189.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 200.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use nucleus::social::gossip::{self as contract, ContactConsent, Offer, Payload, Settings};
 

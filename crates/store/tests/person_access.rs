@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn record, fn person, fn a_credential_free_person_can_receive_authority, fn
+//   a_credential_free_recovery_actor_prevents_bootstrap_replacement.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use std::sync::Arc;

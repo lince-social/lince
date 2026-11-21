@@ -1,5 +1,15 @@
-use super::*;
+// non-lean-yet
+// Scope: fn world, fn profile, fn gated, fn
+//   blocked_saves_keep_ticks_available_and_coalesce_mutations_into_the_next_snapshot.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites gated:path → &Path (30).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (40).
+
 use std::sync::mpsc;
+
+use super::*;
 
 fn world() -> World {
     let mut world = World::new();
@@ -99,9 +109,16 @@ fn failed_saves_wake_without_further_input() {
     let directory = tempfile::tempdir().unwrap();
     let mut records = Records::load(directory.path().join("profiles.json")).unwrap();
     profile(&mut records, false);
-    records.writer = Some(storage::Writer::with_writer(|_| Err(io::Error::other("Controlled write failure"))).unwrap());
+    records.writer = Some(
+        storage::Writer::with_writer(|_| Err(io::Error::other("Controlled write failure")))
+            .unwrap(),
+    );
     let (awake, woken) = mpsc::sync_channel(1);
-    records.start_saving(Some(WakeSignal::new(move || { let _ = awake.try_send(()); }))).unwrap();
+    records
+        .start_saving(Some(WakeSignal::new(move || {
+            let _ = awake.try_send(());
+        })))
+        .unwrap();
     woken.recv_timeout(Duration::from_secs(2)).unwrap();
     assert!(records.finish_saving().is_err());
 }

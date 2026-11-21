@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: const RECORD_UID, const FACT_UID, const CONCEPT_UID, fn
+//   canonical_program_text_is_stable_and_proves_after_round_trip.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::redundant_clone] Move or borrow at the marked sites and check later uses.
+//   Sites 418, 422.
+
 #![cfg(test)]
 
 use std::collections::{BTreeMap, BTreeSet};

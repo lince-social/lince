@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: fn tool_identity, fn main.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 47.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 93.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   38, 40, 42, 47, 57, 66, 73, 82, 85, 143, 145, 158, 161.
+// - [Clippy: clippy::missing_assert_message] assert without any message. Sites 67.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (43).
+
 use std::{
     hash::{Hash, Hasher},
     path::{Path, PathBuf},

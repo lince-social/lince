@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Origin, fn fiote, fn fiote_from_message, fn stamp.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 57, 70, 71.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 50, 52.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   13, 17.
+
 use nucleus::{Cause, CauseKind, NewFact};
 
 struct Origin {

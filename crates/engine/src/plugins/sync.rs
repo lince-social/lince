@@ -1,3 +1,26 @@
+// non-lean-yet
+// Scope: fn incoming_filters, fn matches, fn validate_import.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 30, 281, 350,
+//   411, 465, 520, 546, 566, 567.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 160.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 99, 103, 133, 211, 296, 402, 414, 493.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 402.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 99, 103, 402, 414.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 168, 516, 517, 520.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 160.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 153.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   106, 153.
+
 use super::*;
 use nucleus::{
     Cause, CauseKind, NewFact, RecordKind,

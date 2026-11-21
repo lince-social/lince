@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: fn output, fn run, fn run_with_timeout, struct CommandGroup.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 31, 110.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 11, 96.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 98, 99.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 31, 110.
+
 use std::time::Duration;
 
 use nucleus::command::{Command, CommandResponse};

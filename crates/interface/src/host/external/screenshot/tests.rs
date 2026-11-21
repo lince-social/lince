@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn screenshot_actions_work_without_configuration_and_require_an_unlocked_session, fn
+//   screen_capture_targets_the_focused_output_without_changing_region_selection, fn
+//   saved_builtin_commands_gain_clipboard_support_and_custom_commands_stay_literal, fn executable.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[test]

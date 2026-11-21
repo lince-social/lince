@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn selection, fn row, fn quantities_sort_exactly_and_ties_keep_protein_order, fn
+//   units_duplicates_and_invalid_quantities_cannot_be_numbered.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use serde_json::json;
 use std::{sync::Arc, time::Duration};

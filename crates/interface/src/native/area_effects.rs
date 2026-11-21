@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: mod tests, mod ui, enum ForceMode, enum Immunity.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 332, 335, 346,
+//   347, 408, 502, 628, 659, 754, 795, 821, 826, 928.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (265, 865,
+//   910).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   444, 447, 452, 453, 498, 565.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (305, 622, 741).
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 15.
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 906.
+
 use crate::native::{
     area::{AreaForce, AreaForces, InfluenceArea, ReachMode, RecordProperties},
     canvas::CanvasItem,

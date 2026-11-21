@@ -1,6 +1,11 @@
+// non-lean-yet
+// Scope: fn button, fn center, fn visible_bounds, fn capture.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
+use lince_interface::host::WakeSignal;
+
 use super::*;
 use crate::presentation::{Frame, Presentation};
-use lince_interface::host::WakeSignal;
 
 fn button(canvas: &mut Presentation, text: &str) -> Entity {
     let world = canvas.world_mut();

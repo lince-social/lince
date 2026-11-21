@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: mod content, mod desktop, mod engine, mod panel.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (74).
+
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 

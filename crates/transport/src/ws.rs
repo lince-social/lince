@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn serve, fn send_terminal_error, fn spawn_lane_forwarder.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 23, 46, 47, 191.
+
 use std::sync::Arc;
 
 use axum::extract::ws::{Message, WebSocket};

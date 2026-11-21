@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 31.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 67.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 35, 48.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   35, 48.
+
 use crate::CellRuntime;
 use std::{io, sync::Arc};
 

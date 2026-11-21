@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: fn new_tracy_gpu_context, fn initial_timestamp.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 77, 78.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 51, 58, 69.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   75.
+// - [rustc: unreachable_pub] unreachable `pub` item. Sites 8.
+
 use crate::renderer::{RenderAdapterInfo, RenderDevice, RenderQueue};
 use tracy_client::{Client, GpuContext, GpuContextType};
 use wgpu::{

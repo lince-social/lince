@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn prefix, fn map_positions, fn scalar_positions, fn byte_positions.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   11, 60, 74, 102, 108.
+
 use std::borrow::Cow;
 
 pub fn prefix(text: &str, char_limit: usize) -> &str {

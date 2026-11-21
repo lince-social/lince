@@ -1,3 +1,25 @@
+// non-lean-yet
+// Scope: struct CanvasInfo, struct Context, enum ExpectedResponse, struct Call.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 40, 42, 49, 53,
+//   180, 186, 187, 190, 207, 243, 244, 245, 246, 308, 313, 314, 320, 328, 341, 345, 366, 381, 533,
+//   557.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 85, 323.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites complete:
+//   String (74), register_canvas: String (388).
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 186, 190, 244, 246, 328.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 85, 323.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 74, 110, 388.
+// - [Clippy probe: clippy::rc_buffer] Check whether a shared slice or str suffices. Sites 128, 159,
+//   448.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 15, 21, 59, 91.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   15, 16, 17, 21, 22, 23, 59, 60, 61, 68, 74, 91, 92, 99, 106, 110, 114, 388, 396, 399.
+
 use crate::{Engine, EngineError, actions::ActionOutcome};
 use nucleus::canvas::{Component, Descriptor, Mutation, Request, Response};
 use serde::Deserialize;

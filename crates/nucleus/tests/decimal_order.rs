@@ -1,10 +1,14 @@
+// non-lean-yet
+// Scope: fn decimal, fn arithmetic_cmp, fn
+//   numeric_equality_does_not_change_structural_identity_or_serialization, fn
+//   every_supported_scale_compares_equal_for_equivalent_values_and_zero.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
-use std::cmp::Ordering;
-use std::collections::HashSet;
+use std::{cmp::Ordering, collections::HashSet};
 
-use nucleus::DecimalValue;
-use nucleus::karma::MAX_DECIMAL_SCALE;
+use nucleus::{DecimalValue, karma::MAX_DECIMAL_SCALE};
 
 fn decimal(scale: u8, mantissa: i128) -> DecimalValue {
     DecimalValue::from_mantissa(scale, mantissa).unwrap()

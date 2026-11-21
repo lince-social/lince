@@ -1,3 +1,27 @@
+// non-lean-yet
+// Scope: mod protein_visuals, mod protein_lifecycle, fn fast_cases, fn select_cases.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 227, 284, 370,
+//   415, 423, 495, 519, 885, 1125, 1241, 1243, 1247, 1252, 1257, 1267, 1283, 1284, 1288, 1289,
+//   1306, 1308, 1312, 1313, 1317, 1322, 1330, 1332, 1336, 1350, 1351, 1355, 1357, 1361, 1413.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (30, 42, 58,
+//   68, 89, 106, 116, 130, 1102, 1118, 1120, 1155, 1175, 1184).
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites
+//   982, 1045, 1075.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   573, 574, 610.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (237, 239, 240, 241, 255, 259, 312, 313, 317, 336, 340, 353, 355, 358, 360, 365,
+//   366, 370, 371, 378, 380, 383, 384, 387, 392, 396, 397, 418, 433, 434, 505, 506, 507, 508, 515,
+//   518, 519, 520, 522, 523, 525, 533, 535, 537, 539, 540, 541, 542, 544, 545, 546, 548, 549, 557,
+//   558, 559, 560, 562, 563, 564, 565, 572, 579, 852, 854, 1372, 1380, 1398, 1570, 1573, 1589,
+//   1594, 1596, 1617, 1618, 1619, 1673, 1686, 1703, 1704, 1705, 1828, 1832, 1846, 1853, 1859, 1881,
+//   1911, 1918).
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 205, 265, 402, 468, 804, 1190, 1557, 1637, 1747.
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 443.
+
 use super::driver::{Limits, Runner, Selector, Step, UiAction, UiBackend, UiCondition};
 use crate::native::{actions::Action, edit_mode::EditAction};
 use crate::testing::InterfaceSelection;

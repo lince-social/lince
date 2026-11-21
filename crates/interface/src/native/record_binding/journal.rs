@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: type Retired, struct Cleanup, fn retire, struct Journal.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 20, 66, 67, 96,
+//   113, 183, 184, 185, 281, 289.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   base:empty_before (121), loaded:restored (111).
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites pending_import:
+//   String (136), prepare: String (146).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (113, 228, 229, 231, 233, 247, 249, 258, 262, 267, 294).
+
 use super::*;
 use loro::ExportMode;
 use store::record_edit_drafts::Metadata;

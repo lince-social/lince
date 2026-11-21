@@ -1,8 +1,15 @@
+// non-lean-yet
+// Scope: fn temp_store, fn assert_durable_settings, fn acquire_all, fn assert_pool_is_durable.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use std::str::FromStr;
-use store::Store;
-use store::sqlx::{Connection, SqliteConnection};
+
+use store::{
+    Store,
+    sqlx::{Connection, SqliteConnection},
+};
 
 fn temp_store(name: &str) -> (std::path::PathBuf, String) {
     let directory = std::env::temp_dir().join(nucleus::new_uid(name));
@@ -154,10 +161,12 @@ async fn new_durable_store_applies_migrations_without_initializing_identity() {
             .is_empty()
     );
     for table in ["record", "configuration", "role"] {
-        let count: i64 = store::sqlx::query_scalar(store::sqlx::AssertSqlSafe(format!("SELECT COUNT(*) FROM {table}")))
-            .fetch_one(&store.pool)
-            .await
-            .unwrap();
+        let count: i64 = store::sqlx::query_scalar(store::sqlx::AssertSqlSafe(format!(
+            "SELECT COUNT(*) FROM {table}"
+        )))
+        .fetch_one(&store.pool)
+        .await
+        .unwrap();
         assert_eq!(count, 0, "{table}");
     }
     assert!(store::organs::local(&store.pool).await.unwrap().is_none());

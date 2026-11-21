@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct ScriptText, struct Rendered, struct ScriptFont, fn labels.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 62, 63, 64, 90,
+//   91, 94, 95, 98, 110, 118.
+
 use bevy::{
     prelude::*,
     text::{EditableText, FontFeatureTag, FontFeatures, TextSection},

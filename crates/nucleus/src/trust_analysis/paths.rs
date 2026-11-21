@@ -1,10 +1,31 @@
-use super::{Filter, Identity, IdentityContext, MAX_DEPTH, MAX_IDENTITIES};
-use crate::karma::CanonicalHash;
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+// non-lean-yet
+// Scope: struct Policy, struct Path, struct ResultSet, fn search.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   74.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 120, 122, 148,
+//   149, 150, 151, 154.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   129.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 34, 74.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 11, 12,
+//   13, 14, 15, 16, 17, 18, 22, 34, 54, 55, 56, 57, 61, 67, 68, 69, 70, 71, 74.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites search: String
+//   (74), validate: String (34).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   130, 153.
+
 use std::collections::{BTreeMap, BTreeSet};
 
-use super::contacts::{Edge, RelationKind};
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+
+use super::{
+    Filter, Identity, IdentityContext, MAX_DEPTH, MAX_IDENTITIES,
+    contacts::{Edge, RelationKind},
+};
+use crate::karma::CanonicalHash;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -126,7 +147,10 @@ pub fn search(
     for depth in 0..=policy.max_depth {
         let mut next = Vec::new();
         for path in frontier {
-            let last = path.identities.last().expect("each path starts with the subject identity");
+            let last = path
+                .identities
+                .last()
+                .expect("each path starts with the subject identity");
             if depth > 0 && !policy.intermediaries.allows(last, &identities[last]) {
                 continue;
             }

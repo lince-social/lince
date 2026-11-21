@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn invocation, fn
+//   invocation_validates_typed_targets_and_rejects_shell_text_and_absent_identity, fn
+//   diagnostic_messages_remain_bounded_at_utf8_boundaries.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn invocation() -> Invocation {

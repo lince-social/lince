@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn fixture, fn
+//   returning_to_a_workspace_restores_its_editor_and_follow_without_restoring_stale_input, fn
+//   a_minimized_transient_parent_excludes_its_descendants_from_focus_and_input_restoration, fn
+//   frame.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::actions::Action;
 

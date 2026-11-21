@@ -1,6 +1,19 @@
-use crate::StoreError;
+// non-lean-yet
+// Scope: struct Stored, fn list, fn get, fn save.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   get:public_only (46), list:public_only (13), save:verified (60), set_public:public (101).
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 11, 43, 57, 88, 98.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 5.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 6,
+//   7, 8, 11, 43, 57, 88, 98.
+
 use nucleus::sand_package::{Entry, Identity, Manifest, PAGE_SIZE, Package};
 use sqlx::{Row, SqlitePool};
+
+use crate::StoreError;
 
 pub struct Stored {
     pub package: Package,

@@ -1,9 +1,31 @@
-use crate::{
-    Bounds, Tile,
-    source::{MAX_DECODED_BYTES, MAX_TILE_BYTES, normalize},
-};
-use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
+// non-lean-yet
+// Scope: const MAX_MANIFEST_BYTES, const MAX_PACK_FILES, enum Format, struct File.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 209, 309, 311, 383.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 54.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 92, 409.
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites install:source → &Path (393).
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 109, 110, 192, 217, 226, 229, 305, 313, 498.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   375, 402.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 23.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 59, 139, 184, 200, 235, 373, 392, 476.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 249.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 18, 19,
+//   23, 24, 25, 30, 31, 32, 33, 34, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 59, 139,
+//   184, 200, 235, 249, 250, 251, 373, 392, 476.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites
+//   archive_identity: String (200), identity: String (139), install: String (392), manifest: String
+//   (184), package: String (476), read_tile: String (235), validate: String (59), verify_archive:
+//   String (373).
+
 use std::{
     collections::BTreeSet,
     fs,
@@ -13,6 +35,14 @@ use std::{
         Arc,
         atomic::{AtomicBool, AtomicU64, Ordering},
     },
+};
+
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
+
+use crate::{
+    Bounds, Tile,
+    source::{MAX_DECODED_BYTES, MAX_TILE_BYTES, normalize},
 };
 
 pub const MAX_MANIFEST_BYTES: u64 = 4 * 1024 * 1024;

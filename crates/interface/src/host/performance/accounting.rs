@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: enum Phase, enum TimingKind, struct SystemReading, struct SystemThreadReading.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::{Distribution, Reading};
 use serde::Serialize;
 use std::collections::BTreeMap;

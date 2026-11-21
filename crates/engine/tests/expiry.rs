@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn engine, fn plain, fn person, fn at.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::needless_collect] avoid using `collect()` when not needed. Sites 166.
+
 #![cfg(test)]
 
 use chrono::{DateTime, Utc};

@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod attachments, mod drafts, mod parts, mod presentation.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 105, 121, 218,
+//   260, 262, 447, 475, 588.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 446.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (194, 389, 459, 462, 482, 507, 532, 538).
+
 mod attachments;
 mod drafts;
 mod parts;

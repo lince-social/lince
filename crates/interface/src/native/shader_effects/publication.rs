@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Change, fn prepare, fn update_editor.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 24, 48, 53, 55,
+//   92.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (14, 68, 86, 97, 102, 107).
+
 use super::*;
 
 #[derive(Default)]

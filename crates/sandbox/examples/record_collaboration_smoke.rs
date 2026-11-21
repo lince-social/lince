@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct Exercise, fn main, fn exercise, fn activate_timer.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 48, 75, 87, 88,
+//   91, 92, 99, 117, 119, 120, 151, 161, 289, 302, 339.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (22).
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites
+//   164.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (27, 29, 42, 44, 54, 56, 71, 104, 105, 107, 111, 145, 174, 182, 185, 189, 197,
+//   201, 205, 211, 244, 254, 264, 269, 275).
+
 #![recursion_limit = "256"]
 
 use base64::{Engine as _, engine::general_purpose::STANDARD as B64};

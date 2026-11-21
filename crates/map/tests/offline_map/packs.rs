@@ -1,7 +1,20 @@
-use super::*;
+// non-lean-yet
+// Scope: fn manifest, fn directory, fn install, fn
+//   manifest_rejects_traversal_symlinks_unknown_files_schema_and_bombs_before_activation.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 83, 84, 86, 88.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 30, 31, 86.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   209, 296, 313.
+
+use std::{path::Path, time::Duration};
+
 use lince_map::pack::{self, Format, InstallProgress, Manifest};
 use sha2::{Digest, Sha256};
-use std::{path::Path, time::Duration};
+
+use super::*;
 
 pub(super) fn manifest(root: &Path, format: Format, paths: &[&str], dataset: &str) -> Manifest {
     let value = Manifest {

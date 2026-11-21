@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: const OFFERED, const ACCEPTED, fn offer, fn accept.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 164.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 8, 23, 43, 63, 80, 94, 98, 118, 142, 178, 211, 221, 248, 263, 275, 294, 315, 337.
+// - [Clippy: clippy::needless_question_mark] enclosing `Ok` and `?` operator are unneeded. Sites
+//   85, 102.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 6,
+//   8, 23, 43, 63, 80, 94, 98, 112, 113, 114, 115, 118, 142, 178, 211, 221, 248, 263, 275, 294,
+//   315, 337.
+
 use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;

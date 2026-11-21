@@ -1,3 +1,22 @@
+// non-lean-yet
+// Scope: struct SessionOptions.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 151.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 93, 94, 121, 140.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   99, 128.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 9, 72, 86, 110.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 1.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 3.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 3, 4,
+//   5, 9, 54, 72, 86, 110.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites option_value:
+//   String (9), options: String (86), set_option: String (110), validate_directories: String (72).
+
 use super::*;
 
 pub struct SessionOptions {

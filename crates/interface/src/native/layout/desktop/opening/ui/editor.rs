@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod draft, mod presentation, fn state, fn take.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 44, 48, 69, 75,
+//   133, 301, 353, 357, 372, 410, 446, 448.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   395.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (31, 39, 68, 300, 356).
+
 use super::*;
 use nucleus::property_rule::{Property, PropertyRule};
 

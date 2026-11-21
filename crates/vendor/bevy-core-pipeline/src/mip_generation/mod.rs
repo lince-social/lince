@@ -1,3 +1,24 @@
+// non-lean-yet
+// Scope: mod experimental, struct DownsampleShaders, struct DownsamplePipeline, struct
+//   DownsamplePipelineKey.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   597.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 145.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 98, 178, 328,
+//   714.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 772, 773.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 132.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   598.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 420.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 65, 81, 234, 257, 274, 282, 302,
+//   315.
+
 //! Downsampling of textures to produce mipmap levels.
 //!
 //! This module implements variations on the [AMD FidelityFX single-pass

@@ -1,9 +1,18 @@
-use std::collections::{BTreeMap, HashMap, HashSet};
-use std::ffi::OsString;
-use std::fs::{self, File, Metadata, TryLockError};
-use std::io;
-use std::path::{Path, PathBuf};
-use std::time::SystemTime;
+// non-lean-yet
+// Scope: const LIMIT, type Identity, type Identity, fn identity.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 212.
+// - [Clippy probe: clippy::print_stdout] Check CLI, Cargo, fixture, or library output contract
+//   before changing output. Sites 354, 358, 369.
+
+use std::{
+    collections::{BTreeMap, HashMap, HashSet},
+    ffi::OsString,
+    fs::{self, File, Metadata, TryLockError},
+    io,
+    path::{Path, PathBuf},
+    time::SystemTime,
+};
 
 const LIMIT: u64 = 300_000_000_000;
 
@@ -218,7 +227,10 @@ fn candidates(profile: &Path, running: &HashSet<Identity>) -> io::Result<Vec<Can
         if entry.file_type()?.is_file() && !entry.file_name().to_string_lossy().starts_with('.') {
             let metadata = entry.metadata()?;
             if let Some(hash) = aliases.get(&identity(&entry.path(), &metadata)) {
-                groups.get_mut(hash).ok_or_else(|| io::Error::other("Artifact alias has no matching group"))?.add(entry.path(), running)?;
+                groups
+                    .get_mut(hash)
+                    .ok_or_else(|| io::Error::other("Artifact alias has no matching group"))?
+                    .add(entry.path(), running)?;
             }
         }
     }
@@ -376,10 +388,13 @@ pub(crate) fn command(target: &Path, arguments: &[OsString]) -> Result<(), Strin
 
 #[cfg(test)]
 mod tests {
+    use std::{
+        fs::FileTimes,
+        sync::atomic::{AtomicU64, Ordering},
+        time::Duration,
+    };
+
     use super::*;
-    use std::fs::FileTimes;
-    use std::sync::atomic::{AtomicU64, Ordering};
-    use std::time::Duration;
 
     struct Fixture(PathBuf);
     impl Fixture {

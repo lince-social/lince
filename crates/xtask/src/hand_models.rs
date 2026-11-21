@@ -1,5 +1,10 @@
-use sha2::{Digest, Sha256};
+// non-lean-yet
+// Scope: const REVISION, const MODELS, fn download, fn valid.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::{fs, path::Path, time::Duration};
+
+use sha2::{Digest, Sha256};
 
 const REVISION: &str = "47534e27c9851bb1128ccc0102f1145e27f23f98";
 const MODELS: &[(&str, &str, &str)] = &[

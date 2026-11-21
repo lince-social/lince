@@ -1,5 +1,17 @@
-use lince_editor::{Buffer, Edit, MAX_WINDOW_BYTES};
+// non-lean-yet
+// Scope: fn memory, fn main.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 43, 44.
+// - [Clippy: clippy::panic_in_result_fn] Return the existing error type for recoverable failure.
+//   Sites 16.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   45.
+// - [Clippy: clippy::missing_assert_message] assert without any message. Sites 33, 51, 64, 68.
+
 use std::time::Instant;
+
+use lince_editor::{Buffer, Edit, MAX_WINDOW_BYTES};
 
 fn memory() -> String {
     std::fs::read_to_string("/proc/self/status")

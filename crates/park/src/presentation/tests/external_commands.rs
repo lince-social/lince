@@ -1,6 +1,8 @@
-use super::displays::{labelled, reveal, write};
-use super::shortcuts::{capture, click, click_with_keys, named_button, settle};
-use super::*;
+// non-lean-yet
+// Scope: fn caption_bounds, fn
+//   external_commands_use_real_fields_literal_arguments_save_retry_cancel_and_shared_binding_capture.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use lince_interface::{
     host::{
         HostRequest,
@@ -8,6 +10,12 @@ use lince_interface::{
         launch::Description,
     },
     native::actions::Action,
+};
+
+use super::{
+    displays::{labelled, reveal, write},
+    shortcuts::{capture, click, click_with_keys, named_button, settle},
+    *,
 };
 
 fn caption_bounds(canvas: &Presentation, control: Entity) {

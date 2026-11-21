@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: fn version, fn fits_on, fn observe_on, fn quarantine_on.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 29, 153.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 29.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 242.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 205, 219, 256, 279, 283, 298, 299.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value.
+//   Sites 220.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use store::sqlx::{Sqlite, Transaction};
 

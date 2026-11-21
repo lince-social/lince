@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct Report, fn entries, fn read, fn decode.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 197.
+
 use super::*;
 use serde::de::DeserializeOwned;
 use serde_json::{Map, Value};

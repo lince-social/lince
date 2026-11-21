@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: mod forms, mod qr, mod social, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 235, 272, 407,
+//   412, 498, 502, 659, 675, 679, 719, 781, 795, 800, 810, 826, 839.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 550.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   701, 791.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (195, 312, 399, 407, 471, 502, 576, 705, 759, 791).
+
 use std::sync::Arc;
 use crate::native::{actions::Action, sand_panel as panel};
 use bevy::prelude::*;

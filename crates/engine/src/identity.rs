@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: mod roots, fn invalid, fn validate.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 87.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 22, 25,
+//   147.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 22, 25, 147.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 41.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   41.
+
 use crate::{Engine, EngineError, actions::ActionOutcome};
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use chrono::{DateTime, Utc};

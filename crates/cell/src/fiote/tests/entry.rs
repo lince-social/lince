@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct MemoryProvider, fn submission, fn configured, fn count.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::await_holding_lock] Release the guard before awaiting if the transaction
+//   permits it. Sites 185.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 437, 515, 633, 638.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 89, 684.
+
 use super::*;
 use base64::Engine as _;
 use fiote::assistant::EntryRequest;

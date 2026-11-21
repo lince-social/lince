@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn fixture, fn start, fn every_page_starts_directly_and_escape_keeps_progress_distinct, fn
+//   user_action_and_next_share_observation_without_duplicate_samples.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::actions::{ActionSequence, PracticeIntent};
 use lince_interface::practice::Progress;

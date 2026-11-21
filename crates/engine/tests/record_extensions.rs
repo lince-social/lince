@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn setup, fn schema, fn create, fn apply.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::manual_string_new] empty String is being created manually. Sites 30.
+
 #![cfg(test)]
 
 use engine::{Engine, actions::Action};

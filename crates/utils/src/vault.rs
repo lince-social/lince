@@ -1,12 +1,25 @@
-use {
-    argon2::{Algorithm, Argon2, Params, Version},
-    base64::Engine as _,
-    chacha20poly1305::{
-        XChaCha20Poly1305,
-        aead::{Aead, KeyInit, Payload},
-    },
-    zeroize::Zeroize,
+// non-lean-yet
+// Scope: const MARKER, const AAD_TAG, const SALT_LEN, const NONCE_LEN.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 182.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 22.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   44.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   70, 74, 150, 168, 175, 181, 182.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 138, 159.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 11, 22,
+//   23, 24, 90, 138, 159.
+
+use argon2::{Algorithm, Argon2, Params, Version};
+use base64::Engine as _;
+use chacha20poly1305::{
+    XChaCha20Poly1305,
+    aead::{Aead, KeyInit, Payload},
 };
+use zeroize::Zeroize;
 
 pub const MARKER: &str = "lince-vault.v1";
 

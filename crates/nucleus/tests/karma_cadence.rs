@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn at, fn day, fn fridays, fn dates.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 53, 54, 55, 102, 103, 104, 113, 114, 115, 144, 145, 171, 187, 195, 196, 316, 317, 396,
+//   397.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 430.
+
 use chrono::{DateTime, Datelike, Duration, TimeZone, Utc};
 use nucleus::karma::{Cadence, CadenceError, CadenceStep, CivilWeekday, InvalidDay, WeekdaySet};
 

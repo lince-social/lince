@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: static QUERIES, fn snapshots, fn publish, fn forecast_rows.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 130.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 24.
+
 #![cfg(test)]
 
 use engine::{Engine, actions::Action};

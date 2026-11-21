@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: mod sync_point, fn supports_syncobj_eventfd, trait DrmSyncobjHandler, struct
+//   DrmSyncobjGlobalData.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 379, 380, 417,
+//   444.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 85.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (385, 415, 442).
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 65.
+
 //! DRM syncobj protocol
 //!
 //! This module implement the `linux-drm-syncobj-v1` protocol, used to support

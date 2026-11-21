@@ -1,4 +1,21 @@
-use crate::graphics::{ExportedImage, ProbeFailure, VulkanRenderer};
+// non-lean-yet
+// Scope: mod client_probe, mod clients, mod gestures, mod focus_policy.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 319, 322.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 180, 540, 632,
+//   633, 635, 636, 675, 739, 791, 810, 850, 896, 927, 951, 969, 1002, 1070, 1075, 1081, 1160, 1185,
+//   1194, 1229, 1286, 1368, 1386, 1455, 1485, 1507, 1514, 1525, 1526, 1731, 1739, 1790, 1828, 1834.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   button:pressed (858), focus:focused (956), key:pressed (906), key:repeat (907).
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 424.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (1676).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   564, 834, 838, 1445, 1475, 1481, 1535.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (241, 254, 285, 837, 840, 964, 1462, 1728, 1825).
+
+use std::{path::PathBuf, rc::Rc, sync::Arc};
+
 use bevy::{
     camera::RenderTarget,
     ecs::query::QueryState,
@@ -6,9 +23,7 @@ use bevy::{
     render::{
         RenderApp, RenderPlugin,
         render_asset::RenderAssets,
-        renderer::{
-            RenderAdapter, RenderAdapterInfo, RenderDevice, RenderInstance, RenderQueue,
-        },
+        renderer::{RenderAdapter, RenderAdapterInfo, RenderDevice, RenderInstance, RenderQueue},
         settings::RenderCreation,
         texture::GpuImage,
     },
@@ -21,28 +36,29 @@ use lince_interface::{
         app::{CellHandle, OutputTarget},
     },
 };
-use std::{path::PathBuf, rc::Rc, sync::Arc};
 
+use crate::graphics::{ExportedImage, ProbeFailure, VulkanRenderer};
+
+mod absolute;
+pub(crate) mod accessibility;
+mod capture;
 #[cfg(feature = "native-client-gate")]
 mod client_probe;
 mod clients;
-mod gestures;
-mod focus_policy;
-mod opening;
 mod control;
-mod capture;
-pub(crate) mod accessibility;
-mod mapping;
-mod absolute;
-mod tablet;
-pub mod manipulation;
-mod outputs;
-mod records;
-mod pixels;
-mod pipelines;
+mod focus_policy;
 pub(crate) mod frame_trace;
+mod gestures;
+pub mod manipulation;
+mod mapping;
+mod opening;
+mod outputs;
 mod phase_metrics;
+mod pipelines;
+mod pixels;
+mod records;
 mod system_metrics;
+mod tablet;
 
 pub(crate) fn observe_systems() -> Option<bevy::log::tracing::subscriber::DefaultGuard> {
     lince_interface::host::performance::enabled().then(system_metrics::enter)
@@ -173,11 +189,16 @@ struct MainUpdateStart(std::time::Instant);
 #[derive(Resource)]
 struct RenderUpdateStart(std::time::Instant);
 
-fn connect_cell(app: &mut App, runtime: CellHandle, data: PathBuf) -> std::io::Result<records::Records> {
+fn connect_cell(
+    app: &mut App,
+    runtime: CellHandle,
+    data: PathBuf,
+) -> std::io::Result<records::Records> {
     let records = records::Records::load(data.join("park-windows.json"))?;
     let storage = tokio::runtime::Handle::current().block_on(runtime.0.interface_storage())?;
     app.insert_resource(native::sound::Audio::open(
-        data.clone(), app.world().get_resource::<WakeSignal>().cloned(),
+        data.clone(),
+        app.world().get_resource::<WakeSignal>().cloned(),
     ));
     app.insert_resource(native::workspace::WorkspaceFile::with_settings(
         data.join("interface.json"),
@@ -191,9 +212,13 @@ fn connect_cell(app: &mut App, runtime: CellHandle, data: PathBuf) -> std::io::R
 impl Frame {
     #[cfg(feature = "nested")]
     pub(crate) fn owns_modal_pointer(&self, point: [f64; 2]) -> bool {
-        self.input.modal && self.geometry.as_deref().is_none_or(|geometry| {
-            geometry.outputs.iter().any(|output| Some(output.id) == self.output && output.bounds.contains(point))
-        })
+        self.input.modal
+            && self.geometry.as_deref().is_none_or(|geometry| {
+                geometry
+                    .outputs
+                    .iter()
+                    .any(|output| Some(output.id) == self.output && output.bounds.contains(point))
+            })
     }
 
     pub fn ready(&self) -> Result<bool, ProbeFailure> {
@@ -202,7 +227,11 @@ impl Frame {
 
     pub(crate) fn pending_until(&self) -> Result<Option<std::time::Instant>, ProbeFailure> {
         let mut earliest: Option<std::time::Instant> = None;
-        for image in self.image.iter().chain(self.outputs.iter().map(|output| &output.image)) {
+        for image in self
+            .image
+            .iter()
+            .chain(self.outputs.iter().map(|output| &output.image))
+        {
             if let Some(deadline) = image.pending_until()? {
                 earliest = Some(earliest.map_or(deadline, |previous| previous.min(deadline)));
             }
@@ -211,8 +240,12 @@ impl Frame {
     }
 
     pub fn wait_for_probe(&self) -> Result<(), ProbeFailure> {
-        if let Some(image) = &self.image { image.wait_for_probe()?; }
-        for output in &self.outputs { output.image.wait_for_probe()?; }
+        if let Some(image) = &self.image {
+            image.wait_for_probe()?;
+        }
+        for output in &self.outputs {
+            output.image.wait_for_probe()?;
+        }
         Ok(())
     }
 
@@ -238,7 +271,13 @@ pub fn probe() -> Result<(), ProbeFailure> {
     for _ in 0..10 {
         frame = Some(canvas.probe_frame()?);
     }
-    let before = probe_pixels(frame.as_ref().unwrap().dmabuf().ok_or_else(|| input_failure("The probe output image is unavailable"))?)?;
+    let before = probe_pixels(
+        frame
+            .as_ref()
+            .unwrap()
+            .dmabuf()
+            .ok_or_else(|| input_failure("The probe output image is unavailable"))?,
+    )?;
     let world = canvas.world_mut();
     let root = world
         .query_filtered::<Entity, With<native::container::BoxRoot>>()
@@ -251,7 +290,13 @@ pub fn probe() -> Result<(), ProbeFailure> {
     for _ in 0..10 {
         frame = Some(canvas.probe_frame()?);
     }
-    let after = probe_pixels(frame.as_ref().unwrap().dmabuf().ok_or_else(|| input_failure("The probe output image is unavailable"))?)?;
+    let after = probe_pixels(
+        frame
+            .as_ref()
+            .unwrap()
+            .dmabuf()
+            .ok_or_else(|| input_failure("The probe output image is unavailable"))?,
+    )?;
     let world = canvas.world_mut();
     if !world
         .query::<&native::sand_store::StoredSand>()
@@ -282,7 +327,14 @@ pub fn probe() -> Result<(), ProbeFailure> {
         frame = Some(canvas.probe_frame()?);
     }
     use smithay::backend::allocator::Buffer;
-    if frame.as_ref().unwrap().dmabuf().ok_or_else(|| input_failure("The probe output image is unavailable"))?.size() != (800, 480).into() {
+    if frame
+        .as_ref()
+        .unwrap()
+        .dmabuf()
+        .ok_or_else(|| input_failure("The probe output image is unavailable"))?
+        .size()
+        != (800, 480).into()
+    {
         return Err(input_failure(
             "native output resize did not reach the exported frame",
         ));
@@ -343,7 +395,9 @@ impl Presentation {
         request: lince_interface::host::WindowRequest,
     ) {
         let pending = self.window_requests.entry(surface).or_default();
-        if request.minimized.is_some() { pending.minimized = request.minimized; }
+        if request.minimized.is_some() {
+            pending.minimized = request.minimized;
+        }
         if request.fullscreen.is_some() {
             pending.fullscreen = request.fullscreen;
         }
@@ -395,39 +449,87 @@ impl Presentation {
         action: lince_interface::host::DesktopAction,
     ) -> Result<(), ProbeFailure> {
         use native::actions::Action;
-        if self.suspended() && action != lince_interface::host::DesktopAction::Logout { return Ok(()); }
+        if self.suspended() && action != lince_interface::host::DesktopAction::Logout {
+            return Ok(());
+        }
         if let lince_interface::host::DesktopAction::CommitRecent { request } = action {
             let root = self.canvas_root()?;
-            let Some((workspace, item)) = native::layout::desktop::recent::selection(self.app.world(), root, request) else {
-                native::layout::desktop::recent::acknowledge(self.app.world_mut(), root, request, false);
+            let Some((workspace, item)) =
+                native::layout::desktop::recent::selection(self.app.world(), root, request)
+            else {
+                native::layout::desktop::recent::acknowledge(
+                    self.app.world_mut(),
+                    root,
+                    request,
+                    false,
+                );
                 return Ok(());
             };
-            let prepared = native::layout::desktop::transfers::prepare_identity(self.app.world(), root, workspace);
+            let prepared = native::layout::desktop::transfers::prepare_identity(
+                self.app.world(),
+                root,
+                workspace,
+            );
             self.apply_workspace_transfer(prepared, None, true)?;
-            if self.app.world().get::<native::workspace::Workspaces>(root).is_some_and(|spaces| spaces.active == workspace)
-                && native::layout::desktop::overview::valid_selection(self.app.world(), root, workspace, Some(item)) {
+            if self
+                .app
+                .world()
+                .get::<native::workspace::Workspaces>(root)
+                .is_some_and(|spaces| spaces.active == workspace)
+                && native::layout::desktop::overview::valid_selection(
+                    self.app.world(),
+                    root,
+                    workspace,
+                    Some(item),
+                )
+            {
                 self.application_focus = None;
                 native::layout::desktop::recent::activate(self.app.world_mut(), root, request);
             } else {
-                native::layout::desktop::recent::acknowledge(self.app.world_mut(), root, request, false);
+                native::layout::desktop::recent::acknowledge(
+                    self.app.world_mut(),
+                    root,
+                    request,
+                    false,
+                );
             }
             return Ok(());
         }
         if let lince_interface::host::DesktopAction::SelectPlacement { workspace, item } = action {
             let root = self.canvas_root()?;
             let previous = native::workspace::navigation::capture(self.app.world(), root);
-            if !native::layout::desktop::overview::valid_selection(self.app.world(), root, workspace, item) {
-                native::layout::desktop::overview::activate(self.app.world_mut(), root, workspace, item);
+            if !native::layout::desktop::overview::valid_selection(
+                self.app.world(),
+                root,
+                workspace,
+                item,
+            ) {
+                native::layout::desktop::overview::activate(
+                    self.app.world_mut(),
+                    root,
+                    workspace,
+                    item,
+                );
                 return Ok(());
             }
             if let Some(output) = self.output_state.assignments.focused() {
-                self.output_state.assignments.select(output, workspace).map_err(|_| input_failure("could not select the overview workspace"))?;
+                self.output_state
+                    .assignments
+                    .select(output, workspace)
+                    .map_err(|_| input_failure("could not select the overview workspace"))?;
                 self.select_output_workspace()?;
                 self.refresh_outputs()?;
             }
             self.application_focus = None;
-            native::layout::desktop::overview::activate(self.app.world_mut(), root, workspace, item);
-            if let Some(previous) = previous { previous.remember(self.app.world_mut()); }
+            native::layout::desktop::overview::activate(
+                self.app.world_mut(),
+                root,
+                workspace,
+                item,
+            );
+            if let Some(previous) = previous {
+                previous.remember(self.app.world_mut());
+            }
             return Ok(());
         }
         if action == lince_interface::host::DesktopAction::ReapplyOpeningRules {
@@ -450,65 +552,118 @@ impl Presentation {
         Ok(())
     }
 
-    pub(crate) fn file_drag(&mut self, context: Option<lince_interface::host::FileDragContext>) -> Result<(), ProbeFailure> {
+    pub(crate) fn file_drag(
+        &mut self,
+        context: Option<lince_interface::host::FileDragContext>,
+    ) -> Result<(), ProbeFailure> {
         let window = self.input_window()?;
         let context = context.filter(|_| !self.suspended());
         native::layout::desktop::overview::file_drag(self.app.world_mut(), window, context);
         Ok(())
     }
 
-    pub(crate) fn overview_hover(&mut self, request: lince_interface::host::OverviewHoverRequest, accepted: bool) -> Result<(), ProbeFailure> {
+    pub(crate) fn overview_hover(
+        &mut self,
+        request: lince_interface::host::OverviewHoverRequest,
+        accepted: bool,
+    ) -> Result<(), ProbeFailure> {
         let accepted = accepted && !self.suspended();
-        if native::layout::desktop::overview::acknowledge_hover(self.app.world_mut(), request, accepted) {
+        if native::layout::desktop::overview::acknowledge_hover(
+            self.app.world_mut(),
+            request,
+            accepted,
+        ) {
             self.activate_workspace(request.drag.owner, request.workspace)?;
         }
         Ok(())
     }
 
     pub fn activate_workspace(&mut self, owner: u64, workspace: u64) -> Result<(), ProbeFailure> {
-        if self.suspended() { return Ok(()); }
+        if self.suspended() {
+            return Ok(());
+        }
         match self.try_activate_workspace(owner, workspace) {
             Ok(()) => Ok(()),
-            Err(outputs::ActionFailure::Refused(message)) => { native::notifications::report(self.app.world_mut(), "Park", &message); Ok(()) }
+            Err(outputs::ActionFailure::Refused(message)) => {
+                native::notifications::report(self.app.world_mut(), "Park", &message);
+                Ok(())
+            }
             Err(outputs::ActionFailure::Backend(error)) => Err(error),
         }
     }
 
-    fn try_activate_workspace(&mut self, owner: u64, workspace: u64) -> Result<(), outputs::ActionFailure> {
-        if self.suspended() { return Err(outputs::ActionFailure::Refused("The Park view is inactive.".into())); }
+    fn try_activate_workspace(
+        &mut self,
+        owner: u64,
+        workspace: u64,
+    ) -> Result<(), outputs::ActionFailure> {
+        if self.suspended() {
+            return Err(outputs::ActionFailure::Refused(
+                "The Park view is inactive.".into(),
+            ));
+        }
         let root = self.canvas_root()?;
-        if root.to_bits() != owner || native::laboratory::temporary(self.app.world(), root, workspace) { return Err(outputs::ActionFailure::Refused("The captured workspace is unavailable.".into())); }
-        let prepared = native::layout::desktop::transfers::prepare_identity(self.app.world(), root, workspace);
+        if root.to_bits() != owner
+            || native::laboratory::temporary(self.app.world(), root, workspace)
+        {
+            return Err(outputs::ActionFailure::Refused(
+                "The captured workspace is unavailable.".into(),
+            ));
+        }
+        let prepared =
+            native::layout::desktop::transfers::prepare_identity(self.app.world(), root, workspace);
         native::layout::desktop::overview::dismiss(self.app.world_mut());
         self.try_apply_workspace_transfer(prepared, None, true)
     }
 
     pub fn create_workspace(&mut self, owner: u64) -> Result<(), ProbeFailure> {
-        if self.suspended() { return Ok(()); }
+        if self.suspended() {
+            return Ok(());
+        }
         let root = self.canvas_root()?;
-        if root.to_bits() != owner { return Ok(()); }
+        if root.to_bits() != owner {
+            return Ok(());
+        }
         let prepared = native::layout::desktop::transfers::prepare_creation(self.app.world(), root);
         native::layout::desktop::overview::dismiss(self.app.world_mut());
         self.apply_workspace_transfer(prepared, None, true)
     }
 
     fn workspace_snapshot(&mut self) -> crate::server::WorkspaceSnapshot {
-        let Ok(root) = self.canvas_root() else { return Default::default() };
+        let Ok(root) = self.canvas_root() else {
+            return Default::default();
+        };
         let world = self.app.world();
-        let Some(spaces) = world.get::<native::workspace::Workspaces>(root) else { return Default::default() };
+        let Some(spaces) = world.get::<native::workspace::Workspaces>(root) else {
+            return Default::default();
+        };
         let views = world.get_resource::<native::output_views::OutputViews>();
         crate::server::WorkspaceSnapshot {
             owner: root.to_bits(),
-            entries: spaces.entries.iter().filter(|space| !native::laboratory::temporary(world, root, space.id))
+            entries: spaces
+                .entries
+                .iter()
+                .filter(|space| !native::laboratory::temporary(world, root, space.id))
                 .map(|space| crate::server::WorkspaceEntry {
-                    id: space.id, name: space.name.chars().take(1024).collect(),
-                    active: !self.suspended() && views.map_or(spaces.active == space.id, |views| views.outputs.iter().any(|output| output.workspace == space.id)),
-                }).take(4096).collect(),
+                    id: space.id,
+                    name: space.name.chars().take(1024).collect(),
+                    active: !self.suspended()
+                        && views.map_or(spaces.active == space.id, |views| {
+                            views
+                                .outputs
+                                .iter()
+                                .any(|output| output.workspace == space.id)
+                        }),
+                })
+                .take(4096)
+                .collect(),
         }
     }
 
     pub fn focus_application(&mut self, surface: lince_interface::host::SurfaceId) {
-        if self.suspended() { return; }
+        if self.suspended() {
+            return;
+        }
         if let Some(window) = self.windows.get(&surface) {
             self.application_focus = Some(surface);
             native::layout::desktop::focus_item(self.app.world_mut(), window.entity);
@@ -533,7 +688,9 @@ impl Presentation {
     }
 
     fn refresh_viewport(&mut self) -> Result<(), ProbeFailure> {
-        if self.suspended() { return Ok(()); }
+        if self.suspended() {
+            return Ok(());
+        }
         if !self.output_state.outputs.is_empty() {
             return self.refresh_outputs();
         }
@@ -568,7 +725,8 @@ impl Presentation {
         }
         let bounds = lince_interface::host::Rectangle::new([0.0; 2], size.map(f64::from))
             .ok_or_else(|| input_failure("invalid native view bounds"))?;
-        let local = lince_interface::host::OutputViewport { rotation: Default::default(),
+        let local = lince_interface::host::OutputViewport {
+            rotation: Default::default(),
             bounds,
             usable: region.map(|_| bounds),
             physical_size: size,
@@ -613,7 +771,10 @@ impl Presentation {
     ) {
         self.app
             .insert_resource(native::layout::desktop::HostRequests(sender))
-            .insert_resource(lince_interface::host::FileDragSupport { available: true, reason: None });
+            .insert_resource(lince_interface::host::FileDragSupport {
+                available: true,
+                reason: None,
+            });
     }
     pub fn new(size: [u32; 2], assets: PathBuf, wake: WakeSignal) -> Result<Self, ProbeFailure> {
         Self::new_with_cell(size, assets, wake, None)
@@ -659,7 +820,8 @@ impl Presentation {
         if crate::runtime::tracing_frames() || lince_interface::host::performance::enabled() {
             app.add_systems(First, |mut commands: Commands| {
                 commands.insert_resource(MainUpdateStart(std::time::Instant::now()));
-            }).add_systems(Last, |started: Res<MainUpdateStart>| {
+            })
+            .add_systems(Last, |started: Res<MainUpdateStart>| {
                 crate::runtime::trace_frame("native-main", started.0);
             });
         }
@@ -709,13 +871,18 @@ impl Presentation {
             let render = app.sub_app_mut(RenderApp);
             if let Some(mut extract) = render.take_extract() {
                 render.set_extract(move |main, render| {
-                    let _timing = lince_interface::host::performance::Span::new(lince_interface::host::performance::Stage::NativeExtraction);
-                    let trace = render.get_resource::<frame_trace::RenderId>()
+                    let _timing = lince_interface::host::performance::Span::new(
+                        lince_interface::host::performance::Stage::NativeExtraction,
+                    );
+                    let trace = render
+                        .get_resource::<frame_trace::RenderId>()
                         .map(|id| (id.0, frame_trace::timestamp()));
                     extract(main, render);
                     if let Some((id, started)) = trace {
-                        frame_trace::record(serde_json::json!({"event":"native-extraction", "render":id,
-                            "started_us":started, "monotonic_us":frame_trace::timestamp()}));
+                        frame_trace::record(
+                            serde_json::json!({"event":"native-extraction", "render":id,
+                            "started_us":started, "monotonic_us":frame_trace::timestamp()}),
+                        );
                     }
                 });
             }
@@ -723,14 +890,25 @@ impl Presentation {
         if lince_interface::host::performance::enabled() {
             use bevy::render::{Render, RenderSystems};
             let render = app.sub_app_mut(RenderApp);
-            render.add_systems(Render, (|world: &mut World| {
-                world.insert_resource(RenderUpdateStart(std::time::Instant::now()));
-            }).before(RenderSystems::ExtractCommands));
-            render.add_systems(Render, (|started: Option<Res<RenderUpdateStart>>| {
-                if let Some(started) = started {
-                    lince_interface::host::performance::record(lince_interface::host::performance::Stage::RenderUpdate, started.0.elapsed());
-                }
-            }).after(RenderSystems::PostCleanup));
+            render.add_systems(
+                Render,
+                (|world: &mut World| {
+                    world.insert_resource(RenderUpdateStart(std::time::Instant::now()));
+                })
+                .before(RenderSystems::ExtractCommands),
+            );
+            render.add_systems(
+                Render,
+                (|started: Option<Res<RenderUpdateStart>>| {
+                    if let Some(started) = started {
+                        lince_interface::host::performance::record(
+                            lince_interface::host::performance::Stage::RenderUpdate,
+                            started.0.elapsed(),
+                        );
+                    }
+                })
+                .after(RenderSystems::PostCleanup),
+            );
         }
         let target = app
             .world_mut()
@@ -776,29 +954,53 @@ impl Presentation {
     }
 
     #[cfg(all(test, feature = "nested", feature = "server-tests"))]
-    pub(crate) fn world(&self) -> &World { self.app.world() }
+    pub(crate) fn world(&self) -> &World {
+        self.app.world()
+    }
 
     pub(crate) fn prepare_linear_output(&mut self, requested: bool) -> Result<(), ProbeFailure> {
-        if !requested { return Ok(()); }
-        if self.app.world().contains_resource::<native::topology::presentation::SceneCamera>() {
-            return Err(input_failure("Native color precision must be selected before the first interface frame"));
+        if !requested {
+            return Ok(());
+        }
+        if self
+            .app
+            .world()
+            .contains_resource::<native::topology::presentation::SceneCamera>()
+        {
+            return Err(input_failure(
+                "Native color precision must be selected before the first interface frame",
+            ));
         }
         if let Err(failure) = self.renderer.linear_scene_support() {
             eprintln!("Park native linear color is unavailable: {failure}");
             return Ok(());
         }
-        let target = self.app.world_mut().resource_mut::<Assets<Image>>().add(output_image_format(self.render_size, true));
+        let target = self
+            .app
+            .world_mut()
+            .resource_mut::<Assets<Image>>()
+            .add(output_image_format(self.render_size, true));
         let previous = std::mem::replace(&mut self.target, target.clone());
-        self.app.world_mut().insert_resource(OutputTarget(RenderTarget::Image(target.into())));
-        self.app.world_mut().insert_resource(native::app::LinearOutput);
-        self.app.world_mut().resource_mut::<Assets<Image>>().remove(previous.id());
+        self.app
+            .world_mut()
+            .insert_resource(OutputTarget(RenderTarget::Image(target.into())));
+        self.app
+            .world_mut()
+            .insert_resource(native::app::LinearOutput);
+        self.app
+            .world_mut()
+            .resource_mut::<Assets<Image>>()
+            .remove(previous.id());
         self.linear_output = true;
         Ok(())
     }
 
     fn native_encoding(&self) -> lince_interface::host::color::NativeEncoding {
-        if self.linear_output { lince_interface::host::color::NativeEncoding::LinearRelative }
-        else { lince_interface::host::color::NativeEncoding::Srgb }
+        if self.linear_output {
+            lince_interface::host::color::NativeEncoding::LinearRelative
+        } else {
+            lince_interface::host::color::NativeEncoding::Srgb
+        }
     }
 
     #[cfg(all(test, feature = "nested", feature = "server-tests"))]
@@ -806,36 +1008,61 @@ impl Presentation {
         self.last_geometry.as_deref()
     }
 
-    pub(crate) fn native_test_points(&mut self, entity: Entity) -> Option<(lince_interface::host::OutputId, [[f64; 2]; 4])> {
+    pub(crate) fn native_test_points(
+        &mut self,
+        entity: Entity,
+    ) -> Option<(lince_interface::host::OutputId, [[f64; 2]; 4])> {
         let geometry = self.last_geometry.clone();
         let focused = self.output_state.assignments.focused();
         let mut views = self.accessibility_views(geometry.as_deref());
         views.sort_by_key(|view| Some(view.output) != focused);
         views.into_iter().find_map(|view| {
-            crate::native_input::projection::accessibility_points(self.app.world(), &view, geometry.as_deref(), entity, None)
-                .map(|points| (view.output, points))
+            crate::native_input::projection::accessibility_points(
+                self.app.world(),
+                &view,
+                geometry.as_deref(),
+                entity,
+                None,
+            )
+            .map(|points| (view.output, points))
         })
     }
 
-    pub(crate) fn native_pointer_current(&mut self, target: &crate::native_input::PointerTarget) -> bool {
-        if self.suspended() { return false; }
+    pub(crate) fn native_pointer_current(
+        &mut self,
+        target: &crate::native_input::PointerTarget,
+    ) -> bool {
+        if self.suspended() {
+            return false;
+        }
         let geometry = self.frame_geometry();
         let views = self.accessibility_views(geometry.as_deref());
         crate::native_input::pointer::current(self.app.world(), &views, geometry.as_deref(), target)
     }
 
     pub fn pointer(&mut self, position: [f32; 2]) -> Result<(), ProbeFailure> {
-        if self.suspended() { return Ok(()); }
+        if self.suspended() {
+            return Ok(());
+        }
         if position.iter().any(|value| !value.is_finite()) {
             return Err(input_failure("pointer coordinates must be finite"));
         }
         let mapping = self.input_mapping();
-        let origin = self.output_view.as_ref().map_or([0.0; 2], |output|
-            std::array::from_fn(|axis| output.bounds.origin()[axis] + self.render_origin[axis]));
+        let origin = self.output_view.as_ref().map_or([0.0; 2], |output| {
+            std::array::from_fn(|axis| output.bounds.origin()[axis] + self.render_origin[axis])
+        });
         let window = self.input_window()?;
         let world = self.app.world_mut();
-        let scale = f64::from(world.get::<Window>(window).unwrap().resolution.scale_factor());
-        let physical = mapping.point(std::array::from_fn(|axis| f64::from(position[axis]) + origin[axis]));
+        let scale = f64::from(
+            world
+                .get::<Window>(window)
+                .unwrap()
+                .resolution
+                .scale_factor(),
+        );
+        let physical = mapping.point(std::array::from_fn(|axis| {
+            f64::from(position[axis]) + origin[axis]
+        }));
         let position = Vec2::from_array(physical.map(|value| (value / scale) as f32));
         let mut state = world.get_mut::<Window>(window).unwrap();
         let delta = state.cursor_position().map(|last| position - last);
@@ -857,23 +1084,64 @@ impl Presentation {
         button: bevy::input::mouse::MouseButton,
         pressed: bool,
     ) -> Result<(), ProbeFailure> {
-        if self.suspended() { return Ok(()); }
-        if pressed { self.app.world_mut().remove_resource::<native::output_views::HandFocusRequest>(); }
+        if self.suspended() {
+            return Ok(());
+        }
+        if pressed {
+            self.app
+                .world_mut()
+                .remove_resource::<native::output_views::HandFocusRequest>();
+        }
         let window = self.input_window()?;
         if pressed {
-            let Some(position) = self.app.world().get::<Window>(window).and_then(Window::physical_cursor_position) else { return Ok(()); };
-            let point = self.input_mapping().logical_point(position.as_dvec2().to_array());
+            let Some(position) = self
+                .app
+                .world()
+                .get::<Window>(window)
+                .and_then(Window::physical_cursor_position)
+            else {
+                return Ok(());
+            };
+            let point = self
+                .input_mapping()
+                .logical_point(position.as_dvec2().to_array());
             let geometry = self.frame_geometry();
             let views = self.accessibility_views(geometry.as_deref());
-            let target = crate::native_input::pointer::capture(self.app.world(), &views, geometry.as_deref()).target(point);
-            let Some(target) = target else { return Ok(()); };
-            if !self.app.world_mut().resource_mut::<crate::native_input::pointer::Held>().press(button, target) { return Ok(()); }
+            let target = crate::native_input::pointer::capture(
+                self.app.world(),
+                &views,
+                geometry.as_deref(),
+            )
+            .target(point);
+            let Some(target) = target else {
+                return Ok(());
+            };
+            if !self
+                .app
+                .world_mut()
+                .resource_mut::<crate::native_input::pointer::Held>()
+                .press(button, target)
+            {
+                return Ok(());
+            }
         } else {
-            let Ok(target) = self.app.world_mut().resource_mut::<crate::native_input::pointer::Held>().release(button) else { return Ok(()); };
+            let Ok(target) = self
+                .app
+                .world_mut()
+                .resource_mut::<crate::native_input::pointer::Held>()
+                .release(button)
+            else {
+                return Ok(());
+            };
             if let Some(target) = target {
                 let geometry = self.frame_geometry();
                 let views = self.accessibility_views(geometry.as_deref());
-                if !crate::native_input::pointer::held_current(self.app.world(), &views, geometry.as_deref(), &target) {
+                if !crate::native_input::pointer::held_current(
+                    self.app.world(),
+                    &views,
+                    geometry.as_deref(),
+                    &target,
+                ) {
                     cancel_pointer(self.app.world_mut());
                     return Ok(());
                 }
@@ -906,9 +1174,13 @@ impl Presentation {
         pressed: bool,
         repeat: bool,
     ) -> Result<(), ProbeFailure> {
-        if self.suspended() { return Ok(()); }
+        if self.suspended() {
+            return Ok(());
+        }
         if pressed && physical == KeyCode::Escape {
-            self.app.world_mut().remove_resource::<native::output_views::HandFocusRequest>();
+            self.app
+                .world_mut()
+                .remove_resource::<native::output_views::HandFocusRequest>();
         }
         let event = bevy::input::keyboard::KeyboardInput {
             window: self.input_window()?,
@@ -935,7 +1207,9 @@ impl Presentation {
         unit: bevy::input::mouse::MouseScrollUnit,
         phase: bevy::input::touch::TouchPhase,
     ) -> Result<(), ProbeFailure> {
-        if self.suspended() { return Ok(()); }
+        if self.suspended() {
+            return Ok(());
+        }
         if delta.iter().any(|value| !value.is_finite()) {
             return Err(input_failure("scroll values must be finite"));
         }
@@ -955,8 +1229,13 @@ impl Presentation {
 
     pub fn focus(&mut self, focused: bool) -> Result<(), ProbeFailure> {
         let focused = focused && !self.suspended();
-        if !focused { self.cancel_touch(); self.cancel_tablet(); }
-        if let Some(bridge) = &mut self.accessibility { bridge.focus(focused); }
+        if !focused {
+            self.cancel_touch();
+            self.cancel_tablet();
+        }
+        if let Some(bridge) = &mut self.accessibility {
+            bridge.focus(focused);
+        }
         let window = self.input_window()?;
         self.app
             .world_mut()
@@ -970,7 +1249,10 @@ impl Presentation {
         self.app.world_mut().write_message(event);
         if !focused {
             if native::shortcuts::keyboard_owned(self.app.world())
-                || self.app.world().get_resource::<lince_interface::host::input::InputActivity>()
+                || self
+                    .app
+                    .world()
+                    .get_resource::<lince_interface::host::input::InputActivity>()
                     .is_none_or(|activity| !activity.active())
             {
                 native::layout::desktop::cancel_scratch_interactions(self.app.world_mut());
@@ -984,15 +1266,22 @@ impl Presentation {
         Ok(())
     }
 
-    pub(crate) fn modifiers(&mut self, pressed: &[(KeyCode, bevy::input::keyboard::Key)]) -> Result<(), ProbeFailure> {
-        if self.suspended() { return Ok(()); }
+    pub(crate) fn modifiers(
+        &mut self,
+        pressed: &[(KeyCode, bevy::input::keyboard::Key)],
+    ) -> Result<(), ProbeFailure> {
+        if self.suspended() {
+            return Ok(());
+        }
         let window = self.input_window()?;
         native::synchronize_keyboard_modifiers(self.app.world_mut(), window, pressed);
         Ok(())
     }
 
     pub fn text(&mut self, value: String) -> Result<(), ProbeFailure> {
-        if self.suspended() { return Ok(()); }
+        if self.suspended() {
+            return Ok(());
+        }
         let event = bevy::window::Ime::Commit {
             window: self.input_window()?,
             value,
@@ -1026,8 +1315,7 @@ impl Presentation {
                         Err(input_failure("Native workspace shutdown failed"))
                     };
                 }
-                if !requested && native::app::text_ready_to_close(self.app.world_mut())
-                {
+                if !requested && native::app::text_ready_to_close(self.app.world_mut()) {
                     if let Some(records) = &mut self.records {
                         records.flush().map_err(|error| input_failure(&format!(
                             "Logout cancelled because Park window customizations could not be saved: {error}"
@@ -1061,7 +1349,9 @@ impl Presentation {
     pub fn resize(&mut self, size: [u32; 2]) -> Result<(), ProbeFailure> {
         validate_size(size)?;
         if self.suspended() || !self.output_state.outputs.is_empty() {
-            return Err(input_failure("Resize assigned monitors through output configuration, so their render targets remain synchronized."));
+            return Err(input_failure(
+                "Resize assigned monitors through output configuration, so their render targets remain synchronized.",
+            ));
         }
         let world = self.app.world_mut();
         let target = world
@@ -1101,10 +1391,17 @@ impl Presentation {
         Ok(frame)
     }
 
-    pub(crate) fn imports_ready(&self) -> bool { self.renderer.imports_ready() }
+    pub(crate) fn imports_ready(&self) -> bool {
+        self.renderer.imports_ready()
+    }
 
     pub(crate) fn synchronize_input_activity(&mut self) -> Result<(), ProbeFailure> {
-        if let Some(revision) = self.app.world_mut().get_resource_mut::<lince_interface::host::input::InputActivity>().map(|mut activity| activity.begin_frame()) {
+        if let Some(revision) = self
+            .app
+            .world_mut()
+            .get_resource_mut::<lince_interface::host::input::InputActivity>()
+            .map(|mut activity| activity.begin_frame())
+        {
             if self.input_activity_revision != Some(revision) {
                 let previous = self.input_activity_revision.replace(revision);
                 if previous.is_some() || revision & 1 == 0 {
@@ -1264,7 +1561,12 @@ impl Presentation {
         #[cfg(not(all(test, feature = "nested")))]
         let mut images = self.renderer.export_render_targets(&textures)?;
         #[cfg(all(test, feature = "nested"))]
-        let mut images = match self.app.sub_app_mut(RenderApp).world_mut().remove_resource::<crate::graphics::direct::Prepared>() {
+        let mut images = match self
+            .app
+            .sub_app_mut(RenderApp)
+            .world_mut()
+            .remove_resource::<crate::graphics::direct::Prepared>()
+        {
             Some(prepared) => prepared.export(&self.renderer.gpu, &textures)?,
             None => self.renderer.export_render_targets(&textures)?,
         };
@@ -1301,8 +1603,13 @@ impl Presentation {
         crate::runtime::trace_frame("frame-image-export", detail);
         crate::runtime::trace_frame("export", started);
         if let Some((render, started)) = frame.traced_render.zip(trace_start) {
-            let outputs: Vec<_> = frame.output.iter().copied().chain(frame.outputs.iter().map(|output| output.id))
-                .map(|id| id.0).collect();
+            let outputs: Vec<_> = frame
+                .output
+                .iter()
+                .copied()
+                .chain(frame.outputs.iter().map(|output| output.id))
+                .map(|id| id.0)
+                .collect();
             frame_trace::record(serde_json::json!({"event":"native-export", "render":render,
                 "started_us":started, "monotonic_us":frame_trace::timestamp(), "outputs":outputs}));
         }
@@ -1342,12 +1649,19 @@ impl Presentation {
                         item.size.x.round().max(1.0) as u32,
                         item.size.y.round().max(1.0) as u32,
                     ],
-                    state: native::layout::desktop::manipulation::window_state(world, window.entity).unwrap_or(lince_interface::host::WindowState {
+                    state: native::layout::desktop::manipulation::window_state(
+                        world,
+                        window.entity,
+                    )
+                    .unwrap_or(lince_interface::host::WindowState {
                         minimized: workspace.desktop.minimized(placement),
                         fullscreen: workspace.desktop.protocol_fullscreen(placement),
                         windowed_fullscreen: workspace.desktop.windowed_fullscreen(placement),
                         maximized: workspace.desktop.maximized(placement),
-                        resizing: native::layout::desktop::manipulation::resizing(world, window.entity),
+                        resizing: native::layout::desktop::manipulation::resizing(
+                            world,
+                            window.entity,
+                        ),
                     }),
                 })
             })
@@ -1356,12 +1670,14 @@ impl Presentation {
 
     fn frame_geometry(&mut self) -> Option<Arc<lince_interface::host::GeometrySnapshot>> {
         if self.suspended() {
-            return Some(self.remember_geometry(lince_interface::host::GeometrySnapshot {
-                revision: 0,
-                outputs: Vec::new(),
-                items: Vec::new(),
-                focused: None,
-            }));
+            return Some(
+                self.remember_geometry(lince_interface::host::GeometrySnapshot {
+                    revision: 0,
+                    outputs: Vec::new(),
+                    items: Vec::new(),
+                    focused: None,
+                }),
+            );
         }
         let mut geometry = lince_interface::host::GeometrySnapshot {
             revision: 0,
@@ -1370,13 +1686,34 @@ impl Presentation {
             focused: None,
         };
         let root = self.canvas_root().ok()?;
-        geometry.focused = self.app.world().get::<native::workspace::Workspaces>(root).and_then(|spaces| {
-            let id = spaces.entries.iter().find(|space| space.id == spaces.active)?.desktop.focused()?;
-            self.app.world().get::<Children>(root)?.iter().find_map(|entity| {
-                let world = self.app.world();
-                (world.get::<native::layout::desktop::Managed>(entity)?.id == id).then(|| world.get::<native::layout::desktop::ApplicationWindow>(entity).map_or(lince_interface::host::ItemId::Native(id.0), |window| lince_interface::host::ItemId::Application(window.surface)))
-            })
-        });
+        geometry.focused = self
+            .app
+            .world()
+            .get::<native::workspace::Workspaces>(root)
+            .and_then(|spaces| {
+                let id = spaces
+                    .entries
+                    .iter()
+                    .find(|space| space.id == spaces.active)?
+                    .desktop
+                    .focused()?;
+                self.app
+                    .world()
+                    .get::<Children>(root)?
+                    .iter()
+                    .find_map(|entity| {
+                        let world = self.app.world();
+                        (world.get::<native::layout::desktop::Managed>(entity)?.id == id).then(
+                            || {
+                                world
+                                    .get::<native::layout::desktop::ApplicationWindow>(entity)
+                                    .map_or(lince_interface::host::ItemId::Native(id.0), |window| {
+                                        lince_interface::host::ItemId::Application(window.surface)
+                                    })
+                            },
+                        )
+                    })
+            });
         let outputs = self
             .app
             .world()
@@ -1384,9 +1721,13 @@ impl Presentation {
             .filter(|views| views.applies_to(root))
             .cloned()
             .map_or_else(|| geometry.outputs.clone(), |views| views.outputs);
-        geometry.items = outputs.iter().filter(|output| output.usable.is_some()).flat_map(|output| {
-            native::topology::output_views::geometry(self.app.world_mut(), root, output)
-        }).collect();
+        geometry.items = outputs
+            .iter()
+            .filter(|output| output.usable.is_some())
+            .flat_map(|output| {
+                native::topology::output_views::geometry(self.app.world_mut(), root, output)
+            })
+            .collect();
         geometry.items.retain(|item| {
             let lince_interface::host::ItemId::Application(surface) = item.id else {
                 return true;
@@ -1411,27 +1752,46 @@ impl Presentation {
         if let Some(surface) = self.application_focus {
             let current = self.windows.get(&surface).is_some_and(|window| {
                 let world = self.app.world();
-                world.get::<native::layout::desktop::Managed>(window.entity).is_none_or(|managed| {
-                    world.get::<native::workspace::Workspaces>(root).is_some_and(|spaces| spaces.entries.iter().find(|space| space.id == spaces.active).is_some_and(|space| space.desktop.focused() == Some(managed.id)))
-                })
+                world
+                    .get::<native::layout::desktop::Managed>(window.entity)
+                    .is_none_or(|managed| {
+                        world
+                            .get::<native::workspace::Workspaces>(root)
+                            .is_some_and(|spaces| {
+                                spaces
+                                    .entries
+                                    .iter()
+                                    .find(|space| space.id == spaces.active)
+                                    .is_some_and(|space| {
+                                        space.desktop.focused() == Some(managed.id)
+                                    })
+                            })
+                    })
             });
             let focused = lince_interface::host::ItemId::Application(surface);
-            if current && geometry.items.iter().any(|item| {
-                item.id == focused
-                    && self
-                        .output_state
-                        .assignments
-                        .focused()
-                        .is_none_or(|output| output == item.output)
-            }) {
+            if current
+                && geometry.items.iter().any(|item| {
+                    item.id == focused
+                        && self
+                            .output_state
+                            .assignments
+                            .focused()
+                            .is_none_or(|output| output == item.output)
+                })
+            {
                 geometry.focused = Some(focused);
-            } else if !current || self.windows.get(&surface).is_none_or(|window| {
-                self.app
-                    .world()
-                    .get::<native::castle::Pending>(window.entity)
-                    .is_none()
-                    && native::topology::presentation::displayed(self.app.world(), window.entity)
-            }) {
+            } else if !current
+                || self.windows.get(&surface).is_none_or(|window| {
+                    self.app
+                        .world()
+                        .get::<native::castle::Pending>(window.entity)
+                        .is_none()
+                        && native::topology::presentation::displayed(
+                            self.app.world(),
+                            window.entity,
+                        )
+                })
+            {
                 self.application_focus = None;
             }
         }
@@ -1478,7 +1838,9 @@ impl Presentation {
                 item.mapping = item.mapping.translated(offset)?;
                 if let Some(polygons) = &mut item.clip {
                     for point in polygons.iter_mut().flatten() {
-                        for axis in 0..2 { point[axis] += offset[axis]; }
+                        for axis in 0..2 {
+                            point[axis] += offset[axis];
+                        }
                     }
                 }
             }
@@ -1515,31 +1877,64 @@ impl Presentation {
         geometry
     }
 
-    fn native_input_view(&mut self, geometry: Option<&lince_interface::host::GeometrySnapshot>) -> Option<crate::native_input::projection::View> {
-        if self.suspended() { return None; }
+    fn native_input_view(
+        &mut self,
+        geometry: Option<&lince_interface::host::GeometrySnapshot>,
+    ) -> Option<crate::native_input::projection::View> {
+        if self.suspended() {
+            return None;
+        }
         let root = self.canvas_root().ok();
-        let output = self.output_state.assignments.focused()
+        let output = self
+            .output_state
+            .assignments
+            .focused()
             .or_else(|| self.output_view.as_ref().map(|view| view.id))
             .unwrap_or(lince_interface::host::OutputId(1));
-        let mut viewport = geometry.and_then(|geometry| geometry.outputs.iter().find(|view| view.id == output)).cloned()
+        let mut viewport = geometry
+            .and_then(|geometry| geometry.outputs.iter().find(|view| view.id == output))
+            .cloned()
             .or_else(|| self.output_view.clone())
-            .or_else(|| root.and_then(|root| self.app.world().get::<native::layout::desktop::HostViewport>(root)).map(|view| view.0.clone()));
+            .or_else(|| {
+                root.and_then(|root| {
+                    self.app
+                        .world()
+                        .get::<native::layout::desktop::HostViewport>(root)
+                })
+                .map(|view| view.0.clone())
+            });
         if let Some(viewport) = &mut viewport {
-            if let Some(spaces) = root.and_then(|root| self.app.world().get::<native::workspace::Workspaces>(root)) {
+            if let Some(spaces) =
+                root.and_then(|root| self.app.world().get::<native::workspace::Workspaces>(root))
+            {
                 viewport.workspace = spaces.active;
             }
         }
         Some(crate::native_input::projection::View {
-            root, output, image: self.target.id(), raster: self.input_mapping(),
+            root,
+            output,
+            image: self.target.id(),
+            raster: self.input_mapping(),
             origin: self.output_state.targets.get(&output).map_or_else(
-                || self.output_view.as_ref().map_or(self.render_origin, |view| std::array::from_fn(|axis| view.bounds.origin()[axis] + self.render_origin[axis])),
+                || {
+                    self.output_view
+                        .as_ref()
+                        .map_or(self.render_origin, |view| {
+                            std::array::from_fn(|axis| {
+                                view.bounds.origin()[axis] + self.render_origin[axis]
+                            })
+                        })
+                },
                 |target| target.origin,
             ),
             viewport,
         })
     }
 
-    fn input_snapshot(&mut self, geometry: Option<&lince_interface::host::GeometrySnapshot>) -> InputSnapshot {
+    fn input_snapshot(
+        &mut self,
+        geometry: Option<&lince_interface::host::GeometrySnapshot>,
+    ) -> InputSnapshot {
         use bevy::input_focus::tab_navigation::TabGroup;
         let workspaces = self.workspace_snapshot();
         if self.suspended() {
@@ -1550,94 +1945,131 @@ impl Presentation {
             };
         }
         let manipulation = self.manipulation_snapshot();
-        let pointer_targets = self.canvas_root().ok().map(|root|
-            native::layout::desktop::manipulation::pointer::targets(self.app.world(), root)
-        ).unwrap_or_default();
+        let pointer_targets = self
+            .canvas_root()
+            .ok()
+            .map(|root| {
+                native::layout::desktop::manipulation::pointer::targets(self.app.world(), root)
+            })
+            .unwrap_or_default();
         let mapping = self.input_mapping();
         let input_view = self.native_input_view(geometry);
         let pointer_views = self.accessibility_views(geometry);
         let world = self.app.world_mut();
         {
-            let _timing = lince_interface::host::performance::Span::new(lince_interface::host::performance::Stage::NativeInputProjection);
+            let _timing = lince_interface::host::performance::Span::new(
+                lince_interface::host::performance::Stage::NativeInputProjection,
+            );
             crate::native_input::projection::prepare(world, input_view);
         }
         let native_pointer = {
-            let _timing = lince_interface::host::performance::Span::new(lince_interface::host::performance::Stage::NativePointerCapture);
+            let _timing = lince_interface::host::performance::Span::new(
+                lince_interface::host::performance::Stage::NativePointerCapture,
+            );
             crate::native_input::pointer::capture(world, &pointer_views, geometry)
         };
         let output = self.target.id();
         let window = self.primary_windows.iter(world).next();
-        let output_id = self.output_view.as_ref().map_or(lince_interface::host::OutputId(1), |output| output.id);
-        let drop_target = window.and_then(|window| crate::native_input::transfer::capture(world, window, &native_pointer, output_id, mapping));
+        let output_id = self
+            .output_view
+            .as_ref()
+            .map_or(lince_interface::host::OutputId(1), |output| output.id);
+        let drop_target = window.and_then(|window| {
+            crate::native_input::transfer::capture(
+                world,
+                window,
+                &native_pointer,
+                output_id,
+                mapping,
+            )
+        });
         let nodes: Vec<_> = {
-            let _timing = lince_interface::host::performance::Span::new(lince_interface::host::performance::Stage::NativeInputControls);
+            let _timing = lince_interface::host::performance::Span::new(
+                lince_interface::host::performance::Stage::NativeInputControls,
+            );
             world
-            .query::<(
-                Entity,
-                &ComputedNode,
-                &UiGlobalTransform,
-                &bevy::ui::ComputedUiTargetCamera,
-                Option<&InheritedVisibility>,
-                Option<&TabGroup>,
-                Option<&GlobalZIndex>,
-            )>()
-            .iter(world)
-            .filter_map(|(entity, node, transform, camera, visible, modal, z)| {
-                let camera = camera.get()?;
-                let RenderTarget::Image(target) = world.get::<RenderTarget>(camera)? else {
-                    return None;
-                };
-                if target.handle.id() != output
-                    || visible.is_some_and(|visible| !visible.get())
-                    || node.size().min_element() <= 0.0
-                {
-                    return None;
-                }
-                let control = world.get::<native::actions::ActionButton>(entity).is_some()
-                    || world.get::<bevy::text::EditableText>(entity).is_some()
-                    || z.is_some_and(|z| z.0 > 0);
-                let rectangle = if control {
-                    let half = node.size() * 0.5;
-                    let corners = [
-                        -half,
-                        Vec2::new(half.x, -half.y),
-                        half,
-                        Vec2::new(-half.x, half.y),
-                    ]
-                    .map(|point| transform.transform_point2(point));
-                    let mut low = corners
-                        .into_iter()
-                        .fold(Vec2::splat(f32::INFINITY), Vec2::min);
-                    let mut high = corners
-                        .into_iter()
-                        .fold(Vec2::splat(f32::NEG_INFINITY), Vec2::max);
-                    if let Some(clip) = world.get::<bevy::ui::CalculatedClip>(entity) {
-                        let bounds = native::clipped_rect(Rect { min: low, max: high }, clip);
-                        low = bounds.min;
-                        high = bounds.max;
-                    }
-                    if (high - low).min_element() <= 0.0 {
+                .query::<(
+                    Entity,
+                    &ComputedNode,
+                    &UiGlobalTransform,
+                    &bevy::ui::ComputedUiTargetCamera,
+                    Option<&InheritedVisibility>,
+                    Option<&TabGroup>,
+                    Option<&GlobalZIndex>,
+                )>()
+                .iter(world)
+                .filter_map(|(entity, node, transform, camera, visible, modal, z)| {
+                    let camera = camera.get()?;
+                    let RenderTarget::Image(target) = world.get::<RenderTarget>(camera)? else {
+                        return None;
+                    };
+                    if target.handle.id() != output
+                        || visible.is_some_and(|visible| !visible.get())
+                        || node.size().min_element() <= 0.0
+                    {
                         return None;
                     }
-                    mapping.logical_rectangle(lince_interface::host::Rectangle::new(
-                        low.as_dvec2().to_array(), (high - low).as_dvec2().to_array(),
-                    )?)
-                } else {
-                    None
-                };
-                let mut focus_block = control;
-                let mut ancestor = Some(entity);
-                for _ in 0..native::layout::MAX_DEPTH {
-                    let Some(entity) = ancestor else { break; };
-                    if world.get::<native::canvas::CanvasItem>(entity).is_some() {
-                        focus_block = false;
-                        break;
+                    let control = world.get::<native::actions::ActionButton>(entity).is_some()
+                        || world.get::<bevy::text::EditableText>(entity).is_some()
+                        || z.is_some_and(|z| z.0 > 0);
+                    let rectangle = if control {
+                        let half = node.size() * 0.5;
+                        let corners = [
+                            -half,
+                            Vec2::new(half.x, -half.y),
+                            half,
+                            Vec2::new(-half.x, half.y),
+                        ]
+                        .map(|point| transform.transform_point2(point));
+                        let mut low = corners
+                            .into_iter()
+                            .fold(Vec2::splat(f32::INFINITY), Vec2::min);
+                        let mut high = corners
+                            .into_iter()
+                            .fold(Vec2::splat(f32::NEG_INFINITY), Vec2::max);
+                        if let Some(clip) = world.get::<bevy::ui::CalculatedClip>(entity) {
+                            let bounds = native::clipped_rect(
+                                Rect {
+                                    min: low,
+                                    max: high,
+                                },
+                                clip,
+                            );
+                            low = bounds.min;
+                            high = bounds.max;
+                        }
+                        if (high - low).min_element() <= 0.0 {
+                            return None;
+                        }
+                        mapping.logical_rectangle(lince_interface::host::Rectangle::new(
+                            low.as_dvec2().to_array(),
+                            (high - low).as_dvec2().to_array(),
+                        )?)
+                    } else {
+                        None
+                    };
+                    let mut focus_block = control;
+                    let mut ancestor = Some(entity);
+                    for _ in 0..native::layout::MAX_DEPTH {
+                        let Some(entity) = ancestor else {
+                            break;
+                        };
+                        if world.get::<native::canvas::CanvasItem>(entity).is_some() {
+                            focus_block = false;
+                            break;
+                        }
+                        ancestor = world.get::<ChildOf>(entity).map(ChildOf::parent);
                     }
-                    ancestor = world.get::<ChildOf>(entity).map(ChildOf::parent);
-                }
-                Some((rectangle, modal.is_some_and(|group| group.modal), world.get::<native::shortcuts::KeyboardModalTrigger>(entity).is_some(), focus_block))
-            })
-            .collect()
+                    Some((
+                        rectangle,
+                        modal.is_some_and(|group| group.modal),
+                        world
+                            .get::<native::shortcuts::KeyboardModalTrigger>(entity)
+                            .is_some(),
+                        focus_block,
+                    ))
+                })
+                .collect()
         };
         let keyboard_modal = native::shortcuts::keyboard_owned(world);
         let modal = nodes.iter().any(|(_, modal, _, _)| *modal)
@@ -1662,28 +2094,42 @@ impl Presentation {
             accessibility: None,
             mappings: Default::default(),
             control: {
-                let _timing = lince_interface::host::performance::Span::new(lince_interface::host::performance::Stage::NativeInputCatalog);
-                self.canonical_root.map(|root| native::layout::desktop::control::catalog(world, root)).unwrap_or_default()
+                let _timing = lince_interface::host::performance::Span::new(
+                    lince_interface::host::performance::Stage::NativeInputCatalog,
+                );
+                self.canonical_root
+                    .map(|root| native::layout::desktop::control::catalog(world, root))
+                    .unwrap_or_default()
             },
             workspaces,
             drop_target,
             editor: {
-                let _timing = lince_interface::host::performance::Span::new(lince_interface::host::performance::Stage::NativeInputEditor);
+                let _timing = lince_interface::host::performance::Span::new(
+                    lince_interface::host::performance::Stage::NativeInputEditor,
+                );
                 crate::native_input::capture(world, geometry)
             },
             native_pointer,
             #[cfg(feature = "nested")]
-            pointer_motion: world.run_system_cached(crate::native_input::pointer::observes_motion).expect("Native pointer demand queries are valid"),
+            pointer_motion: world
+                .run_system_cached(crate::native_input::pointer::observes_motion)
+                .expect("Native pointer demand queries are valid"),
             controls: nodes
                 .iter()
                 .filter_map(|(rectangle, _, _, _)| *rectangle)
                 .collect(),
-            focus_blocks: nodes.iter().filter_map(|(rectangle, _, _, blocked)| blocked.then_some(*rectangle).flatten()).collect(),
+            focus_blocks: nodes
+                .iter()
+                .filter_map(|(rectangle, _, _, blocked)| blocked.then_some(*rectangle).flatten())
+                .collect(),
             modal,
             keyboard,
             keyboard_modal,
             keyboard_capture: native::shortcuts::keyboard_capturing(world),
-            keyboard_modal_triggers: nodes.into_iter().filter_map(|(rectangle, _, trigger, _)| trigger.then_some(rectangle).flatten()).collect(),
+            keyboard_modal_triggers: nodes
+                .into_iter()
+                .filter_map(|(rectangle, _, trigger, _)| trigger.then_some(rectangle).flatten())
+                .collect(),
             bindings,
             hardware_bindings,
             pointer_bindings: native::shortcuts::pointer_bindings(world),
@@ -1693,7 +2139,8 @@ impl Presentation {
             overview: native::layout::desktop::overview::active(world),
             focus_policy: native::layout::desktop::focus::policy(world),
             cursor_warp: native::layout::desktop::focus::pending_warp(world),
-            text_composing: world.get_resource::<bevy::input_focus::InputFocus>()
+            text_composing: world
+                .get_resource::<bevy::input_focus::InputFocus>()
                 .and_then(|focus| focus.get())
                 .and_then(|input| world.get::<bevy::text::EditableText>(input))
                 .is_some_and(|input| input.is_composing()),
@@ -1714,7 +2161,10 @@ fn route_pointer_target(
     output: Res<OutputTarget>,
     windows: Query<Entity, With<PrimaryWindow>>,
     mut inputs: MessageMutator<bevy::picking::pointer::PointerInput>,
-    mut pointers: Query<(&bevy::picking::pointer::PointerId, &mut bevy::picking::pointer::PointerLocation)>,
+    mut pointers: Query<(
+        &bevy::picking::pointer::PointerId,
+        &mut bevy::picking::pointer::PointerLocation,
+    )>,
     mut previous: Local<Option<bevy::camera::NormalizedRenderTarget>>,
 ) {
     let Ok(window) = windows.single() else {
@@ -1733,7 +2183,9 @@ fn route_pointer_target(
     }
     for (id, mut pointer) in &mut pointers {
         if let Some(location) = &mut pointer.location
-            && !((matches!(id, bevy::picking::pointer::PointerId::Touch(_)) || crate::native_input::absolute::is_tablet_pointer(id)) && location.target != window_target)
+            && !((matches!(id, bevy::picking::pointer::PointerId::Touch(_))
+                || crate::native_input::absolute::is_tablet_pointer(id))
+                && location.target != window_target)
             && (location.target == window_target || previous.as_ref() == Some(&location.target))
         {
             location.target = target.clone();
@@ -1750,11 +2202,21 @@ impl Drop for Presentation {
     }
 }
 
-fn output_image(size: [u32; 2]) -> Image { output_image_format(size, false) }
+fn output_image(size: [u32; 2]) -> Image {
+    output_image_format(size, false)
+}
 
 fn output_image_format(size: [u32; 2], linear: bool) -> Image {
-    let mut image =
-        Image::new_target_texture(size[0], size[1], if linear { wgpu::TextureFormat::Rgba16Float } else { wgpu::TextureFormat::Bgra8UnormSrgb }, None);
+    let mut image = Image::new_target_texture(
+        size[0],
+        size[1],
+        if linear {
+            wgpu::TextureFormat::Rgba16Float
+        } else {
+            wgpu::TextureFormat::Bgra8UnormSrgb
+        },
+        None,
+    );
     image.texture_descriptor.usage |= wgpu::TextureUsages::COPY_SRC;
     image
 }
@@ -1777,32 +2239,56 @@ fn input_failure(detail: &str) -> ProbeFailure {
 }
 
 fn cancel_pointer(world: &mut World) {
-    use bevy::{ecs::message::Messages, input::mouse::{MouseButton, MouseButtonInput},
-        picking::pointer::{PointerAction, PointerId, PointerInput, PointerLocation}, window::WindowEvent};
-    if let Some(mut held) = world.get_resource_mut::<crate::native_input::pointer::Held>() { held.cancel(); }
+    use bevy::{
+        ecs::message::Messages,
+        input::mouse::{MouseButton, MouseButtonInput},
+        picking::pointer::{PointerAction, PointerId, PointerInput, PointerLocation},
+        window::WindowEvent,
+    };
+    if let Some(mut held) = world.get_resource_mut::<crate::native_input::pointer::Held>() {
+        held.cancel();
+    }
     world.resource_mut::<Messages<MouseButtonInput>>().clear();
-    let retained = world.resource_mut::<Messages<WindowEvent>>().drain()
-        .filter(|event| !matches!(event, WindowEvent::MouseButtonInput(_))).collect::<Vec<_>>();
+    let retained = world
+        .resource_mut::<Messages<WindowEvent>>()
+        .drain()
+        .filter(|event| !matches!(event, WindowEvent::MouseButtonInput(_)))
+        .collect::<Vec<_>>();
     world.write_message_batch(retained);
-    world.resource_mut::<ButtonInput<MouseButton>>().release_all();
-    let locations = world.query::<(&PointerId, &PointerLocation)>().iter(world)
-        .filter(|(id, _)| **id == PointerId::Mouse || **id == native::topology::input::CONTENT_POINTER)
-        .filter_map(|(id, location)| Some((*id, location.location.clone()?))).collect::<Vec<_>>();
-    for (pointer_id, location) in locations { world.write_message(PointerInput { pointer_id, location, action: PointerAction::Cancel }); }
-    if let Some(mut state) = world.get_resource_mut::<native::topology::input::PointerState>() { *state = Default::default(); }
+    world
+        .resource_mut::<ButtonInput<MouseButton>>()
+        .release_all();
+    let locations = world
+        .query::<(&PointerId, &PointerLocation)>()
+        .iter(world)
+        .filter(|(id, _)| {
+            **id == PointerId::Mouse || **id == native::topology::input::CONTENT_POINTER
+        })
+        .filter_map(|(id, location)| Some((*id, location.location.clone()?)))
+        .collect::<Vec<_>>();
+    for (pointer_id, location) in locations {
+        world.write_message(PointerInput {
+            pointer_id,
+            location,
+            action: PointerAction::Cancel,
+        });
+    }
+    if let Some(mut state) = world.get_resource_mut::<native::topology::input::PointerState>() {
+        *state = Default::default();
+    }
 }
 
 fn cancel_input(world: &mut World, window: Entity) {
     use bevy::{
         ecs::message::Messages,
-        input::{
-            mouse::{MouseButton, MouseButtonInput},
-        },
+        input::mouse::{MouseButton, MouseButtonInput},
         picking::pointer::{PointerAction, PointerId, PointerInput, PointerLocation},
         window::{CursorLeft, WindowEvent},
     };
     world.resource_mut::<Messages<MouseButtonInput>>().clear();
-    if let Some(mut held) = world.get_resource_mut::<crate::native_input::pointer::Held>() { held.cancel(); }
+    if let Some(mut held) = world.get_resource_mut::<crate::native_input::pointer::Held>() {
+        held.cancel();
+    }
     let retained = world
         .resource_mut::<Messages<WindowEvent>>()
         .drain()
@@ -1876,43 +2362,43 @@ mod tests {
     }
 
     use super::*;
-    mod showoff;
+    mod appearance;
+    #[cfg(not(debug_assertions))]
+    mod appearance_cost;
+    mod capture;
+    mod commands;
+    mod configuration;
+    mod control;
+    mod displays;
+    #[cfg(feature = "nested")]
+    mod external_commands;
+    mod focus_handoff;
+    #[cfg(feature = "nested")]
+    mod keyboard;
+    mod layers;
+    mod layout_preferences;
+    mod logout;
+    mod manipulation;
+    mod monitors;
+    mod opening;
+    mod overview;
+    mod performance;
     mod pointer;
     mod pointer_bindings;
     #[cfg(feature = "nested")]
     mod pointer_settings;
-    #[cfg(feature = "nested")]
-    mod external_commands;
+    mod recent;
+    mod shaders;
     mod shortcuts;
-    mod configuration;
-    mod control;
-    mod capture;
-    mod monitors;
-    mod overview;
+    mod showoff;
+    mod stacking;
+    mod suspension;
     mod tiling;
     mod transfers;
-    mod workspace_navigation;
-    mod widths;
-    mod layout_preferences;
-    mod displays;
-    mod suspension;
-    mod layers;
-    mod shaders;
-    mod appearance;
-    #[cfg(not(debug_assertions))]
-    mod appearance_cost;
-    mod stacking;
-    mod commands;
-    mod logout;
-    mod recent;
-    mod opening;
-    mod manipulation;
-    #[cfg(feature = "nested")]
-    mod keyboard;
-    mod focus_handoff;
     mod ui_lifecycle;
-    mod performance;
+    mod widths;
     mod window_lookup;
+    mod workspace_navigation;
     use bevy::{
         ecs::message::{MessageCursor, Messages},
         input::{
@@ -1930,34 +2416,58 @@ mod tests {
         let runtime = tokio::runtime::Runtime::new().unwrap();
         let _entered = runtime.enter();
         let directory = tempfile::tempdir().unwrap();
-        let mut canvas = Presentation::new(
-            [800, 600],
-            directory.path().into(),
-            WakeSignal::new(|| {}),
-        ).unwrap();
-        for _ in 0..4 { canvas.probe_frame().unwrap(); }
-        canvas.desktop_action(lince_interface::host::DesktopAction::SetLayout(
-            lince_interface::host::WorkspaceLayout::Free,
-        )).unwrap();
+        let mut canvas =
+            Presentation::new([800, 600], directory.path().into(), WakeSignal::new(|| {})).unwrap();
+        for _ in 0..4 {
+            canvas.probe_frame().unwrap();
+        }
+        canvas
+            .desktop_action(lince_interface::host::DesktopAction::SetLayout(
+                lince_interface::host::WorkspaceLayout::Free,
+            ))
+            .unwrap();
         let surface = lince_interface::host::SurfaceId(1);
-        canvas.open_window(surface, "Lifecycle", "validation").unwrap();
-        canvas.window_request(surface, lince_interface::host::WindowRequest {
-            fullscreen: Some(true),
-            ..Default::default()
-        });
+        canvas
+            .open_window(surface, "Lifecycle", "validation")
+            .unwrap();
+        canvas.window_request(
+            surface,
+            lince_interface::host::WindowRequest {
+                fullscreen: Some(true),
+                ..Default::default()
+            },
+        );
         for _ in 0..4 {
             let frame = canvas.probe_frame().unwrap();
-            let window = frame.windows.iter().find(|window| window.surface == surface).unwrap();
-            assert_eq!(window.size, if window.state.fullscreen { [800, 600] } else { [388, 480] });
+            let window = frame
+                .windows
+                .iter()
+                .find(|window| window.surface == surface)
+                .unwrap();
+            assert_eq!(
+                window.size,
+                if window.state.fullscreen {
+                    [800, 600]
+                } else {
+                    [388, 480]
+                }
+            );
         }
         assert!(canvas.window_requests.is_empty());
-        canvas.window_request(surface, lince_interface::host::WindowRequest {
-            fullscreen: Some(false),
-            ..Default::default()
-        });
+        canvas.window_request(
+            surface,
+            lince_interface::host::WindowRequest {
+                fullscreen: Some(false),
+                ..Default::default()
+            },
+        );
         for _ in 0..4 {
             let frame = canvas.probe_frame().unwrap();
-            let window = frame.windows.iter().find(|window| window.surface == surface).unwrap();
+            let window = frame
+                .windows
+                .iter()
+                .find(|window| window.surface == surface)
+                .unwrap();
             assert!(!window.state.fullscreen);
             assert_eq!(window.size, [388, 480]);
         }
@@ -1996,29 +2506,59 @@ mod tests {
         }
         assert!(canvas.records.is_some());
         assert!(canvas.app.world().contains_resource::<CellHandle>());
-        assert!(canvas.app.world().get_non_send::<native::cell_bridge::CellBridge>().is_some());
+        assert!(
+            canvas
+                .app
+                .world()
+                .get_non_send::<native::cell_bridge::CellBridge>()
+                .is_some()
+        );
         outputs::probe(&mut canvas).unwrap();
         let surface = lince_interface::host::SurfaceId(1);
-        let identity = canvas.open_window(surface, "Save retry", "test.generic").unwrap();
+        let identity = canvas
+            .open_window(surface, "Save retry", "test.generic")
+            .unwrap();
         for _ in 0..100 {
             canvas.probe_frame().unwrap();
-            if canvas.records.as_ref().unwrap().profile(identity).is_some() { break; }
+            if canvas.records.as_ref().unwrap().profile(identity).is_some() {
+                break;
+            }
             std::thread::sleep(std::time::Duration::from_millis(2));
         }
-        let placement = canvas.records.as_ref().unwrap().profile(identity).unwrap().layout.id;
+        let placement = canvas
+            .records
+            .as_ref()
+            .unwrap()
+            .profile(identity)
+            .unwrap()
+            .layout
+            .id;
         let path = directory.path().join("park-windows.json");
-        if path.exists() { std::fs::remove_file(&path).unwrap(); }
+        if path.exists() {
+            std::fs::remove_file(&path).unwrap();
+        }
         std::fs::create_dir(&path).unwrap();
-        let launch = serde_json::from_value(serde_json::json!({"program":"test-generic","arguments":[]})).unwrap();
+        let launch =
+            serde_json::from_value(serde_json::json!({"program":"test-generic","arguments":[]}))
+                .unwrap();
         assert!(canvas.window_launch_description(surface, launch).is_err());
         let failure = canvas.finish().unwrap_err();
-        assert!(failure.detail.contains("window customizations could not be saved"));
+        assert!(
+            failure
+                .detail
+                .contains("window customizations could not be saved")
+        );
         assert!(canvas.app.should_exit().is_none());
         std::fs::remove_dir(&path).unwrap();
         canvas.finish().unwrap();
-        let saved: serde_json::Value = serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
-        let saved = saved.as_array().unwrap().iter()
-            .find(|record| record["layout"]["id"] == serde_json::json!(placement)).unwrap();
+        let saved: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
+        let saved = saved
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|record| record["layout"]["id"] == serde_json::json!(placement))
+            .unwrap();
         assert_eq!(saved["launch"]["program"], "test-generic");
     }
 
@@ -2076,32 +2616,99 @@ mod tests {
     #[test]
     fn cancelling_a_replaced_pointer_target_preserves_keyboard_focus_and_pending_keys() {
         let mut app = App::new();
-        app.add_plugins((MinimalPlugins, InputPlugin, WindowPlugin { primary_window: None, ..default() }))
-            .add_message::<PointerInput>()
-            .init_resource::<bevy::input_focus::InputFocus>();
-        let window = app.world_mut().spawn((Window::default(), PrimaryWindow)).id();
-        let field = app.world_mut().spawn(bevy::text::EditableText::new("Keep this editor")).id();
-        app.world_mut().resource_mut::<bevy::input_focus::InputFocus>().set(field, bevy::input_focus::FocusCause::Navigated);
-        for pointer in [bevy::picking::pointer::PointerId::Mouse, native::topology::input::CONTENT_POINTER] {
-            app.world_mut().spawn((pointer, PointerLocation::new(Location {
-                target: bevy::camera::NormalizedRenderTarget::Image(Handle::<Image>::default().into()), position: Vec2::ONE,
-            })));
+        app.add_plugins((
+            MinimalPlugins,
+            InputPlugin,
+            WindowPlugin {
+                primary_window: None,
+                ..default()
+            },
+        ))
+        .add_message::<PointerInput>()
+        .init_resource::<bevy::input_focus::InputFocus>();
+        let window = app
+            .world_mut()
+            .spawn((Window::default(), PrimaryWindow))
+            .id();
+        let field = app
+            .world_mut()
+            .spawn(bevy::text::EditableText::new("Keep this editor"))
+            .id();
+        app.world_mut()
+            .resource_mut::<bevy::input_focus::InputFocus>()
+            .set(field, bevy::input_focus::FocusCause::Navigated);
+        for pointer in [
+            bevy::picking::pointer::PointerId::Mouse,
+            native::topology::input::CONTENT_POINTER,
+        ] {
+            app.world_mut().spawn((
+                pointer,
+                PointerLocation::new(Location {
+                    target: bevy::camera::NormalizedRenderTarget::Image(
+                        Handle::<Image>::default().into(),
+                    ),
+                    position: Vec2::ONE,
+                }),
+            ));
         }
         app.update();
-        app.world_mut().resource_mut::<ButtonInput<KeyCode>>().press(KeyCode::ControlLeft);
-        app.world_mut().resource_mut::<ButtonInput<MouseButton>>().press(MouseButton::Left);
-        app.world_mut().write_message(KeyboardInput { key_code: KeyCode::KeyX, logical_key: Key::Character("x".into()),
-            state: ButtonState::Pressed, text: Some("x".into()), repeat: false, window });
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .press(KeyCode::ControlLeft);
+        app.world_mut()
+            .resource_mut::<ButtonInput<MouseButton>>()
+            .press(MouseButton::Left);
+        app.world_mut().write_message(KeyboardInput {
+            key_code: KeyCode::KeyX,
+            logical_key: Key::Character("x".into()),
+            state: ButtonState::Pressed,
+            text: Some("x".into()),
+            repeat: false,
+            window,
+        });
         cancel_pointer(app.world_mut());
-        assert_eq!(app.world().resource::<bevy::input_focus::InputFocus>().get(), Some(field));
-        assert_eq!(app.world().get::<bevy::text::EditableText>(field).unwrap().value(), "Keep this editor");
-        assert_eq!(MessageCursor::<PointerInput>::default().read(app.world().resource::<Messages<PointerInput>>())
-            .filter(|event| matches!(event.action, PointerAction::Cancel)).count(), 2);
+        assert_eq!(
+            app.world()
+                .resource::<bevy::input_focus::InputFocus>()
+                .get(),
+            Some(field)
+        );
+        assert_eq!(
+            app.world()
+                .get::<bevy::text::EditableText>(field)
+                .unwrap()
+                .value(),
+            "Keep this editor"
+        );
+        assert_eq!(
+            MessageCursor::<PointerInput>::default()
+                .read(app.world().resource::<Messages<PointerInput>>())
+                .filter(|event| matches!(event.action, PointerAction::Cancel))
+                .count(),
+            2
+        );
         app.update();
-        assert!(app.world().resource::<ButtonInput<KeyCode>>().pressed(KeyCode::ControlLeft));
-        assert!(app.world().resource::<ButtonInput<KeyCode>>().pressed(KeyCode::KeyX));
-        assert!(!app.world().resource::<ButtonInput<MouseButton>>().pressed(MouseButton::Left));
-        assert_eq!(app.world().resource::<bevy::input_focus::InputFocus>().get(), Some(field));
+        assert!(
+            app.world()
+                .resource::<ButtonInput<KeyCode>>()
+                .pressed(KeyCode::ControlLeft)
+        );
+        assert!(
+            app.world()
+                .resource::<ButtonInput<KeyCode>>()
+                .pressed(KeyCode::KeyX)
+        );
+        assert!(
+            !app.world()
+                .resource::<ButtonInput<MouseButton>>()
+                .pressed(MouseButton::Left)
+        );
+        assert_eq!(
+            app.world()
+                .resource::<bevy::input_focus::InputFocus>()
+                .get(),
+            Some(field)
+        );
     }
 
     #[test]

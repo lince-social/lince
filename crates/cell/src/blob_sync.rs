@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn spawn.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 30, 57, 58, 59.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 59.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   7.
+
 use crate::CellRuntime;
 use std::{
     collections::HashMap,

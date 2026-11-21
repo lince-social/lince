@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: mod browsing, mod delivery, mod fragments, mod history.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 105.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 630.
+
 #![cfg(test)]
 
 #[path = "transfer_receipts/browsing.rs"]

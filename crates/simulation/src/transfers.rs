@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: impl World.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 78, 111, 189,
+//   196, 259, 260, 267, 294, 298, 319.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   21, 52, 138, 220, 233, 314, 343.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 21, 52, 100, 104, 107, 111, 112, 113, 138, 154, 165, 220, 227, 233, 251, 258,
+//   314.
+
 use base64::{Engine as _, engine::general_purpose::STANDARD as B64};
 use engine::actions::Action;
 use nucleus::simulation::Cause;

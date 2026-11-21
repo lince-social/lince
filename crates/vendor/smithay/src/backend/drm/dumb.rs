@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct DumbFramebuffer, struct PlanarDumbBuffer, struct OpaqueBufferWrapper, fn
+//   framebuffer_from_dumb_buffer.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 201.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   framebuffer_from_dumb_buffer:use_opaque (146).
+
 //! Utilities to attach [`framebuffer::Handle`]s to dumb buffers
 
 use drm_fourcc::{DrmFormat, DrmModifier};

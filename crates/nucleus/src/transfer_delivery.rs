@@ -1,3 +1,24 @@
+// non-lean-yet
+// Scope: const TRANSFER_ENVELOPE_VERSION, const ENVELOPE_DOMAIN, const
+//   APPLICATION_ATTESTATION_DOMAIN, const APPLICATION_HANDOFF_DOMAIN.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 18, 295.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 122, 152, 234, 258, 364, 451, 517, 575, 641.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 18,
+//   19, 20, 24, 31, 41, 42, 43, 47, 48, 49, 50, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 68, 69,
+//   70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 84, 86, 88, 90, 91, 92, 93, 94, 122, 148,
+//   152, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 234, 254,
+//   258, 295, 296, 297, 298, 299, 303, 314, 315, 316, 317, 318, 319, 320, 321, 322, 323, 324, 325,
+//   326, 327, 328, 329, 330, 331, 332, 333, 334, 338, 364, 409, 410, 411, 412, 413, 414, 415, 416,
+//   417, 418, 419, 420, 421, 422, 423, 424, 425, 429, 451, 483, 484, 485, 486, 487, 488, 489, 490,
+//   491, 492, 493, 494, 495, 499, 517, 544, 545, 546, 547, 548, 549, 550, 551, 552, 553, 554, 555,
+//   556, 557, 558, 559, 560, 561, 565, 575, 605, 611, 612, 613, 614, 615, 616, 617, 618, 619, 620,
+//   621, 625, 641, 664.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites validate_shape:
+//   String (152, 258, 364, 451, 517, 575, 641).
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::{Digest, Sha256};

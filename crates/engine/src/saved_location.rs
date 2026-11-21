@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: mod paging.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 134, 160, 178,
+//   190, 244, 320, 349.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 23, 304, 317, 320, 352.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 28.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   28.
+
 use crate::{Engine, EngineError, actions::ActionOutcome};
 use chrono::{DateTime, Utc};
 use nucleus::vocabulary::{SavedLocation, SavedLocationCommand};

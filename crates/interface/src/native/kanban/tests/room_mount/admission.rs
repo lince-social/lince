@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn setup, fn member, fn mutate, fn
+//   room_mount_admission_counts_owned_regions_and_hidden_record_overrides_atomically.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use nucleus::canvas::{self as api, Component as ContentKind};
 

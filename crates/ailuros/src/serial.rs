@@ -1,6 +1,24 @@
-use crate::{Result, configuration::Configuration};
-use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
+// non-lean-yet
+// Scope: const MAX_LINE, struct Port, fn ports, struct Cancellation.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 246, 249, 263, 272, 289, 291, 299, 384, 387, 390, 491, 511, 515, 516, 533, 558, 569.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 342.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 390.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 546.
+// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 239.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   157, 170, 180, 195, 219, 245, 251, 258, 265, 293, 349, 356, 372.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 23, 54, 83, 162, 177, 185, 202, 231, 278.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 48, 99.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 16, 17,
+//   18, 19, 20, 23, 48, 51, 54, 65, 66, 67, 68, 69, 70, 71, 72, 77, 78, 79, 83, 99, 162, 177, 185,
+//   202, 231, 278.
+
 use std::{
     io::{Read, Write},
     sync::{
@@ -9,6 +27,11 @@ use std::{
     },
     time::{Duration, Instant},
 };
+
+use serde::{Deserialize, Serialize};
+use serde_json::{Value, json};
+
+use crate::{Result, configuration::Configuration};
 
 const MAX_LINE: usize = 8192;
 
@@ -236,10 +259,11 @@ impl Session {
     ) -> Result<()> {
         configuration.validate()?;
         let identity = self.begin_setup(expected_public_key, cancellation)?;
-        if let crate::configuration::Workflow::Camera { width, .. } = &configuration.workflow {
-            if identity.psram_bytes == 0 && *width > 320 {
-                return Err("Installed firmware reports no PSRAM; choose at most 320×240 or compile a verified PSRAM configuration".into());
-            }
+        if let crate::configuration::Workflow::Camera { width, .. } = &configuration.workflow
+            && identity.psram_bytes == 0
+            && *width > 320
+        {
+            return Err("Installed firmware reports no PSRAM; choose at most 320×240 or compile a verified PSRAM configuration".into());
         }
         let mut data =
             serde_json::to_value(configuration).map_err(|_| "Cannot encode configuration")?;

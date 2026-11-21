@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: struct ManualInputs, fn manual_inputs, fn install, fn revision.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 51.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 445.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 269, 276, 281, 282, 340.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 12, 77, 160, 166, 196, 213, 221, 231, 315, 329, 346, 368.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 6, 178.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 7,
+//   8, 9, 12, 77, 160, 166, 178, 179, 180, 181, 182, 196, 213, 221, 231, 315, 329, 346, 368.
+
 use nucleus::projection::{Context, Incomplete, MAX_SPANS, Scheduled, Span, Status};
 use sqlx::{Row, SqlitePool};
 
@@ -398,7 +414,9 @@ pub async fn publish_schedule(
         return Err(protocol("projection byte budget exceeded"));
     }
     let Some(identity) = store.execution_identity() else {
-        return Err(protocol("projection publication requires execution identity"));
+        return Err(protocol(
+            "projection publication requires execution identity",
+        ));
     };
     let pool = &store.pool;
     let key = context.key(identity).map_err(protocol)?;

@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod scratch, struct Pinned, struct PinnedPreview, struct Placement.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 102, 106, 127,
+//   133, 136, 226, 520, 521.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (524).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (436, 440, 444, 475, 527, 533, 540, 571, 637, 639, 642, 643).
+
 use crate::native::{
     actions::Action,
     canvas::{CanvasItem, CanvasView},

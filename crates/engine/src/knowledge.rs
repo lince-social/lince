@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod dumps, mod permanent, mod portable, mod provider.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 131, 144, 145,
+//   183, 184, 185, 186.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   4, 7.
+
 mod dumps;
 mod permanent;
 mod portable;

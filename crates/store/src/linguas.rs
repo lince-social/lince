@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: const LOCAL_UID, fn ensure_local, fn resolve, struct LinguaRow.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 41.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 7, 20, 52, 90, 102, 112, 122, 138, 155, 171, 178, 185, 195.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 7,
+//   20, 32, 33, 34, 35, 36, 37, 38, 52, 90, 102, 112, 122, 138, 155, 171, 178, 185, 195.
+
 use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;
@@ -214,7 +224,11 @@ async fn memberships(
     let sql = format!(
         "SELECT {source}, {target} FROM lingua_concept WHERE {source} IN (SELECT value FROM json_each(?)) ORDER BY adopted_at, {target}"
     );
-    for row in sqlx::query(sqlx::AssertSqlSafe(sql.as_str())).bind(ids).fetch_all(pool).await? {
+    for row in sqlx::query(sqlx::AssertSqlSafe(sql.as_str()))
+        .bind(ids)
+        .fetch_all(pool)
+        .await?
+    {
         memberships
             .entry(row.get(source))
             .or_default()

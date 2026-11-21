@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn permits, fn read, fn visible, fn relation.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 80, 159.
+
 use protein::{Predicate, Protein};
 use serde_json::{Value, json};
 

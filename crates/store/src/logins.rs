@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct Login, fn map, fn grant, fn person_for_organ.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 12.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 20, 33, 43, 52.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 7,
+//   8, 9, 20, 33, 43, 52.
+
 use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;

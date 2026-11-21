@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct PendingWork, fn pending, fn
+//   shutdown_awaits_owned_work_before_network_close_and_closes_cloned_database_access, fn
+//   shutdown_closes_pending_transcription_and_prevents_cloned_speech_from_reopening.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (23, 26).
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 56, 66, 81, 82, 83, 188.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 119.
+
 use super::*;
 use std::sync::atomic::{AtomicUsize, Ordering};
 

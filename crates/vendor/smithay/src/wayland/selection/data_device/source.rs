@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct SourceMetadata, struct DataSourceUserData, fn with_source_metadata.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (64, 91, 102).
+
 use std::sync::Mutex;
 use tracing::error;
 

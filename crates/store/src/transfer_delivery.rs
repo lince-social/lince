@@ -1,9 +1,65 @@
+// non-lean-yet
+// Scope: fn protocol, fn required, struct DeliveryPolicyRow, struct NewDeliveryPolicy.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 2596.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 61, 366, 675, 858, 1482, 1875, 2187, 2405, 2756.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 2018, 2051, 2631,
+//   2634, 2908.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   apply_remote_policy:revoked (1016), finish_remote_command:accepted (1742).
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 71, 257, 307, 324, 371, 372, 376, 434, 448, 449, 530, 544, 546, 686, 687, 688, 739, 760,
+//   792, 863, 865, 917, 997, 1000, 1031, 1056, 1059, 1075, 1168, 1169, 1187, 1188, 1262, 1263,
+//   1313, 1340, 1362, 1417, 1418, 1419, 1444, 1445, 1446, 1493, 1497, 1504, 1633, 1762, 1777, 1892,
+//   1973, 2039, 2198, 2204, 2367, 2373, 2417, 2669, 2765, 2862.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   376, 865, 1497, 2204, 2765.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 71, 371, 372, 376, 434, 686, 687, 688, 863, 865, 1493, 1497, 1504, 1892,
+//   2198, 2417.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 56, 361, 1096, 1477.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   69, 684.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 77, 90, 105, 218, 227, 382, 464, 484, 516, 557, 568, 696, 812, 833, 871, 931, 951, 985,
+//   1011, 1101, 1207, 1296, 1391, 1508, 1540, 1554, 1563, 1651, 1664, 1685, 1722, 1739, 1793, 1819,
+//   1898, 1924, 2002, 2064, 2238, 2251, 2264, 2424, 2459, 2772, 2785, 2882, 2911, 2937, 2964.
+// - [Clippy: clippy::needless_question_mark] enclosing `Ok` and `?` operator are unneeded. Sites
+//   633, 922, 1044, 1086, 1993, 2151.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 36, 47, 642, 1282, 1377, 1911,
+//   2054, 2215, 2437, 2453.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 23, 24,
+//   25, 26, 27, 28, 29, 30, 31, 32, 33, 36, 37, 38, 39, 40, 41, 42, 43, 44, 47, 48, 49, 50, 51, 52,
+//   56, 57, 58, 77, 90, 105, 218, 227, 346, 347, 348, 349, 350, 351, 352, 353, 354, 355, 356, 357,
+//   361, 362, 363, 382, 464, 484, 516, 557, 568, 642, 643, 644, 645, 646, 647, 648, 649, 650, 651,
+//   652, 653, 657, 658, 659, 660, 661, 662, 663, 664, 665, 666, 667, 668, 669, 670, 671, 672, 696,
+//   812, 833, 847, 848, 849, 850, 851, 852, 853, 854, 855, 871, 931, 951, 985, 1011, 1096, 1097,
+//   1098, 1101, 1207, 1282, 1283, 1284, 1285, 1286, 1287, 1288, 1289, 1290, 1291, 1292, 1293, 1296,
+//   1377, 1378, 1379, 1380, 1381, 1382, 1383, 1384, 1385, 1386, 1387, 1388, 1391, 1456, 1457, 1458,
+//   1459, 1460, 1461, 1462, 1463, 1464, 1465, 1466, 1467, 1468, 1469, 1470, 1471, 1472, 1473, 1477,
+//   1478, 1479, 1508, 1540, 1554, 1563, 1651, 1664, 1685, 1722, 1739, 1793, 1819, 1861, 1862, 1863,
+//   1864, 1865, 1866, 1867, 1868, 1869, 1870, 1871, 1872, 1898, 1911, 1912, 1913, 1914, 1915, 1916,
+//   1917, 1918, 1919, 1920, 1921, 1924, 2002, 2054, 2055, 2056, 2057, 2058, 2059, 2060, 2061, 2064,
+//   2161, 2162, 2163, 2164, 2165, 2166, 2167, 2168, 2169, 2170, 2171, 2172, 2173, 2174, 2175, 2176,
+//   2177, 2178, 2179, 2180, 2181, 2182, 2183, 2184, 2215, 2216, 2217, 2218, 2219, 2220, 2221, 2222,
+//   2223, 2224, 2225, 2226, 2227, 2228, 2229, 2230, 2231, 2232, 2233, 2234, 2235, 2238, 2251, 2264,
+//   2388, 2389, 2390, 2391, 2392, 2393, 2394, 2395, 2396, 2397, 2398, 2399, 2400, 2401, 2402, 2424,
+//   2437, 2438, 2439, 2440, 2441, 2442, 2443, 2444, 2445, 2446, 2447, 2448, 2449, 2450, 2453, 2454,
+//   2455, 2456, 2459, 2742, 2743, 2744, 2745, 2746, 2747, 2748, 2749, 2750, 2751, 2752, 2753, 2772,
+//   2785, 2874, 2875, 2876, 2877, 2878, 2879, 2882, 2911, 2937, 2964.
+
 use chrono::{DateTime, Duration, Utc};
-use nucleus::transfer_delivery::{
-    SignedOrganRequestV1, TransferApplicationAttestationV1, TransferApplicationHandoffState,
-    TransferDeliveryMode, TransferEnvelopeV1, TransferRemoteCommandV1,
+use nucleus::{
+    Cause, Fact, NewFact,
+    transfer_delivery::{
+        SignedOrganRequestV1, TransferApplicationAttestationV1, TransferApplicationHandoffState,
+        TransferDeliveryMode, TransferEnvelopeV1, TransferRemoteCommandV1,
+    },
 };
-use nucleus::{Cause, Fact, NewFact};
 use sqlx::{Row, Sqlite, SqlitePool, Transaction};
 
 use crate::StoreError;

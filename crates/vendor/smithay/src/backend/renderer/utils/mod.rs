@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod wayland, struct CommitCounter, struct DamageBag, struct DamageSnapshot.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 85, 272.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (212).
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 9.
+
 //! Utility module for helpers around drawing [`WlSurface`](wayland_server::protocol::wl_surface::WlSurface)s
 //! and [`RenderElement`](super::element::RenderElement)s with [`Renderer`](super::Renderer)s.
 

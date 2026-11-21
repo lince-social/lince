@@ -1,5 +1,23 @@
-use serde::{Deserialize, Serialize};
+// non-lean-yet
+// Scope: const MAX_LATITUDE, const MAX_DATA_ZOOM, const MAX_DISPLAY_ZOOM, const WORLD_METERS.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 132, 133, 134, 135, 141, 142, 150, 237, 240, 253.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   132, 133, 134, 135, 141, 142, 150, 237, 240.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 142, 150, 237, 240.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 225, 266.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 5,
+//   6, 7, 8, 11, 12, 13, 17, 24, 35, 47, 48, 49, 65, 71, 75, 84, 95, 101, 111, 123, 149, 156, 189,
+//   190, 191, 192, 193, 197, 211, 225, 266, 281, 282, 283, 284, 288.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites pyramid: String
+//   (266), tiles: String (225).
+
 use std::collections::BTreeSet;
+
+use serde::{Deserialize, Serialize};
 
 pub const MAX_LATITUDE: f64 = 85.0511287798066;
 pub const MAX_DATA_ZOOM: u8 = 14;

@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: const SLUG, const COLUMNS, const CUSTOM, fn general_defaults.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 39, 77, 97.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   124.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 25, 29, 169.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 38.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 124, 190, 196.
+
 use axum::http::StatusCode;
 use engine::actions::Action;
 use serde_json::{Value, json};

@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: const FREQUENCY_ACTIVATION_HASH_DOMAIN, enum ProgramMutationEvidenceSchema, enum
+//   ProgramMutationAction, struct ProgramMutationEvidence.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 121, 137, 138,
+//   193.
+// - [Clippy: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably fires.
+//   Sites 111.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 14, 21, 50, 57, 68, 75.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 112, 148.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 11, 14,
+//   16, 21, 22, 23, 24, 25, 29, 30, 31, 32, 33, 35, 37, 38, 40, 41, 43, 45, 46, 50, 52, 57, 58, 59,
+//   60, 61, 62, 63, 68, 69, 70, 71, 75, 77, 81, 112, 148, 152, 156, 160, 164, 168, 172, 176, 180,
+//   184, 188, 242, 243, 244, 245, 246, 248, 250, 251, 253, 254, 256, 258, 260, 262, 264, 266, 268,
+//   269.
+
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Deserializer, Serialize, de};
@@ -108,7 +126,10 @@ struct FrequencyActivationEpochWire {
 }
 
 impl FrequencyActivationEpoch {
-    #[allow(clippy::too_many_arguments, reason = "The persisted record constructor mirrors the stored identity and state fields")]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "The persisted record constructor mirrors the stored identity and state fields"
+    )]
     pub fn new(
         frequency_uid: String,
         activating_handle_revision: u64,

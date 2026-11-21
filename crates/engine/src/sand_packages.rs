@@ -1,3 +1,22 @@
+// non-lean-yet
+// Scope: fn invalid, fn signature_valid.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 100, 146, 275,
+//   278, 289, 305.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 250, 285.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 151, 197, 200.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 251, 252, 256.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 250, 285.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 9, 204, 318.
+// - [Clippy probe: clippy::nonminimal_bool] this boolean expression can be simplified. Sites 131,
+//   323.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   9, 204, 318.
+
 use crate::{Engine, EngineError, actions::ActionOutcome};
 use nucleus::sand_package::{self as model, Command, Identity, Manifest, Package, Query, Response};
 

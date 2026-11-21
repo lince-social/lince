@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod presentation, struct Panel, struct Hidden, struct RowPanel.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 138, 192, 275.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   192.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (117, 192, 228).
+
 use super::*;
 use crate::native::actions::{Action, ActionButton};
 

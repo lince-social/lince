@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: fn begin, fn data, fn saved_query, fn
+//   inspector_snapshots_preserve_the_nested_query_and_record_source.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 12, 16, 31, 62.
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites 53.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   14.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (11, 17, 29, 32, 33, 34, 35, 37, 40, 46, 61, 62).
+
 use super::*;
 use crate::native::canvas::CanvasItem;
 use bevy::text::EditableText;

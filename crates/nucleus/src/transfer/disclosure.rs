@@ -1,7 +1,30 @@
+// non-lean-yet
+// Scope: enum AudienceScope, struct FieldAudience, struct ItemDisclosure, struct TransferItem.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 289, 294, 295, 455, 654, 678, 686, 738, 762, 766, 772, 774, 828, 829, 830, 856, 857, 860,
+//   864, 870, 888, 892, 897, 903, 905, 906.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   460.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 262, 475, 504,
+//   530, 531.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   allows:participant (24), for_item:participant (171), for_item:privileged (172),
+//   project_transfer:privileged (460).
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 8.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 105.
+// - [Clippy: clippy::struct_excessive_bools] more than 3 bools in a struct. Sites 157.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 8, 10,
+//   11, 12, 13, 18, 19, 20, 24, 41, 42, 43, 44, 45, 46, 47, 67, 78, 92, 93, 94, 95, 96, 97, 98, 99,
+//   101, 105, 157, 158, 159, 160, 161, 162, 163, 167, 203, 460.
+
+use std::collections::{BTreeMap, BTreeSet};
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -259,23 +282,25 @@ fn hide_private_accounting(value: &mut Value) {
 }
 
 fn cancellation_action(value: &Value) -> Value {
-    let mut value = value.clone();
-    if let Some(object) = value.as_object_mut() {
-        object.retain(|key, _| {
-            [
-                "action",
-                "transfer",
-                "occurrence",
-                "cancellation",
-                "expected_revision",
-                "expected_remaining_quantity",
-                "person",
-                "request_id",
-            ]
-            .contains(&key.as_str())
-        });
-    }
-    value
+    let Some(object) = value.as_object() else {
+        return value.clone();
+    };
+    let fields = [
+        "action",
+        "transfer",
+        "occurrence",
+        "cancellation",
+        "expected_revision",
+        "expected_remaining_quantity",
+        "person",
+        "request_id",
+    ];
+    Value::from_iter(
+        object
+            .iter()
+            .filter(|(key, _)| fields.contains(&key.as_str()))
+            .map(|(key, value)| (key.clone(), value.clone())),
+    )
 }
 
 fn redact_item(row: &mut Value, access: ItemAccess) {
@@ -446,7 +471,7 @@ fn redact_item(row: &mut Value, access: ItemAccess) {
         }
     }
     if let Some(cancellations) = cancellations {
-        row["cancellations"] = json!(cancellations);
+        row["cancellations"] = Value::Array(cancellations);
     }
     if let Some(action) = cancellation_action_payload {
         if !row["action_payloads"].is_object() {
@@ -457,28 +482,25 @@ fn redact_item(row: &mut Value, access: ItemAccess) {
     row["disclosed"] = json!({"title":access.title,"description":access.description,"source":access.source,"parties":access.parties,"quantity":access.quantity,"location":access.location});
 }
 
+/// Applies the viewer's disclosure permissions to a Transfer projection in place.
 pub fn project_transfer(row: &mut Value, viewer: Option<&str>, privileged: bool) {
     if let Some(object) = row.as_object_mut() {
         object.remove("private_applications");
     }
-    let has_items = row["promises"]
-        .as_array()
-        .into_iter()
-        .flatten()
-        .any(|promise| promise.get("item").is_some_and(|item| !item.is_null()));
-    if row["promises"]
-        .as_array()
-        .into_iter()
-        .flatten()
-        .any(|promise| {
-            promise.get("item").is_some_and(|item| {
-                !item.is_null() && serde_json::from_value::<TransferItem>(item.clone()).is_err()
-            })
-        })
-    {
-        *row = json!({"kind":"transfer","uid":row["uid"],"disclosure_error":"invalid_item"});
-        return;
+    // Validate every item before changing any promise so malformed terms fail closed.
+    let mut items = Vec::new();
+    for (index, promise) in row["promises"].as_array().into_iter().flatten().enumerate() {
+        if let Some(raw) = promise.get("item").filter(|item| !item.is_null()) {
+            let Ok(item) = TransferItem::deserialize(raw) else {
+                *row =
+                    json!({"kind":"transfer","uid":row["uid"],"disclosure_error":"invalid_item"});
+                return;
+            };
+            items.push((index, item));
+        }
     }
+    let has_items = !items.is_empty();
+    let mut items = items.into_iter().peekable();
     let participant = row["parties"]
         .as_array()
         .into_iter()
@@ -497,18 +519,10 @@ pub fn project_transfer(row: &mut Value, viewer: Option<&str>, privileged: bool)
         visible_people.insert(viewer.to_string());
     }
     if let Some(promises) = row["promises"].as_array_mut() {
-        for promise in promises {
-            let item = promise
-                .get("item")
-                .filter(|item| !item.is_null())
-                .map(|item| serde_json::from_value::<TransferItem>(item.clone()));
-            let item = match item {
-                Some(Ok(item)) => Some(item),
-                Some(Err(_)) => {
-                    unreachable!("item shape validated before projection");
-                }
-                None => None,
-            };
+        for (index, promise) in promises.iter_mut().enumerate() {
+            let item = items
+                .next_if(|(item_index, _)| *item_index == index)
+                .map(|(_, item)| item);
             let access = ItemAccess::for_item(
                 item.as_ref(),
                 viewer,
@@ -620,8 +634,8 @@ pub fn project_transfer(row: &mut Value, viewer: Option<&str>, privileged: bool)
                 "dependencies",
             ],
         );
-        row["timeline"] = json!(history);
-        row["threads"] = json!(shared_threads);
+        row["timeline"] = Value::Array(history);
+        row["threads"] = Value::Array(shared_threads);
         row["proof"] = json!(proof);
         row["history_disclosure"] =
             json!("Full signed history contains fields unavailable to this viewer");
@@ -742,6 +756,24 @@ pub fn project_transfer(row: &mut Value, viewer: Option<&str>, privileged: bool)
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn invalid_item_replaces_the_whole_projection_before_redaction() {
+        let mut row = json!({
+            "uid": "transfer",
+            "proof": { "private": "signature" },
+            "promises": [false, { "item": false }],
+        });
+
+        project_transfer(&mut row, None, false);
+
+        assert_eq!(
+            row,
+            json!({
+                "kind": "transfer", "uid": "transfer", "disclosure_error": "invalid_item",
+            })
+        );
+    }
 
     #[test]
     fn shared_simulations_keep_only_typed_authorized_information() {

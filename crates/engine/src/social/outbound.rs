@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: struct RequestDraft, fn work_on.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 54, 72, 198, 212,
+//   300, 377, 387, 426, 446, 448, 449, 453, 455, 467, 503, 505, 579, 598, 599, 795.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 426.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   588.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 317.
+// - [Clippy probe: clippy::if_not_else] unnecessary `!=` operation. Sites 706.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 54, 73, 74, 135, 137, 369, 377, 426, 588, 718, 772, 777, 780, 788, 798, 799, 800.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 426.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1, 2.
+
 use super::*;
 use nucleus::social::requests::*;
 use serde::{Deserialize, Serialize};

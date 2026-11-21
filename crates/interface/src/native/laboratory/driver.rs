@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Count, struct InputTrace, fn input_trace, struct Increment.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 206, 295, 297,
+//   364, 376, 403, 415, 516, 519, 521, 535.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (66, 142, 236, 261, 284, 316, 341, 351, 363, 373, 377, 400, 410, 414, 450, 475,
+//   492, 542, 547, 552, 558, 563).
+
 pub use crate::testing::ui::{UiAction, UiBackend, UiCondition, UiSnapshot};
 pub use crate::testing::{Limits, Runner, Selector, Step};
 

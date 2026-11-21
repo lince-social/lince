@@ -1,3 +1,33 @@
+// non-lean-yet
+// Scope: struct CameraMainPassTextureFormats, struct CameraPlugin, fn warn_on_no_render_graph,
+//   struct CameraRenderGraph.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 879.
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option` value.
+//   Sites 642.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   730.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 769.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 120, 186, 192, 507.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 131, 159, 173,
+//   374, 554, 632, 668, 674, 680, 686, 739, 751, 755, 768.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 331, 1092.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 213, 354.
+// - [Clippy: clippy::unnecessary_semicolon] unnecessary semicolon. Sites 701.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 120, 144, 158, 172, 476, 507.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 59, 62, 721, 723, 793, 818, 838,
+//   1039, 1125, 1133.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 62,
+//   197, 198, 213, 221, 331, 333, 335, 337, 338, 459, 460, 461, 462, 463, 464, 465, 466, 467, 468,
+//   469, 470, 473, 723, 724, 725, 726, 727, 730, 799.
+
 use core::mem;
 
 use crate::{

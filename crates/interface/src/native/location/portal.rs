@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: const DESTINATION, fn message, fn needed, fn capture.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use futures_util::StreamExt;
 use std::{collections::HashMap, sync::Arc, time::Duration};
 use zbus::{

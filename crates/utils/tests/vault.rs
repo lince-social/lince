@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: const RECORD, const OTHER, fn
+//   a_locked_description_round_trips_and_never_looks_like_its_plaintext, fn
+//   every_lock_draws_a_fresh_salt_and_nonce.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 25, 46, 48, 49.
+
 use utils::vault::{self, VaultError};
 
 const RECORD: &str = "r_01ARZ3NDEKTSV4RRFFQ69G5FAV";
@@ -68,5 +76,8 @@ fn ordinary_text_is_not_a_vault_and_is_told_apart_from_a_bad_password() {
 fn untrusted_vault_parameters_cannot_request_excessive_password_work() {
     let locked = vault::lock(RECORD, "password", "secret").unwrap();
     let oversized = locked.replace("m=19456,t=2,p=1", "m=4294967295,t=4294967295,p=1");
-    assert_eq!(vault::unlock(RECORD, "password", &oversized), Err(VaultError::Unopenable));
+    assert_eq!(
+        vault::unlock(RECORD, "password", &oversized),
+        Err(VaultError::Unopenable)
+    );
 }

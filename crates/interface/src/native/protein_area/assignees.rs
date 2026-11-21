@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod preparation, mod presentation, struct Field, struct Picker.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 163, 257, 322,
+//   327, 335, 343, 382.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (87, 237, 272, 276, 363, 379, 387, 410).
+
 use std::sync::Arc;
 use super::*;
 use crate::native::{

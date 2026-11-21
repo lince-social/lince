@@ -1,12 +1,38 @@
-use std::collections::VecDeque;
-use std::sync::atomic::{AtomicU32, Ordering};
-use std::sync::{Arc, Mutex};
+// non-lean-yet
+// Scope: struct Speaker, struct Playback, fn devices, fn output.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 155.
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on a `Result` value.
+//   Sites 146.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 109, 110, 111,
+//   144.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 131.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   130.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 20, 30, 53, 67, 73.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 12, 48.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 12, 20,
+//   24, 30, 34, 39, 43, 48, 50, 53, 67, 73.
+
+use std::{
+    collections::VecDeque,
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicU32, Ordering},
+    },
+};
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 
 use super::error;
-use crate::audio::{AudioFrame, FRAME_SAMPLES, Mixer, QUEUE_FRAMES, SAMPLE_RATE, finite};
-use crate::{MediaError, Result};
+use crate::{
+    MediaError, Result,
+    audio::{AudioFrame, FRAME_SAMPLES, Mixer, QUEUE_FRAMES, SAMPLE_RATE, finite},
+};
 
 #[derive(Clone, Default)]
 pub struct Speaker {

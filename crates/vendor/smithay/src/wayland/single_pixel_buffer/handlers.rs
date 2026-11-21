@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: impl SinglePixelBufferState, impl SinglePixelBufferState, impl SinglePixelBufferState.
+// BeautifulRust (baseline lines):
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 57.
+// - [review: §5 Panics] Check intentional unfinished branches before replacing todo!. Sites 58.
+
 use crate::wayland::buffer::BufferHandler;
 
 use super::{SinglePixelBufferState, SinglePixelBufferUserData};

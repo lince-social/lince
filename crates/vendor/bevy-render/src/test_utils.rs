@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn create_dummy_device.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   31, 36.
+// - [rustc: unreachable_pub] unreachable `pub` item. Sites 15.
+
 //! Helpers for this crate's unit tests.
 
 use bevy_platform::future::block_on;

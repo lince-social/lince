@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod ailuros, mod credentials, fn dispatch, const VALUE_FLAGS.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 252, 255.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (65).
+
 use std::io::Error;
 
 use store::Store;

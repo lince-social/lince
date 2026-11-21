@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod support, fn engine, fn plain, fn same_pair_carries_many_link_kinds.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use chrono::Utc;
 use engine::Engine;
 use nucleus::karma::{Cadence, Consequence};

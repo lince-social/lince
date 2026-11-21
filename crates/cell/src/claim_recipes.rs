@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn spawn, mod tests.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value.
+//   Sites 26.
+// - [rustc probe: unreachable_pub] unreachable `pub` item. Sites 5.
+
 use engine::Engine;
 use std::sync::Arc;
 use std::time::Duration;

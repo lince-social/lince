@@ -1,12 +1,26 @@
-use super::pointer::Target;
-use bevy::{prelude::*, input::touch::TouchPhase, picking::pointer::Location};
-use std::{collections::{HashMap, BTreeSet}, sync::{Arc, atomic::{AtomicU64, Ordering}}};
+// non-lean-yet
+// Scope: fn tablet_pointer, fn is_tablet_pointer, struct FocusReceipt, enum FocusTarget.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #[cfg(feature = "session")]
 use std::sync::atomic::AtomicU8;
+use std::{
+    collections::{BTreeSet, HashMap},
+    sync::{
+        Arc,
+        atomic::{AtomicU64, Ordering},
+    },
+};
+
+use bevy::{input::touch::TouchPhase, picking::pointer::Location, prelude::*};
 use lince_interface::host::input::TabletInput;
 
+use super::pointer::Target;
+
 pub(crate) fn tablet_pointer(tool: u64) -> bevy::picking::pointer::PointerId {
-    bevy::picking::pointer::PointerId::Custom(bevy::asset::uuid::Uuid::from_u128((0x4c494e434550454e_u128 << 64) | u128::from(tool)))
+    bevy::picking::pointer::PointerId::Custom(bevy::asset::uuid::Uuid::from_u128(
+        (0x4c494e434550454e_u128 << 64) | u128::from(tool),
+    ))
 }
 
 pub(crate) fn is_tablet_pointer(pointer: &bevy::picking::pointer::PointerId) -> bool {
@@ -19,11 +33,22 @@ pub struct FocusReceipt(AtomicU8);
 
 #[cfg(feature = "session")]
 impl FocusReceipt {
-    pub(crate) fn pending(&self) -> bool { self.0.load(Ordering::Acquire) == 0 }
-    pub(crate) fn accepted(&self) -> bool { self.0.load(Ordering::Acquire) == 1 }
-    pub(crate) fn cancel(&self) { self.0.store(3, Ordering::Release); }
+    pub(crate) fn pending(&self) -> bool {
+        self.0.load(Ordering::Acquire) == 0
+    }
+    pub(crate) fn accepted(&self) -> bool {
+        self.0.load(Ordering::Acquire) == 1
+    }
+    pub(crate) fn cancel(&self) {
+        self.0.store(3, Ordering::Release);
+    }
     pub(crate) fn complete(&self, accepted: bool) {
-        let _ = self.0.compare_exchange(0, if accepted { 1 } else { 2 }, Ordering::AcqRel, Ordering::Acquire);
+        let _ = self.0.compare_exchange(
+            0,
+            if accepted { 1 } else { 2 },
+            Ordering::AcqRel,
+            Ordering::Acquire,
+        );
     }
 }
 
@@ -49,11 +74,17 @@ pub struct Focus {
 #[cfg(feature = "session")]
 impl Focus {
     pub(crate) fn current(&self) -> bool {
-        self.receipt.pending() && self.lifetime.load(Ordering::Acquire) == self.epoch
-            && self.scope.as_ref().is_none_or(|(scope, epoch)| scope.load(Ordering::Acquire) == *epoch)
+        self.receipt.pending()
+            && self.lifetime.load(Ordering::Acquire) == self.epoch
+            && self
+                .scope
+                .as_ref()
+                .is_none_or(|(scope, epoch)| scope.load(Ordering::Acquire) == *epoch)
     }
 
-    pub(crate) fn native(&self) -> bool { matches!(self.target, FocusTarget::Touch(_) | FocusTarget::Tablet(_)) }
+    pub(crate) fn native(&self) -> bool {
+        matches!(self.target, FocusTarget::Touch(_) | FocusTarget::Tablet(_))
+    }
 }
 
 #[derive(Clone)]
@@ -68,7 +99,9 @@ pub struct Touch {
 }
 
 impl Touch {
-    pub(crate) fn current(&self) -> bool { self.lifetime.load(Ordering::Acquire) == self.epoch }
+    pub(crate) fn current(&self) -> bool {
+        self.lifetime.load(Ordering::Acquire) == self.epoch
+    }
 }
 
 pub(crate) struct Contact {
@@ -98,7 +131,10 @@ pub struct Tablet {
 }
 
 impl Tablet {
-    pub(crate) fn current(&self) -> bool { self.lifetime.load(Ordering::Acquire) == self.epoch && self.scope.load(Ordering::Acquire) == self.scope_epoch }
+    pub(crate) fn current(&self) -> bool {
+        self.lifetime.load(Ordering::Acquire) == self.epoch
+            && self.scope.load(Ordering::Acquire) == self.scope_epoch
+    }
 }
 
 pub(crate) struct Pen {
@@ -122,10 +158,16 @@ pub(crate) struct Pens {
 }
 
 pub(crate) fn install(app: &mut App) {
-    app.init_resource::<Pens>().add_message::<TabletInput>().add_systems(Last, retire);
+    app.init_resource::<Pens>()
+        .add_message::<TabletInput>()
+        .add_systems(Last, retire);
 }
 
 fn retire(world: &mut World) {
     let entities = std::mem::take(&mut world.resource_mut::<Pens>().retired);
-    for entity in entities { if let Ok(entity) = world.get_entity_mut(entity) { entity.despawn(); } }
+    for entity in entities {
+        if let Ok(entity) = world.get_entity_mut(entity) {
+            entity.despawn();
+        }
+    }
 }

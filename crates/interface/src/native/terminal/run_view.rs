@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct RunView, struct Recipients, fn attach, enum Playback.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 56, 63, 64, 147,
+//   149, 150, 181, 183, 184, 260.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (37, 54, 92, 105, 112, 115, 132, 155, 160, 170, 195, 231, 243, 244, 255, 257, 263,
+//   274, 282, 300, 301, 302).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 205.
+
 use super::*;
 use cell::command::{Request, Response, Run};
 use std::time::{Duration, Instant};

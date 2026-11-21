@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn no_links, fn op, fn only_named_columns_travel, fn a_delete_rides_under_every_scope.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 31, 43, 82, 147, 199, 229.
+
 use store::sync_ops::{LinkScope, OpRow, narrow_ops_to_scope};
 
 fn no_links() -> LinkScope {
@@ -183,7 +189,10 @@ fn link_op(kind: &str, predicate_uid: Option<&str>) -> OpRow {
 fn links(all: bool, predicates: &[&str]) -> LinkScope {
     LinkScope {
         all,
-        predicates: predicates.iter().map(|uid| uid.to_string()).collect(),
+        predicates: predicates
+            .iter()
+            .map(std::string::ToString::to_string)
+            .collect(),
     }
 }
 

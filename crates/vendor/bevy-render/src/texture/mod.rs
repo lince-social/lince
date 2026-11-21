@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: mod fallback_image, mod gpu_image, mod manual_texture_view, mod texture_attachment.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 61.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 63.
+// - [Clippy: clippy::redundant_clone] Move or borrow at the marked sites and check later uses.
+//   Sites 66.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 26.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 26.
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 9, 10, 11, 12, 13.
+
 mod fallback_image;
 mod gpu_image;
 mod manual_texture_view;

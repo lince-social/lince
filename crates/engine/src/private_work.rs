@@ -1,3 +1,28 @@
+// non-lean-yet
+// Scope: const MAX_WORK_BYTES, const MAX_WORK_LOGS, const MAX_WORK_TIMESTAMP_BYTES, const
+//   MAX_ESTIMATE_MINUTES.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 126, 130,
+//   141, 265, 314.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites time_range:
+//   String (96).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   325.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 146.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 12.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 325, 326, 327, 328, 329, 330, 331.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 126, 130, 141, 265, 314.
+// - [Clippy probe: clippy::match_same_arms] these match arms have identical bodies. Sites 339, 340.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 78, 83, 87, 96.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   6, 7, 8, 9, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 53, 59, 63, 69, 78, 83, 87,
+//   96, 165, 171, 177, 183, 189, 193, 197.
+
 use std::fmt;
 
 use chrono::{DateTime, FixedOffset, NaiveDate};

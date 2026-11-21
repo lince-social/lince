@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn output, fn
+//   the_identity_mapping_keeps_nominal_density_and_independent_asymmetric_targets_match_all_quarter_turns,
+//   fn
+//   magnification_clamps_the_viewport_and_preserves_the_inverse_without_changing_the_nominal_raster,
+//   fn
+//   oriented_logical_input_keeps_its_axes_while_physical_rotation_happens_once_after_magnification.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn output(physical: [u32; 2], rotation: QuarterTurn, scale: f64) -> OutputViewport {

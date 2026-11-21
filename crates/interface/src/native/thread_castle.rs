@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: mod composer_tools, mod controls, mod integration, mod mentions.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 217, 460, 508,
+//   534, 536, 744, 766, 767, 891, 918, 989, 1118, 1120, 1140, 1156, 1165, 1166, 1169, 1233, 1234,
+//   1238.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (1045, 1189).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   641.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (112, 333, 335, 336, 338, 368, 445, 466, 573, 584, 594, 626, 709, 712, 773, 774,
+//   776, 860, 861, 876, 899, 900, 902, 925, 943, 990, 1049, 1111, 1131, 1152, 1178, 1179, 1181,
+//   1244, 1245, 1266, 1270).
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 8.
+
 use crate::i18n::Token as Tr;
 mod composer_tools;
 mod controls;

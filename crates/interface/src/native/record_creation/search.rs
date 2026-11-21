@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: mod preparation, struct Searches, struct Search, fn start.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 75, 77, 370, 373,
+//   428, 484, 498, 501, 507, 635.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (40).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   232.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (81, 91, 107, 178, 279, 325, 340, 357, 369, 532, 557, 560, 566, 568, 569, 571,
+//   572, 583, 591, 597, 600, 608, 610, 612, 613, 616, 622, 648, 652, 665).
+
 use std::sync::Arc;
 use super::*;
 use bevy::input_focus::{FocusCause, InputFocus};

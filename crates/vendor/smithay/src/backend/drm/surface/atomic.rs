@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: struct State, struct AtomicDrmSurface, struct TestBuffer, fn to_fixed.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 78, 159.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 271, 283, 287,
+//   362, 422, 578, 715, 755, 784, 785, 833, 834, 837, 921, 952, 1764.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   commit:event (819), page_flip:event (939), test_state:allow_modeset (763), use_vrr:value (675).
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 182.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 379, 439,
+//   499, 555.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (199, 246, 258, 259, 283, 287, 291, 295, 300, 318, 339, 346, 396, 406, 459, 460,
+//   468, 513, 526, 578, 580, 583, 587, 593, 603, 605, 616, 620, 656, 672, 676, 677, 686, 731, 737,
+//   738, 755, 769, 770, 787, 826, 827, 828, 860, 945, 949, 951, 1009, 1026, 1039, 1042, 1047, 1068,
+//   1069, 1079, 1080, 1082).
+
 use drm::control::atomic::AtomicModeReq;
 use drm::control::connector::Interface;
 use drm::control::property::ValueType;

@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Catalog, struct Snapshot, fn title.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 56.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   77, 81, 92, 93, 94, 106, 113, 125, 133, 136, 143, 144, 146.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (114, 125, 133, 143).
+
 use serde_json::Value;
 use std::{
     ops::Deref,

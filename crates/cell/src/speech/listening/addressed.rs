@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn prefix, fn matches, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   4.
+
 fn prefix<'a>(text: &'a str, name: &str) -> Option<&'a str> {
     text.get(..name.len())
         .filter(|start| start.eq_ignore_ascii_case(name))?;

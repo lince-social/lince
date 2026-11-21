@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod input, mod login_view, mod pending_input, mod presentation.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 51, 57, 300, 312,
+//   381.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   364.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (313).
+
 mod input;
 pub(crate) mod login_view;
 mod pending_input;

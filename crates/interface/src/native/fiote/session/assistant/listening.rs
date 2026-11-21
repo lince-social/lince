@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: mod acoustic, mod input_check, mod wake_setup, struct Listening.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 46, 219, 237,
+//   268, 273, 284, 343, 437, 533, 536, 561, 569, 582, 636, 717, 719, 721, 751, 794, 831, 832, 856,
+//   868, 890, 907, 909, 945, 973, 975, 977, 986, 1090, 1111.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (124, 126, 129, 134, 279, 288, 340, 346, 348, 351, 428, 450, 457, 459, 499, 535,
+//   569, 575, 580, 614, 617, 621, 629, 631, 669, 751, 765, 817, 825, 843, 857, 865, 878, 883, 918,
+//   925, 938, 944, 946, 962, 986, 987, 1000, 1024, 1032, 1040, 1065, 1084, 1087, 1090, 1092, 1108,
+//   1128, 1141, 1144, 1157, 1160, 1166, 1167).
+
 use super::*;
 use bevy::ecs::{entity_disabling::Disabled, query::Allow};
 use cell::speech::{ListeningMode, ListeningStatus, Request, VoiceRequest};

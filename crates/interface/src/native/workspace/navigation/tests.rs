@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn fixture, fn numeric_reselection_is_optional_and_identity_activation_does_not_toggle, fn
+//   history_keeps_identity_after_reorder_and_retires_deleted_or_replaced_canvas_targets, fn
+//   failed_selection_keeps_history_and_a_fresh_session_starts_empty.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::{host::DesktopAction, native::actions::Action};
 

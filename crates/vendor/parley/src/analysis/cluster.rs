@@ -1,6 +1,12 @@
 // Copyright 2025 the Parley Authors
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+// non-lean-yet
+// Scope: const MAX_CLUSTER_SIZE, struct CharCluster, struct SourceRange, struct Char.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   221, 313, 335.
+
 use alloc::vec::Vec;
 use icu_normalizer::properties::Decomposed;
 

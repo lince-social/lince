@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: fn cell_entry, fn signed_roster, fn secret, fn only_front_doors_reach_the_public_tier.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 10, 37, 82.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 10, 37, 82.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 10.
+
 use engine::Engine;
 use engine::directory::{self, MAX_PUBLIC_CELLS, PublicRecord};
 use engine::roster::{CellEntry, Roster, SignedRoster, full_capabilities};

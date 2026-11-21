@@ -1,11 +1,29 @@
+// non-lean-yet
+// Scope: mod forwarding, const NAMESPACE, const MAX_STORAGE_BYTES, const MAX_ITEMS.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 115, 163.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 97, 135.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 181.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 46, 90, 114, 120, 123, 162.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 9, 11,
+//   12, 13, 14, 15, 16, 20, 21, 23, 24, 25, 26, 27, 28, 46, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82,
+//   83, 84, 85, 86, 90, 114, 120, 123, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 162,
+//   168, 181, 182, 183, 185, 186, 188, 189, 190, 192, 193, 194, 195, 197, 198, 200.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites accepts: String
+//   (123), hash: String (120), signing_bytes: String (114, 162), validate: String (46, 90).
+
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+
 use super::{
     Filter,
     contacts::Audience,
     serving::{Artifact, SourceKind},
 };
 use crate::karma::{CanonicalHash, canonical_hash, canonical_json_bytes};
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
 pub mod forwarding;
 
 pub const NAMESPACE: &str = "lince.evidence-custody";

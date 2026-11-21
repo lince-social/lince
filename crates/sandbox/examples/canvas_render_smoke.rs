@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Progress, fn exercise, fn main.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   43, 59.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (38, 40, 41, 42, 44, 54, 71, 74, 76, 84, 86, 87, 92, 94, 107, 114, 143).
+
 use bevy::{
     prelude::*,
     render::view::screenshot::{Screenshot, ScreenshotCaptured, save_to_disk},

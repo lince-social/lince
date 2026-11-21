@@ -1,6 +1,34 @@
-use std::sync::{Arc, Mutex};
-use std::task::{Poll, Waker};
-use std::time::{Duration, Instant};
+// non-lean-yet
+// Scope: struct ResolvedCheck, enum Limit, struct Control, struct State.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   57, 75, 118, 151, 159, 171, 189, 200, 206, 217, 221, 226, 232, 236, 240, 339, 410, 414, 418,
+//   422, 442, 467, 475.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 72, 89, 121, 135,
+//   142, 182, 218, 245, 313, 318, 402, 407.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   checkpoint:evaluation (118).
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 428.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   526.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 17.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   63, 80, 119, 152, 161, 173, 191, 201, 208, 218, 222, 227, 233, 237, 242, 340, 359, 411, 415,
+//   419, 427, 444, 470, 478.
+// - [Clippy: clippy::manual_let_else] this could be rewritten as `let...else`. Sites 245.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 57, 75, 118, 240, 321, 330, 422.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 11, 12,
+//   13, 17, 18, 19, 20, 21, 22, 26, 57, 75, 91, 118, 151, 159, 171, 189, 200, 206, 217, 221, 226,
+//   232, 236, 240, 321, 330, 339, 410, 414, 418, 422, 442, 467, 475.
+
+use std::{
+    sync::{Arc, Mutex},
+    task::{Poll, Waker},
+    time::{Duration, Instant},
+};
 
 use super::causal::{CycleKind, RuleCycle, RuleStep, Trace};
 use crate::simulation::{
@@ -509,9 +537,11 @@ mod tests {
 
     #[test]
     fn paused_work_wakes_on_resume_or_stop_without_spending_evaluations() {
-        use std::future::Future;
-        use std::sync::atomic::{AtomicUsize, Ordering};
-        use std::task::{Context, Wake};
+        use std::{
+            future::Future,
+            sync::atomic::{AtomicUsize, Ordering},
+            task::{Context, Wake},
+        };
 
         #[derive(Default)]
         struct Counter(AtomicUsize);

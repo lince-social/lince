@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn donation_updates_both_private_stocks_without_a_return_contribution, fn
+//   donation_recovers_from_lost_acknowledgements_and_duplicate_messages, fn
+//   source_free_donation_applies_only_after_the_owner_selects_a_record, fn check_donation.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use nucleus::simulation::{ReplayStatus, Verdict};

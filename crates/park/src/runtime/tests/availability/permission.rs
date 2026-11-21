@@ -1,4 +1,7 @@
-use super::*;
+// non-lean-yet
+// Scope: const DRAFT, const FINAL, struct Servers, fn address.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy::{
     input::{
         keyboard::{Key, KeyCode},
@@ -11,6 +14,8 @@ use engine::{
     wire::{PeerAddr, Wire},
 };
 use serde_json::Value;
+
+use super::*;
 
 const DRAFT: &str = "permission-held-draft";
 const FINAL: &str = "permission-held-draft-recovered";

@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: mod receiver, const STREAM_MAX_PAYLOAD, const AUTH_MAX_PAYLOAD, const STREAM_MAX_FPS.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 128, 129.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 99.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 99.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 28, 79, 97, 105, 138.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 13.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   5, 7, 8, 9, 10, 11, 13, 20, 28, 48, 49, 50, 51, 52, 53, 54, 58, 79, 97, 105, 138.
+
 use crate::{Engine, EngineError, signal_endpoints, signal_streams::invalid};
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};

@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn engine, fn setup, fn capture, fn level.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use engine::Engine;

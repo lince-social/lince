@@ -8,6 +8,7 @@ members = [
     "crates/store",
     "crates/engine",
     "crates/protein",
+    "crates/protein-authority",
     "crates/transport",
     "crates/anicca",
     "crates/sensei",
@@ -81,6 +82,7 @@ plugins = { version = "=0.8.0", path = "crates/plugin", package = "lince-plugins
 store = { version = "=0.8.0", path = "crates/store" }
 engine = { version = "=0.8.0", path = "crates/engine" }
 protein = { version = "=0.8.0", path = "crates/protein" }
+protein-authority = { version = "=0.8.0", path = "crates/protein-authority" }
 transport = { version = "=0.8.0", path = "crates/transport" }
 fiote = { version = "=0.8.0", path = "crates/fiote", package = "lince-fiote" }
 lince-ailuros = { version = "=0.8.0", path = "crates/ailuros" }

@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn current_thread_id, struct UserData, enum UserDataInner, struct UserDataMap.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check SAFETY proof and trait invariants. Sites 35, 36.
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 99, 293, 325, 340,
+//   359.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (144, 158).
+
 //! Various utilities used for user data implementations
 
 use std::any::Any;

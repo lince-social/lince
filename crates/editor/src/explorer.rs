@@ -1,8 +1,22 @@
-use crate::{Result, files::Scope};
+// non-lean-yet
+// Scope: const MAX_ENTRIES, struct Entry, struct Listing, struct Batch.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 67.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   list:ignored (28), list_batches:ignored (53), search:ignored (129).
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 28, 50, 129.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 22.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 10,
+//   11, 12, 13, 17, 18, 19, 22, 23, 24, 25, 28, 42, 50, 129.
+
 use std::{
     path::{Path, PathBuf},
     sync::atomic::{AtomicBool, Ordering},
 };
+
+use crate::{Result, files::Scope};
 
 pub const MAX_ENTRIES: usize = 20_000;
 

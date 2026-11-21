@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Status, struct NameField, struct SavedCustom, struct AddedCustom.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 65, 149, 194,
+//   270.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (73, 92, 178, 259).
+
 use super::{CustomCastle, storage};
 use crate::native::{
     actions::{Action, ActionButton},

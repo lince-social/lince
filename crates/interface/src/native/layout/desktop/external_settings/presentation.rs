@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Presentation, struct View, struct Binding, fn refresh.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 151, 152, 161.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (89, 100).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 107.
+
 use super::*;
 use bevy::ecs::query::QueryState;
 use std::{collections::BTreeMap, sync::Arc};

@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn set_directory, fn child, fn assert_directory, fn
+//   working_directory_inheritance_cascades_overrides_and_survives_reopening.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 69, 238, 324, 329.
+
 use super::*;
 
 async fn set_directory(host: &Host, record: &str, directory: &Path) -> Status {

@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: const TEXT, fn panel, struct Toggle, mod tests.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy::prelude::*;
 
 const TEXT: &str = include_str!("info.txt");

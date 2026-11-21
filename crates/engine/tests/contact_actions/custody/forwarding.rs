@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Wire, fn setup_target, fn enable_forwarding, fn cached_paths.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 176, 181.
+
 use super::*;
 use engine::{EngineError, social::Network};
 use nucleus::{

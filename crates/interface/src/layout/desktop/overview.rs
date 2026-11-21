@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct OverviewSettings, struct HoverClock, fn edge_scroll, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites validate:
+//   String (22).
+
 use crate::host::Rectangle;
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};

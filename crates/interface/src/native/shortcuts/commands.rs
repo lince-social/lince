@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod tests.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::{Settings, Shortcut};
 use crate::native::layout::desktop::CommandContext;
 

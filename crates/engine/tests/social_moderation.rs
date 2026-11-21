@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn command, fn publish, fn cache, fn copy.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use engine::{

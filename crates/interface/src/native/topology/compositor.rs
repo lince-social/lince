@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod blur, mod shadow_input, mod tests, const SHADOW.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 353, 354, 374.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (180).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   521.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (119, 259, 311, 315, 319, 327, 333, 373, 386).
+
 use super::presentation::{Surface, VisualOwner};
 use bevy::{
     asset::RenderAssetUsages,

@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: enum Identity, struct Signing.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 32, 33, 35, 48,
+//   49, 51, 106, 107.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites open: String
+//   (21), sign: String (85).
+
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use cell::{ClientMessage, ServerMessage};
 

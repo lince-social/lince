@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: const MAX_CONTRIBUTORS, enum Target, struct Session, struct Status.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (82, 92).
+
 use super::{OutputId, SurfaceId};
 use std::{collections::{BTreeMap, BTreeSet}, sync::{Arc, RwLock, RwLockReadGuard}};
 

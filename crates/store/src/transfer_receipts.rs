@@ -1,10 +1,32 @@
-use crate::StoreError;
+// non-lean-yet
+// Scope: fn invalid, fn request_json, struct Saved, fn get_on.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 9.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 253, 290, 365,
+//   370, 399.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 57, 140, 240, 271, 283, 386, 396.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 57, 140, 240.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 30, 63, 67, 81, 89, 98, 122, 147, 162, 172, 201, 413.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 75, 185, 196.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 22, 23,
+//   24, 25, 26, 27, 30, 63, 67, 75, 76, 77, 78, 81, 89, 98, 122, 147, 162, 172, 185, 186, 187, 188,
+//   189, 190, 191, 192, 193, 196, 197, 198, 201, 413.
+
 use chrono::{DateTime, Utc};
-use nucleus::transfer::receipt::{Command, Document, Scope, ScopeRequest};
-use nucleus::{Cause, Fact, NewFact, RecordKind};
+use nucleus::{
+    Cause, Fact, NewFact, RecordKind,
+    transfer::receipt::{Command, Document, Scope, ScopeRequest},
+};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sqlx::{SqliteConnection, SqlitePool};
+
+use crate::StoreError;
 
 fn invalid(message: impl ToString) -> StoreError {
     StoreError::Protocol(message.to_string())

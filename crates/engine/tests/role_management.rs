@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn role, fn create, fn rename, fn delete.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use engine::{Engine, EngineError, actions::Action};

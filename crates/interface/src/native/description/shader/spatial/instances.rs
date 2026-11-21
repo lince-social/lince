@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct WorldInstance, struct InstanceOf, struct Instances, struct AnchoredAt.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (34, 59, 113,
+//   140).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (105).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 65, 66.
+
 use super::*;
 use bevy::ecs::{entity_disabling::Disabled, query::Allow, system::InRef};
 

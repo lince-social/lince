@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct Stub, fn registry_provides_pinned_models_and_complete_artifacts, fn
+//   shared_guard_rejects_silence_invalid_and_cancelled_audio_before_model_inference, fn
+//   aborted_acquisition_retains_exclusive_permit_until_actual_work_finishes.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 15.
+// - [Clippy: clippy::panic_in_result_fn] Return the existing error type for recoverable failure.
+//   Sites 38.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   116, 117.
+
 use super::*;
 
 struct Stub {

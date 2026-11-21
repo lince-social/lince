@@ -1,3 +1,27 @@
+// non-lean-yet
+// Scope: const LEASE, const MAX_DEVICES, struct Identity, struct Tracks.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 201, 211, 346,
+//   441, 442, 463, 464, 469, 472, 516, 567, 606, 607, 611, 634.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 231.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   529, 544, 600.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 641.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 27, 59.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 529, 544, 600.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 231.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 166, 254, 413, 653.
+// - [Clippy probe: clippy::struct_excessive_bools] more than 3 bools in a struct. Sites 19.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   8, 12, 13, 14, 15, 19, 20, 21, 22, 23, 27, 28, 29, 30, 31, 32, 33, 59, 60, 61, 62, 63, 65, 66,
+//   68, 69, 70, 72, 73, 74, 75, 77, 78, 80, 81, 100, 101, 102, 103, 104, 105, 109, 110, 111, 112,
+//   113, 117, 118, 119, 123, 124, 125, 126, 127, 128, 132, 133, 134, 135, 136, 137, 138, 166, 254,
+//   413, 653.
+
 use std::collections::{BTreeMap, VecDeque};
 use std::time::{Duration, Instant};
 

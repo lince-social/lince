@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn saved_views_page_beyond_five_thousand_with_bounded_results, fn
+//   attachment_download_checks_person_visibility_and_validates_bytes, fn
+//   concept_picker_search_is_case_insensitive.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use engine::{Engine, actions::Action};
 use lince_mobile::{app::Mobile, attachments, views};
 use nucleus::{MessageState, RecordKind, message::MessagePart};

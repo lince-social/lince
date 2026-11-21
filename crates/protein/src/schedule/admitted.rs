@@ -1,47 +1,56 @@
-use super::*;
+use std::collections::{HashMap, HashSet, hash_map::Entry};
+
+use chrono::DateTime;
 use nucleus::{
     karma::{ReferenceKind, TypedUid},
-    projection::{Context, OccurrenceLink},
+    performance::{Span, add},
+    projection::{Context, MAX_SPANS, OccurrenceLink},
+    schedule::{Endpoints, range},
     simulation::RuleOccurrence,
 };
-use std::collections::hash_map::Entry;
-use store::sqlx::Row;
+use serde_json::{Value, json};
+use store::{Store, sqlx::query_as};
+
+use super::{
+    ProteinError, invalid,
+    occurrences::{Materialized, Work},
+};
 
 pub(super) async fn entries(
-    store: &store::Store,
+    store: &Store,
     context: &Context,
     records: &HashMap<&str, &Value>,
-    work: &occurrences::Work<'_>,
-    materialized: &occurrences::Materialized<'_, '_>,
+    work: &Work<'_>,
+    materialized: &Materialized<'_, '_>,
 ) -> Result<(Vec<Value>, bool), ProteinError> {
     if records.is_empty() {
         return Ok((Vec::new(), false));
     }
     let allowed = serde_json::to_string(&records.keys().collect::<Vec<_>>()).map_err(invalid)?;
-    let rows = store::sqlx::query("SELECT a.event_id, a.rule_uid, a.rule_revision, a.intended_at, a.frequency_uid, r.record_uid FROM karma_rule_application a JOIN recurrence r ON r.uid = a.rule_uid LEFT JOIN record_extension w ON w.record_uid = r.record_uid AND w.namespace = 'work' WHERE a.status = 'applied' AND r.record_uid IN (SELECT value FROM json_each(?)) AND ROUND(unixepoch(a.intended_at, 'subsec') * 1000) < ? AND (ROUND(unixepoch(a.intended_at, 'subsec') * 1000) >= ? OR ROUND(unixepoch(a.intended_at, 'subsec') * 1000) + COALESCE(ROUND((julianday(json_extract(w.fds, '$.due')) - julianday(json_extract(w.fds, '$.start'))) * 86400000), ROUND(json_extract(w.fds, '$.estimate_min') * 60000), 0) > ?) ORDER BY a.intended_at, a.event_id, a.rule_uid, a.rule_revision LIMIT ?")
+    type Application = (String, String, i64, String, Option<String>, String);
+    let rows = query_as::<_, Application>("SELECT a.event_id, a.rule_uid, a.rule_revision, a.intended_at, a.frequency_uid, r.record_uid FROM karma_rule_application a JOIN recurrence r ON r.uid = a.rule_uid LEFT JOIN record_extension w ON w.record_uid = r.record_uid AND w.namespace = 'work' WHERE a.status = 'applied' AND r.record_uid IN (SELECT value FROM json_each(?)) AND ROUND(unixepoch(a.intended_at, 'subsec') * 1000) < ? AND (ROUND(unixepoch(a.intended_at, 'subsec') * 1000) >= ? OR ROUND(unixepoch(a.intended_at, 'subsec') * 1000) + COALESCE(ROUND((julianday(json_extract(w.fds, '$.due')) - julianday(json_extract(w.fds, '$.start'))) * 86400000), ROUND(json_extract(w.fds, '$.estimate_min') * 60000), 0) > ?) ORDER BY a.intended_at, a.event_id, a.rule_uid, a.rule_revision LIMIT ?")
         .bind(allowed)
         .bind(context.window.until_ms)
         .bind(context.window.from_ms)
         .bind(context.window.from_ms)
-        .bind((nucleus::projection::MAX_SPANS + 1) as i64)
+        .bind(i64::try_from(MAX_SPANS + 1).map_err(invalid)?)
         .fetch_all(&store.pool)
         .await?;
-    let budget = rows.len() > nucleus::projection::MAX_SPANS;
-    let _publish = nucleus::performance::Span::new("protein-schedule-admitted-publication");
+    let budget = rows.len() > MAX_SPANS;
+    let _publish = Span::new("protein-schedule-admitted-publication");
     let mut entries = Vec::new();
     let mut ids = HashSet::new();
     let mut endpoints = HashMap::new();
-    for row in rows.into_iter().take(nucleus::projection::MAX_SPANS) {
-        let record_uid: String = row.get("record_uid");
-        let intended: String = row.get("intended_at");
-        let at = chrono::DateTime::parse_from_rfc3339(&intended)
+    for (event_id, rule_uid, revision, intended, frequency, record_uid) in
+        rows.into_iter().take(MAX_SPANS)
+    {
+        let at = DateTime::parse_from_rfc3339(&intended)
             .map_err(invalid)?
             .timestamp_millis();
-        let frequency: Option<String> = row.get("frequency_uid");
         let occurrence = RuleOccurrence {
-            rule_uid: row.get("rule_uid"),
-            revision: u64::try_from(row.get::<i64, _>("rule_revision")).map_err(invalid)?,
-            event_id: row.get("event_id"),
+            rule_uid,
+            revision: u64::try_from(revision).map_err(invalid)?,
+            event_id,
             frequency: frequency
                 .map(|uid| TypedUid::new(ReferenceKind::Frequency, uid))
                 .transpose()
@@ -54,7 +63,7 @@ pub(super) async fn entries(
         let time = if let Some((uid, work)) = work.row(&record_uid) {
             let endpoints = match endpoints.entry(uid) {
                 Entry::Occupied(entry) => {
-                    nucleus::performance::add("protein-schedule-endpoint-reuses", 1);
+                    add("protein-schedule-endpoint-reuses", 1);
                     entry.into_mut()
                 }
                 Entry::Vacant(entry) => entry.insert(
@@ -64,7 +73,7 @@ pub(super) async fn entries(
             };
             endpoints.range(work["estimate_min"].as_f64(), Some(at))
         } else {
-            nucleus::schedule::range(None, None, None, Some(at))
+            range(None, None, None, Some(at))
         };
         let Some(time) = time.map_err(invalid)? else {
             continue;
@@ -84,11 +93,14 @@ pub(super) async fn entries(
             occurrence,
             consequence: 0,
         };
-        let mut entry = Value::clone(records[record_uid.as_str()]);
-        entry["uid"] = json!(id);
-        entry["record_uid"] = json!(record_uid);
-        let kind = entry["kind"].take();
-        entry["record_kind"] = kind;
+        let mut entry = Value::clone(
+            records
+                .get(record_uid.as_str())
+                .ok_or_else(|| invalid("Admitted work references an unselected Record"))?,
+        );
+        entry["uid"] = Value::String(id);
+        entry["record_uid"] = Value::String(record_uid);
+        entry["record_kind"] = entry["kind"].take();
         entry["kind"] = json!("schedule-entry");
         entry["category"] = json!("timed");
         entry["time"] = json!(time);

@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: trait AtomicPod, trait AtomicPodBlob, macro impl_atomic_pod.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 151.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 127.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 127.
+// - [rustc: unreachable_pub] unreachable `pub` item. Sites 127.
+
 //! Utilities that allow updating of large POD structures from multiple threads.
 //!
 //! In a select few cases, for performance reasons, we want to update "plain

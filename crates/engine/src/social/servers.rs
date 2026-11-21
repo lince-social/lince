@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: const NAMESPACE, fn validate.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 13, 33, 55.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 27, 112.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 35.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 13, 55.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 27, 112.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 
 const NAMESPACE: &str = "lince.social.servers";

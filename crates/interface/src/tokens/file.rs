@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct ThemeFile, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 19.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites poll: String
+//   (14).
+
 use super::{ThemeSettings, document::ThemeDocument};
 use std::path::PathBuf;
 

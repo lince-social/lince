@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: enum Phase, struct Session, fn attach, fn sender.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 69, 79, 230, 261,
+//   328, 355.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   64.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (400, 406).
+
 use super::*;
 use std::{
     borrow::Cow,

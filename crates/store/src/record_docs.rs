@@ -1,3 +1,29 @@
+// non-lean-yet
+// Scope: const MAX_SNAPSHOT_BYTES, const MAX_RECORD_UID_BYTES, const MAX_TIMESTAMP_BYTES, struct
+//   RecordDocRow.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 197.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   143, 302.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 182, 332.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 18.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   105, 114, 176, 177, 202, 323.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   213, 243.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 143, 302, 339, 390, 443, 454, 465, 489, 497, 518, 541, 557, 578.
+// - [Clippy: clippy::needless_question_mark] enclosing `Ok` and `?` operator are unneeded. Sites
+//   526.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 10.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 10,
+//   11, 12, 13, 14, 18, 19, 20, 21, 22, 24, 25, 26, 31, 32, 33, 34, 35, 36, 37, 38, 42, 43, 44,
+//   143, 302, 339, 390, 443, 454, 465, 489, 497, 518, 541, 557, 578.
+
 use chrono::DateTime;
 use sqlx::{Row, Sqlite, SqlitePool, Transaction};
 

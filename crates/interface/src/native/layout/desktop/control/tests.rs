@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn invocation, fn captured_selection_cannot_retarget_after_focus_or_canvas_changes, fn
+//   dispatcher_access_cannot_grant_window_output_launch_or_capture_permissions, fn
+//   qualified_workspace_selection_is_idempotent_and_reordering_invalidates_the_destination.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn invocation(world: &World, root: Entity, shortcut: Shortcut) -> Invocation {

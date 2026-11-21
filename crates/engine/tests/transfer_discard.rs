@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: mod support, fn
+//   only_unused_creator_drafts_can_be_discarded_with_signed_retryable_evidence, fn
+//   a_dependency_on_a_draft_promise_prevents_discard, fn
+//   dependencies_inside_an_unused_draft_do_not_prevent_discard.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use engine::actions::{Action, TransferReservePoint};

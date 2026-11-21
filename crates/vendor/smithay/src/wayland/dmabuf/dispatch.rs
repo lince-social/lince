@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: impl DmabufState, impl DmabufState, impl DmabufState.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 74, 85, 107, 121,
+//   187, 189, 190, 307, 308, 309, 332, 334, 335, 336.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (92, 97, 99, 116, 121, 155, 262, 281).
+
 use std::sync::{atomic::AtomicBool, Mutex};
 
 use wayland_protocols::wp::linux_dmabuf::zv1::server::{

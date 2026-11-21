@@ -1,3 +1,22 @@
+// non-lean-yet
+// Scope: impl Engine.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 63, 253, 459,
+//   489, 504, 547, 664, 784, 786, 787, 859, 884, 893, 896, 903, 909, 918.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 387, 488, 503.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 100, 153, 165, 271, 327, 334, 339, 341.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or(false)` on an `Option` value.
+//   Sites 229, 299.
+// - [Clippy probe: clippy::match_same_arms] these match arms have identical bodies. Sites 932, 937,
+//   942.
+// - [Clippy probe: clippy::redundant_closure] redundant closure. Sites 770.
+// - [Clippy probe: clippy::unnecessary_lazy_evaluations] unnecessary closure used to substitute
+//   value for `Option::None`. Sites 63.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 
 impl Engine {

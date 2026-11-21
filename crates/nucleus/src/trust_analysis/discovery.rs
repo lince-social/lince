@@ -1,3 +1,28 @@
+// non-lean-yet
+// Scope: const MAX_HEADERS, const MAX_QUESTION_BYTES, const MAX_CURSOR_BYTES, const PAGE_WORK.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 276, 279, 317, 320, 322, 323.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 233, 320.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   320.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 23.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 45, 92, 178, 219.
+// - [Clippy: clippy::nonminimal_bool] this boolean expression can be simplified. Sites 125, 126.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 16, 17,
+//   18, 19, 23, 24, 25, 26, 27, 28, 29, 31, 32, 33, 35, 36, 38, 39, 40, 45, 92, 97, 169, 170, 171,
+//   172, 173, 174, 178, 201, 202, 203, 204, 205, 210, 211, 212, 213, 214, 215, 219.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites hash: String
+//   (92), validate: String (45, 178, 219).
+
+use std::collections::BTreeSet;
+
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+
 use super::{
     Identity,
     serving::{Artifact, MAX_ARTIFACT_BYTES, SourceKind},
@@ -9,9 +34,6 @@ use crate::{
         receipt::{ApprovalRole, Measurement},
     },
 };
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
 
 pub const MAX_HEADERS: usize = 8;
 pub const MAX_QUESTION_BYTES: usize = 12288;

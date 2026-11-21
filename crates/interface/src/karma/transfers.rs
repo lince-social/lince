@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn snapshot, fn retreated, fn names, fn replace.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites automation:
+//   String (147).
+
 use nucleus::karma::rule_field::RuleFieldKind;
 use nucleus::transfer::karma::Snapshot;
 use serde::Deserialize;

@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct Trial, fn minimize_until, fn cards, fn report.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 109, 188, 190,
+//   470, 503, 554, 611, 625, 626.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   43, 116.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (42, 47, 49, 62, 64, 67, 71, 73, 77, 85, 86, 90, 92, 93, 99, 100, 124, 130, 131,
+//   183, 186, 217, 246, 276, 296, 382, 387, 394, 397, 401, 406, 410, 417, 424, 427, 431, 464, 466,
+//   477, 483, 491, 494, 495, 498, 499, 503, 504, 519, 548, 550, 561, 577, 596, 615, 657).
+
 use bevy::{
     math::DVec2,
     prelude::*,

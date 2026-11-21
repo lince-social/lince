@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct Cursor, fn position.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy::prelude::*;
 use x11rb::protocol::xproto::ConnectionExt;
 

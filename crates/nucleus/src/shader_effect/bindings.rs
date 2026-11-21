@@ -1,6 +1,25 @@
+// non-lean-yet
+// Scope: struct NumericBinding, struct NumericSource, enum NumericField, fn bounded_source.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 144, 158, 159, 160.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 223.
+// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 77.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 23.
+// - [Clippy: clippy::field_reassign_with_default] field assignment outside of initializer for an
+//   instance created with Default::default(). Sites 247.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 95, 102, 137.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 8,
+//   9, 10, 15, 16, 17, 18, 23, 24, 25, 26, 27, 45, 95, 102, 132, 137, 150, 154, 166.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites resolve: String
+//   (137), validate: String (102), validate_record_field: String (95).
+
+use serde::{Deserialize, Serialize};
+
 use super::{Operator, gpu_quantity};
 use crate::DecimalValue;
-use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -74,8 +93,8 @@ fn validate_source(
     {
         return Err("Choose stable Organ and Record UIDs for numeric inputs.".into());
     }
-    if let NumericField::Extension { namespace, path } = field {
-        if namespace.is_empty()
+    if let NumericField::Extension { namespace, path } = field
+        && (namespace.is_empty()
             || namespace.len() > 128
             || namespace.chars().any(char::is_control)
             || namespace.starts_with("lince.social.")
@@ -84,10 +103,9 @@ fn validate_source(
             || path.iter().any(|part| {
                 part.is_empty() || part.len() > 128 || part.chars().any(char::is_control)
             })
-            || path.iter().map(String::len).sum::<usize>() > 512
-        {
-            return Err("Choose a readable extension namespace and a bounded field path.".into());
-        }
+            || path.iter().map(String::len).sum::<usize>() > 512)
+    {
+        return Err("Choose a readable extension namespace and a bounded field path.".into());
     }
     Ok(())
 }

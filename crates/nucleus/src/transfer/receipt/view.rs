@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct Publication, fn empty_slice, struct Bundle.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::{
     Approval, Authority, BTreeMap, BTreeSet, Content, MAX_AUTHORITIES, MAX_BUNDLE_BYTES, MAX_BYTES,
     MAX_EVENTS, PersonApproval, Scope, Serialize, SignedEvent, signature_shape,

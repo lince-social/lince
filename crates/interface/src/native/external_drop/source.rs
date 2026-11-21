@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: enum Source, enum Kind, fn kind, fn mime_extension.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 52, 53.
+
 use std::path::{Path, PathBuf};
 
 #[derive(Clone, Debug, PartialEq, Eq)]

@@ -1,5 +1,27 @@
-use sqlx::{Row, SqlitePool};
+// non-lean-yet
+// Scope: fn create, fn create_in, fn ensure, fn add_name.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 395.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 404.
+// - [Clippy: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably fires.
+//   Sites 497.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 411, 498.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   582.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 6, 15, 64, 71, 84, 106, 131, 147, 194, 198, 210, 239, 264, 294, 307, 316, 325, 349, 415,
+//   428, 467, 485, 501.
+// - [Clippy: clippy::needless_question_mark] enclosing `Ok` and `?` operator are unneeded. Sites
+//   309, 338.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 15,
+//   64, 71, 84, 106, 131, 147, 194, 198, 210, 239, 257, 258, 259, 260, 261, 264, 294, 307, 316,
+//   325, 349, 415, 428, 467, 485, 501.
+
 use std::collections::HashSet;
+
+use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;
 
@@ -494,7 +516,10 @@ pub async fn convert(
     let Some((numerator, denominator)) = conversion_ratio(pool, from_uid, to_uid).await? else {
         return Ok(None);
     };
-    #[allow(clippy::cast_precision_loss, reason = "This approximate conversion returns f64 and the exact API preserves precision")]
+    #[allow(
+        clippy::cast_precision_loss,
+        reason = "This approximate conversion returns f64 and the exact API preserves precision"
+    )]
     Ok(Some(quantity * (numerator as f64) / (denominator as f64)))
 }
 

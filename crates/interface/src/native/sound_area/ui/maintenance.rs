@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Pending, fn capture.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (64, 73).
+
 use super::*;
 
 #[derive(Default)]

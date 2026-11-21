@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct Restoration, enum Request, fn restore_missing, fn input_owner.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 43.
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 69.
+
 use super::*;
 
 #[derive(Resource)]

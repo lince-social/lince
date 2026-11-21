@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod viewport, struct GestureSupport, struct Page, enum Change.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 180.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 203.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (89, 153, 160, 165, 226, 227, 248, 252, 265, 278, 357, 374, 379, 398, 405, 416,
+//   417, 438).
+
 use super::input_settings::{button, caption, disable, feedback, field, text, prepared::Prepared};
 use bevy::ecs::query::QueryState;
 use std::collections::HashMap;

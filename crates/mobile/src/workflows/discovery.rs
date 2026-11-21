@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn social, fn search, fn entry, fn results.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 19, 70, 148.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (13).
+
 use super::*;
 
 fn social(

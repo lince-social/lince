@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: fn claim_invalid, fn prepare_claim_action, fn sign_claim_document.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 34, 66, 138, 139,
+//   202, 203, 204, 209, 219, 222, 223, 236, 245, 269, 270, 482, 511, 512, 521, 543, 544, 577, 583,
+//   599, 616, 674.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 338, 363, 364, 365, 413, 414, 415, 416, 417, 418, 419.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option`
+//   value. Sites 575.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 54, 74.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   54, 74.
+
 use super::*;
 use crate::actions::{ActionOutcome, VerifiedActionAuthorship};
 use chrono::{DateTime, Utc};

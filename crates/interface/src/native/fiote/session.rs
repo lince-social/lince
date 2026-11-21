@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: enum Step, struct Panel, struct SecretField, struct Mask.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 196, 198, 237,
+//   293, 340, 373, 374, 375, 392, 402, 627, 705, 732, 738, 739, 750, 751, 767, 787, 839, 850, 854,
+//   1016, 1017, 1044, 1045, 1049, 1050, 1102, 1156, 1182, 1183, 1282, 1285, 1286, 1302, 1339, 1347,
+//   1349, 1364, 1375, 1384, 1393, 1394, 1399, 1446, 1464, 1539, 1583.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   642.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (110, 233, 346, 358, 360, 363, 445, 448, 607, 625, 639, 703, 726, 767, 772, 778,
+//   804, 824, 875, 898, 971, 1009, 1056, 1060, 1062, 1086, 1100, 1114, 1128, 1129, 1131, 1137,
+//   1138, 1141, 1142, 1159, 1164, 1183, 1187, 1196, 1276, 1280, 1368, 1375, 1422, 1448, 1461, 1497,
+//   1542, 1587, 1625).
+
 use crate::native::{
     actions::Action,
     protein_area::{RecordBinding, Source},

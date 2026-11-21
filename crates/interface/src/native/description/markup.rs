@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod retention, fn spawn_block, struct ParagraphLinks, fn click.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 42, 115, 120,
+//   122, 152, 221, 245.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   245.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (104, 106).
+
 use super::*;
 pub(super) use lince_interface::markup::parse;
 

@@ -1,5 +1,19 @@
-use super::Input;
+// non-lean-yet
+// Scope: struct Context, struct Dialogue, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 71, 100.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 36, 61, 69.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 7,
+//   9, 14, 15, 16, 20, 36, 61, 69.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites admission_text:
+//   String (69), dialogue: String (61), encode: String (36).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   26, 82, 90.
+
 use serde::{Deserialize, Serialize};
+
+use super::Input;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

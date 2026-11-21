@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn person_record_identity_constructor_accepts_ordinary_record_ids, fn
+//   person_record_identity_serialization_preserves_person_kind_and_record_uid, fn
+//   person_record_identity_deserialization_accepts_record_uid_directly, fn
+//   person_record_identity_obsolete_person_prefix_is_not_an_alias.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use nucleus::karma::{ReferenceKind, TypedUid};
 use serde_json::json;
 

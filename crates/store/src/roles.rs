@@ -1,5 +1,16 @@
-use crate::{StoreError, auth};
+// non-lean-yet
+// Scope: const MAX_NAME_BYTES, struct Role, fn valid_name, fn get_on.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   catalog:include_permissions (42).
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 21, 40, 66, 78, 85, 101.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 7,
+//   8, 9, 10, 11, 14, 21, 40, 66, 78, 85, 101.
+
 use sqlx::{SqliteConnection, SqlitePool};
+
+use crate::{StoreError, auth};
 
 pub const MAX_NAME_BYTES: usize = 100;
 

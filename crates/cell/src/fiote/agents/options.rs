@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Preview.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 84, 131, 134,
+//   140.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 
 pub(super) struct Preview {

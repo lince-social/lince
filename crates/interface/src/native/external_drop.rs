@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: mod native, mod source, mod tests, mod ui.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 211, 303, 556,
+//   560, 562.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 88, 288.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites
+//   receive_native_text: String (256), receive_native_uri: String (279).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   541, 553, 704, 743.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (546, 573, 668, 685, 720, 730, 753).
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 4.
+
 #[cfg(target_os = "linux")]
 mod native;
 mod source;

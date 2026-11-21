@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct ShareChange, fn parse, fn selected, const TOUCHED_PER_PASS.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 173.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 64.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 20, 42, 94, 160, 179, 217, 251, 269.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   5, 6, 7, 11, 16, 20, 42, 94, 160, 179, 198, 199, 200, 204, 217, 233, 234, 235, 236, 237, 238,
+//   242, 251, 269.
+
 use crate::{Engine, EngineError};
 use std::collections::HashSet;
 

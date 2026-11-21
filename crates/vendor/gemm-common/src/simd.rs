@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: trait Simd, struct Scalar, mod x86, mod aarch64.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check SAFETY proof and trait invariants. Sites 29, 123, 217, 311, 405, 659,
+//   754, 852, 968, 1085, 1202, 1318, 1412, 1523, 1625, 1723, 2084, 2189, 2294.
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 679, 724, 774, 779,
+//   784, 789, 794, 808, 813, 823, 828, 897, 950, 1013, 1066, 1130, 1183, 1247, 1300, 1338, 1432,
+//   1543, 1548, 1553, 1558, 1563, 1580, 1585, 1595, 1600, 1645, 1743, 2108, 2113, 2118, 2123, 2128,
+//   2133, 2138, 2143, 2153, 2158, 2169, 2179, 2184, 2208, 2213, 2238, 2274, 2279, 2284, 2289, 2318,
+//   2343, 2384, 2394, 2399.
+// - [review: §8 Unsafe] Prove unchecked operations and prefer a checked API when equivalent. Sites
+//   transmute (2133, 2179, 2184, 2238, 2284, 2289, 2343, 2394, 2399).
+// - [review: §5 Panics] Check intentional unfinished branches before replacing todo!. Sites 684,
+//   689, 694, 699, 704, 709, 714, 719, 729, 734, 739, 744, 749.
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 6, 9.
+
 pub use bytemuck::Pod;
 #[cfg(feature = "f16")]
 use half::f16;

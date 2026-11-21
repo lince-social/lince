@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn main.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   2, 7.
+
 fn main() {
     sensei::teach(std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR"));
     if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("macos")

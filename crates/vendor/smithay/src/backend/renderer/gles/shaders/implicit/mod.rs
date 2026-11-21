@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: const VERTEX_SHADER, const FRAGMENT_SHADER, const VERTEX_SHADER_SOLID, const
+//   FRAGMENT_SHADER_SOLID.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites 60.
+
 /// OpenGL Shaders
 use crate::backend::renderer::gles::*;
 

@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn engine, fn record, fn protein, fn binding.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 411.
+
 #![cfg(test)]
 
 use engine::{Engine, actions::Action};

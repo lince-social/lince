@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn pending_profile_images_respect_existing_sync_budget_without_partial_draft_writes, fn
+//   signed_pending_images_reject_wrong_hash_unselected_corrupt_and_oversized_data.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 98.
+
 use super::*;
 
 #[tokio::test]

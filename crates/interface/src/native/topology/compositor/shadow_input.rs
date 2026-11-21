@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct ShapeInput.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy::{
     mesh::{Indices, PrimitiveTopology, VertexAttributeValues},
     prelude::*,

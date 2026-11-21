@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: fn password_retention.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   112, 113, 183.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (17, 29, 35, 41, 47, 62, 65, 69, 72, 76, 81, 92, 102, 108, 119, 128, 130, 132,
+//   138, 144, 156, 159, 162, 166, 169, 171, 176, 180, 185, 191, 194, 198).
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 8.
+
 use super::*;
 use bevy::{
     ecs::system::RunSystemOnce,

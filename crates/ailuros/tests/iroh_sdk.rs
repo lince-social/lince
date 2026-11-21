@@ -1,15 +1,22 @@
+// non-lean-yet
+// Scope: fn exported_iroh_qualification_links_and_produces_guarded_images, fn
+//   exported_iroh_camera_links_and_preserves_the_enrollment_partition.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option` value.
+//   Sites 12, 52.
+
+use std::{env::var_os, fs, path::PathBuf};
+
 use lince_ailuros::{
     project::{self, FirmwareMode},
     serial::Cancellation,
 };
-use std::fs;
-use std::path::PathBuf;
 
 #[test]
 #[ignore = "Requires nix develop .#ailuros-rust, ESP Rust installation and a full optimized SDK link; never flashes a device"]
 fn exported_iroh_qualification_links_and_produces_guarded_images() {
     let directory = tempfile::tempdir().unwrap();
-    let root = std::env::var_os("AILUROS_QUALIFICATION_OUTPUT")
+    let root = var_os("AILUROS_QUALIFICATION_OUTPUT")
         .map(PathBuf::from)
         .unwrap_or_else(|| directory.path().join("project"));
     project::export_for_board(&root, "goouuu-esp32s3-cam-v1.5").unwrap();
@@ -49,7 +56,7 @@ fn exported_iroh_qualification_links_and_produces_guarded_images() {
 #[ignore = "Requires nix develop .#ailuros-rust and a full optimized SDK link; never flashes a device"]
 fn exported_iroh_camera_links_and_preserves_the_enrollment_partition() {
     let directory = tempfile::tempdir().unwrap();
-    let root = std::env::var_os("AILUROS_CAMERA_OUTPUT")
+    let root = var_os("AILUROS_CAMERA_OUTPUT")
         .map(PathBuf::from)
         .unwrap_or_else(|| directory.path().join("project"));
     project::export_for_board(&root, "goouuu-esp32s3-cam-v1.5").unwrap();

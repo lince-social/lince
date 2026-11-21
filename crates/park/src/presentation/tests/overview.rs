@@ -1,8 +1,16 @@
-use super::shortcuts::{capture, click, key, named_button, settle};
-use super::*;
+// non-lean-yet
+// Scope: mod dragging, mod settings, fn chord, fn
+//   overview_keyboard_pointer_and_thumbnails_preserve_the_canvas_and_native_content.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use lince_interface::{
     host::{DesktopAction, WorkspaceLayout},
     native::actions::Action,
+};
+
+use super::{
+    shortcuts::{capture, click, key, named_button, settle},
+    *,
 };
 
 mod dragging;
@@ -10,10 +18,14 @@ mod settings;
 
 fn chord(canvas: &mut Presentation, physical: KeyCode) {
     key(canvas, KeyCode::SuperLeft, true);
-    if physical == KeyCode::Space { key(canvas, KeyCode::ShiftLeft, true); }
+    if physical == KeyCode::Space {
+        key(canvas, KeyCode::ShiftLeft, true);
+    }
     key(canvas, physical, true);
     key(canvas, physical, false);
-    if physical == KeyCode::Space { key(canvas, KeyCode::ShiftLeft, false); }
+    if physical == KeyCode::Space {
+        key(canvas, KeyCode::ShiftLeft, false);
+    }
     key(canvas, KeyCode::SuperLeft, false);
 }
 

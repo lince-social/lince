@@ -1,10 +1,15 @@
-use nucleus::{projection::OccurrenceLink, simulation::RuleOccurrence};
-use serde::Deserialize;
-use serde_json::Value;
 use std::{
     collections::{HashMap, HashSet},
     sync::OnceLock,
 };
+
+use nucleus::{
+    performance::{Span, add},
+    projection::OccurrenceLink,
+    simulation::RuleOccurrence,
+};
+use serde::Deserialize;
+use serde_json::Value;
 
 struct Link<'a> {
     value: &'a Value,
@@ -15,7 +20,7 @@ impl Link<'_> {
     fn get(&self) -> Option<&OccurrenceLink> {
         self.parsed
             .get_or_init(|| {
-                nucleus::performance::add("protein-schedule-link-decodes", 1);
+                add("protein-schedule-link-decodes", 1);
                 OccurrenceLink::deserialize(self.value).ok()
             })
             .as_ref()
@@ -43,7 +48,7 @@ impl<'a> Work<'a> {
 
     fn links(&self) -> &HashMap<&'a str, Link<'a>> {
         self.links.get_or_init(|| {
-            let _prepare = nucleus::performance::Span::new("protein-schedule-link-catalog");
+            let _prepare = Span::new("protein-schedule-link-catalog");
             let links: HashMap<_, _> = self
                 .rows
                 .iter()
@@ -57,7 +62,10 @@ impl<'a> Work<'a> {
                     ))
                 })
                 .collect();
-            nucleus::performance::add("protein-schedule-link-values", links.len() as u64);
+            add(
+                "protein-schedule-link-values",
+                u64::try_from(links.len()).unwrap_or(u64::MAX),
+            );
             links
         })
     }
@@ -96,7 +104,7 @@ impl<'a, 'work> Materialized<'a, 'work> {
 
     pub(super) fn contains(&self, record: &str, occurrence: &RuleOccurrence) -> bool {
         let keys = self.identities.get_or_init(|| {
-            let _prepare = nucleus::performance::Span::new("protein-schedule-materialized-index");
+            let _prepare = Span::new("protein-schedule-materialized-index");
             let work: &'a Work<'work> = self.work;
             work.links()
                 .iter()
@@ -105,7 +113,7 @@ impl<'a, 'work> Materialized<'a, 'work> {
                 .map(|link| identity(link.record.as_str(), &link.occurrence))
                 .collect()
         });
-        nucleus::performance::add("protein-schedule-occurrence-lookups", 1);
+        add("protein-schedule-occurrence-lookups", 1);
         keys.contains(&identity(record, occurrence))
     }
 }

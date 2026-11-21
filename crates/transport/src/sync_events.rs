@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: enum SyncEvent, const MAX_FACT_BATCH, struct SyncEvents, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   next:ephemeral (54).
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 5.
+// - [Clippy probe: clippy::large_enum_variant] large size difference between variants. Sites 5.
+// - [Clippy probe: clippy::missing_panics_doc] State the panic conditions for exported functions.
+//   Sites 54.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 5, 16.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   5, 6, 7, 8, 9, 10, 11, 16, 25, 49, 54.
+
 use engine::Engine;
 use nucleus::Fact;
 use tokio::sync::{broadcast, watch};

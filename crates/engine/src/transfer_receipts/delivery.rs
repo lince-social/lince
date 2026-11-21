@@ -1,3 +1,23 @@
+// non-lean-yet
+// Scope: fn result.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 253, 281, 282,
+//   429, 471, 472, 476, 508, 626, 634, 695.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 202.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 415, 525.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 415.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 806.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 266.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 202.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 14.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use crate::actions::{ActionOutcome, VerifiedActionAuthorship};
 use base64::{Engine as _, engine::general_purpose::STANDARD as B64};

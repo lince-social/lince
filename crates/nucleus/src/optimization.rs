@@ -1,11 +1,37 @@
-use crate::DecimalValue;
-use microlp::{ComparisonOp, OptimizationDirection, Problem, ResumeOptions, SolutionStatus};
-use serde::{Deserialize, Serialize};
+// non-lean-yet
+// Scope: const MAX_VARIABLES, const MAX_CONSTRAINTS, const MAX_TERMS, struct Variable.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 202, 297, 392, 481.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 209, 231, 414,
+//   449, 460.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 233, 256, 264, 315.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   233, 256, 264, 315.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 66.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   289, 393, 445.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 104, 146, 185.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 10, 11,
+//   12, 16, 17, 18, 19, 20, 25, 26, 27, 32, 33, 34, 35, 36, 41, 42, 43, 45, 50, 51, 52, 66, 67, 68,
+//   69, 70, 71, 72, 73, 77, 78, 79, 80, 81, 85, 86, 87, 88, 92, 93, 94, 95, 96, 97, 98, 99, 100,
+//   101, 104, 146, 185, 238.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites decimal: String
+//   (104), validate: String (146), verify: String (185).
+
 use std::{
     collections::BTreeSet,
     sync::atomic::{AtomicBool, Ordering},
     time::{Duration, Instant},
 };
+
+use microlp::{ComparisonOp, OptimizationDirection, Problem, ResumeOptions, SolutionStatus};
+use serde::{Deserialize, Serialize};
+
+use crate::DecimalValue;
 
 pub const MAX_VARIABLES: usize = 20_000;
 pub const MAX_CONSTRAINTS: usize = 30_000;
@@ -286,7 +312,8 @@ fn solve_inner(
         .variables
         .iter()
         .map(|v| {
-            let bounds = bounds(v.lower, v.upper, true).expect("the solver validates variable bounds");
+            let bounds =
+                bounds(v.lower, v.upper, true).expect("the solver validates variable bounds");
             problem.add_var(v.cost.to_f64(), bounds)
         })
         .collect();
@@ -296,7 +323,9 @@ fn solve_inner(
             .iter()
             .map(|t| (variables[t.variable], t.coefficient.to_f64()))
             .collect();
-        if let Some(lower) = c.lower && Some(lower) == c.upper {
+        if let Some(lower) = c.lower
+            && Some(lower) == c.upper
+        {
             problem.add_constraint(&terms, ComparisonOp::Eq, lower.to_f64());
         } else {
             if let Some(lower) = c.lower {
@@ -390,7 +419,8 @@ fn impossible_requirements(model: &Model) -> Vec<Diagnostic> {
                     continue;
                 }
                 let v = &model.variables[term.variable];
-                let (lo, hi) = bounds(v.lower, v.upper, true).expect("the solver validates variable bounds");
+                let (lo, hi) =
+                    bounds(v.lower, v.upper, true).expect("the solver validates variable bounds");
                 if coefficient >= 0.0 {
                     min += coefficient * lo;
                     max += coefficient * hi;

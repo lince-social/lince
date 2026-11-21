@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: mod spatial, fn fixture, fn resolve, fn
+//   tiling_round_trip_restores_authored_geometry_and_camera_and_keeps_window_identity.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::actions::Action;
 

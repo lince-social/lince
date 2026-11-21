@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: mod tests, struct Key, struct Panel, struct Ticket.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 154, 183, 274,
+//   366, 388, 412, 470, 476, 515, 523, 583, 592, 650, 718, 733, 758, 765, 777, 778, 787, 810, 813,
+//   815, 818, 955, 956, 970, 971.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 258.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (689).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   502, 559, 584, 723, 754.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (97, 98, 99, 185, 200, 208, 216, 223, 230, 232, 242, 252, 263, 264, 265, 272, 335,
+//   336, 349, 350, 366, 375, 376, 381, 400, 403, 416, 486, 496, 548, 645, 761, 849, 867, 898, 919,
+//   962, 966).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 662.
+
 use super::*;
 use lince_editor::{language, lsp};
 #[cfg(test)]

@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: const VERBS, fn exchange, fn
+//   every_social_verb_refuses_incompatible_alpn_and_malformed_version_without_import, fn
+//   actual_wire_accepts_exact_legal_frames_and_refuses_one_byte_over_each_limit.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 58, 67, 142, 151.
+
 use super::*;
 use engine::wire::{ALPN_SOCIAL, Reach, Wire};
 use std::{sync::Arc, time::Duration};

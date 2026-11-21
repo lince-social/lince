@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn live_cell_restart_reuses_a_projection_after_pairing_address_refresh, fn check_restart.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use std::sync::atomic::Ordering;

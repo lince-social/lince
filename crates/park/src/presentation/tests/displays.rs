@@ -1,9 +1,10 @@
+// non-lean-yet
+// Scope: fn labelled, fn reveal, fn write, fn publish.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #[cfg(feature = "nested")]
-use super::shortcuts::named_button;
-use super::shortcuts::{capture, click, key, settle};
-use super::*;
-#[cfg(feature = "nested")]
-use crate::server::{Monitor, Server};
+use std::sync::mpsc::Receiver;
+
 #[cfg(feature = "nested")]
 use lince_interface::{
     host::{
@@ -14,8 +15,15 @@ use lince_interface::{
 };
 #[cfg(feature = "nested")]
 use smithay::backend::allocator::Buffer;
+
 #[cfg(feature = "nested")]
-use std::sync::mpsc::Receiver;
+use super::shortcuts::named_button;
+use super::{
+    shortcuts::{capture, click, key, settle},
+    *,
+};
+#[cfg(feature = "nested")]
+use crate::server::{Monitor, Server};
 
 pub(super) fn labelled(canvas: &mut Presentation, caption: &str) -> Entity {
     canvas
@@ -47,31 +55,61 @@ pub(super) fn reveal(canvas: &mut Presentation, entity: Entity) {
             let Some(current) = ancestor else {
                 break;
             };
-            if world.get::<Node>(current).is_some_and(|node| node.overflow.x == OverflowAxis::Scroll || node.overflow.y == OverflowAxis::Scroll)
-                && let (Some(node), Some(transform)) = (world.get::<ComputedNode>(current), world.get::<UiGlobalTransform>(current))
-            {
-                let mut visible = Rect::from_center_size(transform.transform_point2(Vec2::ZERO), node.size());
-                if let Some(clip) = world.get::<bevy::ui::CalculatedClip>(current) { visible = lince_interface::native::clipped_rect(visible, clip); }
-                visible = visible.intersect(Rect::from_corners(Vec2::ZERO, Vec2::from_array(canvas.render_size.map(|value| value as f32))));
+            if world.get::<Node>(current).is_some_and(|node| {
+                node.overflow.x == OverflowAxis::Scroll || node.overflow.y == OverflowAxis::Scroll
+            }) && let (Some(node), Some(transform)) = (
+                world.get::<ComputedNode>(current),
+                world.get::<UiGlobalTransform>(current),
+            ) {
+                let mut visible =
+                    Rect::from_center_size(transform.transform_point2(Vec2::ZERO), node.size());
+                if let Some(clip) = world.get::<bevy::ui::CalculatedClip>(current) {
+                    visible = lince_interface::native::clipped_rect(visible, clip);
+                }
+                visible = visible.intersect(Rect::from_corners(
+                    Vec2::ZERO,
+                    Vec2::from_array(canvas.render_size.map(|value| value as f32)),
+                ));
                 let overflow = world.get::<Node>(current).unwrap().overflow;
-                let axes = [overflow.x == OverflowAxis::Scroll && (point.x < visible.min.x || point.x > visible.max.x),
-                    overflow.y == OverflowAxis::Scroll && (point.y < visible.min.y || point.y > visible.max.y)];
-                if visible.width() > 0.0 && visible.height() > 0.0 && axes.into_iter().any(|axis| axis) {
+                let axes = [
+                    overflow.x == OverflowAxis::Scroll
+                        && (point.x < visible.min.x || point.x > visible.max.x),
+                    overflow.y == OverflowAxis::Scroll
+                        && (point.y < visible.min.y || point.y > visible.max.y),
+                ];
+                if visible.width() > 0.0
+                    && visible.height() > 0.0
+                    && axes.into_iter().any(|axis| axis)
+                {
                     scroll = Some((current, visible, axes));
                     break;
                 }
             }
             ancestor = world.get::<ChildOf>(current).map(ChildOf::parent);
         }
-        let (scroll, visible, axes) = scroll.expect("An offscreen control needs a visible scrollable ancestor");
+        let (scroll, visible, axes) =
+            scroll.expect("An offscreen control needs a visible scrollable ancestor");
         let center = visible.center();
         let extent = world.get::<ComputedNode>(scroll).unwrap().size();
         let before = world.get::<ScrollPosition>(scroll).unwrap().0;
         let content = world.get::<ComputedNode>(scroll).unwrap().content_size;
         steps.push((point, scroll, before, center, extent, content));
-        let inverse_scale = world.get::<ComputedNode>(scroll).unwrap().inverse_scale_factor();
-        let delta = [if axes[0] { ((center.x - point.x) * inverse_scale).clamp(-4096.0, 4096.0) } else { 0.0 },
-            if axes[1] { ((center.y - point.y) * inverse_scale).clamp(-4096.0, 4096.0) } else { 0.0 }];
+        let inverse_scale = world
+            .get::<ComputedNode>(scroll)
+            .unwrap()
+            .inverse_scale_factor();
+        let delta = [
+            if axes[0] {
+                ((center.x - point.x) * inverse_scale).clamp(-4096.0, 4096.0)
+            } else {
+                0.0
+            },
+            if axes[1] {
+                ((center.y - point.y) * inverse_scale).clamp(-4096.0, 4096.0)
+            } else {
+                0.0
+            },
+        ];
         super::shortcuts::pixel_pointer(canvas, [visible.max.x - 3.0, visible.center().y]);
         settle(canvas);
         canvas
@@ -85,7 +123,12 @@ pub(super) fn reveal(canvas: &mut Presentation, entity: Entity) {
     }
     let frame = settle(canvas);
     capture("control-unreachable", canvas.render_size, &frame);
-    let caption = canvas.app.world().get::<bevy::a11y::AccessibilityNode>(entity).and_then(|node| node.label()).unwrap_or("unnamed control");
+    let caption = canvas
+        .app
+        .world()
+        .get::<bevy::a11y::AccessibilityNode>(entity)
+        .and_then(|node| node.label())
+        .unwrap_or("unnamed control");
     panic!("The control {caption} was not reachable through wheel scrolling: {steps:?}");
 }
 
@@ -93,7 +136,15 @@ pub(super) fn write(canvas: &mut Presentation, caption: &str, value: &str, size:
     let entity = labelled(canvas, caption);
     reveal(canvas, entity);
     click(canvas, entity, size);
-    assert_eq!(canvas.app.world().resource::<bevy::input_focus::InputFocus>().get(), Some(entity), "Clicking {caption} must focus that field");
+    assert_eq!(
+        canvas
+            .app
+            .world()
+            .resource::<bevy::input_focus::InputFocus>()
+            .get(),
+        Some(entity),
+        "Clicking {caption} must focus that field"
+    );
     key(canvas, KeyCode::ControlLeft, true);
     canvas
         .key(KeyCode::KeyA, Key::Character("a".into()), None, true, false)
@@ -110,8 +161,16 @@ pub(super) fn write(canvas: &mut Presentation, caption: &str, value: &str, size:
         .unwrap();
     settle(canvas);
     key(canvas, KeyCode::ControlLeft, false);
-    let input = canvas.app.world().get::<bevy::text::EditableText>(entity).unwrap();
-    assert_eq!(input.editor.raw_selection().text_range(), 0..input.editor.raw_text().len(), "Select all must cover {caption}");
+    let input = canvas
+        .app
+        .world()
+        .get::<bevy::text::EditableText>(entity)
+        .unwrap();
+    assert_eq!(
+        input.editor.raw_selection().text_range(),
+        0..input.editor.raw_text().len(),
+        "Select all must cover {caption}"
+    );
     canvas.text(value.into()).unwrap();
     settle(canvas);
     assert_eq!(

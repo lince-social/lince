@@ -1,11 +1,18 @@
+// non-lean-yet
+// Scope: fn source_redirects_keep_the_final_base_and_do_not_follow_bibliography_links.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 47, 49.
+
 #![cfg(feature = "publication")]
 
-use lince_resources::{Library, publication::Publication};
 use std::{
     io::{Read, Write},
     net::TcpListener,
     thread,
 };
+
+use lince_resources::{Library, publication::Publication};
 
 #[test]
 fn source_redirects_keep_the_final_base_and_do_not_follow_bibliography_links() {

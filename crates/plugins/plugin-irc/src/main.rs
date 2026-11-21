@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn main, fn run.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 13, 16.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites 33.
+
 use std::{path::PathBuf, sync::Arc};
 
 #[tokio::main(flavor = "current_thread")]

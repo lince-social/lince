@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct LocalLocation, fn
+//   location_invitation_uses_ordinary_private_delivery_without_sending_coordinates.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 26.
+
 use super::*;
 use nucleus::location::{Command as Location, Invitation, Settings, SourceKind};
 

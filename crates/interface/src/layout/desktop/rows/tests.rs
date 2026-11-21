@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn tiled, fn solved, fn
+//   rows_overflow_without_resizing_neighbors_and_restore_scroll_and_free_geometry, fn
+//   horizontal_navigation_stays_in_the_row_and_vertical_navigation_uses_presented_centers.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::super::tests::{id, item, viewport};
 use super::*;
 

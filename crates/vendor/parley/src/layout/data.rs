@@ -1,6 +1,16 @@
 // Copyright 2021 the Parley Authors
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+// non-lean-yet
+// Scope: struct ClusterData, struct ClusterInfo, fn to_whitespace, struct RunData.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 226, 235, 531,
+//   572.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   226, 235, 413, 436, 510, 531, 542, 571, 572, 578, 604, 666, 757, 758, 777, 840, 841.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (414, 661, 664, 752, 772, 942).
+
 use crate::inline_box::InlineBox;
 use crate::layout::{ContentWidths, Glyph, LineMetrics, RunMetrics, Style};
 use crate::style::Brush;

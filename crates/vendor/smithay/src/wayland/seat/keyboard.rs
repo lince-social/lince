@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct KeyboardUserData, fn for_each_focused_kbds, fn serialize_pressed_keys, struct
+//   UnknownKeyState.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 98, 156, 187.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (34, 43, 58, 69, 77, 88, 137, 149, 169, 193).
+
 use std::fmt;
 
 use tracing::{instrument, trace, warn};

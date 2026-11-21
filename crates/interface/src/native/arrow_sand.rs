@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod relation, struct ArrowSand, struct Parts, struct Attachment.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 55, 66, 350.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (344).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   240.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (119, 348, 349, 351, 403, 404, 418, 419).
+
 use crate::native::{canvas::CanvasItem, topology::Spatial, workspace::WorkspaceMember};
 use bevy::{
     math::{DQuat, DVec2, DVec3},

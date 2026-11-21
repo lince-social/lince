@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn extension_changes_use_the_shared_runtime_and_replay_exactly.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use engine::actions::Action;
 use nucleus::{
     karma::rule_field::RuleFieldInput,

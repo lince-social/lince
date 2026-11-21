@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn extend_ancestors, fn nodes, struct Nodes.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 33.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   39.
+
 use bevy::{
     camera::{NormalizedRenderTarget, RenderTarget},
     prelude::*,

@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn tiled, fn step, fn
+//   tiled_focus_tracks_horizontal_and_vertical_scroll_in_both_projections_without_drift, fn
+//   fullscreen_does_not_move_the_spatial_camera_and_exit_applies_only_new_tiled_scroll.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::{host::Direction, layout::desktop::Width, native::topology::view::View};
 use bevy::math::DVec2;

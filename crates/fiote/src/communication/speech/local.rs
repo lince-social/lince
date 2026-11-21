@@ -1,6 +1,28 @@
-use crate::communication::models::{self, Artifact, Cache, Manifest};
-use phonon::engine::{Engine, Precision};
-use serde::Serialize;
+// non-lean-yet
+// Scope: const MANIFEST, const CODE_LICENSE, const MODEL_LICENSE, const NOTICE.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 259, 263.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   259.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   112, 115.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   113, 185.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 67, 107, 125.
+// - [Clippy: clippy::print_stdout] Check CLI, Cargo, fixture, or library output contract before
+//   changing output. Sites 350.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 58.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 14, 26,
+//   27, 29, 43, 44, 45, 46, 47, 48, 49, 53, 54, 55, 58, 59, 67, 91, 95, 99, 107, 125.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 112.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites new: String
+//   (67), submit: String (107), transcribe: String (125).
+// - [review: §5 Panics] Verify panic isolation boundary and preserve the failure contract. Sites
+//   159.
+
 use std::{
     io::Read,
     path::PathBuf,
@@ -10,6 +32,11 @@ use std::{
     },
     time::Instant,
 };
+
+use phonon::engine::{Engine, Precision};
+use serde::Serialize;
+
+use crate::communication::models::{self, Artifact, Cache, Manifest};
 
 pub const MANIFEST: Manifest = Manifest {
     id: "phonon-2",
@@ -100,7 +127,7 @@ impl Recognizer {
         *self
             .engine
             .lock()
-            .unwrap_or_else(|error| error.into_inner()) = None;
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = None;
         self.loaded.store(false, Ordering::Release);
     }
 
@@ -169,7 +196,7 @@ impl Recognizer {
                 let mut engine = self
                     .engine
                     .lock()
-                    .unwrap_or_else(|error| error.into_inner());
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
                 *engine = None;
                 self.engine.clear_poison();
                 self.loaded.store(false, Ordering::Release);

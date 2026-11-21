@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Exercise, fn setup, fn descendant, fn capture.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 77, 158.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (190).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (119, 136, 148, 149, 164).
+
 use bevy::{
     math::DVec2,
     prelude::*,

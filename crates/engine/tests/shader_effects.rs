@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn setup, fn spatial_contracts_validate_all_stages_before_replacing_a_catalog, fn
+//   catalog_updates_preserve_siblings_and_reject_stale_or_invalid_replacements, fn
+//   numeric_binding_declarations_round_trip_and_invalid_edits_preserve_the_extension.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::field_reassign_with_default] field assignment outside of initializer for
+//   an instance created with Default::default(). Sites 44, 112, 295.
+
 #![cfg(test)]
 
 use engine::{Engine, actions::Action};

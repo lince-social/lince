@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct Activation.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   register_fiote_availability:enabled (16).
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 95.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   5, 6, 7, 8, 9, 10, 11, 12, 16, 95.
+
 use crate::{Engine, EngineError, actions::ActionOutcome};
 use serde::{Deserialize, Serialize};
 

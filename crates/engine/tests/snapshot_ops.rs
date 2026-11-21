@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn cell, fn plain, fn ops_of_kind, fn accept_replication.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use engine::Engine;
 use engine::sync::OpBatch;
 use engine::trust::Signer;

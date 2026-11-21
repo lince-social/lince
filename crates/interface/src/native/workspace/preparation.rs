@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Queries, fn with, fn query.
+// BeautifulRust (baseline lines):
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 43.
+
 use super::*;
 use bevy::ecs::query::{QueryData, QueryFilter, QueryState};
 

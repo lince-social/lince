@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod node, struct UpscalingPlugin, struct ViewUpscalingPipeline, fn
+//   clear_view_upscaling_pipelines.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 7.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 16, 38.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 16, 38.
+
 use crate::blit::{BlitPipeline, BlitPipelineKey};
 use bevy_app::prelude::*;
 use bevy_camera::CameraOutputMode;

@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn run, fn add, fn action, fn send.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use engine::actions::Action;

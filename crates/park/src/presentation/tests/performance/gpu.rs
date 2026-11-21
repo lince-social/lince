@@ -1,8 +1,13 @@
+// non-lean-yet
+// Scope: struct MainFrames, fn drain, fn clear, fn diagnostics.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
+use bevy::{diagnostic::DiagnosticsStore, render::diagnostic::DiagnosticsRecorder};
+
 use super::{
     schedules::{Clock, frame_pixels, summary},
     *,
 };
-use bevy::{diagnostic::DiagnosticsStore, render::diagnostic::DiagnosticsRecorder};
 
 #[derive(Resource, Default)]
 struct MainFrames(u64);
@@ -142,7 +147,11 @@ fn native_pass_hardware_intervals_belong_to_one_completed_full_or_pixel_frame() 
     let mut samples = Vec::new();
     let mut totals = Vec::new();
     for pixel_only in [false, true] {
-        performance::set_phase(if pixel_only { Phase::GpuPixel } else { Phase::GpuFull });
+        performance::set_phase(if pixel_only {
+            Phase::GpuPixel
+        } else {
+            Phase::GpuFull
+        });
         let mut readings = Vec::new();
         for sample in 0..24 {
             let main_before = canvas.app.world().resource::<MainFrames>().0;
@@ -233,5 +242,8 @@ fn native_pass_hardware_intervals_belong_to_one_completed_full_or_pixel_frame() 
         samples.len()
     );
     canvas.finish().unwrap();
-    assert!(performance::finish(std::time::Duration::from_secs(2)), "Final GPU diagnostic report was not delivered");
+    assert!(
+        performance::finish(std::time::Duration::from_secs(2)),
+        "Final GPU diagnostic report was not delivered"
+    );
 }

@@ -1,5 +1,10 @@
-use super::*;
+// non-lean-yet
+// Scope: struct Received, fn settle, fn named_button, fn capture_button.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use lince_interface::native::actions::Action;
+
+use super::*;
 
 #[derive(Resource, Default)]
 struct Received(Vec<KeyCode>);
@@ -81,9 +86,14 @@ pub(super) fn capture_button(canvas: &mut Presentation, command: &str) -> Entity
 
 pub(super) fn pixel_pointer(canvas: &mut Presentation, point: [f32; 2]) {
     let logical = canvas.input_mapping().logical_point(point.map(f64::from));
-    let origin = canvas.output_view.as_ref().map_or([0.0; 2], |output|
-        std::array::from_fn(|axis| output.bounds.origin()[axis] + canvas.render_origin[axis]));
-    canvas.pointer(std::array::from_fn(|axis| (logical[axis] - origin[axis]) as f32)).unwrap();
+    let origin = canvas.output_view.as_ref().map_or([0.0; 2], |output| {
+        std::array::from_fn(|axis| output.bounds.origin()[axis] + canvas.render_origin[axis])
+    });
+    canvas
+        .pointer(std::array::from_fn(|axis| {
+            (logical[axis] - origin[axis]) as f32
+        }))
+        .unwrap();
 }
 
 pub(super) fn click_with_keys(
@@ -105,7 +115,9 @@ pub(super) fn click_with_keys(
             && position.x < size[0] as f32
             && position.y < size[1] as f32,
         "control outside viewport: entity={entity:?}, label={:?}, position={position:?}, size={size:?}",
-        world.get::<bevy::a11y::AccessibilityNode>(entity).and_then(|node| node.label())
+        world
+            .get::<bevy::a11y::AccessibilityNode>(entity)
+            .and_then(|node| node.label())
     );
     if let Some(clip) = world.get::<bevy::ui::CalculatedClip>(entity) {
         assert!(clip.contains_point(position), "control center is clipped");

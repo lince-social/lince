@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: static SERIAL_COUNTER, struct Serial, struct SerialCounter, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 109.
+
 use std::sync::atomic::{AtomicU32, Ordering};
 
 /// A global [`SerialCounter`] for use in your compositor.

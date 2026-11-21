@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn simulated_recording, fn
+//   three_simulated_enrollment_takes_save_acoustic_features_and_discard_raw_audio, fn settle, fn
+//   native_import_and_clear_persist_references_without_capture_or_draft_changes.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use cell::speech::Service as _;
 

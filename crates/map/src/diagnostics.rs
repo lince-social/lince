@@ -1,8 +1,22 @@
-use serde::Serialize;
+// non-lean-yet
+// Scope: struct Counters, struct Snapshot, fn registry, fn snapshot.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 89, 90, 94, 95.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 89, 90, 94, 95.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 8.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 8, 9,
+//   10, 11, 12, 13, 17, 18, 19, 20, 21, 22, 44, 55, 79, 80, 81, 82, 83, 84, 87.
+// - [rustc: unreachable_pub] unreachable `pub` item. Sites 67.
+
 use std::sync::{
     Arc, Mutex, OnceLock, Weak,
     atomic::{AtomicBool, AtomicU64, Ordering},
 };
+
+use serde::Serialize;
 
 #[derive(Default)]
 pub struct Counters {
@@ -35,7 +49,9 @@ impl Counters {
             alive: AtomicBool::new(true),
             ..Default::default()
         });
-        let mut registry = registry().lock().unwrap_or_else(|error| error.into_inner());
+        let mut registry = registry()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         registry.retain(|entry| entry.strong_count() > 0);
         registry.push(Arc::downgrade(&counters));
         counters
@@ -53,7 +69,9 @@ impl Counters {
 }
 
 pub fn snapshot() -> Vec<Snapshot> {
-    let mut registry = registry().lock().unwrap_or_else(|error| error.into_inner());
+    let mut registry = registry()
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     registry.retain(|entry| entry.strong_count() > 0);
     registry
         .iter()

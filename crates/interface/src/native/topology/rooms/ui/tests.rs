@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn fixture, fn new_room, fn room_canvas_receipts_preserve_the_spatial_canvas_ghost_root,
+//   fn room_proxy_controls_create_calibrated_surfaces_and_undo_without_losing_the_room.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::{
     canvas::CanvasItem,

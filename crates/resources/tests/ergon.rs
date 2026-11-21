@@ -1,11 +1,47 @@
+// non-lean-yet
+// Scope: fn hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_specializations,
+//   fn mining_preserves_shared_routes_and_three_original_examples_after_relocation, fn
+//   mineralogy_petrology_preserves_shared_learning_and_two_original_examples_after_relocation, fn
+//   quantitative_readings_discover_relocate_and_select_without_absorbing_sources.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 45, 48, 56, 78, 101, 124, 144, 163, 183, 199, 217, 241, 257, 276, 293, 312, 333, 357,
+//   375, 394, 414, 433, 450, 472, 490, 509, 526, 544, 567, 586, 604, 622, 640, 658, 680, 700, 718,
+//   737, 756, 775, 794, 811, 828, 845, 862, 882, 900, 921, 940, 961, 978, 997, 1017, 1034, 1051,
+//   1071, 1093, 1114, 1135, 1228, 1237, 1238, 1240, 1242, 1362, 1376, 1387, 1388, 1393, 1404, 1405,
+//   1410, 1421, 1422, 1427, 1438, 1439, 1444, 1455, 1456, 1461, 1472, 1473, 1474, 1487, 1498, 1499,
+//   1504, 1515, 1516, 1521, 1532, 1533, 1538, 1549, 1550, 1555, 1566, 1567, 1572, 1583, 1584, 1589,
+//   1600, 1601, 1606, 1617, 1618, 1623, 1634, 1635, 1640, 1651, 1652, 1657, 1668, 1669, 1674, 1685,
+//   1686, 1691, 1702, 1703, 1708, 1719, 1720, 1725, 1736, 1737, 1742, 1753, 1754, 1759, 1770, 1771,
+//   1776, 1787, 1788, 1793, 1804, 1805, 1806, 1807, 1812, 1823, 1824, 1825, 1830, 1841, 1842, 1843,
+//   1848, 1859, 1860, 1861, 1866, 1877, 1878, 1879, 1884, 1895, 1896, 1897, 1902, 1913, 1914, 1915,
+//   1920, 1922, 1923, 1924, 1925, 1930, 1941, 1942, 1943, 1944, 1949, 1960, 1961, 1962, 1963, 1968,
+//   1979, 1988, 1989, 1991, 1993, 1999, 2010, 2011, 2012, 2013, 2015, 2021, 2032, 2033, 2034, 2036,
+//   2039, 2045, 2056, 2057, 2058, 2059, 2064, 2075, 2076, 2077, 2078, 2083, 2094, 2095, 2096, 2097,
+//   2102, 2113, 2114, 2115, 2116, 2121, 2132, 2133, 2134, 2135, 2140, 2151, 2152, 2153, 2154, 2159,
+//   2170, 2171, 2172, 2173, 2178, 2189, 2190, 2191, 2193, 2199, 2210, 2211, 2212, 2214, 2230, 2234,
+//   2238, 2243, 2766, 2840, 2856, 2892, 2894, 2895, 2897, 2908, 2932, 3015, 3088, 3103, 3131, 3133,
+//   3134, 3136, 3147, 3169, 3206, 3209, 3258, 3475, 3487, 3508, 3510, 3511, 3512, 3520, 3541, 3613,
+//   3739, 3741, 3751, 3763, 3764, 3816, 3895, 3919, 3921, 3922, 3924, 3929, 3930, 3937, 3955, 4026,
+//   4094, 4107, 4132, 4134, 4135, 4137, 4148, 4168, 4240, 4315, 4332, 4397, 4399, 4400, 4402, 4413,
+//   4438, 4521, 4597, 4615, 4656, 4658, 4659, 4661, 4672, 4698, 4781, 4859, 4878, 4928, 4930, 4931,
+//   4933, 4944, 4971, 5054, 5122, 5135, 5170, 5172, 5173, 5175, 5186, 5207, 5290, 5362, 5376, 5421,
+//   5423, 5424, 5426, 5437, 5459, 5542, 5615, 5630, 5682, 5684, 5685, 5687, 5698, 5721, 5805, 5876,
+//   5892, 5959, 5961, 5962, 5963, 5971, 5995, 6079, 6142, 6197, 6199, 6200, 6203, 6205, 6210, 6254,
+//   6315, 6367, 6389, 6671, 6673, 6674, 6677, 6679, 6684, 6731, 6795, 6845, 6908, 6912, 6938, 6942,
+//   6993, 6994, 7054, 7113, 7138, 7284, 7287, 7288, 7293, 7295, 7302, 7317, 7349, 7350, 7376, 7419,
+//   7422, 7472.
+// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 3358.
+
 #![cfg(feature = "publication")]
 
-use lince_resources::{Library, publication::Publication};
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs,
     path::PathBuf,
 };
+
+use lince_resources::{Library, publication::Publication};
 
 #[test]
 fn hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_specializations() {
@@ -1158,12 +1194,10 @@ fn hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_speciali
     assert_eq!(reached, selected);
     for excluded in [
         "engineering-source-human-factors",
-
         "computing-source-interaction",
         "computing-source-accessibility",
         "computing-source-protection",
         "computing-source-privacy",
-
         "physics-source-quantum",
         "math-source-operators",
         "inquiry-source-causal",
@@ -1177,7 +1211,6 @@ fn hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_speciali
         "inquiry-source-learning",
         "inquiry-source-assessment",
         "inquiry-source-retrieval",
-
         "engineering-source-production",
         "engineering-source-little",
         "computing-source-tcp",
@@ -1254,8 +1287,7 @@ fn hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_speciali
                 .contains(&slug)
             })
         })
-    })
-    {
+    }) {
         let from_entry = Publication::load(&library, &document.uri, &[], false).unwrap();
         let discovered: BTreeSet<_> = from_entry
             .documents
@@ -1803,8 +1835,16 @@ fn hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_speciali
         .collect();
     assert!(feedback_programs[0].contains("from network_study import response, number"));
     assert!(feedback_programs[1].contains("def root_oracle("));
-    assert!(records["computing-map"].body.contains("**Developed sixth common foundation:** concurrent actors and atomic steps"));
-    assert!(records["engineering-map"].body.contains("**Developed sixth common foundation:** feedback boundaries"));
+    assert!(
+        records["computing-map"]
+            .body
+            .contains("**Developed sixth common foundation:** concurrent actors and atomic steps")
+    );
+    assert!(
+        records["engineering-map"]
+            .body
+            .contains("**Developed sixth common foundation:** feedback boundaries")
+    );
     let reporting_programs: Vec<_> = ["reporting_study.py", "reporting_checks.py"]
         .into_iter()
         .map(|filename| {
@@ -1822,7 +1862,11 @@ fn hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_speciali
         .collect();
     assert!(reporting_programs[0].contains("from fitting_study import fit, partition"));
     assert!(reporting_programs[1].contains("def oracle("));
-    assert!(records["inquiry-map"].body.contains("**Developed sixth common foundation:** scientific questions and audiences"));
+    assert!(
+        records["inquiry-map"]
+            .body
+            .contains("**Developed sixth common foundation:** scientific questions and audiences")
+    );
     let discrete_programs: Vec<_> = ["discrete_study.py", "discrete_checks.py"]
         .into_iter()
         .map(|filename| {
@@ -1840,7 +1884,11 @@ fn hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_speciali
         .collect();
     assert!(discrete_programs[0].contains("def quotient("));
     assert!(discrete_programs[1].contains("def closure_oracle("));
-    assert!(records["mathematics-map"].body.contains("**Developed seventh common foundation:** finite objects and equality"));
+    assert!(
+        records["mathematics-map"]
+            .body
+            .contains("**Developed seventh common foundation:** finite objects and equality")
+    );
     let rotation_programs: Vec<_> = ["rotation_study.py", "rotation_checks.py"]
         .into_iter()
         .map(|filename| {
@@ -1858,7 +1906,11 @@ fn hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_speciali
         .collect();
     assert!(rotation_programs[0].contains("def rolling("));
     assert!(rotation_programs[1].contains("expected = eliminate("));
-    assert!(records["physics-map"].body.contains("**Developed seventh common foundation:** orientation and angular motion"));
+    assert!(
+        records["physics-map"]
+            .body
+            .contains("**Developed seventh common foundation:** orientation and angular motion")
+    );
     let identity_programs: Vec<_> = ["identity_study.py", "identity_checks.py"]
         .into_iter()
         .map(|filename| {
@@ -1876,7 +1928,9 @@ fn hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_speciali
         .collect();
     assert!(identity_programs[0].contains("def tetrahedral_classes("));
     assert!(identity_programs[1].contains("def prufer_tree("));
-    assert!(records["chemistry-map"].body.contains("**Developed seventh common foundation:** molecular identity across composition"));
+    assert!(records["chemistry-map"].body.contains(
+        "**Developed seventh common foundation:** molecular identity across composition"
+    ));
     let communication_programs: Vec<_> = ["communication_study.py", "communication_checks.py"]
         .into_iter()
         .map(|filename| {
@@ -1894,7 +1948,11 @@ fn hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_speciali
         .collect();
     assert!(communication_programs[0].contains("class Decoder:"));
     assert!(communication_programs[1].contains("def abstract_graph("));
-    assert!(records["computing-map"].body.contains("**Developed seventh common foundation:** communication boundaries"));
+    assert!(
+        records["computing-map"]
+            .body
+            .contains("**Developed seventh common foundation:** communication boundaries")
+    );
     let production_programs: Vec<_> = ["production_study.py", "production_checks.py"]
         .into_iter()
         .map(|filename| {
@@ -1912,17 +1970,33 @@ fn hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_speciali
         .collect();
     assert!(production_programs[0].contains("def window_area("));
     assert!(production_programs[1].contains("def assignments("));
-    assert!(records["engineering-map"].body.contains("**Developed seventh common foundation:** useful production"));
+    assert!(
+        records["engineering-map"]
+            .body
+            .contains("**Developed seventh common foundation:** useful production")
+    );
     let learning_link = regex::Regex::new(r"(\[[^\]\n]*\]\()[^)\n]+#(r_[A-Z0-9]+)\)").unwrap();
     let learning_body = |body: &str| learning_link.replace_all(body, "$1#$2)").into_owned();
     let learning_material: Vec<_> = inquiry_learning[1..]
         .iter()
         .map(|slug| (*slug, learning_body(&records[slug].body)))
         .collect();
-    assert!(records["inquiry-learning-assessment"].body.contains("| O | 1, 2 | 0, 1 | 2 | 0 |"));
-    assert!(records["inquiry-learning-study"].body.contains("fork-and-join dependency"));
+    assert!(
+        records["inquiry-learning-assessment"]
+            .body
+            .contains("| O | 1, 2 | 0, 1 | 2 | 0 |")
+    );
+    assert!(
+        records["inquiry-learning-study"]
+            .body
+            .contains("fork-and-join dependency")
+    );
     assert!(records["inquiry-learning-scoring"].body.contains("(1,1,0)"));
-    assert!(records["inquiry-map"].body.contains("**Developed seventh common foundation:** learning capabilities"));
+    assert!(
+        records["inquiry-map"]
+            .body
+            .contains("**Developed seventh common foundation:** learning capabilities")
+    );
     let series_programs: Vec<_> = ["series_study.py", "series_checks.py"]
         .into_iter()
         .map(|filename| {
@@ -1940,8 +2014,16 @@ fn hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_speciali
         .collect();
     assert!(series_programs[0].contains("def select_cutoff("));
     assert!(series_programs[1].contains("pairs=[(i,j,r**(i+j))"));
-    assert!(records["mathematics-map"].body.contains("**Developed eighth common foundation:** sequences"));
-    assert!(records["ic-calculus"].body.contains("**Eighth mathematics-core inspection"));
+    assert!(
+        records["mathematics-map"]
+            .body
+            .contains("**Developed eighth common foundation:** sequences")
+    );
+    assert!(
+        records["ic-calculus"]
+            .body
+            .contains("**Eighth mathematics-core inspection")
+    );
     let statistical_programs: Vec<_> = ["statistical_study.py", "statistical_checks.py"]
         .into_iter()
         .map(|filename| {
@@ -1959,8 +2041,16 @@ fn hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_speciali
         .collect();
     assert!(statistical_programs[0].contains("def time_mean_variance("));
     assert!(statistical_programs[1].contains("for path in product((0, 1), repeat=length):"));
-    assert!(records["physics-map"].body.contains("**Developed eighth common foundation:** microscopic states"));
-    assert!(records["mat-tong-statistical"].body.contains("**Eighth physics-core inspection"));
+    assert!(
+        records["physics-map"]
+            .body
+            .contains("**Developed eighth common foundation:** microscopic states")
+    );
+    assert!(
+        records["mat-tong-statistical"]
+            .body
+            .contains("**Eighth physics-core inspection")
+    );
     let phase_programs: Vec<_> = ["phase_study.py", "phase_checks.py"]
         .into_iter()
         .map(|filename| {
@@ -1988,9 +2078,17 @@ fn hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_speciali
     assert!(phase_programs[0].contains("def certify_binodal("));
     assert!(phase_programs[1].contains("alternatives=[(i,total-i)"));
     assert!(shared_phase_program.contains("def symmetric_regular_solution("));
-    assert!(records["chemistry-map"].body.contains("**Developed eighth common foundation:** phases and constraints"));
+    assert!(
+        records["chemistry-map"]
+            .body
+            .contains("**Developed eighth common foundation:** phases and constraints")
+    );
     for slug in ["th-devoe", "gc-webbook", "mat-mit-fundamentals"] {
-        assert!(records[slug].body.contains("**Eighth chemistry-core inspection"));
+        assert!(
+            records[slug]
+                .body
+                .contains("**Eighth chemistry-core inspection")
+        );
     }
     let abstraction_programs: Vec<_> = ["abstraction_study.py", "abstraction_checks.py"]
         .into_iter()
@@ -2009,10 +2107,22 @@ fn hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_speciali
         .collect();
     assert!(abstraction_programs[0].contains("def reserve_many("));
     assert!(abstraction_programs[1].contains("for history in product(alphabet, repeat=length):"));
-    assert!(records["computing-map"].body.contains("**Developed eighth common foundation:** names and captured environments"));
-    assert!(records["rc-modules"].body.contains("**Eighth computing-block reading:"));
+    assert!(
+        records["computing-map"]
+            .body
+            .contains("**Developed eighth common foundation:** names and captured environments")
+    );
+    assert!(
+        records["rc-modules"]
+            .body
+            .contains("**Eighth computing-block reading:")
+    );
     for slug in ["rc-python", "rc-rse"] {
-        assert!(records[slug].body.contains("**Eighth computing-core inspection"));
+        assert!(
+            records[slug]
+                .body
+                .contains("**Eighth computing-core inspection")
+        );
     }
     let service_programs: Vec<_> = ["service_study.py", "service_checks.py"]
         .into_iter()
@@ -2031,12 +2141,29 @@ fn hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_speciali
         .collect();
     assert!(service_programs[0].contains("def evaluate("));
     assert!(service_programs[1].contains("for history in product(events("));
-    assert!(records["engineering-map"].body.contains("**Developed eighth common foundation:** operating histories"));
-    for slug in ["mech-maintenance", "mech-condition-evidence", "mech-failure-investigation", "mech-restoration"] {
-        assert!(records[slug].body.contains("**Eighth engineering-block reading:"));
+    assert!(
+        records["engineering-map"]
+            .body
+            .contains("**Developed eighth common foundation:** operating histories")
+    );
+    for slug in [
+        "mech-maintenance",
+        "mech-condition-evidence",
+        "mech-failure-investigation",
+        "mech-restoration",
+    ] {
+        assert!(
+            records[slug]
+                .body
+                .contains("**Eighth engineering-block reading:")
+        );
     }
     for slug in ["met-handbook", "mech-nasa-systems"] {
-        assert!(records[slug].body.contains("**Eighth engineering-core inspection"));
+        assert!(
+            records[slug]
+                .body
+                .contains("**Eighth engineering-core inspection")
+        );
     }
     let causal_programs: Vec<_> = ["causal_study.py", "causal_checks.py"]
         .into_iter()
@@ -2055,8 +2182,16 @@ fn hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_speciali
         .collect();
     assert!(causal_programs[0].contains("def horvitz_thompson("));
     assert!(causal_programs[1].contains("observed(null_model) == observed(effect_model)"));
-    assert!(records["inquiry-map"].body.contains("**Developed eighth common foundation:** causal questions"));
-    assert!(records["inquiry-source-causal"].body.contains("19 August 2026"));
+    assert!(
+        records["inquiry-map"]
+            .body
+            .contains("**Developed eighth common foundation:** causal questions")
+    );
+    assert!(
+        records["inquiry-source-causal"]
+            .body
+            .contains("19 August 2026")
+    );
     let operator_programs: Vec<_> = ["operator_study.py", "operator_checks.py"]
         .into_iter()
         .map(|filename| {
@@ -2074,8 +2209,16 @@ fn hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_speciali
         .collect();
     assert!(operator_programs[0].contains("def exponential_partial("));
     assert!(operator_programs[1].contains("distance+uncertainty <= tail"));
-    assert!(records["mathematics-map"].body.contains("**Developed common operator bridge:**"));
-    assert!(records["math-source-operators"].body.contains("30 October 2026"));
+    assert!(
+        records["mathematics-map"]
+            .body
+            .contains("**Developed common operator bridge:**")
+    );
+    assert!(
+        records["math-source-operators"]
+            .body
+            .contains("30 October 2026")
+    );
     let quantum_programs: Vec<_> = ["quantum_study.py", "quantum_checks.py"]
         .into_iter()
         .map(|filename| {
@@ -2093,8 +2236,16 @@ fn hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_speciali
         .collect();
     assert!(quantum_programs[0].contains("def dephase("));
     assert!(quantum_programs[1].contains("q.uncertainty([1, 0, 0]"));
-    assert!(records["physics-map"].body.contains("**Developed common quantum foundations:**"));
-    assert!(records["physics-source-quantum"].body.contains("17 September 2013"));
+    assert!(
+        records["physics-map"]
+            .body
+            .contains("**Developed common quantum foundations:**")
+    );
+    assert!(
+        records["physics-source-quantum"]
+            .body
+            .contains("17 September 2013")
+    );
     let trust_programs: Vec<_> = ["trust_study.py", "trust_checks.py"]
         .into_iter()
         .map(|filename| {
@@ -2112,8 +2263,16 @@ fn hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_speciali
         .collect();
     assert!(trust_programs[0].contains("from communication_study import natural, receive"));
     assert!(trust_programs[1].contains("expected_histories"));
-    assert!(records["computing-map"].body.contains("**Developed common human-use and trust foundations:**"));
-    assert!(records["computing-source-accessibility"].body.contains("12 December 2024"));
+    assert!(
+        records["computing-map"]
+            .body
+            .contains("**Developed common human-use and trust foundations:**")
+    );
+    assert!(
+        records["computing-source-accessibility"]
+            .body
+            .contains("12 December 2024")
+    );
     let operation_programs: Vec<_> = ["operation_study.py", "operation_checks.py"]
         .into_iter()
         .map(|filename| {
@@ -2131,8 +2290,16 @@ fn hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_speciali
         .collect();
     assert!(operation_programs[0].contains("from production_study import integer"));
     assert!(operation_programs[1].contains("independent_minimal"));
-    assert!(records["engineering-map"].body.contains("**Developed common people and operation foundations:**"));
-    assert!(records["engineering-source-human-factors"].body.contains("Open Government Licence"));
+    assert!(
+        records["engineering-map"]
+            .body
+            .contains("**Developed common people and operation foundations:**")
+    );
+    assert!(
+        records["engineering-source-human-factors"]
+            .body
+            .contains("Open Government Licence")
+    );
     let field_programs: Vec<_> = ["field_study.py", "field_checks.py"]
         .into_iter()
         .map(|filename| {
@@ -2150,7 +2317,11 @@ fn hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_speciali
         .collect();
     assert!(field_programs[0].contains("from multivariable_study import segment_integral, value"));
     assert!(field_programs[1].contains("result['boundary'], expected"));
-    assert!(records["mathematics-map"].body.contains("**Developed common oriented-field foundations:**"));
+    assert!(
+        records["mathematics-map"]
+            .body
+            .contains("**Developed common oriented-field foundations:**")
+    );
     assert!(!selected.contains(&records["em-vector-book"].uid));
     let magnetic_programs: Vec<_> = ["magnetic_study.py", "magnetic_checks.py"]
         .into_iter()
@@ -2169,7 +2340,11 @@ fn hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_speciali
         .collect();
     assert!(magnetic_programs[0].contains("from electric_study import exact, decay_bracket"));
     assert!(magnetic_programs[1].contains("current_two_tau_bounds"));
-    assert!(records["physics-map"].body.contains("**Developed common magnetic and inductive foundations:**"));
+    assert!(
+        records["physics-map"]
+            .body
+            .contains("**Developed common magnetic and inductive foundations:**")
+    );
     assert!(!selected.contains(&records["em-tong"].uid));
     let spacetime_programs: Vec<_> = ["spacetime_study.py", "spacetime_checks.py"]
         .into_iter()
@@ -2186,10 +2361,21 @@ fn hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_speciali
                 .to_owned()
         })
         .collect();
-    assert!(spacetime_programs[0].contains("from electric_study import exact, rational_root, potential_field"));
+    assert!(
+        spacetime_programs[0]
+            .contains("from electric_study import exact, rational_root, potential_field")
+    );
     assert!(spacetime_programs[1].contains("reported_minus_prediction_over_reported_uncertainty"));
-    assert!(records["physics-map"].body.contains("**Developed common spacetime and gravity foundations:**"));
-    for slug in ["physics-source-dynrel", "physics-source-optical-clocks", "physics-source-equivalence"] {
+    assert!(
+        records["physics-map"]
+            .body
+            .contains("**Developed common spacetime and gravity foundations:**")
+    );
+    for slug in [
+        "physics-source-dynrel",
+        "physics-source-optical-clocks",
+        "physics-source-equivalence",
+    ] {
         assert!(!selected.contains(&records[slug].uid));
     }
     let astronomy_programs: Vec<_> = ["astronomy_study.py", "astronomy_checks.py"]
@@ -2209,8 +2395,16 @@ fn hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_speciali
         .collect();
     assert!(astronomy_programs[0].contains("from spacetime_study import orbit"));
     assert!(astronomy_programs[1].contains("historical_absolute_magnitude"));
-    assert!(records["physics-map"].body.contains("**Developed common astronomical foundations:**"));
-    for slug in ["physics-source-astronomy", "physics-source-gaia-distances", "physics-source-hubble1929"] {
+    assert!(
+        records["physics-map"]
+            .body
+            .contains("**Developed common astronomical foundations:**")
+    );
+    for slug in [
+        "physics-source-astronomy",
+        "physics-source-gaia-distances",
+        "physics-source-hubble1929",
+    ] {
         assert!(!selected.contains(&records[slug].uid));
     }
     let structure_slugs = [
@@ -2226,23 +2420,43 @@ fn hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_speciali
         "math-structures-study",
         "math-structures-review",
     ];
-    let structure_edges: BTreeSet<_> = structure_slugs.windows(2)
+    let structure_edges: BTreeSet<_> = structure_slugs
+        .windows(2)
         .map(|pair| (records[pair[0]].uid.clone(), records[pair[1]].uid.clone()))
         .collect();
-    assert_eq!(learning_edges(&publication, "math-structures"), structure_edges);
+    assert_eq!(
+        learning_edges(&publication, "math-structures"),
+        structure_edges
+    );
     let mathematics_branches = BTreeSet::from([(
-        records["mathematics-map"].uid.clone(), records["math-structures"].uid.clone(),
+        records["mathematics-map"].uid.clone(),
+        records["math-structures"].uid.clone(),
     )]);
-    assert_eq!(learning_edges(&publication, "mathematics-branches"), mathematics_branches);
-    for slug in structure_slugs.into_iter().chain(["math-source-forallx", "math-source-judson"]) {
+    assert_eq!(
+        learning_edges(&publication, "mathematics-branches"),
+        mathematics_branches
+    );
+    for slug in structure_slugs
+        .into_iter()
+        .chain(["math-source-forallx", "math-source-judson"])
+    {
         assert!(!selected.contains(&records[slug].uid));
     }
     let structure_programs: Vec<_> = ["structures_study.py", "structures_checks.py"]
-        .into_iter().map(|filename| {
+        .into_iter()
+        .map(|filename| {
             let marker = format!("```python file={filename}\n");
-            records["math-structures-study"].body.split(&marker).nth(1).unwrap()
-                .split("\n```").next().unwrap().to_owned()
-        }).collect();
+            records["math-structures-study"]
+                .body
+                .split(&marker)
+                .nth(1)
+                .unwrap()
+                .split("\n```")
+                .next()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
     let original_sources = external_references(&publication);
     let contextual_links = |publication: &Publication| {
         let included: BTreeSet<_> = publication
@@ -2289,10 +2503,20 @@ fn hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_speciali
     assert_eq!(learning_edges(&reopened, "hephaestus"), expected_map);
     assert_eq!(learning_edges(&reopened, "hephaestus-core"), expected_core);
     assert_eq!(reopened.documents.len(), 3752);
-    assert_eq!(learning_edges(&reopened, "math-structures"), structure_edges);
-    assert_eq!(learning_edges(&reopened, "mathematics-branches"), mathematics_branches);
-    let reopened_structure = reopened.documents.iter().flat_map(|d| &d.project.records)
-        .find(|r| r.slug.as_deref() == Some("math-structures-study")).unwrap();
+    assert_eq!(
+        learning_edges(&reopened, "math-structures"),
+        structure_edges
+    );
+    assert_eq!(
+        learning_edges(&reopened, "mathematics-branches"),
+        mathematics_branches
+    );
+    let reopened_structure = reopened
+        .documents
+        .iter()
+        .flat_map(|d| &d.project.records)
+        .find(|r| r.slug.as_deref() == Some("math-structures-study"))
+        .unwrap();
     for program in structure_programs {
         assert!(reopened_structure.body.contains(&program));
     }
@@ -2363,10 +2587,14 @@ fn hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_speciali
     for program in machine_programs {
         assert!(reopened_machine.body.contains(&program));
     }
-    assert!(reopened.documents.iter().flat_map(|document| &document.project.records).any(
-        |record| record.slug.as_deref() == Some("rc-floating")
-            && record.body.contains(&floating_program)
-    ));
+    assert!(
+        reopened
+            .documents
+            .iter()
+            .flat_map(|document| &document.project.records)
+            .any(|record| record.slug.as_deref() == Some("rc-floating")
+                && record.body.contains(&floating_program))
+    );
     let reopened_network = reopened
         .documents
         .iter()
@@ -2754,8 +2982,22 @@ fn hephaestus_discovers_six_areas_and_relocates_the_shared_core_without_speciali
         .flat_map(|document| &document.project.records)
     {
         for assertion in &record.assertions {
-            if ["contains", "math-structures", "mathematics-branches", "hephaestus", "hephaestus-core", "quantitative-literacy", "mechanical-engineering", "fluid-dynamics", "general-chemistry", "reproducible-computation", "metrology", "electrical-power-engineering", "water-and-sanitation"]
-                .contains(&assertion.predicate.as_str())
+            if [
+                "contains",
+                "math-structures",
+                "mathematics-branches",
+                "hephaestus",
+                "hephaestus-core",
+                "quantitative-literacy",
+                "mechanical-engineering",
+                "fluid-dynamics",
+                "general-chemistry",
+                "reproducible-computation",
+                "metrology",
+                "electrical-power-engineering",
+                "water-and-sanitation",
+            ]
+            .contains(&assertion.predicate.as_str())
             {
                 let (location, uid) = assertion
                     .object_uri

@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod catalogue, mod components, mod driver, mod interface.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 127.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (195, 215).
+// - [review: §5 Panics] Verify panic isolation boundary and preserve the failure contract. Sites
+//   62.
+
 mod catalogue;
 pub mod components;
 #[cfg(feature = "test-driver")]

@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Page, enum Change, fn install, fn current.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 160.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 179.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (80, 109, 136, 141, 147, 201, 202, 215, 224, 236, 249, 322, 338, 339, 343, 349,
+//   365).
+
 use super::super::input_settings::{button, disable, feedback, field, text, prepared::Prepared};
 use bevy::ecs::query::QueryState;
 use std::collections::HashMap;

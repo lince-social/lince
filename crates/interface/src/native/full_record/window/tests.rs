@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn restoration_preserves_live_metadata_until_its_identity_changes, fn
+//   invalid_window_queries_cannot_insert_or_replace_metadata, fn
+//   metadata_updates_and_closure_preserve_the_actual_record_editor_draft_and_binding, fn
+//   unrelated_or_remote_records_cannot_receive_a_local_application_metadata_header.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use bevy::{ecs::system::RunSystemOnce, input_focus::InputFocus, text::EditableText};
 

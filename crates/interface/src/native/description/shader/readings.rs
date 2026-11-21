@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct Values, struct Current, struct Prepared.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 64, 67, 69, 82.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (81).
+
 use super::*;
 use nucleus::shader_effect::{ResolvedInputs, bindings::NumericValues, gpu_quantity};
 

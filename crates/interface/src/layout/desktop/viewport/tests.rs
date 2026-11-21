@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn tiled, fn
+//   pan_changes_only_the_view_and_preserves_client_sizes_focus_and_authored_homes, fn
+//   pan_uses_current_usable_bounds_and_keeps_floating_items_fixed, fn
+//   invalid_or_unavailable_pan_is_atomic_and_saved_tiled_scroll_survives_free_mode.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::layout::desktop::tests::{id, item, viewport};
 

@@ -1,14 +1,37 @@
+// non-lean-yet
+// Scope: const MAX_PACKET, struct VideoEncoder, struct VideoDecoder, mod tests.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 61, 62, 63, 65, 69, 72, 185, 189, 207, 209, 210.
+// - [Clippy: clippy::multiple_unsafe_ops_per_block] Separate independent safety obligations where
+//   clearer. Sites 194.
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 104, 108, 115, 133,
+//   138, 142, 144, 152, 158, 194, 226.
+// - [review: §8 Unsafe] Prove unchecked operations and prefer a checked API when equivalent. Sites
+//   assume_init (108).
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   encode:keyframe (54).
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 58, 59, 61, 62, 63, 66, 70, 73, 175, 176, 186, 196, 207, 209, 210, 212, 213, 214, 219.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   219.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 66, 70, 73, 175, 176, 196, 212, 213, 214.
+// - [rustc: unreachable_pub] unreachable `pub` item. Sites 18, 20, 27, 50, 54, 98, 101, 127.
+
 use std::ptr::NonNull;
 
-use rav1d::include::dav1d::{
-    data::Dav1dData,
-    dav1d::{Dav1dContext, Dav1dSettings},
-    headers::DAV1D_PIXEL_LAYOUT_I420,
-    picture::Dav1dPicture,
-};
-use rav1d::src::lib::{
-    dav1d_close, dav1d_data_create, dav1d_data_unref, dav1d_default_settings, dav1d_get_picture,
-    dav1d_open, dav1d_picture_unref, dav1d_send_data,
+use rav1d::{
+    include::dav1d::{
+        data::Dav1dData,
+        dav1d::{Dav1dContext, Dav1dSettings},
+        headers::DAV1D_PIXEL_LAYOUT_I420,
+        picture::Dav1dPicture,
+    },
+    src::lib::{
+        dav1d_close, dav1d_data_create, dav1d_data_unref, dav1d_default_settings,
+        dav1d_get_picture, dav1d_open, dav1d_picture_unref, dav1d_send_data,
+    },
 };
 use rav1e::prelude::*;
 

@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct Artifact.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 88.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 28, 65.
+
 use super::{CanonicalHash, EngineError, Resolution, invalid};
 use nucleus::transfer::receipt::Bundle;
 use serde_json::{Value, json};

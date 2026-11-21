@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: mod input, mod model, mod tests, mod ui.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 126, 189, 195,
+//   246, 247, 252, 254, 384, 462.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   141, 243.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (86, 89, 93, 139, 142, 146, 153, 193, 200, 214, 245, 264, 267, 278, 317, 371, 377,
+//   383, 385, 395, 399).
+
 pub(crate) mod input;
 mod model;
 #[cfg(test)]

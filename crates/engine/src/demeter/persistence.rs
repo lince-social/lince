@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: struct ManagedTask, fn identity.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 120, 121, 130,
+//   243, 244, 245, 253, 254, 271, 277, 338, 371, 426, 427, 429, 453, 469, 470, 531.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   31, 488.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 408.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 31, 488.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use crate::{
     actions::Action,

@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: const NATIVE_FEATURES, const INPUT_FEATURES, mod showoff, mod validation.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   15, 17, 19, 21, 23, 25, 91, 117.
+
 use std::ffi::OsString;
 
 use super::{Result, cargo_command, checked};
@@ -14,7 +20,21 @@ pub fn dispatch(arguments: &[OsString]) -> Result<()> {
     match arguments.first().and_then(|argument| argument.to_str()) {
         Some("release") => release(&arguments[1..]),
         #[cfg(target_os = "linux")]
-        Some("control") => checked(cargo_command().args(["run", "--locked", "-p", "lince-park", "--features", "server-tests", "--example", "park_control", "--"]).args(&arguments[1..])),
+        Some("control") => checked(
+            cargo_command()
+                .args([
+                    "run",
+                    "--locked",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    "server-tests",
+                    "--example",
+                    "park_control",
+                    "--",
+                ])
+                .args(&arguments[1..]),
+        ),
         #[cfg(target_os = "linux")]
         Some("validate") => validation::dispatch(&arguments[1..]),
         #[cfg(target_os = "linux")]
@@ -162,7 +182,9 @@ pub fn dispatch(arguments: &[OsString]) -> Result<()> {
             );
             println!("Runs Park protocol regressions and Vulkan/wgpu sharing probes.");
             println!("Use park validate help for isolated, bounded session acceptance runs.");
-            println!("Use park screenshot to refresh institute/assets/photos/showcase.png from a temporary, offscreen showoff workspace.");
+            println!(
+                "Use park screenshot to refresh institute/assets/photos/showcase.png from a temporary, offscreen showoff workspace."
+            );
             println!(
                 "Use park showoff --nested for an interactive release session with Firefox and the saved Laboratory showoff workspace."
             );
@@ -195,7 +217,9 @@ fn screenshot(arguments: &[OsString]) -> Result<()> {
         ])),
         [argument] if matches!(argument.to_str(), Some("help" | "--help" | "-h")) => {
             println!("cargo xtask park screenshot");
-            println!("Renders a fresh 1920×1080 showoff workspace to institute/assets/photos/showcase.png, then removes its temporary data. Your running Park session is untouched; desktop bars and other applications are never captured.");
+            println!(
+                "Renders a fresh 1920×1080 showoff workspace to institute/assets/photos/showcase.png, then removes its temporary data. Your running Park session is untouched; desktop bars and other applications are never captured."
+            );
             Ok(())
         }
         _ => Err("Use cargo xtask park screenshot".into()),

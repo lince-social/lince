@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: const READ_MODEL_AUDIT, struct ReadModelHealth, struct RebuildReport, struct Divergence.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 80, 84, 131, 132,
+//   133, 134, 149, 150.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 182, 183.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value.
+//   Sites 195.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 62, 113, 159, 170, 177.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   9, 12, 13, 14, 15, 16, 17, 21, 22, 23, 24, 28, 29, 30, 31, 32, 36, 37, 38, 42, 62, 113, 159,
+//   170, 177.
+
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 

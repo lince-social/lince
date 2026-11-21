@@ -1,9 +1,35 @@
-use agent_client_protocol::schema::{ProtocolVersion, v1::*};
-use agent_client_protocol::{
-    AcpAgent, AcpAgentConfig, Agent, Client, ConnectionTo, UntypedMessage,
-};
-use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
+// non-lean-yet
+// Scope: mod check, mod content, mod launch, mod options.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value. Sites
+//   635.
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option` value.
+//   Sites 337.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   213.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 328, 335.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 214, 219, 223,
+//   224, 250, 292, 415, 428, 443, 445, 456, 627, 629.
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites prompt:prompt → &str (476).
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   228, 229, 230, 232, 235, 238, 511.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   209, 251, 265, 375.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 54, 197, 213, 372, 378, 386, 395, 473.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 1.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 150.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 24, 35,
+//   36, 37, 38, 40, 42, 44, 46, 50, 54, 109, 110, 111, 112, 113, 117, 118, 119, 122, 123, 127, 128,
+//   150, 153, 177, 197, 213, 363, 368, 372, 378, 386, 395, 473.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites authenticate:
+//   String (386), extension: String (372), extension_wait: String (378), logout: String (197),
+//   open: String (213), prompt: String (473), session: String (395), validate: String (54).
+
 use std::{
     collections::BTreeMap,
     path::PathBuf,
@@ -13,6 +39,13 @@ use std::{
     },
     time::Duration,
 };
+
+use agent_client_protocol::{
+    AcpAgent, AcpAgentConfig, Agent, Client, ConnectionTo, UntypedMessage,
+    schema::{ProtocolVersion, v1::*},
+};
+use serde::{Deserialize, Serialize};
+use serde_json::{Value, json};
 use tokio::sync::{Mutex, mpsc, oneshot, watch};
 
 mod check;

@@ -1,9 +1,16 @@
-use super::*;
+// non-lean-yet
+// Scope: impl State, impl State.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   13.
+
 use smithay::{
     delegate_xdg_decoration,
     reexports::wayland_protocols::xdg::decoration::zv1::server::zxdg_toplevel_decoration_v1::Mode,
     wayland::shell::xdg::decoration::XdgDecorationHandler,
 };
+
+use super::*;
 
 impl State {
     fn client_decoration(&self, surface: ToplevelSurface) {

@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn field, fn header_filter_hides_unmatched_rules_without_changing_the_draft, fn
+//   typing_filters_shared_conditions_and_basic_records_without_copying_identity, fn
+//   tokens_and_countdowns_keep_precise_dates_and_update_each_second.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use model::{FieldDraft, SharedField, Suggestion};
 use nucleus::karma::rule_field::RuleFieldKind;

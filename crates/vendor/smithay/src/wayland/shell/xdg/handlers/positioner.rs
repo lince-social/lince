@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct XdgPositionerUserData.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (36).
+
 use std::sync::Mutex;
 
 use crate::{utils::Rectangle, utils::Serial};

@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct InstanceGuard, struct InstanceEvents, fn claim, fn claim_session.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 28, 34, 84, 338.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (34, 39, 229, 286, 314, 315, 316, 321, 324, 327, 335, 336, 343, 348, 350, 355,
+//   356, 357, 358, 359, 363, 364, 371, 372, 375, 376, 378, 380).
+
 use crate::host::WakeSignal;
 use std::{
     fs::{File, OpenOptions},

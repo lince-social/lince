@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct Trial, fn descendant, fn editor, fn assert_glyphs.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 161, 189, 192.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (60, 660).
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites 80.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (59, 101, 113, 117, 201, 234, 240, 248, 259, 267, 291, 314, 326, 333, 356, 370,
+//   381, 400, 409, 410, 411, 424, 442, 465, 469, 579, 592, 618, 628, 640, 664, 667, 670, 673, 680,
+//   681, 700).
+
 use bevy::{
     input::{
         ButtonState,

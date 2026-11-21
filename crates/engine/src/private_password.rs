@@ -1,3 +1,29 @@
+// non-lean-yet
+// Scope: const MAX_PASSWORD_BYTES, const MAX_PHC_BYTES, const MAX_WORKERS, const MEMORY_KIB.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 187.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 108, 112,
+//   117, 127, 133, 136, 143, 189, 190, 198.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 264.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 264.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 185, 262, 276, 296, 299, 321, 451, 467, 485, 508.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 22.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 108, 112, 117, 127, 133, 136, 143, 189, 190, 198.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 53, 73, 158, 168, 172.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 131, 141.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 471.
+// - [Clippy probe: clippy::redundant_clone] Move or borrow at the marked sites and check later
+//   uses. Sites 276.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   10, 11, 12, 22, 23, 24, 25, 26, 27, 28, 29, 48, 53, 68, 73, 79, 152, 158, 168, 172.
+
 use std::fmt;
 use std::sync::Arc;
 

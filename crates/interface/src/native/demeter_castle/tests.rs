@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod authority, fn fixture, fn mounted, fn edit.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 4.
+
 use super::*;
 use nucleus::demeter::{NutrientBound, Unit};
 

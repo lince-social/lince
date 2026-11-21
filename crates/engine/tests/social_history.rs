@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn copy, fn
+//   retained_history_and_private_mapping_reuse_own_sync_on_existing_and_new_devices.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use engine::{

@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct History, struct Inspect, fn inspect, fn spawn.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 43, 45, 77.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   95.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (50, 53, 54, 60, 70, 80).
+
 use bevy::prelude::*;
 use serde_json::Value;
 

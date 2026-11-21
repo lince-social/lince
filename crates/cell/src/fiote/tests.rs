@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod entry, mod handoff, mod intake, mod live_voice.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 113, 117, 129, 427, 433, 685, 688, 1184, 1386, 1558, 1563, 1829, 2099, 2172, 2177, 2206,
+//   2321, 2345, 2394, 2508, 2803, 2917, 3056, 3070, 3314.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 316.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 588, 803,
+//   838, 884, 929, 1001, 1940, 3291, 3359.
+
 use super::*;
 use fiote::provider::{Reply, ToolCall, ToolDefinition};
 use serde_json::json;

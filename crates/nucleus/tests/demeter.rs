@@ -1,4 +1,14 @@
+// non-lean-yet
+// Scope: fn d, fn fixture, fn solve, fn
+//   no_priced_or_available_supply_is_infeasible_instead_of_free_food.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 103, 104, 121, 144, 156, 158, 171, 178, 179, 189, 204, 205, 208, 209, 210, 226, 227, 229,
+//   230, 231, 233, 234, 241, 255, 264, 421.
+
 #![cfg(test)]
+
+use std::{collections::BTreeMap, sync::atomic::AtomicBool};
 
 use nucleus::{
     DecimalValue,
@@ -6,7 +16,6 @@ use nucleus::{
     optimization::{Options, Status},
 };
 use serde_json::json;
-use std::{collections::BTreeMap, sync::atomic::AtomicBool};
 
 fn d(value: &str) -> DecimalValue {
     exact(value).unwrap()

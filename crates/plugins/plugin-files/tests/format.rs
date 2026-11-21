@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn snapshot, fn calendar_ids_survive_regeneration_and_distinguish_occurrences_and_cells,
+//   fn calendar_escapes_injection_and_folds_unicode_by_octets, fn
+//   all_day_ranges_have_exclusive_end_dates_and_points_have_no_fake_duration.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use lince_plugin_files::{calendar, handle, manifest};
 use nucleus::plugins::ExportSnapshot;
 use serde_json::json;

@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct Peer, fn response, fn peer_process, fn handle.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 37.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on a `Result` value.
+//   Sites 118.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value.
+//   Sites 185.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 60, 72, 97.
+
 #![cfg(test)]
 
 use std::{

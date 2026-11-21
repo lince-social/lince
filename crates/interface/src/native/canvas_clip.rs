@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct CanvasClipPlugin, fn clipping_boundaries, struct ParentClip, struct
+//   ClipPreparation.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 116, 128, 164,
+//   168, 185.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (214, 227).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 26, 87.
+
 use crate::native::canvas::CanvasView;
 use bevy::{
     ecs::entity::EntityHashMap,

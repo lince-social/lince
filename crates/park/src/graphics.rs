@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: mod buffers, mod canvas, mod import, mod completion.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 163, 219, 259, 265,
+//   271, 276, 293, 312, 401, 404, 406, 414, 430, 434, 448, 456, 465, 467, 504, 509, 532, 564, 617,
+//   675, 741, 746.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 263, 308, 330,
+//   355, 441, 442, 506, 708.
+
+use std::{ffi::CStr, os::fd::FromRawFd, sync::Arc};
+
 use ash::{ext, khr, vk};
 use serde::Serialize;
 use smithay::backend::{
@@ -8,7 +19,6 @@ use smithay::backend::{
         gles::{GlesRenderbuffer, GlesRenderer},
     },
 };
-use std::{ffi::CStr, os::fd::FromRawFd, sync::Arc};
 use wgpu::hal::api::Vulkan;
 
 #[cfg(feature = "native-presentation")]
@@ -27,10 +37,10 @@ mod synchronization;
 pub use synchronization::probe as synchronization_probe;
 #[cfg(all(test, feature = "nested", feature = "server-tests"))]
 pub(crate) mod import_gate;
-#[cfg(feature = "native-presentation")]
-pub(crate) mod wait;
 #[cfg(feature = "graphics-gate")]
 mod live;
+#[cfg(feature = "native-presentation")]
+pub(crate) mod wait;
 
 #[cfg(feature = "native-client-gate")]
 pub(crate) use live::with_client;
@@ -76,14 +86,39 @@ impl ProbeFailure {
 
 type Result<T> = std::result::Result<T, ProbeFailure>;
 
-fn shared_format(format: wgpu::TextureFormat) -> Result<(wgpu::TextureFormat, vk::Format, smithay::backend::allocator::Fourcc)> {
+fn shared_format(
+    format: wgpu::TextureFormat,
+) -> Result<(
+    wgpu::TextureFormat,
+    vk::Format,
+    smithay::backend::allocator::Fourcc,
+)> {
     use smithay::backend::allocator::Fourcc;
     match format {
-        wgpu::TextureFormat::Bgra8Unorm | wgpu::TextureFormat::Bgra8UnormSrgb => Ok((wgpu::TextureFormat::Bgra8Unorm, vk::Format::B8G8R8A8_UNORM, Fourcc::Argb8888)),
-        wgpu::TextureFormat::Rgba8Unorm | wgpu::TextureFormat::Rgba8UnormSrgb => Ok((wgpu::TextureFormat::Rgba8Unorm, vk::Format::R8G8B8A8_UNORM, Fourcc::Abgr8888)),
-        wgpu::TextureFormat::Rgba16Float => Ok((wgpu::TextureFormat::Rgba16Float, vk::Format::R16G16B16A16_SFLOAT, Fourcc::Abgr16161616f)),
-        wgpu::TextureFormat::Rgb10a2Unorm => Ok((wgpu::TextureFormat::Rgb10a2Unorm, vk::Format::A2B10G10R10_UNORM_PACK32, Fourcc::Abgr2101010)),
-        _ => Err(ProbeFailure::at("export_color_format", "This texture format has no supported shared color-buffer encoding")),
+        wgpu::TextureFormat::Bgra8Unorm | wgpu::TextureFormat::Bgra8UnormSrgb => Ok((
+            wgpu::TextureFormat::Bgra8Unorm,
+            vk::Format::B8G8R8A8_UNORM,
+            Fourcc::Argb8888,
+        )),
+        wgpu::TextureFormat::Rgba8Unorm | wgpu::TextureFormat::Rgba8UnormSrgb => Ok((
+            wgpu::TextureFormat::Rgba8Unorm,
+            vk::Format::R8G8B8A8_UNORM,
+            Fourcc::Abgr8888,
+        )),
+        wgpu::TextureFormat::Rgba16Float => Ok((
+            wgpu::TextureFormat::Rgba16Float,
+            vk::Format::R16G16B16A16_SFLOAT,
+            Fourcc::Abgr16161616f,
+        )),
+        wgpu::TextureFormat::Rgb10a2Unorm => Ok((
+            wgpu::TextureFormat::Rgb10a2Unorm,
+            vk::Format::A2B10G10R10_UNORM_PACK32,
+            Fourcc::Abgr2101010,
+        )),
+        _ => Err(ProbeFailure::at(
+            "export_color_format",
+            "This texture format has no supported shared color-buffer encoding",
+        )),
     }
 }
 
@@ -118,7 +153,15 @@ pub(crate) struct VulkanRenderer {
     #[cfg(feature = "native-presentation")]
     capture_bytes: Arc<std::sync::atomic::AtomicU64>,
     #[cfg(feature = "native-presentation")]
-    waits: std::cell::RefCell<std::collections::HashMap<(smithay::reexports::wayland_server::protocol::wl_buffer::WlBuffer, u64), wait::Watch>>,
+    waits: std::cell::RefCell<
+        std::collections::HashMap<
+            (
+                smithay::reexports::wayland_server::protocol::wl_buffer::WlBuffer,
+                u64,
+            ),
+            wait::Watch,
+        >,
+    >,
     #[cfg(feature = "native-presentation")]
     reactor: wait::Reactor,
     pub(crate) gpu: Arc<GpuContext>,
@@ -176,12 +219,16 @@ pub(crate) struct ExportedImage {
 }
 
 impl ExportedImage {
-    pub(crate) fn ready(&self) -> Result<bool> { self.completion.ready() }
+    pub(crate) fn ready(&self) -> Result<bool> {
+        self.completion.ready()
+    }
     #[cfg(feature = "native-presentation")]
     pub(crate) fn pending_until(&self) -> Result<Option<std::time::Instant>> {
         self.completion.pending_until()
     }
-    pub(crate) fn wait_for_probe(&self) -> Result<()> { self.completion.wait_for_probe() }
+    pub(crate) fn wait_for_probe(&self) -> Result<()> {
+        self.completion.wait_for_probe()
+    }
 }
 
 struct SharedImage {
@@ -199,27 +246,62 @@ impl VulkanRenderer {
     #[cfg(feature = "native-presentation")]
     pub(crate) fn client_import_formats(&self) -> Vec<smithay::backend::allocator::Fourcc> {
         let mut formats = Vec::new();
-        for format in [wgpu::TextureFormat::Bgra8Unorm, wgpu::TextureFormat::Rgba8Unorm,
-            wgpu::TextureFormat::Rgb10a2Unorm, wgpu::TextureFormat::Rgba16Float] {
+        for format in [
+            wgpu::TextureFormat::Bgra8Unorm,
+            wgpu::TextureFormat::Rgba8Unorm,
+            wgpu::TextureFormat::Rgb10a2Unorm,
+            wgpu::TextureFormat::Rgba16Float,
+        ] {
             let features = self.adapter.get_texture_format_features(format);
-            if !features.allowed_usages.contains(wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST)
-                || !features.flags.contains(wgpu::TextureFormatFeatureFlags::FILTERABLE) { continue; }
-            let Ok((_, vk_format, fourcc)) = shared_format(format) else { continue };
+            if !features
+                .allowed_usages
+                .contains(wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST)
+                || !features
+                    .flags
+                    .contains(wgpu::TextureFormatFeatureFlags::FILTERABLE)
+            {
+                continue;
+            }
+            let Ok((_, vk_format, fourcc)) = shared_format(format) else {
+                continue;
+            };
             let mut modifier = vk::PhysicalDeviceImageDrmFormatModifierInfoEXT::default()
-                .drm_format_modifier(0).sharing_mode(vk::SharingMode::EXCLUSIVE);
+                .drm_format_modifier(0)
+                .sharing_mode(vk::SharingMode::EXCLUSIVE);
             let mut external = vk::PhysicalDeviceExternalImageFormatInfo::default()
                 .handle_type(vk::ExternalMemoryHandleTypeFlags::DMA_BUF_EXT);
-            let information = vk::PhysicalDeviceImageFormatInfo2::default().format(vk_format)
-                .ty(vk::ImageType::TYPE_2D).tiling(vk::ImageTiling::DRM_FORMAT_MODIFIER_EXT)
-                .usage(vk::ImageUsageFlags::TRANSFER_SRC).push_next(&mut modifier).push_next(&mut external);
+            let information = vk::PhysicalDeviceImageFormatInfo2::default()
+                .format(vk_format)
+                .ty(vk::ImageType::TYPE_2D)
+                .tiling(vk::ImageTiling::DRM_FORMAT_MODIFIER_EXT)
+                .usage(vk::ImageUsageFlags::TRANSFER_SRC)
+                .push_next(&mut modifier)
+                .push_next(&mut external);
             let mut external_properties = vk::ExternalImageFormatProperties::default();
             let supported = {
-                let mut properties = vk::ImageFormatProperties2::default().push_next(&mut external_properties);
+                let mut properties =
+                    vk::ImageFormatProperties2::default().push_next(&mut external_properties);
                 // SAFETY: The physical device belongs to this instance and both chains are live.
-                unsafe { self.raw_instance.get_physical_device_image_format_properties2(self.physical_device, &information, &mut properties) }.is_ok()
+                unsafe {
+                    self.raw_instance
+                        .get_physical_device_image_format_properties2(
+                            self.physical_device,
+                            &information,
+                            &mut properties,
+                        )
+                }
+                .is_ok()
             };
-            if supported && external_properties.external_memory_properties.external_memory_features.contains(vk::ExternalMemoryFeatureFlags::IMPORTABLE)
-                && external_properties.external_memory_properties.compatible_handle_types.contains(vk::ExternalMemoryHandleTypeFlags::DMA_BUF_EXT) {
+            if supported
+                && external_properties
+                    .external_memory_properties
+                    .external_memory_features
+                    .contains(vk::ExternalMemoryFeatureFlags::IMPORTABLE)
+                && external_properties
+                    .external_memory_properties
+                    .compatible_handle_types
+                    .contains(vk::ExternalMemoryHandleTypeFlags::DMA_BUF_EXT)
+            {
                 formats.push(fourcc);
             }
         }
@@ -228,12 +310,23 @@ impl VulkanRenderer {
 
     #[cfg(feature = "native-presentation")]
     pub(crate) fn linear_scene_support(&self) -> Result<()> {
-        let format = self.adapter.get_texture_format_features(wgpu::TextureFormat::Rgba16Float);
-        let usages = wgpu::TextureUsages::COPY_SRC | wgpu::TextureUsages::COPY_DST
-            | wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING;
+        let format = self
+            .adapter
+            .get_texture_format_features(wgpu::TextureFormat::Rgba16Float);
+        let usages = wgpu::TextureUsages::COPY_SRC
+            | wgpu::TextureUsages::COPY_DST
+            | wgpu::TextureUsages::RENDER_ATTACHMENT
+            | wgpu::TextureUsages::TEXTURE_BINDING;
         if !format.allowed_usages.contains(usages)
-            || !format.flags.contains(wgpu::TextureFormatFeatureFlags::FILTERABLE | wgpu::TextureFormatFeatureFlags::BLENDABLE) {
-            return Err(ProbeFailure::at("native_linear_color", "The Vulkan adapter does not support filtered, blendable RGBA16F scene targets"));
+            || !format.flags.contains(
+                wgpu::TextureFormatFeatureFlags::FILTERABLE
+                    | wgpu::TextureFormatFeatureFlags::BLENDABLE,
+            )
+        {
+            return Err(ProbeFailure::at(
+                "native_linear_color",
+                "The Vulkan adapter does not support filtered, blendable RGBA16F scene targets",
+            ));
         }
         let _probe = self.create_shared_image_format(1, 1, wgpu::TextureFormat::Rgba16Float)?;
         Ok(())
@@ -309,13 +402,15 @@ impl VulkanRenderer {
         let physical_device = open.device.raw_physical_device();
         let queue_family = open.device.queue_family_index();
         // SAFETY: `open` came from this adapter with the same feature set as `descriptor`.
-        let (device, queue) = unsafe { adapter.create_device_from_hal::<Vulkan>(open, &descriptor) }
-            .map_err(|error| ProbeFailure::at("wgpu_device", error))?;
+        let (device, queue) =
+            unsafe { adapter.create_device_from_hal::<Vulkan>(open, &descriptor) }
+                .map_err(|error| ProbeFailure::at("wgpu_device", error))?;
         drop(hal_adapter);
         #[cfg(feature = "native-presentation")]
         let reactor = {
             let thread = std::thread::current();
-            wait::Reactor::new(move || thread.unpark()).map_err(|error| ProbeFailure::at("client_acquire_events", error))?
+            wait::Reactor::new(move || thread.unpark())
+                .map_err(|error| ProbeFailure::at("client_acquire_events", error))?
         };
         Ok(Self {
             #[cfg(feature = "native-presentation")]
@@ -347,19 +442,34 @@ impl GpuContext {
         self.create_shared_image_format(width, height, wgpu::TextureFormat::Bgra8Unorm)
     }
 
-    fn create_shared_image_format(&self, width: u32, height: u32, format: wgpu::TextureFormat) -> Result<SharedImage> {
-        let SharedAllocation { dmabuf, allocation } = self.allocate_shared_image(width, height, format)?;
+    fn create_shared_image_format(
+        &self,
+        width: u32,
+        height: u32,
+        format: wgpu::TextureFormat,
+    ) -> Result<SharedImage> {
+        let SharedAllocation { dmabuf, allocation } =
+            self.allocate_shared_image(width, height, format)?;
         let (format, _, _) = shared_format(format)?;
         #[cfg(feature = "native-presentation")]
         let started = std::time::Instant::now();
         self.initialize(allocation.clone())?;
         #[cfg(feature = "native-presentation")]
         crate::runtime::trace_frame("shared-image-initialize", started);
-        let size = wgpu::Extent3d { width, height, depth_or_array_layers: 1 };
+        let size = wgpu::Extent3d {
+            width,
+            height,
+            depth_or_array_layers: 1,
+        };
         self.register_shared_image(SharedAllocation { dmabuf, allocation }, size, format)
     }
 
-    fn allocate_shared_image(&self, width: u32, height: u32, format: wgpu::TextureFormat) -> Result<SharedAllocation> {
+    fn allocate_shared_image(
+        &self,
+        width: u32,
+        height: u32,
+        format: wgpu::TextureFormat,
+    ) -> Result<SharedAllocation> {
         #[cfg(feature = "native-presentation")]
         let started = std::time::Instant::now();
         let (_, vk_format, fourcc) = shared_format(format)?;
@@ -495,7 +605,12 @@ impl GpuContext {
         Ok(SharedAllocation { dmabuf, allocation })
     }
 
-    fn register_shared_image(&self, shared: SharedAllocation, size: wgpu::Extent3d, format: wgpu::TextureFormat) -> Result<SharedImage> {
+    fn register_shared_image(
+        &self,
+        shared: SharedAllocation,
+        size: wgpu::Extent3d,
+        format: wgpu::TextureFormat,
+    ) -> Result<SharedImage> {
         let SharedAllocation { dmabuf, allocation } = shared;
         let image = allocation.image;
         #[cfg(feature = "native-presentation")]
@@ -557,13 +672,20 @@ impl GpuContext {
         })
     }
 
-    fn submit_raw(&self, stage: &str, record: impl FnOnce(vk::CommandBuffer)) -> Result<wgpu::SubmissionIndex> {
-        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some(stage) });
+    fn submit_raw(
+        &self,
+        stage: &str,
+        record: impl FnOnce(vk::CommandBuffer),
+    ) -> Result<wgpu::SubmissionIndex> {
+        let mut encoder = self
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some(stage) });
         // SAFETY: Callers only record commands inside the HAL borrow. wgpu finishes
         // and owns the command buffer, and callers retain submitted resources.
         unsafe {
             encoder.as_hal_mut::<Vulkan, _, _>(|encoder| {
-                let encoder = encoder.ok_or_else(|| ProbeFailure::at(stage, "Vulkan HAL unavailable"))?;
+                let encoder =
+                    encoder.ok_or_else(|| ProbeFailure::at(stage, "Vulkan HAL unavailable"))?;
                 record(encoder.raw_handle());
                 Ok::<_, ProbeFailure>(())
             })?;
@@ -593,7 +715,9 @@ impl GpuContext {
     }
 
     fn initialize(&self, allocation: Arc<Allocation>) -> Result<()> {
-        self.submit_raw("initialize_image", |command| self.encode_initialize(&allocation, command))?;
+        self.submit_raw("initialize_image", |command| {
+            self.encode_initialize(&allocation, command)
+        })?;
         self.retain(allocation);
         Ok(())
     }
@@ -642,7 +766,9 @@ impl GpuContext {
         stage: vk::PipelineStageFlags,
     ) -> Result<()> {
         self.checked_submission(|| {
-            self.submit_raw("release_to_egl", |command| self.encode_release(&allocation, layout, access, stage, command))?;
+            self.submit_raw("release_to_egl", |command| {
+                self.encode_release(&allocation, layout, access, stage, command)
+            })?;
             Ok(())
         })?;
         self.retain(allocation);

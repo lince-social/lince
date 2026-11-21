@@ -1,6 +1,21 @@
-use crate::property_rule::PropertyRule;
+// non-lean-yet
+// Scope: const RULE_NAMESPACE, const WINDOW_NAMESPACE, const MAX_BYTES, const MAX_RULES.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 60, 127, 131.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 12.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 46, 81, 113, 119.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 6,
+//   7, 8, 12, 13, 14, 18, 25, 35, 36, 37, 38, 39, 40, 41, 42, 46, 57, 72, 73, 74, 75, 76, 77, 81,
+//   96, 107, 108, 109, 113, 119.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites revision:
+//   String (119), validate: String (46, 81, 113).
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+
+use crate::property_rule::PropertyRule;
 
 pub const RULE_NAMESPACE: &str = "lince.park.opening-rule";
 pub const WINDOW_NAMESPACE: &str = "lince.park.window-opening";
@@ -24,9 +39,12 @@ impl Dimension {
 
     pub fn resolve(self, available: f64) -> f64 {
         match self {
-            Self::Fraction([numerator, denominator]) => available * f64::from(numerator) / f64::from(denominator),
+            Self::Fraction([numerator, denominator]) => {
+                available * f64::from(numerator) / f64::from(denominator)
+            }
             Self::Pixels(size) => f64::from(size),
-        }.clamp(1.0, 100_000.0)
+        }
+        .clamp(1.0, 100_000.0)
     }
 }
 
@@ -45,7 +63,9 @@ pub struct Properties {
 impl Properties {
     pub fn validate(&self) -> Result<(), String> {
         if self.workspace == Some(0)
-            || self.output.as_ref().is_some_and(|output| output.is_empty() || output.len() > 512 || output.chars().any(char::is_control))
+            || self.output.as_ref().is_some_and(|output| {
+                output.is_empty() || output.len() > 512 || output.chars().any(char::is_control)
+            })
             || self.width.is_some_and(|width| !width.valid())
             || self.height.is_some_and(|height| !height.valid())
         {
@@ -94,11 +114,17 @@ impl Rule {
     }
 
     pub fn matches(&self, metadata: &Value) -> bool {
-        self.enabled && self.validate().is_ok() && if self.match_all {
-            self.conditions.iter().all(|condition| condition.matches(metadata))
-        } else {
-            self.conditions.iter().any(|condition| condition.matches(metadata))
-        }
+        self.enabled
+            && self.validate().is_ok()
+            && if self.match_all {
+                self.conditions
+                    .iter()
+                    .all(|condition| condition.matches(metadata))
+            } else {
+                self.conditions
+                    .iter()
+                    .any(|condition| condition.matches(metadata))
+            }
     }
 }
 
@@ -111,7 +137,9 @@ pub struct Window {
 
 impl Window {
     pub fn validate(&self) -> Result<(), String> {
-        if self.revision == 0 { return Err("Window opening preferences need a revision.".into()); }
+        if self.revision == 0 {
+            return Err("Window opening preferences need a revision.".into());
+        }
         self.properties.validate()
     }
 }
@@ -124,11 +152,13 @@ pub fn revision(namespace: &str, value: &Value) -> Result<Option<u64>, String> {
         return Err("Opening preferences exceed 64 KiB.".into());
     }
     let revision = if namespace == RULE_NAMESPACE {
-        let rule: Rule = serde_json::from_value(value.clone()).map_err(|error| error.to_string())?;
+        let rule: Rule =
+            serde_json::from_value(value.clone()).map_err(|error| error.to_string())?;
         rule.validate()?;
         rule.revision
     } else {
-        let window: Window = serde_json::from_value(value.clone()).map_err(|error| error.to_string())?;
+        let window: Window =
+            serde_json::from_value(value.clone()).map_err(|error| error.to_string())?;
         window.validate()?;
         window.revision
     };

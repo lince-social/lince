@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn fixture, fn map_update_waits_for_its_viewport_image, fn
+//   pointer_pan_latency_uses_each_gesture_instead_of_the_previous_button, fn
+//   independent_maps_keep_camera_theme_and_record_bindings_in_workspace.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::actions::Action;
 

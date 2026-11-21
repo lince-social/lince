@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Scope, fn invalid.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 24.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 57.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 57.
+// - [rustc probe: unreachable_pub] unreachable `pub` item. Sites 18, 53.
+
 use crate::{Engine, EngineError, sync::OpBatch};
 use serde::{Deserialize, Serialize};
 use serde_json::json;

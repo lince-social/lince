@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn fixture, fn layout, fn item, fn same.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn fixture(mode: WorkspaceLayout) -> (World, Entity, Entity, Entity) {

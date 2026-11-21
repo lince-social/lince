@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct Writer, struct Targets, fn target_ids, struct Audit.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 171, 172.
+
 use super::*;
 use crate::native::topology::surface_render::{CaptureOrigins, CompletedCaptures, SurfaceCapture};
 use bevy::asset::AssetId;

@@ -1,5 +1,18 @@
-use crate::{Result, files::Scope};
-use cap_std::fs::{Dir, Metadata, OpenOptions};
+// non-lean-yet
+// Scope: struct Entry, struct TrashTicket, fn relocated, fn rename_new.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 159.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   54.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   38.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 59, 74, 80, 92, 164.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 11, 20.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 11, 12,
+//   13, 20, 21, 22, 25, 59, 74, 80, 92, 164.
+
 use std::{
     ffi::OsString,
     io::Write,
@@ -7,6 +20,10 @@ use std::{
     sync::atomic::{AtomicU64, Ordering},
     time::{SystemTime, UNIX_EPOCH},
 };
+
+use cap_std::fs::{Dir, Metadata, OpenOptions};
+
+use crate::{Result, files::Scope};
 
 pub struct Entry {
     pub path: PathBuf,

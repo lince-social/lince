@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: fn state, fn result.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 23, 271, 280,
+//   310, 378, 422, 474, 529, 547, 568.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 142, 145, 148, 152.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option`
+//   value. Sites 527.
+// - [Clippy probe: clippy::match_same_arms] these match arms have identical bodies. Sites 489, 499,
+//   502.
+// - [Clippy probe: clippy::unnecessary_wraps] this function's return value is unnecessarily wrapped
+//   by `Result`. Sites 19.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use crate::actions::{ActionOutcome, VerifiedActionAuthorship};
 use nucleus::transfer::receipt::{Approval, ApprovalRole, Command, Document, Review};

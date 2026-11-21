@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct HolepunchRenderElement, struct OverlayPlaneElement.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use crate::{
     backend::renderer::{
         element::{Element, Id, RenderElement},

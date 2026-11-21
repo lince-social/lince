@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Members, type Ranked, fn compare, fn geometry.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   177, 183, 189, 193, 223.
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 91.
+
 use super::{CanvasItem, OutputViews, Surface, WorkspaceMember};
 use crate::{
     host::{ContentMapping, ItemGeometry, ItemId, OutputViewport, Rectangle},

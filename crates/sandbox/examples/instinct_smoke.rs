@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn setup, fn capture, fn main.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 25.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (50).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (26, 35, 46).
+
 use bevy::{
     diagnostic::FrameCount,
     prelude::*,

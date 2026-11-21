@@ -1,6 +1,26 @@
+// non-lean-yet
+// Scope: fn files, fn read.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 168, 202.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 41, 80, 131, 132,
+//   199, 228, 237, 244, 254, 257, 280, 295, 296.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   load:refresh (119), load_reference:refresh (128).
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 92, 96, 115, 124.
+// - [Clippy: clippy::redundant_clone] Move or borrow at the marked sites and check later uses.
+//   Sites 7.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 1.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 92, 96,
+//   115, 124.
+// - [rustc: unreachable_pub] unreachable `pub` item. Sites 5.
+
+use std::collections::VecDeque;
+
 use super::*;
 use crate::{Reference, reference::Address};
-use std::collections::VecDeque;
 
 pub fn files(directory: &Path) -> Result<Vec<std::path::PathBuf>> {
     let root = fs::canonicalize(directory).map_err(|error| error.to_string())?;

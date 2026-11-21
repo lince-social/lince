@@ -1,7 +1,16 @@
-use crate::presentation::frame_trace;
+// non-lean-yet
+// Scope: const MAX_PENDING, struct Timing, struct Sample.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 36, 67, 99, 123, 135,
+//   143, 157, 166, 171, 179.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (164).
+
+use std::collections::VecDeque;
+
 use serde_json::json;
 use smithay::backend::renderer::gles::{GlesRenderer, ffi};
-use std::collections::VecDeque;
+
+use crate::presentation::frame_trace;
 
 const MAX_PENDING: usize = 8;
 

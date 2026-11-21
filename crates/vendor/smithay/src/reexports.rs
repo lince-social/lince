@@ -1,3 +1,6 @@
+// non-lean-yet
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 //! Reexports of crates, that are part of the public api, for convenience
 
 #[cfg(feature = "backend_vulkan")]

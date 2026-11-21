@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn
+//   a_real_scratch_snapshot_write_failure_keeps_live_content_and_last_good_files_then_retry_reopens_hidden_at_home,
+//   fn ordinary_native_save_normalizes_scratch_home_and_startup_restores_hidden_content.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::{host::WorkspaceLayout, layout::desktop::PlacementId, native::layout::desktop::{self, Managed}};
 

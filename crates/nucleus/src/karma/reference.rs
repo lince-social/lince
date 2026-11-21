@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: const CROCKFORD, enum ReferenceKind, struct TypedUid, fn valid_prefixed_ulid.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 12.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 111, 180, 233.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 12, 13,
+//   14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,
+//   38, 42, 105, 111, 124, 128, 177, 180, 191, 230, 233, 248, 275, 276, 278, 283, 284, 285, 286.
+
 use std::{fmt, str::FromStr};
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de};

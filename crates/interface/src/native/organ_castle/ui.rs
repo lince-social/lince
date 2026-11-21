@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct PairingPanel, struct NearbyRow, struct NearbySummary, fn text.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 56, 102, 119,
+//   161, 213, 220, 250, 264, 279, 285, 314, 385, 508, 541, 542, 543, 633, 739, 751, 1089.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   17, 372, 385.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (48, 53, 89, 100, 164, 534, 606, 673, 745, 964, 1090).
+
 use super::*;
 use forms::{boolean, choices};
 

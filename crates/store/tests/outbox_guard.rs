@@ -1,7 +1,10 @@
+// non-lean-yet
+// Scope: fn cell, fn an_op_superseded_while_in_flight_is_not_dropped_by_the_delete, fn
+//   an_unraced_delivered_row_is_deleted.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use nucleus::RecordKind;
-use store::Store;
-use store::records::NewRecord;
-use store::sync_ops;
+use store::{Store, records::NewRecord, sync_ops};
 
 async fn cell() -> Store {
     Store::open_memory().await.expect("in-memory store")

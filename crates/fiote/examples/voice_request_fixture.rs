@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: fn wav, fn main.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 34, 35, 80, 101.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 78, 87, 116.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 20, 41, 98, 99, 101.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   20, 99, 101.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 99.
+
 use std::{io::Cursor, path::Path, time::Instant};
 
 fn wav(samples: &[f32], rate: u32) -> Result<Vec<u8>, String> {

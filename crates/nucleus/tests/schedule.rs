@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn scheduling_duration_and_point_rules, fn reversed_and_implicit_times_are_rejected, fn
+//   timezone_gaps_and_repeated_times_are_explicit, fn
+//   window_clipping_never_turns_a_point_into_a_range.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 71.
+
 use nucleus::schedule::{TimeValue, civil_instants, range};
 
 #[test]

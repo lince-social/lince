@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: const ORGAN, const PERSON, const RECORD, const OTHER.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 52.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &[Value]). Sites 29, 44.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 283,
+//   1001, 1048, 1051, 1082, 1085, 1088.
+
 #![cfg(test)]
 
 use std::collections::BTreeSet;

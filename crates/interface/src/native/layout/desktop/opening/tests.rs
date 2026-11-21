@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn rule, fn entry, fn fixture, fn
+//   saved_order_not_subscription_order_selects_one_sparse_match.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::layout::desktop::Width;
 use nucleus::property_rule::{Property, PropertyRule};

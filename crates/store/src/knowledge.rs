@@ -1,6 +1,20 @@
-use crate::StoreError;
+// non-lean-yet
+// Scope: mod permanent, fn invalid, fn bounded, fn validate_item.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 185.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 220, 221, 227, 284, 285.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 20, 86, 114, 152, 172, 203, 236, 258, 272, 294, 346, 370.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 20, 86,
+//   114, 152, 172, 203, 236, 258, 272, 294, 346, 370.
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 5.
+
 use nucleus::knowledge::{Archive, CACHE_LIMIT, DEPENDENCY_LIMIT, ITEM_LIMIT, Item};
 use sqlx::{Row, SqliteConnection, SqlitePool};
+
+use crate::StoreError;
 mod permanent;
 pub use permanent::*;
 

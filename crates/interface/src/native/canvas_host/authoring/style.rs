@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn measure, fn val, fn capture, fn apply.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use api::authoring::{Measure, Style};
 

@@ -1,15 +1,33 @@
-use super::*;
-use smithay::reexports::wayland_server::backend::GlobalId;
+// non-lean-yet
+// Scope: fn output_transform, fn output_rotation, struct Registered, struct Monitor.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 120, 138, 139,
+//   166, 194, 218.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   152, 166.
+
 use lince_interface::host::mapping::QuarterTurn;
+use smithay::reexports::wayland_server::backend::GlobalId;
+
+use super::*;
 
 pub(crate) fn output_transform(rotation: QuarterTurn) -> Transform {
-    match rotation { QuarterTurn::Normal => Transform::Normal, QuarterTurn::Clockwise90 => Transform::_90,
-        QuarterTurn::UpsideDown => Transform::_180, QuarterTurn::Clockwise270 => Transform::_270 }
+    match rotation {
+        QuarterTurn::Normal => Transform::Normal,
+        QuarterTurn::Clockwise90 => Transform::_90,
+        QuarterTurn::UpsideDown => Transform::_180,
+        QuarterTurn::Clockwise270 => Transform::_270,
+    }
 }
 
 pub(crate) fn output_rotation(transform: Transform) -> Option<QuarterTurn> {
-    Some(match transform { Transform::Normal => QuarterTurn::Normal, Transform::_90 => QuarterTurn::Clockwise90,
-        Transform::_180 => QuarterTurn::UpsideDown, Transform::_270 => QuarterTurn::Clockwise270, _ => return None })
+    Some(match transform {
+        Transform::Normal => QuarterTurn::Normal,
+        Transform::_90 => QuarterTurn::Clockwise90,
+        Transform::_180 => QuarterTurn::UpsideDown,
+        Transform::_270 => QuarterTurn::Clockwise270,
+        _ => return None,
+    })
 }
 
 pub(super) struct Registered {
@@ -26,16 +44,23 @@ pub struct Monitor {
 }
 
 impl Server {
-    #[cfg(any(feature = "session", all(test, feature = "server-tests", feature = "nested")))]
+    #[cfg(any(
+        feature = "session",
+        all(test, feature = "server-tests", feature = "nested")
+    ))]
     pub(crate) fn disconnect_outputs(&mut self) {
         self.clear_input(0);
         let layers: Vec<_> = self.state.layers.surfaces.keys().cloned().collect();
         for surface in layers {
-            if let Some(layer) = self.state.layers.surfaces.get(&surface) { layer.layer_surface().send_close(); }
+            if let Some(layer) = self.state.layers.surfaces.get(&surface) {
+                layer.layer_surface().send_close();
+            }
             self.state.remove_layer(&surface);
         }
         for (_, registered) in std::mem::take(&mut self.state.outputs) {
-            for surface in &self.state.surfaces { registered.output.leave(surface); }
+            for surface in &self.state.surfaces {
+                registered.output.leave(surface);
+            }
             self.state.handle.remove_global::<State>(registered.global);
         }
         self.state.configure_locks();
@@ -48,15 +73,30 @@ impl Server {
         self.configure_scaled_outputs(monitors, &BTreeMap::new())
     }
 
-    pub fn configure_scaled_outputs(&mut self, monitors: &[Monitor], scales: &BTreeMap<OutputId, f64>) -> io::Result<()> {
+    pub fn configure_scaled_outputs(
+        &mut self,
+        monitors: &[Monitor],
+        scales: &BTreeMap<OutputId, f64>,
+    ) -> io::Result<()> {
         self.configure_transformed_outputs(monitors, scales, &BTreeMap::new())
     }
 
-    pub fn configure_transformed_outputs(&mut self, monitors: &[Monitor], scales: &BTreeMap<OutputId, f64>, rotations: &BTreeMap<OutputId, QuarterTurn>) -> io::Result<()> {
+    pub fn configure_transformed_outputs(
+        &mut self,
+        monitors: &[Monitor],
+        scales: &BTreeMap<OutputId, f64>,
+        rotations: &BTreeMap<OutputId, QuarterTurn>,
+    ) -> io::Result<()> {
         self.configure_prepared_outputs(monitors, scales, rotations, &BTreeMap::new())
     }
 
-    pub(crate) fn configure_prepared_outputs(&mut self, monitors: &[Monitor], scales: &BTreeMap<OutputId, f64>, rotations: &BTreeMap<OutputId, QuarterTurn>, prepared: &BTreeMap<OutputId, (Output, Mode)>) -> io::Result<()> {
+    pub(crate) fn configure_prepared_outputs(
+        &mut self,
+        monitors: &[Monitor],
+        scales: &BTreeMap<OutputId, f64>,
+        rotations: &BTreeMap<OutputId, QuarterTurn>,
+        prepared: &BTreeMap<OutputId, (Output, Mode)>,
+    ) -> io::Result<()> {
         let mut ids = HashSet::new();
         let mut names = HashSet::new();
         let mut pixels = 0_u64;
@@ -66,22 +106,34 @@ impl Server {
                 "Park needs between one and sixteen outputs",
             ));
         }
-        if scales.keys().chain(rotations.keys()).any(|id| !monitors.iter().any(|monitor| monitor.id == *id)) {
+        if scales
+            .keys()
+            .chain(rotations.keys())
+            .any(|id| !monitors.iter().any(|monitor| monitor.id == *id))
+        {
             return Err(io::Error::other("Settings requested for an unknown output"));
         }
         for monitor in monitors {
             validate_size(monitor.size)?;
             let scale = scales.get(&monitor.id).copied().unwrap_or(1.0);
-            if !scale.is_finite() || !(0.5..=4.0).contains(&scale)
-                || (scale * 120.0 - (scale * 120.0).round()).abs() > 0.000001 {
+            if !scale.is_finite()
+                || !(0.5..=4.0).contains(&scale)
+                || (scale * 120.0 - (scale * 120.0).round()).abs() > 0.000001
+            {
                 return Err(io::Error::other("Unsupported fractional output scale"));
             }
-            let source = rotations.get(&monitor.id).copied().unwrap_or_default().source_size(monitor.size.map(|size| size as u32));
+            let source = rotations
+                .get(&monitor.id)
+                .copied()
+                .unwrap_or_default()
+                .source_size(monitor.size.map(|size| size as u32));
             let logical = source.map(|size| (f64::from(size) / scale).round() as i32);
             validate_size(logical)?;
             logical_pixels += logical[0] as u64 * logical[1] as u64;
             if logical_pixels > 64 * 1024 * 1024 {
-                return Err(io::Error::other("Logical output area exceeds Park's resource limit"));
+                return Err(io::Error::other(
+                    "Logical output area exceeds Park's resource limit",
+                ));
             }
             pixels += monitor.size[0] as u64 * monitor.size[1] as u64;
             if monitor.name.is_empty()
@@ -135,36 +187,53 @@ impl Server {
         }
         for monitor in monitors {
             if !self.state.outputs.contains_key(&monitor.id) {
-                let output = prepared.get(&monitor.id).map(|(output, _)| output.clone()).unwrap_or_else(|| Output::new(
-                    monitor.name.clone(),
-                    PhysicalProperties {
-                        size: (0, 0).into(),
-                        subpixel: Subpixel::Unknown,
-                        make: "Lince".into(),
-                        model: "Park".into(),
-                    },
-                ));
+                let output = prepared
+                    .get(&monitor.id)
+                    .map(|(output, _)| output.clone())
+                    .unwrap_or_else(|| {
+                        Output::new(
+                            monitor.name.clone(),
+                            PhysicalProperties {
+                                size: (0, 0).into(),
+                                subpixel: Subpixel::Unknown,
+                                make: "Lince".into(),
+                                model: "Park".into(),
+                            },
+                        )
+                    });
                 let global = output.create_global::<State>(&self.state.handle);
                 self.state
                     .outputs
                     .insert(monitor.id, Registered { output, global });
             }
             let registered = &self.state.outputs[&monitor.id];
-            let mode = prepared.get(&monitor.id).map(|(_, mode)| *mode).unwrap_or(Mode {
-                size: (monitor.size[0], monitor.size[1]).into(),
-                refresh: 60_000,
-            });
+            let mode = prepared
+                .get(&monitor.id)
+                .map(|(_, mode)| *mode)
+                .unwrap_or(Mode {
+                    size: (monitor.size[0], monitor.size[1]).into(),
+                    refresh: 60_000,
+                });
             registered.output.change_current_state(
                 Some(mode),
-                Some(output_transform(rotations.get(&monitor.id).copied().unwrap_or_default())),
-                Some(smithay::output::Scale::Fractional(scales.get(&monitor.id).copied().unwrap_or(1.0))),
+                Some(output_transform(
+                    rotations.get(&monitor.id).copied().unwrap_or_default(),
+                )),
+                Some(smithay::output::Scale::Fractional(
+                    scales.get(&monitor.id).copied().unwrap_or(1.0),
+                )),
                 Some((monitor.origin[0], monitor.origin[1]).into()),
             );
             registered.output.set_preferred(mode);
             smithay::desktop::layer_map_for_output(&registered.output).arrange();
         }
         self.state.output = self.state.outputs[&monitors[0].id].output.clone();
-        self.state.initial_size = rotations.get(&monitors[0].id).copied().unwrap_or_default().source_size(monitors[0].size.map(|size| size as u32)).map(|size| size as i32);
+        self.state.initial_size = rotations
+            .get(&monitors[0].id)
+            .copied()
+            .unwrap_or_default()
+            .source_size(monitors[0].size.map(|size| size as u32))
+            .map(|size| size as i32);
         self.state.configure_locks();
         self.state.update_surface_scales();
         self.state.refresh_color_feedback();
@@ -180,7 +249,9 @@ impl Server {
     }
 
     #[cfg(feature = "nested")]
-    pub(crate) fn has_output(&self, id: OutputId) -> bool { self.state.outputs.contains_key(&id) }
+    pub(crate) fn has_output(&self, id: OutputId) -> bool {
+        self.state.outputs.contains_key(&id)
+    }
 
     pub fn output_viewports(&self) -> Vec<(String, lince_interface::host::OutputViewport)> {
         self.state.output_viewports()
@@ -192,7 +263,12 @@ impl Server {
         focused: Option<OutputId>,
     ) {
         self.state.presented_geometry = Some(geometry.clone());
-        self.state.presented_mappings.retain(|output, _| geometry.outputs.iter().any(|viewport| viewport.id == *output));
+        self.state.presented_mappings.retain(|output, _| {
+            geometry
+                .outputs
+                .iter()
+                .any(|viewport| viewport.id == *output)
+        });
         self.state.presented_focus = focused;
         for (id, window) in &self.state.windows {
             for (output, registered) in &self.state.outputs {
@@ -213,30 +289,55 @@ impl Server {
     }
 
     #[cfg(feature = "nested")]
-    pub(crate) fn presented_output_mapping(&mut self, output: OutputId, mapping: Option<&lince_interface::host::mapping::Mapping>) {
+    pub(crate) fn presented_output_mapping(
+        &mut self,
+        output: OutputId,
+        mapping: Option<&lince_interface::host::mapping::Mapping>,
+    ) {
         if let Some(mapping) = mapping.filter(|mapping| mapping.output() == output) {
-            self.state.presented_mappings.insert(output, mapping.clone());
-        } else { self.state.presented_mappings.remove(&output); }
+            self.state
+                .presented_mappings
+                .insert(output, mapping.clone());
+        } else {
+            self.state.presented_mappings.remove(&output);
+        }
     }
 }
 
 impl State {
-    pub(super) fn visible_output_rectangle(&self, id: OutputId) -> Option<lince_interface::host::Rectangle> {
-        let output = self.output_viewports().into_iter().find(|(_, output)| output.id == id)?.1;
-        let Some(mapping) = self.presented_mappings.get(&id) else { return Some(output.bounds); };
-        let physical = lince_interface::host::Rectangle::new([0.0; 2], mapping.physical_size().map(f64::from))?;
-        mapping.logical_rectangle(physical)?.intersection(output.bounds)
+    pub(super) fn visible_output_rectangle(
+        &self,
+        id: OutputId,
+    ) -> Option<lince_interface::host::Rectangle> {
+        let output = self
+            .output_viewports()
+            .into_iter()
+            .find(|(_, output)| output.id == id)?
+            .1;
+        let Some(mapping) = self.presented_mappings.get(&id) else {
+            return Some(output.bounds);
+        };
+        let physical = lince_interface::host::Rectangle::new(
+            [0.0; 2],
+            mapping.physical_size().map(f64::from),
+        )?;
+        mapping
+            .logical_rectangle(physical)?
+            .intersection(output.bounds)
     }
 
     fn usable_output(&self, id: OutputId) -> Option<Rectangle<i32, Logical>> {
         let output = &self.outputs.get(&id)?.output;
         let bounds = Rectangle::from_size(logical_size(output)?);
-        Some(bounds.intersection(smithay::desktop::layer_map_for_output(output).non_exclusive_zone()).unwrap_or_else(|| Rectangle::from_size((0, 0).into())))
+        Some(
+            bounds
+                .intersection(smithay::desktop::layer_map_for_output(output).non_exclusive_zone())
+                .unwrap_or_else(|| Rectangle::from_size((0, 0).into())),
+        )
     }
 
     pub(super) fn output_viewports(&self) -> Vec<(String, lince_interface::host::OutputViewport)> {
-        self
-            .outputs
+        self.outputs
             .iter()
             .filter_map(|(id, registered)| {
                 let output = &registered.output;
@@ -257,22 +358,31 @@ impl State {
                 );
                 Some((
                     output.name(),
-                    lince_interface::host::OutputViewport { rotation: output_rotation(output.current_transform())?,
+                    lince_interface::host::OutputViewport {
+                        rotation: output_rotation(output.current_transform())?,
                         id: *id,
                         bounds,
                         usable,
                         physical_size: [size.w as u32, size.h as u32],
-                        raster: lince_interface::host::raster::RasterMapping { origin: (bounds).origin(), scale: [output.current_scale().fractional_scale(); 2] },
+                        raster: lince_interface::host::raster::RasterMapping {
+                            origin: (bounds).origin(),
+                            scale: [output.current_scale().fractional_scale(); 2],
+                        },
                         workspace: 1,
                     },
                 ))
             })
             .collect()
     }
-
 }
 
 pub(super) fn logical_size(output: &Output) -> Option<smithay::utils::Size<i32, Logical>> {
-    Some(output.current_transform().transform_size(output.current_mode()?.size)
-        .to_f64().to_logical(output.current_scale().fractional_scale()).to_i32_round())
+    Some(
+        output
+            .current_transform()
+            .transform_size(output.current_mode()?.size)
+            .to_f64()
+            .to_logical(output.current_scale().fractional_scale())
+            .to_i32_round(),
+    )
 }

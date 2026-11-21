@@ -1,17 +1,23 @@
-use super::*;
-use crate::{
-    runtime::{CanvasWorker, Configuration},
-    server::Server,
+// non-lean-yet
+// Scope: fn wait, fn settle, fn view, fn inspect.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
+use std::{
+    io::Write,
+    sync::{Arc, mpsc},
+    time::{Duration, Instant},
 };
+
 use bevy::{math::DVec2, prelude::*};
 use lince_interface::{
     host::{OutputId, Rectangle, WorkspaceLayout},
     native,
 };
-use std::{
-    io::Write,
-    sync::{Arc, mpsc},
-    time::{Duration, Instant},
+
+use super::*;
+use crate::{
+    runtime::{CanvasWorker, Configuration},
+    server::Server,
 };
 
 fn wait(desktop: &mut Desktop, serial: u64) {
@@ -209,7 +215,8 @@ fn fixture() -> (tokio::runtime::Runtime, tempfile::TempDir, Desktop) {
             canvas
                 .outputs(vec![crate::presentation::Output {
                     name: "Gesture fixture".into(),
-                    viewport: OutputViewport { rotation: Default::default(),
+                    viewport: OutputViewport {
+                        rotation: Default::default(),
                         id: OutputId(1),
                         bounds,
                         usable: Some(bounds),

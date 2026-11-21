@@ -1,16 +1,32 @@
-use {
-    crate::{
-        binary::FioteBinary,
-        credential::ProviderCredential,
-        cub::{Cub, CubSpec, CubStatus},
+// non-lean-yet
+// Scope: struct Supervisor.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   39, 53, 61, 76.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 45, 81.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   48, 56, 64, 77.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 35, 39, 70.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 16.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 16, 23,
+//   31, 35, 39, 53, 61, 70, 76.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites spawn: String
+//   (35), spawn_with_credential: String (39), stop: String (70).
+
+use std::{
+    collections::BTreeMap,
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicU64, Ordering},
     },
-    std::{
-        collections::BTreeMap,
-        sync::{
-            Arc, Mutex,
-            atomic::{AtomicU64, Ordering},
-        },
-    },
+};
+
+use crate::{
+    binary::FioteBinary,
+    credential::ProviderCredential,
+    cub::{Cub, CubSpec, CubStatus},
 };
 
 pub struct Supervisor {

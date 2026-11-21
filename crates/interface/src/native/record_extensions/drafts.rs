@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct DraftData, fn edit.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 13, 23, 27.
+
 use std::{ops::Deref, sync::Arc};
 
 #[derive(Clone)]

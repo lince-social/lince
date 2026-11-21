@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct Exercise, fn button, fn activate, fn pointer.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 303.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (342).
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites 41.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   114, 118.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (52, 55, 59, 71, 84, 130, 133, 152, 156, 182, 193, 216, 234, 242, 243, 248, 249,
+//   269, 283, 284, 290, 292, 311, 321, 324, 327, 362).
+
 use bevy::{
     a11y::AccessibilityNode,
     input::{ButtonState, mouse::MouseButtonInput},

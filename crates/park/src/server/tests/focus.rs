@@ -1,4 +1,11 @@
-use super::*;
+// non-lean-yet
+// Scope: fn overview_renders_inactive_wayland_content_and_advances_only_its_presented_callbacks, fn
+//   settle, fn green_center, fn capture.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 164, 167.
+
+use std::io::Write;
+
 use bevy::prelude::*;
 use lince_interface::{
     host::{DesktopAction, ItemId, OutputViewport, Rectangle as CanvasRectangle},
@@ -6,7 +13,8 @@ use lince_interface::{
 };
 use native::actions::Action;
 use smithay::backend::allocator::Buffer;
-use std::io::Write;
+
+use super::*;
 
 #[test]
 #[ignore = "requires hardware Vulkan and EGL"]
@@ -42,12 +50,16 @@ fn overview_renders_inactive_wayland_content_and_advances_only_its_presented_cal
         .unwrap();
     let bounds = CanvasRectangle::new([0.0; 2], [640.0, 480.0]).unwrap();
     canvas
-        .viewport(OutputViewport { rotation: Default::default(),
+        .viewport(OutputViewport {
+            rotation: Default::default(),
             id: OutputId(1),
             bounds,
             usable: Some(bounds),
             physical_size: [640, 480],
-            raster: lince_interface::host::raster::RasterMapping { origin: (bounds).origin(), scale: [1.0; 2] },
+            raster: lince_interface::host::raster::RasterMapping {
+                origin: (bounds).origin(),
+                scale: [1.0; 2],
+            },
             workspace: 1,
         })
         .unwrap();
@@ -394,12 +406,16 @@ fn native_and_real_wayland_targets_follow_without_rendered_frame_lag_or_client_r
     let bounds = CanvasRectangle::new([0.0; 2], [1000.0, 700.0]).unwrap();
     let usable = CanvasRectangle::new([60.0, 40.0], [940.0, 630.0]).unwrap();
     canvas
-        .viewport(OutputViewport { rotation: Default::default(),
+        .viewport(OutputViewport {
+            rotation: Default::default(),
             id: OutputId(1),
             bounds,
             usable: Some(usable),
             physical_size: [1000, 700],
-            raster: lince_interface::host::raster::RasterMapping { origin: (bounds).origin(), scale: [1.0; 2] },
+            raster: lince_interface::host::raster::RasterMapping {
+                origin: (bounds).origin(),
+                scale: [1.0; 2],
+            },
             workspace: 1,
         })
         .unwrap();

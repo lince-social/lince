@@ -1,12 +1,30 @@
+// non-lean-yet
+// Scope: mod context, mod dialogue, mod laya, mod nli.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 187, 207.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   185, 190, 205, 210, 253, 254, 281, 292, 331, 332, 335, 336.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 19, 78.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   189, 209.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 45, 137, 179, 199.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 140.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 2, 3,
+//   4, 5, 19, 21, 22, 23, 27, 28, 29, 30, 34, 35, 36, 37, 38, 39, 40, 41, 45, 78, 79, 80, 81, 85,
+//   86, 87, 88, 89, 93, 104, 105, 106, 107, 108, 109, 110, 111, 112, 116, 117, 118, 119, 121, 122,
+//   123, 127, 128, 129, 130, 131, 137, 140, 146, 150, 159, 166, 169, 172, 175, 179, 199.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites acquire: String
+//   (179), submit: String (199), validate: String (45).
+
 mod context;
 pub mod dialogue;
 pub mod laya;
 pub mod nli;
 pub mod qwen;
 
-pub use context::{Context, Dialogue};
-
-use serde::{Deserialize, Serialize};
 use std::{
     path::PathBuf,
     sync::{
@@ -14,6 +32,9 @@ use std::{
         atomic::{AtomicBool, AtomicU64},
     },
 };
+
+pub use context::{Context, Dialogue};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ModelId {
@@ -218,8 +239,9 @@ impl Engine {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::sync::atomic::Ordering;
+
+    use super::*;
 
     struct BlockedModel {
         started: Arc<AtomicBool>,

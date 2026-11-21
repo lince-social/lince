@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: impl ShmState, impl ShmState, impl ShmState.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 167, 240.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (73, 195, 240).
+
 use crate::wayland::{
     buffer::BufferHandler,
     shm::{wl_bytes_per_pixel, ShmBufferUserData},

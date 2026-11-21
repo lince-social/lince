@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod activity, struct DragActive, struct FocusPolicy, struct FocusTarget.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites validate:
+//   String (72).
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 41, 43, 45, 47.
+
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, sync::Arc};
 

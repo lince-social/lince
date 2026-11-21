@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: static NULL, enum Data, struct WindowValues, struct Projection.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 105, 108, 117,
+//   222.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   117.
+
 use super::*;
 use crate::host::performance::{self, Count, Stage};
 use crate::native::area::RecordProperties;

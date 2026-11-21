@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn fixture, fn make_room, fn finish, fn
+//   room_import_follows_its_moved_destination_and_restores_calibration_and_credits.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (14, 23, 24, 25).
+
 use super::*;
 use crate::native::{
     canvas::CanvasView,

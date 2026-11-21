@@ -1,8 +1,21 @@
+// non-lean-yet
+// Scope: fn canonical_hash_ignores_object_key_order_and_preserves_sequence_and_text, fn fixture, fn
+//   request, fn atomic_patch_receipts_export_and_recovery_preserve_record_bindings.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 99, 102, 199, 203, 284.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 118, 216, 281.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   128.
+
 #![cfg(test)]
 
-use nucleus::canvas::{self as api, authoring::*};
-use nucleus::component::ComponentState;
 use std::collections::BTreeMap;
+
+use nucleus::{
+    canvas::{self as api, authoring::*},
+    component::ComponentState,
+};
 
 #[test]
 fn canonical_hash_ignores_object_key_order_and_preserves_sequence_and_text() {

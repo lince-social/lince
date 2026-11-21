@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct Wire, fn known, fn administrator, fn connect.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 384, 390, 393, 394.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 232.
+
 use super::*;
 use nucleus::{
     social::{Command as Social, PublicRequest, ask, gossip},

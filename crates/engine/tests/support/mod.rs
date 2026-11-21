@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: mod karma, struct Person, struct TransferFixture, struct DraftOptions.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 368.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 206.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 206.
+// - [rustc probe: unreachable_pub] unreachable `pub` item. Sites 3, 16, 21, 26, 33, 53, 61, 83,
+//   101, 120, 130, 205, 213, 235, 264, 290, 319, 369.
+
 #![allow(dead_code, reason = "Integration binaries share these helpers and each selects a subset")]
 
 pub mod karma;

@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: const PRESETS, fn fixture, fn size, fn
+//   row_height_cycle_is_exact_shared_and_preserves_individual_widths_and_free_geometry.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::layout::desktop::tests::{id, item, viewport};
 

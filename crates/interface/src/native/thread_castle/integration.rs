@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: fn setup, fn pump, fn composer, fn
+//   record_threads_create_numbered_tabs_and_send_from_enter.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 20, 38, 45, 46,
+//   49, 53, 85, 166, 181.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (56).
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites
+//   105, 173.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (18, 19, 31, 33, 36, 40, 58, 90, 93, 112, 138).
+
 use super::*;
 use bevy::input_focus::{FocusCause, InputFocus};
 use serde_json::json;

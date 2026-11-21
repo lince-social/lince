@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: mod process, mod tests, const CREDITS, struct FreedoomSand.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 211.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (209).
+
 mod process;
 #[cfg(test)]
 mod tests;

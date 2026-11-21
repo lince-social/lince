@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: const NAMESPACE, const SESSION_NAMESPACE, const KIND_PARTICIPANT, const KIND_GROUP_OF.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value. Sites
+//   300.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 261, 303, 305,
+//   306, 364.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 127, 136, 146, 155, 172, 194, 216, 226, 237, 316, 370, 393.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 10, 11,
+//   13, 14, 15, 16, 17, 18, 37, 39, 41, 43, 45, 60, 62, 64, 66, 68, 70, 86, 88, 100, 101, 103, 105,
+//   107, 109, 113, 114, 115, 116, 117, 121, 122, 123, 124, 127, 136, 146, 155, 172, 194, 216, 226,
+//   237, 316, 370, 393.
+
 use nucleus::RecordKind;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
@@ -229,7 +243,9 @@ pub async fn is_participant(
     person_uid: &str,
 ) -> Result<bool, StoreError> {
     match crate::vocabulary::feature_read(pool, "participant").await? {
-        Some(kind) => assertions::object_exists(pool, conversation_uid, &kind, Some(person_uid)).await,
+        Some(kind) => {
+            assertions::object_exists(pool, conversation_uid, &kind, Some(person_uid)).await
+        }
         None => Ok(false),
     }
 }

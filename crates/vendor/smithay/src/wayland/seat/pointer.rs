@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct V120UserData, const CURSOR_IMAGE_ROLE, struct WlPointerHandle, struct
+//   PointerUserData.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 49, 230.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (54, 67, 71, 76, 92, 99, 146, 168, 177, 185, 223, 260, 401, 411, 413, 446, 534,
+//   546).
+
 use std::sync::{atomic::Ordering, Arc, Mutex};
 
 use atomic_float::AtomicF64;

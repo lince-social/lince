@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn register, fn fonts, struct Options, fn build.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 #![cfg(feature = "ui")]

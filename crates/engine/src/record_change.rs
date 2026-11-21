@@ -1,3 +1,31 @@
+// non-lean-yet
+// Scope: struct Request, enum Mutation, enum WorkField, struct Register.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 188, 189, 226,
+//   404, 407, 583, 616, 644, 681, 688, 709, 716, 719, 733, 769, 823, 824, 863, 911, 912, 939, 940,
+//   941, 942, 943, 979, 995, 1093, 1121, 1131, 1141, 1168, 1248, 1325.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 97.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   224, 259, 716, 724.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 611, 1023.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 18, 59.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 402, 474, 727.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 179, 224, 249, 318, 336, 342, 447, 480, 499, 741, 783, 788, 848, 1158.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 97.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option`
+//   value. Sites 126.
+// - [Clippy probe: clippy::match_same_arms] these match arms have identical bodies. Sites 1071,
+//   1077.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 544.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   10, 11, 12, 13, 18, 19, 20, 22, 23, 25, 26, 28, 29, 30, 32, 33, 35, 36, 37, 39, 40, 42, 43, 44,
+//   45, 46, 48, 49, 50, 52, 53, 59, 60, 61, 62, 63, 67, 79, 80, 81, 82, 83, 544.
+
 use nucleus::DecimalValue;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};

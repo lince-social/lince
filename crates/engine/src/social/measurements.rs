@@ -1,3 +1,24 @@
+// non-lean-yet
+// Scope: fn command, fn timings, fn storage, fn machine.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 65, 135, 146,
+//   168, 202, 228.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   16.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (8, 10, 24, 28, 32, 60, 61, 63, 68, 75, 80, 82, 84, 85, 87, 97, 104, 113, 141,
+//   158, 160, 164, 168, 169, 170, 181, 184, 187, 190, 210, 217, 234, 253).
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 243, 244.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 243.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 243, 244.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 16, 158, 164, 214, 217, 218, 219, 280, 282, 284, 301, 303, 304.
+// - [Clippy probe: clippy::print_stderr] Check CLI, Cargo, fixture, or library output contract
+//   before changing output. Sites 106, 154, 192, 302.
+
 use super::*;
 use std::{path::Path, time::Instant};
 

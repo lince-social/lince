@@ -1,7 +1,30 @@
+// non-lean-yet
+// Scope: struct ExecutionIdentity, const MAX_SPANS, const MAX_CACHE_BYTES, const MAX_STEPS.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::trivially_copy_pass_by_ref] Consider a value parameter for small Copy inputs.
+//   Sites 90.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 63.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 211, 223.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   37, 106, 148.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 10, 32, 104, 131, 135, 165.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 79.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 10,
+//   14, 19, 20, 21, 25, 26, 27, 28, 32, 72, 73, 74, 75, 79, 82, 86, 94, 98, 104, 131, 135, 151,
+//   159, 160, 161, 165, 178, 179, 180, 181, 182, 183, 184, 189, 190, 191, 192, 193, 194, 195, 196,
+//   197, 198, 203, 204, 205, 206, 211, 212, 213, 214, 215, 216, 217, 218, 223, 224, 225, 226.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites dates: String
+//   (135), month: String (104), resolve: String (32), validate: String (131).
+
 use serde::{Deserialize, Serialize};
 
-use crate::karma::{CanonicalHash, TypedUid, canonical_hash};
-use crate::simulation::{Cause, Quantity};
+use crate::{
+    karma::{CanonicalHash, TypedUid, canonical_hash},
+    simulation::{Cause, Quantity},
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExecutionIdentity(CanonicalHash);

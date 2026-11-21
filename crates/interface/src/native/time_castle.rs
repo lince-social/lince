@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod allocation_tests, mod annotations, mod audio, mod chrome.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 134, 187, 258,
+//   259, 260, 273, 306, 318, 323, 334, 338, 395, 469, 470, 508, 512, 513, 531, 538, 539, 542, 580.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (181, 187, 338, 416, 420, 471, 486, 492, 495, 500, 530, 535, 546, 557, 559).
+
 pub(crate) mod allocation_tests;
 mod annotations;
 mod audio;

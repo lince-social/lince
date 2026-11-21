@@ -1,6 +1,22 @@
-use crate::expr::{BinOp, Expr, UnOp};
-use crate::karma::Rounding;
-use crate::{DecimalValue, NucleusError};
+// non-lean-yet
+// Scope: const SCALE, const ROUNDING, enum EffectMode, struct PrivateEffect.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 20.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   48.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   54, 93.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 51, 57, 69, 76, 140, 148, 152.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 6,
+//   20, 22, 23, 30, 31, 32, 34, 51, 57, 69, 76, 140, 148, 152.
+
+use crate::{
+    DecimalValue, NucleusError,
+    expr::{BinOp, Expr, UnOp},
+    karma::Rounding,
+};
 
 pub const SCALE: u8 = 18;
 pub const ROUNDING: Rounding = Rounding::HalfEven;
@@ -55,15 +71,14 @@ pub fn amount(value: f64) -> Result<DecimalValue, NucleusError> {
 }
 
 pub fn sum(values: impl IntoIterator<Item = DecimalValue>) -> Result<DecimalValue, NucleusError> {
-    values.into_iter().try_fold(
-        DecimalValue::from_integer(0),
-        |total, value| {
+    values
+        .into_iter()
+        .try_fold(DecimalValue::from_integer(0), |total, value| {
             total
                 .aligned_add(value)
                 .map(normalized)
                 .ok_or_else(|| invalid("quantity sum exceeds the supported decimal range"))
-        },
-    )
+        })
 }
 
 pub fn difference(after: DecimalValue, before: DecimalValue) -> Result<DecimalValue, NucleusError> {

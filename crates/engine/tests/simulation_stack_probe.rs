@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod support, fn four_engines, fn quantity, fn run_rules.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use chrono::{TimeDelta, TimeZone, Utc};

@@ -1,11 +1,22 @@
-use super::shortcuts::{click, named_button, settle};
-use super::*;
-use bevy::core_pipeline::prepass::ViewPrepassTextures;
-use bevy::render::{
-    sync_world::RenderEntity,
-    view::{ViewDepthStencilTexture, ViewTarget},
+// non-lean-yet
+// Scope: fn playback, fn released, fn output, fn preview_cameras.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
+use std::{
+    collections::BTreeMap,
+    time::{Duration, Instant},
 };
-use bevy::{asset::AssetId, camera::visibility::RenderLayers, math::DVec2};
+
+use bevy::{
+    asset::AssetId,
+    camera::visibility::RenderLayers,
+    core_pipeline::prepass::ViewPrepassTextures,
+    math::DVec2,
+    render::{
+        sync_world::RenderEntity,
+        view::{ViewDepthStencilTexture, ViewTarget},
+    },
+};
 use lince_interface::host::{OutputId, OutputViewport, Rectangle, WorkspaceLayout};
 use native::{
     canvas::{CanvasItem, CanvasView},
@@ -20,8 +31,11 @@ use nucleus::shader_effect::{
     Effect,
     spatial::{MeshSettings, Mode},
 };
-use std::collections::BTreeMap;
-use std::time::{Duration, Instant};
+
+use super::{
+    shortcuts::{click, named_button, settle},
+    *,
+};
 
 fn playback(
     canvas: &Presentation,
@@ -70,7 +84,8 @@ fn output(id: u64) -> Output {
     let bounds = Rectangle::new([800.0 * (id - 1) as f64, 0.0], [800.0, 600.0]).unwrap();
     Output {
         name: format!("Layer isolation {id}"),
-        viewport: OutputViewport { rotation: Default::default(),
+        viewport: OutputViewport {
+            rotation: Default::default(),
             id: OutputId(id),
             bounds,
             usable: Some(bounds),
@@ -112,7 +127,10 @@ pub(super) fn image_pixels(canvas: &Presentation, id: AssetId<Image>) -> ([u32; 
         .unwrap();
     let size = [image.texture.width(), image.texture.height()];
     let format = image.texture.format();
-    assert!(matches!(format, wgpu::TextureFormat::Rgba8UnormSrgb | wgpu::TextureFormat::Bgra8UnormSrgb));
+    assert!(matches!(
+        format,
+        wgpu::TextureFormat::Rgba8UnormSrgb | wgpu::TextureFormat::Bgra8UnormSrgb
+    ));
     let row = (size[0] * 4).div_ceil(256) * 256;
     let buffer = canvas
         .renderer
@@ -163,7 +181,9 @@ pub(super) fn image_pixels(canvas: &Presentation, id: AssetId<Image>) -> ([u32; 
     drop(mapped);
     buffer.unmap();
     if format == wgpu::TextureFormat::Bgra8UnormSrgb {
-        for pixel in pixels.chunks_exact_mut(4) { pixel.swap(0, 2); }
+        for pixel in pixels.chunks_exact_mut(4) {
+            pixel.swap(0, 2);
+        }
     }
     (size, pixels)
 }

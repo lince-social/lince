@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct GroupPose, fn attach, fn members, fn rebind.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::{Attachment, spatial};
 use bevy::{
     math::{DQuat, DVec3},

@@ -1,3 +1,22 @@
+// non-lean-yet
+// Scope: struct Replay, fn effect, fn install, fn find.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 120, 131, 144,
+//   146, 172, 234, 241, 265, 281, 340, 345, 351, 353, 365, 367, 372, 377, 416, 508, 518, 550, 559,
+//   580, 613, 650, 666, 732, 789, 806, 813, 824, 831, 999, 1005, 1034, 1091, 1106.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (901).
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites
+//   989.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   557, 874, 875, 908, 910, 1158.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (60, 77, 88, 102, 104, 122, 127, 138, 153, 166, 168, 181, 182, 191, 234, 240, 258,
+//   259, 260, 264, 267, 270, 294, 298, 299, 301, 305, 312, 315, 320, 321, 352, 353, 354, 356, 357,
+//   364, 365, 370, 378, 380, 384, 386, 400, 452, 456, 477, 484, 509, 513, 531, 550, 556, 583, 586,
+//   592, 649, 650, 651, 659, 662, 666, 684, 730, 761, 771, 774, 778, 780, 790, 793, 798, 831, 832,
+//   835, 838, 843, 845, 852, 943, 945, 981, 985, 1022, 1026, 1033, 1035, 1038, 1064, 1066, 1112,
+//   1113, 1114, 1136, 1138).
+
 use super::*;
 use lince_sandbox::{
     area::{InfluenceArea, RecordProperties},

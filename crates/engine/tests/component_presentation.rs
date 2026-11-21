@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: mod support, fn
+//   fiote_presentations_are_wrapped_and_typed_saved_components_cannot_drop_protection, fn field, fn
+//   save.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 43, 477.
+
 #![cfg(test)]
 
 use engine::{Engine, actions::Action};

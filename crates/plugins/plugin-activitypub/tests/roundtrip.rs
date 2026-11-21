@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Mock, fn note, fn authorized, fn timeline.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 126.
+
 #![cfg(test)]
 
 use axum::{

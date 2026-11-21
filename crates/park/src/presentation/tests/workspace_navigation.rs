@@ -1,10 +1,19 @@
-use super::commands::{named, type_command};
-use super::shortcuts::{capture, capture_button, click, key, named_button, settle};
-use super::transfers::output;
-use super::*;
+// non-lean-yet
+// Scope: fn submit, fn receive, fn selection, fn
+//   workspace_navigation_operation_commands_preserve_editor_drafts_outputs_and_live_availability.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
+use std::sync::mpsc::Receiver;
+
 use lince_interface::host::{DesktopAction, HostRequest, OutputId};
 use native::actions::Action;
-use std::sync::mpsc::Receiver;
+
+use super::{
+    commands::{named, type_command},
+    shortcuts::{capture, capture_button, click, key, named_button, settle},
+    transfers::output,
+    *,
+};
 
 fn submit(canvas: &mut Presentation, root: Entity, path: &str) -> Frame {
     native::operation::OpenOperation.apply(canvas.world_mut(), root);

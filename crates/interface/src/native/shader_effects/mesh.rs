@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: enum Control, fn controls, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 52.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (43, 142).
+
 use super::*;
 use model::spatial::{
     DEFORM_SPHERE, Deformation, GENERATED_TRIANGLE, GeneratedGeometry, MESH_SHADE, MeshSettings,

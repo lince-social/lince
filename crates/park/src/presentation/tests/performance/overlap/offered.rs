@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct Offer, enum Signal, fn trial, fn
+//   identical_offered_inputs_keep_order_pixels_and_bounded_event_driven_publication.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 pub(super) struct Offer {

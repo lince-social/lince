@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct AnnotationOf, struct Annotations, struct Annotation, struct Layout.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 48, 73, 126, 131,
+//   195, 232, 253, 255, 261, 272, 275, 287, 381, 442, 446, 599, 697.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   588, 589, 805.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (84, 94, 100, 101, 126, 127, 131, 142, 177, 183, 195, 197, 256, 277, 313, 340,
+//   368, 472, 488, 508, 510, 524, 542, 563, 586, 597, 624, 633, 637, 638, 642, 646, 650, 659, 665,
+//   669, 672, 679, 683).
+
 use super::*;
 use crate::native::actions::ActionButton;
 use crate::native::canvas::CanvasItem;

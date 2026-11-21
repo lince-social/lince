@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Mapping, fn same_values, struct Numeric, fn numeric_fields.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 33, 40, 43, 72,
+//   107, 112, 175, 201, 242, 273.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (143).
+
 use super::*;
 use model::{InputMappings, ResolvedInputs};
 

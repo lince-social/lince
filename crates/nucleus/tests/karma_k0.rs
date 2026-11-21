@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: const RECORD_UID, const FACT_UID, struct GoldenFixture, fn
+//   complete_k0_fixture_has_stable_canonical_hash.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::useless_format] useless use of `format!`. Sites 55.
+
 #![cfg(test)]
 
 use std::collections::BTreeMap;

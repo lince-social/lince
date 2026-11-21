@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn fixture, fn rectangle, fn
+//   default_panels_start_apart_on_wide_and_narrow_screens_and_respect_reserved_space, fn
+//   dragging_panels_keeps_them_screen_fixed_clamps_edges_and_does_not_move_the_other_panel.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn fixture(width: f32) -> (World, Entity, Entity, Entity) {

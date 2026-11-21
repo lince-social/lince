@@ -1,3 +1,32 @@
+// non-lean-yet
+// Scope: const MAX_DSL_BYTES, const MAX_DSL_TOKENS, const MAX_DSL_STRING_BYTES, const
+//   MAX_DSL_NESTING.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 814, 816, 818, 820, 821, 829, 863, 885, 886, 887, 889, 896.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 2441.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 2276.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 33.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   89, 90, 91, 92, 93, 95, 96, 104, 119, 123, 133, 148, 151, 162, 164, 184, 185, 186, 192, 193,
+//   195, 210, 223, 233, 239, 250, 256, 257, 264, 265, 266, 269, 275, 281, 287, 288, 294, 300, 301,
+//   307, 308, 410, 422, 425, 433, 435, 455, 480, 500, 514, 530, 546, 553, 783, 788.
+// - [Clippy: clippy::format_push_string] `format!(..)` appended to existing `String`. Sites 367,
+//   369, 373.
+// - [Clippy: clippy::large_enum_variant] large size difference between variants. Sites 2500.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   848, 1374, 1496, 2276, 2297, 2307, 2317, 2327.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 168, 312.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 26, 27,
+//   28, 29, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 48, 49, 50, 51, 52, 53, 87, 168, 182,
+//   312.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (790).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   847, 899.
+
 use std::{
     collections::{BTreeMap, BTreeSet},
     fmt,
@@ -91,7 +120,10 @@ pub fn format_program(program: &ProgramAst) -> String {
     writeln!(&mut output, "  schema {};", enum_atom(&program.schema)).expect("String write");
     writeln!(&mut output, "  purpose {};", json_string(&program.purpose)).expect("String write");
     write!(&mut output, "  tags [").expect("String write");
-    write_joined(&mut output, program.tags.iter().map(|slug| slug.as_str()));
+    write_joined(
+        &mut output,
+        program.tags.iter().map(super::reference::Slug::as_str),
+    );
     writeln!(&mut output, "];").expect("String write");
     write!(&mut output, "  capabilities [").expect("String write");
     let mut capability_names = program
@@ -191,7 +223,10 @@ pub fn format_frequency(frequency: &FrequencyAst) -> String {
     )
     .expect("String write");
     write!(&mut output, "  tags [").expect("String write");
-    write_joined(&mut output, frequency.tags.iter().map(|slug| slug.as_str()));
+    write_joined(
+        &mut output,
+        frequency.tags.iter().map(super::reference::Slug::as_str),
+    );
     writeln!(&mut output, "];").expect("String write");
     for (id, parameter) in &frequency.parameters {
         match parameter {

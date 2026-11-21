@@ -1,9 +1,32 @@
+// non-lean-yet
+// Scope: mod allocation, const MAX_TIME_BYTES, const MAX_INSTANT_MS, const MAX_DURATION_MS.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 139.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   139.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 13.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   25, 32, 194, 198, 224.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 19, 100, 128, 171, 180, 184, 193, 216.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 94.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 1, 8,
+//   9, 10, 13, 14, 15, 19, 39, 46, 53, 63, 64, 65, 69, 79, 86, 94, 100, 120, 124, 128, 171, 180,
+//   184, 193, 212, 216.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites civil_instants:
+//   String (193), new: String (100), on_date: String (216), parse: String (19, 171), range: String
+//   (128, 184), validate_endpoints: String (180).
+
 pub mod allocation;
+
+use std::borrow::Cow;
 
 use chrono::{DateTime, Datelike, FixedOffset, LocalResult, NaiveDate, NaiveDateTime, TimeZone};
 pub use chrono_tz::Tz;
 use serde::{Deserialize, Serialize};
-use std::borrow::Cow;
 
 pub const MAX_TIME_BYTES: usize = 64;
 pub const MAX_INSTANT_MS: i64 = i64::MAX >> crate::hlc::COUNTER_BITS;

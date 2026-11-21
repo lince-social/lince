@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod maintenance, enum Change, fn allowed, struct StatusLabel.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 80, 82, 102, 134,
+//   229.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (238).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (48, 62, 67, 68, 78, 199, 210, 217, 220).
+
 use super::*;
 use crate::native::{actions::Action, castle_feed::button, edit_mode::label};
 use bevy::text::EditableText;

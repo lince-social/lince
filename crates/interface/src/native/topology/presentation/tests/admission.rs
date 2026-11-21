@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn demand, fn
+//   text_demand_tracks_reentry_and_current_children_without_suspending_their_state, fn
+//   secondary_outputs_and_overview_previews_keep_their_text_resolution.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn demand(world: &World, root: Entity, entity: Entity) -> Request {

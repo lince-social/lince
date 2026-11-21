@@ -1,3 +1,22 @@
+// non-lean-yet
+// Scope: struct ComputedStackIndex, struct UiStack, struct StackRoot, fn ui_stack_system.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 117, 206, 209, 359, 362, 473, 481.
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value. Sites
+//   130, 131, 151, 201, 545, 546, 561.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 58, 64, 525, 531.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 179, 583.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   179, 583.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 58, 61, 64, 85, 86, 87, 88, 89, 90, 91, 94, 187, 525, 531.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 22.
+// - [rustc: unreachable_pub] unreachable `pub` item. Sites 52.
+
 //! This module contains the systems that update the stored UI nodes stack
 
 use crate::{

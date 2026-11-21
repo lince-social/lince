@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod blit, mod core_2d, mod core_3d, mod deferred.
+// BeautifulRust (baseline lines):
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 45.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 1, 9,
+//   10, 11, 12, 18, 19, 20, 45.
+
 #![expect(missing_docs, reason = "Not all docs are written yet, see #3492.")]
 #![forbid(unsafe_code)]
 #![cfg_attr(docsrs, feature(doc_cfg))]

@@ -1,3 +1,29 @@
+// non-lean-yet
+// Scope: struct LayoutNode, struct UiTree, struct UiSurface, fn
+//   _assert_send_sync_ui_surface_impl_safe.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value. Sites
+//   283.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   120, 183, 203, 210, 221, 255, 319, 338.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 151, 156, 157, 168, 196, 199, 205, 214, 226, 247, 248, 315, 325,
+//   356.
+// - [review: §8 Unsafe] Check SAFETY proof and trait invariants. Sites 48, 52.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   get_layout:use_rounding (341), get_text_buffer:needs_buffer (439).
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 265, 266.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 431.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 338, 414.
+// - [Clippy: clippy::unnecessary_semicolon] unnecessary semicolon. Sites 231.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 87.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 21, 23,
+//   25, 68, 69, 431, 433, 435, 438.
+
 use bevy_platform::collections::hash_map::Entry;
 use core::fmt;
 use core::ops::{Deref, DerefMut};

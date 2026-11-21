@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn main, fn run.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 15, 16.
+
 use nucleus::plugins::{PROTOCOL, RpcRequest, RpcResponse};
 use std::path::PathBuf;
 use tokio::io::{AsyncWriteExt, BufReader};

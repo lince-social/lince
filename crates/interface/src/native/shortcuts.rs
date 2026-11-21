@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: mod commands, mod pointer, mod configuration, mod editor.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 87, 202.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (70, 98, 203).
+
 use bevy::prelude::*;
 
 mod commands;

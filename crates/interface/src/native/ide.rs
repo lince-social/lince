@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod actions, mod autosave, mod closing, mod credits.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 93, 250, 351,
+//   498, 585, 620, 665, 668, 768.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   500.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (227, 265, 267, 284, 300, 316, 371, 497, 498, 510, 583, 620, 666).
+
 use crate::i18n::Token as Tr;
 mod actions;
 mod autosave;

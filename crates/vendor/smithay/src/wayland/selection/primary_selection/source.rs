@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct SourceMetadata, struct PrimarySourceUserData.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (51, 70).
+
 use std::sync::Mutex;
 
 use wayland_protocols::wp::primary_selection::zv1::server::zwp_primary_selection_source_v1::{

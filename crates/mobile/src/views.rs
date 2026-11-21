@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: const FIELDS, const PAGE_SIZE, fn query, fn draft.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 77, 129.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   query:kanban (15).
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites apply: String
+//   (86), query: String (15).
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (36, 50).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   21.
+
 use crate::app::{Intent, Mobile, button, input, label};
 use bevy::prelude::*;
 use lince_interface::queries::ProteinDraft;

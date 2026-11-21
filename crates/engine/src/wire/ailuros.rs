@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: struct SessionConnection, fn control, fn enabled.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 59, 100.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 29, 35, 36,
+//   61, 67, 68, 85, 90, 96.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 57.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 138.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 29, 35, 36, 61, 67, 68, 85, 90, 96, 133, 137, 143.
+
 use super::Wire;
 use crate::{
     Engine, EngineError,

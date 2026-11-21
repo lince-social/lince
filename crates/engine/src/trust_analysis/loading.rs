@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct ContactEvaluation.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 142, 252, 261,
+//   303, 304, 305, 343, 353, 381, 399, 405, 406, 408.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 367.
+// - [Clippy probe: clippy::if_not_else] unnecessary boolean `not` operation. Sites 308.
+// - [Clippy probe: clippy::manual_let_else] this could be rewritten as `let...else`. Sites 326.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use crate::actions::ActionOutcome;
 use chrono::{DateTime, Utc};

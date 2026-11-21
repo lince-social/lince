@@ -1,4 +1,13 @@
-use super::*;
+// non-lean-yet
+// Scope: const CLIENT_SHADER, struct ClientMaterial, struct ExternalTextures, fn
+//   prepare_external_images.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 279, 283.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 47, 131, 132,
+//   134, 135, 183, 209, 224, 253, 264.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   298, 299.
+
 use bevy::{
     asset::AssetId,
     camera::RenderTarget,
@@ -7,14 +16,14 @@ use bevy::{
         Render, RenderApp, RenderPlugin, RenderSystems,
         render_asset::RenderAssets,
         render_resource::AsBindGroup,
-        renderer::{
-            RenderAdapter, RenderAdapterInfo, RenderDevice, RenderInstance, RenderQueue,
-        },
+        renderer::{RenderAdapter, RenderAdapterInfo, RenderDevice, RenderInstance, RenderQueue},
         settings::RenderCreation,
         texture::GpuImage,
     },
     shader::ShaderRef,
 };
+
+use super::*;
 
 const CLIENT_SHADER: Handle<Shader> =
     bevy::asset::uuid_handle!("ea275d71-dff9-47fa-a876-af27e5e9be74");

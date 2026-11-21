@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn stepping_and_resuming_preserve_the_headless_result_and_cancellation_replays.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use nucleus::simulation::{ReplayStatus, Stop, Verdict};
 use simulation::{artifacts, fixtures};
 

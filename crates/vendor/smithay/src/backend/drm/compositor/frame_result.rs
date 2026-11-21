@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct RenderFrameResult, struct SwapchainElement, enum FrameResultDamageElement, enum
+//   PrimaryPlaneElement.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 241, 322, 332.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 216, 265, 283.
+
 use std::collections::HashSet;
 
 use crate::{

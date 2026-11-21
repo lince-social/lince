@@ -1,3 +1,32 @@
+// non-lean-yet
+// Scope: mod activations, mod agents, mod assignments, mod behavior.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 97, 149, 172,
+//   245, 253, 301, 308, 309, 435, 566, 617, 651, 683, 829, 841, 864, 878, 892, 920, 950, 1074,
+//   1134, 1139, 1140, 1143, 1144, 1167, 1168, 1172, 1173, 1180, 1182, 1187, 1194, 1213, 1231, 1259,
+//   1264, 1281, 1286, 1291, 1314, 1316, 1358.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 211, 861,
+//   939, 1075.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites open: String
+//   (106).
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 97, 878, 1134, 1172, 1173, 1176, 1187, 1314, 1316.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 135.
+// - [Clippy probe: clippy::format_push_string] `format!(..)` appended to existing `String`. Sites
+//   1370.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 144, 145, 950.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 211, 861, 939, 1075.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option`
+//   value. Sites 1207.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 106.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 72.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   32, 35, 72, 91, 106, 386.
+
 use engine::{
     Engine,
     actions::{Action, ActionOutcome},

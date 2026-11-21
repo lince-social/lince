@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn scoped_environment_survives_yields_without_leaking_into_other_tasks, fn
+//   calendar_windows_follow_timezone_gaps_and_folds.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use nucleus::execution::Execution;
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

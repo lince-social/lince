@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct Version.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 //! The [`Version`] type.
 
 use std::{

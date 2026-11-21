@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: const CHRONO_LICENSE, const BEVY_LICENSE, const SYMBOLS_LICENSE, const LATO_LICENSE.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 pub const CHRONO_LICENSE: &str = include_str!("../licenses/chrono.txt");
 pub const BEVY_LICENSE: &str = include_str!("../licenses/bevy-MIT.txt");
 pub const SYMBOLS_LICENSE: &str =

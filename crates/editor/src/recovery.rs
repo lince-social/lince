@@ -1,15 +1,33 @@
-use crate::{Checkpoint, MAX_FILE_BYTES, Result};
+// non-lean-yet
+// Scope: const HEADER, const LIMIT, struct Draft, struct Store.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 219, 220, 223, 224, 234, 237.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 86, 93, 96, 203, 231, 234, 237.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   234, 237.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 31, 58, 115, 143.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 18, 25.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 18, 19,
+//   20, 21, 22, 25, 31, 58, 115, 143.
+
+use std::{
+    io::{Read, Write},
+    path::{Path, PathBuf},
+    sync::atomic::{AtomicU64, Ordering},
+};
+
 use cap_std::{
     ambient_authority,
     fs::{Dir, OpenOptions},
 };
 use ropey::Rope;
 use sha2::{Digest, Sha256};
-use std::{
-    io::{Read, Write},
-    path::{Path, PathBuf},
-    sync::atomic::{AtomicU64, Ordering},
-};
+
+use crate::{Checkpoint, MAX_FILE_BYTES, Result};
 
 const HEADER: &[u8] = b"LINCE-DRAFT-1\n";
 const LIMIT: usize = 3 * MAX_FILE_BYTES + 8192;

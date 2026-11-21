@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: fn action, struct Mail, fn
+//   ordinary_conversation_preserves_signed_fragments_without_promoting_incomplete_history, fn
+//   delivery_policy_denial_rolls_back_message_audience_fact_index_and_queue.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 1424, 1506, 1511, 1548, 1552, 1639.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 169,
+//   1564.
+
 use super::*;
 use nucleus::transfer::receipt_delivery::{
     Artifact, Command as DeliveryCommand, Delivery, Request, Source as DeliverySource,

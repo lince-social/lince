@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Assets, struct Lines, fn endpoints, fn line_transform.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 64, 81, 85, 89,
+//   90, 185.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (119, 129, 154, 172, 180, 184, 187, 190, 191).
+
 use super::*;
 
 #[derive(Resource)]

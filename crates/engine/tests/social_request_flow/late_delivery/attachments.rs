@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn thread, fn message, fn attachment, fn received.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use base64::{Engine as _, engine::general_purpose::STANDARD as B64};
 use nucleus::{MessageState, message::MessagePart, social::requests::*};

@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct SettingsSnapshot, fn settings, enum Definition, struct Selection.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 26, 30, 32, 69,
+//   74, 75, 105, 111.
+
 use super::*;
 use std::{borrow::Cow, sync::Arc};
 

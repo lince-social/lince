@@ -1,5 +1,15 @@
-use crate::grammar::grammar as ast;
-use crate::{Diagnostic, diagnostic};
+// non-lean-yet
+// Scope: fn parse, fn format, fn binary, fn quoted.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 27, 28, 36, 54.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   111.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 4.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 24,
+//   114, 127.
+
+use crate::{Diagnostic, diagnostic, grammar::grammar as ast};
 
 pub fn parse(source: &str) -> Result<ast::Expression, Diagnostic> {
     if source.len() > 65536 {

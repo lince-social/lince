@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: static CONTEXT_ID, struct DummyRenderer, enum DummyError, struct DummyFramebuffer.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 151.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 71, 239.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 1.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 101, 273.
+// - [review: §5 Panics] Check unimplemented! reachability and caller contract. Sites 113, 122, 176,
+//   190, 194, 198, 207.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (157).
+
 #![allow(missing_docs)]
 
 #[cfg(all(

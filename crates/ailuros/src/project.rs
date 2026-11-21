@@ -1,6 +1,26 @@
-use crate::{Result, serial::Cancellation};
-use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha384};
+// non-lean-yet
+// Scope: const SDK, mod iroh, const NIX_SDK, fn source_files.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 438, 448, 452, 457, 462, 469, 599, 748, 751, 927, 1040, 1044, 1046, 1048, 1105, 1107,
+//   1108, 1110.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 253, 325, 327, 412, 478, 615, 1077.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   1077.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 359, 500.
+// - [Clippy: clippy::manual_is_multiple_of] manual implementation of `.is_multiple_of()`. Sites
+//   379.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   224, 454, 459, 464, 674, 677, 707, 747, 761, 812, 818.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 135, 159, 163, 220, 367, 373, 571, 686, 690, 807, 815, 823.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 14, 18,
+//   107, 108, 109, 110, 111, 112, 113, 135, 159, 163, 220, 339, 340, 341, 342, 347, 348, 349, 350,
+//   351, 352, 353, 354, 359, 360, 361, 362, 363, 367, 373, 500, 502, 503, 508, 509, 510, 511, 571,
+//   686, 690, 807, 815, 823.
+
 use std::{
     collections::VecDeque,
     fs,
@@ -9,6 +29,11 @@ use std::{
     process::{Command, Stdio},
     time::Duration,
 };
+
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha384};
+
+use crate::{Result, serial::Cancellation};
 
 const SDK: &str = "5.5.2";
 pub mod iroh;

@@ -1,5 +1,8 @@
-use super::super::{cargo_command, checked};
-use serde_json::json;
+// non-lean-yet
+// Scope: type Result, fn run, fn example, fn ready.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 53, 59, 62, 65.
+
 use std::{
     env,
     ffi::OsString,
@@ -9,6 +12,10 @@ use std::{
     process::{Command, Stdio},
     time::Duration,
 };
+
+use serde_json::json;
+
+use super::super::{cargo_command, checked};
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 

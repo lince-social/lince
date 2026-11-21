@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn local_search_requires_selection_and_refuses_stale_results, fn
+//   routing_is_opt_in_bounded_and_old_geometry_cannot_replace_a_new_request.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use lince_map::{
     Coordinate,
     navigation::{Geocoder, Mode, Place, Provider, Route, Router, Selection, Settings},

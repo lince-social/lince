@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct GroupRows, struct LayoutPreparation, fn update, fn update_layout.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 125.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (46).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   164.
+
 use super::*;
 use crate::host::performance::{self, Count, Stage};
 

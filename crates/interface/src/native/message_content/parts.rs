@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct Parts, struct Content.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 24, 25, 82.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   68, 69.
+
 use nucleus::message::MessagePart;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{

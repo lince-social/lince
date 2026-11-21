@@ -1,3 +1,25 @@
+// non-lean-yet
+// Scope: fn process, fn run_tier, fn
+//   resource_tiers_measure_many_owner_intake_control_progress_and_disk_cost, fn
+//   ordinary_identity_flood_cannot_reset_global_counters_or_spend_control_reserve.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 40, 70, 71, 74,
+//   117, 159.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   68.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (31, 34, 36, 46, 52, 76, 96, 101, 120, 121, 131, 136, 140, 145, 153, 164).
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 63.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 70.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 151, 165, 166.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value.
+//   Sites 20.
+// - [Clippy probe: clippy::print_stdout] Check CLI, Cargo, fixture, or library output contract
+//   before changing output. Sites 223.
+
 use super::*;
 use std::time::Instant;
 

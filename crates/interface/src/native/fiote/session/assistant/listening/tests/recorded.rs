@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod frozen, mod live, mod performance, mod speech_reference.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 mod frozen;

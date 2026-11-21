@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: type SettingsResult, struct Settings, struct Confirmation, struct DeletionPlugin.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 90, 349.
+
 use crate::native::{
     actions::{Action, ActionButton, KeyBinding, KeyBindings, Modifiers},
     edit_mode::label,

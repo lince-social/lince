@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Pending, fn place_with.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   99, 105, 106, 107, 111, 112, 113, 117, 118, 126.
+
 use super::*;
 use crate::layout::desktop::SolvedItem;
 

@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn text_nodes.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (11).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 9, 10.
+
 use super::*;
 use accesskit::{NodeId, TreeUpdate};
 use bevy::ecs::change_detection::DetectChangesMut;

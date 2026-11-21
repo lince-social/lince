@@ -1,6 +1,17 @@
-use crate::StoreError;
+// non-lean-yet
+// Scope: fn invalid, fn settings, fn save_on, fn people.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 5.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 9, 19, 44, 60, 72.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 9, 19,
+//   44, 60, 72.
+
 use nucleus::location::{Choice, Settings};
 use sqlx::{SqliteConnection, SqlitePool};
+
+use crate::StoreError;
 
 fn invalid(error: impl ToString) -> StoreError {
     StoreError::Protocol(error.to_string())

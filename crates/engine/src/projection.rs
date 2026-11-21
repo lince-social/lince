@@ -1,3 +1,28 @@
+// non-lean-yet
+// Scope: mod schedule, fn execution_identity, struct Request, struct Queue.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 47, 93, 114, 142,
+//   190, 191, 192, 193, 194, 195, 207, 229, 258, 378, 421, 425, 443, 452, 477, 479, 489, 498, 502,
+//   509, 531.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 328, 486.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 328.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 191, 194, 195.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 22, 45, 77, 80, 92, 113, 158, 277, 311.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 100, 338, 778.
+// - [Clippy probe: clippy::missing_panics_doc] State the panic conditions for exported functions.
+//   Sites 100.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 774.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 60, 67, 298.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   18, 60, 61, 62, 63, 67, 72, 100, 298, 299, 300, 301, 302, 303, 338, 778.
+
 use std::collections::BTreeMap;
 use std::sync::{
     Arc, Mutex,

@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn prepare, fn simulation, fn execute, fn complete.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (9, 28, 31, 35, 48).
+
 use super::*;
 
 pub(super) fn prepare(world: &mut World, root: Entity) {

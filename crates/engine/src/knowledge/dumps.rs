@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: fn parse, fn wikidata, fn wikipedia, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 49, 65, 167.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 138, 141.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   144.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 81, 144.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 81, 144.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 180, 181, 183.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 138, 141.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value.
+//   Sites 130.
+
 use super::{EngineError, invalid, wikimedia};
 use nucleus::knowledge::{Archive, ITEM_LIMIT, Source};
 use serde_json::{Value, json};

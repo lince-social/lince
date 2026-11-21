@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: enum CapabilityFamily, enum Capability, struct CapabilitySet.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 6, 40.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 8,
+//   10, 12, 14, 16, 18, 20, 22, 24, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64, 66, 68, 70,
+//   72, 74, 76, 78, 80, 82, 84, 86, 88, 90, 92, 94, 96, 98, 100, 102, 104, 106, 108, 110, 112, 114,
+//   118, 162, 165, 169, 173, 177, 181.
+
 use std::collections::BTreeSet;
 
 use serde::{Deserialize, Serialize};

@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod allocator, mod input, mod renderer, mod drm.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 //! Backend (rendering/input) helpers
 //!
 //! This module provides helpers for interaction with the operating system.

@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: fn invocation, fn add, fn action, fn decision.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 18.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 10, 239.
+// - [Clippy probe: clippy::missing_panics_doc] State the panic conditions for exported functions.
+//   Sites 83.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   83.
+
 use nucleus::simulation::{Predicate, Quantity};
 use serde_json::{Value, json};
 

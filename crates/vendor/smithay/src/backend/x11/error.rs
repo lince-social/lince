@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: enum X11Error, enum MissingExtensionError, enum CreateWindowError, enum
+//   AllocateBuffersError.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::io;
 
 use rustix::io::Errno;

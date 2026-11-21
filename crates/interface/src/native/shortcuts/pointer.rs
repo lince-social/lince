@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct PointerChord, struct PointerBinding, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites from_input:
+//   String (18).
+
 use super::{Shortcut, model::modifier_name};
 use crate::{host::Manipulation, native::actions::Modifiers};
 use bevy::input::mouse::MouseButton;

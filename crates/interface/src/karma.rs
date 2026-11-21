@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: mod transfers, mod suggestions, struct SharedField, struct Rule.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 81, 85, 103, 104,
+//   105, 112.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (382, 384).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   35, 173, 175, 246, 254, 256, 260, 266, 268, 271, 275, 301, 309.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (216).
+
 use nucleus::karma::rule_field::{RuleFieldInput, RuleFieldKind};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;

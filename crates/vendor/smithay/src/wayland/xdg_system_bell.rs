@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: trait XdgSystemBellHandler, struct XdgSystemBellState, macro delegate_xdg_system_bell.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 59.
+
 //! XDG System Bell
 //!
 //! This protocol enables clients to ring the system bell.

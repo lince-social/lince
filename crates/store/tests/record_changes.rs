@@ -1,7 +1,18 @@
+// non-lean-yet
+// Scope: fn cell, fn plain, fn a_local_edit_is_logged_as_local_and_names_no_winner, fn
+//   entries_age_out.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 95.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 93.
+
 use nucleus::RecordKind;
-use store::Store;
-use store::record_changes::{self, Cause};
-use store::records::NewRecord;
+use store::{
+    Store,
+    record_changes::{self, Cause},
+    records::NewRecord,
+};
 
 async fn cell() -> Store {
     Store::open_memory().await.expect("in-memory store")

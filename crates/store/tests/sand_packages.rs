@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn package, fn
+//   received_packages_survive_reopening_and_stay_private_without_executable_records, fn
+//   immutable_package_versions_keep_publication_choices_on_repeated_receipt, fn
+//   catalogue_pages_use_metadata_and_public_index_instead_of_loading_payloads.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 140.
+
 #![cfg(test)]
 
 use nucleus::sand_package::{self as model, Identity, Kind, License, Manifest, Package};

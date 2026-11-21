@@ -1,7 +1,11 @@
-use super::super::{Result, cargo_command};
-use crate::file_sha256 as digest;
-use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
+// non-lean-yet
+// Scope: mod attribution, mod browser, mod diagnostics, mod metrics.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 597, 599, 2660,
+//   2955.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   449, 686, 687, 688, 689, 690, 1130.
+
 use std::{
     collections::BTreeMap,
     env,
@@ -9,26 +13,36 @@ use std::{
     fs::{self, File, OpenOptions},
     io::{IsTerminal, Read, Write},
     net::TcpListener,
-    os::unix::fs::{MetadataExt, OpenOptionsExt, PermissionsExt},
-    os::unix::process::CommandExt,
+    os::unix::{
+        fs::{MetadataExt, OpenOptionsExt, PermissionsExt},
+        process::CommandExt,
+    },
     path::{Path, PathBuf},
     process::{Child, Command, ExitStatus},
     thread,
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
+
+use super::super::{Result, cargo_command};
+use crate::file_sha256 as digest;
+
 mod attribution;
+mod automation;
 mod browser;
 mod diagnostics;
+mod final_suite;
 mod metrics;
 mod observe;
-mod automation;
-mod final_suite;
 
-const CONNECTED_CELL_TEST: &str = "presentation::tests::connected_cell_attaches_before_render_plugins_and_protects_failed_saves";
+const CONNECTED_CELL_TEST: &str =
+    "presentation::tests::connected_cell_attaches_before_render_plugins_and_protects_failed_saves";
 const QUIET_INSPECTOR_TEST: &str = "runtime::tests::availability::record_loading_and_deletion_wake_a_quiet_worker_without_test_input";
 const PERMISSION_INSPECTOR_TEST: &str = "runtime::tests::availability::permission::real_permission_refusal_and_refresh_keep_the_captured_source_and_native_draft";
-const POINTER_DRAG_CANCEL_TEST: &str = "server::tests::cancelling_an_accepted_pointer_drag_cannot_perform_its_drop_and_retires_once";
+const POINTER_DRAG_CANCEL_TEST: &str =
+    "server::tests::cancelling_an_accepted_pointer_drag_cannot_perform_its_drop_and_retires_once";
 const FILE_HOVER_SCROLL_TEST: &str = "runtime::tests::hover::scroll::stationary_file_edge_scroll_reaches_its_real_limit_and_cancels_without_late_wakes";
 const FILE_HOVER_LIFETIME_TESTS: &[&str] = &[
     "server::tests::transfers_tests::dispatch::hover_lifetime::a_real_drag_crosses_outputs_without_reusing_the_previous_hover_or_moving_its_source",
@@ -492,7 +506,10 @@ impl Configuration {
     }
 
     fn session_seconds(&self) -> u64 {
-        90 + u64::from(self.lifecycle_rounds) * 55 + self.observation_seconds + self.soak_seconds + if self.automation { 150 } else { 0 }
+        90 + u64::from(self.lifecycle_rounds) * 55
+            + self.observation_seconds
+            + self.soak_seconds
+            + if self.automation { 150 } else { 0 }
     }
 }
 
@@ -580,25 +597,26 @@ fn resource_sample(pid: rustix::process::Pid, elapsed_ms: u128) -> ResourceSampl
             let Some(client) = fields.get("drm-client-id") else {
                 continue;
             };
-            let Some(device) = fields
-                .get("drm-pdev")
-                .cloned()
-                .or_else(|| {
-                    fs::read_link(base.join("fd").join(entry.file_name()))
-                        .ok()
-                        .filter(|path| path.starts_with("/dev/dri"))
-                        .map(|path| path.to_string_lossy().into_owned())
-                })
-            else {
+            let Some(device) = fields.get("drm-pdev").cloned().or_else(|| {
+                fs::read_link(base.join("fd").join(entry.file_name()))
+                    .ok()
+                    .filter(|path| path.starts_with("/dev/dri"))
+                    .map(|path| path.to_string_lossy().into_owned())
+            }) else {
                 continue;
             };
-            let known = drm_clients.entry(format!("{device}:{client}")).or_insert_with(BTreeMap::new);
+            let known = drm_clients
+                .entry(format!("{device}:{client}"))
+                .or_insert_with(BTreeMap::new);
             for (name, value) in fields {
-                known.entry(name.clone()).and_modify(|previous| {
-                    if drm_engine_ns(&name, &value) > drm_engine_ns(&name, previous) {
-                        *previous = value.clone();
-                    }
-                }).or_insert(value);
+                known
+                    .entry(name.clone())
+                    .and_modify(|previous| {
+                        if drm_engine_ns(&name, &value) > drm_engine_ns(&name, previous) {
+                            *previous = value.clone();
+                        }
+                    })
+                    .or_insert(value);
             }
         }
     }
@@ -630,21 +648,32 @@ fn drm_engine_window(previous: &ResourceSample, current: &ResourceSample) -> ser
     let mut counters = Vec::new();
     for (client, fields) in current {
         for (name, value) in fields {
-            let Some(end) = drm_engine_ns(name, value) else { continue; };
-            let start = previous.get(client).and_then(|fields| fields.get(name))
+            let Some(end) = drm_engine_ns(name, value) else {
+                continue;
+            };
+            let start = previous
+                .get(client)
+                .and_then(|fields| fields.get(name))
                 .and_then(|value| drm_engine_ns(name, value));
-            let delta = start.and_then(|start| end.checked_sub(start)).filter(|_| elapsed_ms > 0);
+            let delta = start
+                .and_then(|start| end.checked_sub(start))
+                .filter(|_| elapsed_ms > 0);
             let status = match (start, delta) {
                 (_, Some(_)) => "sampled",
                 (None, None) => "no matching earlier counter",
                 (Some(_), None) if elapsed_ms == 0 => "empty observation interval",
                 (Some(_), None) => "counter decreased",
             };
-            counters.push(serde_json::json!({"device_client":client, "driver":fields.get("drm-driver"),
-                "engine":name, "elapsed_engine_ns":delta, "status":status}));
+            counters.push(
+                serde_json::json!({"device_client":client, "driver":fields.get("drm-driver"),
+                "engine":name, "elapsed_engine_ns":delta, "status":status}),
+            );
         }
     }
-    let departed: Vec<_> = previous.keys().filter(|client| !current.contains_key(*client)).collect();
+    let departed: Vec<_> = previous
+        .keys()
+        .filter(|client| !current.contains_key(*client))
+        .collect();
     serde_json::json!({"elapsed_ms":elapsed_ms, "counters":counters, "departed_clients":departed,
         "status":if counters.is_empty() { "no DRM engine time counters in nanoseconds" } else { "per-client engine time; clients may be shared across processes" }})
 }
@@ -714,11 +743,15 @@ pub(super) fn dispatch(arguments: &[OsString]) -> Result<()> {
             println!(
                 "cargo xtask park validate analyze LOG [--warmup 10] [--seconds 60] [--minimum-fps 57] [--surface ID]"
             );
-            println!("cargo xtask park validate attribute PHASES_LOG [--pid PID] [--frames FRAME_LOG]");
+            println!(
+                "cargo xtask park validate attribute PHASES_LOG [--pid PID] [--frames FRAME_LOG]"
+            );
             println!(
                 "Fixtures: {{\"terminal\":{{\"program\":\"xdg-terminal-exec\",\"arguments\":[]}},\"showoff\":false,\"clients\":[]}}"
             );
-            println!("Use automation:true in a separate private fixture for the authorized physical-session SDK probe; preserve a selected provider helper in its own fixture. Preparation always verifies the selected optimized candidate's nested automation path.");
+            println!(
+                "Use automation:true in a separate private fixture for the authorized physical-session SDK probe; preserve a selected provider helper in its own fixture. Preparation always verifies the selected optimized candidate's nested automation path."
+            );
             println!(
                 "Preparation checks and compiles before emitting one physical-session command."
             );
@@ -782,7 +815,6 @@ fn executable(program: &Path) -> Result<PathBuf> {
     Ok(candidate)
 }
 
-
 fn bounded(command: &mut Command, deadline: Duration) -> Result<(ExitStatus, u128)> {
     let start = Instant::now();
     let mut children = Children(vec![ManagedChild::spawn(command)?]);
@@ -815,12 +847,22 @@ fn preparation_step(directory: &Path, name: &str, arguments: &[&str]) -> Result<
     preparation_step_with_environment(directory, name, arguments, &[])
 }
 
-fn copy_dependency_source(source: &Path, destination: &Path, relative: &Path, hashes: &mut BTreeMap<String, String>) -> Result<()> {
+fn copy_dependency_source(
+    source: &Path,
+    destination: &Path,
+    relative: &Path,
+    hashes: &mut BTreeMap<String, String>,
+) -> Result<()> {
     fs::create_dir(destination).map_err(error)?;
-    let entries = fs::read_dir(source).map_err(error)?.collect::<std::io::Result<Vec<_>>>().map_err(error)?;
+    let entries = fs::read_dir(source)
+        .map_err(error)?
+        .collect::<std::io::Result<Vec<_>>>()
+        .map_err(error)?;
     for entry in entries {
         let name = entry.file_name();
-        if matches!(name.to_str(), Some("target" | ".git" | "Cargo.lock")) { continue; }
+        if matches!(name.to_str(), Some("target" | ".git" | "Cargo.lock")) {
+            continue;
+        }
         let kind = entry.file_type().map_err(error)?;
         let target = destination.join(&name);
         let relative = relative.join(&name);
@@ -828,9 +870,18 @@ fn copy_dependency_source(source: &Path, destination: &Path, relative: &Path, ha
             copy_dependency_source(&entry.path(), &target, &relative, hashes)?;
         } else if kind.is_file() {
             fs::copy(entry.path(), &target).map_err(error)?;
-            hashes.insert(relative.to_str().ok_or("Dependency source paths must be UTF-8")?.to_owned(), digest(&target)?);
+            hashes.insert(
+                relative
+                    .to_str()
+                    .ok_or("Dependency source paths must be UTF-8")?
+                    .to_owned(),
+                digest(&target)?,
+            );
         } else {
-            return Err(format!("Refusing a nonregular dependency source: {}", entry.path().display()));
+            return Err(format!(
+                "Refusing a nonregular dependency source: {}",
+                entry.path().display()
+            ));
         }
     }
     Ok(())
@@ -840,16 +891,28 @@ fn prepare_smithay_source(directory: &Path) -> Result<String> {
     let root = env::current_dir().map_err(error)?;
     let destination = directory.join("smithay-dependency");
     let mut hashes = BTreeMap::new();
-    copy_dependency_source(&root.join("crates/vendor/smithay"), &destination, Path::new(""), &mut hashes)?;
+    copy_dependency_source(
+        &root.join("crates/vendor/smithay"),
+        &destination,
+        Path::new(""),
+        &mut hashes,
+    )?;
     isolate_dependency_manifest(&destination.join("Cargo.toml"))?;
     fs::copy(root.join("Cargo.lock"), destination.join("Cargo.lock")).map_err(error)?;
-    write_json(&directory.join("smithay-source.json"), &serde_json::json!({
-        "source": root.join("crates/vendor/smithay"), "copy": destination,
-        "files_sha256": hashes, "seed_lock_sha256": digest(&root.join("Cargo.lock"))?,
-        "prepared_manifest_sha256": digest(&destination.join("Cargo.toml"))?,
-        "scope": "dependency atomic request unit fixtures; no kernel submission or physical acceptance",
-    }))?;
-    destination.join("Cargo.toml").to_str().map(str::to_owned).ok_or_else(|| "Dependency manifest must be UTF-8".into())
+    write_json(
+        &directory.join("smithay-source.json"),
+        &serde_json::json!({
+            "source": root.join("crates/vendor/smithay"), "copy": destination,
+            "files_sha256": hashes, "seed_lock_sha256": digest(&root.join("Cargo.lock"))?,
+            "prepared_manifest_sha256": digest(&destination.join("Cargo.toml"))?,
+            "scope": "dependency atomic request unit fixtures; no kernel submission or physical acceptance",
+        }),
+    )?;
+    destination
+        .join("Cargo.toml")
+        .to_str()
+        .map(str::to_owned)
+        .ok_or_else(|| "Dependency manifest must be UTF-8".into())
 }
 
 fn isolate_dependency_manifest(path: &Path) -> Result<()> {
@@ -947,21 +1010,69 @@ fn preparation_step_with_environment(
         "compositor-appearance-cost" => &[APPEARANCE_COST_TEST],
         _ => &[],
     };
-    let groups = [required,
-        if name == "window-layout-policy" { WORKSPACE_HISTORY_LOWER_TESTS } else { &[] },
-        if name == "window-layout-policy" { OUTPUT_AFFINITY_LOWER_TESTS } else { &[] },
-        if name == "window-layout-policy" { FOCUS_POLICY_LOWER_TESTS } else { &[] },
-        if name == "window-layout-policy" { OPENING_LIFETIME_LOWER_TESTS } else { &[] },
-        if name == "window-layout-policy" { AUTOMATION_MODEL_TESTS } else { &[] },
-        if name == "window-layout-policy" { CAPTURE_ALIAS_POLICY_TESTS } else { &[] },
-        if name == "window-layout-policy" { WINDOWED_FULLSCREEN_MODEL_TESTS } else { &[] },
-        if name == "window-layout-policy" { COMPACT_MODEL_TESTS } else { &[] },
-        if name == "window-layout-policy" { SCRATCH_MODEL_TESTS } else { &[] },
-        if name == "window-layout-policy" { ACCESSIBILITY_CONTEXT_TESTS } else { &[] },
-        if name == "keyboard-shortcuts" { &[WINDOWED_FULLSCREEN_CONFIGURATION_TEST] } else { &[] }];
+    let groups = [
+        required,
+        if name == "window-layout-policy" {
+            WORKSPACE_HISTORY_LOWER_TESTS
+        } else {
+            &[]
+        },
+        if name == "window-layout-policy" {
+            OUTPUT_AFFINITY_LOWER_TESTS
+        } else {
+            &[]
+        },
+        if name == "window-layout-policy" {
+            FOCUS_POLICY_LOWER_TESTS
+        } else {
+            &[]
+        },
+        if name == "window-layout-policy" {
+            OPENING_LIFETIME_LOWER_TESTS
+        } else {
+            &[]
+        },
+        if name == "window-layout-policy" {
+            AUTOMATION_MODEL_TESTS
+        } else {
+            &[]
+        },
+        if name == "window-layout-policy" {
+            CAPTURE_ALIAS_POLICY_TESTS
+        } else {
+            &[]
+        },
+        if name == "window-layout-policy" {
+            WINDOWED_FULLSCREEN_MODEL_TESTS
+        } else {
+            &[]
+        },
+        if name == "window-layout-policy" {
+            COMPACT_MODEL_TESTS
+        } else {
+            &[]
+        },
+        if name == "window-layout-policy" {
+            SCRATCH_MODEL_TESTS
+        } else {
+            &[]
+        },
+        if name == "window-layout-policy" {
+            ACCESSIBILITY_CONTEXT_TESTS
+        } else {
+            &[]
+        },
+        if name == "keyboard-shortcuts" {
+            &[WINDOWED_FULLSCREEN_CONFIGURATION_TEST]
+        } else {
+            &[]
+        },
+    ];
     if groups.iter().any(|group| !group.is_empty()) {
         let log = fs::read_to_string(directory.join(format!("{name}.log"))).map_err(error)?;
-        for required in groups.into_iter().flatten() { inspector_result(&log, required)?; }
+        for required in groups.into_iter().flatten() {
+            inspector_result(&log, required)?;
+        }
     }
     Ok(())
 }
@@ -1098,9 +1209,13 @@ fn prepare_capture_probe(directory: &Path) -> Result<String> {
 }
 
 fn prebuilt_probe(name: &str) -> Result<Option<PathBuf>> {
-    let Some(directory) = env::var_os("LINCE_PARK_VALIDATION_BINARIES") else { return Ok(None); };
+    let Some(directory) = env::var_os("LINCE_PARK_VALIDATION_BINARIES") else {
+        return Ok(None);
+    };
     let directory = PathBuf::from(directory);
-    if !directory.is_absolute() { return Err("LINCE_PARK_VALIDATION_BINARIES must be absolute".into()); }
+    if !directory.is_absolute() {
+        return Err("LINCE_PARK_VALIDATION_BINARIES must be absolute".into());
+    }
     Ok(Some(executable(&directory.join(name))?))
 }
 
@@ -1163,7 +1278,11 @@ fn prepare(configuration: &Path, installed: Option<&Path>) -> Result<()> {
     prepare_into(configuration, installed, None).map(|_| ())
 }
 
-fn prepare_into(configuration: &Path, installed: Option<&Path>, destination: Option<&Path>) -> Result<PathBuf> {
+fn prepare_into(
+    configuration: &Path,
+    installed: Option<&Path>,
+    destination: Option<&Path>,
+) -> Result<PathBuf> {
     let selected = installed
         .map(|path| -> Result<PathBuf> {
             if !path.is_absolute() {
@@ -1223,7 +1342,9 @@ fn prepare_into(configuration: &Path, installed: Option<&Path>, destination: Opt
     executable(Path::new("dbus-run-session"))?;
     executable(Path::new("dbus-update-activation-environment"))?;
     let repository = env::current_dir().map_err(error)?;
-    let base = destination.map(Path::to_path_buf).unwrap_or_else(|| repository.join("target/park-validation"));
+    let base = destination
+        .map(Path::to_path_buf)
+        .unwrap_or_else(|| repository.join("target/park-validation"));
     fs::create_dir_all(&base).map_err(error)?;
     let metadata = fs::symlink_metadata(&base).map_err(error)?;
     if !metadata.is_dir() || metadata.uid() != rustix::process::geteuid().as_raw() {
@@ -1282,18 +1403,49 @@ fn prepare_into(configuration: &Path, installed: Option<&Path>, destination: Opt
         for (name, arguments) in [
             (
                 "smithay-atomic-lock",
-                vec!["metadata", "--format-version", "1", "--manifest-path", smithay_manifest.as_str(), "--no-default-features",
-                    "--features", "backend_drm,renderer_gl,wayland_frontend,desktop"],
+                vec![
+                    "metadata",
+                    "--format-version",
+                    "1",
+                    "--manifest-path",
+                    smithay_manifest.as_str(),
+                    "--no-default-features",
+                    "--features",
+                    "backend_drm,renderer_gl,wayland_frontend,desktop",
+                ],
             ),
             (
                 "smithay-atomic-debug",
-                vec!["test", "--locked", "--manifest-path", smithay_manifest.as_str(), "--no-default-features",
-                    "--features", "backend_drm,renderer_gl,wayland_frontend,desktop", "--lib", "backend::drm::surface::atomic::test::", "--", "--test-threads=1"],
+                vec![
+                    "test",
+                    "--locked",
+                    "--manifest-path",
+                    smithay_manifest.as_str(),
+                    "--no-default-features",
+                    "--features",
+                    "backend_drm,renderer_gl,wayland_frontend,desktop",
+                    "--lib",
+                    "backend::drm::surface::atomic::test::",
+                    "--",
+                    "--test-threads=1",
+                ],
             ),
             (
                 "smithay-atomic-release",
-                vec!["test", "--locked", "--release", "--manifest-path", smithay_manifest.as_str(), "--no-default-features",
-                    "--features", "backend_drm,renderer_gl,wayland_frontend,desktop", "--lib", "backend::drm::surface::atomic::test::", "--", "--test-threads=1"],
+                vec![
+                    "test",
+                    "--locked",
+                    "--release",
+                    "--manifest-path",
+                    smithay_manifest.as_str(),
+                    "--no-default-features",
+                    "--features",
+                    "backend_drm,renderer_gl,wayland_frontend,desktop",
+                    "--lib",
+                    "backend::drm::surface::atomic::test::",
+                    "--",
+                    "--test-threads=1",
+                ],
             ),
             (
                 "validation-tooling",
@@ -1424,249 +1576,644 @@ fn prepare_into(configuration: &Path, installed: Option<&Path>, destination: Opt
             (
                 "file-hover-lifetime",
                 vec![
-                    "test", "--locked", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", "server::tests::transfers_tests::dispatch::hover_lifetime::", "--", "--ignored", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    "server::tests::transfers_tests::dispatch::hover_lifetime::",
+                    "--",
+                    "--ignored",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "file-hover-scroll",
                 vec![
-                    "test", "--locked", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", FILE_HOVER_SCROLL_TEST, "--", "--ignored", "--exact", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    FILE_HOVER_SCROLL_TEST,
+                    "--",
+                    "--ignored",
+                    "--exact",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "workspace-history",
                 vec![
-                    "test", "--locked", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", WORKSPACE_HISTORY_TEST, "--", "--ignored", "--exact", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    WORKSPACE_HISTORY_TEST,
+                    "--",
+                    "--ignored",
+                    "--exact",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "output-affinity-recovery",
                 vec![
-                    "test", "--locked", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", OUTPUT_AFFINITY_TEST, "--", "--ignored", "--exact", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    OUTPUT_AFFINITY_TEST,
+                    "--",
+                    "--ignored",
+                    "--exact",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "focus-policy-settings",
                 vec![
-                    "test", "--locked", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", FOCUS_POLICY_SETTINGS_TEST, "--", "--ignored", "--exact", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    FOCUS_POLICY_SETTINGS_TEST,
+                    "--",
+                    "--ignored",
+                    "--exact",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "focus-policy-clients",
                 vec![
-                    "test", "--locked", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", FOCUS_POLICY_CLIENT_TEST, "--", "--ignored", "--exact", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    FOCUS_POLICY_CLIENT_TEST,
+                    "--",
+                    "--ignored",
+                    "--exact",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "focus-policy-motion",
                 vec![
-                    "test", "--locked", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", FOCUS_POLICY_MOTION_TEST, "--", "--ignored", "--exact", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    FOCUS_POLICY_MOTION_TEST,
+                    "--",
+                    "--ignored",
+                    "--exact",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "opening-rule-workflow",
                 vec![
-                    "test", "--locked", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", OPENING_RULE_WORKFLOW_TEST, "--", "--ignored", "--exact", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    OPENING_RULE_WORKFLOW_TEST,
+                    "--",
+                    "--ignored",
+                    "--exact",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "opening-rule-readiness",
                 vec![
-                    "test", "--locked", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", OPENING_RULE_READINESS_TEST, "--", "--ignored", "--exact", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    OPENING_RULE_READINESS_TEST,
+                    "--",
+                    "--ignored",
+                    "--exact",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "automation-protocol",
                 vec![
-                    "test", "--locked", "-p", "lince-park", "--features", "server-tests", "--lib", "--",
-                    "server::control::flow::tests::", "server::tests::control_tests::", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    "server-tests",
+                    "--lib",
+                    "--",
+                    "server::control::flow::tests::",
+                    "server::tests::control_tests::",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "automation-input",
                 vec![
-                    "test", "--locked", "--release", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", "server::tests::transfers_tests::dispatch::control::", "--", "--ignored", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "--release",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    "server::tests::transfers_tests::dispatch::control::",
+                    "--",
+                    "--ignored",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "automation-settings",
                 vec![
-                    "test", "--locked", "--release", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", AUTOMATION_RENDER_TEST, "--", "--ignored", "--exact", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "--release",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    AUTOMATION_RENDER_TEST,
+                    "--",
+                    "--ignored",
+                    "--exact",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "native-pointer-ownership",
                 vec![
-                    "test", "--locked", "--release", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", "server::tests::transfers_tests::dispatch::native_pointer::", "--", "--ignored", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "--release",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    "server::tests::transfers_tests::dispatch::native_pointer::",
+                    "--",
+                    "--ignored",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "accessibility-platform",
                 vec![
-                    "test", "--locked", "--release", "-p", "lince-park", "--features", "nested,server-tests,accessibility-gate",
-                    "--lib", "presentation::accessibility::platform::", "--", "--ignored", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "--release",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    "nested,server-tests,accessibility-gate",
+                    "--lib",
+                    "presentation::accessibility::platform::",
+                    "--",
+                    "--ignored",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "magnification-settings",
                 vec![
-                    "test", "--locked", "--release", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", MAGNIFICATION_SETTINGS_TEST, "--", "--ignored", "--exact", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "--release",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    MAGNIFICATION_SETTINGS_TEST,
+                    "--",
+                    "--ignored",
+                    "--exact",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "magnification-client",
                 vec![
-                    "test", "--locked", "--release", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", MAGNIFICATION_CLIENT_TEST, "--", "--ignored", "--exact", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "--release",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    MAGNIFICATION_CLIENT_TEST,
+                    "--",
+                    "--ignored",
+                    "--exact",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "accessibility-protection",
                 vec![
-                    "test", "--locked", "--release", "-p", "lince-park", "--features", "nested,server-tests,accessibility-gate",
-                    "--lib", ACCESSIBILITY_PROTECTION_TEST, "--", "--ignored", "--exact", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "--release",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    "nested,server-tests,accessibility-gate",
+                    "--lib",
+                    ACCESSIBILITY_PROTECTION_TEST,
+                    "--",
+                    "--ignored",
+                    "--exact",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "accessibility-mixed",
                 vec![
-                    "test", "--locked", "--release", "-p", "lince-park", "--features", "nested,server-tests,accessibility-gate",
-                    "--lib", ACCESSIBILITY_MIXED_TEST, "--", "--ignored", "--exact", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "--release",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    "nested,server-tests,accessibility-gate",
+                    "--lib",
+                    ACCESSIBILITY_MIXED_TEST,
+                    "--",
+                    "--ignored",
+                    "--exact",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "output-rotated-accessibility",
                 vec![
-                    "test", "--locked", "--release", "-p", "lince-park", "--features", "nested,server-tests,accessibility-gate",
-                    "--lib", "server::tests::transfers_tests::dispatch::magnification::platform::mixed::", "--", "--ignored",
-                    "--skip", ACCESSIBILITY_MIXED_TEST, "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "--release",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    "nested,server-tests,accessibility-gate",
+                    "--lib",
+                    "server::tests::transfers_tests::dispatch::magnification::platform::mixed::",
+                    "--",
+                    "--ignored",
+                    "--skip",
+                    ACCESSIBILITY_MIXED_TEST,
+                    "--test-threads=1",
                 ],
             ),
             (
                 "magnification-input",
                 vec![
-                    "test", "--locked", "--release", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", MAGNIFICATION_INPUT_TEST, "--", "--ignored", "--exact", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "--release",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    MAGNIFICATION_INPUT_TEST,
+                    "--",
+                    "--ignored",
+                    "--exact",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "magnification-reveal",
                 vec![
-                    "test", "--locked", "--release", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", MAGNIFICATION_REVEAL_TEST, "--", "--ignored", "--exact", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "--release",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    MAGNIFICATION_REVEAL_TEST,
+                    "--",
+                    "--ignored",
+                    "--exact",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "magnification-drop",
                 vec![
-                    "test", "--locked", "--release", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", MAGNIFICATION_DROP_TEST, "--", "--ignored", "--exact", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "--release",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    MAGNIFICATION_DROP_TEST,
+                    "--",
+                    "--ignored",
+                    "--exact",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "magnification-caret",
                 vec![
-                    "test", "--locked", "--release", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", MAGNIFICATION_CARET_TEST, "--", "--ignored", "--exact", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "--release",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    MAGNIFICATION_CARET_TEST,
+                    "--",
+                    "--ignored",
+                    "--exact",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "magnification-text-input",
                 vec![
-                    "test", "--locked", "--release", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", "server::tests::text_input_tests::", "--", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "--release",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    "server::tests::text_input_tests::",
+                    "--",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "output-rotation-workflows",
                 vec![
-                    "test", "--locked", "--release", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", "server::tests::transfers_tests::dispatch::outputs::", "--", "--ignored", "--test-threads=1",
-                    "--skip", "server::tests::transfers_tests::dispatch::outputs::color::",
-                    "--skip", "server::tests::transfers_tests::dispatch::outputs::controls::",
-                    "--skip", "server::tests::transfers_tests::dispatch::outputs::lifetimes::",
+                    "test",
+                    "--locked",
+                    "--release",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    "server::tests::transfers_tests::dispatch::outputs::",
+                    "--",
+                    "--ignored",
+                    "--test-threads=1",
+                    "--skip",
+                    "server::tests::transfers_tests::dispatch::outputs::color::",
+                    "--skip",
+                    "server::tests::transfers_tests::dispatch::outputs::controls::",
+                    "--skip",
+                    "server::tests::transfers_tests::dispatch::outputs::lifetimes::",
                 ],
             ),
             (
                 "output-color-client-workflows",
                 vec![
-                    "test", "--locked", "--release", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", "server::tests::transfers_tests::dispatch::outputs::color::", "--", "--ignored", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "--release",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    "server::tests::transfers_tests::dispatch::outputs::color::",
+                    "--",
+                    "--ignored",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "output-control-ui",
-                vec!["test", "--locked", "-p", "lince-interface", "--features", "native-presentation", "--lib",
-                    OUTPUT_CONTROL_UI_TEST, "--", "--exact", "--test-threads=1"],
+                vec![
+                    "test",
+                    "--locked",
+                    "-p",
+                    "lince-interface",
+                    "--features",
+                    "native-presentation",
+                    "--lib",
+                    OUTPUT_CONTROL_UI_TEST,
+                    "--",
+                    "--exact",
+                    "--test-threads=1",
+                ],
             ),
             (
                 "output-control-model",
-                vec!["test", "--locked", "-p", "lince-park", "--features", super::INPUT_FEATURES, "--lib",
-                    "server::tests::display_tests::", "--", "--test-threads=1"],
+                vec![
+                    "test",
+                    "--locked",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    "server::tests::display_tests::",
+                    "--",
+                    "--test-threads=1",
+                ],
             ),
             (
                 "output-control-clients",
-                vec!["test", "--locked", "--release", "-p", "lince-park", "--features", super::INPUT_FEATURES, "--lib",
-                    OUTPUT_CONTROL_CLIENT_TEST, "--", "--ignored", "--exact", "--test-threads=1"],
+                vec![
+                    "test",
+                    "--locked",
+                    "--release",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    OUTPUT_CONTROL_CLIENT_TEST,
+                    "--",
+                    "--ignored",
+                    "--exact",
+                    "--test-threads=1",
+                ],
             ),
             (
                 "output-generation-clients",
-                vec!["test", "--locked", "--release", "-p", "lince-park", "--features", super::INPUT_FEATURES, "--lib",
-                    OUTPUT_GENERATION_CLIENT_TEST, "--", "--ignored", "--exact", "--test-threads=1"],
+                vec![
+                    "test",
+                    "--locked",
+                    "--release",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    OUTPUT_GENERATION_CLIENT_TEST,
+                    "--",
+                    "--ignored",
+                    "--exact",
+                    "--test-threads=1",
+                ],
             ),
             (
                 "output-color-native-pixels",
                 vec![
-                    "test", "--locked", "--release", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", OUTPUT_COLOR_NATIVE_TEST, "--", "--ignored", "--exact", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "--release",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    OUTPUT_COLOR_NATIVE_TEST,
+                    "--",
+                    "--ignored",
+                    "--exact",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "output-color-gles-pixels",
                 vec![
-                    "test", "--locked", "--release", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", OUTPUT_COLOR_GLES_TEST, "--", "--ignored", "--exact", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "--release",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    OUTPUT_COLOR_GLES_TEST,
+                    "--",
+                    "--ignored",
+                    "--exact",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "output-color-dmabuf-pixels",
                 vec![
-                    "test", "--locked", "--release", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", "graphics::import::tests::", "--", "--ignored", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "--release",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    "graphics::import::tests::",
+                    "--",
+                    "--ignored",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "power-protocol-lifetimes",
-                vec!["test", "--locked", "-p", "lince-park", "--features", "server-tests", "--lib",
-                    "server::tests::power_tests::", "--", "--test-threads=1"],
+                vec![
+                    "test",
+                    "--locked",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    "server-tests",
+                    "--lib",
+                    "server::tests::power_tests::",
+                    "--",
+                    "--test-threads=1",
+                ],
             ),
             (
                 "power-transition-workflows",
-                vec!["test", "--locked", "--release", "-p", "lince-park", "--features", "session,server-tests", "--lib",
-                    "server::tests::transfers_tests::dispatch::power::", "--", "--ignored", "--test-threads=1"],
+                vec![
+                    "test",
+                    "--locked",
+                    "--release",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    "session,server-tests",
+                    "--lib",
+                    "server::tests::transfers_tests::dispatch::power::",
+                    "--",
+                    "--ignored",
+                    "--test-threads=1",
+                ],
             ),
             (
                 "tablet-protocol-lifetimes",
-                vec!["test", "--locked", "-p", "lince-park", "--features", "server-tests", "--lib",
-                    TABLET_LIFETIME_TEST, "--", "--exact", "--test-threads=1"],
+                vec![
+                    "test",
+                    "--locked",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    "server-tests",
+                    "--lib",
+                    TABLET_LIFETIME_TEST,
+                    "--",
+                    "--exact",
+                    "--test-threads=1",
+                ],
             ),
             (
                 "logout-recovery",
-                vec!["test", "--locked", "--release", "-p", "lince-park", "--features", super::INPUT_FEATURES, "--lib",
-                    LOGOUT_RECOVERY_TEST, "--", "--ignored", "--exact", "--test-threads=1"],
+                vec![
+                    "test",
+                    "--locked",
+                    "--release",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    LOGOUT_RECOVERY_TEST,
+                    "--",
+                    "--ignored",
+                    "--exact",
+                    "--test-threads=1",
+                ],
             ),
             (
                 "absolute-input-ordering",
@@ -1717,86 +2264,205 @@ fn prepare_into(configuration: &Path, installed: Option<&Path>, destination: Opt
             (
                 "compositor-appearance-client",
                 vec![
-                    "test", "--locked", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", APPEARANCE_CLIENT_TEST, "--", "--ignored", "--exact", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    APPEARANCE_CLIENT_TEST,
+                    "--",
+                    "--ignored",
+                    "--exact",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "capture-rendering",
                 vec![
-                    "test", "--locked", "--release", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", "presentation::tests::capture::", "--", "--ignored", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "--release",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    "presentation::tests::capture::",
+                    "--",
+                    "--ignored",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "capture-client",
                 vec![
-                    "test", "--locked", "--release", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", CAPTURE_CLIENT_TEST, "--", "--ignored", "--exact", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "--release",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    CAPTURE_CLIENT_TEST,
+                    "--",
+                    "--ignored",
+                    "--exact",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "capture-lifetime",
                 vec![
-                    "test", "--locked", "--release", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", "server::tests::transfers_tests::dispatch::capture_lifetime::peers::", "--", "--ignored", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "--release",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    "server::tests::transfers_tests::dispatch::capture_lifetime::peers::",
+                    "--",
+                    "--ignored",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "capture-retained-protocol",
                 vec![
-                    "test", "--locked", "-p", "lince-park", "--features", "server-tests", "--lib",
-                    "server::tests::capture_tests::", "--", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    "server-tests",
+                    "--lib",
+                    "server::tests::capture_tests::",
+                    "--",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "capture-retained-pixels",
                 vec![
-                    "test", "--locked", "--release", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", "server::tests::transfers_tests::dispatch::capture_lifetime::retained::", "--", "--ignored", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "--release",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    "server::tests::transfers_tests::dispatch::capture_lifetime::retained::",
+                    "--",
+                    "--ignored",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "capture-settings",
                 vec![
-                    "test", "--locked", "--release", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", "server::tests::transfers_tests::dispatch::privacy::settings::", "--", "--ignored", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "--release",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    "server::tests::transfers_tests::dispatch::privacy::settings::",
+                    "--",
+                    "--ignored",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "windowed-fullscreen-clients",
                 vec![
-                    "test", "--locked", "--release", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", "--", "--ignored", "server::tests::transfers_tests::windowed_fullscreen::",
-                    "server::tests::transfers_tests::dispatch::windowed_fullscreen::", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "--release",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    "--",
+                    "--ignored",
+                    "server::tests::transfers_tests::windowed_fullscreen::",
+                    "server::tests::transfers_tests::dispatch::windowed_fullscreen::",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "compact-group-clients",
                 vec![
-                    "test", "--locked", "--release", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", "server::tests::transfers_tests::dispatch::compact::", "--", "--ignored", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "--release",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    "server::tests::transfers_tests::dispatch::compact::",
+                    "--",
+                    "--ignored",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "scratch-workflows",
                 vec![
-                    "test", "--locked", "--release", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", "server::tests::transfers_tests::dispatch::scratch::", "--", "--ignored", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "--release",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    "server::tests::transfers_tests::dispatch::scratch::",
+                    "--",
+                    "--ignored",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "compositor-appearance-capture",
                 vec![
-                    "test", "--locked", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", "server::tests::transfers_tests::dispatch::capture_lifetime::", "--", "--ignored", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    "server::tests::transfers_tests::dispatch::capture_lifetime::",
+                    "--",
+                    "--ignored",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "compositor-appearance-cost",
                 vec![
-                    "test", "--locked", "--release", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", APPEARANCE_COST_TEST, "--", "--ignored", "--exact", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "--release",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    APPEARANCE_COST_TEST,
+                    "--",
+                    "--ignored",
+                    "--exact",
+                    "--test-threads=1",
                 ],
             ),
             (
@@ -1925,22 +2591,51 @@ fn prepare_into(configuration: &Path, installed: Option<&Path>, destination: Opt
             (
                 "configuration-review-rendering",
                 vec![
-                    "test", "--release", "--locked", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", "presentation::tests::configuration::", "--", "--ignored", "--test-threads=1",
+                    "test",
+                    "--release",
+                    "--locked",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    "presentation::tests::configuration::",
+                    "--",
+                    "--ignored",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "configuration-review-input",
                 vec![
-                    "test", "--locked", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", "server::tests::transfers_tests::dispatch::configuration::", "--", "--ignored", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    "server::tests::transfers_tests::dispatch::configuration::",
+                    "--",
+                    "--ignored",
+                    "--test-threads=1",
                 ],
             ),
             (
                 "configuration-quiet-reload",
                 vec![
-                    "test", "--locked", "-p", "lince-park", "--features", super::INPUT_FEATURES,
-                    "--lib", CONFIGURATION_QUIET_TEST, "--", "--ignored", "--exact", "--test-threads=1",
+                    "test",
+                    "--locked",
+                    "-p",
+                    "lince-park",
+                    "--features",
+                    super::INPUT_FEATURES,
+                    "--lib",
+                    CONFIGURATION_QUIET_TEST,
+                    "--",
+                    "--ignored",
+                    "--exact",
+                    "--test-threads=1",
                 ],
             ),
             (
@@ -2556,34 +3251,36 @@ fn prepare_into(configuration: &Path, installed: Option<&Path>, destination: Opt
     }
     let build_info = inspect_build(&target)?;
     let process_executable = process_executable(&target)?;
-    let probe = if let Some(probe) = prebuilt_probe("session-probe")? { probe } else {
-    let mut probe = cargo_command();
-    probe.args([
-        "run",
-        "--locked",
-        "--message-format=json",
-        "-p",
-        "lince-park-clients",
-        "--bin",
-        "session_probe",
-        "--",
-        "--help",
-    ]);
-    let output = probe.output().map_err(error)?;
-    fs::write(directory.join("prepare-probe.log"), &output.stderr).map_err(error)?;
-    if !output.status.success() {
-        return Err("Preparing the native session probe failed".into());
-    }
-    output
-        .stdout
-        .split(|byte| *byte == b'\n')
-        .filter_map(|line| serde_json::from_slice::<serde_json::Value>(line).ok())
-        .filter(|value| {
-            value["reason"] == "compiler-artifact" && value["target"]["name"] == "session_probe"
-        })
-        .filter_map(|value| value["executable"].as_str().map(PathBuf::from))
-        .last()
-        .ok_or("Cargo did not report the session probe executable")?
+    let probe = if let Some(probe) = prebuilt_probe("session-probe")? {
+        probe
+    } else {
+        let mut probe = cargo_command();
+        probe.args([
+            "run",
+            "--locked",
+            "--message-format=json",
+            "-p",
+            "lince-park-clients",
+            "--bin",
+            "session_probe",
+            "--",
+            "--help",
+        ]);
+        let output = probe.output().map_err(error)?;
+        fs::write(directory.join("prepare-probe.log"), &output.stderr).map_err(error)?;
+        if !output.status.success() {
+            return Err("Preparing the native session probe failed".into());
+        }
+        output
+            .stdout
+            .split(|byte| *byte == b'\n')
+            .filter_map(|line| serde_json::from_slice::<serde_json::Value>(line).ok())
+            .filter(|value| {
+                value["reason"] == "compiler-artifact" && value["target"]["name"] == "session_probe"
+            })
+            .filter_map(|value| value["executable"].as_str().map(PathBuf::from))
+            .last()
+            .ok_or("Cargo did not report the session probe executable")?
     };
     fs::copy(probe, directory.join("bin/session-probe")).map_err(error)?;
     let capture_sha256 = prepare_capture_probe(&directory)?;
@@ -2806,7 +3503,9 @@ fn ready(directory: &Path) -> Result<()> {
             .arg(directory.join("physical-automation.json"))
             .arg(directory.join("bin/session-probe"))
             .exec();
-        return Err(format!("The authorized automation probe could not start: {failure}"));
+        return Err(format!(
+            "The authorized automation probe could not start: {failure}"
+        ));
     }
     if let Some(helper) = &run.configuration.helper {
         let descriptor = env::var("WAYLAND_SOCKET")
@@ -3035,7 +3734,13 @@ fn seat_inner(run: &Run, children: &mut Children, results: &mut Results) -> Resu
         thread::sleep(Duration::from_millis(50));
     };
     results.phases.push(Phase { name: "first-frame-readiness".into(), outcome: "passed".into(), elapsed_ms: start.elapsed().as_millis(), detail: "Readiness hook ran after the initial scene submission; physical scanout still needs observation".into() });
-    automation::collect(run, &socket, pid.as_raw_nonzero().get() as u32, children, results)?;
+    automation::collect(
+        run,
+        &socket,
+        pid.as_raw_nonzero().get() as u32,
+        children,
+        results,
+    )?;
     for round in 0..run.configuration.lifecycle_rounds {
         results
             .resources
@@ -3181,8 +3886,12 @@ mod tests {
 
     #[test]
     fn dependency_source_copy_preserves_content_identity_and_refuses_symlink_escape() {
-        let stamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
-        let directory = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/park-validation")
+        let stamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let directory = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../target/park-validation")
             .join(format!("dependency-copy-{stamp}-{}", std::process::id()));
         let source = directory.join("source");
         fs::create_dir_all(source.join("src")).unwrap();
@@ -3194,21 +3903,39 @@ mod tests {
         let destination = directory.join("copy");
         let mut hashes = BTreeMap::new();
         copy_dependency_source(&source, &destination, Path::new(""), &mut hashes).unwrap();
-        assert_eq!(fs::read(destination.join("src/lib.rs")).unwrap(), b"fixture source");
+        assert_eq!(
+            fs::read(destination.join("src/lib.rs")).unwrap(),
+            b"fixture source"
+        );
         assert_eq!(hashes.len(), 2);
-        assert_eq!(hashes["src/lib.rs"], digest(&destination.join("src/lib.rs")).unwrap());
+        assert_eq!(
+            hashes["src/lib.rs"],
+            digest(&destination.join("src/lib.rs")).unwrap()
+        );
         assert!(!destination.join("Cargo.lock").exists());
         assert!(!destination.join("target").exists());
         isolate_dependency_manifest(&destination.join("Cargo.toml")).unwrap();
-        assert_eq!(fs::read(destination.join("Cargo.toml")).unwrap(), b"fixture manifest\n[workspace]\n");
-        assert_eq!(fs::read(source.join("Cargo.toml")).unwrap(), b"fixture manifest");
-        assert_ne!(hashes["Cargo.toml"], digest(&destination.join("Cargo.toml")).unwrap());
+        assert_eq!(
+            fs::read(destination.join("Cargo.toml")).unwrap(),
+            b"fixture manifest\n[workspace]\n"
+        );
+        assert_eq!(
+            fs::read(source.join("Cargo.toml")).unwrap(),
+            b"fixture manifest"
+        );
+        assert_ne!(
+            hashes["Cargo.toml"],
+            digest(&destination.join("Cargo.toml")).unwrap()
+        );
         let linked = directory.join("linked");
         fs::create_dir(&linked).unwrap();
         fs::write(directory.join("outside"), "must not copy").unwrap();
         std::os::unix::fs::symlink(directory.join("outside"), linked.join("escape")).unwrap();
         let rejected = directory.join("rejected");
-        assert!(copy_dependency_source(&linked, &rejected, Path::new(""), &mut BTreeMap::new()).is_err());
+        assert!(
+            copy_dependency_source(&linked, &rejected, Path::new(""), &mut BTreeMap::new())
+                .is_err()
+        );
         assert!(!rejected.join("escape").exists());
         fs::remove_dir_all(directory).unwrap();
     }
@@ -3427,7 +4154,11 @@ mod tests {
 
     #[test]
     fn inspector_preparation_rejects_empty_wrong_and_failed_test_selections() {
-        for required in [CONNECTED_CELL_TEST, QUIET_INSPECTOR_TEST, PERMISSION_INSPECTOR_TEST] {
+        for required in [
+            CONNECTED_CELL_TEST,
+            QUIET_INSPECTOR_TEST,
+            PERMISSION_INSPECTOR_TEST,
+        ] {
             assert!(inspector_result(&format!("test {required} ... ok"), required).is_ok());
             for log in [
                 String::new(),

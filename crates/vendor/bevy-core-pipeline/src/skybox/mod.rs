@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: struct SkyboxPlugin, fn extract_skybox, struct SkyboxUniforms, struct SkyboxPipeline.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option` value.
+//   Sites 75.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 88, 152, 154,
+//   179.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 19.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 34, 96, 194, 221.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 34, 68,
+//   96, 194, 221.
+
 use bevy_app::{App, Plugin};
 use bevy_asset::{embedded_asset, load_embedded_asset, AssetServer, Handle};
 use bevy_camera::Exposure;

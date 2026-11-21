@@ -3,6 +3,16 @@
 
 //! A simple plain text editor and related types.
 
+// non-lean-yet
+// Scope: struct Generation, struct SplitString, struct PlainEditor, struct PlainEditorDriver.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 217, 219, 259,
+//   277, 315, 387, 432, 1228, 1291.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   set_quantize:quantize (1082).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   992, 993, 1258, 1261, 1266, 1273.
+
 use alloc::{
     borrow::{Cow, ToOwned},
     string::String,

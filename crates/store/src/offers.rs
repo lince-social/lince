@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: enum OfferKind, enum Direction, struct Offer, fn pending.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or(false)` on a `Result` value. Sites
+//   216, 234.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 119.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 6, 27.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 52, 174, 198, 221, 240, 258, 276, 288.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 7,
+//   8, 9, 10, 11, 15, 27, 28, 29, 33, 42, 43, 44, 45, 46, 47, 48, 49, 52, 163, 166, 167, 168, 169,
+//   170, 171, 174, 198, 221, 240, 258, 276, 288.
+
 use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;

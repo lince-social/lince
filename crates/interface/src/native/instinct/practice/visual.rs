@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct Restoration, struct State, fn handles, fn prepare.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 69, 242.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (33, 57, 67, 91, 112, 120, 131, 134, 147, 169, 186, 232).
+
 use super::*;
 
 #[derive(Clone, Default)]

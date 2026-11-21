@@ -1,7 +1,27 @@
-use super::{Admission, Candidate, Choice, Information, Input, Model, Output};
-use crate::communication::models::{self, Artifact, Cache, Manifest};
-use candle_core::{DType, Device, IndexOp, Tensor};
-use candle_nn::{Linear, Module, VarBuilder};
+// non-lean-yet
+// Scope: mod modern, const ID, const REVISION, const REPOSITORY.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 125, 137, 288, 369, 384, 385, 386.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 113, 190, 256,
+//   288.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 369.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   429, 430.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   178.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 124.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 61.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 17, 18,
+//   61, 66, 67, 68, 92, 104, 124.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites directory:
+//   String (124).
+// - [review: §5 Panics] Verify panic isolation boundary and preserve the failure contract. Sites
+//   447.
+
 use std::{
     path::PathBuf,
     sync::{
@@ -10,7 +30,13 @@ use std::{
     },
     time::Instant,
 };
+
+use candle_core::{DType, Device, IndexOp, Tensor};
+use candle_nn::{Linear, Module, VarBuilder};
 use tokenizers::Tokenizer;
+
+use super::{Admission, Candidate, Choice, Information, Input, Model, Output};
+use crate::communication::models::{self, Artifact, Cache, Manifest};
 
 mod modern;
 
@@ -451,7 +477,7 @@ impl Model for Driver {
                 *self
                     .classifier
                     .lock()
-                    .unwrap_or_else(|error| error.into_inner()) = None;
+                    .unwrap_or_else(std::sync::PoisonError::into_inner) = None;
                 self.classifier.clear_poison();
                 self.loaded.store(false, Ordering::Release);
                 Err("NLI inference failed. Retry to reload its model.".into())

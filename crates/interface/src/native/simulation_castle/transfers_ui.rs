@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct Form, enum Command, enum Field, struct Input.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 138, 297, 308,
+//   310, 311, 316, 328, 332, 333, 334, 337, 339, 340, 376, 379, 381, 382, 388, 396, 398, 408, 426.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   424.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (138, 242, 297, 435, 438).
+
 use super::*;
 use simulation::assumptions::{Direction, TransferAssumption, TransferSource};
 use simulation::scenario::{Event, Input as ScenarioInput};

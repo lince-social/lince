@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod lifecycle, mod custody, struct PublicationFixture, fn action.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 320, 444,
+//   752, 873, 882, 953, 1047.
+
 use super::*;
 #[path = "lifecycle.rs"]
 mod lifecycle;

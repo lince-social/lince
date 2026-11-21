@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn press, fn
+//   client_requests_require_the_held_serial_seat_window_and_client_and_cannot_replace_a_claim, fn
+//   a_subsurface_press_authorizes_only_its_actual_toplevel, fn
+//   protocol_resize_edges_keep_single_axes_corners_and_none_distinct.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn press(harness: &mut Harness) -> u32 {
@@ -204,7 +211,8 @@ pub(super) fn configure_client_color(
     assert_eq!(configured.0, size);
     let expected = state.resizing;
     assert_eq!(
-        configured.1
+        configured
+            .1
             .contains(&(xdg_toplevel::State::Resizing as u32)),
         expected
     );
@@ -221,8 +229,9 @@ pub(super) fn configure_client_color(
 #[test]
 #[ignore = "requires hardware Vulkan and EGL"]
 fn titlebar_move_and_edge_resize_use_the_original_press_and_acknowledged_client_buffers() {
-    use crate::runtime::{CanvasWorker, Configuration, Input};
     use lince_interface::host::{DesktopAction, WorkspaceLayout};
+
+    use crate::runtime::{CanvasWorker, Configuration, Input};
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .thread_stack_size(32 * 1024 * 1024)

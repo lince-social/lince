@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: struct Page.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 127.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 123.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 123.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 10, 31, 139.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 4.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   4, 5, 6, 10, 31, 139.
+
 use crate::sync::OpBatch;
 use crate::{Engine, EngineError};
 

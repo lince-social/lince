@@ -1,13 +1,21 @@
-use bevy::log::{
-    tracing::{self, Subscriber, field::Visit, span::Attributes},
-    tracing_subscriber::{self, layer::Context, prelude::*, registry::LookupSpan},
-};
-use lince_interface::host::performance;
+// non-lean-yet
+// Scope: struct Name, struct Body, struct Entered, struct Systems.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 93, 94.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (119).
+
 use std::{
     cell::{Cell, RefCell},
     sync::Arc,
     time::{Duration, Instant},
 };
+
+use bevy::log::{
+    tracing::{self, Subscriber, field::Visit, span::Attributes},
+    tracing_subscriber::{self, layer::Context, prelude::*, registry::LookupSpan},
+};
+use lince_interface::host::performance;
 
 #[derive(Default)]
 struct Name(String);

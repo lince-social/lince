@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod tablet, struct LibinputInputBackend, enum PointerScrollAxis, struct
+//   LibinputSessionInterface.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 81, 879.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (879, 884).
+
 //! Implementation of input backend trait for types provided by `libinput`
 
 use crate::backend::input::{

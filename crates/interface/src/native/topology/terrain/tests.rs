@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn fixture, fn empty_floor_does_not_evaluate_formulas, fn
+//   inactive_overview_terrain_has_real_heights_without_physics_activation_and_releases_meshes, fn
+//   tiles_are_cached_and_moving_an_effect_restores_its_old_location.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::{
     canvas::{CanvasItem, CanvasView},

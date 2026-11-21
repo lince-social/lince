@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: impl State, impl Engine.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 29, 99.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   complete_journey_location_stop:accepted (33).
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 45.
+// - [Clippy probe: clippy::needless_collect] avoid using `collect()` when not needed. Sites 100.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   33, 45.
+
 use super::*;
 use futures::StreamExt;
 

@@ -1,6 +1,23 @@
-use super::*;
+// non-lean-yet
+// Scope: const PACKAGE_LIMIT, fn retained_by_publication_on, fn read_package, fn validate_package.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   353.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   publication_on:active (205).
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   366, 382.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 7, 15, 25, 49, 69, 81, 108, 202, 218, 232, 341, 353.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 1.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 7,
+//   15, 25, 49, 69, 81, 108, 202, 218, 232, 341, 353.
+
 use nucleus::vocabulary::Publication;
 use serde_json::{Value, json};
+
+use super::*;
 
 pub const PACKAGE_LIMIT: usize = 4 * 1024 * 1024;
 

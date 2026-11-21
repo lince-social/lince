@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Settings, struct View, struct Frame, type Reply.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 144, 313, 439,
+//   446, 657, 674, 707, 712, 720, 787, 805.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (144, 305, 306, 307, 495, 634, 641, 650, 654, 679, 688, 738, 749, 760).
+
 use crate::native::sand_panel as panel;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};

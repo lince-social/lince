@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: fn fixture, fn enable, fn move_to, fn pump.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 35, 36, 356, 363,
+//   462, 550, 779, 780, 789, 791.
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites
+//   118.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   802.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (6, 19, 21, 32, 71, 91, 102, 135, 137, 139, 356, 357, 361, 386, 422, 462, 465,
+//   476, 492, 508, 515, 521, 540, 542, 543, 550, 554, 590, 625, 643, 663, 669, 672, 686, 696, 703,
+//   761, 774, 776, 778, 799, 801, 804).
+
 use super::*;
 use crate::native::area::{AreaShape, Property, PropertyRule};
 use std::sync::Arc;

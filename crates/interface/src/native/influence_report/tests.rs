@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn fixture, fn explanation_matches_forces_and_names_suppressed_rules, fn
+//   pins_and_workspace_pause_stop_effects_and_cannot_modify_other_workspaces, fn
+//   spatial_explanation_keeps_full_force_vectors_and_paused_immunity.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::{
     actions::Action,

@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: fn concurrent_assertion_additions_converge_and_observed_removals_do_not_return, fn
+//   assigned_levels_survive_checkpoints_and_later_additions, fn
+//   assertion_requests_are_saved_once_and_retractions_stay_on_their_record, fn
+//   rebuilding_preserves_register_values_and_work_log_identity.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 706, 716.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 716.
+
 #![cfg(test)]
 
 use engine::{

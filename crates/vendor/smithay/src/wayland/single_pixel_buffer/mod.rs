@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod handlers, struct SinglePixelBufferState, struct SinglePixelBufferUserData, enum
+//   BufferAccessError.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 81.
+
 //! Utilities for handling the `wp_single_pixel_buffer` protocol
 //!
 //! ## How to use it

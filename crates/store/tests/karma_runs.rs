@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: fn frozen_epoch_runs_exact_program_revisions_in_cell_order, fn
+//   mid_epoch_restart_preserves_order_deduplication_and_no_effect_boundary, fn
+//   deterministic_evaluation_failure_is_terminal_and_does_not_poison_cell_order, fn
+//   program_control_state_commits_with_runs_and_survives_restart.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 234, 235, 334, 374, 396, 416, 418, 419, 422, 423, 453, 505, 513, 516, 555, 560, 568.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 58, 589, 1329,
+//   1336, 1390, 1394.
+// - [Clippy: clippy::redundant_clone] Move or borrow at the marked sites and check later uses.
+//   Sites 987.
+
 #![cfg(test)]
 
 use std::{
@@ -17,18 +30,20 @@ use nucleus::karma::{
     StateMigrationPolicy, StatePersistence, StateResetPolicy, TimestampMs, TriggerSource, TypedUid,
     ValueType, prove_program,
 };
-use store::Store;
-use store::karma::frequencies::{
-    ActivateFrequencyInput, CreateFrequencyInput, FrequencyHandleRow, FrequencyMutationCommit,
-    activate as activate_frequency, create as create_frequency,
-};
-use store::karma::programs::{
-    ActivateProgramInput, CreateProgramInput, ProgramHandleRow, ProgramMutationCommit,
-    ReviseProgramInput, activate as activate_program, create as create_program,
-    revise as revise_program,
-};
-use store::karma::runs::{
-    has_pending_occurrences, list_epochs, list_runs, process_next_occurrence,
+use store::{
+    Store,
+    karma::{
+        frequencies::{
+            ActivateFrequencyInput, CreateFrequencyInput, FrequencyHandleRow,
+            FrequencyMutationCommit, activate as activate_frequency, create as create_frequency,
+        },
+        programs::{
+            ActivateProgramInput, CreateProgramInput, ProgramHandleRow, ProgramMutationCommit,
+            ReviseProgramInput, activate as activate_program, create as create_program,
+            revise as revise_program,
+        },
+        runs::{has_pending_occurrences, list_epochs, list_runs, process_next_occurrence},
+    },
 };
 
 #[tokio::test]
@@ -614,7 +629,7 @@ async fn act_routed_candidate_is_atomic_durable_and_still_inert() {
                 expected_state_revision: 1,
                 response: nucleus::karma::CandidateReviewAction::Dismiss,
                 actor_person_uid: None,
-                    },
+            },
             now,
             |_| None,
         )
@@ -632,7 +647,7 @@ async fn act_routed_candidate_is_atomic_durable_and_still_inert() {
             expected_state_revision: 2,
             response: nucleus::karma::CandidateReviewAction::Dismiss,
             actor_person_uid: None,
-            },
+        },
         now,
         |_| None,
     )
@@ -654,7 +669,7 @@ async fn act_routed_candidate_is_atomic_durable_and_still_inert() {
                 until: timestamp_ms(1_000),
             },
             actor_person_uid: None,
-            },
+        },
         now,
         |_| None,
     )
@@ -1409,8 +1424,10 @@ async fn reaction_counts(store: &Store) -> (i64, i64, i64, i64) {
 }
 
 async fn count(store: &Store, table: &str) -> i64 {
-    store::sqlx::query_scalar(store::sqlx::AssertSqlSafe(format!("SELECT COUNT(*) FROM {table}")))
-        .fetch_one(&store.pool)
-        .await
-        .unwrap()
+    store::sqlx::query_scalar(store::sqlx::AssertSqlSafe(format!(
+        "SELECT COUNT(*) FROM {table}"
+    )))
+    .fetch_one(&store.pool)
+    .await
+    .unwrap()
 }

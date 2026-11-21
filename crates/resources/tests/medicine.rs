@@ -1,7 +1,12 @@
+// non-lean-yet
+// Scope: fn medicine_entries_discover_the_readings_and_export_external_resource_references.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(feature = "publication")]
 
-use lince_resources::{Library, publication::Publication};
 use std::{collections::BTreeMap, fs, path::PathBuf};
+
+use lince_resources::{Library, publication::Publication};
 
 #[test]
 fn medicine_entries_discover_the_readings_and_export_external_resource_references() {

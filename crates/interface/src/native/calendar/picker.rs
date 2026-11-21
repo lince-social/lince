@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct DateField, struct ParsedFields, struct OpenDate, fn date_button.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 260, 267, 290,
+//   291, 330, 332, 351, 356.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (97, 173, 180, 226, 282, 284, 294, 327, 339, 348, 351).
+
 use super::*;
 use crate::native::{
     actions::ActionButton,

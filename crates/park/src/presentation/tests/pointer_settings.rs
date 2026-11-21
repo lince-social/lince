@@ -1,7 +1,9 @@
-use super::displays::{labelled, reveal, write};
-use super::shortcuts::{capture, click, named_button, settle};
-use super::*;
-use crate::input_settings::{self, PointerControl};
+// non-lean-yet
+// Scope: fn bridge, fn pointer_settings_validate_save_restore_and_cancel_at_wide_and_narrow_sizes.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
+use std::{collections::BTreeMap, sync::mpsc::Receiver};
+
 use lince_interface::{
     host::{
         HostRequest,
@@ -9,7 +11,13 @@ use lince_interface::{
     },
     native::actions::Action,
 };
-use std::{collections::BTreeMap, sync::mpsc::Receiver};
+
+use super::{
+    displays::{labelled, reveal, write},
+    shortcuts::{capture, click, named_button, settle},
+    *,
+};
+use crate::input_settings::{self, PointerControl};
 
 fn bridge(
     canvas: &mut Presentation,

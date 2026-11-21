@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod remote, mod serving, fn request, fn automatic_summary_uses_public_receiver_evidence.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use nucleus::trust_analysis::claims::{
     self as claim,

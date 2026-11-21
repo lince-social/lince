@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct Slots, const OUTPUTS, const FIOTE, const SHADERS.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::ops::Range;
 
 #[derive(Clone, Copy)]

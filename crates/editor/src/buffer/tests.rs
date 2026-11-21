@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn an_intermediate_truncated_disk_write_cannot_erase_unrelated_local_edits, fn
+//   a_bounded_window_keeps_complete_lines_editable, fn
+//   saving_invalidates_an_older_disk_comparison_even_without_further_typing, fn
+//   stale_background_comparisons_are_retried_without_losing_typing.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[test]
@@ -191,7 +198,10 @@ fn deferred_encoding_contains_only_the_requested_save_version() {
             text: "later".into(),
         })
         .unwrap();
-    let point = std::thread::spawn(move || point.encode()).join().unwrap().unwrap();
+    let point = std::thread::spawn(move || point.encode())
+        .join()
+        .unwrap()
+        .unwrap();
     let text = point.text.to_string().into();
     buffer.saved_with_text(point, text).unwrap();
     buffer.reconcile("saved\ntwo\ndisk\n").unwrap();
@@ -218,7 +228,9 @@ fn large_file_save_snapshots_preserve_newer_edits() {
             text: "later\n".into(),
         }])
         .unwrap();
-    buffer.saved_with_text(point.encode().unwrap(), saved_text).unwrap();
+    buffer
+        .saved_with_text(point.encode().unwrap(), saved_text)
+        .unwrap();
     assert!(buffer.is_dirty());
     assert!(buffer.observed().starts_with("first\ntext"));
     buffer.undo(false).unwrap();

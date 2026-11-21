@@ -1,4 +1,20 @@
-use crate::StoreError;
+// non-lean-yet
+// Scope: fn invalid, struct Saved, fn get_on, fn request_json.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 10.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 148, 151, 153.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 32, 104, 106, 107, 108, 169.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 32.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 23, 64, 90.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 14, 82.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 14, 15,
+//   16, 17, 18, 19, 20, 23, 64, 82, 83, 84, 85, 86, 87, 90.
+
 use chrono::{DateTime, Utc};
 use nucleus::{
     Cause, Fact, NewFact, RecordKind,
@@ -6,6 +22,8 @@ use nucleus::{
 };
 use serde_json::Value;
 use sqlx::{Sqlite, SqliteConnection, Transaction};
+
+use crate::StoreError;
 
 fn invalid(error: impl ToString) -> StoreError {
     StoreError::Protocol(error.to_string())

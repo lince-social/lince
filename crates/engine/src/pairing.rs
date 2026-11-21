@@ -1,3 +1,26 @@
+// non-lean-yet
+// Scope: const INVITE_PREFIX, const SEP, struct PairingInvite, const MAILBOX_PREFIX.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 23.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   151.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 197, 209, 210, 211, 274, 279.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 211, 274.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 35, 43, 48, 51, 56, 57, 59, 96, 105, 111, 112, 142, 151, 158, 159, 160, 161, 162,
+//   279.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 32, 67, 94, 140, 170, 184, 191.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 207.
+// - [Clippy probe: clippy::unnecessary_wraps] this function's return value is unnecessarily wrapped
+//   by `Result`. Sites 207.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   11, 12, 13, 14, 15, 19, 32, 67, 84, 85, 86, 90, 94, 120, 121, 122, 123, 124, 125, 129, 140,
+//   170, 184, 191.
+
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD as B64;
 

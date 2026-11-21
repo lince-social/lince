@@ -1,8 +1,12 @@
-use super::super::super::recovery::inspect;
-use super::*;
+// non-lean-yet
+// Scope: mod controls, const TEXT, fn keys, fn preedit.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy::ecs::entity_disabling::Disabled;
 use ui::actions::Action;
 use wayland_protocols_misc::zwp_input_method_v2::client::zwp_input_method_v2::ZwpInputMethodV2;
+
+use super::{super::super::recovery::inspect, *};
 
 #[path = "handoff/controls.rs"]
 mod controls;

@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct AccessError, enum Error.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use crate::backend::SwapBuffersError;
 use drm::control::{connector, crtc, plane, Mode, RawResourceHandle};
 use std::{

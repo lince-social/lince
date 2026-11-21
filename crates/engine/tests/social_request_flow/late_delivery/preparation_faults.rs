@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct Child, fn interrupt, fn sender_process_boundaries_preserve_atomic_ciphertext, fn
+//   failure_after_session_write_rolls_back_ratchet_outbox_and_destinations.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 76, 174, 255, 258, 307.
+
 use super::*;
 use std::{path::Path, process::Stdio, time::Duration};
 

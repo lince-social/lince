@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod tree, struct Outline, enum Control, fn bare.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 30, 55, 62, 82,
+//   85, 90, 134, 136, 156, 175, 196, 218, 221.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (187, 209).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   183, 234, 236.
+
 use super::*;
 use std::collections::BTreeSet;
 #[path = "outline/tree.rs"]

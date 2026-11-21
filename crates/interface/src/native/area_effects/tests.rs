@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn fixture, fn simple_forces_reuse_destinations_during_motion_and_invalidate_for_changes,
+//   fn combined_simple_destinations_keep_their_individual_strengths, fn
+//   newtonian_force_uses_distance_while_simple_reach_still_stops_at_the_boundary.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::area::{AreaShape, Property, PropertyRule, spawn_area};
 use crate::native::workspace::Workspaces;

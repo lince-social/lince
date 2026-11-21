@@ -1,11 +1,19 @@
-use super::commands::{named, type_command};
-use super::shortcuts::{capture, click, key, named_button, settle};
-use super::*;
+// non-lean-yet
+// Scope: fn chord, fn draft, fn
+//   logout_confirmation_and_session_defaults_use_real_keys_pointer_cancel_retry_and_retained_drafts.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use lince_interface::{
     host::{DesktopAction, HostRequest, SurfaceId},
     i18n::Token,
 };
 use native::actions::Action;
+
+use super::{
+    commands::{named, type_command},
+    shortcuts::{capture, click, key, named_button, settle},
+    *,
+};
 
 fn chord(canvas: &mut Presentation, trigger: KeyCode, shifted: bool) -> Frame {
     canvas

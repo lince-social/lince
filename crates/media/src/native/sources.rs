@@ -1,9 +1,39 @@
-use std::collections::VecDeque;
-use std::sync::{
-    Arc, Mutex,
-    atomic::{AtomicBool, Ordering},
+// non-lean-yet
+// Scope: struct Packet, struct Track, struct State, struct Sources.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 75, 80, 97, 142, 145, 159, 166, 178, 188, 191, 192, 196, 198, 199, 201, 207, 254, 267.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   134.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 145.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   set_enabled:enabled (78).
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 75, 80, 96, 97, 126, 142, 145, 184, 185, 186, 195, 216, 254, 267.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   96, 185, 186, 195, 216.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 185, 186.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   148, 239.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   203.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 91, 134.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 54.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 54, 74,
+//   78, 91, 134.
+// - [rustc: unreachable_pub] unreachable `pub` item. Sites 252, 266, 270.
+
+use std::{
+    collections::VecDeque,
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicBool, Ordering},
+    },
+    time::{Duration, Instant},
 };
-use std::time::{Duration, Instant};
 
 use opus_rs::{Application, OpusEncoder};
 

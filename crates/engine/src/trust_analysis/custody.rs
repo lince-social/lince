@@ -1,3 +1,23 @@
+// non-lean-yet
+// Scope: mod discovery, mod forwarding, mod local, struct Runtime.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 141, 292, 367,
+//   378, 379, 494, 504, 505, 506, 510, 580.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 406, 457.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 365, 416, 418, 471, 613.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 378.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 333.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 618.
+// - [Clippy probe: clippy::manual_let_else] this could be rewritten as `let...else`. Sites 573.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 406, 457.
+// - [Clippy probe: clippy::nonminimal_bool] this boolean expression can be simplified. Sites 461.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 2.
+
 use super::serving::{PeerAuthority, authority_stamp};
 use super::*;
 use crate::actions::{ActionOutcome, VerifiedActionAuthorship};

@@ -1,3 +1,33 @@
+// non-lean-yet
+// Scope: fn validate_delegation, fn validate_ending_delegation, fn validate_delegation_for, fn
+//   validate_profile.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 102, 196, 199,
+//   204, 206, 238, 252, 282, 325, 345, 448, 543, 578, 628, 692, 737, 762, 808, 868, 882, 908, 940,
+//   943, 970, 987, 997.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 573, 695,
+//   697, 725, 801, 918.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   29, 246, 247, 252, 965, 994, 1024.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 150.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 29, 188, 246, 252, 339, 345, 347, 348, 404, 405, 424, 440, 450, 506, 510, 517,
+//   518, 569, 609, 643, 644, 645, 686, 721, 726, 764, 837, 838, 842, 860, 861, 882, 924, 965, 994,
+//   995, 996, 1024, 1025, 1026.
+// - [Clippy probe: clippy::manual_is_variant_and] called `.ok().is_some_and(..)` on a `Result`
+//   value. Sites 881.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 573, 695, 697, 725, 801, 918.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option`
+//   value. Sites 184.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 312.
+// - [Clippy probe: clippy::nonminimal_bool] this boolean expression can be simplified. Sites 56.
+// - [Clippy probe: clippy::unnecessary_sort_by] consider using `sort_by_key`. Sites 183.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   312.
+// - [rustc probe: unreachable_pub] unreachable `pub` item. Sites 3, 72.
+
 use super::*;
 
 pub fn validate_delegation(doc: &Delegation, now: i64) -> Result<(), EngineError> {

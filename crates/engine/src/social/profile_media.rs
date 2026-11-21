@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct DraftImage, struct PreparedImage, fn omit_encoded_images, fn validate_images.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 49, 86.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 48.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 48.
+
 use super::*;
 use serde::{Deserialize, Serialize};
 

@@ -1,3 +1,29 @@
+// non-lean-yet
+// Scope: fn hold_private_copy_on.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 67, 68, 87, 92,
+//   233, 290, 292, 308, 312, 322, 344, 350, 373, 439, 444, 455, 486, 507, 525, 548, 550.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 291.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   59, 439.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 59.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 59.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 59.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 59, 72, 73, 80, 99, 196, 222, 223, 225, 233, 290, 316, 327, 328, 329, 331, 340,
+//   342, 344, 354, 355, 356, 357, 365, 368, 373, 439, 441, 490, 495, 521, 525, 558, 559, 560, 561.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 291.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 18, 150, 415.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1, 2.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   18, 150, 415.
+
 use super::*;
 use nucleus::social::requests::*;
 use store::sqlx::Row;

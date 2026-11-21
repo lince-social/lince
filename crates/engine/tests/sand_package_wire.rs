@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn node, fn address, fn
+//   contacts_browse_and_fetch_public_packages_without_live_login_or_registry.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 28.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 98, 113,
+//   148, 170, 198.
+
 #![cfg(test)]
 
 use engine::{

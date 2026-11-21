@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: fn invalid, fn terms_on, fn require_participant, fn amend.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 8.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 46.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 46.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   67.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 12, 105, 169, 177.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 94.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 12, 94,
+//   95, 96, 97, 98, 99, 100, 102, 105, 169, 177.
+
 use chrono::{DateTime, Utc};
 use nucleus::{Fact, transfer::TransferChildTerms};
 use serde::{Deserialize, Serialize};

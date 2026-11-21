@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn bound, fn native_properties_reuse_the_record_factory_in_sandbox_and_park, fn
+//   inspection_accepts_unbound_items_preserves_explicit_unfocus_and_rejects_invalid_records, fn
+//   application_handoff_captures_the_origin_before_focus_or_workspace_changes.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::{actions::Action, area::InfluenceArea, protein_area::Source};
 

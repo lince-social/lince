@@ -1,7 +1,13 @@
-use {
-    serde::{Deserialize, Serialize},
-    zeroize::Zeroize,
-};
+// non-lean-yet
+// Scope: enum CredentialSource, struct ProviderCredential.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 8.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 8, 9,
+//   11, 15, 23, 30, 42, 51, 55.
+
+use serde::{Deserialize, Serialize};
+use zeroize::Zeroize;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]

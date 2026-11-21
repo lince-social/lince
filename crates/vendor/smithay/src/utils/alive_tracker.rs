@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct AliveTracker, trait IsAlive.
+// BeautifulRust (baseline lines):
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 6.
+
 //! Utilities to track object's life cycle
 
 // All our AliveTracker usage is internal and only

@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn scenario, fn refused_actions_require_an_explicit_expected_refusal, fn run, fn
+//   daily_karma_runs_through_real_cells_and_replays_every_identity_and_clock.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use engine::actions::Action;

@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct ViewportNode, fn viewport_picking, fn update_viewport_render_target_size.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   166.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 188.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 152, 154.
+
 #[cfg(feature = "bevy_picking")]
 use crate::UiGlobalTransform;
 use crate::{ComputedNode, Node};

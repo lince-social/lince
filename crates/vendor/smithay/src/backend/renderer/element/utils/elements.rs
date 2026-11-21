@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct RescaleRenderElement, struct CropRenderElement, enum Relocate, struct
+//   RelocateRenderElement.
+// BeautifulRust (baseline lines):
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 453.
+
 //! Utilities and helpers around the `Element` trait.
 
 use crate::{

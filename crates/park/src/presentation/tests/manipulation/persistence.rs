@@ -1,8 +1,13 @@
-use super::*;
+// non-lean-yet
+// Scope: struct UiEvents, fn provider, fn persisted_provider, fn with_engine.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::{
     path::Path,
     time::{Duration, Instant},
 };
+
+use super::*;
 
 #[derive(Resource, Default, Debug)]
 struct UiEvents {
@@ -329,22 +334,36 @@ fn connected_cell_autosaves_committed_geometry_and_recovers_during_window_previe
             )
             .unwrap();
         until(&mut canvas, |canvas| {
-            identities.iter().all(|(_, id, _)| {
-                canvas
-                    .records
-                    .as_ref()
-                    .unwrap()
-                    .profile(*id)
-                    .is_some()
-            })
+            identities
+                .iter()
+                .all(|(_, id, _)| canvas.records.as_ref().unwrap().profile(*id).is_some())
         });
         let uid = runtime.block_on(async {
-            cell.0.engine.act(engine::actions::Action::CreateRecord {
-                slug: None, kind: nucleus::RecordKind::Plain, head: "Preview attachment".into(), body: String::new(), quantity: 0.0,
-            }, None).await.unwrap().created.unwrap()
+            cell.0
+                .engine
+                .act(
+                    engine::actions::Action::CreateRecord {
+                        slug: None,
+                        kind: nucleus::RecordKind::Plain,
+                        head: "Preview attachment".into(),
+                        body: String::new(),
+                        quantity: 0.0,
+                    },
+                    None,
+                )
+                .await
+                .unwrap()
+                .created
+                .unwrap()
         });
         native::item_properties::attach(canvas.world_mut(), root, target, &uid).unwrap();
-        until(&mut canvas, |canvas| canvas.app.world().get::<native::protein_area::RecordBinding>(target).is_some());
+        until(&mut canvas, |canvas| {
+            canvas
+                .app
+                .world()
+                .get::<native::protein_area::RecordBinding>(target)
+                .is_some()
+        });
         runtime.block_on(async {
             cell.0
                 .engine

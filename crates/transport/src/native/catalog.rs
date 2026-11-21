@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: static ACTIONS, static PROTEIN, struct Arguments, fn describe.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 40.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   40.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 9, 12.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 23, 25, 30, 40, 45, 53.
+
 use std::{collections::BTreeSet, sync::LazyLock};
 
 use serde::Deserialize;

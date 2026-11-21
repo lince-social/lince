@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct SeatData.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 218.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   send_selection:update_data_control (132).
+
 use wayland_protocols_wlr::data_control::v1::server::zwlr_data_control_device_v1::EVT_PRIMARY_SELECTION_SINCE;
 use wayland_server::protocol::wl_data_device::WlDataDevice;
 use wayland_server::{Client, DisplayHandle, Resource};

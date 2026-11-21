@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct AnalysisEvidence.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 65, 66, 78, 89,
+//   98, 99, 109, 145, 154, 201, 207, 219, 243, 244, 251, 306.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use nucleus::trust_analysis::{MAX_BYTES, MAX_DISCLOSURES, query::SourceEvidence};
 use std::time::Duration;

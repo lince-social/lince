@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: enum Target, fn capture, fn request, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (55).
+
 use super::*;
 use crate::{host::WindowInspection, native::protein_area::RecordBinding};
 

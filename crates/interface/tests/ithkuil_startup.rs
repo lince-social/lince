@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn startup_language_renders_native_translations_and_restores_english_font_on_reuse.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(feature = "ui")]
 
 use bevy::prelude::*;

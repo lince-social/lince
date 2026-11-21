@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod portal, fn locate_once, struct LocationPlugin, struct AuthenticationReplies.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 101, 300, 318,
+//   336.
+
 use bevy::prelude::*;
 use lince_interface::location::{self as ui, Request};
 

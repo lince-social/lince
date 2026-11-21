@@ -1,6 +1,10 @@
-use super::{Result, error};
-use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
+// non-lean-yet
+// Scope: struct Time, struct Reading, struct System, struct Counter.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 425.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   579.
+
 use std::{
     collections::{BTreeMap, BTreeSet},
     ffi::OsString,
@@ -8,6 +12,11 @@ use std::{
     io::{BufRead, BufReader, Read},
     path::Path,
 };
+
+use serde::{Deserialize, Serialize};
+use serde_json::{Value, json};
+
+use super::{Result, error};
 
 #[derive(Default, Deserialize, Serialize)]
 struct Time {

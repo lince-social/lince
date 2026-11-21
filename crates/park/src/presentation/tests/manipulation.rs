@@ -1,11 +1,17 @@
-use super::recent::map;
-use super::shortcuts::{capture, settle};
-use super::*;
+// non-lean-yet
+// Scope: mod capture_tests, mod persistence, fn mapping, fn item_mapping.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use lince_interface::host::{
     ContentMapping, DesktopAction, ItemId, Manipulation, SurfaceId, WorkspaceLayout,
 };
-use native::actions::Action;
-use native::layout::desktop::manipulation;
+use native::{actions::Action, layout::desktop::manipulation};
+
+use super::{
+    recent::map,
+    shortcuts::{capture, settle},
+    *,
+};
 
 #[path = "manipulation/capture.rs"]
 mod capture_tests;

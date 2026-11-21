@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct ControlsCorner, struct HideDelay, const HIDE_DELAY, struct CornerGlyph.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 76.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (116, 119, 176, 190, 225, 227, 228, 229, 233, 260, 264, 265, 267, 271, 272, 274,
+//   276, 279, 282, 284, 297, 301, 305, 307, 313, 315, 319, 320, 323, 325, 328, 332, 333, 348, 353,
+//   354, 356, 359, 362, 367, 370, 372, 395, 396, 399, 403).
+
 use super::CanvasToolbar;
 use crate::native::tokens::{ThemeSettings, Token};
 use bevy::{

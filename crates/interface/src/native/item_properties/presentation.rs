@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Refresh, fn page.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (64).
+
 use super::*;
 use crate::host::performance::{self, Count, Stage};
 

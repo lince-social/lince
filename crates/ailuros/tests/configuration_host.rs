@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn firmware_destination_updates_preserve_credentials_and_the_trusted_clock_floor.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::{env, path::PathBuf, process::Command};
 
 #[test]

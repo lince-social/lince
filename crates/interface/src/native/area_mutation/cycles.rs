@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Window, mod tests, struct Cycles.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   check:inside (77), record:inside (121).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   100, 149.
+
 use bevy::prelude::*;
 use std::{
     collections::{HashMap, VecDeque},

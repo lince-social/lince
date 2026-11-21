@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn a_client_key_drives_verified_new_pixels_with_an_explicit_observed_proxy, fn
+//   pixel_only_classification_preserves_layout_limits_and_input_regions, fn
+//   input_proxy_requires_the_forwarded_surface_and_a_newer_attached_buffer_per_output, fn
+//   locking_and_destroying_surfaces_retire_pending_application_input_proxies.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::runtime::latency::monotonic;
 

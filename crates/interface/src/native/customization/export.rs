@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: type ExportResult, struct ExportState, struct ExportStatus, fn controls.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 51, 179.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (61, 131).
+
 use super::{CustomizationAction, ThemeSettings, control, label, row};
 use crate::native::tokens::document::ThemeDocument;
 use bevy::prelude::*;

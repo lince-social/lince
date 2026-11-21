@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: fn saved_credentials_survive_restart_without_any_password, fn
+//   independent_accounts_are_not_lost_and_stale_refresh_cannot_replace_a_login, fn
+//   invalid_large_replacement_keeps_the_previous_credential, fn
+//   files_are_private_and_symlinked_or_shared_files_are_refused.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 63.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   63.
+
 use super::*;
 
 #[tokio::test]

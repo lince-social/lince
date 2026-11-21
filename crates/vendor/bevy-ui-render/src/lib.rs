@@ -1,3 +1,49 @@
+// non-lean-yet
+// Scope: mod box_shadow, mod clipping, mod gradient, mod image.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 1165, 1172, 1173, 2288, 2543.
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value. Sites
+//   2019, 2062, 2399.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   1300, 2240.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 2542.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 764, 876, 956, 1105, 1453, 1544, 1699, 1913.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 1666, 1785, 1825,
+//   1863, 1991, 2033, 2076.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 810, 837, 915, 1069, 1179, 1230, 1342, 1343, 1500, 1613, 1664, 1783, 1798, 1824, 1862,
+//   1959, 1990, 2032, 2075, 2300, 2460, 2466, 2467, 2531, 2537, 2538.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   2300, 2460, 2466, 2467, 2531, 2537, 2538.
+// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 1650, 1769.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 137, 177, 376, 382.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   1380, 1405, 2397, 2472.
+// - [Clippy: clippy::if_not_else] unnecessary `!=` operation. Sites 2377.
+// - [Clippy: clippy::unnecessary_semicolon] unnecessary semicolon. Sites 2265.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 61.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 459, 507, 510, 539, 540, 541, 542, 543, 544, 545, 546, 558, 559, 560,
+//   561, 562, 563, 564, 565, 577, 578, 579, 580, 581, 582, 583, 584, 595, 596, 597, 598, 599, 600,
+//   601, 603, 604, 751, 764, 863, 876, 943, 956, 1092, 1105, 1303, 1318, 1441, 1453, 1525, 1544,
+//   1682, 1699, 1890, 1905, 1913.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 213, 316, 335, 365, 382, 404, 415,
+//   427, 430, 433, 1278, 1288, 1292, 2122, 2236.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 11, 16,
+//   18, 20, 98, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 137, 138, 139, 140,
+//   141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 213, 316, 365, 366, 367, 368, 369,
+//   370, 377, 378, 379, 382, 383, 384, 385, 386, 387, 388, 395, 404, 405, 406, 407, 427, 430, 433,
+//   748, 860, 939, 1089, 1437, 1522, 1679, 1887, 2122, 2146, 2147, 2148, 2159, 2160, 2161, 2162,
+//   2163, 2164, 2165, 2166, 2167, 2168, 2171, 2236, 2237, 2240.
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 85, 86, 87, 102.
+
 #![expect(missing_docs, reason = "Not all docs are written yet, see #3492.")]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![doc(

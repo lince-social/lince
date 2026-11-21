@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: fn lifecycle_forms, mod lifecycle_tests, fn outcome_forms, fn reviewed_payload.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 19, 30, 80, 95,
+//   112, 121, 123, 193, 195, 199, 204, 206, 213, 214, 260.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites
+//   reviewed_payload: String (142).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   89, 178, 204.
+
 use super::*;
 
 pub fn lifecycle_forms(transfer: &Value, person: &str) -> Vec<Form> {

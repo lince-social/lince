@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: fn overlaps, fn distance.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 17, 43, 62, 170,
+//   179, 180.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value.
+//   Sites 114.
+// - [Clippy probe: clippy::nonminimal_bool] this boolean expression can be simplified. Sites 247,
+//   248.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use crate::actions::ActionOutcome;
 use chrono::{DateTime, Utc};

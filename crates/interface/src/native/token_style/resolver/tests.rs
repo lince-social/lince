@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn typed_resolution_tracks_inheritance_sources_rules_and_removals, fn
+//   cached_values_follow_same_frame_edits_and_retire_removed_entities, fn
+//   typed_metric_bindings_follow_authored_replacement_and_removal, fn
+//   text_autosave_retains_unrelated_styles_and_unchanged_geometry.
+// BeautifulRust (baseline lines):
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 52, 141, 142, 143, 207, 324, 466.
+
 use super::*;
 use bevy::ecs::system::SystemState;
 

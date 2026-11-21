@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: enum AutomationStage, const READINGS, fn is_reading, fn is_agreement_reading.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 74, 108, 119,
+//   124, 137.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 89.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 11.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 59, 156.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 11, 13,
+//   14, 15, 16, 19, 29, 33, 42, 43, 44, 49, 50, 51, 52, 53, 54, 55, 59, 96, 97, 98, 99, 100, 101,
+//   102, 106, 117, 128, 144, 156.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites validate:
+//   String (59, 156).
+
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};

@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn selected_x11_screen_delivers_the_rendered_pixels.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 22, 46.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 50, 51.
+
 #![cfg(all(feature = "native", target_os = "linux"))]
 
 use std::time::{Duration, Instant};

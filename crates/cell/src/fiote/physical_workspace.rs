@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: struct Turn.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 71.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites physical_reply:
+//   String (75), physical_waiting: String (94), start_physical_request: String (23),
+//   start_physical_request_with_content: String (33), stop_physical_request: String (111).
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 71, 81, 103, 105.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 23, 33, 75, 94, 111.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   4, 11, 14, 17, 23, 33, 75, 94, 111.
+
 use super::*;
 
 #[derive(Clone, Debug)]

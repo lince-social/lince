@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: mod incoming, mod outline, mod persistence, struct SourceView.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 487, 580, 619,
+//   707, 741, 747, 755, 756, 778, 782, 786, 790, 791, 792, 809, 810, 811, 817, 818, 844, 860, 883,
+//   888, 894, 936, 955, 958, 969, 979, 1023, 1024, 1031, 1036, 1037, 1059, 1065, 1087, 1093, 1103,
+//   1106, 1150, 1175, 1183, 1530, 1547, 1596, 1609, 1622, 1629, 1642, 1666, 1674, 1738, 1746, 1822,
+//   1830, 1883, 1893, 1933, 2009, 2032, 2037, 2082, 2086, 2098, 2102, 2121, 2126, 2132, 2136.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   1169.
+
 use crate::native::{actions::Action, protein_area::Source, sand_panel as panel};
 use bevy::{math::DVec2, prelude::*};
 use cell::{ClientMessage, ServerMessage};

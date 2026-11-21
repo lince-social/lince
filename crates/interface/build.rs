@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: mod native_freedoom_build, mod native_icon_art, fn main, fn native_assets.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 57.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 19, 52.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   19.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   7, 21, 26, 43, 46, 50, 60, 62.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (27).
+
 #[cfg(all(feature = "native-presentation", feature = "stuff"))]
 mod native_freedoom_build;
 #[cfg(feature = "native-presentation")]

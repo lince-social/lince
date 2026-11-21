@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct GbmFramebuffer, fn framebuffer_from_wayland_buffer, enum Error, fn
+//   framebuffer_from_dmabuf.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 118, 180, 204.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   framebuffer_from_bo:use_opaque (189), framebuffer_from_dmabuf:allow_legacy (146),
+//   framebuffer_from_dmabuf:use_opaque (145), framebuffer_from_wayland_buffer:use_opaque (76).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   159, 163.
+
 //! Utilities to attach [`framebuffer::Handle`]s to gbm backed buffers
 
 use std::os::unix::io::AsFd;

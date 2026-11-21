@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod hand_camera, mod video_castle, mod communication, mod app.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #[cfg(feature = "native-presentation")]
 mod hand_camera;
 #[cfg(feature = "native-presentation")]

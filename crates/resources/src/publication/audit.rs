@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: struct Audit.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 29, 54, 55, 58,
+//   60, 73, 77, 82, 83, 93, 95, 96, 97, 105, 110, 139, 188, 199, 208.
+// - [Clippy: clippy::manual_is_variant_and] called `.ok().is_some_and(..)` on a `Result` value.
+//   Sites 144.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   143.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 13.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 1.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 6,
+//   7, 8, 9, 13.
+
 use super::*;
 use crate::Reference;
 

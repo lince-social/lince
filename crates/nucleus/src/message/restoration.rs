@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: struct Restoration, struct RestoringPart.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   28.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 77.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   36.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 16, 28, 54.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 4, 10.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 10,
+//   16, 28, 47, 54.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites finish: String
+//   (28, 54), part: String (16).
+
 use super::{MAX_CONTENT_BYTES, MAX_PARTS, MessagePart, StoredPart};
 
 #[derive(Default)]

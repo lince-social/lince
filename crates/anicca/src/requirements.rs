@@ -1,6 +1,18 @@
-use crate::{Diagnostic, ast, diagnostic, parse_with_tree};
-use rust_sitter::tree_sitter::Node;
+// non-lean-yet
+// Scope: struct Requirement, fn discover, fn discover_in, fn nodes.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 13.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 7,
+//   8, 9, 10, 13.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   126.
+
 use std::{collections::BTreeSet, path::Path};
+
+use rust_sitter::tree_sitter::Node;
+
+use crate::{Diagnostic, ast, diagnostic, parse_with_tree};
 
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct Requirement {

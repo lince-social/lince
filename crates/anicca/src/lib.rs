@@ -1,19 +1,51 @@
+// non-lean-yet
+// Scope: mod expression, mod extension, mod grammar, mod instinct.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 525, 527, 1303, 1490, 1491, 1502, 1533, 1534, 1535, 1536, 1537, 1538, 1540, 1578, 1579,
+//   1582, 1583, 1593, 1594, 1618, 1648.
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option` value.
+//   Sites 365.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 373, 374, 380,
+//   388, 471, 483, 499, 511, 767, 770, 772, 773, 778, 783, 784, 785, 786, 790, 791, 792, 795.
+// - [Clippy: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably fires.
+//   Sites 674.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 526, 527.
+// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 988.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   255, 263, 1148, 1260, 1289, 1295, 1296, 1300, 1307, 1321, 1329, 1339, 1343, 1351, 1354, 1370,
+//   1374, 1384.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 114, 227, 277, 281, 313, 358, 399, 457, 591, 625, 675, 722, 821, 878, 1401, 1408.
+// - [Clippy: clippy::uninlined_format_args] variables can be used directly in the `format!` string.
+//   Sites 205, 211, 217.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 1, 2,
+//   3, 4, 5, 19, 20, 23, 24, 25, 26, 27, 28, 32, 33, 34, 38, 39, 40, 41, 42, 46, 47, 48, 49, 50,
+//   51, 52, 56, 57, 58, 59, 60, 61, 62, 63, 67, 68, 69, 70, 71, 72, 73, 74, 75, 79, 80, 81, 82, 83,
+//   84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 97, 98, 99, 114, 227, 238, 277, 281, 313, 352, 353,
+//   354, 355, 358, 399, 457, 591, 625, 675, 722, 744, 821, 878, 1381, 1390, 1391, 1392, 1393, 1394,
+//   1395, 1396, 1397, 1401, 1408, 1416, 1427, 1428, 1429, 1430.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   161, 1178, 1203, 1214.
+
 pub mod expression;
 pub mod extension;
 pub mod grammar;
 pub mod instinct;
-pub mod requirements;
 mod projection;
-pub use projection::{project, validate_projection};
-
-use std::borrow::Cow;
-use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
-use std::fmt::Write as _;
-use std::fs;
-use std::path::{Path, PathBuf};
+pub mod requirements;
+use std::{
+    borrow::Cow,
+    collections::{BTreeMap, HashMap, HashSet, VecDeque},
+    fmt::Write as _,
+    fs,
+    path::{Path, PathBuf},
+};
 
 use ast::{Declaration, Document};
 use grammar::grammar as ast;
+pub use projection::{project, validate_projection};
 use sha2::{Digest, Sha256};
 
 pub const EXTENSION: &str = "lingua";
@@ -203,20 +235,17 @@ fn validate_record_boundaries(document: &Document) -> Result<(), Diagnostic> {
             (Some(opening), Some(closing)) if opening == closing => {}
             (Some(opening), Some(closing)) => {
                 return Err(diagnostic(format!(
-                    "Record `{}` opens with uid `{opening}` but closes with `{closing}`",
-                    title
+                    "Record `{title}` opens with uid `{opening}` but closes with `{closing}`"
                 )));
             }
             (Some(uid), None) => {
                 return Err(diagnostic(format!(
-                    "Record `{}` opens with uid `{uid}` but its closing boundary has none",
-                    title
+                    "Record `{title}` opens with uid `{uid}` but its closing boundary has none"
                 )));
             }
             (None, Some(uid)) => {
                 return Err(diagnostic(format!(
-                    "Record `{}` closes with uid `{uid}` but its opening boundary has none",
-                    title
+                    "Record `{title}` closes with uid `{uid}` but its opening boundary has none"
                 )));
             }
         }
@@ -671,7 +700,10 @@ pub fn set_frequency_runtime(
     Err(diagnostic(format!("no Frequency has uid `{uid}`")))
 }
 
-#[allow(clippy::too_many_arguments, reason = "The runtime transition takes the persisted rule identity, state, and audit context separately")]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "The runtime transition takes the persisted rule identity, state, and audit context separately"
+)]
 pub fn set_rule_runtime(
     source: &str,
     uid: &str,
@@ -987,10 +1019,9 @@ fn validate_document<'a>(
                 for item in &record.header.rest {
                     if let RecordField::Assertion(field) = &item.field
                         && let Some(ast::AssertionTail::Link(link)) = &field.tail
+                        && !link.target.is_uri()
                     {
-                        if !link.target.is_uri() {
-                            references.push((link.target.value().to_owned(), path));
-                        }
+                        references.push((link.target.value().to_owned(), path));
                     }
                 }
             }

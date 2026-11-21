@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct App, fn main, fn run_winit, fn send_frames_surface_tree.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 194.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (96, 163, 170, 211, 230, 231, 232, 234, 246, 256).
+
 use std::{os::unix::io::OwnedFd, sync::Arc};
 
 use ::winit::platform::pump_events::PumpStatus;

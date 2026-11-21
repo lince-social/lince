@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct Editor, struct Pending, fn composer, struct Add.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 67, 189, 358.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (32, 52, 74, 78, 208, 218, 260, 315, 333, 343, 344).
+
 use crate::native::{actions::Action, message_content::ContentRef};
 use bevy::{prelude::*, text::EditableText};
 use nucleus::operation::{Priority, Step, StepState};

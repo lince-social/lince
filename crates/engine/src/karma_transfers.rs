@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: type Snapshots, struct Readings, fn scope, fn actor.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 42, 74, 79, 157,
+//   169, 190, 216.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 94.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 154.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 157.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 94, 100, 173.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 94.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 45.
+
 use std::{cell::RefCell, collections::BTreeMap, future::Future, sync::Arc};
 
 use nucleus::DecimalValue;

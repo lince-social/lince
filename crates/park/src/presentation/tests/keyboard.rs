@@ -1,12 +1,19 @@
-use super::displays::{labelled, reveal, write};
-use super::shortcuts::{capture, click, named_button, settle};
-use super::*;
+// non-lean-yet
+// Scope: fn keyboard_settings_use_native_fields_and_the_host_transaction_at_wide_and_narrow_sizes.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use lince_interface::{
     host::{
         HostRequest,
         input::{InputOutcome, KeyboardSettings},
     },
     native::actions::Action,
+};
+
+use super::{
+    displays::{labelled, reveal, write},
+    shortcuts::{capture, click, named_button, settle},
+    *,
 };
 
 #[test]

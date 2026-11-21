@@ -1,11 +1,30 @@
+// non-lean-yet
+// Scope: fn socket, fn receive, fn
+//   the_public_sdk_recovers_from_actual_socket_write_backpressure_without_resending_a_snapshot, fn
+//   a_public_sdk_mutation_timeout_never_replays_the_command_and_a_late_reply_cannot_replace_a_fresh_snapshot.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
+use std::{
+    os::unix::fs::MetadataExt,
+    sync::mpsc::{Receiver, TryRecvError, channel},
+};
+
 use super::*;
-use crate::{control_client::ControlClient, launch::{Capability, Description}};
-use std::{os::unix::fs::MetadataExt, sync::mpsc::{Receiver, TryRecvError, channel}};
+use crate::{
+    control_client::ControlClient,
+    launch::{Capability, Description},
+};
 
 fn socket(server: &mut Server) -> UnixStream {
     let (server_socket, client_socket) = UnixStream::pair().unwrap();
     rustix::net::sockopt::set_socket_send_buffer_size(&client_socket, 4096).unwrap();
-    server.insert_authorized_client(server_socket, vec![Capability::WindowList, Capability::DesktopControl], false).unwrap();
+    server
+        .insert_authorized_client(
+            server_socket,
+            vec![Capability::WindowList, Capability::DesktopControl],
+            false,
+        )
+        .unwrap();
     client_socket
 }
 
@@ -14,10 +33,15 @@ fn receive<T>(server: &mut Server, receiver: &Receiver<T>) -> T {
     loop {
         match receiver.try_recv() {
             Ok(value) => return value,
-            Err(TryRecvError::Disconnected) => panic!("The public SDK fixture disconnected before reporting"),
+            Err(TryRecvError::Disconnected) => {
+                panic!("The public SDK fixture disconnected before reporting")
+            }
             Err(TryRecvError::Empty) => {}
         }
-        assert!(Instant::now() < deadline, "The public SDK fixture did not finish");
+        assert!(
+            Instant::now() < deadline,
+            "The public SDK fixture did not finish"
+        );
         server.dispatch().unwrap();
         std::thread::sleep(Duration::from_millis(1));
     }
@@ -39,14 +63,24 @@ fn the_public_sdk_recovers_from_actual_socket_write_backpressure_without_resendi
         let queue = connection.new_event_queue::<Client>();
         let mut saturated = false;
         for _ in 0..4096 {
-            connection.display().sync(&queue.handle(), Arc::new(AtomicBool::new(false)));
+            connection
+                .display()
+                .sync(&queue.handle(), Arc::new(AtomicBool::new(false)));
             match connection.flush() {
                 Ok(()) => {}
-                Err(wayland_client::backend::WaylandError::Io(error)) if error.kind() == io::ErrorKind::WouldBlock => { saturated = true; break; }
+                Err(wayland_client::backend::WaylandError::Io(error))
+                    if error.kind() == io::ErrorKind::WouldBlock =>
+                {
+                    saturated = true;
+                    break;
+                }
                 Err(error) => panic!("Unexpected Wayland write failure: {error}"),
             }
         }
-        assert!(saturated, "The fixture must observe a real full socket before claiming write-pressure recovery");
+        assert!(
+            saturated,
+            "The fixture must observe a real full socket before claiming write-pressure recovery"
+        );
         blocked.send(()).unwrap();
         let response = client.snapshot(0, 0).unwrap();
         assert!(matches!(response, Response::Snapshot { next: None, .. }));
@@ -65,7 +99,8 @@ fn the_public_sdk_recovers_from_actual_socket_write_backpressure_without_resendi
 }
 
 #[test]
-fn a_public_sdk_mutation_timeout_never_replays_the_command_and_a_late_reply_cannot_replace_a_fresh_snapshot() {
+fn a_public_sdk_mutation_timeout_never_replays_the_command_and_a_late_reply_cannot_replace_a_fresh_snapshot()
+ {
     let mut server = Server::new([640, 480]).unwrap();
     let stream = socket(&mut server);
     let (ready, started) = channel();
@@ -74,8 +109,12 @@ fn a_public_sdk_mutation_timeout_never_replays_the_command_and_a_late_reply_cann
     let (refresh, refreshed) = channel();
     let (finished, result) = channel();
     let thread = std::thread::spawn(move || {
-        let mut client = ControlClient::from_connection(Connection::from_socket(stream).unwrap()).unwrap();
-        assert_eq!(client.reply_timeout_for_test(Duration::from_millis(500)), Duration::from_secs(12));
+        let mut client =
+            ControlClient::from_connection(Connection::from_socket(stream).unwrap()).unwrap();
+        assert_eq!(
+            client.reply_timeout_for_test(Duration::from_millis(500)),
+            Duration::from_secs(12)
+        );
         ready.send(()).unwrap();
         proceed.recv_timeout(Duration::from_secs(5)).unwrap();
         let error = client.invoke(&call()).unwrap_err();
@@ -84,7 +123,10 @@ fn a_public_sdk_mutation_timeout_never_replays_the_command_and_a_late_reply_cann
         client.reply_timeout_for_test(Duration::from_secs(12));
         expired.send(()).unwrap();
         refreshed.recv_timeout(Duration::from_secs(5)).unwrap();
-        assert!(matches!(client.snapshot(0, 0).unwrap(), Response::Snapshot { .. }));
+        assert!(matches!(
+            client.snapshot(0, 0).unwrap(),
+            Response::Snapshot { .. }
+        ));
         finished.send(()).unwrap();
     });
     receive(&mut server, &started);
@@ -92,7 +134,9 @@ fn a_public_sdk_mutation_timeout_never_replays_the_command_and_a_late_reply_cann
     let deadline = Instant::now() + Duration::from_secs(5);
     let work = loop {
         server.dispatch().unwrap();
-        if let Some(work) = server.control_work().pop() { break work; }
+        if let Some(work) = server.control_work().pop() {
+            break work;
+        }
         assert!(Instant::now() < deadline);
         std::thread::sleep(Duration::from_millis(1));
     };
@@ -116,7 +160,8 @@ fn the_public_sdk_consumes_resync_and_reads_the_final_revision_after_a_real_slow
     let (resume, proceed) = channel();
     let (finished, result) = channel();
     let thread = std::thread::spawn(move || {
-        let mut client = ControlClient::from_connection(Connection::from_socket(stream).unwrap()).unwrap();
+        let mut client =
+            ControlClient::from_connection(Connection::from_socket(stream).unwrap()).unwrap();
         client.subscribe(true).unwrap();
         ready.send(()).unwrap();
         proceed.recv_timeout(Duration::from_secs(5)).unwrap();
@@ -124,21 +169,50 @@ fn the_public_sdk_consumes_resync_and_reads_the_final_revision_after_a_real_slow
         let final_change = client.next_change(Duration::from_secs(5)).unwrap();
         assert!(final_change.0 > first.0);
         assert_ne!(final_change.1 & CHANGE_RESYNC, 0);
-        let Response::Snapshot { revision, entries, next } = client.snapshot(0, 0).unwrap() else { panic!("Resync must produce a fresh actual snapshot"); };
+        let Response::Snapshot {
+            revision,
+            entries,
+            next,
+        } = client.snapshot(0, 0).unwrap()
+        else {
+            panic!("Resync must produce a fresh actual snapshot");
+        };
         assert_eq!(revision, final_change.0);
         assert_eq!(next, None);
-        assert!(entries.iter().any(|entry| matches!(entry, Entry::Workspace { name, .. } if name == "SDK final workspace")));
-        assert_eq!(client.next_change(Duration::from_millis(30)).unwrap_err().kind(), io::ErrorKind::TimedOut);
+        assert!(entries.iter().any(
+            |entry| matches!(entry, Entry::Workspace { name, .. } if name == "SDK final workspace")
+        ));
+        assert_eq!(
+            client
+                .next_change(Duration::from_millis(30))
+                .unwrap_err()
+                .kind(),
+            io::ErrorKind::TimedOut
+        );
         client.close().unwrap();
         finished.send(()).unwrap();
     });
     receive(&mut server, &started);
     server.dispatch().unwrap();
     for index in 0..EVENT_LIMIT + 10 {
-        server.workspaces(WorkspaceSnapshot { owner: 11, entries: vec![WorkspaceEntry { id: 1, name: format!("SDK workspace {index}"), active: true }] });
+        server.workspaces(WorkspaceSnapshot {
+            owner: 11,
+            entries: vec![WorkspaceEntry {
+                id: 1,
+                name: format!("SDK workspace {index}"),
+                active: true,
+            }],
+        });
         server.dispatch().unwrap();
     }
-    server.workspaces(WorkspaceSnapshot { owner: 11, entries: vec![WorkspaceEntry { id: 1, name: "SDK final workspace".into(), active: true }] });
+    server.workspaces(WorkspaceSnapshot {
+        owner: 11,
+        entries: vec![WorkspaceEntry {
+            id: 1,
+            name: "SDK final workspace".into(),
+            active: true,
+        }],
+    });
     server.dispatch().unwrap();
     resume.send(()).unwrap();
     receive(&mut server, &result);
@@ -150,29 +224,76 @@ fn the_public_sdk_consumes_resync_and_reads_the_final_revision_after_a_real_slow
 #[test]
 #[ignore = "only spawned by the authorized helper restart fixture"]
 fn authorized_helper_child() {
-    let raw = std::env::var("WAYLAND_SOCKET").expect("The helper must inherit its authorized FD").parse::<u32>().unwrap();
-    let inode = std::fs::metadata(format!("/proc/self/fd/{raw}")).unwrap().ino();
+    let raw = std::env::var("WAYLAND_SOCKET")
+        .expect("The helper must inherit its authorized FD")
+        .parse::<u32>()
+        .unwrap();
+    let inode = std::fs::metadata(format!("/proc/self/fd/{raw}"))
+        .unwrap()
+        .ino();
     let mut client = ControlClient::connect().unwrap();
-    assert!(matches!(client.snapshot(0, 0).unwrap(), Response::Snapshot { .. }));
+    assert!(matches!(
+        client.snapshot(0, 0).unwrap(),
+        Response::Snapshot { .. }
+    ));
     let response = client.invoke(&call()).unwrap();
-    std::fs::write("helper-result.json", serde_json::to_vec(&serde_json::json!({"pid":std::process::id(), "inode":inode, "response":response})).unwrap()).unwrap();
+    std::fs::write(
+        "helper-result.json",
+        serde_json::to_vec(
+            &serde_json::json!({"pid":std::process::id(), "inode":inode, "response":response}),
+        )
+        .unwrap(),
+    )
+    .unwrap();
 }
 
 #[test]
-fn restarting_an_owner_selected_helper_uses_a_fresh_authorized_fd_and_only_its_new_connection_grants() {
+fn restarting_an_owner_selected_helper_uses_a_fresh_authorized_fd_and_only_its_new_connection_grants()
+ {
     let directory = tempfile::tempdir().unwrap();
     let mut server = Server::new([640, 480]).unwrap();
     let mut reports = Vec::new();
     for generation in 0..2 {
         let path = directory.path().join(format!("helper-{generation}"));
         std::fs::create_dir(&path).unwrap();
-        let capabilities = if generation == 0 { vec![Capability::WindowList, Capability::DesktopControl] } else { vec![Capability::WindowList] };
-        let executable = std::env::current_exe().unwrap().to_str().unwrap().to_owned();
-        let mut arguments = vec!["-c".into(), "exec \"$@\" > helper.log 2>&1".into(), "park-helper-fixture".into(), "env".into()];
-        if let Ok(libraries) = std::env::var("LD_LIBRARY_PATH") { arguments.push(format!("LD_LIBRARY_PATH={libraries}")); }
-        arguments.extend([executable, "--exact".into(), "server::tests::control_tests::sdk::authorized_helper_child".into(), "--ignored".into(), "--test-threads=1".into()]);
-        let description = Description { program: "sh".into(), arguments, directory: Some(path.clone()), capabilities: capabilities.clone() };
-        let mut child = server.spawn_helper(&description, &directory.path().join("wayland-authorized-fixture")).unwrap();
+        let capabilities = if generation == 0 {
+            vec![Capability::WindowList, Capability::DesktopControl]
+        } else {
+            vec![Capability::WindowList]
+        };
+        let executable = std::env::current_exe()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_owned();
+        let mut arguments = vec![
+            "-c".into(),
+            "exec \"$@\" > helper.log 2>&1".into(),
+            "park-helper-fixture".into(),
+            "env".into(),
+        ];
+        if let Ok(libraries) = std::env::var("LD_LIBRARY_PATH") {
+            arguments.push(format!("LD_LIBRARY_PATH={libraries}"));
+        }
+        arguments.extend([
+            executable,
+            "--exact".into(),
+            "server::tests::control_tests::sdk::authorized_helper_child".into(),
+            "--ignored".into(),
+            "--test-threads=1".into(),
+        ]);
+        let description = Description {
+            program: "sh".into(),
+            arguments,
+            directory: Some(path.clone()),
+            capabilities: capabilities.clone(),
+        };
+        let mut child = server
+            .spawn_helper(
+                &description,
+                &directory.path().join("wayland-authorized-fixture"),
+            )
+            .unwrap();
         let deadline = Instant::now() + Duration::from_secs(20);
         let mut requests = 0;
         let mut observed = false;
@@ -185,18 +306,36 @@ fn restarting_an_owner_selected_helper_uses_a_fresh_authorized_fd_and_only_its_n
                 work.complete(Ok(Disposition::Dispatched));
             }
             if let Some(status) = child.try_wait().unwrap() {
-                assert!(status.success(), "{}", std::fs::read_to_string(path.join("helper.log")).unwrap());
+                assert!(
+                    status.success(),
+                    "{}",
+                    std::fs::read_to_string(path.join("helper.log")).unwrap()
+                );
                 break;
             }
-            if Instant::now() >= deadline { child.kill().unwrap(); child.wait().unwrap(); panic!("The selected helper did not finish"); }
+            if Instant::now() >= deadline {
+                child.kill().unwrap();
+                child.wait().unwrap();
+                panic!("The selected helper did not finish");
+            }
             std::thread::sleep(Duration::from_millis(1));
         }
         assert!(observed);
         assert_eq!(requests, usize::from(generation == 0));
-        let report: serde_json::Value = serde_json::from_slice(&std::fs::read(path.join("helper-result.json")).unwrap()).unwrap();
+        let report: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(path.join("helper-result.json")).unwrap())
+                .unwrap();
         let response: Response = serde_json::from_value(report["response"].clone()).unwrap();
-        if generation == 0 { assert!(matches!(response, Response::Complete { outcome: Disposition::Dispatched })); }
-        else { assert_eq!(failed(&response), Error::Denied); }
+        if generation == 0 {
+            assert!(matches!(
+                response,
+                Response::Complete {
+                    outcome: Disposition::Dispatched
+                }
+            ));
+        } else {
+            assert_eq!(failed(&response), Error::Denied);
+        }
         reports.push(report);
         let deadline = Instant::now() + Duration::from_secs(5);
         while server.control_status().readers != 0 {

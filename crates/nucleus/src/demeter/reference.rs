@@ -1,7 +1,28 @@
+// non-lean-yet
+// Scope: enum ReferenceGroup, struct Profile, struct ReferenceCase, struct EnergyFraction.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 137.
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option` value.
+//   Sites 33.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 118, 145, 151,
+//   152, 156, 177, 181.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 8.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 25, 108.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 8, 9,
+//   10, 15, 16, 17, 18, 19, 20, 21, 25, 54, 55, 56, 57, 58, 59, 63, 64, 65, 66, 70, 71, 72, 73, 74,
+//   75, 76, 77, 78, 83, 84, 85, 86, 87, 88, 93, 94, 95, 96, 97, 102, 103, 105, 108.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites energy: String
+//   (25), select_references: String (108).
+
+use std::collections::BTreeSet;
+
+use serde::{Deserialize, Serialize};
+
 use super::{Bounds, Unit, exact};
 use crate::{DecimalValue, optimization::decimal};
-use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]

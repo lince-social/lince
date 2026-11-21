@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: mod chooser, mod properties, mod strip, struct Target.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 55, 58, 142, 144,
+//   186, 205.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 152, 155,
+//   156, 157, 187, 206.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   152, 153.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (76, 126, 149, 207).
+
 use super::*;
 use crate::layout::desktop::{CompactGroup, Workspace as Model};
 use crate::native::{actions::Action, full_record::window::Metadata, protein_area::RecordBinding};

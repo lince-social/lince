@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct StaticMetadata, struct SignalColorimetry, struct Information, struct Hdr.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 36, 51, 55, 58.
+
 use std::{ffi::c_void, io, ptr::NonNull};
 
 #[repr(C)]
@@ -45,27 +50,42 @@ pub(super) struct Hdr {
 
 pub(super) fn hdr(bytes: &[u8]) -> io::Result<Hdr> {
     if bytes.len() < 128 || bytes.len() > 32768 || bytes.len() % 128 != 0 {
-        return Err(io::Error::other("The display information has an invalid length."));
+        return Err(io::Error::other(
+            "The display information has an invalid length.",
+        ));
     }
     // SAFETY: The input slice remains readable for the entire parse call.
     let information = unsafe { di_info_parse_edid(bytes.as_ptr().cast(), bytes.len()) };
-    let information = Information(NonNull::new(information)
-        .ok_or_else(|| io::Error::other("The display information could not be parsed."))?);
+    let information = Information(
+        NonNull::new(information)
+            .ok_or_else(|| io::Error::other("The display information could not be parsed."))?,
+    );
     // SAFETY: The metadata is read only while its owning Information is live.
     let metadata = unsafe { di_info_get_hdr_static_metadata(information.0.as_ptr()).as_ref() }
         .ok_or_else(|| io::Error::other("The display has no HDR metadata information."))?;
     // SAFETY: The colorimetry is read only while its owning Information is live.
-    let colorimetry = unsafe { di_info_get_supported_signal_colorimetry(information.0.as_ptr()).as_ref() }
-        .ok_or_else(|| io::Error::other("The display has no signal colorimetry information."))?;
+    let colorimetry =
+        unsafe { di_info_get_supported_signal_colorimetry(information.0.as_ptr()).as_ref() }
+            .ok_or_else(|| {
+                io::Error::other("The display has no signal colorimetry information.")
+            })?;
     if !metadata.pq || !metadata.type1 || !colorimetry.rgb {
-        return Err(io::Error::other("The display does not report HDR10 PQ, static metadata and BT.2020 RGB support."));
+        return Err(io::Error::other(
+            "The display does not report HDR10 PQ, static metadata and BT.2020 RGB support.",
+        ));
     }
     if metadata.maximum.is_finite() && metadata.maximum > 0.0 && metadata.maximum < 203.0 {
-        return Err(io::Error::other("The display's reported peak is below Park's HDR reference white."));
+        return Err(io::Error::other(
+            "The display's reported peak is below Park's HDR reference white.",
+        ));
     }
     let reported = metadata.maximum.is_finite() && metadata.maximum >= 203.0;
     Ok(Hdr {
-        peak_nits: if reported { metadata.maximum.round().clamp(203.0, 1000.0) as u32 } else { 1000 },
+        peak_nits: if reported {
+            metadata.maximum.round().clamp(203.0, 1000.0) as u32
+        } else {
+            1000
+        },
         reported,
     })
 }
@@ -76,7 +96,13 @@ mod tests {
 
     #[test]
     fn absent_or_invalid_display_data_never_establishes_hdr_support() {
-        for bytes in [vec![], vec![0; 127], vec![0; 128], vec![0; 129], vec![0; 32896]] {
+        for bytes in [
+            vec![],
+            vec![0; 127],
+            vec![0; 128],
+            vec![0; 129],
+            vec![0; 32896],
+        ] {
             assert!(hdr(&bytes).is_err());
         }
     }

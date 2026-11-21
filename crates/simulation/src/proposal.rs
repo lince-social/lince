@@ -1,3 +1,26 @@
+// non-lean-yet
+// Scope: struct Assertion, struct Record, fn validate_record, struct Occurrence.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 93, 110, 132,
+//   136, 290, 291, 297, 303, 442, 478, 479, 485.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   285.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 86, 286.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 286.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 181, 188, 246.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 237, 285.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 44, 48, 142, 206, 235, 259, 279, 358, 409, 468, 493, 502.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   19, 20, 21, 22, 23, 24, 25, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 44, 48, 131, 142, 169,
+//   170, 171, 172, 173, 174, 175, 176, 181, 182, 183, 188, 189, 190, 191, 196, 197, 198, 199, 200,
+//   201, 202, 206, 235, 246, 247, 248, 249, 251, 252, 254, 255, 259, 279, 338, 339, 340, 341, 342,
+//   347, 348, 349, 350, 351, 352, 353, 354, 358, 409, 464, 468, 493, 502.
+
 use std::collections::BTreeSet;
 
 use engine::{

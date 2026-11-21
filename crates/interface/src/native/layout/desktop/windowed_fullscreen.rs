@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Target, struct Page, struct Toggle, fn install.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 47, 89, 108, 115,
+//   125.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 64.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (55, 62, 121).
+
 use super::*;
 use crate::native::{actions::Action, full_record::window::Metadata, protein_area::RecordBinding};
 

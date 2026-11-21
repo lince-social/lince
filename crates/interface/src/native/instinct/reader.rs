@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: fn button, fn scroll, fn keyboard, fn scrolling.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 113, 114, 160,
+//   175, 191, 205, 229, 233, 272, 315, 348, 372, 394, 421, 440, 514.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   421, 440.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (37, 136, 152, 228, 229, 250, 251, 274, 279, 301, 302, 304).
+
 use super::*;
 use crate::native::{actions::ActionButton, edit_mode::label, tokens::Token};
 use bevy::{

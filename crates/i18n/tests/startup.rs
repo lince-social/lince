@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn startup_selection_freezes_the_catalog_and_resolves_ithkuil_fallbacks.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use lince_i18n::{Language, Token, catalog, initialize, native_text};
 
 #[test]

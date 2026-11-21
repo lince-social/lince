@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: const PAGE_SIZE, fn stack, fn row, fn clear.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 57, 58, 63, 157,
+//   171, 172, 196, 198.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (49, 61, 64, 81, 100, 101, 161, 190, 192, 206).
+
 use super::*;
 
 pub(super) const PAGE_SIZE: usize = 100;

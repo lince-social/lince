@@ -1,10 +1,31 @@
+// non-lean-yet
+// Scope: mod score, struct Suite, struct Model, enum Engine.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 297.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 318, 391, 452,
+//   466, 496.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 365, 446, 457.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 40.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 81, 185, 202, 313, 533, 631.
+// - [Clippy: clippy::print_stderr] Check CLI, Cargo, fixture, or library output contract before
+//   changing output. Sites 700.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 22, 33, 40, 55, 63, 74, 117, 130,
+//   149.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 22, 23,
+//   24, 25, 26, 27, 28, 33, 34, 35, 40, 41, 42, 44, 45, 46, 47, 48, 49, 55, 56, 57, 58, 63, 64, 65,
+//   66, 67, 68, 70, 74, 75, 76, 77, 80, 81, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 130,
+//   131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 149, 150, 151, 152,
+//   153, 154, 155, 156, 185, 202, 313, 440, 533, 631.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites fetch: String
+//   (313), read: String (185), run: String (631), validate: String (202), worker: String (533).
+
 mod score;
 
-pub use score::{Score, words};
-
-use super::{local, moonshine};
-use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 use std::{
     fs::File,
     io::{Read, Write},
@@ -16,6 +37,12 @@ use std::{
     },
     time::{Duration, Instant},
 };
+
+pub use score::{Score, words};
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
+
+use super::{local, moonshine};
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

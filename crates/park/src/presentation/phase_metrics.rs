@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn install, fn ui_layout_work, fn static_text_work, fn text_work.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 345.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   218, 220, 244, 245.
+
+use std::time::{Duration, Instant};
+
 use bevy::{
     app::{Main, MainScheduleOrder},
     ecs::{
@@ -9,7 +18,6 @@ use bevy::{
     prelude::*,
 };
 use lince_interface::host::performance::{self, Stage};
-use std::time::{Duration, Instant};
 
 pub(super) fn install(app: &mut App) -> Result<(), &'static str> {
     #[cfg(test)]

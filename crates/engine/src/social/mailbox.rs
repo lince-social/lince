@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: fn anchor_control, fn require_generation, fn route_on, fn access_on.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 182, 290, 291,
+//   292, 293.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 12, 38, 73,
+//   161.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 115, 493.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 115.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 12, 38, 73, 161.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value.
+//   Sites 226.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1, 2.
+
 use super::*;
 use nucleus::social::requests::*;
 use store::sqlx::{Row, Sqlite, Transaction};

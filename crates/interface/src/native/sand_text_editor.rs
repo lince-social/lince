@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: enum TextAction, struct TextPanel, fn available, fn open.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 125, 127, 181,
+//   190, 390.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   182.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (55, 73, 87, 106, 107, 114, 115, 181, 190, 209, 262, 334, 405, 411, 416).
+
 use crate::native::{
     edit_mode::{EditAction, EditMode, control, label},
     sand::text_editor,

@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Generated, struct GeneratedCanvas, struct PendingInteractions, struct Events.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 30, 41, 53, 69,
+//   87, 111, 115, 123, 191, 253, 255, 265, 324, 341, 342, 381, 387, 471, 484, 492, 504, 513, 519,
+//   525.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (173, 174, 175, 178, 242, 331, 351, 356, 394, 482).
+
 use super::*;
 use nucleus::component::{Composition, Document};
 

@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: const SLOT_CAP, struct Swapchain, struct Slot, struct InternalSlot.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 182.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (169).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (110, 124).
+
 use std::{
     fmt,
     ops::Deref,

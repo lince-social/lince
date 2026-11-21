@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct XSettings, struct Setting, enum Value, fn pad.
+// BeautifulRust (baseline lines):
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 152, 161.
+
 //! Types related to XSETTINGS handling
 //!
 //! See <https://specifications.freedesktop.org/xsettings-spec/0.5/>

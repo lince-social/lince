@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: impl Window, impl Window.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (45, 70).
+
 use crate::{
     backend::renderer::{
         element::{

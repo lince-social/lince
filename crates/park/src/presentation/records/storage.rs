@@ -1,4 +1,12 @@
-use super::*;
+// non-lean-yet
+// Scope: struct Request, struct Finished, struct Writer, fn save.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites new:path → &Path (37).
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 103.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (78, 89, 101).
+
 use std::{
     sync::{
         Arc,
@@ -7,6 +15,8 @@ use std::{
     },
     thread,
 };
+
+use super::*;
 
 pub(super) struct Request {
     pub version: u64,

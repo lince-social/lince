@@ -1,4 +1,7 @@
-use super::*;
+// non-lean-yet
+// Scope: impl State, impl State.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use smithay::{
     reexports::{
         wayland_protocols::xdg::shell::server::{
@@ -10,6 +13,8 @@ use smithay::{
         XdgPositionerUserData, XdgShellSurfaceUserData, XdgSurfaceUserData, XdgWmBaseUserData,
     },
 };
+
+use super::*;
 
 delegate_global_dispatch!(State: [xdg_wm_base::XdgWmBase: ()] => XdgShellState);
 delegate_dispatch!(State: [xdg_wm_base::XdgWmBase: XdgWmBaseUserData] => XdgShellState);

@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn prepare, fn update.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 17, 19, 64, 71,
+//   113, 115, 118, 124, 128, 129.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   38.
+
 use super::*;
 use std::collections::BTreeSet;
 

@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn convert_one, fn
+//   conversion_history_pins_units_ratios_and_withdrawals_without_rewriting_receipts, fn
+//   reapproving_the_same_ratio_binds_new_definitions_and_keys_cannot_be_renamed.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use store::Store;

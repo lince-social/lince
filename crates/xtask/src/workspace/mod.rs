@@ -1,5 +1,10 @@
-use crate::Result;
+// non-lean-yet
+// Scope: mod character, mod fixtures, mod geometry, mod validate.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::{ffi::OsString, path::Path};
+
+use crate::Result;
 
 mod character;
 mod fixtures;

@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod support, fn command, fn effects, fn
+//   source_inspection_obeys_visibility_and_remote_commands_cannot_open_local_files.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 33.
+
 #![cfg(test)]
 
 mod support;

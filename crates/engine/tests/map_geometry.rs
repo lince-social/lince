@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod support, fn fixture, fn page, fn
+//   geometry_pages_cover_three_hundred_once_and_bind_continuations_to_viewport_and_viewer.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 37, 40, 313.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 313.
+
 #![cfg(test)]
 
 mod support;

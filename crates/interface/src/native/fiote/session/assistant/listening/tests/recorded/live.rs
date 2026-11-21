@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod native_connection, struct Trace, fn trace, fn cpu_ticks.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 mod native_connection {

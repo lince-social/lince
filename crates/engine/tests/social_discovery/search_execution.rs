@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct SelectedServices, fn signed_row, fn
+//   dispersed_selected_services_use_three_slots_and_merge_signed_copies_despite_failure, struct
+//   HangingService.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 99, 103, 192.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 18.
+
 use super::*;
 use std::sync::atomic::{AtomicUsize, Ordering};
 

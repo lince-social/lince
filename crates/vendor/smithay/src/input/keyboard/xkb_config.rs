@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct XkbConfig.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 40.
+
 pub use xkbcommon::xkb;
 
 /// Configuration for xkbcommon.

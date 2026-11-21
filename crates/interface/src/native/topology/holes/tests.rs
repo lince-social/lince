@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn fixture, fn
+//   room_vertical_areas_retain_local_fill_geometry_instead_of_uploading_empty_meshes, fn hole, fn
+//   sand.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::{
     area::{AreaShape, RecordProperties, spawn_area},

@@ -1,5 +1,16 @@
-use serde::{Deserialize, Serialize};
+// non-lean-yet
+// Scope: const MAX_ENTRIES, const MAX_BYTES, const MAX_OFFER_BYTES, struct Entry.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 28, 75.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 5,
+//   6, 10, 11, 12, 13, 18, 19, 20, 24, 28, 75, 109, 110, 111, 112.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites validate:
+//   String (28), validate_path: String (75).
+
 use std::collections::BTreeMap;
+
+use serde::{Deserialize, Serialize};
 
 pub const MAX_ENTRIES: usize = 4096;
 pub const MAX_BYTES: u64 = 1024 * 1024 * 1024 * 1024;

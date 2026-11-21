@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: mod storage, fn invalid.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 226, 292, 328,
+//   342, 343, 406, 422, 425, 438, 450.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   377.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 350, 377, 560.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 350.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 377.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 16.
+
 use chrono::{DateTime, Utc};
 use nucleus::visibility::{
     Condition, Data, Policy,

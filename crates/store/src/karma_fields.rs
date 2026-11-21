@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: struct Field, fn invalid, fn read, fn get.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option` value.
+//   Sites 81.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 20.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 209.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   79, 247, 249.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 33, 42, 47, 56, 63, 128, 141, 184, 275.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 123.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 9, 10,
+//   11, 12, 13, 16, 33, 42, 47, 56, 63, 123, 124, 125, 128, 141, 184, 275.
+
 use chrono::{DateTime, Utc};
 use nucleus::karma::rule_field::{RuleConsequence, RuleFieldKind};
 use serde::Serialize;

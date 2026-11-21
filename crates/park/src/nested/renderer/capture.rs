@@ -1,17 +1,36 @@
-use super::*;
-use crate::server::{CaptureJob, CaptureTarget, WindowSnapshot};
+// non-lean-yet
+// Scope: type Mapping, fn capture_transform, struct Cursor, struct View.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 1053, 1099, 1102,
+//   1143.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 139, 140, 211,
+//   235, 238, 245, 356, 364, 365, 370, 575, 602, 611, 612, 632, 659, 722, 893, 957.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   74, 80, 84, 103, 270, 273, 274, 275, 293, 298, 393, 394, 788, 791, 798, 799, 800, 973, 976,
+//   984, 1019.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (35, 55, 107, 494, 529, 618, 1004).
+
+use std::collections::VecDeque;
+
 use lince_smithay_capture::wayland::image_copy_capture::CaptureFailureReason as Failure;
 use smithay::{
     backend::renderer::{ExportMem, Frame as _, TextureMapping, gles::GlesMapping},
     wayland::shm::with_buffer_contents_mut,
 };
-use std::collections::VecDeque;
+
+use super::*;
+use crate::server::{CaptureJob, CaptureTarget, WindowSnapshot};
 type Mapping = RasterMapping;
 
 fn capture_transform(rotation: lince_interface::host::mapping::QuarterTurn) -> Transform {
     use lince_interface::host::mapping::QuarterTurn;
-    match rotation { QuarterTurn::Normal => Transform::Flipped180, QuarterTurn::Clockwise90 => Transform::Flipped90,
-        QuarterTurn::UpsideDown => Transform::Flipped, QuarterTurn::Clockwise270 => Transform::Flipped270 }
+    match rotation {
+        QuarterTurn::Normal => Transform::Flipped180,
+        QuarterTurn::Clockwise90 => Transform::Flipped90,
+        QuarterTurn::UpsideDown => Transform::Flipped,
+        QuarterTurn::Clockwise270 => Transform::Flipped270,
+    }
 }
 
 pub(crate) use crate::runtime::latency::monotonic;
@@ -170,17 +189,40 @@ impl Source {
                     return None;
                 }
                 if let Some(job) = job {
-                    if job.color_revision.is_some_and(|(output, revision)| output != view.id || view.scene.colors.get(&output).copied().unwrap_or(0) != revision) { return None; }
-                    let same_mapping = match (view.frame.frame.input.mappings.get(view.id), job.output_mapping.as_ref()) {
+                    if job.color_revision.is_some_and(|(output, revision)| {
+                        output != view.id
+                            || view.scene.colors.get(&output).copied().unwrap_or(0) != revision
+                    }) {
+                        return None;
+                    }
+                    let same_mapping = match (
+                        view.frame.frame.input.mappings.get(view.id),
+                        job.output_mapping.as_ref(),
+                    ) {
                         (Some(current), Some(captured)) => current.same_mapping(captured),
                         (None, None) => true,
                         _ => false,
                     };
-                    if !same_mapping { return None; }
+                    if !same_mapping {
+                        return None;
+                    }
                     let stamp = view.frame.frame.capture_source()?;
-                    if stamp.revision != job.policy_revision || stamp.mapping_revision != job.mapping_revision || stamp.mappings != job.mappings { return None; }
-                    if !job.cursor && (view.frame.frame.capture_dmabuf(view.id, job.policy_revision, job.mapping_revision).is_none()
-                        || !view.frame.frame.capture_ready(view.id).ok()?) { return None; }
+                    if stamp.revision != job.policy_revision
+                        || stamp.mapping_revision != job.mapping_revision
+                        || stamp.mappings != job.mappings
+                    {
+                        return None;
+                    }
+                    if !job.cursor
+                        && (view
+                            .frame
+                            .frame
+                            .capture_dmabuf(view.id, job.policy_revision, job.mapping_revision)
+                            .is_none()
+                            || !view.frame.frame.capture_ready(view.id).ok()?)
+                    {
+                        return None;
+                    }
                 }
                 view.scene = filtered_scene(desktop, &view);
                 let output = view
@@ -193,7 +235,12 @@ impl Source {
                     .find(|output| output.id == view.id)?;
                 let bounds = output.bounds;
                 let rotation = output.rotation;
-                let mapping = Composition::output_raster(Some(&view.frame.frame), view.id, output.raster_mapping()).ok()?;
+                let mapping = Composition::output_raster(
+                    Some(&view.frame.frame),
+                    view.id,
+                    output.raster_mapping(),
+                )
+                .ok()?;
                 Some(Self::Output {
                     view,
                     bounds,
@@ -208,7 +255,11 @@ impl Source {
                     .into_iter()
                     .find(|window| window.id == id && window.mapped)?;
                 let window = match job.filter(|job| !job.cursor) {
-                    Some(job) => job.window.as_ref().filter(|window| window.id == id && window.surface == current.surface)?.clone(),
+                    Some(job) => job
+                        .window
+                        .as_ref()
+                        .filter(|window| window.id == id && window.surface == current.surface)?
+                        .clone(),
                     None => current,
                 };
                 let bounds = window.bounds()?;
@@ -217,8 +268,14 @@ impl Source {
                 let mut view = desktop.capture_view(target);
                 if let Some(view) = &mut view {
                     if let Some(job) = job.filter(|job| job.cursor || job.paint_cursor)
-                        && view.frame.frame.capture_source().is_none_or(|stamp| stamp.revision != job.policy_revision || stamp.mapping_revision != job.mapping_revision || stamp.mappings != job.mappings)
-                    { return None; }
+                        && view.frame.frame.capture_source().is_none_or(|stamp| {
+                            stamp.revision != job.policy_revision
+                                || stamp.mapping_revision != job.mapping_revision
+                                || stamp.mappings != job.mappings
+                        })
+                    {
+                        return None;
+                    }
                     view.scene = filtered_scene(desktop, view);
                 }
                 Some(Self::Window {
@@ -241,8 +298,19 @@ impl Source {
 
     fn painted_cursors(&self) -> Vec<Cursor> {
         let mut cursors = vec![self.cursor()];
-        let view = match self { Self::Output { view, .. } => Some(view), Self::Window { view, .. } => view.as_ref() };
-        if let Some(view) = view { cursors.extend(view.scene.tablets.iter().filter(|tablet| tablet.output == view.id).map(|tablet| tablet.cursor.clone())); }
+        let view = match self {
+            Self::Output { view, .. } => Some(view),
+            Self::Window { view, .. } => view.as_ref(),
+        };
+        if let Some(view) = view {
+            cursors.extend(
+                view.scene
+                    .tablets
+                    .iter()
+                    .filter(|tablet| tablet.output == view.id)
+                    .map(|tablet| tablet.cursor.clone()),
+            );
+        }
         cursors
     }
 
@@ -337,7 +405,9 @@ impl Source {
         };
         if job.paint_cursor {
             nodes.extend(cursor.nodes);
-            for cursor in self.painted_cursors().into_iter().skip(1) { nodes.extend(cursor.nodes); }
+            for cursor in self.painted_cursors().into_iter().skip(1) {
+                nodes.extend(cursor.nodes);
+            }
         }
         nodes
     }
@@ -360,13 +430,28 @@ fn filtered_scene(desktop: &Desktop, view: &View) -> Arc<Presented> {
         scene.tablets.clear();
         return Arc::new(scene);
     };
-    let Some(policy) = view.frame.frame.capture_source().filter(|capture| capture.revision == read.revision()).map(|capture| &capture.policy).or_else(|| read.policy()) else {
-        if view.scene.tablets.is_empty() { return view.scene.clone(); }
+    let Some(policy) = view
+        .frame
+        .frame
+        .capture_source()
+        .filter(|capture| capture.revision == read.revision())
+        .map(|capture| &capture.policy)
+        .or_else(|| read.policy())
+    else {
+        if view.scene.tablets.is_empty() {
+            return view.scene.clone();
+        }
         let mut scene = (*view.scene).clone();
-        scene.tablets.retain(|tablet| desktop.server.tablet_active(tablet.tool));
+        scene
+            .tablets
+            .retain(|tablet| desktop.server.tablet_active(tablet.tool));
         return Arc::new(scene);
     };
-    let native_private = view.frame.frame.capture_source().is_none_or(|capture| capture.native_private_focus);
+    let native_private = view
+        .frame
+        .frame
+        .capture_source()
+        .is_none_or(|capture| capture.native_private_focus);
     let mut scene = (*view.scene).clone();
     scene.popups.retain(|popup| match popup.owner {
         PopupOwner::Application(surface) => policy.windows.get(&surface) == Some(&false),
@@ -374,13 +459,19 @@ fn filtered_scene(desktop: &Desktop, view: &View) -> Arc<Presented> {
         PopupOwner::Layer(_) => true,
     });
     let public = |owner| match owner {
-        crate::server::CaptureContentOwner::Window(surface) => policy.windows.get(&surface) == Some(&false),
+        crate::server::CaptureContentOwner::Window(surface) => {
+            policy.windows.get(&surface) == Some(&false)
+        }
         crate::server::CaptureContentOwner::Native => !native_private,
         crate::server::CaptureContentOwner::Layer => true,
         crate::server::CaptureContentOwner::Unknown => false,
     };
-    if !public(scene.drag_owner) { scene.drag.clear(); }
-    scene.tablets.retain(|tablet| desktop.server.tablet_active(tablet.tool) && (tablet.cursor.named || public(tablet.owner)));
+    if !public(scene.drag_owner) {
+        scene.drag.clear();
+    }
+    scene.tablets.retain(|tablet| {
+        desktop.server.tablet_active(tablet.tool) && (tablet.cursor.named || public(tablet.owner))
+    });
     if !scene.cursor.named && !public(scene.pointer_owner) {
         scene.cursor.nodes.clear();
         scene.cursor.visible = false;
@@ -437,9 +528,20 @@ impl Captures {
 impl Composition {
     #[cfg(all(test, feature = "server-tests"))]
     pub(crate) fn capture_test_state(&self) -> [usize; 4] {
-        [self.capture.waiting.len(), self.capture.readbacks.len(),
-            self.capture.readbacks.iter().filter(|readback| !readback.sync.is_reached()).count(),
-            self.capture.readbacks.iter().filter(|readback| readback.job.is_none()).count()]
+        [
+            self.capture.waiting.len(),
+            self.capture.readbacks.len(),
+            self.capture
+                .readbacks
+                .iter()
+                .filter(|readback| !readback.sync.is_reached())
+                .count(),
+            self.capture
+                .readbacks
+                .iter()
+                .filter(|readback| readback.job.is_none())
+                .count(),
+        ]
     }
 
     pub(crate) fn capture_timeout(&self) -> Option<Duration> {
@@ -507,8 +609,13 @@ impl Composition {
             }
             copied = true;
             match renderer.map_texture(&readback.mapping).map_err(error) {
-                Ok(bytes) => desktop.server.complete_capture(job, readback.time, readback.hotspot,
-                    |job| write_buffer(job, bytes, readback.mapping.flipped())),
+                Ok(bytes) => {
+                    desktop
+                        .server
+                        .complete_capture(job, readback.time, readback.hotspot, |job| {
+                            write_buffer(job, bytes, readback.mapping.flipped())
+                        })
+                }
                 Err(error) => {
                     eprintln!("Park capture readback: {error}");
                     job.frame.fail(Failure::Unknown);
@@ -577,7 +684,8 @@ impl Composition {
             let mut ready = true;
             let mut failed = false;
             for node in &nodes {
-                let retained = !waiting.job.cursor && matches!(source, Source::Window { window, .. }
+                let retained = !waiting.job.cursor
+                    && matches!(source, Source::Window { window, .. }
                     if window.nodes.iter().any(|root| root.surface == node.surface && root.content.version == node.content.version));
                 match self.import_source(renderer, node, retained) {
                     Ok(imported) => ready &= imported,
@@ -595,11 +703,28 @@ impl Composition {
             }
             if !ready {
                 #[cfg(test)]
-                if waiting.job.deadline.saturating_duration_since(Instant::now()) < Duration::from_millis(50) {
-                    eprintln!("Capture source remained unready for {:?}: {:?}", waiting.job.target,
-                        nodes.iter().map(|node| (&node.surface, node.content.version, node.content.is_released(),
-                            crate::graphics::retained_capture(&node.content).is_ok_and(|capture| capture.is_some()),
-                            self.views.contains_key(&(node.surface.clone(), node.content.version)))).collect::<Vec<_>>());
+                if waiting
+                    .job
+                    .deadline
+                    .saturating_duration_since(Instant::now())
+                    < Duration::from_millis(50)
+                {
+                    eprintln!(
+                        "Capture source remained unready for {:?}: {:?}",
+                        waiting.job.target,
+                        nodes
+                            .iter()
+                            .map(|node| (
+                                &node.surface,
+                                node.content.version,
+                                node.content.is_released(),
+                                crate::graphics::retained_capture(&node.content)
+                                    .is_ok_and(|capture| capture.is_some()),
+                                self.views
+                                    .contains_key(&(node.surface.clone(), node.content.version))
+                            ))
+                            .collect::<Vec<_>>()
+                    );
                 }
                 self.capture.waiting.push_back(waiting);
                 continue;
@@ -706,7 +831,10 @@ impl Composition {
             ));
         }
         let size: Size<i32, Physical> = (job.size[0], job.size[1]).into();
-        let rotation = match source { Source::Output { rotation, .. } if !job.cursor => *rotation, _ => Default::default() };
+        let rotation = match source {
+            Source::Output { rotation, .. } if !job.cursor => *rotation,
+            _ => Default::default(),
+        };
         let transform = capture_transform(rotation);
         let source_size = rotation.source_size(job.size.map(|size| size as u32));
         let damage = Rect::from_size((source_size[0] as i32, source_size[1] as i32).into());
@@ -716,8 +844,13 @@ impl Composition {
         let native = if !job.cursor
             && let Source::Output { view, .. } = source
         {
-            let dmabuf = view.frame.frame.capture_dmabuf(view.id, job.policy_revision, job.mapping_revision)
-                .ok_or_else(|| io::Error::other("The privacy-safe output image or its mapping was retired"))?;
+            let dmabuf = view
+                .frame
+                .frame
+                .capture_dmabuf(view.id, job.policy_revision, job.mapping_revision)
+                .ok_or_else(|| {
+                    io::Error::other("The privacy-safe output image or its mapping was retired")
+                })?;
             let texture = renderer.import_dmabuf(dmabuf, None).map_err(error)?;
             inputs.push(texture.clone());
             Some(texture)
@@ -726,16 +859,41 @@ impl Composition {
         };
         let linear = self.linear_color_available();
         let mut intermediate: Option<GlesTexture> = if linear {
-            let retained = self.capture.readbacks.iter().flat_map(|readback| &readback._inputs)
+            let retained = self
+                .capture
+                .readbacks
+                .iter()
+                .flat_map(|readback| &readback._inputs)
                 .filter(|texture| texture.format() == Some(Fourcc::Abgr16161616f))
-                .map(|texture| texture.size().w.max(0) as u64 * texture.size().h.max(0) as u64 * 8).sum::<u64>();
-            let bytes = u64::from(source_size[0]).checked_mul(u64::from(source_size[1])).and_then(|pixels| pixels.checked_mul(8));
-            if bytes.and_then(|bytes| retained.checked_add(bytes)).is_none_or(|bytes| bytes > 256 * 1024 * 1024) {
-                return Err(io::Error::other("Linear capture targets exceed the 256 MiB budget"));
+                .map(|texture| texture.size().w.max(0) as u64 * texture.size().h.max(0) as u64 * 8)
+                .sum::<u64>();
+            let bytes = u64::from(source_size[0])
+                .checked_mul(u64::from(source_size[1]))
+                .and_then(|pixels| pixels.checked_mul(8));
+            if bytes
+                .and_then(|bytes| retained.checked_add(bytes))
+                .is_none_or(|bytes| bytes > 256 * 1024 * 1024)
+            {
+                return Err(io::Error::other(
+                    "Linear capture targets exceed the 256 MiB budget",
+                ));
             }
-            Some(renderer.create_buffer(Fourcc::Abgr16161616f, (source_size[0] as i32, source_size[1] as i32).into()).map_err(error)?)
-        } else { None };
-        let render_size = if linear { (source_size[0] as i32, source_size[1] as i32).into() } else { size };
+            Some(
+                renderer
+                    .create_buffer(
+                        Fourcc::Abgr16161616f,
+                        (source_size[0] as i32, source_size[1] as i32).into(),
+                    )
+                    .map_err(error)?,
+            )
+        } else {
+            None
+        };
+        let render_size = if linear {
+            (source_size[0] as i32, source_size[1] as i32).into()
+        } else {
+            size
+        };
         let render_transform = if linear { Transform::Normal } else { transform };
         self.linear_composition = linear;
         let drawn = (|| -> io::Result<()> {
@@ -768,10 +926,7 @@ impl Composition {
                     match source {
                         Source::Output { view, mapping, .. } => {
                             frame
-                                .clear(
-                                    self.sdr_solid([0.08, 0.08, 0.08, 1.0]),
-                                    &[damage],
-                                )
+                                .clear(self.sdr_solid([0.08, 0.08, 0.08, 1.0]), &[damage])
                                 .map_err(error)?;
                             self.draw_output(
                                 &mut frame,
@@ -831,7 +986,14 @@ impl Composition {
         if let Some(intermediate) = intermediate {
             {
                 let mut target = renderer.bind(&mut texture).map_err(error)?;
-                drop(self.encode_output(renderer, &mut target, &intermediate, size, transform, Default::default())?);
+                drop(self.encode_output(
+                    renderer,
+                    &mut target,
+                    &intermediate,
+                    size,
+                    transform,
+                    Default::default(),
+                )?);
             }
             inputs.push(intermediate);
         }
@@ -917,7 +1079,10 @@ impl Composition {
                 },
             );
             if let Some(damage) = local_damage(clip, damage) {
-                self.color_canvas(frame, canvas.map_or(Default::default(), |canvas| canvas.encoding))?;
+                self.color_canvas(
+                    frame,
+                    canvas.map_or(Default::default(), |canvas| canvas.encoding),
+                )?;
                 let result = frame
                     .render_texture_from_to(
                         native,
@@ -1005,11 +1170,7 @@ impl Composition {
                 let destination = mapping.rectangle(rectangle);
                 if let Some(damage) = local_damage(destination, damage) {
                     frame
-                        .draw_solid(
-                            destination,
-                            &[damage],
-                            self.sdr_solid([1.0, 1.0, 1.0, 1.0]),
-                        )
+                        .draw_solid(destination, &[damage], self.sdr_solid([1.0, 1.0, 1.0, 1.0]))
                         .map_err(error)?;
                 }
             }
@@ -1163,18 +1324,36 @@ mod tests {
     #[test]
     fn output_capture_combines_physical_rotation_with_readback_flip_once() {
         use lince_interface::host::mapping::QuarterTurn;
-        for rotation in [QuarterTurn::Normal, QuarterTurn::Clockwise90, QuarterTurn::UpsideDown, QuarterTurn::Clockwise270] {
-            let physical = match rotation { QuarterTurn::Normal | QuarterTurn::UpsideDown => [1200.0, 800.0], _ => [800.0, 1200.0] };
-            let projection = capture_transform(rotation).matrix() * capture_transform(QuarterTurn::Normal).matrix();
+        for rotation in [
+            QuarterTurn::Normal,
+            QuarterTurn::Clockwise90,
+            QuarterTurn::UpsideDown,
+            QuarterTurn::Clockwise270,
+        ] {
+            let physical = match rotation {
+                QuarterTurn::Normal | QuarterTurn::UpsideDown => [1200.0, 800.0],
+                _ => [800.0, 1200.0],
+            };
+            let projection = capture_transform(rotation).matrix()
+                * capture_transform(QuarterTurn::Normal).matrix();
             for [x, y] in [[0.0, 0.0], [100.0, 200.0], [1200.0, 800.0]] {
                 let point = [x / 600.0 - 1.0, y / 400.0 - 1.0, 1.0];
                 let actual: [f32; 2] = std::array::from_fn(|row| {
-                    let projected: f32 = (0..3).map(|column| projection[column][row] * point[column]).sum();
+                    let projected: f32 = (0..3)
+                        .map(|column| projection[column][row] * point[column])
+                        .sum();
                     (projected + 1.0) * physical[row] * 0.5
                 });
-                let expected = match rotation { QuarterTurn::Normal => [x, y], QuarterTurn::Clockwise90 => [800.0 - y, x],
-                    QuarterTurn::UpsideDown => [1200.0 - x, 800.0 - y], QuarterTurn::Clockwise270 => [y, 1200.0 - x] };
-                assert!((0..2).all(|axis| (actual[axis] - expected[axis]).abs() < 0.001), "{rotation:?}: {actual:?} != {expected:?}");
+                let expected = match rotation {
+                    QuarterTurn::Normal => [x, y],
+                    QuarterTurn::Clockwise90 => [800.0 - y, x],
+                    QuarterTurn::UpsideDown => [1200.0 - x, 800.0 - y],
+                    QuarterTurn::Clockwise270 => [y, 1200.0 - x],
+                };
+                assert!(
+                    (0..2).all(|axis| (actual[axis] - expected[axis]).abs() < 0.001),
+                    "{rotation:?}: {actual:?} != {expected:?}"
+                );
             }
         }
     }

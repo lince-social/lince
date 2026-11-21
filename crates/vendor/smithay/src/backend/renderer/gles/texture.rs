@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: struct GlesTexture, struct TextureSync, fn wait_for_syncpoint, struct GlesTextureInternal.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check SAFETY proof and trait invariants. Sites 135, 136.
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 87, 95, 100, 104,
+//   113, 119.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 39.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   from_raw:opaque (26).
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (220).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (88, 93, 105, 106, 111, 143, 144, 149).
+
 use ffi::Gles2;
 
 use super::*;

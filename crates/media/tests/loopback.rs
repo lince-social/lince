@@ -1,5 +1,18 @@
-#![cfg(test)]
+// non-lean-yet
+// Scope: fn opus_and_av1_cross_native_peers_without_internet_or_capture, fn
+//   forced_turn_carries_opus_and_av1, fn loopback, fn exchange.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 100, 107.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 189.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 81, 139.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   81.
+// - [Clippy: clippy::string_add] you added something to a string. Consider using
+//   `String::push_str()` instead. Sites 191.
 
+#![cfg(test)]
 #![cfg(feature = "native")]
 
 use std::time::{Duration, Instant};

@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn fixture, fn role_name, fn policy, fn
+//   matching_role_grants_add_properties_without_cross_granting_selectors.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::manual_string_new] empty String is being created manually. Sites 237.
+
 #![cfg(test)]
 
 use engine::{Engine, actions::Action};

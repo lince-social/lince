@@ -1,11 +1,24 @@
-#[cfg(feature = "nested")]
-use smithay::backend::renderer::sync::SyncPoint;
+// non-lean-yet
+// Scope: enum Target, struct Job, struct Watch, fn signal.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 133.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 130, 135.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   104.
+
 use std::{
     io::{self, Read, Write},
     os::{fd::OwnedFd, unix::net::UnixStream},
-    sync::{Arc, Mutex, atomic::{AtomicBool, AtomicUsize, Ordering}, mpsc::{SyncSender, TryRecvError, sync_channel}},
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicBool, AtomicUsize, Ordering},
+        mpsc::{SyncSender, TryRecvError, sync_channel},
+    },
     thread::JoinHandle,
 };
+
+#[cfg(feature = "nested")]
+use smithay::backend::renderer::sync::SyncPoint;
 
 enum Target {
     Descriptor(OwnedFd),
@@ -45,11 +58,16 @@ pub(crate) struct Watch {
 }
 
 impl Watch {
-    pub(crate) fn ready(&self) -> bool { self.completed.load(Ordering::Acquire) }
+    pub(crate) fn ready(&self) -> bool {
+        self.completed.load(Ordering::Acquire)
+    }
 }
 
 fn signal(control: &Mutex<UnixStream>) {
-    let _ = control.lock().unwrap_or_else(|error| error.into_inner()).write(&[1]);
+    let _ = control
+        .lock()
+        .unwrap_or_else(|error| error.into_inner())
+        .write(&[1]);
 }
 
 impl Drop for Watch {
@@ -74,65 +92,121 @@ impl Reactor {
         input.set_nonblocking(true)?;
         let control = Arc::new(Mutex::new(control));
         let (sender, receiver) = sync_channel::<Job>(256);
-        let worker = std::thread::Builder::new().name("park-fence-events".into()).spawn(move || {
-            let mut jobs: Vec<Job> = Vec::new();
-            loop {
+        let worker = std::thread::Builder::new()
+            .name("park-fence-events".into())
+            .spawn(move || {
+                let mut jobs: Vec<Job> = Vec::new();
                 loop {
-                    match receiver.try_recv() {
-                        Ok(job) => jobs.push(job),
-                        Err(TryRecvError::Empty) => break,
-                        Err(TryRecvError::Disconnected) => return,
-                    }
-                }
-                jobs.retain(|job| !job.cancelled.load(Ordering::Acquire));
-                let (ready, control_ready) = {
-                    let mut descriptors = vec![rustix::event::PollFd::new(&input, rustix::event::PollFlags::IN)];
-                    let mut indices = Vec::new();
-                    for (index, job) in jobs.iter().enumerate() {
-                        if let Some(fd) = job.target.descriptor() {
-                            descriptors.push(rustix::event::PollFd::new(fd, rustix::event::PollFlags::IN));
-                            indices.push(index);
+                    loop {
+                        match receiver.try_recv() {
+                            Ok(job) => jobs.push(job),
+                            Err(TryRecvError::Empty) => break,
+                            Err(TryRecvError::Disconnected) => return,
                         }
                     }
-                    let fallback = rustix::time::Timespec { tv_sec: 0, tv_nsec: 5_000_000 };
-                    let timeout = jobs.iter().any(|job| job.target.descriptor().is_none()).then_some(&fallback);
-                    if let Err(error) = rustix::event::poll(&mut descriptors, timeout) {
-                        if error == rustix::io::Errno::INTR { continue; }
-                        wake();
-                        return;
+                    jobs.retain(|job| !job.cancelled.load(Ordering::Acquire));
+                    let (ready, control_ready) = {
+                        let mut descriptors = vec![rustix::event::PollFd::new(
+                            &input,
+                            rustix::event::PollFlags::IN,
+                        )];
+                        let mut indices = Vec::new();
+                        for (index, job) in jobs.iter().enumerate() {
+                            if let Some(fd) = job.target.descriptor() {
+                                descriptors.push(rustix::event::PollFd::new(
+                                    fd,
+                                    rustix::event::PollFlags::IN,
+                                ));
+                                indices.push(index);
+                            }
+                        }
+                        let fallback = rustix::time::Timespec {
+                            tv_sec: 0,
+                            tv_nsec: 5_000_000,
+                        };
+                        let timeout = jobs
+                            .iter()
+                            .any(|job| job.target.descriptor().is_none())
+                            .then_some(&fallback);
+                        if let Err(error) = rustix::event::poll(&mut descriptors, timeout) {
+                            if error == rustix::io::Errno::INTR {
+                                continue;
+                            }
+                            wake();
+                            return;
+                        }
+                        let ready: Vec<_> = indices
+                            .into_iter()
+                            .zip(&descriptors[1..])
+                            .filter_map(|(index, fd)| {
+                                fd.revents()
+                                    .intersects(
+                                        rustix::event::PollFlags::IN
+                                            | rustix::event::PollFlags::HUP
+                                            | rustix::event::PollFlags::ERR
+                                            | rustix::event::PollFlags::NVAL,
+                                    )
+                                    .then_some(index)
+                            })
+                            .collect();
+                        (
+                            ready,
+                            descriptors[0]
+                                .revents()
+                                .contains(rustix::event::PollFlags::IN),
+                        )
+                    };
+                    if control_ready {
+                        let mut bytes = [0; 256];
+                        while input.read(&mut bytes).is_ok_and(|count| count > 0) {}
                     }
-                    let ready: Vec<_> = indices.into_iter().zip(&descriptors[1..]).filter_map(|(index, fd)| {
-                        fd.revents().intersects(rustix::event::PollFlags::IN | rustix::event::PollFlags::HUP | rustix::event::PollFlags::ERR | rustix::event::PollFlags::NVAL).then_some(index)
-                    }).collect();
-                    (ready, descriptors[0].revents().contains(rustix::event::PollFlags::IN))
-                };
-                if control_ready {
-                    let mut bytes = [0; 256];
-                    while input.read(&mut bytes).is_ok_and(|count| count > 0) {}
+                    let mut index = 0;
+                    let mut changed = false;
+                    jobs.retain(|job| {
+                        let done = ready.contains(&index) || job.target.reached();
+                        if done {
+                            job.completed.store(true, Ordering::Release);
+                        }
+                        index += 1;
+                        changed |= done;
+                        !done && !job.cancelled.load(Ordering::Acquire)
+                    });
+                    if changed {
+                        wake();
+                    }
                 }
-                let mut index = 0;
-                let mut changed = false;
-                jobs.retain(|job| {
-                    let done = ready.contains(&index) || job.target.reached();
-                    if done { job.completed.store(true, Ordering::Release); }
-                    index += 1;
-                    changed |= done;
-                    !done && !job.cancelled.load(Ordering::Acquire)
-                });
-                if changed { wake(); }
-            }
-        })?;
-        Ok(Self { sender: Some(sender), control, count: Arc::new(AtomicUsize::new(0)), worker: Some(worker) })
+            })?;
+        Ok(Self {
+            sender: Some(sender),
+            control,
+            count: Arc::new(AtomicUsize::new(0)),
+            worker: Some(worker),
+        })
     }
 
     fn register(&self, target: Target) -> io::Result<Watch> {
-        self.count.try_update(Ordering::AcqRel, Ordering::Acquire, |count| (count < 256).then_some(count + 1))
+        self.count
+            .try_update(Ordering::AcqRel, Ordering::Acquire, |count| {
+                (count < 256).then_some(count + 1)
+            })
             .map_err(|_| io::Error::other("Park fence watch limit reached"))?;
         let cancelled = Arc::new(AtomicBool::new(false));
         let completed = Arc::new(AtomicBool::new(false));
-        let watch = Watch { completed: completed.clone(), cancelled: cancelled.clone(), count: self.count.clone(), control: self.control.clone() };
-        self.sender.as_ref().ok_or_else(|| io::Error::other("Fence reactor stopped"))?
-            .try_send(Job { target, cancelled, completed }).map_err(|_| io::Error::other("Fence event queue is unavailable"))?;
+        let watch = Watch {
+            completed: completed.clone(),
+            cancelled: cancelled.clone(),
+            count: self.count.clone(),
+            control: self.control.clone(),
+        };
+        self.sender
+            .as_ref()
+            .ok_or_else(|| io::Error::other("Fence reactor stopped"))?
+            .try_send(Job {
+                target,
+                cancelled,
+                completed,
+            })
+            .map_err(|_| io::Error::other("Fence event queue is unavailable"))?;
         signal(&self.control);
         Ok(watch)
     }
@@ -152,7 +226,9 @@ impl Drop for Reactor {
     fn drop(&mut self) {
         self.sender.take();
         signal(&self.control);
-        if let Some(worker) = self.worker.take() { let _ = worker.join(); }
+        if let Some(worker) = self.worker.take() {
+            let _ = worker.join();
+        }
     }
 }
 
@@ -163,11 +239,16 @@ mod tests {
     #[test]
     fn descriptor_completion_wakes_without_periodic_polling() {
         let (sent, received) = std::sync::mpsc::channel();
-        let reactor = Reactor::new(move || { let _ = sent.send(()); }).unwrap();
+        let reactor = Reactor::new(move || {
+            let _ = sent.send(());
+        })
+        .unwrap();
         let (reader, mut writer) = UnixStream::pair().unwrap();
         let watch = reactor.descriptor(reader.into()).unwrap();
         writer.write_all(&[1]).unwrap();
-        received.recv_timeout(std::time::Duration::from_secs(2)).unwrap();
+        received
+            .recv_timeout(std::time::Duration::from_secs(2))
+            .unwrap();
         drop(watch);
         assert_eq!(reactor.count.load(Ordering::Acquire), 0);
     }

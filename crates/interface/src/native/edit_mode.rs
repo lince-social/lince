@@ -1,3 +1,24 @@
+// non-lean-yet
+// Scope: mod workspaces, mod panels, struct FocusScroll, struct FocusScrollGroup.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 1596, 1692, 2618,
+//   2903, 3004.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (720, 740,
+//   752, 774, 845, 857, 884, 898, 905, 912, 1144, 1652, 1783).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (1907, 2159, 2162, 2213, 2214, 2215, 2230, 2234, 2253, 2263, 2266, 2292, 2317,
+//   2318, 2320, 2323, 2325, 2332, 2355, 2357, 2360, 2365, 2368, 2387, 2388, 2393, 2394, 2397, 2427,
+//   2453, 2456, 2459, 2463, 2464, 2465, 2466, 2471, 2572, 2573, 2576, 2579, 2584, 2591, 2597, 2606,
+//   2611, 2624, 2628, 2629, 2630, 2632, 2635, 2636, 2638, 2640, 2647, 2654, 2663, 2722, 2726, 2743,
+//   2747, 2788, 2790, 2794, 2802, 2809, 2811, 2821, 2826, 2828, 2832, 2836, 2843, 2850, 2857, 2867,
+//   2874, 2885, 2888, 2893, 2902, 2907, 2912, 2917, 2924, 2933, 2934, 2939, 2947, 2955, 2961, 2962,
+//   2969, 2975, 2978, 3003, 3004, 3010, 3012, 3013, 3018, 3024, 3032, 3037, 3041, 3050, 3055,
+//   3059).
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 1865.
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 2637.
+
 use crate::i18n::Token as Tr;
 use crate::native::{
     actions::{

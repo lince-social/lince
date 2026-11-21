@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: mod background_motion_vectors, mod node, const NORMAL_PREPASS_FORMAT, const
+//   MOTION_VECTOR_PREPASS_FORMAT.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 271, 354.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   prepass_target_descriptors:deferred_prepass (395),
+//   prepass_target_descriptors:motion_vector_prepass (394),
+//   prepass_target_descriptors:normal_prepass (393).
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 65, 71, 79, 85, 91, 97, 103, 113,
+//   118, 126, 187, 209, 239, 314.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 29, 59,
+//   60, 104, 105, 106, 107, 108, 109, 113, 114, 118, 119, 147, 153, 161, 165, 171, 175, 199, 200,
+//   322, 323, 324, 392.
+
 //! Run a prepass before the main pass to generate depth, normals, and/or motion vectors textures, sometimes called a thin g-buffer.
 //! These textures are useful for various screen-space effects and reducing overdraw in the main pass.
 //!

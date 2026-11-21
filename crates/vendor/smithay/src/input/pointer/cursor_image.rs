@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct CursorImageAttributes, type CursorImageSurfaceData, enum CursorImageStatus.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #[cfg(feature = "wayland_frontend")]
 use wayland_server::protocol::wl_surface::WlSurface;
 

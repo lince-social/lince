@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn received_outcomes_are_signed_fresh_revocable_and_independent_of_observer_agreement.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use nucleus::simulation::{ReplayStatus, Verdict};
 
 #[test]

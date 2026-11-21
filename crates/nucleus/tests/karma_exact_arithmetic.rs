@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: const KG, const METRE, fn scaling_a_quantity_by_a_plain_decimal_keeps_its_unit, fn
+//   division_rounds_by_the_declared_rule_and_reports_what_it_discarded.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 60.
+// - [Clippy: clippy::unnecessary_wraps] this function's return value is unnecessarily wrapped by
+//   `Option`. Sites 417.
+
 #![cfg(test)]
 
 use std::collections::{BTreeMap, BTreeSet};

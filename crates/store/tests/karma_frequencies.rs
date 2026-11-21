@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: const PERSON_UID, const OTHER_PERSON_UID, fn
+//   create_replay_and_reopen_preserve_definition_and_original_result, fn
+//   activation_parameter_epochs_revision_switch_and_pause_keep_exact_history.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 576, 584, 591.
+// - [Clippy: clippy::unnecessary_wraps] this function's return value is unnecessarily wrapped by
+//   `Option`. Sites 595.
+
 #![cfg(test)]
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -10,14 +19,18 @@ use nucleus::karma::{
     InactiveGapPolicy, LocalId, MissedPolicy, OverloadPolicy, ProgramAst, ProgramSchema,
     RephasePolicy, Slug, TimestampMs,
 };
-use store::Store;
-use store::karma::frequencies::{
-    ActivateFrequencyInput, CreateFrequencyInput, FrequencyHandleRow, FrequencyMutationCommit,
-    PauseFrequencyInput, ResetFrequencyParametersInput, ReviseFrequencyInput,
-    SetFrequencyParametersInput, activate, create, get_activation, get_handle, get_revision, pause,
-    reset_parameters, revise, set_parameters,
+use store::{
+    Store,
+    karma::{
+        frequencies::{
+            ActivateFrequencyInput, CreateFrequencyInput, FrequencyHandleRow,
+            FrequencyMutationCommit, PauseFrequencyInput, ResetFrequencyParametersInput,
+            ReviseFrequencyInput, SetFrequencyParametersInput, activate, create, get_activation,
+            get_handle, get_revision, pause, reset_parameters, revise, set_parameters,
+        },
+        programs::{CreateProgramInput, create as create_program},
+    },
 };
-use store::karma::programs::{CreateProgramInput, create as create_program};
 
 const PERSON_UID: &str = "r_01APS3NDEKTSV4RRFFQ69G5FAV";
 const OTHER_PERSON_UID: &str = "r_01APS3NDEKTSV4RRFFQ69G5FAW";

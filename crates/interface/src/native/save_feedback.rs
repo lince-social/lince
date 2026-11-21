@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod presentation, const SAVE_WARNING_AFTER, struct SaveWake, struct SaveFeedback.
+// BeautifulRust (baseline lines):
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 28, 35, 92, 93.
+
 use crate::host::performance::{self, Count, Stage};
 use crate::native::{
     sand::Unsaved,

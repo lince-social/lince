@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: const MANAGER_VERSION, const INPUT_POPUP_SURFACE_ROLE, mod input_method_handle, mod
+//   input_method_keyboard_grab.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 161, 219, 220.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 129, 242.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (124, 207, 212, 213, 215).
+
 //! Utilities for input method support
 //!
 //! This module provides you with utilities to handle input methods,

@@ -1,3 +1,22 @@
+// non-lean-yet
+// Scope: mod runner, struct QueryContext, fn invalid, fn command_runs_without_timeout.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 186, 224, 226,
+//   250, 260, 269, 620, 670, 696, 709, 792.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 117, 372,
+//   457, 474.
+// - [Clippy probe: clippy::if_not_else] unnecessary boolean `not` operation. Sites 666.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 133, 137, 141, 142, 239.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 117, 372, 457, 474.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 10, 99, 445.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 33.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   10, 99, 445.
+
 use nucleus::command::{Command, CommandResponse};
 use serde::{Deserialize, Serialize};
 use store::sqlx::Row;

@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: mod node, struct TonemappingLuts, struct TonemappingPlugin, fn check_tonemapping_none.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 414.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 77, 78, 259, 262,
+//   304.
+// - [Clippy: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably fires.
+//   Sites 390.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 17.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 394.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 38, 44, 149, 310.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 39, 40,
+//   41, 44, 149, 173, 276, 310, 312, 359, 382, 417.
+
 use bevy_app::prelude::*;
 use bevy_asset::{
     embedded_asset, load_embedded_asset, AssetServer, Assets, Handle, RenderAssetUsages,

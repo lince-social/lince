@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: mod extent, mod readings, mod scheduling, mod snapshot.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 90, 139, 280,
+//   297, 314, 326, 418, 459, 517, 520, 589, 611, 700, 807, 810, 963, 966, 1187, 1211, 1212.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (239, 715).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   1154, 1155, 1156, 1157.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (155, 257, 266, 267, 272, 281, 295, 315, 325, 329, 370, 470, 547, 548, 549, 681,
+//   685, 687, 771, 775, 781, 789, 798, 801, 803, 840, 844, 862, 878, 890, 900, 907, 934, 954, 970,
+//   982, 988, 997, 999, 1023, 1036, 1067, 1073, 1079, 1081, 1086, 1100, 1109, 1116, 1132, 1154,
+//   1155, 1156, 1157, 1183, 1187, 1212, 1218, 1255).
+
 use bevy::{
     asset::{AssetId, RenderAssetUsages},
     camera::{RenderTarget, visibility::RenderLayers},

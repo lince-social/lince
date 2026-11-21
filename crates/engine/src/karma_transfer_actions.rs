@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: fn invalid, fn guard_error, fn fulfillment_request_id.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 145.
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites activate_transfer_fulfillment_action:fulfillment → &str (170).
+// - [Clippy: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably fires.
+//   Sites 80, 165.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 13.
+
 use chrono::{DateTime, Utc};
 use nucleus::transfer::AgreementGuard;
 

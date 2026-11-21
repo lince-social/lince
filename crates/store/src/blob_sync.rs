@@ -1,7 +1,22 @@
-use crate::{StoreError, sqlx};
+// non-lean-yet
+// Scope: struct Transfer, fn decode, fn list, fn get.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 21.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 32, 81.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 32.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 38, 43, 53, 62, 74, 85, 96, 105, 111.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 8,
+//   9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 38, 43, 53, 62, 74, 85, 96, 105, 111.
+
 use nucleus::blob_sync::Manifest;
 use serde::Serialize;
 use sqlx::{Row, SqlitePool};
+
+use crate::{StoreError, sqlx};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Transfer {

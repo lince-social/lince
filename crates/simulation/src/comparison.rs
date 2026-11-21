@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: struct Change, enum DifferenceKind, struct Incomplete, enum EvidenceGap.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 64, 82, 111, 204,
+//   209, 214, 215, 222, 223.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 22, 39.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 87.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 94, 105, 116, 138, 188.
+// - [Clippy probe: clippy::missing_panics_doc] State the panic conditions for exported functions.
+//   Sites 78.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   12, 13, 14, 15, 16, 17, 22, 23, 24, 25, 30, 31, 32, 33, 34, 39, 40, 41, 42, 43, 44, 49, 50, 51,
+//   52, 53, 54, 55, 56, 57, 58, 59, 60, 63, 78, 94, 105, 116, 138, 188.
+
 use std::{collections::BTreeMap, path::Path};
 
 use serde::{Deserialize, Serialize};

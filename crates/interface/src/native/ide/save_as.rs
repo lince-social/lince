@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Pending, fn inspect, fn confirm, fn save.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 134, 135, 136,
+//   155, 158, 161, 166, 170.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (52, 58, 78, 156, 186).
+
 use super::*;
 use lince_editor::files::SaveDestination;
 

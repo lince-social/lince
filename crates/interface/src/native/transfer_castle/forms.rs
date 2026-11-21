@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: mod fields, mod presentation, mod summary, fn set_display.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 134, 288.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   258, 259.
+
 use super::*;
 use model::FieldKind;
 use ui::{Command, button, input, row};

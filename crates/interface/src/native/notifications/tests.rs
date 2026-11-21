@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn fixture, fn click, fn toasts, fn
+//   passive_toasts_stay_below_the_modal_edit_panel_without_losing_history.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use bevy::ecs::system::RunSystemOnce;
 use crate::native::{

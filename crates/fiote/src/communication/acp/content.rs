@@ -1,5 +1,25 @@
-use super::*;
+// non-lean-yet
+// Scope: fn from_agent.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 47, 48, 52, 55,
+//   62, 64.
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites prompt_content:text → &str (75).
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   61.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 41, 72.
+// - [Clippy: clippy::uninlined_format_args] variables can be used directly in the `format!` string.
+//   Sites 58.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 1.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 41, 72.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites content: String
+//   (41), prompt_content: String (72).
+
 use nucleus::message::MessagePart;
+
+use super::*;
 
 pub(super) fn from_agent(block: ContentBlock) -> Result<MessagePart, String> {
     let part = match block {
@@ -55,7 +75,7 @@ impl Connection {
                     ContentBlock::Audio(AudioContent::new(data.clone(), mime_type.clone()))
                 } else {
                     if !capabilities.embedded_context { return Err("This agent does not accept embedded files. Send an accessible reference or select another agent.".into()) }
-                    let uri = format!("lince-attachment:{}", name);
+                    let uri = format!("lince-attachment:{name}");
                     let resource = if mime_type.starts_with("text/") || mime_type == "application/json" {
                         let bytes = nucleus::message::decode(data)?;
                         let text = String::from_utf8(bytes).map_err(|_| "The text attachment is not UTF-8.")?;

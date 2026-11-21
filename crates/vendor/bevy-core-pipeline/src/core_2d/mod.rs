@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: mod main_opaque_pass_2d_node, mod main_transparent_pass_2d_node, const
+//   CORE_2D_DEPTH_FORMAT, struct Core2dPlugin.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 155, 270, 351,
+//   444, 460.
+// - [Clippy: clippy::unnecessary_semicolon] unnecessary semicolon. Sites 437.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 48, 95, 190, 209, 310.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 46, 48,
+//   311, 312, 313, 314, 315, 316, 317, 392, 423.
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 18, 19.
+
 mod main_opaque_pass_2d_node;
 mod main_transparent_pass_2d_node;
 

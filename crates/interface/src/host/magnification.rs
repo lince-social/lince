@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: enum Caret, const MINIMUM, const MAXIMUM, const STEP.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::{OutputId, Rectangle, SurfaceId};
 
 #[derive(Clone, Copy, Debug, PartialEq)]

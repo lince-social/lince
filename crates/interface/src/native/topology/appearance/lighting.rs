@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn active, fn synchronize.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (113, 119, 132, 136).
+
 use super::*;
 
 fn active(world: &World, owner: Entity, surface: &super::super::presentation::Surface) -> bool {

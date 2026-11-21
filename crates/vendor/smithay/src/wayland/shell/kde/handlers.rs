@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: impl KdeDecorationState, impl KdeDecorationState, impl KdeDecorationState.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (72).
+
 //! Handlers for KDE decoration events.
 use tracing::trace;
 

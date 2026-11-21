@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: fn interface_checks, fn textures, fn
+//   pooled_targets_keep_output_and_capture_leases_clear_reuse_and_bound_replacement, fn
+//   dropped_image_leases_cannot_recycle_a_gpu_pending_target.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 158, 173, 180.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 22.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (8).
+
 use super::*;
 use crate::graphics::{
     import::tests::batches::{read, target, write},

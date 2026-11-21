@@ -1,3 +1,27 @@
+// non-lean-yet
+// Scope: const BUFFER_ALLOCATION_GROWTH_FACTOR, struct GpuComponentArrayBufferPlugin, trait
+//   GpuComponentArrayBuffer, struct GpuComponentArray.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 265, 280, 290.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 247, 275, 285.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 309, 322.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 109, 194, 256, 258, 263, 265, 280, 290, 307, 315, 339, 340, 440, 446, 452.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   194, 256, 307, 340, 446, 452.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 340.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   314.
+// - [Clippy: clippy::missing_assert_message] assert without any message. Sites 270, 305, 316.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 135.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 30, 67.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 30, 71.
+
 //! Lightweight storage of per-mesh-instance data.
 
 use crate::storage::{ShaderBuffer, ShaderBufferData};

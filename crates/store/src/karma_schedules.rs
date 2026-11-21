@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: struct Boundary, struct Schedule, fn boundary, fn get.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option` value.
+//   Sites 184.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 36.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 56, 63, 86, 101, 110, 134, 151, 166, 224, 257, 314.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 9, 10,
+//   11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 27, 28, 29, 30, 31, 32, 33, 56, 63, 86,
+//   101, 110, 134, 151, 166, 224, 257, 314.
+
 use chrono::{DateTime, Utc};
 use nucleus::karma::scheduled_change::{BoundaryInput, Purpose};
 use serde::Serialize;

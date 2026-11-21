@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: enum Request, enum Response, fn run, fn handle.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 164, 185.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 9, 20.
+// - [Clippy probe: clippy::large_enum_variant] large size difference between variants. Sites 9.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 48.
+// - [Clippy probe: clippy::print_stdout] Check CLI, Cargo, fixture, or library output contract
+//   before changing output. Sites 210.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   9, 10, 11, 12, 13, 14, 15, 20, 21, 22, 23, 24, 25, 26, 27, 29, 30, 32, 33, 35, 36, 38, 39, 41,
+//   42, 43, 45, 48.
+
 use std::io::{BufRead, Write};
 use std::path::Path;
 

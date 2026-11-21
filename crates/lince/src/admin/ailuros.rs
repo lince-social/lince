@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: const USAGE, fn request, fn dispatch.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 40, 63, 71, 83,
+//   91.
+
 use std::io::Error;
 
 use engine::{Engine, actions::Action, signal_endpoints::Request};

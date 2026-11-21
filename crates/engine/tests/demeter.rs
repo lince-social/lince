@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: mod support, fn command, fn ready, fn solved.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 118, 361.
+
 #![cfg(test)]
 
 mod support;

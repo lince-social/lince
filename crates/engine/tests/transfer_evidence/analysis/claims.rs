@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn request, fn check_publisher_amount_against_original_receipts.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use nucleus::trust_analysis::claims::{
     Comparator, Descriptor, Metric,

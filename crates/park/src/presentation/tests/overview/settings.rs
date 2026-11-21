@@ -1,5 +1,11 @@
-use super::super::displays::{labelled, reveal, write};
-use super::*;
+// non-lean-yet
+// Scope: fn launch, fn press, fn open, fn value.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
+use super::{
+    super::displays::{labelled, reveal, write},
+    *,
+};
 
 fn launch(
     directory: &std::path::Path,

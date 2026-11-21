@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct LockedClientObjsIter, fn new_locked_obj_iter_from_vec, fn new_locked_obj_iter.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 29.
+// - [review: §8 Unsafe] Prove unchecked operations and prefer a checked API when equivalent. Sites
+//   transmute (30).
+
 /// Common iterator types
 use wayland_server::{backend::ClientId, Resource, Weak};
 

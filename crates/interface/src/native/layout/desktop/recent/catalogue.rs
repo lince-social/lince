@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct Target, struct Entry, fn workspace, fn entry.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]

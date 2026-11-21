@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: mod commands, mod publication, mod compact, mod scratch.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 1528.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   487, 524, 536, 607, 675, 676, 677, 678, 773, 774, 775, 839, 909, 968, 969, 970, 1030, 1031,
+//   1032, 1034, 1096.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (322, 488, 495, 509, 546, 615, 787, 930, 982, 1075, 1489, 1490, 1491, 1496, 1500,
+//   1506, 1528, 1532, 1537, 1555, 1558, 1565, 1569, 1570, 1571, 1576, 1577, 1578, 1580, 1588, 1898,
+//   1903, 1908, 1911, 1914, 1923, 1927, 1931, 1948, 1958, 1962).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 443.
+
 use super::LayoutBox;
 use crate::{
     host::{

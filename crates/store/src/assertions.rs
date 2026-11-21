@@ -1,9 +1,33 @@
-use nucleus::DecimalValue;
-use nucleus::graph::Edge;
+// non-lean-yet
+// Scope: fn assertion_op_value, enum AssertionRole, struct AssertionRow, fn map.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 304.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 67, 907, 1378.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 723, 1763, 1764.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   objects_from_subjects:with_body (1523), record_descendants:include_self (1730).
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 34.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 330, 338, 463, 505, 540, 580, 605, 685, 694, 705, 729, 752, 764, 851, 865, 882, 932, 949,
+//   956, 1003, 1013, 1029, 1052, 1137, 1150, 1236, 1256, 1281, 1319, 1328, 1414, 1432, 1450, 1467,
+//   1490, 1506, 1519, 1560, 1590, 1605, 1616, 1629, 1660, 1726.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 105, 569.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 34, 35,
+//   36, 40, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 105, 106, 107, 108,
+//   109, 110, 111, 112, 116, 117, 118, 330, 338, 463, 505, 540, 569, 570, 571, 572, 573, 574, 575,
+//   576, 577, 580, 605, 685, 694, 705, 729, 752, 764, 851, 865, 882, 896, 897, 898, 899, 900, 901,
+//   902, 903, 904, 932, 949, 956, 1003, 1013, 1029, 1052, 1137, 1150, 1236, 1256, 1281, 1319, 1328,
+//   1414, 1432, 1450, 1467, 1490, 1506, 1519, 1560, 1590, 1605, 1616, 1629, 1660, 1713, 1714, 1715,
+//   1716, 1717, 1718, 1719, 1720, 1721, 1722, 1723, 1726.
+
+use nucleus::{DecimalValue, graph::Edge};
 use sqlx::{Row, Sqlite, SqlitePool, Transaction};
 
-use crate::StoreError;
-use crate::sync_ops::OpKind;
+use crate::{StoreError, sync_ops::OpKind};
 
 fn assertion_op_value(
     subject_uid: &str,
@@ -1597,7 +1621,7 @@ pub async fn edges_of_predicate(
         .map(|row| Edge {
             from: row.subject_uid,
             to: row.object_uid,
-            quantity: row.quantity.map(|value| value.to_f64()),
+            quantity: row.quantity.map(nucleus::DecimalValue::to_f64),
         })
         .collect())
 }

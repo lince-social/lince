@@ -1,23 +1,14 @@
-use serde::{Deserialize, Serialize};
+//! Adds visible incident assertions and family names to Record results.
+
+use crate::ProteinError;
+use nucleus::performance::{Span, add};
+pub use protein_authority::query::relation_context::Include;
 use serde_json::Value;
 use std::collections::{BTreeMap, HashMap, HashSet};
-use store::{Store, records::RecordRow};
-
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
-#[serde(deny_unknown_fields)]
-pub struct Include {
-    #[serde(default)]
-    pub families: Vec<String>,
-}
-
-impl Include {
-    pub fn valid(&self) -> bool {
-        self.families.len() <= 128
-            && self.families.iter().all(|family| {
-                !family.trim().is_empty() && family.len() <= 128 && !family.contains('\0')
-            })
-    }
-}
+use store::{
+    Store, assertions::incident_to, concepts::descendants_including, records::RecordRow,
+    vocabulary::resolve,
+};
 
 pub(crate) async fn attach<Body>(
     store: &Store,
@@ -26,36 +17,35 @@ pub(crate) async fn attach<Body>(
     include: &Include,
     names: &HashMap<String, String>,
     subject: Option<&str>,
-) -> Result<HashMap<String, Value>, crate::ProteinError> {
-    let _context = nucleus::performance::Span::new("protein-relation-context-await");
+) -> Result<HashMap<String, Value>, ProteinError> {
+    let _context = Span::new("protein-relation-context-await");
     let ids: Vec<_> = records.iter().map(|record| record.uid.as_str()).collect();
     let positions: HashMap<_, _> = ids
         .iter()
         .enumerate()
         .map(|(index, uid)| (*uid, index))
         .collect();
-    let mut context: Vec<Vec<Value>> = records.iter().map(|_| Vec::new()).collect();
+    let mut context = vec![Vec::new(); ids.len()];
     let mut families = BTreeMap::new();
     for family in &include.families {
         let family = family.trim();
         if families.contains_key(family) {
             continue;
         }
-        let members: HashSet<_> =
-            if let Some(uid) = store::vocabulary::resolve(&store.pool, family, subject).await? {
-                store::concepts::descendants_including(&store.pool, &uid)
-                    .await?
-                    .into_iter()
-                    .collect()
-            } else {
-                HashSet::new()
-            };
+        let members: HashSet<_> = if let Some(uid) = resolve(&store.pool, family, subject).await? {
+            descendants_including(&store.pool, &uid)
+                .await?
+                .into_iter()
+                .collect()
+        } else {
+            HashSet::new()
+        };
         families.insert(family, members);
     }
     let mut family_index: HashMap<String, Vec<&str>> = HashMap::new();
     let mut published = 0;
     let mut fanouts = 0;
-    for assertion in store::assertions::incident_to(&store.pool, &ids).await? {
+    for assertion in incident_to(&store.pool, &ids).await? {
         if visible.is_some_and(|allowed| {
             !allowed.contains(&assertion.subject_uid)
                 || assertion
@@ -72,19 +62,19 @@ pub(crate) async fn attach<Body>(
             .filter(|to| *to != assertion.subject_uid.as_str())
             .and_then(|to| positions.get(to))
             .copied();
-        if from.is_none() && target.is_none() {
+        let Some(primary) = from.or(target) else {
             continue;
-        }
-        let _publish = nucleus::performance::Span::new("protein-relation-context-publish");
+        };
+        let _publish = Span::new("protein-relation-context-publish");
         if !families.is_empty() && !family_index.contains_key(&assertion.predicate_uid) {
-            let _index = nucleus::performance::Span::new("protein-relation-context-index");
+            let _index = Span::new("protein-relation-context-index");
             let matched = families
                 .iter()
                 .filter(|(_, members)| members.contains(&assertion.predicate_uid))
                 .map(|(family, _)| *family)
                 .collect();
             family_index.insert(assertion.predicate_uid.clone(), matched);
-            nucleus::performance::add("protein-relation-context-family-lookups", 1);
+            add("protein-relation-context-family-lookups", 1);
         }
         let matched = family_index
             .get(&assertion.predicate_uid)
@@ -115,19 +105,18 @@ pub(crate) async fn attach<Body>(
             ("families", matched.iter().copied().collect::<Value>()),
             ("unit_name", unit_name.into()),
         ]);
-        match (from, target) {
-            (Some(from), Some(target)) => {
-                context[from].push(value.clone());
-                context[target].push(value);
-                fanouts += 1;
-            }
-            (Some(index), None) | (None, Some(index)) => context[index].push(value),
-            (None, None) => unreachable!(),
+        // Positions come from the same IDs that sized context. Self-links have no target.
+        if let Some(target) = target.filter(|_| from.is_some()) {
+            context[primary].push(value.clone());
+            context[target].push(value);
+            fanouts += 1;
+        } else {
+            context[primary].push(value);
         }
         published += 1;
     }
-    nucleus::performance::add("protein-relation-context-assertions", published);
-    nucleus::performance::add("protein-relation-context-fanouts", fanouts);
+    add("protein-relation-context-assertions", published);
+    add("protein-relation-context-fanouts", fanouts);
     Ok(records
         .iter()
         .zip(context)

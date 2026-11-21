@@ -1,3 +1,23 @@
+// non-lean-yet
+// Scope: enum UpdatePhase, struct Information, struct InformationChannel, trait Updater.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 130, 199, 220,
+//   224, 248, 265.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites request: String
+//   (41).
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 9.
+// - [Clippy probe: clippy::if_not_else] unnecessary boolean `not` operation. Sites 195.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option`
+//   value. Sites 245.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 41.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 35.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   9, 10, 11, 12, 13, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 35, 36, 41, 47,
+//   51.
+
 use std::{path::PathBuf, time::Duration};
 
 use tokio::sync::{mpsc, watch};

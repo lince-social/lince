@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: fn sign_organ_root_proof, fn verify.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 23, 25, 133, 147,
+//   174, 182, 184, 185, 200.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 5, 42.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   5, 42.
+
 use super::*;
 use crate::{actions::VerifiedActionAuthorship, trust::Signer};
 use nucleus::identity::roots::{self as model, Proof, Review};

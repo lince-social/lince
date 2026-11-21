@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: enum Work, struct State, struct Scope, struct Pending.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 18, 21, 24, 64,
+//   70, 75, 87, 89, 106, 111, 120.
+
 use cell::{ClientMessage, ServerMessage, Session, speech::Request};
 use std::{
     collections::HashMap,

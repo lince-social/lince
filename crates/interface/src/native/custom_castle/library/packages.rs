@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct State, struct View, enum Command, fn show.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 119, 121, 149,
+//   154, 160, 168, 183, 198, 202, 262, 265, 275, 337, 347, 364, 374, 375, 376, 381.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (106, 125, 148, 159, 173, 180, 192, 244, 262, 263, 265, 276, 301, 304, 334, 343,
+//   351, 364, 372, 551).
+
 use super::*;
 use nucleus::sand_package::{self as model, Entry, Identity, Package, Response};
 

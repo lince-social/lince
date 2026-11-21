@@ -1,5 +1,12 @@
-use super::*;
+// non-lean-yet
+// Scope: fn consumed_modifier_release_updates_the_newly_focused_client_without_replaying_keys, fn
+//   intercepted_modifier_changes_respect_the_input_method_grab_and_update_its_next_event, fn
+//   settings, fn request.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use lince_interface::host::input::{InputOutcome, KeyboardRequest, KeyboardSettings};
+
+use super::*;
 
 #[test]
 fn consumed_modifier_release_updates_the_newly_focused_client_without_replaying_keys() {

@@ -1,8 +1,24 @@
-use super::{StoreError, invalid};
+// non-lean-yet
+// Scope: const KNOWLEDGE_NAMESPACE, const REFERENCE_NAMESPACE, const IMPORT_NAMESPACE, const
+//   MAX_KNOWLEDGE_PARTS.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 125, 132, 164, 168, 183, 188.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 122, 166.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   122.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 20, 41, 62, 98, 149, 198.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 8,
+//   9, 10, 13, 20, 41, 62, 98, 149, 198.
+
 use nucleus::knowledge::Item;
 use serde_json::{Value, json};
 use sha2::{Digest, Sha384};
 use sqlx::{Row, Sqlite, Transaction};
+
+use super::{StoreError, invalid};
 
 pub const KNOWLEDGE_NAMESPACE: &str = "lince.knowledge";
 pub const REFERENCE_NAMESPACE: &str = "lince.knowledge.reference";

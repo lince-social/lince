@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: enum ColorField, struct Swatch, struct Editor, fn hex.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 229.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   48, 50, 237, 279, 280, 281.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (58, 170, 192, 197, 229, 235, 248, 268, 276, 294, 300).
+
 use crate::native::{
     canvas_background::{self, CanvasColors},
     edit_mode::{EditAction, EditMode, control, label},

@@ -1,3 +1,33 @@
+// non-lean-yet
+// Scope: fn remote_action_binding, fn remote_action_transfer_token, fn identity_public_key, fn
+//   hex_sha256.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 21, 34, 63, 76,
+//   135, 147, 164, 179, 182, 183, 184, 185, 187, 188, 189, 546, 554, 557, 559, 561, 562, 627, 635,
+//   642, 766, 809, 894, 900, 901, 922, 1353, 1395, 1405, 1408, 1409, 1431.
+// - [Clippy: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably fires.
+//   Sites 1056, 1494, 1511.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 51, 94,
+//   232, 290, 677, 699, 775, 781, 810, 826, 1387, 1902, 1903, 1904, 1905, 1906, 1907.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 453, 520, 526, 556, 912, 1023, 1077, 1342.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 526.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 453, 520, 556, 912, 1077, 1342.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 835.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 51, 94, 233, 290, 677, 700, 775, 781, 811, 826, 1387, 1902, 1903, 1904, 1905, 1906, 1907.
+// - [Clippy probe: clippy::match_same_arms] these match arms have identical bodies. Sites 1616,
+//   1637, 1641, 1647, 1654, 1660, 1716, 1738, 1758, 1759.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 17, 43, 59, 85, 102, 127, 156, 201, 243, 318, 364, 394, 422, 585, 619, 652,
+//   735, 863, 1057, 1275.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   17, 43, 59, 85, 102, 127, 156, 201, 243, 318, 364, 394, 422, 585, 619, 652, 735, 863, 1057,
+//   1275.
+
 use std::collections::HashMap;
 
 use base64::Engine as _;

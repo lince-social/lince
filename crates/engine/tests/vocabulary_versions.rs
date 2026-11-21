@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn command, fn record, fn
+//   vocabulary_commands_publish_adopt_revise_and_retain_saved_assertion_meaning, fn
+//   readers_cannot_publish_or_revise_and_record_history_obeys_read_policies.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use engine::{Engine, actions::Action};

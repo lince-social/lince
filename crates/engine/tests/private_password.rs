@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: const SALT, const OUTPUT, fn phc, fn canonical.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 300.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 300.
+
 #![cfg(test)]
 
 use engine::private_password::{

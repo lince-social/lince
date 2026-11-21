@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct PendingProfile, fn payload, fn checked_draft, fn pending_images.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 38, 165, 166,
+//   180, 212, 270, 298, 315.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   219, 360, 363.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 219, 270, 360, 363.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use serde::{Deserialize, Serialize};
 

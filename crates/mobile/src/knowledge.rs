@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct State, enum Intent, fn act, fn apply.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 115, 156, 167,
+//   196, 240, 247, 254, 259, 262, 278, 297, 331, 332, 333, 334, 335, 336, 337, 338, 340.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites apply: String
+//   (80).
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (585).
+
 use crate::{
     app::{self, Mobile, button, input, label},
     navigation::Page,

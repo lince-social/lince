@@ -1,3 +1,24 @@
+// non-lean-yet
+// Scope: const MAX_FRAME_BYTES, struct LiveHost, fn write_frame, fn authenticate.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 38, 42, 45, 46,
+//   199, 210, 211, 212, 213, 341.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 76, 90, 95,
+//   103, 190.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 64, 68, 152, 206.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 68.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 38, 45, 46, 210, 211, 270.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 224.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 76, 90, 95, 103, 190.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 14.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   14, 21.
+
 use std::sync::Arc;
 
 use engine::Engine;

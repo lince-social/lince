@@ -1,7 +1,16 @@
+// non-lean-yet
+// Scope: fn package, fn many_packages_are_registered_without_running_executables, fn
+//   duplicates_and_path_escapes_do_not_hide_healthy_packages, fn
+//   changed_executables_and_unapproved_digests_cannot_run.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 62, 116, 117.
+
 #![cfg(test)]
 
-use nucleus::plugins::{Contribution, Manifest};
 use std::path::Path;
+
+use nucleus::plugins::{Contribution, Manifest};
 
 fn package(root: &Path, directory: &str, id: &str, executable: &str) {
     let directory = root.join(directory);

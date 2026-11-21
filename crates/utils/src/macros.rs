@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: macro fetch_all, macro ok, macro query, macro log.
+// BeautifulRust (baseline lines):
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 2, 15,
+//   22, 32, 46.
+
 #[macro_export]
 macro_rules! fetch_all {
     ($model:ty, $session:expr) => {

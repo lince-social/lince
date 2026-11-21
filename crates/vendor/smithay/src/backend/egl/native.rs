@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: macro egl_platform, struct EGLPlatform, trait EGLNativeDisplay, struct X11DefaultDisplay.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check SAFETY proof and trait invariants. Sites 377, 400.
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 333, 383, 406.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (169).
+
 //! Type safe native types for safe context/surface creation
 
 #[cfg(feature = "backend_winit")]

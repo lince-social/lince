@@ -1,6 +1,21 @@
-use crate::StoreError;
+// non-lean-yet
+// Scope: mod encoding, const PAGE_SIZE, const PRUNE_QUERY, mod tests.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 21, 22, 39, 173, 195.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   22.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 21, 22, 173, 195.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 14, 26, 47, 99, 110, 117, 146.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 14,
+//   26, 47, 99, 110, 117, 146.
+
 use nucleus::sync::{Activity, Change, Direction, Instance, Outcome, Pending, Retention, Summary};
 use sqlx::{Row, SqlitePool};
+
+use crate::StoreError;
 
 mod encoding;
 

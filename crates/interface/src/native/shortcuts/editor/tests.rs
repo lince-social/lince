@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn reviewed_rebase_keeps_independent_binding_changes_in_draft_until_normal_save, fn
+//   cancelling_binding_review_preserves_the_original_draft_and_can_resume_capture, struct
+//   Delivered, fn
+//   an_external_binding_change_during_a_held_capture_preserves_its_release_and_local_candidate.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use bevy::{
     input::{ButtonState, InputPlugin, keyboard::Key},

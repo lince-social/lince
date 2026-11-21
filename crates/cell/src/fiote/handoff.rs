@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: fn digest, struct Forwarded.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 173, 189, 191,
+//   230, 232, 233, 234, 236, 246, 248, 251, 255, 257, 264.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 190.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 189.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 190.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use fiote::assistant::{Candidate, Delegate, Directory, Handoff, Source};
 use sha2::{Digest, Sha256};

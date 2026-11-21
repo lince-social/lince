@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Preview, struct Geometry, fn mesh, fn meshes.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 79, 225.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   27, 28, 30, 31, 32, 33, 40.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (225).
+
 use crate::native::{
     area::{AreaShape, InfluenceArea, ReachMode, ReachShape},
     area_panel::AreaEditor,

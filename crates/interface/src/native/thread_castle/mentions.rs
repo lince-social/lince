@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: mod links, mod popup, struct Mention, struct Candidate.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 180, 203, 216,
+//   223, 436, 485, 492, 548, 553, 656, 687.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (303, 349,
+//   670).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   105, 108, 128, 138, 145, 152, 216, 382, 523, 528, 656.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (118, 119, 180, 377, 380, 381, 398, 450, 457, 493, 509, 513, 559, 560, 561, 570,
+//   574, 623, 638, 642, 645, 648).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 170, 427.
+
 use super::*;
 mod links;
 mod popup;

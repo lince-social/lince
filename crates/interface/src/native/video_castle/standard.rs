@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct Process, struct Cancellation, fn decoder, fn stream.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 98, 99, 100, 188,
+//   190, 213, 220, 221, 222.
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites audio:input → &str (80).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   134, 145.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (146, 213, 225, 268).
+
 use super::*;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use std::{

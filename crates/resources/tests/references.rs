@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn github_file_pages_resolve_as_raw_sources_with_their_identity_intact, fn
+//   contextual_addresses_preserve_fragments_queries_and_native_paths, fn
+//   known_ids_and_declared_alternatives_share_one_resolution_path, fn
+//   explicit_imports_compose_once_with_their_own_bases_and_navigation_stays_unloaded.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 21, 37, 76, 77, 83, 105, 107, 114, 166, 174, 175, 186, 187, 190.
+
 use lince_resources::{Library, Reference};
 
 #[test]
@@ -87,8 +96,9 @@ fn known_ids_and_declared_alternatives_share_one_resolution_path() {
 #[cfg(feature = "publication")]
 #[test]
 fn explicit_imports_compose_once_with_their_own_bases_and_navigation_stays_unloaded() {
-    use lince_resources::publication::Publication;
     use std::fs;
+
+    use lince_resources::publication::Publication;
     let directory = tempfile::tempdir().unwrap();
     fs::create_dir(directory.path().join("parts")).unwrap();
     fs::write(directory.path().join("Entry.lingua"), "Import \"./parts/Part.lingua\"\nImport \"./parts/Part.lingua#r_00000000000000000000000001\"\n").unwrap();

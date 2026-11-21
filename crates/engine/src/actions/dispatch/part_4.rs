@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: impl Engine.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 35, 58, 164, 194,
+//   200, 207, 264, 331, 373, 382, 428, 449, 497, 499, 500, 570, 588, 592, 593, 601, 646, 666, 670,
+//   671, 679, 739, 751.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 476.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 103.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 476.
+// - [Clippy probe: clippy::nonminimal_bool] this boolean expression can be simplified. Sites 129.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 
 impl Engine {

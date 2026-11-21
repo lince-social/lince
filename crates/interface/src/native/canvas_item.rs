@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct CanvasItem, struct Ephemeral, fn eligible, struct DeleteItem.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 716, 908.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   669.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (419, 472, 544, 547, 555, 566, 662, 670, 675, 720, 729, 730, 731, 737, 747, 759,
+//   766, 833, 884, 895, 896, 900, 907, 908, 947, 954, 956, 960, 962).
+
 use crate::native::{
     actions::{Action, ActionButton},
     canvas::CanvasView,

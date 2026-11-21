@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: mod support, fn karma_activation_carries_each_occurrence_value_without_changing_the_fiote,
+//   fn activation_requests_are_durable_idempotent_and_leave_quantities_unchanged.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use engine::actions::Action;
 mod support;
 

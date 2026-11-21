@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct DelayedAnswer, struct NoRequest, fn
+//   unfinished_forwarded_question_reopens_with_local_partial_answers_without_new_work, fn
+//   late_contact_answers_require_the_original_pin_and_current_consent.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 68, 83, 124, 231, 248, 342.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 17, 194.
+
 use super::*;
 use nucleus::social::ask::Reply;
 use std::time::{Duration, Instant};

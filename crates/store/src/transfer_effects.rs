@@ -1,9 +1,23 @@
+// non-lean-yet
+// Scope: fn invalid, fn mode, struct Effect, struct Group.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 10.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 70, 130, 132,
+//   192, 256, 259, 260, 350, 351.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 44, 55, 220, 227, 284, 298, 303, 367, 381.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 22, 23,
+//   24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 37, 38, 39, 40, 41, 44, 55, 220, 227, 284, 298, 303,
+//   367, 381.
+
+use std::collections::HashMap;
+
 use chrono::{DateTime, Utc};
 use nucleus::{DecimalValue, Fact, transfer::application::EffectMode};
 use serde::Serialize;
 use serde_json::json;
 use sqlx::{Row, SqliteConnection, SqlitePool};
-use std::collections::HashMap;
 
 use crate::{StoreError, exact, transfer_accounting as accounting};
 

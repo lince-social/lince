@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct Quiescence, fn start, fn stop, fn receive.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 37.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (33, 69, 73, 101, 193, 199).
+
 use super::*;
 
 #[derive(Default)]

@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn query, fn component_records_support_rename_replacement_and_deletion, fn
+//   component_mutations_respect_existing_organ_permissions.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use engine::{

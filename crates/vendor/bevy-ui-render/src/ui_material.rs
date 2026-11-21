@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: trait UiMaterial, struct UiMaterialKey, struct MaterialNode.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 151.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 128.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 116,
+//   125, 128, 129, 130, 168, 182.
+
 use crate::Node;
 use bevy_asset::{Asset, AssetId, Handle};
 use bevy_derive::{Deref, DerefMut};

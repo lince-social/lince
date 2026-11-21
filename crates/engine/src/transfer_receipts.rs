@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: mod analysis, mod browsing, mod collection, mod commands.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 137, 143, 144,
+//   145, 146, 148, 155, 314, 331, 361, 376, 383, 384, 404, 406, 421, 422, 441.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 102.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 434.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 122, 127, 421, 422.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 102.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 81, 172.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   34, 40, 44, 81, 172.
+
 use std::collections::{BTreeMap, BTreeSet};
 
 use chrono::{DateTime, Utc};

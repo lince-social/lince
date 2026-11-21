@@ -1,6 +1,14 @@
-use super::*;
-use lince_interface::host::{DesktopAction, OutputId, WorkspaceLayout};
+// non-lean-yet
+// Scope: fn fixture, fn fixture_with_color, fn
+//   first_revealed_frame_has_current_text_style_and_input_mapping, fn
+//   invisible_native_items_record_preparation_cost_without_changing_visible_pixels.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::hash::{Hash, Hasher};
+
+use lince_interface::host::{DesktopAction, OutputId, WorkspaceLayout};
+
+use super::*;
 
 pub(super) fn fixture(
     directory: &std::path::Path,
@@ -18,8 +26,11 @@ pub(super) fn fixture_with_color(
 ) -> (Presentation, Vec<(Entity, bool)>) {
     let size = [640, 480];
     std::fs::create_dir_all(directory.join(mode)).unwrap();
-    let mut canvas =
-        super::super::appearance::launch_with_color(&directory.join(format!("{mode}/workspace.json")), size, linear);
+    let mut canvas = super::super::appearance::launch_with_color(
+        &directory.join(format!("{mode}/workspace.json")),
+        size,
+        linear,
+    );
     let root = canvas.canvas_root().unwrap();
     for _ in 0..2 {
         native::workspace::create(canvas.world_mut(), root);
@@ -175,13 +186,14 @@ pub(super) fn fixture_with_color(
 #[test]
 #[ignore = "private two-output GPU reveal and input coverage"]
 fn first_revealed_frame_has_current_text_style_and_input_mapping() {
-    use crate::responsiveness::current_input_point;
     use bevy::{
         input::keyboard::Key,
         input_focus::InputFocus,
         math::DVec2,
         text::{EditableText, TextLayoutInfo},
     };
+
+    use crate::responsiveness::current_input_point;
 
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_all()

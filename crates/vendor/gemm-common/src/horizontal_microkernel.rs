@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: macro horizontal_kernel, macro horizontal_cplx_kernel.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #[macro_export]
 macro_rules! horizontal_kernel {
     ($([$target: tt])?, $name: ident, $m: tt, $n: tt $(,)?) => {

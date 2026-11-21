@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: const CHILD_DIRECTORY, const SAVED_FILE, const DRAFT_FILE, const SAVE_ACK.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::file_explorer::worker;
 use std::{

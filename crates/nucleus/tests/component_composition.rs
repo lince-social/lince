@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn composition, fn shared_contract_checks_ids_actions_geometry_depth_and_document_size, fn
+//   activation_has_an_explicit_roundtrip_and_is_an_outward_effect, fn
+//   part_settings_roundtrip_and_reject_unbounded_or_structured_values.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 29, 32, 43, 71, 72, 73, 79, 82, 97.
+
 use nucleus::component::{ComponentState, Composition, Document, Part};
 
 fn composition() -> Composition {

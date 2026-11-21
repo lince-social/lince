@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: enum TextOverflow, struct SandText, struct SavedText, fn value.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 79, 90.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   new:editable (34).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (101).
+
 use crate::native::{canvas::CanvasItem, sand::text_editor, theme::Typography};
 use bevy::{
     picking::events::PointerScroll,

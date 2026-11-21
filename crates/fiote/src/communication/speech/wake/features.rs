@@ -1,8 +1,21 @@
+// non-lean-yet
+// Scope: const STEP, const WIDTH, const CONTEXT, const MEL_FRAMES.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 43, 50, 65, 134, 146, 163, 205, 206.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 77, 131.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 137.
+// - [rustc: unreachable_pub] unreachable `pub` item. Sites 94, 108, 126.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites new: String
+//   (108), push: String (126).
+
 use std::{
     collections::VecDeque,
     io::Cursor,
     sync::{Arc, OnceLock},
 };
+
 use tract_onnx::prelude::*;
 
 pub(super) const STEP: usize = 1280;

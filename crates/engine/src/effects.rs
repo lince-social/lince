@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: struct EffectOutcome, struct DatabaseEffects, fn decode, fn database_action.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 44, 101, 149,
+//   153, 310, 359, 360, 363, 364, 367, 368, 374, 375, 390, 403.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 136, 185, 187, 188, 435, 436.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 70, 74.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 417.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 19.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   12, 13, 14, 15, 16, 19, 20, 21, 22, 26, 70, 74.
+
 use std::sync::Arc;
 
 use chrono::Utc;

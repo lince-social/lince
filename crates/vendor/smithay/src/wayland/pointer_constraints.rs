@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: const VERSION, trait PointerConstraintsHandler, struct ConfinedPointer, struct
+//   LockedPointer.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 227, 254, 277,
+//   328, 372, 376, 377, 387, 406, 410, 411, 421.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 556.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (274, 298, 319, 320, 372, 406).
+
 //! Protocol for confining the pointer.
 //!
 //! This provides a way for the client to request that the pointer is confined to a region or

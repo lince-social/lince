@@ -1,3 +1,34 @@
+// non-lean-yet
+// Scope: const HOST_MAXIMUM_ARMED_ENTRIES, const HOST_MAXIMUM_LANES, const
+//   HOST_CLOCK_DISCONTINUITY_TOLERANCE_MS, const HOST_LEASE_DURATION_MS.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 227, 228, 447,
+//   832, 889.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 964.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 126.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 126.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 447.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 84.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 28, 251, 253, 258, 278, 286, 288, 479.
+// - [Clippy probe: clippy::manual_let_else] this could be rewritten as `let...else`. Sites 44.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 598, 964.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 79, 100, 175, 201, 212, 264, 325, 332.
+// - [Clippy probe: clippy::missing_panics_doc] State the panic conditions for exported functions.
+//   Sites 212, 264.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 34, 153, 494.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   31, 34, 35, 78, 79, 80, 84, 85, 86, 88, 89, 90, 95, 100, 153, 154, 155, 156, 157, 158, 159,
+//   160, 161, 162, 163, 164, 169, 170, 171, 175, 195, 196, 197, 201, 212, 264, 315, 319, 325, 332,
+//   437, 489, 490, 491, 494, 495, 496, 497.
+
 use std::{
     collections::BTreeMap,
     future::Future,

@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: type Socket, fn receive, fn enrollment, fn
+//   websocket_frames_follow_demand_and_revocation_without_persistence.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use engine::signal_streams::Metadata;
 use engine::{actions::Action, signal_endpoints::Request};

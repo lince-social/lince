@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: const TEXTURE, struct ReviewPlugin, struct State, struct Review.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 54, 100, 182,
+//   183, 184, 204, 205, 315, 365, 376, 389.
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites 99,
+//   114, 146.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (50, 53, 56, 61, 100, 117, 125, 128, 132, 135, 161, 167, 174, 181, 182, 226, 279,
+//   285, 289, 308, 321, 327, 333, 337, 340, 358, 402).
+
 use bevy::{
     input_focus::{FocusCause, InputFocus},
     prelude::*,

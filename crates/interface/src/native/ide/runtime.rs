@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: fn update, fn restore, fn render.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 29, 45, 46, 54,
+//   127, 156, 172, 178, 204, 221, 235, 257.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   344, 347.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (99, 123, 126, 127, 161, 168, 169, 172, 187, 188, 210, 212, 227, 231, 239, 240,
+//   253, 257, 270, 367, 368, 371, 372, 376, 391, 395, 401, 402, 437, 439).
+
 use super::*;
 
 pub(super) fn update(world: &mut World) {

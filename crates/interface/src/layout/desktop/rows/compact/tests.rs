@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn workspace, fn
+//   compact_members_share_one_slot_and_ungroup_restores_individual_homes_and_sizes, fn
+//   incompatible_member_constraints_are_clipped_inside_a_stable_slot_without_moving_neighbours, fn
+//   free_mode_keeps_the_relation_dormant_and_returns_to_its_remembered_active_member.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::layout::desktop::tests::{id, item, viewport};
 

@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: enum ConstrainReference, struct ConstrainBehavior, fn constrain_space_element.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use crate::{
     backend::renderer::{
         element::{

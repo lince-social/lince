@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Source, struct Presentation, fn candidate, fn refresh.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 28, 29, 185, 187,
+//   218.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (153, 183, 195, 217, 236, 243).
+
 use super::*;
 use crate::host::input::InputResponse;
 use bevy::ecs::query::QueryState;

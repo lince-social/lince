@@ -1,9 +1,21 @@
-use crate::{Library, Result, address, fingerprint};
-use reqwest::{
-    StatusCode,
-    header::{HeaderMap, HeaderName, HeaderValue},
-};
-use serde::{Deserialize, Serialize};
+// non-lean-yet
+// Scope: struct Stored, struct HttpFile, fn now, fn date.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 278, 280.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 152, 184, 222,
+//   245, 309.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   http_file:refresh (143).
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 273.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 138.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 27.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 27, 28,
+//   29, 30, 138.
+
 use std::{
     collections::BTreeMap,
     fs,
@@ -12,6 +24,14 @@ use std::{
     sync::{Arc, Mutex, OnceLock, Weak},
     time::{SystemTime, UNIX_EPOCH},
 };
+
+use reqwest::{
+    StatusCode,
+    header::{HeaderMap, HeaderName, HeaderValue},
+};
+use serde::{Deserialize, Serialize};
+
+use crate::{Library, Result, address, fingerprint};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct Stored {
@@ -258,8 +278,8 @@ impl Library {
         let mut buffer = [0u8; 65536];
         let mut previous;
         let input: &mut dyn Read = if let Some(stored) = cached {
-            previous = fs::File::open(directory.join(&stored.body))
-                .map_err(|error| error.to_string())?;
+            previous =
+                fs::File::open(directory.join(&stored.body)).map_err(|error| error.to_string())?;
             &mut previous
         } else {
             &mut response

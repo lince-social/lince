@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct Color32F.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::ops::Mul;
 
 /// A four-component color representing pre-multiplied RGBA color values

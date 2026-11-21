@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Form, enum Field, struct Input, enum Command.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 118, 320, 335,
+//   346, 392, 412, 446, 447, 462, 463, 487.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (111, 118, 231, 333, 392, 549, 559, 562).
+
 use bevy::{prelude::*, text::EditableText};
 use nucleus::simulation::{
     CheckDefinition, CheckOptions, Comparison, Evaluation, FailureMode, Predicate, Quantity,

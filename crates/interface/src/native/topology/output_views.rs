@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct Targets, mod tests, enum ViewKey, struct RenderView.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 211, 234, 330,
+//   342, 375, 377, 425, 559, 564, 570, 583, 596, 647, 651, 697.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   419, 538, 632.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (312, 419, 461, 568, 570, 574, 575, 583, 650, 651, 655, 657, 664, 675).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 151.
+
 use super::{holes, presentation::Surface};
 use crate::{
     host::OutputId,

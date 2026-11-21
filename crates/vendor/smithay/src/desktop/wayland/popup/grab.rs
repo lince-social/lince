@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: enum PopupGrabError, enum PopupUngrabStrategy, struct PopupGrabInternal, struct
+//   PopupGrabInner.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 84, 170, 257,
+//   260, 261, 262, 263, 282, 291, 336, 378, 421, 529.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   90.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (109, 114, 119, 128, 148).
+
 use std::{
     fmt,
     sync::{Arc, Mutex},

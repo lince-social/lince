@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod fields, mod retained, mod tests, mod ui.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 92, 94, 130, 131,
+//   143, 256, 260, 265, 281, 300, 304, 316, 353, 379, 401, 412, 425, 453, 455, 473, 481, 491, 493,
+//   520, 524, 568, 570, 600.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (455, 503, 530, 536, 578, 595, 600, 601, 626).
+
 mod fields;
 mod retained;
 #[cfg(test)]

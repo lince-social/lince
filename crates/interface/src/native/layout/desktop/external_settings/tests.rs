@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn fixture, fn settle, fn write, fn
+//   action_selection_preserves_literal_argument_drafts_and_saving_never_executes_them.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::host::input::InputResponse;
 use crate::host::launch::Capability;

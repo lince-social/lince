@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct Voice, struct Playback, enum Command, enum Event.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 26, 185, 191,
+//   276, 354, 373, 400, 439.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 229.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites catalog: String
+//   (120), preview: String (117), schedule: String (113).
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (97).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (125, 200, 348, 349).
+
 use bevy::prelude::*;
 use lince_interface::sound::{Cue, Mode, Output, Queue};
 use std::{

@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn a_missing_executable_is_a_diagnostic_and_external_tools_do_not_claim_chat, fn
+//   api_model_discovery_uses_the_configured_endpoint_without_an_inference_request, fn
+//   generic_harness_probe_negotiates_settings_and_never_sends_a_prompt, fn
+//   keyless_compatible_endpoint_can_discover_and_answer_without_an_api_key.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 52, 92, 138, 140.
+
 use fiote::{
     adapters::Catalog,
     communication::{

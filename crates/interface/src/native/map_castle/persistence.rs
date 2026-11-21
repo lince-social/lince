@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct SavedMap, fn snapshot.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 101, 103, 104,
+//   108.
+
 use super::*;
 use serde::{Deserialize, Serialize};
 

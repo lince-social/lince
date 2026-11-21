@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct Generated, fn spawn, fn populate, fn capture.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 24, 49, 83, 167,
+//   196, 198, 204, 235.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (64, 70).
+
 use super::*;
 use crate::native::actions::Action;
 

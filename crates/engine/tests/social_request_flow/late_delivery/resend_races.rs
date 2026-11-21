@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct DelayedDeposit, fn
+//   late_stored_response_cannot_overwrite_the_replacement_delivery_attempt, fn
+//   resend_rejects_terminal_closed_provisional_intro_deleted_and_unprivileged_cases.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 59, 65.
+
 use super::*;
 use nucleus::social::requests::{DELIVERY_NAMESPACE, PARTICIPANTS_NAMESPACE};
 use serde_json::json;

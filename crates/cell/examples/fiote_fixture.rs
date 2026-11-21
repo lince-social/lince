@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: mod native_connection, fn main.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 38, 43, 63.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 43.
+
 use cell::{Cell, CellOptions, fiote::Host};
 use fiote::config::Request;
 use std::{io::Error, path::PathBuf};

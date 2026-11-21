@@ -1,31 +1,38 @@
-use nucleus::shader_effect::bindings::NumericField;
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
+//! Projects requested numeric fields from readable Records for shader inputs.
+
+use crate::ProteinError;
+use nucleus::{
+    performance::{Span, add},
+    shader_effect::bindings::{NumericField, validate_record_field},
+};
+pub use protein_authority::query::shader_inputs::Request;
+use serde_json::{Map, Value, to_string};
 use std::collections::{BTreeSet, HashMap};
-use store::{Store, records::RecordRow};
+use store::{
+    Store,
+    records::{ExtensionNumbers, RecordRow},
+    sqlx::{Error::Protocol, QueryBuilder},
+};
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
-#[serde(deny_unknown_fields)]
-pub struct Request {
-    pub record: String,
-    pub field: NumericField,
-}
-
+/// Returns the JSON key used to identify a numeric field in a query result.
 pub fn key(field: &NumericField) -> String {
-    serde_json::to_string(field).expect("numeric field keys contain only enum tags and strings")
+    to_string(field).expect("numeric field keys contain only enum tags and strings")
 }
 
-pub fn validate(requests: &[Request]) -> Result<(), crate::ProteinError> {
-    let _validation = nucleus::performance::Span::new("numeric-projection-validation");
+/// Checks the request count and each Record UID and numeric field path.
+///
+/// # Errors
+/// Returns a protocol error for an oversized batch or malformed request.
+pub fn validate(requests: &[Request]) -> Result<(), ProteinError> {
+    let _validation = Span::new("numeric-projection-validation");
     if requests.len() > 128 {
-        return Err(store::StoreError::Protocol(
+        return Err(Protocol(
             "Numeric projections support at most 128 requested fields.".into(),
         ));
     }
     for request in requests {
-        nucleus::performance::add("numeric-projection-validation-attempts", 1);
-        nucleus::shader_effect::bindings::validate_record_field(&request.record, &request.field)
-            .map_err(store::StoreError::Protocol)?;
+        add("numeric-projection-validation-attempts", 1);
+        validate_record_field(&request.record, &request.field).map_err(Protocol)?;
     }
     Ok(())
 }
@@ -34,7 +41,7 @@ pub(crate) async fn attach<Body>(
     store: &Store,
     rows: &[RecordRow<Body>],
     requests: &[Request],
-) -> Result<HashMap<String, Value>, crate::ProteinError> {
+) -> Result<HashMap<String, Value>, ProteinError> {
     if requests.is_empty() {
         return Ok(HashMap::new());
     }
@@ -50,9 +57,10 @@ pub(crate) async fn attach<Body>(
             NumericField::Quantity => None,
         })
         .collect();
-    let mut raw_documents = Vec::new();
-    if !pairs.is_empty() {
-        let mut query = store::sqlx::QueryBuilder::new(
+    let raw_documents = if pairs.is_empty() {
+        Vec::new()
+    } else {
+        let mut query = QueryBuilder::new(
             "SELECT record_uid, namespace, fds FROM record_extension WHERE length(CAST(fds AS BLOB)) <= 65536 AND (",
         );
         for (index, (record, namespace)) in pairs.iter().enumerate() {
@@ -67,20 +75,19 @@ pub(crate) async fn attach<Body>(
                 .push(")");
         }
         query.push(")");
-        raw_documents = query
+        query
             .build_query_as::<(String, String, String)>()
             .fetch_all(&store.pool)
-            .await?;
-    }
-    let mut documents: HashMap<&str, HashMap<&str, store::records::ExtensionNumbers<'_>>> =
-        HashMap::new();
+            .await?
+    };
+    let mut documents: HashMap<&str, HashMap<&str, ExtensionNumbers<'_>>> = HashMap::new();
     for (uid, namespace, raw) in &raw_documents {
         documents
             .entry(uid)
             .or_default()
-            .insert(namespace, store::records::ExtensionNumbers::new(raw));
+            .insert(namespace, ExtensionNumbers::new(raw));
     }
-    let mut out = HashMap::new();
+    let mut out: HashMap<String, Value> = HashMap::new();
     for request in requests {
         let Some(record) = readable.get(request.record.as_str()) else {
             continue;
@@ -93,10 +100,16 @@ pub(crate) async fn attach<Body>(
                 .and_then(|numbers| numbers.get(path).ok())
                 .map(|number| number.to_string()),
         };
-        let fields = out
-            .entry(request.record.clone())
-            .or_insert_with(|| Value::Object(Default::default()));
-        fields[key(&request.field)] = value.map_or(Value::Null, Value::String);
+        let field = key(&request.field);
+        let value = value.map_or(Value::Null, Value::String);
+        if let Some(Value::Object(fields)) = out.get_mut(request.record.as_str()) {
+            fields.insert(field, value);
+        } else {
+            out.insert(
+                request.record.clone(),
+                Value::Object(Map::from_iter([(field, value)])),
+            );
+        }
     }
     Ok(out)
 }

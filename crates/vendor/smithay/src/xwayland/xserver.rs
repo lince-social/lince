@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct XWayland, enum XWaylandEvent, struct Instance, struct XWaylandClientData.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 167, 192, 242.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 207, 223.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   spawn:open_abstract_socket (116).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   353.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (232, 239, 258, 285, 378).
+
 use std::{
     env,
     ffi::OsStr,

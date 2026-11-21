@@ -1,7 +1,41 @@
-use crate::canvas::{Pose, room};
+// non-lean-yet
+// Scope: mod replay, const MAX_DEVICES, const MAX_SURFACES, const MAX_OBSERVATIONS.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 86.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   730.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 388, 395, 402,
+//   482, 501, 600, 673, 674, 675, 685, 726, 742, 748, 756, 766, 780, 782.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   blank:blanked (692), capture:enabled (458), map:inverse (117).
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 43, 259, 301.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   763.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 23, 77, 117, 170, 204, 359, 368, 434, 458, 511, 519, 573, 604, 699, 730, 787, 816, 832.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 8,
+//   9, 10, 11, 12, 13, 15, 23, 43, 44, 45, 50, 51, 52, 53, 54, 58, 68, 77, 117, 140, 141, 142, 143,
+//   144, 145, 146, 147, 148, 149, 150, 154, 170, 198, 199, 200, 204, 235, 236, 237, 244, 245, 246,
+//   247, 248, 249, 250, 251, 252, 253, 254, 259, 260, 261, 262, 263, 268, 269, 270, 271, 272, 276,
+//   277, 278, 279, 280, 281, 282, 287, 288, 289, 290, 294, 301, 302, 303, 304, 305, 306, 307, 312,
+//   313, 314, 315, 316, 317, 318, 319, 320, 321, 322, 323, 327, 328, 329, 330, 334, 335, 336, 337,
+//   338, 339, 340, 359, 368, 434, 458, 493, 511, 519, 573, 604, 692, 699, 730, 787, 816, 824, 832,
+//   842.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites advance: String
+//   (519), cancel: String (816), capture: String (458), configure: String (368), connect: String
+//   (434), dismiss: String (832), dispatch: String (730), enqueue: String (699), finish: String
+//   (787), interact: String (604), map: String (117), matrix: String (77), new: String (359),
+//   observe: String (573), physical_point: String (170), revision: String (23), surface: String
+//   (511), validate: String (204).
+
+use std::collections::{BTreeMap, BTreeSet};
+
 use glam::{DMat3, DVec2, DVec3};
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet};
+
+use crate::canvas::{Pose, room};
 
 pub mod replay;
 

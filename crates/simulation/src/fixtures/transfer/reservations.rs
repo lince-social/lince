@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: fn competing_reservations.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 25, 68.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   competing_reservations:replicated (6).
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 13, 43.
+// - [Clippy probe: clippy::missing_panics_doc] State the panic conditions for exported functions.
+//   Sites 6.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   6.
+
 use engine::actions::{Action, TransferReservePoint};
 use nucleus::simulation::{CheckDefinition, Predicate, Refusal};
 

@@ -1,6 +1,20 @@
-use crate::karma::{CanonicalHash, canonical_hash};
+// non-lean-yet
+// Scope: mod roots, struct PersonKey, enum Command.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 30.
+// - [Clippy: clippy::match_same_arms] these match arms have identical bodies. Sites 51, 53.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 15, 19.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 8,
+//   9, 10, 11, 15, 19, 30, 31, 32, 33, 34, 35, 36, 38, 39, 41, 42, 43, 44, 49, 58, 62.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites fingerprint:
+//   String (15), review_hash: String (19).
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
+use crate::karma::{CanonicalHash, canonical_hash};
 pub mod roots;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
@@ -28,10 +42,21 @@ impl PersonKey {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Command {
-    OrganRoots { subject: String },
-    ExportOrganRoot { subject: String },
-    PreviewOrganRoot { subject: String, document: String },
-    AcceptOrganRoot { request_id: String, review: roots::Review, expected_review: CanonicalHash },
+    OrganRoots {
+        subject: String,
+    },
+    ExportOrganRoot {
+        subject: String,
+    },
+    PreviewOrganRoot {
+        subject: String,
+        document: String,
+    },
+    AcceptOrganRoot {
+        request_id: String,
+        review: roots::Review,
+        expected_review: CanonicalHash,
+    },
     PersonKeys {
         subject: String,
     },
@@ -48,19 +73,24 @@ pub enum Command {
 impl Command {
     pub fn subject(&self) -> &str {
         match self {
-            Self::OrganRoots {subject} | Self::ExportOrganRoot {subject} | Self::PreviewOrganRoot {subject,..} => subject,
-            Self::AcceptOrganRoot {review,..} => &review.proof.organ,
+            Self::OrganRoots { subject }
+            | Self::ExportOrganRoot { subject }
+            | Self::PreviewOrganRoot { subject, .. } => subject,
+            Self::AcceptOrganRoot { review, .. } => &review.proof.organ,
             Self::PersonKeys { subject } => subject,
             Self::PreviewPersonKey { key } | Self::AcceptPersonKey { key, .. } => &key.subject,
         }
     }
 
     pub fn is_mutation(&self) -> bool {
-        matches!(self, Self::AcceptPersonKey { .. } | Self::AcceptOrganRoot {..})
+        matches!(
+            self,
+            Self::AcceptPersonKey { .. } | Self::AcceptOrganRoot { .. }
+        )
     }
 
     pub fn permission(&self) -> &'static str {
-        if self.is_mutation() || matches!(self,Self::ExportOrganRoot {..}) {
+        if self.is_mutation() || matches!(self, Self::ExportOrganRoot { .. }) {
             "organ:update"
         } else {
             "record:read"

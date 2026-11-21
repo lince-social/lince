@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: struct GestureSettings, enum GestureAxis, struct GestureProgress, enum GestureResult.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   end:cancelled (172).
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 103.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites validate:
+//   String (23).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   140.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (176).
+
 use crate::host::OutputId;
 use serde::{Deserialize, Serialize};
 

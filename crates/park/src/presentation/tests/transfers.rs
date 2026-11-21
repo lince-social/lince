@@ -1,13 +1,22 @@
-use super::shortcuts::{capture, click, named_button, settle};
-use super::*;
+// non-lean-yet
+// Scope: fn output, fn active, fn control, fn
+//   workspace_buttons_create_and_select_stable_destinations_through_the_host_on_multiple_outputs.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use lince_interface::host::{DesktopAction, HostRequest, OutputId, OutputViewport, Rectangle};
 use native::actions::Action;
+
+use super::{
+    shortcuts::{capture, click, named_button, settle},
+    *,
+};
 
 pub(super) fn output(id: u64, x: f64, size: [u32; 2]) -> Output {
     let bounds = Rectangle::new([x, 0.0], size.map(f64::from)).unwrap();
     Output {
         name: format!("Transfer-{id}"),
-        viewport: OutputViewport { rotation: Default::default(),
+        viewport: OutputViewport {
+            rotation: Default::default(),
             id: OutputId(id),
             bounds,
             usable: Some(bounds),

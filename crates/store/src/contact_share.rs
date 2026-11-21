@@ -1,6 +1,20 @@
-use crate::StoreError;
-use sqlx::{Row, SqlitePool};
+// non-lean-yet
+// Scope: fn flagged, fn held, fn picked, fn set_picked.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   set_picked:picked (33), set_picked_tx:picked (84).
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 42, 93.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 21, 25, 29, 49, 67, 80, 100, 113.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 21, 25,
+//   29, 49, 67, 80, 100, 113.
+
 use std::collections::HashSet;
+
+use sqlx::{Row, SqlitePool};
+
+use crate::StoreError;
 
 async fn flagged(
     pool: &SqlitePool,

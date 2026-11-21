@@ -1,9 +1,21 @@
-use crate::{MAX_FILE_BYTES, Result};
-use cap_std::{
-    ambient_authority,
-    fs::{Dir, OpenOptions},
-};
-use sha2::{Digest, Sha256};
+// non-lean-yet
+// Scope: struct Scope, struct FileBinding, struct SaveDestination, struct Snapshot.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 211, 218, 263.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   recovered:bom (158), save:bom (135).
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 207, 241, 259.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   36, 70, 271.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 24, 33, 52, 67, 106, 135, 173, 191, 233, 280.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 18, 93, 99.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 18, 19,
+//   24, 33, 52, 67, 93, 94, 99, 100, 106, 131, 135, 151, 152, 153, 158, 173, 191, 233, 280.
+
 use std::{
     ffi::OsString,
     io::{Read, Write},
@@ -13,6 +25,14 @@ use std::{
         atomic::{AtomicU64, Ordering},
     },
 };
+
+use cap_std::{
+    ambient_authority,
+    fs::{Dir, OpenOptions},
+};
+use sha2::{Digest, Sha256};
+
+use crate::{MAX_FILE_BYTES, Result};
 
 #[derive(Clone)]
 pub struct Scope {

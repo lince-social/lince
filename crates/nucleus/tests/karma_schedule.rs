@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn three_milliseconds_and_five_hours_keep_independent_exact_cursors, fn
+//   every_missed_policy_records_an_exact_due_and_skipped_range, fn
+//   inactive_gap_is_either_explicitly_skipped_or_left_for_missed_policy, fn
+//   all_rephase_policies_have_distinct_anchor_and_cursor_semantics.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 319.
+
 #![cfg(test)]
 
 use std::num::NonZeroU32;

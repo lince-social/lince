@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Status, fn for_peer, fn observe, fn get.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 84.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 14, 40, 57, 63.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 8, 9,
+//   10, 11, 14, 40, 57, 63.
+
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 

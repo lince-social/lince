@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: fn eligible, fn terminal_on.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 131.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   66, 190.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 65, 124, 190, 211, 212, 213, 214, 215.
+// - [Clippy probe: clippy::needless_borrow] this expression creates a reference which is
+//   immediately dereferenced by the compiler. Sites 15.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1, 2.
+
 use super::*;
 use nucleus::social::requests::*;
 

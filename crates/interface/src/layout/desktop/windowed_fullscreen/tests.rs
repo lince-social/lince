@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn workspace, fn
+//   bounded_protocol_presentation_retains_requests_homes_and_neighbour_geometry_for_twenty_cycles,
+//   fn
+//   output_constraints_and_deliberate_edits_resolve_the_existing_request_without_an_entry_snapshot,
+//   fn client_fullscreen_and_maximize_requests_preserve_bounded_policy_until_an_explicit_exit.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::host::WindowRequest;
 use super::super::tests::{id, item, viewport};

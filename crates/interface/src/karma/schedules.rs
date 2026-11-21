@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: fn default_timezone_revision, enum DateKind, struct DateDraft, struct Draft.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 18, 20, 97, 125.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 62, 72, 78,
+//   92.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites from_value:
+//   String (200), input: String (58), inputs: String (165).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   144, 148, 171, 180, 215, 216, 230, 233.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (16).
+
 use nucleus::karma::rule_field::RuleConsequence;
 use nucleus::karma::scheduled_change::{BoundaryInput, DateInput, Purpose};
 use nucleus::karma::{

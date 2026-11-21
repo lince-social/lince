@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod draft_query, struct ProteinDraft, fn decode_query, fn validate_compiled.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 78, 92, 506.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 156.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites compile: String
+//   (77), compile_shared: String (81).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (30, 31, 56).
+
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 

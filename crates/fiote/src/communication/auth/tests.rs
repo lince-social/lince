@@ -1,10 +1,22 @@
-use super::*;
+// non-lean-yet
+// Scope: fn key, fn jwt, struct Fixture, fn fixture.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::get_unwrap] Check bounds and preserve the lookup failure contract. Sites 99,
+//   100, 101, 103, 106, 107, 109.
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 67, 69, 81, 140, 141, 142, 143, 144, 145, 146, 280.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 118.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites 53,
+//   54, 55, 303, 304, 308.
+
 use chrono::{Duration as ChronoDuration, Utc};
 use openidconnect::{
     Audience, PrivateSigningKey, StandardClaims, SubjectIdentifier,
     core::{CoreIdTokenClaims, CoreJwsSigningAlgorithm, CoreRsaPrivateSigningKey},
 };
 use serde_json::json;
+
+use super::*;
 
 fn key() -> CoreRsaPrivateSigningKey {
     CoreRsaPrivateSigningKey::from_pem(

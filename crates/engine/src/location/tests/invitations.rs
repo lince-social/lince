@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn prepare, fn observe, fn
+//   invitation_scope_never_grants_access_and_current_exclusions_and_precision_win, fn
+//   invitations_require_authenticated_recipient_and_do_not_renew_or_survive_stop.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 408, 411.
+
 use super::*;
 use nucleus::visibility::{Command as VisibilityCommand, Condition, Data, Policy};
 

@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod support, fn authorize, fn recognize_original, fn proof.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 pub mod support;

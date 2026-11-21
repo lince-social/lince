@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod diagnostics, mod feed, mod input, mod locating.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 280, 302, 327,
+//   334, 418, 419, 483.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites observe: String
+//   (316).
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 9.
+
 mod diagnostics;
 mod feed;
 mod input;

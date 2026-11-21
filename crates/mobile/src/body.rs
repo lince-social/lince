@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct Fonts, fn render.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 51, 79, 81.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   42.
+
 use bevy::prelude::*;
 use lince_interface::theme::{INK, PURPLE, Typography};
 

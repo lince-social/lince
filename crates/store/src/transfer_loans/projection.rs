@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: struct Terms, fn positive, fn minimum, fn terms.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 84, 115, 124, 133.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 54, 88, 89, 105,
+//   106, 113, 148, 149, 338, 347, 348, 389, 447, 475, 483.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   terms:retained (33).
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 33, 161, 275, 279, 518.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 12, 13,
+//   14, 15, 16, 17, 18, 33, 161, 213, 214, 215, 216, 217, 275, 279, 518.
+
 use std::collections::{BTreeMap, BTreeSet};
 
 use nucleus::{DecimalValue, transfer::disclosure::TransferItem};

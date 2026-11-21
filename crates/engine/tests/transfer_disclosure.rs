@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: mod support, fn query, fn item_disclosure_applies_to_reads_filters_history_and_revisions,
+//   fn counteroffer_preserves_private_bindings_hidden_terms_and_disclosure.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 176.
+
 mod support;
 
 use engine::actions::{

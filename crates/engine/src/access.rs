@@ -1,3 +1,22 @@
+// non-lean-yet
+// Scope: mod graph, mod preparation, struct AccessLimits, enum AccessError.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 304, 384, 592,
+//   616, 620, 676, 792, 805, 815, 820, 847, 856, 864, 868, 869.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 165, 172,
+//   190, 264, 288.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 43.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 165, 172, 190, 264, 288.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 230, 314, 361, 540, 549.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 84, 94, 132, 149.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   24, 25, 26, 43, 44, 45, 46, 47, 48, 49, 50, 51, 84, 85, 86, 87, 88, 89, 90, 91, 94, 95, 96,
+//   102, 106, 132, 149, 230, 314, 333, 337, 341, 347, 351, 357, 361, 513, 517, 521, 529, 540, 549.
+
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 

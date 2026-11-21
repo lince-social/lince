@@ -1,10 +1,15 @@
+// non-lean-yet
+// Scope: mod changes, mod queued, mod suspension, struct Fixture.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
+use lince_interface::host::{ContentMapping, DesktopAction, WorkspaceLayout};
+use smithay::backend::winit::WinitEvent;
+
 use super::*;
 use crate::{
     desktop::Desktop,
     runtime::{CanvasWorker, Configuration, Input},
 };
-use lince_interface::host::{ContentMapping, DesktopAction, WorkspaceLayout};
-use smithay::backend::winit::WinitEvent;
 
 #[path = "lifecycle/changes.rs"]
 mod changes;

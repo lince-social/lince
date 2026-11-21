@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod native, struct Target, struct Hit, struct Projection.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 42, 126, 258,
+//   324.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   202, 230, 287, 300, 301, 335, 336.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (228, 233, 234, 258).
+
 use super::*;
 use crate::host::{ItemGeometry, ItemId};
 

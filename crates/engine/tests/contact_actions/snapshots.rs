@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn command, fn check, fn
+//   snapshot_checks_require_recognized_authority_and_create_no_retained_records_or_facts, fn
+//   snapshots_cannot_bypass_a_readers_retained_hidden_withdrawal_or_same_revision_fork.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use nucleus::trust_analysis::{
     claims::{self as model, commands::Command as ClaimCommand},

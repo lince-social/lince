@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn
+//   an_inactive_tiled_destination_reprojects_the_committed_row_without_changing_authored_homes_or_focus,
+//   fn a_hidden_transient_family_reprojects_together_without_rewriting_its_authored_home, fn
+//   free_destinations_keep_the_existing_live_geometry, fn
+//   a_workspace_on_a_companion_output_keeps_its_normal_output_geometry_owner.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[test]

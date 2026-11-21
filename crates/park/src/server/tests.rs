@@ -1,67 +1,85 @@
-use super::*;
+// non-lean-yet
+// Scope: mod output_control_tests, mod text_input_tests, mod power_tests, mod touch_tests.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::{os::fd::AsFd, time::Duration};
+
 use wayland_client::{
     Connection, Dispatch, EventQueue, Proxy, QueueHandle, delegate_noop,
     protocol::{
-        wl_buffer, wl_callback, wl_compositor, wl_data_device, wl_data_device_manager, wl_data_offer, wl_data_source, wl_keyboard, wl_output, wl_pointer, wl_region,
-        wl_registry, wl_seat, wl_shm, wl_shm_pool, wl_subcompositor, wl_subsurface, wl_surface,
+        wl_buffer, wl_callback, wl_compositor, wl_data_device, wl_data_device_manager,
+        wl_data_offer, wl_data_source, wl_keyboard, wl_output, wl_pointer, wl_region, wl_registry,
+        wl_seat, wl_shm, wl_shm_pool, wl_subcompositor, wl_subsurface, wl_surface,
     },
 };
-use wayland_protocols::ext::session_lock::v1::client::{
-    ext_session_lock_manager_v1, ext_session_lock_surface_v1, ext_session_lock_v1,
+use wayland_protocols::{
+    ext::{
+        foreign_toplevel_list::v1::client::{
+            ext_foreign_toplevel_handle_v1, ext_foreign_toplevel_list_v1,
+        },
+        idle_notify::v1::client::{ext_idle_notification_v1, ext_idle_notifier_v1},
+        session_lock::v1::client::{
+            ext_session_lock_manager_v1, ext_session_lock_surface_v1, ext_session_lock_v1,
+        },
+        workspace::v1::client::{
+            ext_workspace_group_handle_v1, ext_workspace_handle_v1, ext_workspace_manager_v1,
+        },
+    },
+    wp::{
+        fractional_scale::v1::client::{wp_fractional_scale_manager_v1, wp_fractional_scale_v1},
+        idle_inhibit::zv1::client::{zwp_idle_inhibit_manager_v1, zwp_idle_inhibitor_v1},
+        viewporter::client::{wp_viewport, wp_viewporter},
+    },
+    xdg::{
+        activation::v1::client::{xdg_activation_token_v1, xdg_activation_v1},
+        decoration::zv1::client::{zxdg_decoration_manager_v1, zxdg_toplevel_decoration_v1},
+        shell::client::{xdg_popup, xdg_positioner, xdg_surface, xdg_toplevel, xdg_wm_base},
+        xdg_output::zv1::client::{zxdg_output_manager_v1, zxdg_output_v1},
+    },
 };
-use wayland_protocols::ext::foreign_toplevel_list::v1::client::{
-    ext_foreign_toplevel_list_v1, ext_foreign_toplevel_handle_v1,
+use wayland_protocols_misc::{
+    zwp_input_method_v2::client::{
+        zwp_input_method_keyboard_grab_v2, zwp_input_method_manager_v2, zwp_input_method_v2,
+        zwp_input_popup_surface_v2,
+    },
+    zwp_virtual_keyboard_v1::client::{zwp_virtual_keyboard_manager_v1, zwp_virtual_keyboard_v1},
 };
-use wayland_protocols::wp::fractional_scale::v1::client::{wp_fractional_scale_manager_v1, wp_fractional_scale_v1};
-use wayland_protocols::wp::viewporter::client::{wp_viewporter, wp_viewport};
-use wayland_protocols::ext::idle_notify::v1::client::{ext_idle_notifier_v1, ext_idle_notification_v1};
-use wayland_protocols::ext::workspace::v1::client::{ext_workspace_manager_v1, ext_workspace_handle_v1, ext_workspace_group_handle_v1};
-use wayland_protocols::wp::idle_inhibit::zv1::client::{zwp_idle_inhibit_manager_v1, zwp_idle_inhibitor_v1};
-use wayland_protocols::xdg::activation::v1::client::{xdg_activation_token_v1, xdg_activation_v1};
-use wayland_protocols::xdg::decoration::zv1::client::{
-    zxdg_decoration_manager_v1, zxdg_toplevel_decoration_v1,
+use wayland_protocols_wlr::{
+    foreign_toplevel::v1::client::{
+        zwlr_foreign_toplevel_handle_v1, zwlr_foreign_toplevel_manager_v1,
+    },
+    layer_shell::v1::client::{zwlr_layer_shell_v1, zwlr_layer_surface_v1},
 };
-use wayland_protocols::xdg::shell::client::{
-    xdg_popup, xdg_positioner, xdg_surface, xdg_toplevel, xdg_wm_base,
-};
-use wayland_protocols::xdg::xdg_output::zv1::client::{zxdg_output_manager_v1, zxdg_output_v1};
-use wayland_protocols_wlr::layer_shell::v1::client::{zwlr_layer_shell_v1, zwlr_layer_surface_v1};
-use wayland_protocols_wlr::foreign_toplevel::v1::client::{zwlr_foreign_toplevel_manager_v1, zwlr_foreign_toplevel_handle_v1};
-use wayland_protocols_misc::zwp_input_method_v2::client::{zwp_input_method_manager_v2, zwp_input_method_v2, zwp_input_popup_surface_v2, zwp_input_method_keyboard_grab_v2};
-use wayland_protocols_misc::zwp_virtual_keyboard_v1::client::{zwp_virtual_keyboard_manager_v1, zwp_virtual_keyboard_v1};
 
-#[path = "tests/output_control.rs"]
-mod output_control_tests;
-#[path = "tests/text_input.rs"]
-mod text_input_tests;
-#[path = "tests/power.rs"]
-mod power_tests;
-#[path = "tests/touch.rs"]
-mod touch_tests;
-#[path = "tests/tablet.rs"]
-mod tablet_tests;
-#[path = "tests/displays.rs"]
-mod display_tests;
-#[path = "tests/color.rs"]
-mod color_tests;
-#[path = "tests/dmabuf.rs"]
-mod dmabuf_tests;
-#[path = "tests/capture.rs"]
-mod capture_tests;
-#[path = "tests/popup_output.rs"]
-mod popup_output_tests;
-#[path = "tests/input_controls.rs"]
-mod input_control_tests;
-#[path = "tests/gestures.rs"]
-mod gesture_tests;
+use super::*;
+
 #[path = "tests/activation.rs"]
 mod activation_tests;
+#[path = "tests/capture.rs"]
+mod capture_tests;
+#[path = "tests/color.rs"]
+mod color_tests;
+#[cfg(feature = "nested")]
+#[path = "tests/configuration.rs"]
+mod configuration_tests;
 #[path = "tests/control.rs"]
 mod control_tests;
+#[path = "tests/displays.rs"]
+mod display_tests;
+#[path = "tests/dmabuf.rs"]
+mod dmabuf_tests;
 #[cfg(feature = "nested")]
-#[path = "tests/manipulation.rs"]
-mod manipulation_tests;
+#[path = "tests/file_hover.rs"]
+mod file_hover_tests;
+#[cfg(feature = "native-presentation")]
+#[path = "tests/focus.rs"]
+mod focus_tests;
+#[path = "tests/gestures.rs"]
+mod gesture_tests;
+#[path = "tests/idle_output.rs"]
+mod idle_output_tests;
+#[path = "tests/input_controls.rs"]
+mod input_control_tests;
 #[cfg(feature = "nested")]
 #[path = "tests/keyboard.rs"]
 mod keyboard_tests;
@@ -69,28 +87,32 @@ mod keyboard_tests;
 #[path = "tests/latency.rs"]
 mod latency_tests;
 #[cfg(feature = "nested")]
-#[path = "tests/pixels.rs"]
-mod pixel_tests;
+#[path = "tests/manipulation.rs"]
+mod manipulation_tests;
 #[cfg(feature = "nested")]
 #[path = "tests/native_ime.rs"]
 mod native_ime_tests;
+#[path = "tests/output_control.rs"]
+mod output_control_tests;
 #[cfg(feature = "nested")]
-#[path = "tests/configuration.rs"]
-mod configuration_tests;
-#[cfg(feature = "nested")]
-#[path = "tests/file_hover.rs"]
-mod file_hover_tests;
-#[path = "tests/idle_output.rs"]
-mod idle_output_tests;
-#[cfg(feature = "native-presentation")]
-#[path = "tests/focus.rs"]
-mod focus_tests;
-#[cfg(feature = "native-presentation")]
-#[path = "tests/transfers.rs"]
-mod transfers_tests;
+#[path = "tests/pixels.rs"]
+mod pixel_tests;
+#[path = "tests/popup_output.rs"]
+mod popup_output_tests;
+#[path = "tests/power.rs"]
+mod power_tests;
 #[cfg(feature = "native-presentation")]
 #[path = "tests/raster.rs"]
 mod raster_tests;
+#[path = "tests/tablet.rs"]
+mod tablet_tests;
+#[path = "tests/text_input.rs"]
+mod text_input_tests;
+#[path = "tests/touch.rs"]
+mod touch_tests;
+#[cfg(feature = "native-presentation")]
+#[path = "tests/transfers.rs"]
+mod transfers_tests;
 
 #[derive(Default)]
 struct Client {
@@ -160,8 +182,10 @@ struct Client {
     layer_shell: Option<zwlr_layer_shell_v1::ZwlrLayerShellV1>,
     layer_configures: Vec<[u32; 2]>,
     configures: Vec<[i32; 2]>,
-    window_configurations: std::collections::HashMap<wayland_client::backend::ObjectId, ([i32; 2], Vec<u32>)>,
-    window_configure_sizes: std::collections::HashMap<wayland_client::backend::ObjectId, Vec<[i32; 2]>>,
+    window_configurations:
+        std::collections::HashMap<wayland_client::backend::ObjectId, ([i32; 2], Vec<u32>)>,
+    window_configure_sizes:
+        std::collections::HashMap<wayland_client::backend::ObjectId, Vec<[i32; 2]>>,
     output: Option<wl_output::WlOutput>,
     outputs: Option<zxdg_output_manager_v1::ZxdgOutputManagerV1>,
     output_name: String,
@@ -220,10 +244,15 @@ impl Harness {
         Self::connect_authorized(server, None)
     }
 
-    fn connect_authorized(mut server: Server, capabilities: Option<Vec<crate::launch::Capability>>) -> Self {
+    fn connect_authorized(
+        mut server: Server,
+        capabilities: Option<Vec<crate::launch::Capability>>,
+    ) -> Self {
         let (server_stream, client_stream) = UnixStream::pair().unwrap();
         if let Some(capabilities) = capabilities {
-            server.insert_authorized_client(server_stream, capabilities, false).unwrap();
+            server
+                .insert_authorized_client(server_stream, capabilities, false)
+                .unwrap();
         } else {
             server.insert_client(server_stream).unwrap();
         }
@@ -324,7 +353,8 @@ fn synchronize(
             return Err("the Wayland client timed out".into());
         }
         if let Err(error) = connection.flush()
-            && !matches!(&error, wayland_client::backend::WaylandError::Io(error) if error.kind() == std::io::ErrorKind::WouldBlock) {
+            && !matches!(&error, wayland_client::backend::WaylandError::Io(error) if error.kind() == std::io::ErrorKind::WouldBlock)
+        {
             return Err(error.to_string());
         }
         server.dispatch().map_err(|error| error.to_string())?;
@@ -345,7 +375,8 @@ fn synchronize(
             if poll[0].revents().contains(rustix::event::PollFlags::IN) {
                 match read.read() {
                     Ok(_) => {}
-                    Err(wayland_client::backend::WaylandError::Io(error)) if error.kind() == io::ErrorKind::WouldBlock => {}
+                    Err(wayland_client::backend::WaylandError::Io(error))
+                        if error.kind() == io::ErrorKind::WouldBlock => {}
                     Err(error) => return Err(error.to_string()),
                 }
             }
@@ -374,27 +405,60 @@ impl Dispatch<wl_registry::WlRegistry, ()> for Client {
         {
             state.globals.push(interface.clone());
             match interface.as_str() {
-                "lince_park_control_v1" => state.control.manager = Some(registry.bind(name, version.min(1), qh, ())),
-                "zwp_pointer_gestures_v1" => gesture_tests::bind(state, registry, name, version, qh),
-                "zwp_pointer_constraints_v1" | "zwp_relative_pointer_manager_v1" | "zwp_keyboard_shortcuts_inhibit_manager_v1" =>
-                    input_control_tests::bind(state, registry, name, &interface, qh),
-                "ext_output_image_capture_source_manager_v1" | "ext_foreign_toplevel_image_capture_source_manager_v1" | "ext_image_copy_capture_manager_v1" => capture_tests::bind(state, registry, name, &interface, qh),
-                "zwlr_output_manager_v1" => output_control_tests::bind(state, registry, name, version, qh),
-                "zwlr_output_power_manager_v1" => power_tests::bind(state, registry, name, version, qh),
+                "lince_park_control_v1" => {
+                    state.control.manager = Some(registry.bind(name, version.min(1), qh, ()))
+                }
+                "zwp_pointer_gestures_v1" => {
+                    gesture_tests::bind(state, registry, name, version, qh)
+                }
+                "zwp_pointer_constraints_v1"
+                | "zwp_relative_pointer_manager_v1"
+                | "zwp_keyboard_shortcuts_inhibit_manager_v1" => {
+                    input_control_tests::bind(state, registry, name, &interface, qh)
+                }
+                "ext_output_image_capture_source_manager_v1"
+                | "ext_foreign_toplevel_image_capture_source_manager_v1"
+                | "ext_image_copy_capture_manager_v1" => {
+                    capture_tests::bind(state, registry, name, &interface, qh)
+                }
+                "zwlr_output_manager_v1" => {
+                    output_control_tests::bind(state, registry, name, version, qh)
+                }
+                "zwlr_output_power_manager_v1" => {
+                    power_tests::bind(state, registry, name, version, qh)
+                }
                 "zwp_tablet_manager_v2" => tablet_tests::bind(state, registry, name, version, qh),
                 "wp_color_manager_v1" => color_tests::bind(state, registry, name, version, qh),
                 "zwp_linux_dmabuf_v1" => dmabuf_tests::bind(state, registry, name, version, qh),
-                "ext_workspace_manager_v1" => state.workspace_manager = Some(registry.bind(name, 1, qh, ())),
-                "zwlr_foreign_toplevel_manager_v1" => state.management = Some(registry.bind(name, version.min(3), qh, ())),
-                "wl_data_device_manager" => state.data_manager = Some(registry.bind(name, version.min(3), qh, ())),
-                "zwp_input_method_manager_v2" => state.input_method = Some(registry.bind(name, 1, qh, ())),
+                "ext_workspace_manager_v1" => {
+                    state.workspace_manager = Some(registry.bind(name, 1, qh, ()))
+                }
+                "zwlr_foreign_toplevel_manager_v1" => {
+                    state.management = Some(registry.bind(name, version.min(3), qh, ()))
+                }
+                "wl_data_device_manager" => {
+                    state.data_manager = Some(registry.bind(name, version.min(3), qh, ()))
+                }
+                "zwp_input_method_manager_v2" => {
+                    state.input_method = Some(registry.bind(name, 1, qh, ()))
+                }
                 "zwp_text_input_manager_v3" => text_input_tests::bind(state, registry, name, qh),
-                "zwp_virtual_keyboard_manager_v1" => state.virtual_keyboard = Some(registry.bind(name, 1, qh, ())),
-                "ext_idle_notifier_v1" => state.idle = Some(registry.bind(name, version.min(2), qh, ())),
-                "zwp_idle_inhibit_manager_v1" => state.idle_inhibit = Some(registry.bind(name, 1, qh, ())),
-                "wp_fractional_scale_manager_v1" => state.fractional = Some(registry.bind(name, 1, qh, ())),
+                "zwp_virtual_keyboard_manager_v1" => {
+                    state.virtual_keyboard = Some(registry.bind(name, 1, qh, ()))
+                }
+                "ext_idle_notifier_v1" => {
+                    state.idle = Some(registry.bind(name, version.min(2), qh, ()))
+                }
+                "zwp_idle_inhibit_manager_v1" => {
+                    state.idle_inhibit = Some(registry.bind(name, 1, qh, ()))
+                }
+                "wp_fractional_scale_manager_v1" => {
+                    state.fractional = Some(registry.bind(name, 1, qh, ()))
+                }
                 "wp_viewporter" => state.viewporter = Some(registry.bind(name, 1, qh, ())),
-                "ext_foreign_toplevel_list_v1" => state.foreign = Some(registry.bind(name, 1, qh, ())),
+                "ext_foreign_toplevel_list_v1" => {
+                    state.foreign = Some(registry.bind(name, 1, qh, ()))
+                }
                 "wl_compositor" => {
                     state.compositor = Some(registry.bind(name, version.min(4), qh, ()))
                 }
@@ -429,10 +493,16 @@ impl Dispatch<wl_registry::WlRegistry, ()> for Client {
 
 impl Dispatch<ext_foreign_toplevel_list_v1::ExtForeignToplevelListV1, ()> for Client {
     fn event(
-        state: &mut Self, _: &ext_foreign_toplevel_list_v1::ExtForeignToplevelListV1,
-        event: ext_foreign_toplevel_list_v1::Event, _: &(), _: &Connection, _: &QueueHandle<Self>,
+        state: &mut Self,
+        _: &ext_foreign_toplevel_list_v1::ExtForeignToplevelListV1,
+        event: ext_foreign_toplevel_list_v1::Event,
+        _: &(),
+        _: &Connection,
+        _: &QueueHandle<Self>,
     ) {
-        if let ext_foreign_toplevel_list_v1::Event::Toplevel { toplevel } = event { state.foreign_handles.push(toplevel); }
+        if let ext_foreign_toplevel_list_v1::Event::Toplevel { toplevel } = event {
+            state.foreign_handles.push(toplevel);
+        }
     }
 
     wayland_client::event_created_child!(Client, ext_foreign_toplevel_list_v1::ExtForeignToplevelListV1, [
@@ -442,8 +512,12 @@ impl Dispatch<ext_foreign_toplevel_list_v1::ExtForeignToplevelListV1, ()> for Cl
 
 impl Dispatch<ext_foreign_toplevel_handle_v1::ExtForeignToplevelHandleV1, ()> for Client {
     fn event(
-        state: &mut Self, handle: &ext_foreign_toplevel_handle_v1::ExtForeignToplevelHandleV1,
-        event: ext_foreign_toplevel_handle_v1::Event, _: &(), _: &Connection, _: &QueueHandle<Self>,
+        state: &mut Self,
+        handle: &ext_foreign_toplevel_handle_v1::ExtForeignToplevelHandleV1,
+        event: ext_foreign_toplevel_handle_v1::Event,
+        _: &(),
+        _: &Connection,
+        _: &QueueHandle<Self>,
     ) {
         match event {
             ext_foreign_toplevel_handle_v1::Event::Title { title } => {
@@ -457,11 +531,21 @@ impl Dispatch<ext_foreign_toplevel_handle_v1::ExtForeignToplevelHandleV1, ()> fo
 }
 
 impl Dispatch<ext_workspace_manager_v1::ExtWorkspaceManagerV1, ()> for Client {
-    fn event(state: &mut Self, _: &ext_workspace_manager_v1::ExtWorkspaceManagerV1,
-        event: ext_workspace_manager_v1::Event, _: &(), _: &Connection, _: &QueueHandle<Self>) {
+    fn event(
+        state: &mut Self,
+        _: &ext_workspace_manager_v1::ExtWorkspaceManagerV1,
+        event: ext_workspace_manager_v1::Event,
+        _: &(),
+        _: &Connection,
+        _: &QueueHandle<Self>,
+    ) {
         match event {
-            ext_workspace_manager_v1::Event::Workspace { workspace } => state.workspaces.push(workspace),
-            ext_workspace_manager_v1::Event::WorkspaceGroup { workspace_group } => state.workspace_groups.push(workspace_group),
+            ext_workspace_manager_v1::Event::Workspace { workspace } => {
+                state.workspaces.push(workspace)
+            }
+            ext_workspace_manager_v1::Event::WorkspaceGroup { workspace_group } => {
+                state.workspace_groups.push(workspace_group)
+            }
             ext_workspace_manager_v1::Event::Done => state.workspace_done += 1,
             _ => {}
         }
@@ -473,48 +557,90 @@ impl Dispatch<ext_workspace_manager_v1::ExtWorkspaceManagerV1, ()> for Client {
 }
 
 impl Dispatch<ext_workspace_handle_v1::ExtWorkspaceHandleV1, ()> for Client {
-    fn event(state: &mut Self, proxy: &ext_workspace_handle_v1::ExtWorkspaceHandleV1,
-        event: ext_workspace_handle_v1::Event, _: &(), _: &Connection, _: &QueueHandle<Self>) {
+    fn event(
+        state: &mut Self,
+        proxy: &ext_workspace_handle_v1::ExtWorkspaceHandleV1,
+        event: ext_workspace_handle_v1::Event,
+        _: &(),
+        _: &Connection,
+        _: &QueueHandle<Self>,
+    ) {
         match event {
             ext_workspace_handle_v1::Event::Name { name } => {
-                state.workspace_name_events.push((proxy.clone(), name.clone()));
+                state
+                    .workspace_name_events
+                    .push((proxy.clone(), name.clone()));
                 state.workspace_names.push(name);
             }
             ext_workspace_handle_v1::Event::Coordinates { coordinates } => {
-                let coordinates = coordinates.chunks_exact(4)
-                    .map(|value| u32::from_ne_bytes(value.try_into().unwrap())).collect();
-                state.workspace_coordinates.push((proxy.clone(), coordinates));
+                let coordinates = coordinates
+                    .chunks_exact(4)
+                    .map(|value| u32::from_ne_bytes(value.try_into().unwrap()))
+                    .collect();
+                state
+                    .workspace_coordinates
+                    .push((proxy.clone(), coordinates));
             }
             ext_workspace_handle_v1::Event::Removed => state.workspace_removed += 1,
-            ext_workspace_handle_v1::Event::State { state: wayland_client::WEnum::Value(flags) } => state.workspace_active.push(flags.contains(ext_workspace_handle_v1::State::Active)),
+            ext_workspace_handle_v1::Event::State {
+                state: wayland_client::WEnum::Value(flags),
+            } => state
+                .workspace_active
+                .push(flags.contains(ext_workspace_handle_v1::State::Active)),
             _ => {}
         }
     }
 }
 
 impl Dispatch<ext_workspace_group_handle_v1::ExtWorkspaceGroupHandleV1, ()> for Client {
-    fn event(state: &mut Self, _: &ext_workspace_group_handle_v1::ExtWorkspaceGroupHandleV1,
-        event: ext_workspace_group_handle_v1::Event, _: &(), _: &Connection, _: &QueueHandle<Self>) {
+    fn event(
+        state: &mut Self,
+        _: &ext_workspace_group_handle_v1::ExtWorkspaceGroupHandleV1,
+        event: ext_workspace_group_handle_v1::Event,
+        _: &(),
+        _: &Connection,
+        _: &QueueHandle<Self>,
+    ) {
         match event {
-            ext_workspace_group_handle_v1::Event::OutputEnter { .. } => state.workspace_output_enters += 1,
-            ext_workspace_group_handle_v1::Event::OutputLeave { .. } => state.workspace_output_leaves += 1,
+            ext_workspace_group_handle_v1::Event::OutputEnter { .. } => {
+                state.workspace_output_enters += 1
+            }
+            ext_workspace_group_handle_v1::Event::OutputLeave { .. } => {
+                state.workspace_output_leaves += 1
+            }
             _ => {}
         }
     }
 }
 
 fn workspace_snapshot(owner: u64) -> WorkspaceSnapshot {
-    WorkspaceSnapshot { owner, entries: vec![
-        WorkspaceEntry { id: 11, name: "Home".into(), active: true },
-        WorkspaceEntry { id: 29, name: "Work".into(), active: false },
-    ] }
+    WorkspaceSnapshot {
+        owner,
+        entries: vec![
+            WorkspaceEntry {
+                id: 11,
+                name: "Home".into(),
+                active: true,
+            },
+            WorkspaceEntry {
+                id: 29,
+                name: "Work".into(),
+                active: false,
+            },
+        ],
+    }
 }
 
 #[test]
 fn workspace_requests_require_control_permission_and_commit_atomically() {
     for control in [false, true] {
-        let capability = if control { crate::launch::Capability::WindowControl } else { crate::launch::Capability::WindowList };
-        let mut harness = Harness::connect_authorized(Server::new([640, 480]).unwrap(), Some(vec![capability]));
+        let capability = if control {
+            crate::launch::Capability::WindowControl
+        } else {
+            crate::launch::Capability::WindowList
+        };
+        let mut harness =
+            Harness::connect_authorized(Server::new([640, 480]).unwrap(), Some(vec![capability]));
         harness.server.workspaces(workspace_snapshot(41));
         harness.sync();
         assert_eq!(harness.client.workspace_names, vec!["Home", "Work"]);
@@ -526,16 +652,24 @@ fn workspace_requests_require_control_permission_and_commit_atomically() {
         assert!(harness.server.workspace_activations().is_empty());
         manager.commit();
         harness.sync();
-        assert_eq!(harness.server.workspace_activations(), if control { vec![(41, 29)] } else { Vec::new() });
+        assert_eq!(
+            harness.server.workspace_activations(),
+            if control { vec![(41, 29)] } else { Vec::new() }
+        );
         let done = harness.client.workspace_done;
-        for _ in 0..4 { harness.sync(); }
+        for _ in 0..4 {
+            harness.sync();
+        }
         assert_eq!(harness.client.workspace_done, done);
     }
 }
 
 #[test]
 fn stale_workspace_handles_and_pending_requests_cannot_cross_canvas_owners() {
-    let mut harness = Harness::connect_authorized(Server::new([640, 480]).unwrap(), Some(vec![crate::launch::Capability::WindowControl]));
+    let mut harness = Harness::connect_authorized(
+        Server::new([640, 480]).unwrap(),
+        Some(vec![crate::launch::Capability::WindowControl]),
+    );
     harness.server.workspaces(workspace_snapshot(41));
     harness.sync();
     let old = harness.client.workspaces[0].clone();
@@ -556,11 +690,16 @@ fn stale_workspace_handles_and_pending_requests_cannot_cross_canvas_owners() {
 
 #[test]
 fn removed_or_destroyed_workspace_handles_remain_inert() {
-    let mut harness = Harness::connect_authorized(Server::new([640, 480]).unwrap(), Some(vec![crate::launch::Capability::WindowControl]));
+    let mut harness = Harness::connect_authorized(
+        Server::new([640, 480]).unwrap(),
+        Some(vec![crate::launch::Capability::WindowControl]),
+    );
     harness.server.workspaces(workspace_snapshot(41));
     harness.sync();
     harness.client.workspaces[0].destroy();
-    for _ in 0..4 { harness.sync(); }
+    for _ in 0..4 {
+        harness.sync();
+    }
     assert_eq!(harness.client.workspaces.len(), 2);
     harness.client.workspaces[1].activate();
     harness.sync();
@@ -575,12 +714,20 @@ fn removed_or_destroyed_workspace_handles_remain_inert() {
 
 #[test]
 fn session_lock_discards_workspace_activation_including_pending_transactions() {
-    let mut harness = Harness::connect_authorized(Server::new([640, 480]).unwrap(), Some(vec![crate::launch::Capability::WindowControl]));
+    let mut harness = Harness::connect_authorized(
+        Server::new([640, 480]).unwrap(),
+        Some(vec![crate::launch::Capability::WindowControl]),
+    );
     harness.server.workspaces(workspace_snapshot(41));
     harness.sync();
     harness.client.workspaces[1].activate();
     harness.sync();
-    let _lock = harness.client.lock_manager.as_ref().unwrap().lock(&harness.queue.handle(), ());
+    let _lock = harness
+        .client
+        .lock_manager
+        .as_ref()
+        .unwrap()
+        .lock(&harness.queue.handle(), ());
     harness.sync();
     harness.client.workspace_manager.as_ref().unwrap().commit();
     harness.sync();
@@ -589,7 +736,10 @@ fn session_lock_discards_workspace_activation_including_pending_transactions() {
 
 #[test]
 fn workspace_names_active_state_and_output_membership_update_without_reannouncement() {
-    let mut harness = Harness::connect_authorized(Server::new([640, 480]).unwrap(), Some(vec![crate::launch::Capability::WindowList]));
+    let mut harness = Harness::connect_authorized(
+        Server::new([640, 480]).unwrap(),
+        Some(vec![crate::launch::Capability::WindowList]),
+    );
     harness.server.workspaces(workspace_snapshot(41));
     harness.sync();
     assert_eq!(harness.client.workspace_output_enters, 1);
@@ -600,27 +750,50 @@ fn workspace_names_active_state_and_output_membership_update_without_reannouncem
     harness.server.workspaces(snapshot);
     harness.sync();
     assert_eq!(harness.client.workspaces.len(), 2);
-    assert_eq!(harness.client.workspace_names.last().map(String::as_str), Some("Renamed"));
+    assert_eq!(
+        harness.client.workspace_names.last().map(String::as_str),
+        Some("Renamed")
+    );
     assert_eq!(&harness.client.workspace_active[2..], &[false, true]);
-    harness.server.configure_outputs(&[Monitor { id: OutputId(2), name: "Replacement".into(), origin: [0, 0], size: [640, 480] }]).unwrap();
-    for _ in 0..4 { harness.sync(); }
+    harness
+        .server
+        .configure_outputs(&[Monitor {
+            id: OutputId(2),
+            name: "Replacement".into(),
+            origin: [0, 0],
+            size: [640, 480],
+        }])
+        .unwrap();
+    for _ in 0..4 {
+        harness.sync();
+    }
     assert_eq!(harness.client.workspace_output_enters, 2);
     assert_eq!(harness.client.workspace_output_leaves, 1);
     harness.client.workspace_groups[0].destroy();
-    for _ in 0..4 { harness.sync(); }
+    for _ in 0..4 {
+        harness.sync();
+    }
     assert_eq!(harness.client.workspace_groups.len(), 1);
 }
 
 #[test]
 fn reordered_workspaces_publish_coordinates_without_recreating_handles_or_redirecting_activation() {
-    let mut harness = Harness::connect_authorized(Server::new([640, 480]).unwrap(),
-        Some(vec![crate::launch::Capability::WindowList, crate::launch::Capability::WindowControl]));
+    let mut harness = Harness::connect_authorized(
+        Server::new([640, 480]).unwrap(),
+        Some(vec![
+            crate::launch::Capability::WindowList,
+            crate::launch::Capability::WindowControl,
+        ]),
+    );
     let mut snapshot = workspace_snapshot(41);
     harness.server.workspaces(snapshot.clone());
     harness.sync();
     let handles = harness.client.workspaces.clone();
     assert_eq!(handles.len(), 2);
-    assert_eq!(harness.client.workspace_coordinates, vec![(handles[0].clone(), vec![0]), (handles[1].clone(), vec![1])]);
+    assert_eq!(
+        harness.client.workspace_coordinates,
+        vec![(handles[0].clone(), vec![0]), (handles[1].clone(), vec![1])]
+    );
     let done = harness.client.workspace_done;
     snapshot.entries.swap(0, 1);
     harness.server.workspaces(snapshot.clone());
@@ -629,7 +802,10 @@ fn reordered_workspaces_publish_coordinates_without_recreating_handles_or_redire
     assert_eq!(harness.client.workspace_removed, 0);
     assert_eq!(harness.client.workspace_names.len(), 2);
     assert_eq!(harness.client.workspace_done, done + 1);
-    assert_eq!(&harness.client.workspace_coordinates[2..], &[(handles[1].clone(), vec![0]), (handles[0].clone(), vec![1])]);
+    assert_eq!(
+        &harness.client.workspace_coordinates[2..],
+        &[(handles[1].clone(), vec![0]), (handles[0].clone(), vec![1])]
+    );
     harness.server.workspaces(snapshot);
     harness.sync();
     assert_eq!(harness.client.workspace_done, done + 1);
@@ -642,7 +818,10 @@ fn reordered_workspaces_publish_coordinates_without_recreating_handles_or_redire
 
 #[test]
 fn invalid_workspace_snapshots_do_not_replace_the_last_accepted_state() {
-    let mut harness = Harness::connect_authorized(Server::new([640, 480]).unwrap(), Some(vec![crate::launch::Capability::WindowControl]));
+    let mut harness = Harness::connect_authorized(
+        Server::new([640, 480]).unwrap(),
+        Some(vec![crate::launch::Capability::WindowControl]),
+    );
     harness.server.workspaces(workspace_snapshot(41));
     harness.sync();
     for invalid in 0..3 {
@@ -663,7 +842,10 @@ fn invalid_workspace_snapshots_do_not_replace_the_last_accepted_state() {
 
 #[test]
 fn removed_workspace_requests_do_not_reappear_when_the_workspace_is_restored() {
-    let mut harness = Harness::connect_authorized(Server::new([640, 480]).unwrap(), Some(vec![crate::launch::Capability::WindowControl]));
+    let mut harness = Harness::connect_authorized(
+        Server::new([640, 480]).unwrap(),
+        Some(vec![crate::launch::Capability::WindowControl]),
+    );
     harness.server.workspaces(workspace_snapshot(41));
     harness.sync();
     harness.client.workspaces[1].activate();
@@ -677,9 +859,17 @@ fn removed_workspace_requests_do_not_reappear_when_the_workspace_is_restored() {
 }
 
 impl Dispatch<zwlr_foreign_toplevel_manager_v1::ZwlrForeignToplevelManagerV1, ()> for Client {
-    fn event(state: &mut Self, _: &zwlr_foreign_toplevel_manager_v1::ZwlrForeignToplevelManagerV1,
-        event: zwlr_foreign_toplevel_manager_v1::Event, _: &(), _: &Connection, _: &QueueHandle<Self>) {
-        if let zwlr_foreign_toplevel_manager_v1::Event::Toplevel { toplevel } = event { state.managed.push(toplevel); }
+    fn event(
+        state: &mut Self,
+        _: &zwlr_foreign_toplevel_manager_v1::ZwlrForeignToplevelManagerV1,
+        event: zwlr_foreign_toplevel_manager_v1::Event,
+        _: &(),
+        _: &Connection,
+        _: &QueueHandle<Self>,
+    ) {
+        if let zwlr_foreign_toplevel_manager_v1::Event::Toplevel { toplevel } = event {
+            state.managed.push(toplevel);
+        }
     }
     wayland_client::event_created_child!(Client, zwlr_foreign_toplevel_manager_v1::ZwlrForeignToplevelManagerV1, [
         0 => (zwlr_foreign_toplevel_handle_v1::ZwlrForeignToplevelHandleV1, ())
@@ -687,13 +877,23 @@ impl Dispatch<zwlr_foreign_toplevel_manager_v1::ZwlrForeignToplevelManagerV1, ()
 }
 
 impl Dispatch<zwlr_foreign_toplevel_handle_v1::ZwlrForeignToplevelHandleV1, ()> for Client {
-    fn event(state: &mut Self, _: &zwlr_foreign_toplevel_handle_v1::ZwlrForeignToplevelHandleV1,
-        event: zwlr_foreign_toplevel_handle_v1::Event, _: &(), _: &Connection, _: &QueueHandle<Self>) {
+    fn event(
+        state: &mut Self,
+        _: &zwlr_foreign_toplevel_handle_v1::ZwlrForeignToplevelHandleV1,
+        event: zwlr_foreign_toplevel_handle_v1::Event,
+        _: &(),
+        _: &Connection,
+        _: &QueueHandle<Self>,
+    ) {
         match event {
             zwlr_foreign_toplevel_handle_v1::Event::Done => state.management_done += 1,
             zwlr_foreign_toplevel_handle_v1::Event::Closed => state.management_closed += 1,
-            zwlr_foreign_toplevel_handle_v1::Event::State { state: flags } => state.management_minimized.push(flags.chunks_exact(4)
-                .any(|flag| u32::from_ne_bytes(flag.try_into().unwrap()) == zwlr_foreign_toplevel_handle_v1::State::Minimized as u32)),
+            zwlr_foreign_toplevel_handle_v1::Event::State { state: flags } => state
+                .management_minimized
+                .push(flags.chunks_exact(4).any(|flag| {
+                    u32::from_ne_bytes(flag.try_into().unwrap())
+                        == zwlr_foreign_toplevel_handle_v1::State::Minimized as u32
+                })),
             _ => {}
         }
     }
@@ -702,8 +902,13 @@ impl Dispatch<zwlr_foreign_toplevel_handle_v1::ZwlrForeignToplevelHandleV1, ()> 
 #[test]
 fn taskbar_control_requires_separate_connection_authorization() {
     for control in [false, true] {
-        let capability = if control { crate::launch::Capability::WindowControl } else { crate::launch::Capability::WindowList };
-        let mut harness = Harness::connect_authorized(Server::new([640, 480]).unwrap(), Some(vec![capability]));
+        let capability = if control {
+            crate::launch::Capability::WindowControl
+        } else {
+            crate::launch::Capability::WindowList
+        };
+        let mut harness =
+            Harness::connect_authorized(Server::new([640, 480]).unwrap(), Some(vec![capability]));
         let window = harness.window();
         let _buffer = harness.attach(&window, [320, 240]);
         harness.sync();
@@ -718,16 +923,31 @@ fn taskbar_control_requires_separate_connection_authorization() {
         let requests = harness.server.requests();
         assert_eq!(requests.len(), usize::from(control));
         if control {
-            assert_eq!(requests[0], (id, WindowRequest { minimized: Some(true), fullscreen: Some(true), maximized: Some(true) }));
+            assert_eq!(
+                requests[0],
+                (
+                    id,
+                    WindowRequest {
+                        minimized: Some(true),
+                        fullscreen: Some(true),
+                        maximized: Some(true)
+                    }
+                )
+            );
             assert_eq!(harness.server.activations(), vec![id]);
-        } else { assert!(harness.server.activations().is_empty()); }
+        } else {
+            assert!(harness.server.activations().is_empty());
+        }
         assert_eq!(harness.client.closed, control);
     }
 }
 
 #[test]
 fn xdg_and_taskbar_minimization_use_policy_requests_and_report_confirmed_state() {
-    let mut harness = Harness::connect_authorized(Server::new([640, 480]).unwrap(), Some(vec![crate::launch::Capability::WindowControl]));
+    let mut harness = Harness::connect_authorized(
+        Server::new([640, 480]).unwrap(),
+        Some(vec![crate::launch::Capability::WindowControl]),
+    );
     let window = harness.window();
     let _buffer = harness.attach(&window, [320, 240]);
     harness.sync();
@@ -736,35 +956,82 @@ fn xdg_and_taskbar_minimization_use_policy_requests_and_report_confirmed_state()
     assert_eq!(harness.client.management_minimized.last(), Some(&false));
     window.role.set_minimized();
     harness.sync();
-    assert_eq!(harness.server.requests(), vec![(id, WindowRequest { minimized: Some(true), ..Default::default() })]);
+    assert_eq!(
+        harness.server.requests(),
+        vec![(
+            id,
+            WindowRequest {
+                minimized: Some(true),
+                ..Default::default()
+            }
+        )]
+    );
     assert_eq!(harness.client.management_minimized.last(), Some(&false));
-    harness.server.configure_state(id, [320, 240], WindowState { minimized: true, ..Default::default() }).unwrap();
+    harness
+        .server
+        .configure_state(
+            id,
+            [320, 240],
+            WindowState {
+                minimized: true,
+                ..Default::default()
+            },
+        )
+        .unwrap();
     harness.sync();
     assert_eq!(harness.client.management_minimized.last(), Some(&true));
     handle.unset_minimized();
     harness.sync();
-    assert_eq!(harness.server.requests(), vec![(id, WindowRequest { minimized: Some(false), ..Default::default() })]);
-    harness.server.configure_state(id, [320, 240], WindowState::default()).unwrap();
+    assert_eq!(
+        harness.server.requests(),
+        vec![(
+            id,
+            WindowRequest {
+                minimized: Some(false),
+                ..Default::default()
+            }
+        )]
+    );
+    harness
+        .server
+        .configure_state(id, [320, 240], WindowState::default())
+        .unwrap();
     harness.sync();
     assert_eq!(harness.client.management_minimized.last(), Some(&false));
     handle.set_minimized();
     harness.sync();
-    assert_eq!(harness.server.requests(), vec![(id, WindowRequest { minimized: Some(true), ..Default::default() })]);
+    assert_eq!(
+        harness.server.requests(),
+        vec![(
+            id,
+            WindowRequest {
+                minimized: Some(true),
+                ..Default::default()
+            }
+        )]
+    );
 }
 
 #[test]
 fn taskbar_handles_close_once_and_unchanged_dispatch_does_not_emit_updates() {
-    let mut harness = Harness::connect_authorized(Server::new([640, 480]).unwrap(), Some(vec![crate::launch::Capability::WindowList]));
+    let mut harness = Harness::connect_authorized(
+        Server::new([640, 480]).unwrap(),
+        Some(vec![crate::launch::Capability::WindowList]),
+    );
     let window = harness.window();
     let _buffer = harness.attach(&window, [320, 240]);
     harness.sync();
     assert_eq!(harness.client.managed.len(), 1);
     let done = harness.client.management_done;
-    for _ in 0..4 { harness.sync(); }
+    for _ in 0..4 {
+        harness.sync();
+    }
     assert_eq!(harness.client.management_done, done);
     window.surface.attach(None, 0, 0);
     window.surface.commit();
-    for _ in 0..4 { harness.sync(); }
+    for _ in 0..4 {
+        harness.sync();
+    }
     assert_eq!(harness.client.management_closed, 1);
     harness.client.managed[0].destroy();
     harness.sync();
@@ -772,27 +1039,39 @@ fn taskbar_handles_close_once_and_unchanged_dispatch_does_not_emit_updates() {
 
 #[test]
 fn destroying_a_taskbar_handle_does_not_reannounce_the_same_window() {
-    let mut harness = Harness::connect_authorized(Server::new([640, 480]).unwrap(), Some(vec![crate::launch::Capability::WindowList]));
+    let mut harness = Harness::connect_authorized(
+        Server::new([640, 480]).unwrap(),
+        Some(vec![crate::launch::Capability::WindowList]),
+    );
     let window = harness.window();
     let _buffer = harness.attach(&window, [320, 240]);
     harness.sync();
     harness.client.managed[0].destroy();
-    for _ in 0..4 { harness.sync(); }
+    for _ in 0..4 {
+        harness.sync();
+    }
     assert_eq!(harness.client.managed.len(), 1);
 }
 
 #[test]
 fn a_closed_taskbar_handle_remains_inert_after_the_window_remaps() {
-    let mut harness = Harness::connect_authorized(Server::new([640, 480]).unwrap(), Some(vec![crate::launch::Capability::WindowControl]));
+    let mut harness = Harness::connect_authorized(
+        Server::new([640, 480]).unwrap(),
+        Some(vec![crate::launch::Capability::WindowControl]),
+    );
     let window = harness.window();
     let _buffer = harness.attach(&window, [320, 240]);
     harness.sync();
     let old = harness.client.managed[0].clone();
     window.surface.attach(None, 0, 0);
     window.surface.commit();
-    for _ in 0..4 { harness.sync(); }
+    for _ in 0..4 {
+        harness.sync();
+    }
     window.surface.commit();
-    for _ in 0..2 { harness.sync(); }
+    for _ in 0..2 {
+        harness.sync();
+    }
     let _buffer = harness.attach(&window, [320, 240]);
     harness.sync();
     assert_eq!(harness.client.management_closed, 1);
@@ -808,12 +1087,20 @@ fn a_closed_taskbar_handle_remains_inert_after_the_window_remaps() {
 
 #[test]
 fn authorized_taskbar_controls_are_denied_during_session_lock() {
-    let mut harness = Harness::connect_authorized(Server::new([640, 480]).unwrap(), Some(vec![crate::launch::Capability::WindowControl]));
+    let mut harness = Harness::connect_authorized(
+        Server::new([640, 480]).unwrap(),
+        Some(vec![crate::launch::Capability::WindowControl]),
+    );
     let window = harness.window();
     let _buffer = harness.attach(&window, [320, 240]);
     harness.sync();
     let handle = harness.client.managed[0].clone();
-    let _lock = harness.client.lock_manager.as_ref().unwrap().lock(&harness.queue.handle(), ());
+    let _lock = harness
+        .client
+        .lock_manager
+        .as_ref()
+        .unwrap()
+        .lock(&harness.queue.handle(), ());
     harness.sync();
     assert!(harness.server.locked());
     handle.close();
@@ -836,8 +1123,16 @@ fn helper_capabilities_are_connection_scoped_and_independent() {
         (vec![Capability::WindowControl], false, false, true),
         (vec![Capability::Clipboard], true, false, false),
     ] {
-        let harness = Harness::connect_authorized(Server::new([640, 480]).unwrap(), Some(capabilities));
-        assert_eq!(harness.client.globals.iter().any(|name| name == "zwlr_data_control_manager_v1"), clipboard);
+        let harness =
+            Harness::connect_authorized(Server::new([640, 480]).unwrap(), Some(capabilities));
+        assert_eq!(
+            harness
+                .client
+                .globals
+                .iter()
+                .any(|name| name == "zwlr_data_control_manager_v1"),
+            clipboard
+        );
         assert_eq!(harness.client.foreign.is_some(), listing);
         assert_eq!(harness.client.management.is_some(), management);
         assert_eq!(harness.client.workspace_manager.is_some(), management);
@@ -846,15 +1141,24 @@ fn helper_capabilities_are_connection_scoped_and_independent() {
 
 #[test]
 fn foreign_listing_follows_mapping_metadata_and_unmapping() {
-    let mut harness = Harness::connect_authorized(Server::new([640, 480]).unwrap(), Some(vec![crate::launch::Capability::WindowList]));
+    let mut harness = Harness::connect_authorized(
+        Server::new([640, 480]).unwrap(),
+        Some(vec![crate::launch::Capability::WindowList]),
+    );
     let window = harness.window();
     assert!(harness.client.foreign_titles.is_empty());
     let _buffer = harness.attach(&window, [640, 480]);
     harness.sync();
-    assert_eq!(harness.client.foreign_titles.last().map(String::as_str), Some("A real Wayland window"));
+    assert_eq!(
+        harness.client.foreign_titles.last().map(String::as_str),
+        Some("A real Wayland window")
+    );
     window.role.set_title("Updated title".into());
     harness.sync();
-    assert_eq!(harness.client.foreign_titles.last().map(String::as_str), Some("Updated title"));
+    assert_eq!(
+        harness.client.foreign_titles.last().map(String::as_str),
+        Some("Updated title")
+    );
     window.surface.attach(None, 0, 0);
     window.surface.commit();
     harness.sync();
@@ -884,7 +1188,12 @@ fn damage_history_survives_skipped_commits_and_snapshots_remain_immutable() {
     assert!(changed.iter().any(|rectangle| rectangle.contains((42, 42))));
     assert!(!changed.iter().any(|rectangle| rectangle.contains((90, 90))));
     assert!(initial.buffer_damage_since(Some(commit)).is_empty());
-    let region = harness.client.compositor.as_ref().unwrap().create_region(&harness.queue.handle(), ());
+    let region = harness
+        .client
+        .compositor
+        .as_ref()
+        .unwrap()
+        .create_region(&harness.queue.handle(), ());
     region.add(0, 0, 100, 100);
     window.surface.set_opaque_region(Some(&region));
     window.surface.commit();
@@ -908,15 +1217,37 @@ delegate_noop!(Client: ignore zwp_virtual_keyboard_manager_v1::ZwpVirtualKeyboar
 delegate_noop!(Client: ignore zwp_virtual_keyboard_v1::ZwpVirtualKeyboardV1);
 
 impl Dispatch<zwp_input_method_keyboard_grab_v2::ZwpInputMethodKeyboardGrabV2, ()> for Client {
-    fn event(state: &mut Self, _: &zwp_input_method_keyboard_grab_v2::ZwpInputMethodKeyboardGrabV2,
-        event: zwp_input_method_keyboard_grab_v2::Event, _: &(), _: &Connection, _: &QueueHandle<Self>) {
+    fn event(
+        state: &mut Self,
+        _: &zwp_input_method_keyboard_grab_v2::ZwpInputMethodKeyboardGrabV2,
+        event: zwp_input_method_keyboard_grab_v2::Event,
+        _: &(),
+        _: &Connection,
+        _: &QueueHandle<Self>,
+    ) {
         match event {
-            zwp_input_method_keyboard_grab_v2::Event::Keymap { fd, size, .. } => state.input_keymap = Some((fd, size)),
-            zwp_input_method_keyboard_grab_v2::Event::Key { key, state: wayland_client::WEnum::Value(value), .. } => {
-                state.input_keys.push((key, value == wl_keyboard::KeyState::Pressed));
+            zwp_input_method_keyboard_grab_v2::Event::Keymap { fd, size, .. } => {
+                state.input_keymap = Some((fd, size))
             }
-            zwp_input_method_keyboard_grab_v2::Event::Modifiers { mods_depressed, mods_latched, mods_locked, group, .. } => {
-                state.input_modifiers.push([mods_depressed, mods_latched, mods_locked, group]);
+            zwp_input_method_keyboard_grab_v2::Event::Key {
+                key,
+                state: wayland_client::WEnum::Value(value),
+                ..
+            } => {
+                state
+                    .input_keys
+                    .push((key, value == wl_keyboard::KeyState::Pressed));
+            }
+            zwp_input_method_keyboard_grab_v2::Event::Modifiers {
+                mods_depressed,
+                mods_latched,
+                mods_locked,
+                group,
+                ..
+            } => {
+                state
+                    .input_modifiers
+                    .push([mods_depressed, mods_latched, mods_locked, group]);
             }
             _ => {}
         }
@@ -924,12 +1255,26 @@ impl Dispatch<zwp_input_method_keyboard_grab_v2::ZwpInputMethodKeyboardGrabV2, (
 }
 
 impl Dispatch<zwp_input_method_v2::ZwpInputMethodV2, ()> for Client {
-    fn event(state: &mut Self, proxy: &zwp_input_method_v2::ZwpInputMethodV2,
-        event: zwp_input_method_v2::Event, _: &(), _: &Connection, _: &QueueHandle<Self>) {
+    fn event(
+        state: &mut Self,
+        proxy: &zwp_input_method_v2::ZwpInputMethodV2,
+        event: zwp_input_method_v2::Event,
+        _: &(),
+        _: &Connection,
+        _: &QueueHandle<Self>,
+    ) {
         match event {
-            zwp_input_method_v2::Event::Done => state.input_serial = state.input_serial.wrapping_add(1),
-            zwp_input_method_v2::Event::SurroundingText { text, cursor, anchor } => state.input_surrounding.push((text, cursor, anchor)),
-            zwp_input_method_v2::Event::TextChangeCause { cause: wayland_client::WEnum::Value(cause) } => state.input_causes.push(cause as u32),
+            zwp_input_method_v2::Event::Done => {
+                state.input_serial = state.input_serial.wrapping_add(1)
+            }
+            zwp_input_method_v2::Event::SurroundingText {
+                text,
+                cursor,
+                anchor,
+            } => state.input_surrounding.push((text, cursor, anchor)),
+            zwp_input_method_v2::Event::TextChangeCause {
+                cause: wayland_client::WEnum::Value(cause),
+            } => state.input_causes.push(cause as u32),
             zwp_input_method_v2::Event::Activate => state.input_active = true,
             zwp_input_method_v2::Event::Deactivate => state.input_active = false,
             zwp_input_method_v2::Event::Unavailable => state.input_unavailable.push(proxy.id()),
@@ -942,13 +1287,35 @@ impl Dispatch<zwp_input_method_v2::ZwpInputMethodV2, ()> for Client {
 fn input_method_and_keyboard_injection_are_connection_scoped() {
     let ordinary = Harness::new();
     assert!(ordinary.client.input_method.is_none());
-    assert!(!ordinary.client.globals.iter().any(|name| name == "zwp_virtual_keyboard_manager_v1"));
-    let mut authorized = Harness::connect_authorized(Server::new([640, 480]).unwrap(), Some(vec![crate::launch::Capability::InputMethod]));
-    assert!(authorized.client.input_method.is_some());
-    assert!(authorized.client.globals.iter().any(|name| name == "zwp_virtual_keyboard_manager_v1"));
-    let method = authorized.client.input_method.as_ref().unwrap().get_input_method(
-        authorized.client.seat.as_ref().unwrap(), &authorized.queue.handle(), (),
+    assert!(
+        !ordinary
+            .client
+            .globals
+            .iter()
+            .any(|name| name == "zwp_virtual_keyboard_manager_v1")
     );
+    let mut authorized = Harness::connect_authorized(
+        Server::new([640, 480]).unwrap(),
+        Some(vec![crate::launch::Capability::InputMethod]),
+    );
+    assert!(authorized.client.input_method.is_some());
+    assert!(
+        authorized
+            .client
+            .globals
+            .iter()
+            .any(|name| name == "zwp_virtual_keyboard_manager_v1")
+    );
+    let method = authorized
+        .client
+        .input_method
+        .as_ref()
+        .unwrap()
+        .get_input_method(
+            authorized.client.seat.as_ref().unwrap(),
+            &authorized.queue.handle(),
+            (),
+        );
     authorized.sync();
     assert!(!authorized.client.input_active);
     assert!(authorized.client.input_surrounding.is_empty());
@@ -958,30 +1325,65 @@ fn input_method_and_keyboard_injection_are_connection_scoped() {
 
 #[cfg(feature = "nested")]
 #[test]
-fn native_text_input_transports_unicode_preedit_deletion_and_secret_context_without_stale_commits() {
-    let mut harness = Harness::connect_authorized(Server::new([640, 480]).unwrap(), Some(vec![crate::launch::Capability::InputMethod]));
-    let method = harness.client.input_method.as_ref().unwrap().get_input_method(
-        harness.client.seat.as_ref().unwrap(), &harness.queue.handle(), (),
+fn native_text_input_transports_unicode_preedit_deletion_and_secret_context_without_stale_commits()
+{
+    let mut harness = Harness::connect_authorized(
+        Server::new([640, 480]).unwrap(),
+        Some(vec![crate::launch::Capability::InputMethod]),
     );
-    for _ in 0..8 { harness.sync(); }
+    let method = harness
+        .client
+        .input_method
+        .as_ref()
+        .unwrap()
+        .get_input_method(
+            harness.client.seat.as_ref().unwrap(),
+            &harness.queue.handle(),
+            (),
+        );
+    for _ in 0..8 {
+        harness.sync();
+    }
     assert!(harness.server.native_ready());
-    let context = crate::native_input::Editor { owner: 1, revision: 1, projection: 0, from_ime: false, selection: [2, 2], surrounding: "é世".into(),
-        cursor: 2, anchor: 2, sensitive: false, multiline: false, caret: [20, 20, 2, 20] };
+    let context = crate::native_input::Editor {
+        owner: 1,
+        revision: 1,
+        projection: 0,
+        from_ime: false,
+        selection: [2, 2],
+        surrounding: "é世".into(),
+        cursor: 2,
+        anchor: 2,
+        sensitive: false,
+        multiline: false,
+        caret: [20, 20, 2, 20],
+    };
     harness.server.native_editor(Some(context.clone()));
     harness.server.native_focus();
-    for _ in 0..8 { harness.sync(); }
+    for _ in 0..8 {
+        harness.sync();
+    }
     assert!(harness.client.input_active);
-    assert_eq!(harness.client.input_surrounding.last(), Some(&("é世".into(), 2, 2)));
+    assert_eq!(
+        harness.client.input_surrounding.last(),
+        Some(&("é世".into(), 2, 2))
+    );
     assert_eq!(harness.client.input_causes.last(), Some(&1));
     method.delete_surrounding_text(2, 0);
     method.commit_string("Olá".into());
     method.set_preedit_string("界".into(), 0, 3);
     method.commit(harness.client.input_serial);
-    for _ in 0..4 { harness.sync(); }
+    for _ in 0..4 {
+        harness.sync();
+    }
     let events = harness.server.native_events();
-    let edits: Vec<_> = events.into_iter().filter_map(|event| match event {
-        crate::native_input::client::Event::Edit(edit) => Some(edit), _ => None,
-    }).collect();
+    let edits: Vec<_> = events
+        .into_iter()
+        .filter_map(|event| match event {
+            crate::native_input::client::Event::Edit(edit) => Some(edit),
+            _ => None,
+        })
+        .collect();
     assert_eq!(edits.len(), 1);
     assert_eq!(edits[0].context, context);
     assert_eq!(edits[0].delete, Some((2, 0)));
@@ -993,34 +1395,71 @@ fn native_text_input_transports_unicode_preedit_deletion_and_secret_context_with
     harness.server.native_editor(Some(popup_context));
     let bounds = lince_interface::host::Rectangle::new([0.0; 2], [640.0, 480.0]).unwrap();
     harness.server.state.presented_geometry = Some(lince_interface::host::GeometrySnapshot {
-        revision: 1, items: Vec::new(), focused: None, outputs: vec![lince_interface::host::OutputViewport { rotation: Default::default(),
-            id: OutputId(1), bounds, usable: lince_interface::host::Rectangle::new([0.0, 30.0], [640.0, 450.0]),
-            physical_size: [640, 480], raster: lince_interface::host::raster::RasterMapping { origin: (bounds).origin(), scale: [1.0; 2] }, workspace: 1,
+        revision: 1,
+        items: Vec::new(),
+        focused: None,
+        outputs: vec![lince_interface::host::OutputViewport {
+            rotation: Default::default(),
+            id: OutputId(1),
+            bounds,
+            usable: lince_interface::host::Rectangle::new([0.0, 30.0], [640.0, 450.0]),
+            physical_size: [640, 480],
+            raster: lince_interface::host::raster::RasterMapping {
+                origin: (bounds).origin(),
+                scale: [1.0; 2],
+            },
+            workspace: 1,
         }],
     });
-    for _ in 0..8 { harness.sync(); }
+    for _ in 0..8 {
+        harness.sync();
+    }
     assert_eq!(harness.client.input_causes.last(), Some(&0));
-    let popup_surface = harness.client.compositor.as_ref().unwrap().create_surface(&harness.queue.handle(), ());
+    let popup_surface = harness
+        .client
+        .compositor
+        .as_ref()
+        .unwrap()
+        .create_surface(&harness.queue.handle(), ());
     let popup = method.get_input_popup_surface(&popup_surface, &harness.queue.handle(), ());
     let buffer = harness.buffer([64, 32]);
     popup_surface.attach(Some(&buffer), 0, 0);
     popup_surface.commit();
-    for _ in 0..4 { harness.sync(); }
+    for _ in 0..4 {
+        harness.sync();
+    }
     let popups = harness.server.native_popups();
     assert_eq!(popups.len(), 1);
     assert_eq!(popups[0].origin, [576, 418]);
     let previous = harness.client.input_serial;
-    let protected = crate::native_input::Editor { owner: 2, revision: 2, sensitive: true, surrounding: String::new(),
-        cursor: 0, anchor: 0, selection: [8, 8], ..context };
+    let protected = crate::native_input::Editor {
+        owner: 2,
+        revision: 2,
+        sensitive: true,
+        surrounding: String::new(),
+        cursor: 0,
+        anchor: 0,
+        selection: [8, 8],
+        ..context
+    };
     harness.server.native_editor(Some(protected.clone()));
-    for _ in 0..8 { harness.sync(); }
-    assert_eq!(harness.client.input_surrounding.last(), Some(&(String::new(), 0, 0)));
+    for _ in 0..8 {
+        harness.sync();
+    }
+    assert_eq!(
+        harness.client.input_surrounding.last(),
+        Some(&(String::new(), 0, 0))
+    );
     method.commit_string("stale".into());
     method.commit(previous);
-    for _ in 0..4 { harness.sync(); }
+    for _ in 0..4 {
+        harness.sync();
+    }
     assert!(harness.server.native_events().is_empty());
     harness.server.native_editor(None);
-    for _ in 0..8 { harness.sync(); }
+    for _ in 0..8 {
+        harness.sync();
+    }
     assert!(!harness.client.input_active);
     harness.server.focus(None, 100.into());
     assert!(harness.server.native_popups().is_empty());
@@ -1029,14 +1468,26 @@ fn native_text_input_transports_unicode_preedit_deletion_and_secret_context_with
     method.destroy();
     harness.sync();
     harness.client.input_serial = 0;
-    let restarted = harness.client.input_method.as_ref().unwrap().get_input_method(
-        harness.client.seat.as_ref().unwrap(), &harness.queue.handle(), (),
-    );
+    let restarted = harness
+        .client
+        .input_method
+        .as_ref()
+        .unwrap()
+        .get_input_method(
+            harness.client.seat.as_ref().unwrap(),
+            &harness.queue.handle(),
+            (),
+        );
     harness.server.native_editor(Some(protected));
     harness.server.native_focus();
-    for _ in 0..8 { harness.sync(); }
+    for _ in 0..8 {
+        harness.sync();
+    }
     assert!(harness.client.input_active);
-    assert_eq!(harness.client.input_surrounding.last(), Some(&(String::new(), 0, 0)));
+    assert_eq!(
+        harness.client.input_surrounding.last(),
+        Some(&(String::new(), 0, 0))
+    );
     restarted.destroy();
     harness.sync();
 }
@@ -1045,50 +1496,101 @@ fn native_text_input_transports_unicode_preedit_deletion_and_secret_context_with
 #[test]
 fn internal_native_keyboard_receives_one_pair_of_physical_key_events() {
     let mut harness = Harness::new();
-    for _ in 0..8 { harness.sync(); }
+    for _ in 0..8 {
+        harness.sync();
+    }
     harness.server.native_focus();
-    for _ in 0..4 { harness.sync(); }
+    for _ in 0..4 {
+        harness.sync();
+    }
     harness.server.native_events();
     harness.server.keyboard(30, true, 1, |_| false).unwrap();
     harness.server.keyboard(30, false, 2, |_| false).unwrap();
-    for _ in 0..4 { harness.sync(); }
-    let keys: Vec<_> = harness.server.native_events().into_iter().filter_map(|event| match event {
-        crate::native_input::client::Event::Key { code, pressed, event } => Some((code, pressed, event.text)),
-        _ => None,
-    }).collect();
-    assert_eq!(keys, vec![(30, true, Some("a".into())), (30, false, Some("a".into()))]);
+    for _ in 0..4 {
+        harness.sync();
+    }
+    let keys: Vec<_> = harness
+        .server
+        .native_events()
+        .into_iter()
+        .filter_map(|event| match event {
+            crate::native_input::client::Event::Key {
+                code,
+                pressed,
+                event,
+            } => Some((code, pressed, event.text)),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        keys,
+        vec![(30, true, Some("a".into())), (30, false, Some("a".into()))]
+    );
 }
 
 #[cfg(feature = "nested")]
 #[test]
 fn input_method_grabs_suppress_direct_native_keys_and_virtual_passthrough_arrives_once() {
-    let mut harness = Harness::connect_authorized(Server::new([640, 480]).unwrap(), Some(vec![crate::launch::Capability::InputMethod]));
-    let method = harness.client.input_method.as_ref().unwrap().get_input_method(
-        harness.client.seat.as_ref().unwrap(), &harness.queue.handle(), (),
+    let mut harness = Harness::connect_authorized(
+        Server::new([640, 480]).unwrap(),
+        Some(vec![crate::launch::Capability::InputMethod]),
     );
-    for _ in 0..8 { harness.sync(); }
+    let method = harness
+        .client
+        .input_method
+        .as_ref()
+        .unwrap()
+        .get_input_method(
+            harness.client.seat.as_ref().unwrap(),
+            &harness.queue.handle(),
+            (),
+        );
+    for _ in 0..8 {
+        harness.sync();
+    }
     harness.server.native_focus();
-    for _ in 0..4 { harness.sync(); }
+    for _ in 0..4 {
+        harness.sync();
+    }
     let grab = method.grab_keyboard(&harness.queue.handle(), ());
-    for _ in 0..4 { harness.sync(); }
+    for _ in 0..4 {
+        harness.sync();
+    }
     assert!(harness.server.input_method_grabbed());
     harness.server.native_events();
     harness.server.keyboard(30, true, 1, |_| false).unwrap();
     harness.server.keyboard(30, false, 2, |_| false).unwrap();
-    for _ in 0..4 { harness.sync(); }
+    for _ in 0..4 {
+        harness.sync();
+    }
     assert_eq!(harness.client.input_keys, [(30, true), (30, false)]);
     assert!(harness.server.native_events().is_empty());
-    let keyboard = harness.client.virtual_keyboard.as_ref().unwrap().create_virtual_keyboard(
-        harness.client.seat.as_ref().unwrap(), &harness.queue.handle(), (),
-    );
+    let keyboard = harness
+        .client
+        .virtual_keyboard
+        .as_ref()
+        .unwrap()
+        .create_virtual_keyboard(
+            harness.client.seat.as_ref().unwrap(),
+            &harness.queue.handle(),
+            (),
+        );
     let (fd, size) = harness.client.input_keymap.as_ref().unwrap();
     keyboard.keymap(1, fd.as_fd(), *size);
     keyboard.key(3, 30, 1);
     keyboard.key(4, 30, 0);
-    for _ in 0..4 { harness.sync(); }
-    let keys: Vec<_> = harness.server.native_events().into_iter().filter_map(|event| match event {
-        crate::native_input::client::Event::Key { code, pressed, .. } => Some((code, pressed)), _ => None,
-    }).collect();
+    for _ in 0..4 {
+        harness.sync();
+    }
+    let keys: Vec<_> = harness
+        .server
+        .native_events()
+        .into_iter()
+        .filter_map(|event| match event {
+            crate::native_input::client::Event::Key { code, pressed, .. } => Some((code, pressed)),
+            _ => None,
+        })
+        .collect();
     assert_eq!(keys, [(30, true), (30, false)]);
     keyboard.destroy();
     grab.release();
@@ -1100,8 +1602,14 @@ delegate_noop!(Client: ignore zwp_idle_inhibit_manager_v1::ZwpIdleInhibitManager
 delegate_noop!(Client: ignore zwp_idle_inhibitor_v1::ZwpIdleInhibitorV1);
 
 impl Dispatch<ext_idle_notification_v1::ExtIdleNotificationV1, ()> for Client {
-    fn event(state: &mut Self, _: &ext_idle_notification_v1::ExtIdleNotificationV1,
-        event: ext_idle_notification_v1::Event, _: &(), _: &Connection, _: &QueueHandle<Self>) {
+    fn event(
+        state: &mut Self,
+        _: &ext_idle_notification_v1::ExtIdleNotificationV1,
+        event: ext_idle_notification_v1::Event,
+        _: &(),
+        _: &Connection,
+        _: &QueueHandle<Self>,
+    ) {
         match event {
             ext_idle_notification_v1::Event::Idled => state.idle_events.push(true),
             ext_idle_notification_v1::Event::Resumed => state.idle_events.push(false),
@@ -1114,7 +1622,10 @@ impl Dispatch<ext_idle_notification_v1::ExtIdleNotificationV1, ()> for Client {
 fn idle_notifications_resume_on_activity_and_destroy_clears_the_deadline() {
     let mut harness = Harness::new();
     let notification = harness.client.idle.as_ref().unwrap().get_idle_notification(
-        0, harness.client.seat.as_ref().unwrap(), &harness.queue.handle(), (),
+        0,
+        harness.client.seat.as_ref().unwrap(),
+        &harness.queue.handle(),
+        (),
     );
     harness.sync();
     assert_eq!(harness.client.idle_events, [true]);
@@ -1124,9 +1635,17 @@ fn idle_notifications_resume_on_activity_and_destroy_clears_the_deadline() {
     assert_eq!(harness.client.idle_events, [true, false, true]);
     notification.destroy();
     harness.sync();
-    let notification = harness.client.idle.as_ref().unwrap().get_input_idle_notification(
-        60_000, harness.client.seat.as_ref().unwrap(), &harness.queue.handle(), (),
-    );
+    let notification = harness
+        .client
+        .idle
+        .as_ref()
+        .unwrap()
+        .get_input_idle_notification(
+            60_000,
+            harness.client.seat.as_ref().unwrap(),
+            &harness.queue.handle(),
+            (),
+        );
     harness.sync();
     assert!(harness.server.idle_timeout().is_some());
     notification.destroy();
@@ -1142,7 +1661,10 @@ fn hidden_surface_inhibitors_do_not_prevent_idle_and_are_reference_counted() {
     let first = manager.create_inhibitor(&window.surface, &harness.queue.handle(), ());
     let second = manager.create_inhibitor(&window.surface, &harness.queue.handle(), ());
     let notification = harness.client.idle.as_ref().unwrap().get_idle_notification(
-        0, harness.client.seat.as_ref().unwrap(), &harness.queue.handle(), (),
+        0,
+        harness.client.seat.as_ref().unwrap(),
+        &harness.queue.handle(),
+        (),
     );
     harness.sync();
     assert_eq!(harness.client.idle_events, [true]);
@@ -1162,11 +1684,19 @@ fn visible_inhibitors_respect_reference_counts_input_idle_and_session_lock() {
     let id = harness.server.windows()[0].id;
     let rectangle = lince_interface::host::Rectangle::new([0.0; 2], [640.0, 480.0]).unwrap();
     harness.server.state.presented_geometry = Some(lince_interface::host::GeometrySnapshot {
-        revision: 1, outputs: Vec::new(), focused: None,
+        revision: 1,
+        outputs: Vec::new(),
+        focused: None,
         items: vec![lince_interface::host::ItemGeometry {
-            id: lince_interface::host::ItemId::Application(id), output: OutputId(1),
-            mapping: lince_interface::host::ContentMapping { corners: None, canvas: rectangle, surface: rectangle },
-            floating: false, clip: None,
+            id: lince_interface::host::ItemId::Application(id),
+            output: OutputId(1),
+            mapping: lince_interface::host::ContentMapping {
+                corners: None,
+                canvas: rectangle,
+                surface: rectangle,
+            },
+            floating: false,
+            clip: None,
         }],
     });
     let manager = harness.client.idle_inhibit.as_ref().unwrap();
@@ -1174,21 +1704,37 @@ fn visible_inhibitors_respect_reference_counts_input_idle_and_session_lock() {
     let second = manager.create_inhibitor(&window.surface, &harness.queue.handle(), ());
     harness.sync();
     let ordinary = harness.client.idle.as_ref().unwrap().get_idle_notification(
-        0, harness.client.seat.as_ref().unwrap(), &harness.queue.handle(), (),
+        0,
+        harness.client.seat.as_ref().unwrap(),
+        &harness.queue.handle(),
+        (),
     );
     harness.sync();
     assert!(harness.client.idle_events.is_empty());
     first.destroy();
     harness.sync();
     assert!(harness.client.idle_events.is_empty());
-    let input = harness.client.idle.as_ref().unwrap().get_input_idle_notification(
-        0, harness.client.seat.as_ref().unwrap(), &harness.queue.handle(), (),
-    );
+    let input = harness
+        .client
+        .idle
+        .as_ref()
+        .unwrap()
+        .get_input_idle_notification(
+            0,
+            harness.client.seat.as_ref().unwrap(),
+            &harness.queue.handle(),
+            (),
+        );
     harness.sync();
     assert_eq!(harness.client.idle_events, [true]);
     input.destroy();
     harness.sync();
-    let _lock = harness.client.lock_manager.as_ref().unwrap().lock(&harness.queue.handle(), ());
+    let _lock = harness
+        .client
+        .lock_manager
+        .as_ref()
+        .unwrap()
+        .lock(&harness.queue.handle(), ());
     harness.sync();
     assert!(harness.server.locked());
     assert_eq!(harness.client.idle_events, [true, true]);
@@ -1199,7 +1745,14 @@ fn visible_inhibitors_respect_reference_counts_input_idle_and_session_lock() {
 }
 
 impl Dispatch<wp_fractional_scale_v1::WpFractionalScaleV1, ()> for Client {
-    fn event(state: &mut Self, _: &wp_fractional_scale_v1::WpFractionalScaleV1, event: wp_fractional_scale_v1::Event, _: &(), _: &Connection, _: &QueueHandle<Self>) {
+    fn event(
+        state: &mut Self,
+        _: &wp_fractional_scale_v1::WpFractionalScaleV1,
+        event: wp_fractional_scale_v1::Event,
+        _: &(),
+        _: &Connection,
+        _: &QueueHandle<Self>,
+    ) {
         if let wp_fractional_scale_v1::Event::PreferredScale { scale } = event {
             state.preferred_scales.push(scale);
         }
@@ -1209,19 +1762,42 @@ impl Dispatch<wp_fractional_scale_v1::WpFractionalScaleV1, ()> for Client {
 #[test]
 fn fractional_output_geometry_and_client_preference_agree() {
     let mut server = Server::new([800, 600]).unwrap();
-    let monitor = Monitor { id: OutputId(1), name: "Park".into(), origin: [0, 0], size: [800, 600] };
-    server.configure_scaled_outputs(std::slice::from_ref(&monitor), &BTreeMap::from([(monitor.id, 1.25)])).unwrap();
+    let monitor = Monitor {
+        id: OutputId(1),
+        name: "Park".into(),
+        origin: [0, 0],
+        size: [800, 600],
+    };
+    server
+        .configure_scaled_outputs(
+            std::slice::from_ref(&monitor),
+            &BTreeMap::from([(monitor.id, 1.25)]),
+        )
+        .unwrap();
     let viewport = &server.output_viewports()[0].1;
     assert_eq!(viewport.bounds.size(), [640.0, 480.0]);
     assert_eq!(viewport.physical_size, [800, 600]);
     let mut harness = Harness::connect(server);
     let window = harness.window();
-    let _scale = harness.client.fractional.as_ref().unwrap().get_fractional_scale(&window.surface, &harness.queue.handle(), ());
+    let _scale = harness
+        .client
+        .fractional
+        .as_ref()
+        .unwrap()
+        .get_fractional_scale(&window.surface, &harness.queue.handle(), ());
     harness.sync();
     assert_eq!(harness.client.preferred_scales.last(), Some(&150));
     let before = harness.server.output_viewports();
     for scale in [0.0, f64::NAN, 10.0, 1.234] {
-        assert!(harness.server.configure_scaled_outputs(std::slice::from_ref(&monitor), &BTreeMap::from([(monitor.id, scale)])).is_err());
+        assert!(
+            harness
+                .server
+                .configure_scaled_outputs(
+                    std::slice::from_ref(&monitor),
+                    &BTreeMap::from([(monitor.id, scale)])
+                )
+                .is_err()
+        );
         assert_eq!(harness.server.output_viewports(), before);
     }
 }
@@ -1252,7 +1828,13 @@ impl Dispatch<ext_session_lock_surface_v1::ExtSessionLockSurfaceV1, ()> for Clie
         _: &Connection,
         _: &QueueHandle<Self>,
     ) {
-        if let ext_session_lock_surface_v1::Event::Configure { serial, width, height, .. } = event {
+        if let ext_session_lock_surface_v1::Event::Configure {
+            serial,
+            width,
+            height,
+            ..
+        } = event
+        {
             state.lock_sizes.push([width, height]);
             proxy.ack_configure(serial);
         }
@@ -1490,13 +2072,19 @@ impl Dispatch<xdg_toplevel::XdgToplevel, ()> for Client {
                 states,
             } => {
                 state.configures.push([width, height]);
-                state.window_configure_sizes.entry(proxy.id()).or_default().push([width, height]);
+                state
+                    .window_configure_sizes
+                    .entry(proxy.id())
+                    .or_default()
+                    .push([width, height]);
                 let states: Vec<_> = states
                     .chunks_exact(4)
                     .map(|value| u32::from_ne_bytes(value.try_into().unwrap()))
                     .collect();
                 state.window_states.push(states.clone());
-                state.window_configurations.insert(proxy.id(), ([width, height], states));
+                state
+                    .window_configurations
+                    .insert(proxy.id(), ([width, height], states));
             }
             xdg_toplevel::Event::Close => state.closed = true,
             _ => {}
@@ -1883,17 +2471,31 @@ impl Dispatch<wl_keyboard::WlKeyboard, ()> for Client {
             let mut keymap = String::new();
             let mut file = std::fs::File::from(fd);
             file.seek(SeekFrom::Start(0)).unwrap();
-            let bytes = file.take(u64::from(size)).read_to_string(&mut keymap).unwrap();
+            let bytes = file
+                .take(u64::from(size))
+                .read_to_string(&mut keymap)
+                .unwrap();
             assert_eq!(bytes, size as usize);
             state.keymaps.push(keymap.trim_end_matches('\0').to_owned());
         } else if let wl_keyboard::Event::RepeatInfo { rate, delay } = event {
             state.repeat_info.push((rate, delay));
-        } else if let wl_keyboard::Event::Modifiers { mods_depressed, mods_latched, mods_locked, group, .. } = event {
-            state.modifiers.push([mods_depressed, mods_latched, mods_locked, group]);
+        } else if let wl_keyboard::Event::Modifiers {
+            mods_depressed,
+            mods_latched,
+            mods_locked,
+            group,
+            ..
+        } = event
+        {
+            state
+                .modifiers
+                .push([mods_depressed, mods_latched, mods_locked, group]);
         } else if let wl_keyboard::Event::Enter { surface, .. } = event {
             state.keyboard_focus = Some(surface);
         } else if let wl_keyboard::Event::Leave { surface, .. } = event {
-            if state.keyboard_focus.as_ref() == Some(&surface) { state.keyboard_focus = None; }
+            if state.keyboard_focus.as_ref() == Some(&surface) {
+                state.keyboard_focus = None;
+            }
         } else if let wl_keyboard::Event::Key {
             key,
             serial,
@@ -1906,8 +2508,11 @@ impl Dispatch<wl_keyboard::WlKeyboard, ()> for Client {
                 key,
                 key_state == wayland_client::WEnum::Value(wl_keyboard::KeyState::Pressed),
             ));
-            state.key_recipients.push((state.keyboard_focus.as_ref().map(|surface| surface.id()), key,
-                key_state == wayland_client::WEnum::Value(wl_keyboard::KeyState::Pressed)));
+            state.key_recipients.push((
+                state.keyboard_focus.as_ref().map(|surface| surface.id()),
+                key,
+                key_state == wayland_client::WEnum::Value(wl_keyboard::KeyState::Pressed),
+            ));
         }
     }
 }
@@ -2294,17 +2899,31 @@ impl Dispatch<xdg_activation_token_v1::XdgActivationTokenV1, ()> for Client {
 }
 
 impl Dispatch<wl_data_source::WlDataSource, ()> for Client {
-    fn event(state: &mut Self, _: &wl_data_source::WlDataSource, event: wl_data_source::Event,
-        _: &(), _: &Connection, _: &QueueHandle<Self>) {
+    fn event(
+        state: &mut Self,
+        _: &wl_data_source::WlDataSource,
+        event: wl_data_source::Event,
+        _: &(),
+        _: &Connection,
+        _: &QueueHandle<Self>,
+    ) {
         match event {
             wl_data_source::Event::Send { fd, .. } => {
                 use std::io::Write;
-                if state.drop_hold { state.drop_held.push(fd); assert!(state.drop_held.len() <= 8); }
-                else { state.drop_send_failed = std::fs::File::from(fd).write_all(&state.drop_payload).is_err(); }
+                if state.drop_hold {
+                    state.drop_held.push(fd);
+                    assert!(state.drop_held.len() <= 8);
+                } else {
+                    state.drop_send_failed = std::fs::File::from(fd)
+                        .write_all(&state.drop_payload)
+                        .is_err();
+                }
             }
             wl_data_source::Event::DndDropPerformed => state.drop_performed += 1,
             wl_data_source::Event::DndFinished => state.drop_finished += 1,
-            wl_data_source::Event::Action { dnd_action: wayland_client::WEnum::Value(action) } => state.drop_action = Some(action.bits()),
+            wl_data_source::Event::Action {
+                dnd_action: wayland_client::WEnum::Value(action),
+            } => state.drop_action = Some(action.bits()),
             wl_data_source::Event::Cancelled => state.drop_cancelled += 1,
             _ => {}
         }
@@ -2312,8 +2931,15 @@ impl Dispatch<wl_data_source::WlDataSource, ()> for Client {
 }
 
 impl Dispatch<wl_data_device::WlDataDevice, ()> for Client {
-    fn event(_: &mut Self, _: &wl_data_device::WlDataDevice, _: wl_data_device::Event,
-        _: &(), _: &Connection, _: &QueueHandle<Self>) {}
+    fn event(
+        _: &mut Self,
+        _: &wl_data_device::WlDataDevice,
+        _: wl_data_device::Event,
+        _: &(),
+        _: &Connection,
+        _: &QueueHandle<Self>,
+    ) {
+    }
     wayland_client::event_created_child!(Client, wl_data_device::WlDataDevice, [
         0 => (wl_data_offer::WlDataOffer, ())
     ]);
@@ -2359,7 +2985,13 @@ fn native_drop_keyboard_focus_change_invalidates_queued_frontend_payload() {
 }
 
 #[cfg(feature = "nested")]
-enum NativeDropChange { Suspend, Output, Target, Focus, Cancel }
+enum NativeDropChange {
+    Suspend,
+    Output,
+    Target,
+    Focus,
+    Cancel,
+}
 
 #[cfg(feature = "nested")]
 #[test]
@@ -2374,14 +3006,26 @@ fn native_drop_completion(accept: Option<bool>) {
 
 #[cfg(feature = "nested")]
 fn native_drop_completion_for(accept: Option<bool>, change: NativeDropChange) {
-    use crate::native_input::{Editor, client::Event, transfer::{Destination, Payload, Target}};
+    use crate::native_input::{
+        Editor,
+        client::Event,
+        transfer::{Destination, Payload, Target},
+    };
     let mut harness = Harness::new();
     let window = harness.window();
     let _buffer = harness.attach(&window, [320, 240]);
-    for _ in 0..8 { harness.sync(); }
+    for _ in 0..8 {
+        harness.sync();
+    }
     let surface = harness.server.windows()[0].surface.clone();
-    harness.server.focus_surface(Some(surface.clone()), smithay::utils::SERIAL_COUNTER.next_serial());
-    harness.server.pointer_motion(Some((surface, [20.0, 20.0])), 1).unwrap();
+    harness.server.focus_surface(
+        Some(surface.clone()),
+        smithay::utils::SERIAL_COUNTER.next_serial(),
+    );
+    harness
+        .server
+        .pointer_motion(Some((surface, [20.0, 20.0])), 1)
+        .unwrap();
     harness.server.pointer_button(272, true, 2);
     harness.sync();
     let qh = harness.queue.handle();
@@ -2391,27 +3035,66 @@ fn native_drop_completion_for(accept: Option<bool>, change: NativeDropChange) {
     source.offer("text/plain;charset=utf-8".into());
     source.set_actions(wl_data_device_manager::DndAction::Copy);
     harness.client.drop_payload = "Olá 世界".as_bytes().to_vec();
-    device.start_drag(Some(&source), &window.surface, None, harness.client.pointer_serial);
-    for _ in 0..4 { harness.sync(); }
-    let target = Target { window: 1, output: lince_interface::host::OutputId(1), mapping_revision: None, pointer: [100.0, 100.0],
+    device.start_drag(
+        Some(&source),
+        &window.surface,
+        None,
+        harness.client.pointer_serial,
+    );
+    for _ in 0..4 {
+        harness.sync();
+    }
+    let target = Target {
+        window: 1,
+        output: lince_interface::host::OutputId(1),
+        mapping_revision: None,
+        pointer: [100.0, 100.0],
         destination: Destination::Editor {
-            context: Editor { owner: 1, revision: 1, projection: 0, from_ime: false, selection: [0, 0], surrounding: String::new(),
-                cursor: 0, anchor: 0, sensitive: false, multiline: false, caret: [0, 0, 1, 20] },
-            point: [10.0, 10.0], transform: [1.0, 0.0, 0.0, 1.0, 0.0, 0.0], size: [100.0; 2], scale: 1.0,
+            context: Editor {
+                owner: 1,
+                revision: 1,
+                projection: 0,
+                from_ime: false,
+                selection: [0, 0],
+                surrounding: String::new(),
+                cursor: 0,
+                anchor: 0,
+                sensitive: false,
+                multiline: false,
+                caret: [0, 0, 1, 20],
+            },
+            point: [10.0, 10.0],
+            transform: [1.0, 0.0, 0.0, 1.0, 0.0, 0.0],
+            size: [100.0; 2],
+            scale: 1.0,
             content_origin: [-50.0; 2],
-        } };
+        },
+    };
     harness.server.native_drop_target(Some(target.clone()));
     let native = harness.server.native_surface().unwrap();
-    harness.server.pointer_motion(Some((native, [100.0, 100.0])), 3).unwrap();
-    for _ in 0..8 { harness.sync(); }
+    harness
+        .server
+        .pointer_motion(Some((native, [100.0, 100.0])), 3)
+        .unwrap();
+    for _ in 0..8 {
+        harness.sync();
+    }
     if matches!(change, NativeDropChange::Cancel) {
         assert!(harness.server.pointer_dragging());
         assert_eq!(harness.server.cancel_pointer_drag(4), vec![272]);
         assert!(harness.server.cancel_pointer_drag(5).is_empty());
-        for _ in 0..8 { harness.sync(); }
+        for _ in 0..8 {
+            harness.sync();
+        }
         assert!(!harness.server.dragging());
         assert!(harness.server.native_file_drag().is_none());
-        assert!(!harness.server.native_events().iter().any(|event| matches!(event, Event::Drop(_))));
+        assert!(
+            !harness
+                .server
+                .native_events()
+                .iter()
+                .any(|event| matches!(event, Event::Drop(_)))
+        );
         assert_eq!(harness.client.drop_cancelled, 1);
         assert_eq!(harness.client.drop_performed, 0);
         assert_eq!(harness.client.drop_finished, 0);
@@ -2425,10 +3108,21 @@ fn native_drop_completion_for(accept: Option<bool>, change: NativeDropChange) {
     let deadline = std::time::Instant::now() + Duration::from_secs(2);
     let request = loop {
         harness.sync();
-        if let Some(request) = harness.server.native_events().into_iter().find_map(|event| match event {
-            Event::Drop(request) => Some(request), _ => None,
-        }) { break request; }
-        assert!(std::time::Instant::now() < deadline, "native drop did not arrive");
+        if let Some(request) = harness
+            .server
+            .native_events()
+            .into_iter()
+            .find_map(|event| match event {
+                Event::Drop(request) => Some(request),
+                _ => None,
+            })
+        {
+            break request;
+        }
+        assert!(
+            std::time::Instant::now() < deadline,
+            "native drop did not arrive"
+        );
         std::thread::yield_now();
     };
     assert_eq!(request.target, target);
@@ -2448,13 +3142,20 @@ fn native_drop_completion_for(accept: Option<bool>, change: NativeDropChange) {
             NativeDropChange::Target => harness.server.native_drop_target(None),
             NativeDropChange::Suspend => harness.server.suspend_native_drop(),
             NativeDropChange::Focus => harness.server.native_focus(),
-            NativeDropChange::Cancel => unreachable!("A cancelled drag must return before receiving a drop"),
+            NativeDropChange::Cancel => {
+                unreachable!("A cancelled drag must return before receiving a drop")
+            }
         }
         assert!(request.cancelled.load(std::sync::atomic::Ordering::Acquire));
         harness.server.finish_native_drop(request.token, true);
     }
-    for _ in 0..4 { harness.sync(); }
-    assert_eq!(harness.client.drop_finished, usize::from(accept == Some(true)));
+    for _ in 0..4 {
+        harness.sync();
+    }
+    assert_eq!(
+        harness.client.drop_finished,
+        usize::from(accept == Some(true))
+    );
     assert!(harness.server.native_timeout().is_none());
     source.destroy();
     device.release();
@@ -2471,21 +3172,44 @@ impl Dispatch<wl_pointer::WlPointer, ()> for Client {
         _: &QueueHandle<Self>,
     ) {
         match event {
-            wl_pointer::Event::Button { serial, button, state: button_state, .. } => {
+            wl_pointer::Event::Button {
+                serial,
+                button,
+                state: button_state,
+                ..
+            } => {
                 state.pointer_serial = serial;
-                state.pointer_buttons.push((button, button_state == wayland_client::WEnum::Value(wl_pointer::ButtonState::Pressed)));
-                state.button_recipients.push((state.pointer_focus.as_ref().map(|surface| surface.id()), button,
-                    button_state == wayland_client::WEnum::Value(wl_pointer::ButtonState::Pressed)));
+                state.pointer_buttons.push((
+                    button,
+                    button_state == wayland_client::WEnum::Value(wl_pointer::ButtonState::Pressed),
+                ));
+                state.button_recipients.push((
+                    state.pointer_focus.as_ref().map(|surface| surface.id()),
+                    button,
+                    button_state == wayland_client::WEnum::Value(wl_pointer::ButtonState::Pressed),
+                ));
             }
-            wl_pointer::Event::Enter { serial, surface, surface_x, surface_y, .. } => {
+            wl_pointer::Event::Enter {
+                serial,
+                surface,
+                surface_x,
+                surface_y,
+                ..
+            } => {
                 state.pointer_enter_serial = serial;
                 state.pointer_focus = Some(surface);
                 state.pointer_positions.push([surface_x, surface_y]);
             }
             wl_pointer::Event::Leave { surface, .. } => {
-                if state.pointer_focus.as_ref() == Some(&surface) { state.pointer_focus = None; }
+                if state.pointer_focus.as_ref() == Some(&surface) {
+                    state.pointer_focus = None;
+                }
             }
-            wl_pointer::Event::Motion { surface_x, surface_y, .. } => state.pointer_positions.push([surface_x, surface_y]),
+            wl_pointer::Event::Motion {
+                surface_x,
+                surface_y,
+                ..
+            } => state.pointer_positions.push([surface_x, surface_y]),
             _ => {}
         }
     }

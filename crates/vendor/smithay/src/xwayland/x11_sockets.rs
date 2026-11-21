@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn prepare_x11_sockets, struct X11Lock, fn open_x11_sockets_for_display, fn
+//   open_x11_sockets_for_display.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 86, 88, 92,
+//   95.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (147, 150, 167).
+
 use std::{
     io::{Read, Write},
     os::unix::net::UnixStream,

@@ -1,6 +1,28 @@
+// non-lean-yet
+// Scope: const FORMAT, const DECLARATIVE, const DESKTOP_LAYOUT, const MAX_BYTES.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 132, 305.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 13, 202, 219, 260.
+// - [Clippy: clippy::large_enum_variant] large size difference between variants. Sites 202.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   131, 327.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 59, 77, 107, 112, 119, 161, 188, 322.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 6,
+//   7, 8, 9, 13, 14, 15, 20, 21, 22, 27, 28, 29, 30, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45,
+//   50, 51, 52, 53, 54, 55, 59, 77, 107, 112, 119, 161, 177, 178, 179, 180, 181, 182, 183, 184,
+//   188, 202, 203, 204, 205, 207, 208, 209, 210, 212, 213, 219, 220, 221, 222, 224, 225, 226, 228,
+//   229, 230, 231, 232, 234, 235, 236, 238, 239, 240, 242, 243, 248, 260, 261, 262, 322.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites content_digest:
+//   String (112), required_permissions: String (322), signing_bytes: String (107), validate: String
+//   (59, 77, 161, 188), validate_execution: String (119).
+
+use std::collections::BTreeSet;
+
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::collections::BTreeSet;
 
 pub const FORMAT: &str = "lince.sand-package.v1";
 pub const DECLARATIVE: &str = "lince.declarative.v1";

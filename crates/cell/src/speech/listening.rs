@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: mod addressed, mod followup, trait Recognition, struct LocalRecognition.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 226, 245, 247,
+//   248, 249, 544, 551, 555, 556, 584, 588, 590, 617, 618, 642, 670, 671, 686, 738, 798, 799, 800,
+//   807, 809, 819, 857, 858, 887, 890, 902, 905, 917.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 555, 556, 588, 590, 642, 686, 819.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use ::fiote::{
     assistant::{Conversation, Directory, EntryReceipt, EntryRequest},

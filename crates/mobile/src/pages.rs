@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: fn render, fn rows, fn records, fn card.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 96, 543, 743,
+//   778, 810, 849, 905, 938.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites edit_frequency:
+//   String (922), edit_karma: String (795), record_control: String (686), save_frequency: String
+//   (936), save_karma: String (808).
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (220).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   108, 213, 315, 757, 815, 861, 941.
+
 use crate::{
     app::{self, Intent, Mobile, act, button, input, label},
     navigation::Page,

@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct DumbBuffer, struct DumbAllocator.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 73.
+
 //! Module for [DumbBuffer](https://docs.kernel.org/gpu/drm-kms.html#dumb-buffer-objects) buffers
 
 use std::fmt;

@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn main.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use lince_sandbox::laboratory::{StressConfig, run_headless};
 use std::{fs::OpenOptions, io::Write, path::PathBuf};
 

@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn
+//   many_stranger_identities_fill_only_the_stranger_partition_and_control_progress_survives_reopen.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[tokio::test]

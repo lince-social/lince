@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct SurfaceView, fn remove, fn create, fn place.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 45, 69, 77, 84,
+//   112, 134, 160, 285, 296, 307, 313, 340, 349.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   124, 131, 220, 221, 224, 226, 227, 228, 230, 244, 245, 247, 248, 249.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (66, 81, 207, 212, 213, 218, 262, 268, 279, 300, 307, 410, 411).
+
 use super::*;
 use crate::server::{SurfaceNode, WindowSnapshot};
 
@@ -13,8 +23,16 @@ pub(super) struct SurfaceView {
 }
 
 impl SurfaceView {
-    fn previous(&self, node: &SurfaceNode) -> Option<(&wgpu::Texture, smithay::backend::renderer::utils::CommitCounter)> {
-        if self.layout != Some(node.layout) { return None; }
+    fn previous(
+        &self,
+        node: &SurfaceNode,
+    ) -> Option<(
+        &wgpu::Texture,
+        smithay::backend::renderer::utils::CommitCounter,
+    )> {
+        if self.layout != Some(node.layout) {
+            return None;
+        }
         Some((self.texture.as_ref()?, self.commit?))
     }
 }
@@ -31,10 +49,20 @@ pub(super) fn remove(world: &mut World, node: SurfaceView) {
 }
 
 impl Presentation {
-    pub(crate) fn sync_pixels(&mut self, windows: &[WindowSnapshot]) -> Result<PixelSync, ProbeFailure> {
-        if self.retained.is_none() || self.suspended() || !self.rejected.is_empty()
+    pub(crate) fn sync_pixels(
+        &mut self,
+        windows: &[WindowSnapshot],
+    ) -> Result<PixelSync, ProbeFailure> {
+        if self.retained.is_none()
+            || self.suspended()
+            || !self.rejected.is_empty()
             || windows.len() != self.painted_windows.len()
-            || windows.iter().any(|window| self.painted_windows.get(&window.id).is_none_or(|previous| !previous.same_semantics(window))) {
+            || windows.iter().any(|window| {
+                self.painted_windows
+                    .get(&window.id)
+                    .is_none_or(|previous| !previous.same_semantics(window))
+            })
+        {
             return Ok(PixelSync::Incompatible);
         }
         self.renderer.retain_imports(windows);
@@ -42,33 +70,70 @@ impl Presentation {
         let mut changed = false;
         let mut imported = Vec::new();
         for snapshot in windows {
-            if !snapshot.mapped { self.painted_windows.insert(snapshot.id, snapshot.clone()); continue; }
+            if !snapshot.mapped {
+                self.painted_windows.insert(snapshot.id, snapshot.clone());
+                continue;
+            }
             let mut ready = true;
-            let Some(window) = self.windows.get(&snapshot.id) else { return Ok(PixelSync::Incompatible); };
+            let Some(window) = self.windows.get(&snapshot.id) else {
+                return Ok(PixelSync::Incompatible);
+            };
             for node in &snapshot.nodes {
-                let Some(view) = window.nodes.get(&node.surface) else { return Ok(PixelSync::Incompatible); };
-                if view.version == Some(node.content.version) { continue; }
-                let Some((texture, opaque)) = self.renderer.import_surface(node, view.previous(node))? else {
-                    pending = true; ready = false; continue;
+                let Some(view) = window.nodes.get(&node.surface) else {
+                    return Ok(PixelSync::Incompatible);
                 };
-                if opaque != view.opaque { return Ok(PixelSync::Incompatible); }
+                if view.version == Some(node.content.version) {
+                    continue;
+                }
+                let Some((texture, opaque)) =
+                    self.renderer.import_surface(node, view.previous(node))?
+                else {
+                    pending = true;
+                    ready = false;
+                    continue;
+                };
+                if opaque != view.opaque {
+                    return Ok(PixelSync::Incompatible);
+                }
                 if view.texture.as_ref() != Some(&texture) {
-                    let image = self.app.world().resource::<Assets<Image>>().get(&view.image).ok_or_else(|| input_failure("The retained client image is unavailable"))?;
-                    if image.texture_descriptor.size != texture.size() || image.texture_descriptor.format != texture.format() {
+                    let image = self
+                        .app
+                        .world()
+                        .resource::<Assets<Image>>()
+                        .get(&view.image)
+                        .ok_or_else(|| input_failure("The retained client image is unavailable"))?;
+                    if image.texture_descriptor.size != texture.size()
+                        || image.texture_descriptor.format != texture.format()
+                    {
                         return Ok(PixelSync::Incompatible);
                     }
                 }
                 imported.push((snapshot.id, node, texture, opaque));
             }
-            if !ready { imported.clear(); continue; }
+            if !ready {
+                imported.clear();
+                continue;
+            }
             changed |= !imported.is_empty();
             for (id, node, texture, opaque) in imported.drain(..) {
-                let view = self.windows.get_mut(&id).unwrap().nodes.get_mut(&node.surface).unwrap();
+                let view = self
+                    .windows
+                    .get_mut(&id)
+                    .unwrap()
+                    .nodes
+                    .get_mut(&node.surface)
+                    .unwrap();
                 if view.texture.as_ref() != Some(&texture) {
                     let world = self.app.world_mut();
-                    world.resource_mut::<Textures>().0.insert(view.image.id(), texture.clone());
-                    world.resource_mut::<Messages<bevy::asset::AssetEvent<ClientMaterial>>>()
-                        .write(bevy::asset::AssetEvent::Modified { id: view.material.id() });
+                    world
+                        .resource_mut::<Textures>()
+                        .0
+                        .insert(view.image.id(), texture.clone());
+                    world
+                        .resource_mut::<Messages<bevy::asset::AssetEvent<ClientMaterial>>>()
+                        .write(bevy::asset::AssetEvent::Modified {
+                            id: view.material.id(),
+                        });
                     view.texture = Some(texture);
                 }
                 view.version = Some(node.content.version);
@@ -78,17 +143,26 @@ impl Presentation {
             }
             if let Some(window) = self.windows.get_mut(&snapshot.id) {
                 for node in &snapshot.nodes {
-                    window.nodes.get_mut(&node.surface).unwrap().commit = Some(node.damage.current_commit());
+                    window.nodes.get_mut(&node.surface).unwrap().commit =
+                        Some(node.damage.current_commit());
                 }
             }
             self.painted_windows.insert(snapshot.id, snapshot.clone());
         }
-        Ok(if !pending { PixelSync::Ready } else if changed { PixelSync::Partial } else { PixelSync::Pending })
+        Ok(if !pending {
+            PixelSync::Ready
+        } else if changed {
+            PixelSync::Partial
+        } else {
+            PixelSync::Pending
+        })
     }
 
     pub fn sync_windows(&mut self, windows: &[WindowSnapshot]) -> Result<bool, ProbeFailure> {
         self.retained = None;
-        lince_interface::host::performance::count(lince_interface::host::performance::Count::ClientSync);
+        lince_interface::host::performance::count(
+            lince_interface::host::performance::Count::ClientSync,
+        );
         let started = std::time::Instant::now();
         self.renderer.retain_imports(windows);
         let live: HashSet<_> = windows.iter().map(|window| window.id).collect();
@@ -128,7 +202,10 @@ impl Presentation {
                     if current {
                         return Ok(ready);
                     }
-                    let previous = self.windows[&window.id].nodes.get(&node.surface).and_then(|view| view.previous(node));
+                    let previous = self.windows[&window.id]
+                        .nodes
+                        .get(&node.surface)
+                        .and_then(|view| view.previous(node));
                     match self.renderer.import_surface(node, previous)? {
                         Some(_) => {
                             self.uploads.push(node.content.clone());
@@ -184,7 +261,10 @@ impl Presentation {
                     .world_mut()
                     .entity_mut(entity)
                     .insert(native::layout::desktop::TransientParent(parent));
-                self.app.world_mut().entity_mut(entity).remove::<native::layout::desktop::opening::Decision>();
+                self.app
+                    .world_mut()
+                    .entity_mut(entity)
+                    .remove::<native::layout::desktop::opening::Decision>();
             } else {
                 self.app
                     .world_mut()
@@ -230,23 +310,43 @@ impl Presentation {
                 .clamp(layout.rules.axes[axis].min, layout.rules.axes[axis].max);
         }
         if snapshot.parent.is_none()
-            && world.get::<native::layout::desktop::ApplicationOpeningPending>(window.entity).is_some()
-            && world.get::<native::layout::desktop::opening::Decision>(window.entity).is_some_and(|decision| !decision.retained)
+            && world
+                .get::<native::layout::desktop::ApplicationOpeningPending>(window.entity)
+                .is_some()
+            && world
+                .get::<native::layout::desktop::opening::Decision>(window.entity)
+                .is_some_and(|decision| !decision.retained)
             && let Some(parent) = world.get::<ChildOf>(window.entity).map(ChildOf::parent)
-            && let Some(workspace) = world.get::<native::workspace::WorkspaceMember>(window.entity).map(|member| member.0)
+            && let Some(workspace) = world
+                .get::<native::workspace::WorkspaceMember>(window.entity)
+                .map(|member| member.0)
         {
             let canvas = native::output_views::canvas(world, parent, workspace);
-            let viewport = world.get_resource::<native::output_views::OutputViews>()
-                .filter(|views| views.applies_to(parent)).and_then(|views| views.outputs.iter().find(|output| output.workspace == workspace))
+            let viewport = world
+                .get_resource::<native::output_views::OutputViews>()
+                .filter(|views| views.applies_to(parent))
+                .and_then(|views| {
+                    views
+                        .outputs
+                        .iter()
+                        .find(|output| output.workspace == workspace)
+                })
                 .map(|output| (output.usable.unwrap_or(output.bounds), output.bounds));
             let available = viewport.map(|(usable, _)| usable.size());
-            let center = viewport.map_or(canvas.center, |(usable, bounds)| canvas.center + bevy::math::DVec2::from_array(
-                std::array::from_fn(|axis| (usable.origin()[axis] - bounds.origin()[axis]
-                    + (usable.size()[axis] - bounds.size()[axis]) * 0.5) / canvas.zoom)));
+            let center = viewport.map_or(canvas.center, |(usable, bounds)| {
+                canvas.center
+                    + bevy::math::DVec2::from_array(std::array::from_fn(|axis| {
+                        (usable.origin()[axis] - bounds.origin()[axis]
+                            + (usable.size()[axis] - bounds.size()[axis]) * 0.5)
+                            / canvas.zoom
+                    }))
+            });
             for axis in 0..2 {
                 let preferred = [bounds.size.w, bounds.size.h][axis];
-                let preferred = available.map_or(preferred, |size| preferred.min(size[axis] / canvas.zoom));
-                layout.rules.axes[axis].size = (preferred as f32).clamp(layout.rules.axes[axis].min, layout.rules.axes[axis].max);
+                let preferred =
+                    available.map_or(preferred, |size| preferred.min(size[axis] / canvas.zoom));
+                layout.rules.axes[axis].size = (preferred as f32)
+                    .clamp(layout.rules.axes[axis].min, layout.rules.axes[axis].max);
             }
             if let Some(mut item) = world.get_mut::<native::canvas::CanvasItem>(window.entity) {
                 item.position = center;
@@ -285,9 +385,8 @@ impl Presentation {
                 .entry(node.surface.clone())
                 .or_insert_with(|| create(world, window.entity));
             if view.version != Some(node.content.version) {
-                if let Some((texture, opaque)) = self
-                    .renderer
-                    .import_surface(node, view.previous(node))?
+                if let Some((texture, opaque)) =
+                    self.renderer.import_surface(node, view.previous(node))?
                 {
                     if view.texture.as_ref() != Some(&texture) {
                         world
@@ -297,14 +396,14 @@ impl Presentation {
                         *world
                             .resource_mut::<Assets<Image>>()
                             .get_mut(&view.image)
-                            .unwrap() = imported_image(
-                            texture.width(),
-                            texture.height(),
-                            texture.format(),
-                        );
+                            .unwrap() =
+                            imported_image(texture.width(), texture.height(), texture.format());
                         view.texture = Some(texture);
-                        world.resource_mut::<Assets<ClientMaterial>>()
-                            .get_mut(&view.material).unwrap().content = view.image.clone();
+                        world
+                            .resource_mut::<Assets<ClientMaterial>>()
+                            .get_mut(&view.material)
+                            .unwrap()
+                            .content = view.image.clone();
                     }
                     view.version = Some(node.content.version);
                     view.layout = Some(node.layout);
@@ -327,13 +426,11 @@ impl Presentation {
 }
 
 fn create(world: &mut World, parent: Entity) -> SurfaceView {
-    let image = world
-        .resource_mut::<Assets<Image>>()
-        .add(imported_image(
-            1,
-            1,
-            wgpu::TextureFormat::Bgra8Unorm,
-        ));
+    let image = world.resource_mut::<Assets<Image>>().add(imported_image(
+        1,
+        1,
+        wgpu::TextureFormat::Bgra8Unorm,
+    ));
     let material = world
         .resource_mut::<Assets<ClientMaterial>>()
         .add(ClientMaterial {
@@ -386,7 +483,11 @@ fn place(
     if world.get::<ZIndex>(view.entity) != Some(&order) {
         world.entity_mut(view.entity).insert(order);
     }
-    let color = if world.contains_resource::<native::app::LinearOutput>() { source.color.native_uniforms() } else { source.color.uniforms() };
+    let color = if world.contains_resource::<native::app::LinearOutput>() {
+        source.color.native_uniforms()
+    } else {
+        source.color.uniforms()
+    };
     let [color_red, color_green, color_blue, color_curve] = color.map(Vec4::from_array);
     let mapping = Mapping {
         color_red,
@@ -397,7 +498,11 @@ fn place(
             source.layout.uv_origin[0],
             source.layout.uv_x[0],
             source.layout.uv_y[0],
-            if view.opaque || source.fully_opaque() { 1.0 } else { 0.0 },
+            if view.opaque || source.fully_opaque() {
+                1.0
+            } else {
+                0.0
+            },
         ),
         v: Vec4::new(
             source.layout.uv_origin[1],

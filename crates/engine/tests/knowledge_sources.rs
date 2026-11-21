@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn read_from, fn organ, fn save, fn
+//   export_import_are_offline_atomic_and_keep_required_data.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 594.
+// - [Clippy probe: clippy::nonminimal_bool] this boolean expression can be simplified. Sites 640.
+
 #![cfg(test)]
 
 use engine::{Engine, actions::Action};

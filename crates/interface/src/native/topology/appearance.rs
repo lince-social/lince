@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: mod lighting, mod overlay, mod preparation, mod room_order.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 113, 127, 227,
+//   245, 251, 252, 292, 313, 328.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (140).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   190.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (197, 243, 251, 274, 275, 279, 286, 300, 311, 356).
+
 use bevy::prelude::*;
 use bevy::{
     light::{NotShadowCaster, NotShadowReceiver, PointLightShadowMap},

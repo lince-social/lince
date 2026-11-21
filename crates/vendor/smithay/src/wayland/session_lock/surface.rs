@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct ExtLockSurfaceUserData, struct LockSurfaceAttributes, struct LockSurface, struct
+//   LockSurfaceState.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 52.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 214.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (48, 169, 203, 220, 222).
+
 //! ext-session-lock surface.
 
 use std::sync::Mutex;

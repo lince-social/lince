@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: const VISIBILITY_RANGES_STORAGE_BUFFER_COUNT, const VISIBILITY_RANGE_UNIFORM_BUFFER_SIZE,
+//   struct RenderVisibilityRangePlugin, struct RenderVisibilityRanges.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 163.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 139.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 163.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 207.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 43, 63.
+
 //! Specific distances from the camera in which entities are visible, also known
 //! as *hierarchical levels of detail* or *HLOD*s.
 

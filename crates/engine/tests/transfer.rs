@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: mod support, fn at, fn a_sale_applies_only_reviewed_occurrences_owned_by_the_signer, fn
+//   revising_a_signed_promise_invalidates_current_agreement.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 pub mod support;

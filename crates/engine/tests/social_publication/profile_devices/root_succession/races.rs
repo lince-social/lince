@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Delayed, fn
+//   late_publication_receipt_keeps_evidence_without_sending_the_rest_of_obsolete_work, fn
+//   revoked_root_pending_identified_post_can_still_be_withdrawn_under_its_stable_id, fn
+//   root_refresh_does_not_publish_local_withdrawn_or_conflicting_profile_fields.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 40, 41.
+
 use super::*;
 use tokio::sync::Notify;
 

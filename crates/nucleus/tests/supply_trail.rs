@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Stock, fn number, fn
+//   drinking_water_purchase_need_tracks_shortfalls_and_clears_at_the_target.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 47, 48, 49, 106, 107.
+// - [Clippy: clippy::panic_in_result_fn] Return the existing error type for recoverable failure.
+//   Sites 12.
+
 #![cfg(test)]
 
 use std::collections::{BTreeMap, BTreeSet};

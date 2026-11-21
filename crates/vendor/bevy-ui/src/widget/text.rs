@@ -1,3 +1,24 @@
+// non-lean-yet
+// Scope: struct UiTextMeasureDiagnostics, enum UiTextMeasureReading, struct TextDisplayBoxes,
+//   struct TextNodeFlags.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   347, 481.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 467, 568.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 427.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 414.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 34.
+// - [Clippy: clippy::unnecessary_semicolon] unnecessary semicolon. Sites 469.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 264, 353, 354, 358, 363, 364, 487, 488, 492, 494.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 32, 34, 50, 246.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 32, 34,
+//   35, 36, 37, 38, 39, 40, 41, 247.
+
 use crate::{
     ComputedNode, ComputedUiRenderTargetInfo, ContentSize, Display, FixedMeasure, Measure,
     MeasureArgs, Node, NodeMeasure,

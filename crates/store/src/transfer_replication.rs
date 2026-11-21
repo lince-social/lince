@@ -1,3 +1,23 @@
+// non-lean-yet
+// Scope: mod policy, mod schema, const VECTOR_PREFIX, const MAX_MESSAGE_BYTES.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 323, 326, 327, 328, 329, 451, 452, 453, 454, 464, 470, 476, 478, 486, 487, 494, 496, 499,
+//   508, 583.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 305, 307, 308,
+//   461, 474, 496, 547, 548, 551, 554, 556, 579.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 175, 412.
+// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 213, 282, 291,
+//   297.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 56, 62, 69, 134, 148, 166, 372, 389, 420, 620.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 11, 13,
+//   14, 15, 17, 23, 24, 25, 26, 31, 32, 33, 38, 39, 40, 41, 42, 43, 44, 45, 50, 51, 52, 56, 62, 69,
+//   134, 148, 166, 372, 389, 420, 620.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   213, 267.
+
 use std::collections::{BTreeMap, BTreeSet};
 
 use nucleus::{Cause, CauseKind, Fact, NewFact};
@@ -125,7 +145,9 @@ pub async fn install(pool: &SqlitePool) -> Result<(), StoreError> {
                 schema::quoted(&format!("transfer_sync_{operation}_{name}")),
                 schema::quoted(&name)
             );
-            sqlx::query(sqlx::AssertSqlSafe(sql.as_str())).execute(&mut *tx).await?;
+            sqlx::query(sqlx::AssertSqlSafe(sql.as_str()))
+                .execute(&mut *tx)
+                .await?;
         }
     }
     tx.commit().await
@@ -210,13 +232,13 @@ pub async fn pending(
                     if target != "fact" {
                         continue;
                     }
-                    if let Some(uid) = row[column].as_str() {
-                        if included.insert(uid.to_owned()) {
-                            let local: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM fact WHERE uid = ? AND cause_kind != 'sync')")
+                    if let Some(uid) = row[column].as_str()
+                        && included.insert(uid.to_owned())
+                    {
+                        let local: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM fact WHERE uid = ? AND cause_kind != 'sync')")
                                 .bind(uid).fetch_one(&mut **tx).await?;
-                            if local {
-                                ids.push(uid.to_owned());
-                            }
+                        if local {
+                            ids.push(uid.to_owned());
                         }
                     }
                 }
@@ -279,25 +301,25 @@ async fn prerequisites(
                     }
                 }
             }
-            if change.table == "organ_contact" {
-                if let Some(actor) = row["record_uid"].as_str() {
-                    actors.insert(actor.to_owned());
-                }
+            if change.table == "organ_contact"
+                && let Some(actor) = row["record_uid"].as_str()
+            {
+                actors.insert(actor.to_owned());
             }
             if change.table == "visibility_rule" {
                 if let Some(target) = row["target_uid"].as_str() {
                     records.insert(target.to_owned());
                 }
-                if matches!(row["subject_kind"].as_str(), Some("organ" | "actor")) {
-                    if let Some(subject) = row["subject_uid"].as_str() {
-                        records.insert(subject.to_owned());
-                    }
+                if matches!(row["subject_kind"].as_str(), Some("organ" | "actor"))
+                    && let Some(subject) = row["subject_uid"].as_str()
+                {
+                    records.insert(subject.to_owned());
                 }
             }
-            if change.table == "signed_action_intent" {
-                if let Some(actor) = row["actor_person_uid"].as_str() {
-                    actors.insert(actor.to_owned());
-                }
+            if change.table == "signed_action_intent"
+                && let Some(actor) = row["actor_person_uid"].as_str()
+            {
+                actors.insert(actor.to_owned());
             }
         }
     }

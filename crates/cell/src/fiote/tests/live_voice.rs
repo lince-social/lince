@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod spoken, fn renew_existing_native_test_connection_through_local_credentials, mod
+//   native_connection, fn prepare_isolated_native_release_laboratory_data.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 25, 109.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 147.
+
 use super::*;
 use fiote::{
     assistant::{Conversation, EntryRequest},

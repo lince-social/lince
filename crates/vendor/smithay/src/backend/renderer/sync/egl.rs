@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: impl EGLFence.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::{os::unix::io::OwnedFd, time::Duration};
 
 use crate::backend::{

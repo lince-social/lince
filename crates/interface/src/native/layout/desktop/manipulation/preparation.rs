@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct Baseline, struct Sources.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 48.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   74, 125, 126, 127, 156, 157, 158.
+
 use super::*;
 use std::cell::OnceCell;
 

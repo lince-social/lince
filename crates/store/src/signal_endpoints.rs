@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Endpoint, fn ensure_authority, fn token_endpoint, fn token_matches_on.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 45, 53, 67, 77, 88, 94, 104, 110, 129, 143.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 8,
+//   9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 45, 53, 67, 77, 88, 94, 104, 110,
+//   129, 143.
+
 use serde::{Deserialize, Serialize};
 use sqlx::{Sqlite, SqliteConnection, SqlitePool, Transaction};
 

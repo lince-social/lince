@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn cell, fn become_sibling_of, fn pair, fn deliver_to_sibling.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 556, 563.
+
 #![cfg(test)]
 
 use engine::sync::Delivery;

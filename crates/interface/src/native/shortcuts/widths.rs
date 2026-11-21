@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod presentation, struct WidthEditor, struct Modal, struct Entry.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 538, 562, 642,
+//   751, 768, 824.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 153, 154,
+//   585, 589, 593.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (236, 259, 263, 265, 382, 387, 390, 478, 640, 651, 735, 740, 799).
+
 use super::{
     Settings,
     configuration::{self, ApplicationOpening, LayoutSettings},

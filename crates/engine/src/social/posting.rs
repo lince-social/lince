@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: struct Wallet, fn validate_authority.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 67, 119, 120,
+//   160, 161, 184, 196, 197, 198, 204, 219, 221, 245, 325, 338, 404.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 41, 126,
+//   145, 309.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 111, 118, 120, 140.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 67, 161, 181, 192, 193, 196, 197, 198, 240, 326, 373, 381, 382, 383, 399, 418.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 41, 126, 145, 309.
+
 use super::*;
 use nucleus::social::requests::PrivateOwnerBinding;
 use serde::{Deserialize, Serialize};

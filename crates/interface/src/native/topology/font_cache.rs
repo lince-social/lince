@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: const CACHE_BYTES, fn trim, fn retain_used, mod tests.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy::{
     ecs::{entity_disabling::Disabled, query::Allow},
     prelude::*,

@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn gevv.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use crate::simd::Simd;
 use num_traits::{One, Zero};
 

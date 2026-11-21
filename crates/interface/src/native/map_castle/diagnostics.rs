@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct ViewMetrics, struct State, struct Diagnostics, fn sample.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 213, 256.
+
 use super::*;
 use bevy::render::extract_resource::ExtractResource;
 use serde::Serialize;

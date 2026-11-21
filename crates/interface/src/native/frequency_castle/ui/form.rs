@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: fn controls, struct Form, struct Weekdays, struct Day.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 111, 118, 215.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (165).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   138, 157, 158, 169, 213, 226, 251.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (5, 8, 101, 102, 126, 162, 209, 212, 214, 218, 229, 232, 241, 251).
+
 use super::*;
 use crate::native::retained::Presentation;
 

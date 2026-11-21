@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn publish, fn all, fn
+//   signed_transport_announcements_page_filter_expire_withdraw_and_keep_routes_approximate.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use nucleus::{
     social::{

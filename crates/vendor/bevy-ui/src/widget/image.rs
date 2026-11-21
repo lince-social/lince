@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct ImageNode, enum NodeImageMode, struct ImageNodeSize, struct ImageMeasure.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 215.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 276, 378, 380.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 268.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 15,
+//   185.
+
 use crate::{
     ComputedUiRenderTargetInfo, ContentSize, Measure, MeasureArgs, Node, NodeMeasure, ResolvedAxis,
     VisualBox,

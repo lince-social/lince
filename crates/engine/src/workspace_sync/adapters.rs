@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: fn action_change, fn component_records, fn visit_component_records, fn component_contains.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 31, 34, 172, 304,
+//   455, 478, 480, 511, 512.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 3.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   3, 103, 166, 179, 338.
+
 use super::*;
 
 pub fn action_change(action: &Value) -> Result<Change, EngineError> {

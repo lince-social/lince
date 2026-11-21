@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod client, mod export, mod graph, mod schema.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 70, 157, 164.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 98.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites fetch: String
+//   (69), handle: String (138), pull: String (90), sync: String (74).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (56, 119, 134).
+
 pub mod client;
 pub mod export;
 pub mod graph;

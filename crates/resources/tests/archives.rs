@@ -1,5 +1,15 @@
-use lince_resources::{Library, Reference};
+// non-lean-yet
+// Scope: fn archive, fn
+//   extracted_folders_move_and_books_register_in_place_before_explicit_retention, fn
+//   archive_parent_paths_and_duplicate_entries_do_not_escape_or_replace_files, fn
+//   archive_entries_cannot_expand_past_their_declared_size.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 79.
+
 use std::{fs, io::Write};
+
+use lince_resources::{Library, Reference};
 
 fn archive(path: &std::path::Path, name: &str) {
     let mut zip = zip::ZipWriter::new(fs::File::create(path).expect("create the ZIP fixture"));

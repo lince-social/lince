@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: enum UniformType, struct UniformDesc, struct Uniform, struct UniformName.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 280, 281, 282, 283,
+//   284, 285, 286, 287, 288, 289, 290, 291, 292, 300, 308, 316, 324, 332, 340, 348, 356.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 91, 92, 117.
+
 use std::borrow::Cow;
 
 use super::GlesError;

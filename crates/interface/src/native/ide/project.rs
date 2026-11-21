@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Search, fn spawn, fn run, fn render.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 67, 80, 81, 87,
+//   213, 234.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (67, 76, 84, 156, 163, 164, 171, 172, 174, 189, 204, 211, 213, 215, 222).
+
 use super::*;
 use std::sync::atomic::{AtomicBool, Ordering};
 

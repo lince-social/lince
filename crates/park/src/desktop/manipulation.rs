@@ -1,6 +1,13 @@
+// non-lean-yet
+// Scope: struct Press, struct Drag, struct State.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (182, 255).
+
+use lince_interface::host::SurfaceId;
+
 use super::*;
 use crate::presentation::manipulation::{Active, Event, Request};
-use lince_interface::host::SurfaceId;
 
 struct Press {
     button: u32,

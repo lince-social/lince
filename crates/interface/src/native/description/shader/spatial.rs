@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: mod geometry, mod instances, mod lighting, mod volume.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 53, 58, 61, 84,
+//   208, 251, 277, 280, 334, 362, 439, 471, 500, 524, 537, 539, 573, 596, 598, 601, 607, 616, 619,
+//   650, 654, 690, 768, 813, 814, 816, 874, 875, 929, 931, 978, 979.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (1101).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   277, 280, 448, 461, 719, 810, 814, 894.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (248, 379, 382, 456, 486, 527, 680, 703, 704, 811, 823, 830, 837, 842, 846, 868,
+//   869, 899, 1022, 1045, 1084).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 1105.
+
 use super::*;
 use bevy::{
     camera::primitives::Aabb,

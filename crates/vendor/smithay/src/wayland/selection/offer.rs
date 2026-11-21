@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: enum OfferReplySource, enum SelectionOffer, struct OfferReplyData.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 45, 133.
+// - [review: §3 Ownership] Check whether the borrowed container can expose a narrower view. Sites
+//   contains_mime_type:mime_type → &str (50).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (97, 100, 101, 103, 106).
+
 use std::os::unix::io::OwnedFd;
 use std::sync::Arc;
 

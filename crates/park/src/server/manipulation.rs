@@ -1,9 +1,15 @@
-use super::*;
-use smithay::reexports::wayland_protocols::xdg::shell::server::xdg_toplevel::ResizeEdge;
+// non-lean-yet
+// Scope: struct Request, fn edges, struct Grab.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 42, 75, 87.
+
 use smithay::{
     input::pointer::*,
+    reexports::wayland_protocols::xdg::shell::server::xdg_toplevel::ResizeEdge,
     utils::{Point, SERIAL_COUNTER},
 };
+
+use super::*;
 
 pub(crate) struct Request {
     pub surface: SurfaceId,

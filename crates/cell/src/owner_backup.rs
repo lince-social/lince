@@ -1,3 +1,25 @@
+// non-lean-yet
+// Scope: mod tests, fn invalid, fn plain_path, fn regular_file.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 196.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 184, 194.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   118.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 55, 82, 114.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 118.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 184, 194.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 230.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 230.
+// - [Clippy probe: clippy::option_as_ref_deref] called `.as_ref().map(|key| &**key)` on an `Option`
+//   value. Sites 197.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   230.
+
 use engine::trust::Signer;
 use sha2::{Digest, Sha256};
 use std::{

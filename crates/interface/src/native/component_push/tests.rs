@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn setup, fn
+//   generated_compositions_are_isolated_saved_and_reopened_as_independent_balloons, fn
+//   nested_text_settings_are_validated_saved_and_restored, fn request.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn setup() -> (App, Entity) {

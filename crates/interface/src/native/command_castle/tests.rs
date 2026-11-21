@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod performance, fn removing_castle_keeps_run_alive_and_reopening_restores_history, fn
+//   settings_survive_castle_configuration_roundtrip, fn
+//   remote_command_has_no_local_execution_controls.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::sand_panel::tests::{app, settle};
 use serde_json::json;

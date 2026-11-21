@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct Peer, fn transfer, fn offer, fn fetch.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 266, 323.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 266.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 27, 37, 348.
+
 use super::network::Request;
 use super::*;
 use crate::wire::{Reach, Wire};

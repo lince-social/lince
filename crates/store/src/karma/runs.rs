@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: struct OccurrenceProgramEpochRow, struct KarmaRunRow, struct ProgramProcessingTurn, struct
+//   PreparedRun.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 819, 853, 903, 907.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 95, 218, 283,
+//   300, 308, 358, 361, 363, 364, 383, 471, 474, 480, 521, 525, 553, 610, 611, 612, 613, 614, 615,
+//   617, 618, 715, 718, 719, 720.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   250, 763.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   81, 226, 700, 738, 896, 900.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 64, 101, 114, 125, 137.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 20, 21,
+//   22, 23, 24, 25, 26, 27, 31, 32, 33, 34, 38, 39, 40, 41, 42, 43, 60, 61, 64, 101, 114, 125, 137.
+
 use std::{collections::BTreeMap, num::NonZeroU32};
 
 use chrono::{DateTime, TimeZone, Utc};

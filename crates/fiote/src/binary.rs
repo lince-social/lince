@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: const BINARY_ENV, struct FioteBinary, enum Origin, fn locate.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 15.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 29.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 9,
+//   10, 11, 15, 16, 17, 21, 29.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites locate: String
+//   (29).
+
 use std::{
     env,
     path::{Path, PathBuf},

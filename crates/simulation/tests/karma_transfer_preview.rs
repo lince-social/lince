@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod support, fn run, fn fixture, fn request.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 #[path = "../../engine/tests/support/mod.rs"]

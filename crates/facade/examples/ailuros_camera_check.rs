@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: const USAGE, fn verification_timeout, fn direct_paths, fn prepare_direct.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 78, 84, 85, 89,
+//   252, 307, 318, 327, 355, 419.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 82, 278,
+//   310, 362, 387, 435.
+
 use engine::wire::{PeerId, Wire};
 use iroh::endpoint::TransportAddrUsage;
 use std::{io, path::PathBuf, sync::Arc, time::Duration};

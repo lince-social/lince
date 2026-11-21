@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn inactive_admission_and_unblock_tombstones_survive_stale_enrolled_device_uploads.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use nucleus::social::requests::{BLOCK_NAMESPACE, SESSION_AUTHORITY_NAMESPACE};
 

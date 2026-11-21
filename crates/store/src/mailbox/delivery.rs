@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: enum Deposit, fn deposit, fn advance_roster, fn roster_floor.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 181, 215, 227.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 19, 198, 299.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 7.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 14, 97, 121, 134, 162, 261, 311, 318, 331, 342, 374, 386.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 8,
+//   9, 10, 11, 14, 97, 121, 134, 162, 261, 311, 318, 331, 342, 374, 386.
+
 use sqlx::{Row, SqlitePool};
 
 use super::{HeldBundle, map_bundle};

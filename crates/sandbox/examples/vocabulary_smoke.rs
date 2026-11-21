@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: const TITLE, const SEARCH, struct Exercise, fn button.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 53, 81, 364.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (343).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (53, 63, 71, 72, 92, 94, 103, 118, 123, 144, 184, 196, 202, 211, 219, 280, 282,
+//   292, 315, 321, 323, 345, 346, 355, 361).
+
 use bevy::{
     a11y::AccessibilityNode,
     input::{

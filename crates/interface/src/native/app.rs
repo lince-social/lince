@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct CellHandle, fn initialize_language, struct OutputTarget, struct LinearOutput.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 92, 200, 204.
+
 use crate::native::{
     canvas::CanvasPlugin,
     effect::EffectPlugin,

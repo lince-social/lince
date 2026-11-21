@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: mod details, mod rows, struct CursorChoice, struct TryDate.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 221, 310, 342,
+//   413, 426, 430, 626, 629, 638, 684, 694, 695, 698.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   329.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (90, 202, 209, 221, 278, 289, 293, 317, 318, 368, 397, 398, 420, 432, 439, 448,
+//   454, 626, 638, 639, 649, 695).
+
 use super::*;
 use crate::native::actions::{Action, ActionButton};
 use bevy::text::EditableText;

@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: trait Cacheable, struct CachedState, trait Cache, struct MultiCache.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   178.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (104, 121, 127, 181, 186).
+
 // The caching logic is used to process surface synchronization. It creates
 // an effective decoupling between the moment the client sends wl_surface.commit
 // and the moment where the state that was commited is actually applied by the

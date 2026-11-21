@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn empty_clock_cadence_bounds_hand_motion_and_preserves_fast_clocks, fn clock, fn
+//   clock_updates_coalesce_deadlines_and_retire_removed_views.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 73, 81, 102.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (65, 78, 92, 94, 99, 106, 112, 116, 120, 122, 123, 124, 125, 127, 128, 129, 133).
+
 use super::*;
 use std::{
     sync::{

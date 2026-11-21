@@ -1,8 +1,15 @@
-use super::super::shortcuts::{capture_button, click, key, named_button};
-use super::*;
+// non-lean-yet
+// Scope: struct Delivered, fn observe, fn activate, fn text.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy::{
     input::mouse::MouseButton,
     picking::pointer::{PointerButton, PointerId},
+};
+
+use super::{
+    super::shortcuts::{capture_button, click, key, named_button},
+    *,
 };
 
 #[derive(Resource, Default)]
@@ -29,8 +36,7 @@ fn observe(canvas: &mut Presentation) {
             },
         )
         .add_observer(
-            |event: On<PointerRelease>,
-             mut delivered: ResMut<Delivered>| {
+            |event: On<PointerRelease>, mut delivered: ResMut<Delivered>| {
                 if event.pointer.id == PointerId::Mouse
                     && event.entity == event.original_event_target()
                     && matches!(

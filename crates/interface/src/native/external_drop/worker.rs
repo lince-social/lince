@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct Package, struct Prepared, struct Job, type Reply.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 113, 141.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 217.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (99).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   190, 252.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (284).
+
 use super::source::{self, Kind, Source};
 use crate::native::{media_sand::Pixels, topology::assets::ImportedAsset};
 use bevy::prelude::*;

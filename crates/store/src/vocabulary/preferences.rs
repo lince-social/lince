@@ -1,7 +1,22 @@
-use super::{StoreError, invalid, term_text};
+// non-lean-yet
+// Scope: fn terminology_owner, fn terminology_context_on, fn set_terminology_context_on, fn
+//   terminology_state_on.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   hide_term_on:hidden (178).
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 10, 23, 42, 103, 111, 147, 174, 218.
+// - [Clippy: clippy::needless_question_mark] enclosing `Ok` and `?` operator are unneeded. Sites
+//   94.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 10,
+//   23, 42, 103, 111, 147, 174, 218.
+
+use std::collections::{HashMap, HashSet};
+
 use serde_json::Value;
 use sqlx::{Row, SqliteConnection, SqlitePool};
-use std::collections::{HashMap, HashSet};
+
+use super::{StoreError, invalid, term_text};
 
 pub fn terminology_owner(person: Option<&str>) -> &str {
     person.unwrap_or("local")
@@ -70,11 +85,7 @@ pub async fn terminology_state_on(
     ]))
 }
 
-fn choices_query(
-    owner: &str,
-    context: &str,
-    columns: &str,
-) -> sqlx::QueryBuilder<sqlx::Sqlite> {
+fn choices_query(owner: &str, context: &str, columns: &str) -> sqlx::QueryBuilder<sqlx::Sqlite> {
     let mut query = sqlx::QueryBuilder::new("SELECT ");
     query
         .push(columns)

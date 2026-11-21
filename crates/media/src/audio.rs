@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: const SAMPLE_RATE, const FRAME_SAMPLES, const QUEUE_FRAMES, const MAX_AUDIO_TRACKS.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 20, 95.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   20.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 35, 51.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 11, 29.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 6,
+//   7, 8, 11, 14, 18, 24, 29, 35, 47, 51, 64, 80.
+
 use std::collections::{BTreeMap, VecDeque};
 
 use crate::{MediaError, Result};

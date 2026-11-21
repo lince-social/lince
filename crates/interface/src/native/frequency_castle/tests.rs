@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn draft, fn frequency, fn simple_editor_preserves_exact_anchor_policies_and_identity, fn
+//   calendar_definitions_round_trip_without_flattening.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn draft() -> Draft {

@@ -1,15 +1,44 @@
-use crate::{
-    communication::models::{self, Artifact, Cache, Manifest},
-    config::Secret,
-};
-use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
-use serde::{Deserialize, Serialize};
+// non-lean-yet
+// Scope: const REVISION, const ARTIFACTS, enum Request, struct Status.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   122.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 130, 332.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 93.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 97, 161, 212,
+//   217, 285.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   216, 218, 219, 220, 247, 248, 256.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 35.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   110, 263, 314.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 93, 122.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 82.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 15, 16,
+//   35, 36, 37, 38, 39, 41, 42, 43, 45, 46, 48, 49, 54, 55, 56, 57, 58, 59, 63, 64, 65, 66, 67, 82,
+//   93, 122, 289.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites handle: String
+//   (122), new: String (93).
+
 use std::{
     path::PathBuf,
     sync::{
         Arc, Mutex,
         atomic::{AtomicBool, AtomicU64, Ordering},
     },
+};
+
+use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
+use serde::{Deserialize, Serialize};
+
+use crate::{
+    communication::models::{self, Artifact, Cache, Manifest},
+    config::Secret,
 };
 
 pub const REVISION: &str = "5f9280c761a5c147bb682321f3f019482fab3e7b";
@@ -122,7 +151,10 @@ impl Service {
     pub async fn handle(&self, request: Request) -> Result<Status, String> {
         let mut state = self.state.lock().await;
         if let Some(running) = state.as_mut()
-            && running.task.as_ref().is_some_and(|task| task.is_finished())
+            && running
+                .task
+                .as_ref()
+                .is_some_and(tokio::task::JoinHandle::is_finished)
         {
             let result = running
                 .task
@@ -298,7 +330,7 @@ impl Service {
         *self
             .engine
             .lock()
-            .unwrap_or_else(|error| error.into_inner()) = None;
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = None;
     }
 }
 

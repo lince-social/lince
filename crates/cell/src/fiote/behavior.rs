@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: impl Host.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 82, 87, 196, 207,
+//   268, 279, 290, 323, 338.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 49, 147.
+// - [Clippy probe: clippy::format_push_string] `format!(..)` appended to existing `String`. Sites
+//   406, 408, 461, 480, 486.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 16, 19, 54, 63, 102, 439, 443, 450, 459, 503.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use fiote::config::{Behavior, FioteChoice, PromptSource};
 use sha2::{Digest, Sha256};

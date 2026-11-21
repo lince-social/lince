@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct TabletTool, struct TabletToolHandle, struct CursorOwner, struct TabletToolUserData.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 67, 290, 298,
+//   522.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (58, 151, 262, 303, 343, 363, 369, 374, 379, 403, 411, 418, 425, 432, 439, 446,
+//   451, 521, 548, 558, 560, 582).
+
 use std::fmt;
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};

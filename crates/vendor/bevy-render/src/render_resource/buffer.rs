@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Buffer, struct BufferSlice.
+// BeautifulRust (baseline lines):
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 13, 20,
+//   24, 32, 56, 63.
+
 use crate::renderer::wgpu_wrapper;
 use bevy_utils::define_atomic_id;
 use core::ops::{Deref, RangeBounds};

@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: mod karma, fn fixture, fn call, fn read.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 221.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 221.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 45, 126, 413, 647.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 61.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 424.
+
 #![cfg(test)]
 
 use std::sync::Arc;

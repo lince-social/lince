@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: enum Control, enum Changed, fn scope_for, fn apply.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 66, 90, 93, 109,
+//   118, 174, 194, 205, 277.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (58, 153, 164, 188, 255, 269, 283).
+
 use super::*;
 use crate::native::actions::Action;
 use std::path::{Component, Path};

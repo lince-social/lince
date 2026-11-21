@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn synchronize, mod tests.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 pub(super) fn synchronize(world: &mut World, root: Entity, physical_size: UVec2) {

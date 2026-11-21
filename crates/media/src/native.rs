@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod capture, mod codec, mod ice, mod network.
+// BeautifulRust (baseline lines):
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 1, 5,
+//   6, 7, 9.
+
 pub mod capture;
 mod codec;
 mod ice;

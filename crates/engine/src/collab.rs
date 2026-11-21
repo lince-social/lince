@@ -1,3 +1,29 @@
+// non-lean-yet
+// Scope: const MAX_OPEN_DOCS, const COMPACT_OPS, const COMPACT_ATOMS, struct OpenDoc.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 177, 191, 226,
+//   504, 643.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites encode_update:
+//   String (50).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   808.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 491.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 191, 226.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 308, 309.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 65, 168, 808.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 312, 313, 808.
+// - [Clippy probe: clippy::manual_let_else] this could be rewritten as `let...else`. Sites 408.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 43, 50, 230, 252, 358, 363, 367, 373, 396, 604, 614, 649, 657, 755, 782.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 22.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   22, 27, 39, 43, 50, 230, 252, 358, 363, 367, 373, 396, 604, 614, 649, 657, 755, 782, 793.
+
 use std::collections::{BTreeSet, HashMap};
 use std::sync::Arc;
 

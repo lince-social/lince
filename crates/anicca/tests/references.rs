@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn urls_and_composition_imports_round_trip_without_loading_navigation, fn
+//   import_statements_and_records_titled_import_are_distinct.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 9, 10, 12, 16, 18, 29.
+
 #[test]
 fn urls_and_composition_imports_round_trip_without_loading_navigation() {
     let source = "Import \"./parts/Definitions.lingua\"\nImport @r_00000000000000000000000002 from [\"./Parts.lingua\", \"https://example.org/Parts.lingua\"]\nPlato (@plato: 0, #part-of \"../Philosophers.lingua#r_00000000000000000000000003\") { r_00000000000000000000000001\n} r_00000000000000000000000001\n";

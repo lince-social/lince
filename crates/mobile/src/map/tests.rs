@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn fixture, fn position, fn
+//   actual_two_pointer_gesture_and_accessible_commands_share_one_view_and_old_actor_replies_are_discarded,
+//   fn packaged_overview_and_example_are_offline_and_received_invitation_starts_no_observation.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use bevy::picking::{
     backend::HitData,

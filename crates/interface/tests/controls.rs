@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn editor_and_container_primitives_work_without_a_desktop_host, fn
+//   a_worker_can_wake_the_host_without_owning_its_event_loop.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(feature = "ui")]
 
 use bevy::prelude::*;

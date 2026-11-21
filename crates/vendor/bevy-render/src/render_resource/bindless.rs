@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: const AUTO_BINDLESS_SLAB_RESOURCE_LIMIT, const AUTO_BINDLESS_SLAB_RESOURCE_LIMIT, static
+//   BINDING_NUMBERS, enum BindlessSlabResourceLimit.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 332.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   227.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 245.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 64, 116.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   234.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 94, 200.
+
 //! Types and functions relating to bindless resources.
 
 use alloc::borrow::Cow;

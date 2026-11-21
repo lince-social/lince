@@ -1,6 +1,11 @@
-use super::*;
+// non-lean-yet
+// Scope: fn prepare_flat, fn prepare, fn prepare_pair, fn fixture.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy::prelude::{Entity, With};
 use lince_interface::native::{self, actions::Action};
+
+use super::*;
 
 pub(super) fn prepare_flat(canvas: &mut crate::presentation::Presentation) {
     for _ in 0..4 {

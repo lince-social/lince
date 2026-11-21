@@ -1,6 +1,9 @@
-use super::layers::{capture, image_pixels};
-use super::shortcuts::settle;
-use super::*;
+// non-lean-yet
+// Scope: fn effect, fn output, fn source, fn wait.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
+use std::time::{Duration, Instant};
+
 use bevy::{asset::AssetId, camera::visibility::RenderLayers, math::DVec2};
 use lince_interface::host::{
     DesktopAction, ItemId, OutputId, OutputViewport, Rectangle, WorkspaceLayout,
@@ -15,7 +18,12 @@ use nucleus::shader_effect::{
     spatial::{MeshSettings, Mode, Quality, VolumeSettings},
 };
 use smithay::backend::allocator::Buffer;
-use std::time::{Duration, Instant};
+
+use super::{
+    layers::{capture, image_pixels},
+    shortcuts::settle,
+    *,
+};
 
 fn effect(kind: usize) -> Effect {
     let (mode, source) = match kind {
@@ -50,7 +58,8 @@ fn output(scale: f64) -> Output {
     let bounds = Rectangle::new([0.0; 2], [800.0, 600.0]).unwrap();
     Output {
         name: "Shader raster reference".into(),
-        viewport: OutputViewport { rotation: Default::default(),
+        viewport: OutputViewport {
+            rotation: Default::default(),
             id: OutputId(1),
             bounds,
             usable: Some(bounds),
@@ -366,7 +375,8 @@ fn verify(
 
 #[test]
 #[ignore = "requires hardware Vulkan and EGL"]
-fn shader_sources_match_final_free_tiled_maximized_and_overview_return_pixels_at_fractional_scale() {
+fn shader_sources_match_final_free_tiled_maximized_and_overview_return_pixels_at_fractional_scale()
+{
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .thread_stack_size(32 * 1024 * 1024)

@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: static DROP_THIS, static OLD_SIGBUS_HANDLER, struct Pool, struct InnerPool.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check SAFETY proof and trait invariants. Sites 60, 62.
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 107, 141, 212, 222,
+//   224, 245, 249, 256, 263, 279, 284, 299, 319, 326, 329, 337, 342, 364, 369.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 144, 358.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 273, 280,
+//   292.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites with_data: ()
+//   (105, 188), with_data_mut: () (139, 192).
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites
+//   118, 154, 309.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (40, 86, 101, 109, 145, 181, 185, 189, 193, 199, 320).
+
 #![deny(unsafe_op_in_unsafe_fn)]
 
 use std::{

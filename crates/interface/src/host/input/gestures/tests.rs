@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn start, fn one_completed_swipe_commits_once_to_its_original_output, fn
+//   small_diagonal_and_four_finger_horizontal_gestures_have_no_action, fn
+//   horizontal_pan_keeps_axis_and_reports_total_travel_for_coalescing.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn start(fingers: u32) -> GestureRecognizer {

@@ -3,6 +3,14 @@
 
 //! Range based style application.
 
+// non-lean-yet
+// Scope: struct RangedStyleBuilder, struct SplitRange, fn split_range, fn resolve_range.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 89, 101, 105,
+//   107, 125, 131, 134, 149.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   99, 124, 129, 142, 143, 144, 149, 150, 188, 194, 195.
+
 use alloc::vec;
 
 use super::{Brush, RangedProperty, RangedStyle, ResolvedProperty, ResolvedStyle, StyleRun, Vec};

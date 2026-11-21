@@ -1,8 +1,32 @@
-use crate::NucleusError;
-use crate::karma::{Cadence, Carry, Condition, ConditionError, DecimalValue, ExactResolver, Gate};
+// non-lean-yet
+// Scope: const VALUE_DEPTH_CAP, struct Snapshot, struct ProjPromise, enum ProjMove.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 243, 254.
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on a `Result` value. Sites
+//   157.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 200, 244, 248,
+//   283, 286.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 91, 162, 229, 295.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 26.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   126.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 302.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 10, 11,
+//   12, 13, 14, 15, 19, 20, 21, 22, 26, 27, 28, 32, 33, 34, 35, 36, 37, 38, 39, 43, 44, 45, 46, 50,
+//   51, 52, 53, 54, 58, 59, 60, 64, 70, 194, 302.
+
+use std::{cell::OnceCell, collections::HashMap};
+
 use chrono::{DateTime, Utc};
-use std::cell::OnceCell;
-use std::collections::HashMap;
+
+use crate::{
+    NucleusError,
+    karma::{Cadence, Carry, Condition, ConditionError, DecimalValue, ExactResolver, Gate},
+};
 
 const VALUE_DEPTH_CAP: usize = 4;
 
@@ -315,8 +339,9 @@ pub fn proj_condition(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use chrono::TimeDelta;
+
+    use super::*;
 
     fn at(s: &str) -> DateTime<Utc> {
         DateTime::parse_from_rfc3339(s).unwrap().with_timezone(&Utc)

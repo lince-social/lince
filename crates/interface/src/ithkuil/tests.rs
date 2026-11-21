@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn app, fn native_labels_share_font_bytes_and_keep_text_storage_unchanged_between_frames,
+//   fn ordinary_labels_and_editable_buffers_keep_their_original_text_and_font, fn
+//   labels_follow_updated_script_and_keep_external_font_size_changes.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use bevy::text::{FontCx, LayoutCx};
 

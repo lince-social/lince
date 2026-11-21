@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: mod health, fn command, fn
+//   deployment_policy_overrides_native_roles_without_reauthoring_private_settings, fn post.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use engine::{Engine, actions::Action, social::Worker};

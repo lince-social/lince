@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: mod model, mod tests, mod ui, struct Pending.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 231, 235, 238,
+//   427, 444, 469, 473, 481, 498.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   156.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (170, 193, 240, 352, 362, 370, 389, 392, 405, 457, 481, 496, 507, 515, 529, 535,
+//   547).
+
 mod model;
 #[cfg(test)]
 mod tests;

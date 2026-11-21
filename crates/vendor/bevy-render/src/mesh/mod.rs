@@ -1,3 +1,30 @@
+// non-lean-yet
+// Scope: mod allocator, mod morph, struct MeshRenderAssetPlugin, struct MeshMetadataFallbackMesh.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value. Sites
+//   231.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   98.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 72, 110, 111.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 111.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 227, 250, 285.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   227, 250, 285.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 183.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   220.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 244, 298.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 38, 88, 93.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 3, 88,
+//   94, 95, 98, 121, 122, 124, 125, 127, 168, 176, 184, 185, 186, 188.
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 27.
+
 pub mod allocator;
 #[cfg(feature = "morph")]
 pub mod morph;

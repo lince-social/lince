@@ -1,6 +1,16 @@
-use crate::Result;
-use serde_json::{Value, json};
+// non-lean-yet
+// Scope: struct Glb, fn local_place, fn globe, fn castle.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 186.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (41, 45).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   37, 45, 95, 101, 142, 186.
+
 use std::borrow::Cow;
+
+use serde_json::{Value, json};
+
+use crate::Result;
 
 pub(super) struct Glb {
     document: Value,
@@ -38,11 +48,16 @@ impl Glb {
         if node.get("children").is_none() {
             node["children"] = json!([]);
         }
-        node["children"].as_array_mut().expect("GLB node children are stored as an array").push(json!(child));
+        node["children"]
+            .as_array_mut()
+            .expect("GLB node children are stored as an array")
+            .push(json!(child));
     }
 
     pub(super) fn array(&mut self, key: &str, value: Value) -> usize {
-        let entries = self.document[key].as_array_mut().expect("the GLB field is declared as an array");
+        let entries = self.document[key]
+            .as_array_mut()
+            .expect("the GLB field is declared as an array");
         let index = entries.len();
         entries.push(value);
         index

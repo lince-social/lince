@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn pixels, fn paint, fn update, fn encode.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   38, 39, 89, 92.
+
 use nucleus::drawing::Drawing;
 
 pub(super) fn pixels(drawing: &Drawing) -> Result<image::RgbaImage, String> {

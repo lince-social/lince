@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn unresolved_retained_images_require_filtering_without_stopping_public_output_sessions,
+//   fn publishing_unchanged_content_keeps_in_flight_privacy_revisions_valid, fn
+//   policy_changes_retire_old_jobs_and_unknown_or_private_sources_fail_closed, fn
+//   final_capture_copy_orders_security_publication_after_its_guard.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[test]

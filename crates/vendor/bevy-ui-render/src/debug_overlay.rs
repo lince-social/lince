@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: struct UiDebugOptions, struct GlobalUiDebugOptions, fn extract_debug_overlay.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 189.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 215.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   215.
+// - [Clippy: clippy::struct_excessive_bools] more than 3 bools in a struct. Sites 41, 109.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 176, 189.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 41, 109.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 65,
+//   133.
+// - [rustc: unreachable_pub] unreachable `pub` item. Sites 172.
+
 use super::ExtractedUiItem;
 use super::ExtractedUiNode;
 use super::ExtractedUiNodes;

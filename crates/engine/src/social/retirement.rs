@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: const NAMESPACE, struct Decision, fn pending_requests, fn checked.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 32, 53.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   44, 106.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 96.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 46, 106.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use nucleus::social::requests::DeviceAuthorizationRequest;
 use serde::{Deserialize, Serialize};

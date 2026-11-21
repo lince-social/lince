@@ -1,4 +1,14 @@
+// non-lean-yet
+// Scope: struct Script, fn call, fn tools_return_to_the_model_before_the_final_reply, fn
+//   file_tool_refuses_overwrites_traversal_and_symlink_escape.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 24, 155, 157, 171, 172, 173, 174, 175, 177, 182, 439, 543.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 245, 585.
+
 #![cfg(test)]
+
+use std::sync::Mutex;
 
 use async_trait::async_trait;
 use fiote::{
@@ -7,7 +17,6 @@ use fiote::{
     tools::{CreateFile, Registry, Tool},
 };
 use serde_json::{Value, json};
-use std::sync::Mutex;
 use tokio::sync::watch;
 
 struct Script(Mutex<Vec<Reply>>);

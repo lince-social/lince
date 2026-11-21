@@ -1,3 +1,22 @@
+// non-lean-yet
+// Scope: mod stdio, struct Handler, struct Access, fn authorize.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 168, 171, 176,
+//   183, 185, 190, 191, 193, 230.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 157.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites open: String
+//   (155).
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 92.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 157.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 155.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 146.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   146, 147, 148, 155, 214, 218.
+
 mod stdio;
 pub use stdio::bridge_stdio;
 

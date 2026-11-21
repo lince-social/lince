@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Cooling, struct Spring, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   64, 65, 66, 69.
+
 #[derive(Clone, Copy, Debug)]
 pub struct Cooling {
     remaining: f32,

@@ -1,3 +1,24 @@
+// non-lean-yet
+// Scope: fn install_current.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   70.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 99.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 5.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   74.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites 9,
+//   12, 24.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 4, 70, 99.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 1.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 70,
+//   99.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites install: String
+//   (4), install_current: String (99), remove: String (70).
+
 use super::*;
 
 impl Host {

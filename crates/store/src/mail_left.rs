@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct LeftMail, fn map, fn record, fn carriers_to_ask.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 15.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 26, 48, 59, 78, 91, 100.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 7,
+//   8, 9, 10, 11, 12, 26, 48, 59, 78, 91, 100.
+
 use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;

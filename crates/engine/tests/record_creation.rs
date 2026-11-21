@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn engine, fn creation_preserves_exact_quantity_work_and_retries_without_duplicates, fn
+//   invalid_fields_and_relations_leave_no_record_or_sync_operations, fn
+//   assertions_are_atomic_with_creation_and_invalid_amount_rolls_everything_back.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use engine::{

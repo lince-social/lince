@@ -1,3 +1,25 @@
+// non-lean-yet
+// Scope: struct PendingCommandBuffersInner, enum PendingCommandBuffer, struct
+//   PendingCommandBuffers, fn finish_sequential.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check SAFETY proof and trait invariants. Sites 342, 407.
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 382, 394.
+// - [review: §8 Unsafe] Prove unchecked operations and prefer a checked API when equivalent. Sites
+//   get_unchecked (394).
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 63, 267.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 194, 217, 244.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   195.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   394.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 205.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 42, 175, 234, 296, 317, 335.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 53, 63,
+//   74, 91, 95, 325, 330.
+
 use crate::diagnostic::internal::DiagnosticsRecorder;
 use crate::render_phase::TrackedRenderPass;
 use crate::render_resource::{CommandEncoder, RenderPassDescriptor};

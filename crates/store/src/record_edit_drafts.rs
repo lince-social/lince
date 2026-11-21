@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: const MAX_BYTES, const MAX_CHECKPOINT_BYTES, const MAX_REQUESTS, struct Stamp.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 101.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 217.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 322, 335, 339, 344, 544, 566, 567.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   351.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   122.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 170, 182, 276, 356, 581.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 8, 9,
+//   10, 13, 14, 15, 19, 20, 21, 22, 23, 24, 25, 26, 30, 31, 32, 36, 37, 38, 39, 40, 44, 45, 46, 50,
+//   51, 52, 53, 54, 55, 56, 170, 182, 276, 356, 581.
+
 use std::collections::{HashMap, HashSet};
 
 use sha2::{Digest, Sha256};

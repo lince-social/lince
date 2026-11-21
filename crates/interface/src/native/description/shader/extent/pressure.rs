@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct Pixels, fn resize, fn step, fn wait.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 93, 114, 116.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (200).
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites 98,
+//   210.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   123.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (27, 44, 125, 126, 139, 140, 142, 143, 171, 179, 187, 203).
+
 use super::*;
 use crate::native::{
     actions::Action,

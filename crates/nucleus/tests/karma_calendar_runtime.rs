@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct FakeProvider, fn
+//   provider_verified_cursor_replays_calendar_boundaries_with_an_explicit_budget, fn
+//   skip_pause_on_lag_and_discontinuity_pause_remain_distinct, fn
+//   a_bounded_calendar_emits_its_last_occurrence_and_retires_without_a_pause.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 45, 97, 118,
+//   157, 183, 205.
+// - [Clippy: clippy::redundant_clone] Move or borrow at the marked sites and check later uses.
+//   Sites 133, 178.
+
 #![cfg(test)]
 
 use std::{collections::BTreeMap, num::NonZeroU32};

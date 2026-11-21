@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Face, fn text_width, struct Ring, fn motto_arc.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (17, 128, 131, 176).
+
 use super::*;
 
 pub(super) struct Face {

@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct Field, struct Status, struct ImportPath, const CREDITS.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 61, 71.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 109, 113.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   99, 239, 400.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (408, 414, 440, 446).
+
 use super::*;
 use crate::native::actions::Action;
 

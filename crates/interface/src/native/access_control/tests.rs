@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn fixture, fn catalog, fn set, fn notice.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use bevy::math::DVec2;
 use serde_json::json;

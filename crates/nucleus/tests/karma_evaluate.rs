@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn same_frozen_context_produces_byte_identical_result_and_parameter_override_is_explicit,
+//   fn missing_and_wrong_typed_boundary_values_fail_without_partial_success, fn
+//   checked_arithmetic_reports_overflow_and_division_by_zero, fn
+//   if_is_lazy_but_both_branches_remain_statically_typed.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use std::collections::{BTreeMap, BTreeSet};

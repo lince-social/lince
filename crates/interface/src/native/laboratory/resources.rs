@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct GraphicsDevice, struct StartupIssue, struct StartupFailure, struct SandResources.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 37, 40, 41, 57,
+//   259, 316.
+
 use bevy::{
     asset::{LoadState, UntypedAssetId},
     ecs::{entity_disabling::Disabled, query::Allow},

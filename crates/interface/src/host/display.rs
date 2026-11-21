@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct ColorStatus, fn color_confirmation_ready, enum AdaptiveSyncSupport, struct
+//   AdaptiveSyncStatus.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 167.
+
 use super::{OutputId, OutputViewport};
 use std::{collections::BTreeMap, time::Instant};
 use serde::{Deserialize, Serialize};

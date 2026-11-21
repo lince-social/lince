@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct InterruptedDeposit, fn person_on_disk, fn reopen, fn protected_session_state.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 134, 140, 142, 185, 188.
+
 use super::*;
 use engine::{roster::cell_key_id, trust::Signer};
 use sha2::{Digest, Sha256};

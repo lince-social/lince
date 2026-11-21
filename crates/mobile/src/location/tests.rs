@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct Local, fn start, fn
+//   denied_revoked_and_old_android_epochs_only_affect_their_selected_record_sessions.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use nucleus::location::{Command, Settings, SourceLease};
 use std::sync::Arc;

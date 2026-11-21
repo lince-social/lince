@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod performance, fn equivalent, fn
+//   window_record_cards_keep_their_captured_source_through_aliases_and_refuse_changed_identities,
+//   fn immutable_source_snapshots_keep_extracted_values_and_decline_truncated_roots.
+// BeautifulRust (baseline lines):
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 6, 64, 104, 202, 272, 301.
+
 use super::*;
 use bevy::ecs::system::SystemState;
 

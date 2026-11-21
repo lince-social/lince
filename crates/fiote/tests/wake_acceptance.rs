@@ -1,4 +1,19 @@
+// non-lean-yet
+// Scope: fn audio, fn two_voice_keyword_regressions_without_asr_or_cloud.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 62, 77, 82, 96, 113, 136, 139.
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option` value.
+//   Sites 28.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 115.
+
 #![cfg(test)]
+
+use std::{
+    collections::BTreeMap,
+    path::{Path, PathBuf},
+};
 
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use fiote::{
@@ -7,10 +22,6 @@ use fiote::{
         decode_audio,
         wake::{Detector, Profile},
     },
-};
-use std::{
-    collections::BTreeMap,
-    path::{Path, PathBuf},
 };
 
 fn audio(root: &Path, name: &str, hashes: &BTreeMap<String, String>) -> Vec<f32> {

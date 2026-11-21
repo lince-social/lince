@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: mod reused_action, fn cell, fn guest_role, fn loopback.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 75, 84, 326.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 75, 326.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 94, 99, 118, 122, 197, 202, 213, 215, 404, 408, 481, 486, 496, 498, 666, 671, 678, 681,
+//   800, 801, 805, 806.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 344, 545,
+//   581, 620, 622, 710, 731, 770, 824.
+// - [Clippy probe: clippy::single_match] you seem to be trying to use `match` for destructuring a
+//   single pattern. Consider using `if let`. Sites 579.
+
 #![cfg(test)]
 
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};

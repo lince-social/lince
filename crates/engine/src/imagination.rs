@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: fn build_snapshot, fn confidence, fn demand, const CROSSING_HORIZON_SECS.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 17.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 123, 171.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value.
+//   Sites 61, 65.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 11, 105, 126, 178, 187, 191, 255.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   11, 105, 126, 175, 178, 187, 191, 255.
+
 use chrono::{DateTime, Utc};
 use nucleus::PromiseState;
 use nucleus::imagination::{ProjCondition, ProjMove, ProjPromise, ProjRule, Snapshot, Timeline};

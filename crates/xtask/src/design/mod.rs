@@ -1,16 +1,26 @@
+// non-lean-yet
+// Scope: mod native, mod server, const FOCUSES, const VIEWER.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 173, 179, 195,
+//   383.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 425, 434.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   195.
+
 mod native;
 mod server;
 
-use lince_interface::tokens::{
-    ColorScheme, SandStyleKind, ThemeSettings, TokenOverrides, css, document::ThemeDocument,
-};
-use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, BTreeSet},
     ffi::OsString,
     fs,
     path::{Component, Path, PathBuf},
 };
+
+use lince_interface::tokens::{
+    ColorScheme, SandStyleKind, ThemeSettings, TokenOverrides, css, document::ThemeDocument,
+};
+use serde::{Deserialize, Serialize};
 
 use crate::Result;
 
@@ -436,8 +446,9 @@ fn kind(value: &str) -> Result<SandStyleKind> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::sync::atomic::{AtomicU64, Ordering};
+
+    use super::*;
 
     static COUNTER: AtomicU64 = AtomicU64::new(0);
 

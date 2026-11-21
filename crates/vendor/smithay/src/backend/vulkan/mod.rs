@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: mod inner, mod phd, mod version, static LIBRARY.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check SAFETY proof and trait invariants. Sites 622, 623.
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 97, 165, 192, 277,
+//   278, 289, 308, 346, 351, 407, 411, 526, 543, 560, 570, 712, 716.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 406.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 338.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 97, 269.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (254).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   662.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (712).
+// - [review: §5 Panics] Verify panic isolation boundary and preserve the failure contract. Sites
+//   707.
+
 //! Types to initialize and use Vulkan.
 //!
 //! This module provides some thin abstractions over [`ash`](https://crates.io/crates/ash) for initializing

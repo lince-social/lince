@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: enum Stage, struct Form, struct PasswordMask, enum Command.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 329, 365, 410,
+//   422, 450, 452.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (297).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (53, 57, 258, 265, 276, 290, 516).
+
 use super::*;
 use crate::host::performance::{self, Count, Stage as PerfStage};
 use crate::native::{

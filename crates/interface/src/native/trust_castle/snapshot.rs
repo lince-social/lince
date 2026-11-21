@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: const PAGE_CHARACTERS, enum JsonPart, struct Snapshot, struct Payload.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   59, 73.
+
 use serde::{Serialize, Serializer, de::DeserializeOwned};
 use serde_json::Value;
 use std::{

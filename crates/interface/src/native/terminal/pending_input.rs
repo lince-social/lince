@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: const LIMIT, struct Chunk, struct Input.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   12, 68, 74.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (90).
+
 use std::{borrow::Cow, collections::VecDeque};
 
 const LIMIT: usize = 1024 * 1024;

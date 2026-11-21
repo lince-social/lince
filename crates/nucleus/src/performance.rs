@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: enum Reading, type Observer, static OBSERVER, fn install.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 98, 130, 140.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 92, 125.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 8.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 8, 29, 57.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 8, 9,
+//   10, 11, 14, 18, 22, 29, 32, 46, 50, 57, 63.
+// - [review: §5 Panics] Verify panic isolation boundary and preserve the failure contract. Sites
+//   138.
+
 use std::{
     collections::hash_map::RandomState,
     hash::BuildHasher,
@@ -82,8 +97,9 @@ impl Drop for Span {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::sync::atomic::{AtomicU64, Ordering};
+
+    use super::*;
 
     #[test]
     fn operation_identity_is_optional_opaque_and_stable_across_threads() {

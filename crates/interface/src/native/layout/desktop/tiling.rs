@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct TiledViews, fn toggle_view, struct InitialFocus, fn shift_camera.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   266, 267.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (18, 20, 21, 28, 146, 151).
+
 use super::*;
 
 #[derive(Resource, Default)]

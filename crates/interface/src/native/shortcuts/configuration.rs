@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: const LIMIT, const TARGET, const NAMESPACE, mod reload.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 216, 265, 266,
+//   274, 356.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites validate:
+//   String (62).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   96.
+
 use super::model::{ModKey, Scope, Settings, Shortcut};
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};

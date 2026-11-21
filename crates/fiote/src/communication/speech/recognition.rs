@@ -1,15 +1,44 @@
-use super::{local, moonshine};
-use crate::{
-    communication::models::{self, Artifact, Cache, Manifest},
-    config::Secret,
-};
-use serde::{Deserialize, Serialize};
+// non-lean-yet
+// Scope: enum ModelId, trait Model, struct Moonshine, struct Recognizer.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 150.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 333.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 112, 150, 271,
+//   320, 339.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   182, 183, 318, 337, 343.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 16.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   203, 299, 305, 322, 341.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 103, 235, 295, 312, 331.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 227.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 16, 18,
+//   19, 20, 24, 26, 34, 91, 92, 93, 94, 95, 96, 97, 103, 227, 235, 273, 276, 279, 282, 285, 288,
+//   295, 309, 312, 331.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites acquire: String
+//   (312), select: String (295), selected: String (235), submit: String (331).
+// - [review: §5 Panics] Verify panic isolation boundary and preserve the failure contract. Sites
+//   366.
+
 use std::{
     path::PathBuf,
     sync::{
         Arc, Mutex, RwLock,
         atomic::{AtomicBool, AtomicU64, Ordering},
     },
+};
+
+use serde::{Deserialize, Serialize};
+
+use super::{local, moonshine};
+use crate::{
+    communication::models::{self, Artifact, Cache, Manifest},
+    config::Secret,
 };
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -159,7 +188,7 @@ impl Model for Moonshine {
         *self
             .engine
             .lock()
-            .unwrap_or_else(|error| error.into_inner()) = None;
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = None;
         self.engine.clear_poison();
         self.loaded.store(false, Ordering::Release);
     }
@@ -267,7 +296,7 @@ impl Recognizer {
     fn model(&self) -> Arc<dyn Model> {
         self.model
             .read()
-            .unwrap_or_else(|error| error.into_inner())
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .clone()
     }
     pub fn selection(&self) -> ModelId {

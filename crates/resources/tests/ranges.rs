@@ -1,4 +1,15 @@
-use lince_resources::{Library, RangeReader, Resource};
+// non-lean-yet
+// Scope: fn large_sources_are_read_incrementally_and_seen_ranges_survive_offline, fn
+//   complete_retention_recovers_when_the_origin_stops_honouring_ranges, fn
+//   weak_etags_and_last_modified_use_a_full_response_without_combining_ranges, fn
+//   a_complete_range_snapshot_must_match_its_whole_file_pin.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 115.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites 20,
+//   21.
+// - [Clippy: clippy::manual_let_else] this could be rewritten as `let...else`. Sites 24.
+
 use std::{
     io::{Read, Seek, SeekFrom, Write},
     net::TcpListener,
@@ -8,6 +19,8 @@ use std::{
     },
     thread,
 };
+
+use lince_resources::{Library, RangeReader, Resource};
 
 #[test]
 fn large_sources_are_read_incrementally_and_seen_ranges_survive_offline() {

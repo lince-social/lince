@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn game_keys_match_the_engine_and_leave_tab_to_focus_navigation, fn
+//   embedded_game_produces_frames_pauses_and_terminates_on_drop.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[test]

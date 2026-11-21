@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn record, fn revision, fn
+//   the_initial_migration_initializes_revisions_and_installs_every_trigger, fn
+//   new_records_start_positive_and_every_record_update_advances.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use nucleus::RecordKind;

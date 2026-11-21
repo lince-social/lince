@@ -1,15 +1,36 @@
-use crate::{
-    adapters::Descriptor,
-    config::{Secret, Settings},
-    provider::{Message, Provider, Reply, ToolDefinition},
-};
+// non-lean-yet
+// Scope: struct Driver, struct Connection, struct DriverProvider.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 88, 123, 143, 144, 152, 172, 176, 246.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 144, 176, 217,
+//   233, 246.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   44, 70, 98, 114, 129, 137, 140, 141, 145, 155, 177, 192, 234, 247.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 32, 94, 132, 148, 168.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 23, 202.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 17, 18,
+//   20, 23, 32, 94, 132, 148, 168, 202, 209, 216.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites connect: String
+//   (32), discover: String (94), finish_login: String (168), login: String (148), request: String
+//   (132).
+
+use std::{env::var_os, path::PathBuf, process::Stdio, time::Duration};
+
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use std::{path::PathBuf, process::Stdio, time::Duration};
 use tokio::{
     io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
     process::{Child, ChildStdin, ChildStdout},
     sync::Mutex,
+};
+
+use crate::{
+    adapters::Descriptor,
+    config::{Secret, Settings},
+    provider::{Message, Provider, Reply, ToolDefinition},
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -58,11 +79,11 @@ impl Driver {
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
             .kill_on_drop(true);
-        if let Some(path) = std::env::var_os("PATH") {
+        if let Some(path) = var_os("PATH") {
             command.env("PATH", path);
         }
         #[cfg(windows)]
-        if let Some(root) = std::env::var_os("SystemRoot") {
+        if let Some(root) = var_os("SystemRoot") {
             command.env("SystemRoot", root);
         }
         let mut child = command

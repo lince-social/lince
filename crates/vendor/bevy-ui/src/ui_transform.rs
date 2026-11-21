@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Val2, struct UiTransform, struct UiGlobalTransform.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 94, 113.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 35,
+//   154.
+
 use crate::Val;
 use crate::ValArithmeticError;
 use crate::ValNum;

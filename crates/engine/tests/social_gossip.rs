@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct ContactNetwork, fn command, fn known, fn
+//   public_directory_results_do_not_export_the_private_gossip_contact_path.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 239, 244, 247, 345, 350, 353, 404, 405, 660, 669, 670.
+
 #![cfg(test)]
 
 use engine::{Engine, EngineError, social::Network};

@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: struct ProjectionMaterial, struct Output, struct PointerMarker, fn pointers.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 49, 60, 68, 253,
+//   261, 335, 357, 390, 500, 608, 636, 714, 853, 856, 944.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites open: String
+//   (247).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   311, 312, 313, 732.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (260, 276, 277, 282, 285, 411, 414, 433, 439, 443, 475, 481, 879, 904, 909, 1033).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 130, 226.
+
 use super::*;
 use bevy::{
     asset::embedded_asset,

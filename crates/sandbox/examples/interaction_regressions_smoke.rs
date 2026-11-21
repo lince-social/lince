@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Fixture, fn window, fn pointer, fn press.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (38, 45, 83, 104, 108, 135, 147, 149, 153, 157, 159, 163, 164, 170, 185).
+
 use bevy::{
     a11y::AccessibilityNode,
     diagnostic::FrameCount,

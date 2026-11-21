@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct Form, struct Boundary, fn owns_input, fn render.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 49, 111, 112,
+//   113, 224.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   100, 113, 218, 219, 220, 241.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (40, 43, 77, 96, 99, 186, 212, 215, 223, 227, 237, 240).
+
 use super::*;
 use crate::native::retained::Presentation;
 

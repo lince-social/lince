@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: enum Key, struct Parts, struct Heading, struct Retry.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 193, 236.
+
 use super::*;
 use crate::native::retained::{Children as RetainedChildren, Presentation};
 use std::borrow::Cow;

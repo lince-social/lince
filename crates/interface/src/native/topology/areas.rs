@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct Volume, struct SelectionVolume, fn opacity, fn selection.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 204, 212, 213,
+//   214, 232, 233, 248, 269, 270, 281, 282, 300, 301.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   55, 56, 57, 59, 100, 101.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (221, 226, 230, 232, 233, 298, 301, 314, 317, 329).
+
 use bevy::{asset::RenderAssetUsages, mesh::PrimitiveTopology, prelude::*};
 
 #[derive(Component)]

@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod forwarding, struct Fixture, fn fixture, fn acknowledgment.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 50, 54, 75.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 79, 243.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   79, 243.
+
 #![cfg(test)]
 
 use nucleus::{
@@ -157,10 +167,12 @@ async fn retain(
 }
 
 async fn count(store: &Store, table: &str) -> i64 {
-    store::sqlx::query_scalar(store::sqlx::AssertSqlSafe(format!("SELECT COUNT(*) FROM {table}")))
-        .fetch_one(&store.pool)
-        .await
-        .unwrap()
+    store::sqlx::query_scalar(store::sqlx::AssertSqlSafe(format!(
+        "SELECT COUNT(*) FROM {table}"
+    )))
+    .fetch_one(&store.pool)
+    .await
+    .unwrap()
 }
 
 #[tokio::test]

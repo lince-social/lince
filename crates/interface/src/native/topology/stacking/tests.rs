@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn window, fn focus, fn
+//   application_selection_changes_coplanar_order_without_rewriting_authored_placement, fn
+//   selecting_a_transient_raises_its_family_and_keeps_children_above_the_parent.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::{
     host::{Rectangle, SurfaceId},

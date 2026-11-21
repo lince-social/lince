@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct ViewporterState, type ViewporterSurfaceState, struct ViewportState, struct
+//   ViewportMarker.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 95.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 431.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (138, 170, 172, 214, 216, 328, 330, 363, 365).
+
 //! Utilities for handling the `wp_viewporter` protocol
 //!
 //! ## How to use it

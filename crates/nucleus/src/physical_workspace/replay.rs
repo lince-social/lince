@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: enum Event, struct Step, struct Trace, struct Report.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 74, 94, 98, 105,
+//   122.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 5.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 67.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 1.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 6,
+//   7, 8, 10, 11, 13, 14, 15, 17, 18, 20, 21, 23, 24, 26, 27, 28, 30, 31, 32, 33, 34, 36, 37, 43,
+//   44, 45, 50, 51, 52, 53, 57, 58, 59, 60, 61, 62, 63, 67.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites run: String
+//   (67).
+
 use super::*;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

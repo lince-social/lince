@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod recorded, fn
+//   actual_native_microphone_check_accepts_clean_input_or_refuses_distortion_without_changing_the_draft,
+//   fn fixture, fn click.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use cell::FioteService as _;
 use cell::fiote_assistant::Conversation;

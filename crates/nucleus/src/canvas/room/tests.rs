@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: fn placement, fn hierarchy, fn state, fn mutate.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 98, 121, 142, 143, 151, 195, 210, 234, 244, 245, 247, 253, 260, 263, 269, 270, 289, 315,
+//   331, 332, 358, 361, 401, 404, 407, 413, 414, 416, 425, 428, 433, 437, 444, 448, 458, 485, 521,
+//   529, 567, 627, 648.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 87, 526.
+// - [Clippy: clippy::panic_in_result_fn] Return the existing error type for recoverable failure.
+//   Sites 80.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   116, 380, 565, 673.
+// - [Clippy: clippy::field_reassign_with_default] field assignment outside of initializer for an
+//   instance created with Default::default(). Sites 626.
+
 use super::*;
 use crate::canvas::{
     Component, Geometry, Metadata, Mutation, Request, Response, Snapshot, State, Workspace,

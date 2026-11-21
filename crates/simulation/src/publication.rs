@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: type Hook, fn boundary, struct Guard, fn install.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::{cell::RefCell, path::Path};
 
 type Hook = Box<dyn Fn(&Path, &str) -> crate::Result<()>>;

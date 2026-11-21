@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct ColorStop, struct AngularColorStop, struct LinearGradient, struct RadialGradient.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 465, 575, 670.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 67,
+//   160, 179, 353, 391, 452, 465, 575.
+
 use crate::{UiPosition, Val, ValNum};
 use bevy_color::{Color, Srgba};
 use bevy_ecs::{component::Component, reflect::ReflectComponent};

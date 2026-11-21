@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: mod connect, fn dispatch, fn import_legacy, fn password_file_read.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 49, 54.
+
 mod connect;
 
 use cell::FioteSecret as Secret;

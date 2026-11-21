@@ -3,6 +3,10 @@
 
 //! Various helper functions to assert truths during testing.
 
+// non-lean-yet
+// Scope: fn canonicalize_layout_data, fn assert_eq_layout_data.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::vec::Vec;
 
 use crate::{Brush, data::LayoutData};

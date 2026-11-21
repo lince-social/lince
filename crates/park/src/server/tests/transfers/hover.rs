@@ -1,7 +1,15 @@
-use super::overview::{capture, center, current};
-use super::*;
-use crate::presentation::Presentation;
+// non-lean-yet
+// Scope: fn control, fn
+//   a_real_uri_drag_opens_the_hovered_workspace_and_delivers_one_native_file_drop.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use lince_interface::host::{FileDragContext, HostRequest, WakeSignal};
+
+use super::{
+    overview::{capture, center, current},
+    *,
+};
+use crate::presentation::Presentation;
 
 pub(super) fn control(canvas: &mut Presentation, caption: &str) -> Option<Entity> {
     let world = canvas.world_mut();
@@ -249,7 +257,12 @@ fn a_real_uri_drag_opens_the_hovered_workspace_and_delivers_one_native_file_drop
         std::thread::sleep(Duration::from_millis(2));
     };
     let point = center(&mut canvas, choice);
-    capture("uri-choice", [1000, 720], 1.0, &current(&mut canvas, &mut harness));
+    capture(
+        "uri-choice",
+        [1000, 720],
+        1.0,
+        &current(&mut canvas, &mut harness),
+    );
     harness
         .server
         .pointer_motion(Some((native, point.as_dvec2().to_array())), 5)
@@ -287,7 +300,12 @@ fn a_real_uri_drag_opens_the_hovered_workspace_and_delivers_one_native_file_drop
     );
     assert_eq!(member(&mut canvas, id), original);
     assert_eq!(finished, 1);
-    capture("uri-imported", [1000, 720], 1.0, &current(&mut canvas, &mut harness));
+    capture(
+        "uri-imported",
+        [1000, 720],
+        1.0,
+        &current(&mut canvas, &mut harness),
+    );
     for _ in 0..4 {
         harness.sync();
     }

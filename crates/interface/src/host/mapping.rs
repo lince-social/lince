@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: enum QuarterTurn, struct Mapping, struct Snapshot, fn compose.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   130, 134, 135, 136, 142, 144, 155, 156, 160, 193, 194, 200, 201, 202, 211, 217, 222, 225, 226,
+//   227.
+
 use super::{OutputId, OutputViewport, Rectangle, raster::RasterMapping};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;

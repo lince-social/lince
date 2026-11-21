@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod checks, mod pressure, struct Consumer, struct Consumers.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (171, 274).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (337, 892, 898, 901, 907).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 278, 298.
+
 use super::*;
 use crate::native::topology::surface_budget::{Entry, Grant, Request};
 use bevy::ecs::system::InRef;

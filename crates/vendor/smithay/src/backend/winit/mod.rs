@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: mod input, fn init, fn init_from_attributes, fn init_from_attributes_with_gl_attr.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 127, 139, 147, 162,
+//   182, 398.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 127, 192, 193.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 116.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (334).
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites
+//   175.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (151, 166, 641).
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 59.
+
 //! Implementation of backend traits for types provided by `winit`
 //!
 //! This module provides the appropriate implementations of the backend

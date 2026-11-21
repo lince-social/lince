@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: type CompositorList, struct DrmOutputManager, enum DrmOutputManagerError, type
+//   DrmOutputManagerResult.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 248, 250, 251,
+//   252, 259, 263, 265, 266, 267, 271, 340, 364, 394, 396, 397, 485, 784, 804.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   activate:disable_connectors (509).
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 218.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (237, 314, 336, 360, 389, 390, 406, 460, 465, 469, 478, 513, 515, 706, 707, 720,
+//   751, 753, 759, 767, 780, 793, 800).
+
 //! Device-wide synchronization helpers
 
 use std::{

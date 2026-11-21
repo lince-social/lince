@@ -1,6 +1,27 @@
-use super::{Admission, Candidate, Choice, Information, Input, Model, Output};
-use crate::communication::models::{self, Artifact, Cache, Manifest};
-use serde_json::{Map, Value};
+// non-lean-yet
+// Scope: const ID, const REVISION, const LICENSE, const CREDITS.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 70, 391, 406, 432, 465.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 57, 277, 339,
+//   406.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   104.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   177.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 68, 85.
+// - [Clippy: clippy::print_stdout] Check CLI, Cargo, fixture, or library output contract before
+//   changing output. Sites 557, 606.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 46, 147.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 13, 14,
+//   15, 16, 46, 51, 68, 75, 81, 85, 129, 130, 131, 132, 133, 147, 148, 156, 166.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites acquire: String
+//   (85), directory: String (68).
+// - [review: §5 Panics] Verify panic isolation boundary and preserve the failure contract. Sites
+//   316.
+
 use std::{
     path::PathBuf,
     sync::{
@@ -9,6 +30,11 @@ use std::{
     },
     time::Instant,
 };
+
+use serde_json::{Map, Value};
+
+use super::{Admission, Candidate, Choice, Information, Input, Model, Output};
+use crate::communication::models::{self, Artifact, Cache, Manifest};
 
 pub const ID: &str = "laya-typed-decisions";
 pub const REVISION: &str = "7b928d828b7b0e022f929d9bd2e44165aa270148";
@@ -317,7 +343,10 @@ impl Model for Driver {
         {
             Ok(result) => result,
             Err(_) => {
-                *self.agent.lock().unwrap_or_else(|error| error.into_inner()) = None;
+                *self
+                    .agent
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner) = None;
                 self.agent.clear_poison();
                 self.loaded.store(false, Ordering::Release);
                 Err("Local decision inference failed. Retry to reload the model.".into())

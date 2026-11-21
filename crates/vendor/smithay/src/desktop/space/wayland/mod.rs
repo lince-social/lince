@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod layer, mod window, mod x11, fn output_update.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (36, 63).
+
 use std::{cell::RefCell, collections::HashMap};
 
 use tracing::instrument;

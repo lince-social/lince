@@ -1,3 +1,23 @@
+// non-lean-yet
+// Scope: const DUMMY_HASH, enum AuthenticationError, struct Captured, struct Authenticator.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 116, 202.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   new:accept_credentials (66).
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 205.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 16.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 304.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 205.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 62, 81, 91.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 53.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   16, 17, 18, 53, 62, 81, 91.
+
 use std::fmt;
 use std::future::{Future, ready};
 

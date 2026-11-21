@@ -1,3 +1,33 @@
+// non-lean-yet
+// Scope: mod presentation, const LOCAL_ORGAN_SLUG, const CELL_SURFACE_CONFIG, struct OrganRecord.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 407.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   set_pending_introduction:pending (538), set_sync_policy:sync_in (338), set_sync_policy:sync_out
+//   (337).
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 304, 327, 341, 342, 422, 874.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   422.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 422.
+// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 26.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 664.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 24, 84, 101, 193, 201, 268, 310, 319, 334, 349, 373, 439, 451, 471, 482, 494, 505, 514,
+//   522, 535, 548, 561, 593, 607, 620, 635, 648, 694, 710, 719, 732, 744, 757, 769, 833, 851, 885,
+//   897, 907.
+// - [Clippy: clippy::useless_conversion] useless conversion to the same type: `sqlx::Error`. Sites
+//   178.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 8, 10,
+//   15, 16, 17, 18, 19, 20, 21, 24, 84, 101, 193, 201, 240, 241, 242, 243, 244, 245, 246, 247, 248,
+//   249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263, 264, 265, 268, 310,
+//   319, 334, 349, 373, 439, 451, 471, 482, 494, 505, 514, 522, 535, 548, 561, 593, 607, 620, 635,
+//   648, 664, 665, 666, 667, 679, 689, 694, 710, 719, 732, 744, 757, 767, 769, 833, 851, 885, 897,
+//   907.
+
 use chrono::Utc;
 use nucleus::RecordKind;
 use serde_json::{Value, json};
@@ -23,10 +53,10 @@ pub struct OrganRecord {
 
 pub async fn ensure_local(pool: &SqlitePool, base_url: &str) -> Result<OrganRecord, StoreError> {
     let mut base_url = normalize_base_url(base_url);
-    if base_url.is_empty() {
-        if let Some(existing) = local(pool).await? {
-            base_url = existing.base_url;
-        }
+    if base_url.is_empty()
+        && let Some(existing) = local(pool).await?
+    {
+        base_url = existing.base_url;
     }
     let now = nucleus::execution::now().to_rfc3339();
     let existing_uid = sqlx::query_scalar::<_, String>("SELECT uid FROM record WHERE slug = ?")
@@ -175,7 +205,7 @@ pub async fn adopt_identity(
         .await?;
     tx.commit().await?;
 
-    local(pool).await?.ok_or(sqlx::Error::RowNotFound.into())
+    local(pool).await?.ok_or(sqlx::Error::RowNotFound)
 }
 
 fn local_record_query(columns: &str) -> sqlx::QueryBuilder<sqlx::Sqlite> {

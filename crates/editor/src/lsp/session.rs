@@ -1,10 +1,31 @@
-use super::*;
-use serde_json::{Value, json};
+// non-lean-yet
+// Scope: struct Opened, struct Pending, struct Tasks, fn emit.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 62, 119, 121, 122, 123, 125, 132, 138, 140, 147, 148, 191, 203, 208, 209, 219, 220, 221,
+//   222, 224, 225, 226, 228, 251, 261, 267, 273, 396, 397, 399, 403, 406, 409, 410, 413, 414, 417,
+//   420, 424, 426.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 411, 418, 422.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 246.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 125, 360.
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites run:command → &[T] (72), serve:root → &Path (91).
+// - [Clippy: clippy::if_not_else] unnecessary boolean `not` operation. Sites 225.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   42, 131.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 1.
+
 use std::{collections::BTreeMap, time::Duration};
+
+use serde_json::{Value, json};
 use tokio::{
     io::{AsyncWrite, BufReader},
     time::Instant,
 };
+
+use super::*;
 
 #[derive(Clone)]
 struct Opened {

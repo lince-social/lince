@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: mod events, mod inspector, mod style, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 64, 65, 66, 91,
+//   221, 297, 302, 313, 333, 337, 406, 410, 545, 550, 643, 651, 658, 685, 715, 940, 1045, 1047,
+//   1057, 1058, 1063, 1080, 1081, 1085, 1097, 1101, 1113, 1118, 1119, 1133, 1143, 1188, 1227, 1246,
+//   1252, 1266, 1382, 1405, 1417, 1436, 1439, 1533, 1557, 1628, 1632, 1635, 1636, 1726.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (425).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   990, 1009, 1197, 1198, 1203, 1309, 1315, 1340, 1341, 1368, 1398, 1401.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (344, 429, 518, 1039, 1089, 1188, 1252, 1281, 1296, 1398, 1405, 1472, 1641, 1643).
+
 use super::*;
 use crate::native::tokens::{Token, TokenOverrides, TokenValue};
 use api::authoring::{AddedPart, Edits, Element, PartInfo, TokenInfo};

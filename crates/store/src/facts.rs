@@ -1,9 +1,33 @@
+// non-lean-yet
+// Scope: fn instant, fn instant_str, fn exists, fn last_hash.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on a `Result` value.
+//   Sites 13, 76.
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option` value.
+//   Sites 28.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 87.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   ledger_since:include_details (600).
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 622, 654.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 18, 26, 36, 107, 125, 144, 163, 185, 216, 228, 241, 255, 345, 355, 365, 375, 388, 420,
+//   486, 502, 513, 529, 549, 563, 596, 640.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 64, 586.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 8, 18,
+//   26, 36, 64, 65, 66, 67, 68, 107, 125, 144, 163, 185, 216, 228, 241, 255, 345, 355, 365, 375,
+//   388, 420, 486, 502, 513, 529, 549, 563, 586, 587, 588, 589, 590, 591, 592, 593, 596, 640.
+
 use chrono::{DateTime, SecondsFormat, TimeDelta, Utc};
 use nucleus::{Cause, CauseKind, DecimalValue, Fact};
 use sqlx::{Row, Sqlite, SqlitePool, Transaction};
 
-use crate::StoreError;
-use crate::exact::{decimal_columns, read_decimal, zero};
+use crate::{
+    StoreError,
+    exact::{decimal_columns, read_decimal, zero},
+};
 
 pub fn instant(at: DateTime<Utc>) -> String {
     at.to_rfc3339_opts(SecondsFormat::Nanos, true)

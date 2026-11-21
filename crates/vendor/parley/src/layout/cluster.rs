@@ -1,6 +1,16 @@
 // Copyright 2021 the Parley Authors
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+// non-lean-yet
+// Scope: struct Cluster, enum ClusterSide, enum Affinity, struct ClusterPath.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 137, 284, 357,
+//   369, 381, 393.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   154, 219.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (132).
+
 use crate::analysis::cluster::Whitespace;
 use crate::layout::Style;
 use crate::layout::data::BreakReason;

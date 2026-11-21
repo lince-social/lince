@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod device, mod source, trait PrimarySelectionHandler, struct PrimarySelectionState.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 144.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 148, 393.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (167, 191, 233, 265, 286, 373).
+
 //! Utilities for manipulating the primary selection
 //!
 //! The primary selection is an additional protocol modeled after the data device to represent

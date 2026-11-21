@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct State, struct Choice, struct View, enum Key.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 122, 127, 144,
+//   168, 187.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (45, 47, 88, 111, 138, 157, 168, 172, 237, 247).
+
 use super::*;
 use crate::host::performance::{self, Count, Stage};
 use std::sync::Weak;

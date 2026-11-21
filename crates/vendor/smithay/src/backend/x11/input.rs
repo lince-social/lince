@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct X11Input, struct X11VirtualDevice, struct X11KeyboardInputEvent, struct
+//   X11MouseWheelEvent.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 //! Input backend implementation for the X11 backend.
 
 use super::{window_inner::WindowInner, Window, WindowTemporary};

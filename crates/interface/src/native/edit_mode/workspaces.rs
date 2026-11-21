@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct NameCapture, fn save_names, struct Row, fn reorder.
+// BeautifulRust (baseline lines):
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 27.
+
 use super::*;
 use bevy::ecs::query::QueryState;
 use std::collections::HashMap;

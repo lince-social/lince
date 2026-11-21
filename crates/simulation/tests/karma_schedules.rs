@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn invocation, fn boundary, fn case, fn input.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use engine::actions::Action;

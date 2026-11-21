@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn prepare, fn selected, fn choose, fn save.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 29, 69.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites choose: String
+//   (52), prepare: String (5), save: String (64).
+
 use crate::app::Mobile;
 use bevy::prelude::*;
 use nucleus::message::MessagePart;

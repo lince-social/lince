@@ -1,6 +1,19 @@
+// non-lean-yet
+// Scope: fn same_value_encoding, fn same_values_encoding, fn encoded_len, fn sha256.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 38, 47.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   56.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 34, 42, 51.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 25,
+//   34, 42, 51.
+
+use std::io::{self, Write};
+
 use serde::Serialize;
 use sha2::{Digest, Sha256};
-use std::io::{self, Write};
 
 pub fn same_value_encoding(left: &serde_json::Value, right: &serde_json::Value) -> bool {
     use serde_json::Value;

@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: const WEEKDAYS, fn weekday_label, fn parse, fn describe.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites parse: String
+//   (26).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   32, 37.
+
 use super::model::Unit;
 use nucleus::karma::{CadenceStep, CivilWeekday};
 

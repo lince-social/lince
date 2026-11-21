@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn files, fn main.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   6, 7, 30, 36, 60, 65, 90.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (94).
+
 use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 

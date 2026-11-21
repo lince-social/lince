@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: struct TextureBuffer, struct TextureRenderBuffer, struct RenderContext, struct
+//   TextureRenderElement.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 450, 451, 453,
+//   459, 475, 476, 478, 484.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   from_memory:flipped (251, 314).
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 245, 308, 493, 532.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (343, 356, 406, 460).
+
 //! Element to render a texture
 //!
 //! # Why use this implementation

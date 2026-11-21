@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: trait Session, enum Event, trait AsErrno, mod libseat.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (122, 126, 130, 134, 138).
+
 //! Abstraction of different session APIs.
 //!
 //! Sessions provide a way for multiple graphical systems to run in parallel by providing

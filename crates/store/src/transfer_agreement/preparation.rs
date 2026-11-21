@@ -1,7 +1,23 @@
+// non-lean-yet
+// Scope: enum Subject, struct Key, type Groups, struct Paths.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 135, 194.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 80, 186.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 35.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 35, 41,
+//   85.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   93, 96, 100, 109, 110, 193.
+
+use std::{cell::OnceCell, collections::HashMap, iter::Peekable, slice};
+
+use nucleus::transfer::{TransferDependencyScope, TransferRevisionDependency as Dependency};
+
 use super::agreement_path_matches;
 use crate::transfers::AgreementPromiseReadinessRow as Promise;
-use nucleus::transfer::{TransferDependencyScope, TransferRevisionDependency as Dependency};
-use std::{cell::OnceCell, collections::HashMap, iter::Peekable, slice};
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 enum Subject<'a> {

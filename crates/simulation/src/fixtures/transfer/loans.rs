@@ -1,3 +1,22 @@
+// non-lean-yet
+// Scope: fn temporary_loan, fn extended_loan.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 25.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   extended_loan:replicated (81), temporary_loan:assumed (5), temporary_loan:replicated (5).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   109.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 110.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 13, 16.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 109.
+// - [Clippy probe: clippy::missing_panics_doc] State the panic conditions for exported functions.
+//   Sites 5, 81.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   5, 81.
+
 use crate::scenario::{Event, Scenario};
 use engine::actions::Action;
 use nucleus::transfer::loans::Interval;

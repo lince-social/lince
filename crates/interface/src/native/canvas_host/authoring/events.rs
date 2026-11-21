@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct AuthoredEvents, struct Routes, struct EventRoute, struct Routing.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 48, 50, 53, 59,
+//   61, 64, 68, 69, 73, 75, 101, 105, 109, 135, 141, 158, 159, 175, 188.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   215, 223.
+
 use super::*;
 use crate::native::actions::Action;
 

@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn key, fn pointer_buttons_keep_the_key_context_at_their_position_in_a_complete_batch, fn
+//   pointer_context_uses_prepared_modifier_roles_and_drops_lost_window_history, fn
+//   press_and_release_keep_their_own_cursor_positions_in_one_update.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use bevy::input::{
     ButtonState,

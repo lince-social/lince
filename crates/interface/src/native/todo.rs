@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: const PAGE, mod ui, mod tests, struct SavedTodo.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 148, 161, 310,
+//   377, 421, 478, 526, 605, 607, 627, 630, 635, 636.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 381.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   605.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (96, 166, 171, 280, 281, 286, 300, 316, 425, 433, 460, 493, 514, 515, 554, 569,
+//   594, 625, 643, 646).
+
 use crate::i18n::Token as Tr;
 use crate::native::{
     actions::Action,

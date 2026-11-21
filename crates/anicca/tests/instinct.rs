@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn all_missing_requirements_are_reported_together, fn
+//   parser_and_semantics_reject_invalid_bundles, fn
+//   steps_require_the_declared_subject_and_unique_slugs, fn
+//   chapter_and_page_order_must_match_the_manifest.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 22, 23.
+
 use anicca::instinct::{Requirement, validate};
 
 #[test]

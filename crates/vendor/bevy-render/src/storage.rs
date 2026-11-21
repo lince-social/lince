@@ -1,3 +1,24 @@
+// non-lean-yet
+// Scope: struct StoragePlugin, struct ShaderBuffer, enum ShaderBufferData, struct
+//   RenderChangedShaderBuffers.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 356, 380.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 379.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 329, 359.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 120, 158, 180, 227, 356, 376, 378, 517.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   227, 356, 376.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 85.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 341.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 31, 290, 293.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 93, 94.
+
 //! [`ShaderBuffer`], an asset that encapsulates arbitrary data that will be
 //! extracted and uploaded to the GPU for use in shaders.
 

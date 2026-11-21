@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn chatgpt, fn save.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 13.
+
 use cell::{FioteSettings, fiote_communication::native, fiote_credentials};
 use serde_json::Value;
 use std::{io, path::Path};

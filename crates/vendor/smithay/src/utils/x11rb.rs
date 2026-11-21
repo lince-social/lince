@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct X11Source, fn run_event_thread.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 //! Helper utilities for using x11rb as an event source in calloop.
 //!
 //! The primary use for this module is XWayland integration but is also widely useful for an X11

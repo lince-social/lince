@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: mod catalog, mod persistence, const PLAN, const OFFER.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 285, 288, 304.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites validate:
+//   String (72).
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 123.
+// - [Clippy probe: clippy::large_enum_variant] large size difference between variants. Sites 123.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 72.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   21, 22, 23, 27, 28, 29, 30, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 50, 72,
+//   105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 123, 124, 125, 126, 128,
+//   129, 130, 132, 133, 134, 135, 137, 138, 140, 141, 143, 144, 146, 148, 149, 151, 152, 154, 155,
+//   156, 158, 159, 160, 162, 163, 164, 165, 166, 171.
+
 mod catalog;
 mod persistence;
 

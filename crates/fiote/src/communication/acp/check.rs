@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: struct ConnectionCheck.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option` value.
+//   Sites 35.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 27.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 1.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 5,
+//   6, 7, 8, 9, 10, 27.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites check: String
+//   (27).
+
 use super::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

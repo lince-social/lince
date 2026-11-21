@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct Preference, struct Output, struct Assignments, enum AssignmentError.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 48, 113, 160,
+//   163, 175, 209, 314, 380, 396.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   425.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (242, 293, 332, 338, 345).
+
 use crate::host::{Direction, OutputId, Rectangle};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};

@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn normalize, fn normalize_children, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 6, 54.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 28, 31, 97,
+//   104, 107.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   13, 16, 25, 26, 30, 59, 86, 91, 95, 96, 101, 102, 106.
+
 use super::*;
 use crate::{layout::desktop::{ItemKind, TransferKind}, native::{layout::LayoutBox, sand_placement::scratch::{Home, Homes, normalize_all}}};
 

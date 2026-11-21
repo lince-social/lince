@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct Chooser, enum Edit, fn open, fn wrapped.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 137.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (58, 59, 134).
+
 use super::*;
 use crate::native::{actions::{Action, KeyBinding, KeyBindings, Modifiers}, edit_mode::label, shortcuts};
 use bevy::{input_focus::tab_navigation::TabGroup, picking::events::PointerScroll};

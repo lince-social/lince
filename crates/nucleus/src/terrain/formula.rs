@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: struct Formula, enum Instruction, struct Parser, mod tests.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 53, 57, 68, 69, 87, 189, 209.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   190, 210.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   192.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 21, 39.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 2, 21,
+//   39.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites compile: String
+//   (21), evaluate: String (39).
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (161, 224,
+//   227, 231).
+
 #[derive(Clone, Debug)]
 pub struct Formula(Vec<Instruction>);
 

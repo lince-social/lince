@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct GapEditor, struct Save, fn panel, mod tests.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::{sand_panel, shortcuts::{Settings, configuration::{self, LayoutSettings}}};
 

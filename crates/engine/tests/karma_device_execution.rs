@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: mod support, fn a_local_cell_runs_karma_without_a_roster_and_can_stop_locally, fn
+//   enrolment_allows_karma_when_no_existing_cell_is_an_executor, struct Pair.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use engine::{

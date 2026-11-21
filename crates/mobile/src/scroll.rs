@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct Gesture, struct ScrollPlugin, fn clamp, fn wheel.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy::{
     input::{
         mouse::MouseScrollUnit,

@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct UpscalingBindGroupCache, fn upscaling.
+// BeautifulRust (baseline lines):
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 18, 27.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 13.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 17.
+
 use crate::{blit::BlitPipeline, upscaling::ViewUpscalingPipeline};
 use bevy_camera::{CameraOutputMode, ClearColor, ClearColorConfig};
 use bevy_ecs::prelude::*;

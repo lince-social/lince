@@ -1,13 +1,28 @@
-use crate::provider::ToolDefinition;
-use async_trait::async_trait;
-use serde::Deserialize;
-use serde_json::{Value, json};
+// non-lean-yet
+// Scope: mod command, mod workspace, trait Tool, struct Registry.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites 95.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 27, 57.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 24, 54.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 18, 19,
+//   20, 24, 27, 34, 38, 42, 54, 57.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites new: String
+//   (57), register_workspace: String (27).
+
 use std::{
     collections::BTreeMap,
     io::Write,
     path::{Component, Path},
     sync::Arc,
 };
+
+use async_trait::async_trait;
+use serde::Deserialize;
+use serde_json::{Value, json};
+
+use crate::provider::ToolDefinition;
 
 mod command;
 mod workspace;

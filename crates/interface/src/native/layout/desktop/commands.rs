@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct CommandContext, mod tests.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]

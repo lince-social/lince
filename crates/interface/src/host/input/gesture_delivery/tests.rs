@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn context, fn pan, fn end, fn
+//   a_paused_worker_coalesces_ten_thousand_updates_and_retains_one_terminal_delivery.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn context(sequence: u64) -> GestureContext {

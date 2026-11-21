@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Fixture, enum Contents, mod tests, fn run.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (256).
+
 use super::*;
 
 #[derive(Clone, Copy)]
@@ -45,8 +51,9 @@ impl Contents {
 
 #[cfg(test)]
 mod tests {
-    use super::Contents;
     use std::collections::HashSet;
+
+    use super::Contents;
 
     #[test]
     fn distinct_fixture_keeps_paragraph_load_without_duplicate_paragraphs() {

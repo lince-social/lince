@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn person_changes_are_signed_and_stopped_by_signout.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use cell::{ClientMessage, ServerMessage};
 use engine::{actions::Action, private_password::PasswordInput};
 use lince_mobile::session::Signing;

@@ -1,5 +1,15 @@
-use sha2::{Digest, Sha384};
+// non-lean-yet
+// Scope: fn verify.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 14, 15, 19, 40.
+// - [rustc: unreachable_pub] unreachable `pub` item. Sites 4.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites verify: String
+//   (4).
+
 use std::{collections::BTreeSet, fs, path::Path};
+
+use sha2::{Digest, Sha384};
 
 pub fn verify(root: &Path) -> Result<(), String> {
     let lock_path = root.join("migrations.sha384");

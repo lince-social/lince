@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn panel, fn show, fn cancel, fn apply.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 49, 81.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (5, 18, 22, 26, 30, 35, 49, 61, 77, 93).
+
 use super::*;
 
 pub(super) fn panel(world: &mut World, owner: Entity) -> Entity {

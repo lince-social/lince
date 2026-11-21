@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn above_threshold_hysteresis_emits_single_enter_and_leave_pulses, fn
+//   below_threshold_and_invalid_bands_are_proven_exactly, fn
+//   debounce_requires_continuity_and_promotes_on_the_exact_boundary, fn
+//   cooldown_and_rate_limit_use_independent_exact_windows.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use std::collections::{BTreeMap, BTreeSet};

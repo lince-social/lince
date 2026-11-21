@@ -1,5 +1,15 @@
-use super::*;
+// non-lean-yet
+// Scope: fn read, fn read_on.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 4.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 1.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4.
+
 use nucleus::transfer::public_history::{NAMESPACE, Terms};
+
+use super::*;
 
 pub async fn read(pool: &SqlitePool, transfer: &str) -> Result<Option<Terms>, StoreError> {
     let mut tx = pool.begin().await?;

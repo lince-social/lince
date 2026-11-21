@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: const MAX_LIGHTS, const MAX_MATERIALS, const MAX_SHADOW_LIGHTS, const MAX_TEXTURES.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 12, 83, 104.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 5,
+//   6, 7, 8, 12, 14, 15, 16, 17, 18, 19, 24, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 63, 83, 85,
+//   86, 87, 88, 92, 104, 106, 107, 108, 109, 114, 115, 116, 117, 118, 119, 120, 121, 139.
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 

@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn scoring_keeps_wrong_values_names_negation_order_and_hallucinations, fn fixture, fn
+//   changed_fixture_bytes_are_rejected_before_decoding, struct FakeBackend.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 89, 91, 94, 135, 160, 164.
+// - [Clippy: clippy::panic_in_result_fn] Return the existing error type for recoverable failure.
+//   Sites 38, 105, 141, 170, 181, 199.
+
 use super::*;
 
 #[test]

@@ -1,3 +1,28 @@
+// non-lean-yet
+// Scope: const DEFAULT_DURATION_SECONDS, const MAX_DURATION_SECONDS, const MAX_RECIPIENTS, const
+//   MAX_SESSIONS.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 140, 153, 293.
+// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 60.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 71, 162, 258, 327.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   34, 45.
+// - [Clippy: clippy::match_same_arms] these match arms have identical bodies. Sites 235, 244.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 30, 37, 50, 90, 139.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 5,
+//   6, 7, 8, 12, 13, 14, 16, 21, 22, 23, 24, 25, 26, 30, 37, 50, 71, 72, 73, 78, 79, 80, 81, 82,
+//   83, 84, 85, 86, 90, 129, 130, 131, 132, 133, 134, 135, 139, 162, 163, 164, 165, 167, 168, 170,
+//   171, 172, 174, 175, 176, 177, 178, 179, 181, 182, 183, 185, 186, 187, 189, 190, 191, 192, 194,
+//   195, 196, 198, 199, 200, 201, 203, 204, 205, 207, 208, 209, 210, 212, 213, 214, 216, 217, 219,
+//   220, 221, 223, 224, 225, 226, 227, 232, 250, 251, 252, 253, 258, 259, 260, 261, 262, 263, 264,
+//   268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 279, 283, 303, 304, 305, 306, 307, 308, 309,
+//   310, 315, 316, 317, 318, 319, 320, 321, 322, 327, 328, 329, 330, 332, 333, 334, 336, 337, 338,
+//   339, 341, 342, 344, 345, 347, 348, 349, 350, 352, 353, 354, 356, 357, 358, 360, 361, 362, 363,
+//   364, 366, 367, 368.
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -57,10 +82,16 @@ impl Invitation {
         {
             return Err("Invalid location Record or authority endpoint");
         }
-        if let Some(grant) = &self.grant {
-            if !crate::valid_uid(&grant.uid,"li") || !crate::valid_uid(&grant.issuer,"r") || !crate::valid_uid(&grant.recipient,"r") || chrono::DateTime::from_timestamp_millis(grant.expires_at_ms).is_none() || grant.radius_metres.is_some_and(|radius|!crate::place::valid_area_radius(radius)) {
-                return Err("Invalid private location invitation scope");
-            }
+        if let Some(grant) = &self.grant
+            && (!crate::valid_uid(&grant.uid, "li")
+                || !crate::valid_uid(&grant.issuer, "r")
+                || !crate::valid_uid(&grant.recipient, "r")
+                || chrono::DateTime::from_timestamp_millis(grant.expires_at_ms).is_none()
+                || grant
+                    .radius_metres
+                    .is_some_and(|radius| !crate::place::valid_area_radius(radius)))
+        {
+            return Err("Invalid private location invitation scope");
         }
         Ok(())
     }
@@ -231,7 +262,9 @@ pub enum Command {
 impl Command {
     pub fn person(&self) -> &str {
         match self {
-            Self::Configure { settings } | Self::Handover { settings, .. } => &settings.controller_uid,
+            Self::Configure { settings } | Self::Handover { settings, .. } => {
+                &settings.controller_uid
+            }
             Self::Context { person, .. }
             | Self::Start { person, .. }
             | Self::Approve { person, .. }
@@ -241,7 +274,10 @@ impl Command {
             | Self::StopAll { person }
             | Self::StopTransfer { person, .. }
             | Self::Publish { person, .. } => person,
-            Self::PrepareInvitation {person,..} | Self::ObserveInvitation {person,..} | Self::ReadInvitation {person,..} | Self::SendInvitation {person,..} => person,
+            Self::PrepareInvitation { person, .. }
+            | Self::ObserveInvitation { person, .. }
+            | Self::ReadInvitation { person, .. }
+            | Self::SendInvitation { person, .. } => person,
         }
     }
 }
@@ -281,8 +317,12 @@ pub struct View {
 
 impl View {
     pub fn elapse(&mut self, millis: u64) {
-        if let Some(remaining) = &mut self.remaining_millis {*remaining = remaining.saturating_sub(millis);}
-        if let Some(age) = &mut self.age_ms {*age = age.saturating_add(millis);}
+        if let Some(remaining) = &mut self.remaining_millis {
+            *remaining = remaining.saturating_sub(millis);
+        }
+        if let Some(age) = &mut self.age_ms {
+            *age = age.saturating_add(millis);
+        }
         if self.remaining_millis == Some(0) {
             self.status = Status::Stopped;
             self.session_uid = None;
@@ -290,12 +330,14 @@ impl View {
             self.fix = None;
             self.age_ms = None;
             self.radius_metres = None;
-        } else if self.age_ms.is_some_and(|age|age >= MAX_FIX_AGE_MS as u64) {
+        } else if self.age_ms.is_some_and(|age| age >= MAX_FIX_AGE_MS as u64) {
             self.status = Status::Unavailable;
             self.fix = None;
             self.age_ms = None;
             self.radius_metres = None;
-        } else if self.age_ms.is_some_and(|age|age > 15_000) && self.status == Status::Live {self.status = Status::Stale;}
+        } else if self.age_ms.is_some_and(|age| age > 15_000) && self.status == Status::Live {
+            self.status = Status::Stale;
+        }
     }
 }
 

@@ -1,10 +1,17 @@
-use super::Desktop;
-use crate::runtime::{Completed, Input};
+// non-lean-yet
+// Scope: struct Capture, struct State, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 241.
+
+use std::{io, sync::mpsc::TrySendError};
+
 use lince_interface::host::{
     OutputViewport,
     input::{GestureContext, GestureDelivery, GestureDeliveryBuffer, GestureRecognizer},
 };
-use std::{io, sync::mpsc::TrySendError};
+
+use super::Desktop;
+use crate::runtime::{Completed, Input};
 
 struct Capture {
     context: GestureContext,

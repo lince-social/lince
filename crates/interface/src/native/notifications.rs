@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod tests, mod ui, struct Notifications, struct NotificationSnapshot.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 135, 180, 265.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (318, 321).
+
 pub(crate) mod tests;
 mod ui;
 

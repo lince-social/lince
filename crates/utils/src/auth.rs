@@ -1,8 +1,18 @@
-use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
+// non-lean-yet
+// Scope: struct PermissionKey, const ALL_PERMISSIONS, fn all_permission_keys, fn
+//   normalized_permission_strings.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 112, 119.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 8, 9,
+//   10, 14, 18, 23, 97, 101, 112, 119.
+
 use std::{
     collections::BTreeSet,
     io::{Error, ErrorKind},
 };
+
+use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PermissionKey {

@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct Page, struct Indicator, struct Stop, fn caption.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 53.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (45, 56, 58, 60, 63, 65, 68).
+
 use super::*;
 use crate::host::capture::{Session, Status, Target};
 

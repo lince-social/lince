@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn seed.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 5.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5.
+
 use sqlx::SqlitePool;
 
 use crate::{StoreError, auth, config};

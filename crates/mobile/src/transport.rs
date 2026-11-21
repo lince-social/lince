@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct State, fn restore, fn persist, enum Intent.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 110, 203, 224,
+//   226, 284, 313.
+
 use crate::{
     app::{self, Mobile},
     navigation::Page,

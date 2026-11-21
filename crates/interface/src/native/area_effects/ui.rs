@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: enum Change, fn allowed, fn set_scale, fn button.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 45, 50, 58, 195.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (37, 71, 79, 161, 193, 334, 336, 347, 357, 365, 369, 372, 373, 385, 388, 393).
+
 use super::*;
 use crate::native::area::editing::Edit;
 use crate::native::{

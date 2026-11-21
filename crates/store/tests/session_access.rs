@@ -1,10 +1,22 @@
+// non-lean-yet
+// Scope: fn node, fn person, fn credential, fn password.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 821.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 790, 905, 910, 939.
+// - [Clippy: clippy::string_add] you added something to a string. Consider using
+//   `String::push_str()` instead. Sites 616, 621, 663, 696, 719.
+
 #![cfg(test)]
 
 use std::sync::Arc;
 
-use store::Store;
-use store::session_access::{
-    self, AuthenticationSource, AuthenticationState, ContactTrust, DeviceAdmission,
+use store::{
+    Store,
+    session_access::{
+        self, AuthenticationSource, AuthenticationState, ContactTrust, DeviceAdmission,
+    },
 };
 
 fn node(number: u64) -> String {

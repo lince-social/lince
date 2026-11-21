@@ -1,10 +1,37 @@
+// non-lean-yet
+// Scope: const REQUEST_HASH_DOMAIN, const PROGRAM_REVISION_HASH_DOMAIN, const MAX_REQUEST_ID_BYTES,
+//   struct ProgramHandleRow.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   89, 208.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 801, 829, 978, 982.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 165, 166, 167,
+//   171, 294, 295, 296, 300, 301, 559, 562, 613.
+// - [Clippy: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably fires.
+//   Sites 662.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 75.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   189, 318, 581.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   934, 938.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 89, 208, 337, 371, 405, 420, 434, 445.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 18, 19,
+//   20, 21, 22, 23, 24, 25, 26, 27, 31, 32, 33, 34, 35, 36, 37, 41, 42, 43, 44, 45, 49, 50, 51, 52,
+//   53, 54, 58, 59, 60, 61, 62, 63, 67, 68, 69, 70, 71, 75, 76, 77, 78, 80, 81, 82, 84, 85, 89,
+//   208, 337, 371, 405, 420, 434, 445.
+
 use chrono::{DateTime, TimeZone, Utc};
-use nucleus::karma::{
-    CanonicalHash, DefinitionStatus, ProgramAst, ProgramMutationAction, ProgramMutationEvidence,
-    ProgramMutationEvidenceSchema, Proof, ProofStatus, ReferenceKind, TypedUid, canonical_hash,
-    canonical_json_bytes, format_program, prove_program,
+use nucleus::{
+    Cause, CauseKind, Fact, NewFact, RecordKind,
+    karma::{
+        CanonicalHash, DefinitionStatus, ProgramAst, ProgramMutationAction,
+        ProgramMutationEvidence, ProgramMutationEvidenceSchema, Proof, ProofStatus, ReferenceKind,
+        TypedUid, canonical_hash, canonical_json_bytes, format_program, prove_program,
+    },
 };
-use nucleus::{Cause, CauseKind, Fact, NewFact, RecordKind};
 use serde::{Deserialize, Serialize};
 use sqlx::{Row, Sqlite, SqlitePool, Transaction};
 
@@ -659,7 +686,10 @@ async fn insert_revision(
     Ok(())
 }
 
-#[allow(clippy::too_many_arguments, reason = "The insert binds distinct persisted request fields")]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "The insert binds distinct persisted request fields"
+)]
 async fn insert_request(
     tx: &mut Transaction<'_, Sqlite>,
     request_id: &str,

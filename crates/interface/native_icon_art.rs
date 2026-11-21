@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: const COUNT, fn source, fn minus, fn plus.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 50.
+// - [rustc: unreachable_pub] unreachable `pub` item. Sites 1, 3.
+
 pub const COUNT: usize = 45;
 
 pub fn source(index: usize) -> &'static str {

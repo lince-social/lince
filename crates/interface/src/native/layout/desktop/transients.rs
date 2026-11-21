@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct Placement, mod inheritance, mod placement, fn inherit.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::layout::desktop::{Solution, Workspace};
 

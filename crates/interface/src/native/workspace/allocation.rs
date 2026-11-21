@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Numbered, fn numbered, fn new.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (57, 145).
+
 use super::*;
 
 pub(crate) struct Numbered {

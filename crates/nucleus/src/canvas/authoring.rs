@@ -1,3 +1,28 @@
+// non-lean-yet
+// Scope: enum TokenValue, enum Measure, struct Style, struct PartEdit.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 348.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 386, 395, 398,
+//   404, 414, 474, 482, 490, 656, 674, 694.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 4, 16, 512.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 52, 217, 226, 383, 556, 634, 699.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 1.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 5,
+//   6, 16, 17, 18, 19, 20, 21, 22, 23, 27, 42, 44, 46, 48, 52, 135, 136, 137, 139, 141, 143, 145,
+//   146, 147, 148, 149, 150, 152, 154, 159, 160, 161, 162, 167, 168, 169, 170, 171, 172, 173, 174,
+//   175, 176, 177, 182, 183, 184, 185, 186, 191, 192, 193, 194, 195, 196, 201, 202, 204, 206, 208,
+//   210, 212, 214, 217, 226, 383, 512, 513, 514, 515, 517, 518, 520, 521, 522, 524, 525, 526, 528,
+//   529, 530, 532, 533, 534, 536, 537, 539, 540, 541, 543, 544, 546, 547, 548, 550, 551, 556, 576,
+//   577, 578, 579, 580, 581, 582, 583, 584, 588, 589, 590, 591, 592, 593, 594, 595, 596, 597, 598,
+//   599, 600, 601, 602, 603, 607, 608, 609, 610, 611, 612, 613, 616, 623, 627, 634, 699.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites apply: String
+//   (383), hash: String (699), part_id: String (217), rebind: String (634), validate: String (52,
+//   226, 556).
+
 use super::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, JsonSchema)]

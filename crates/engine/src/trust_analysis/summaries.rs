@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: mod authoring, mod evaluation, mod runtime, fn prepare_recipe_action.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 31, 74, 255, 256,
+//   265, 272, 285, 293, 297, 299, 300, 302, 327, 368, 369, 404.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 51.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 2.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   51.
+
 use super::claims::claim_invalid as invalid;
 use super::*;
 use crate::actions::{ActionOutcome, VerifiedActionAuthorship};

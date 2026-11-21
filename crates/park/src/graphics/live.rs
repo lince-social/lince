@@ -1,4 +1,22 @@
-use super::*;
+// non-lean-yet
+// Scope: mod client, struct Commit, enum Content, fn shm_content.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 69.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 127, 133, 260,
+//   272.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 374, 378.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (114, 266, 267, 269).
+
+use std::{
+    os::unix::net::UnixStream,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        mpsc::{Receiver, SyncSender, sync_channel},
+    },
+    time::{Duration, Instant},
+};
+
 use smithay::{
     delegate_compositor, delegate_dmabuf, delegate_seat, delegate_shm, delegate_xdg_shell,
     input::{Seat, SeatHandler, SeatState, pointer::MotionEvent},
@@ -21,14 +39,8 @@ use smithay::{
         shm::{ShmHandler, ShmState, with_buffer_contents},
     },
 };
-use std::{
-    os::unix::net::UnixStream,
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        mpsc::{Receiver, SyncSender, sync_channel},
-    },
-    time::{Duration, Instant},
-};
+
+use super::*;
 
 mod client;
 
@@ -261,7 +273,8 @@ fn serve(
                 .ok_or_else(|| ProbeFailure::at("wayland_resize", "no configured toplevel"))?;
             surface.with_pending_state(|state| state.size = Some(size.into()));
             surface.send_configure();
-            let mapping = lince_interface::host::ContentMapping { corners: None,
+            let mapping = lince_interface::host::ContentMapping {
+                corners: None,
                 canvas: lince_interface::host::Rectangle::new([320.0, 16.0], [256.0, 256.0])
                     .unwrap(),
                 surface: lince_interface::host::Rectangle::new([0.0, 0.0], [128.0, 128.0]).unwrap(),

@@ -1,7 +1,20 @@
+// non-lean-yet
+// Scope: mod client, fn demo_client, fn probe, fn probe_mode.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 35, 51, 63, 64.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 120, 181,
+//   203, 225, 305, 311, 319, 327, 340, 349, 401, 423, 426, 459.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   99, 244, 245, 246, 249.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (133).
+
+use std::{os::unix::net::UnixStream, sync::atomic::AtomicUsize, time::Instant};
+
+use lince_interface::host::{ItemId, OutputId, OutputViewport, Rectangle};
+
 use super::*;
 use crate::server::Server;
-use lince_interface::host::{ItemId, OutputId, OutputViewport, Rectangle};
-use std::{os::unix::net::UnixStream, sync::atomic::AtomicUsize, time::Instant};
 
 mod client;
 
@@ -28,8 +41,11 @@ fn probe_mode(connected: bool) -> Result<(), ProbeFailure> {
     let runtime = tokio::runtime::Runtime::new().map_err(|error| failure(error.to_string()))?;
     let directory = tempfile::tempdir().map_err(|error| failure(error.to_string()))?;
     let cell = if connected {
-        let engine = Arc::new(runtime.block_on(engine::Engine::open_memory())
-            .map_err(|error| failure(error.to_string()))?);
+        let engine = Arc::new(
+            runtime
+                .block_on(engine::Engine::open_memory())
+                .map_err(|error| failure(error.to_string()))?,
+        );
         Some(CellHandle(cell::CellRuntime {
             commands: cell::terminal::commands::CommandHost::new(directory.path().into()),
             store: engine.store.clone(),
@@ -137,12 +153,16 @@ fn probe_mode(connected: bool) -> Result<(), ProbeFailure> {
                         display: None,
                         outputs: vec![crate::presentation::Output {
                             name: "Park-1".into(),
-                            viewport: OutputViewport { rotation: Default::default(),
+                            viewport: OutputViewport {
+                                rotation: Default::default(),
                                 id: OutputId(1),
                                 bounds,
                                 usable: Rectangle::new([0.0, 32.0], [800.0, 424.0]),
                                 physical_size: [800, 480],
-                                raster: lince_interface::host::raster::RasterMapping { origin: (bounds).origin(), scale: [1.0; 2] },
+                                raster: lince_interface::host::raster::RasterMapping {
+                                    origin: (bounds).origin(),
+                                    scale: [1.0; 2],
+                                },
                                 workspace: 1,
                             },
                         }],
@@ -190,7 +210,10 @@ fn probe_mode(connected: bool) -> Result<(), ProbeFailure> {
                 {
                     maximize_restored = true;
                 }
-                let buffer = completed.frame.dmabuf().ok_or_else(|| failure("The probe output image is unavailable".into()))?;
+                let buffer = completed
+                    .frame
+                    .dmabuf()
+                    .ok_or_else(|| failure("The probe output image is unavailable".into()))?;
                 if buffer.size() != (expected[0], expected[1]).into() {
                     return Err(failure(
                         "the native view does not fit its reserved output area".into(),
@@ -237,8 +260,7 @@ fn probe_mode(connected: bool) -> Result<(), ProbeFailure> {
                         if let Some(window) =
                             completed.windows.iter().find(|window| window.id == id)
                         {
-                            let pixels =
-                                crate::presentation::probe_pixels(buffer)?;
+                            let pixels = crate::presentation::probe_pixels(buffer)?;
                             let sample = |content: [f64; 2]| {
                                 let point: [f64; 2] = std::array::from_fn(|axis| {
                                     item.mapping.canvas.origin()[axis]

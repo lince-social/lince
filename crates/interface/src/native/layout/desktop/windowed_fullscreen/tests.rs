@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn fixture, fn
+//   the_shared_command_toggles_protocol_intent_without_changing_camera_or_item_geometry, fn
+//   a_properties_control_changes_its_captured_window_without_taking_focus_from_the_inspector, fn
+//   captured_controls_refuse_replaced_hidden_transient_canvas_and_sandbox_targets.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::actions::Action;
 

@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn record, fn an_undesignated_record_runs_here, fn
+//   a_record_designated_to_this_cell_runs_here, fn
+//   a_record_designated_to_another_cell_does_not_run_here.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use store::Store;

@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: impl Engine.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 24, 141, 156,
+//   162, 317.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 238, 240.
+// - [Clippy probe: clippy::needless_borrows_for_generic_args] the borrowed expression implements
+//   the required traits. Sites 226.
+
 use super::{Operation, Property, denied};
 use crate::{
     Engine, EngineError,

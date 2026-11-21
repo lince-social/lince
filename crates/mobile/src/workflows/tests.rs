@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn fixture, fn button, fn field, fn
+//   real_mobile_transport_controls_review_one_normal_draft_and_clear_changed_person_results.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn fixture(directory: &std::path::Path, person: &str) -> (World, Entity) {

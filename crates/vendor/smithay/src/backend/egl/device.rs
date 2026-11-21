@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct EGLDevice, fn device_extensions.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check SAFETY proof and trait invariants. Sites 18.
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 46, 55, 68, 74, 103,
+//   124, 144, 160, 182, 198.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 133.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (163, 201,
+//   276).
+
 use std::{ffi::CStr, os::raw::c_void, path::PathBuf, ptr};
 
 use super::{

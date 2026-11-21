@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Entry, struct Saved, struct Open, fn show.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 53, 133, 137,
+//   212, 238, 242, 275, 277, 279, 283, 310, 327, 347, 361, 366, 371, 373, 375, 394, 404, 408, 416,
+//   422, 433, 474, 506, 523, 537, 540.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (52, 82, 151, 230, 283, 318, 494, 500, 543, 545, 555, 561, 587).
+
 use super::*;
 use crate::native::sand_panel as ui;
 use cell::fiote_assistant::{Directory, EntryReceipt, EntryRequest};

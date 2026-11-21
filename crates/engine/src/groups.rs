@@ -1,3 +1,24 @@
+// non-lean-yet
+// Scope: const NAMESPACE, const ADMISSION_NAMESPACE, const DOMAIN, struct Member.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 155, 156, 202,
+//   246, 254.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   set_group_person:allowed (561).
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 86, 196.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   601, 615.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 127.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 601, 615.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 86, 196.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 72, 111, 126, 164, 294, 436, 465, 557, 607, 619.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   9, 10, 14, 15, 16, 17, 18, 19, 20, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 37, 38, 39, 72, 111,
+//   126, 164, 294, 436, 465, 557, 607, 619.
+
 use std::collections::BTreeSet;
 
 use base64::{Engine as _, engine::general_purpose::STANDARD as B64};

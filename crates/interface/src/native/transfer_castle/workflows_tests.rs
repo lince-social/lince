@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: fn setup, fn activate, fn preset, fn
+//   actual_activity_presets_keep_parties_units_and_reviewed_route_identities_separate.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 36, 53, 100, 117,
+//   128, 203, 206, 213, 219, 247, 320, 464, 489, 497, 520, 613, 614, 647.
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites 32,
+//   315.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (22, 34, 51, 54, 59, 75, 76, 103, 109, 115, 118, 126, 129, 149, 169, 171, 196,
+//   199, 203, 204, 208, 210, 212, 219, 222, 225, 228, 229, 243, 247, 250, 251, 266, 272, 284, 287,
+//   290, 313, 320, 327, 331, 336, 345, 359, 360, 371, 381, 409, 420, 430, 437, 444, 445, 455, 472,
+//   476, 489, 498, 502, 522, 538, 540, 601, 627, 631, 637, 640, 645, 649, 663, 664, 667, 677, 700,
+//   732), unwrap_err (671).
+
 use super::super::{self as castle, TransferCastle, View, detail};
 use super::*;
 use bevy::{math::DVec2, prelude::*};

@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct EditorOf, struct SourceEditors, struct EditorCell, fn editor.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 21, 58, 62, 74,
+//   128, 155, 159.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (54, 60, 65, 99, 105, 128, 159).
+
 use super::*;
 use crate::native::actions::{Action, ActionButton};
 use crate::native::protein_castle::{ProteinCastle, ProteinDraft};

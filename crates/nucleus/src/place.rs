@@ -1,5 +1,15 @@
-use serde::{Deserialize, Serialize};
+// non-lean-yet
+// Scope: struct Place, const EARTH_RADIUS_M, const MIN_AREA_RADIUS_METRES, const
+//   MAX_AREA_RADIUS_METRES.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 95, 98, 110, 113, 119.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 6,
+//   7, 12, 13, 15, 19, 43, 51, 56, 57, 58, 62, 63, 64, 68, 77.
+
 use std::collections::{BinaryHeap, HashMap};
+
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Place {

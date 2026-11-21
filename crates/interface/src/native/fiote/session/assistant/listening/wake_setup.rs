@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: const CREDITS, struct Setup, struct Worker, enum Product.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 123, 201, 217,
+//   276, 278, 315, 452, 456.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (154, 175, 217, 291, 315, 323, 348, 352, 360, 379, 394, 395, 399, 441).
+
 use super::*;
 use cell::fiote_communication::speech::wake::{self, Profile};
 

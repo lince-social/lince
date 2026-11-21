@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn receive, fn exchange.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::published_events::action;
 use super::*;
 use nucleus::transfer::{

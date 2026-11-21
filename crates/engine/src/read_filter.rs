@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: struct PersonFilter.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 46, 47.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 64.
+// - [Clippy probe: clippy::match_same_arms] these match arms have identical bodies. Sites 90, 93,
+//   146, 148, 154, 212, 213.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 11, 23, 39, 445.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 6.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   6, 7, 11, 23, 39, 445.
+
 use std::collections::HashSet;
 
 use crate::Engine;

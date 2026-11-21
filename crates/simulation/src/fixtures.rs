@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: mod transfer, mod frequencies, fn daily, fn current_database.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 205.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   network:two_organs (145).
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 13.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 154, 164.
+// - [Clippy probe: clippy::missing_panics_doc] State the panic conditions for exported functions.
+//   Sites 9.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   6, 7, 9, 108, 145.
+
 use crate::scenario::{Cell, Check, Invocation, Limits, Scenario};
 use engine::actions::Action;
 use nucleus::karma::{Cadence, CadenceStep, Consequence};

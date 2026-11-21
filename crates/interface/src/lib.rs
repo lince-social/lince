@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod testing, mod transfers, mod map_navigation, mod map_view.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![recursion_limit = "256"]
 
 extern crate self as lince_interface;

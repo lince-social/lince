@@ -1,5 +1,26 @@
-use serde::{Deserialize, Serialize};
+// non-lean-yet
+// Scope: enum Operation, struct Step, struct Lesson, fn lessons.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   permits:navigation (359), permits:recovery (358).
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 5, 229, 235, 242, 260, 276, 285.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 212.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 6,
+//   7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+//   31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54,
+//   55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78,
+//   79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101,
+//   102, 106, 187, 188, 189, 190, 194, 195, 196, 197, 200, 205, 206, 207, 208, 209, 212, 229, 230,
+//   231, 235, 237, 238, 242, 243, 244, 245, 246, 250, 253, 254, 255, 256, 260, 261, 262, 263, 264,
+//   266, 267, 268, 270, 271, 272, 276, 277, 278, 279, 280, 281, 285, 286, 287, 288, 289, 291, 292,
+//   296, 297, 298, 299, 300, 301, 302, 309, 330, 346, 350, 354, 369, 379, 413, 422, 482, 504, 518,
+//   525, 531, 534, 537, 541, 544, 547.
+
 use std::collections::{BTreeMap, BTreeSet};
+
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum Operation {

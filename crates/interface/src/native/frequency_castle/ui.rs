@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: mod form, mod list, const PAGE_SIZE, struct Input.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 117, 130, 440.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (310, 354,
+//   449).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   332, 344.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (85, 97, 104, 107, 117, 120, 123, 138, 278, 366, 402, 422, 433, 442, 453, 471).
+
 use super::*;
 use bevy::{
     ecs::{entity_disabling::Disabled, query::Allow},

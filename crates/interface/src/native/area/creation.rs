@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct Defaults, struct Save, fn controls, fn apply.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 80, 167, 171.
+
 use super::InfluenceArea;
 use crate::native::{
     actions::Action,

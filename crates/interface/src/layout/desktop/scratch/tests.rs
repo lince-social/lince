@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn workspace, fn
+//   marking_does_not_move_or_hide_and_twenty_reveals_keep_one_item_and_restore_its_home, fn
+//   scratch_and_groups_are_exclusive_and_failed_actions_preserve_the_model, fn
+//   normalized_native_save_starts_hidden_at_home_and_never_persists_the_reveal_state.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use super::super::tests::{id, item, viewport};
 

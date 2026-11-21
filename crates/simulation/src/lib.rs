@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod artifacts, mod publication, mod location_workflows, mod assumptions.
+// BeautifulRust (baseline lines):
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   1, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 21, 24, 26, 27.
+
 pub mod artifacts;
 #[cfg(test)]
 mod publication;

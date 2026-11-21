@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: const RUN, const RESULT, const MAX_RESULT_BYTES, enum Command.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 252, 261, 267,
+//   282, 283.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 261.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 287.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 27.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 127, 130, 143, 156, 431, 437.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 74.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   27, 28, 29, 31, 33, 34, 36, 37, 42.
+
 use crate::{
     Engine, EngineError, actions::ActionOutcome, record_creation::Draft,
     record_policy::ScalarChange,

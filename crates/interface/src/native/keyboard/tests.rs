@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct Count, struct Increment, fn fixture, fn emit.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::actions::{Action, ActionsPlugin, KeyBinding, KeyBindings, WindowActionTarget};
 use bevy::{

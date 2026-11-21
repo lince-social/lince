@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct LabelTargets, struct FloatingScratch, struct SurfaceScratch, fn update.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 158, 321, 328,
+//   329.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (27, 30, 346,
+//   347).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   164.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (146, 150, 285, 382, 408).
+
 use super::*;
 
 #[derive(Default)]

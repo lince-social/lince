@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn rule, fn quantity, fn card, fn exact_comparisons_ranges_and_missing_values.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use serde_json::json;
 

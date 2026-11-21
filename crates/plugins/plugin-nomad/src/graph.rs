@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: const NAMESPACE, const MAX_NODES, fn digest, fn identity.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 172, 175, 236,
+//   239, 243, 281, 304, 411, 416, 464, 492, 514, 525, 597, 612, 614, 615, 624, 625.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 36, 57.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites build: String
+//   (270), imported: String (573), lingua: String (603).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   21, 93, 94, 174, 226, 325, 327, 492, 551, 610, 644.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (20, 21, 192, 243, 244, 245, 263, 295, 399, 414, 441, 443, 502, 505, 538, 575,
+//   593).
+
 use crate::{schema::*, settings::Settings};
 use anicca::{ProjectedAssertion, ProjectedRecord};
 use nucleus::plugins::ImportedRecord;

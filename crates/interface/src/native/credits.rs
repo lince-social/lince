@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: const AVIAN_LICENSE, const LORO_LICENSE, const ACCESSKIT_LICENSE, const ATTRIBUTIONS.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   269.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (264, 265, 271, 275, 282, 286, 290).
+
 pub use lince_interface::credits::{
     Attribution, BEVY_LICENSE, CHRONO_LICENSE, CJK, DEJAVU, FONTIQUE, ICU, LATO_LICENSE, PARLEY,
     SYMBOLS, SYMBOLS_LICENSE,

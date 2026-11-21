@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: mod buffer, mod error, mod extension, mod input.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 995.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 257, 260, 285,
+//   286, 287, 318, 376, 417, 480, 577, 578, 826.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   set_cursor_visible:visible (525).
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 438.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 589.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   205, 475, 1014.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (313, 323, 349, 370, 377, 404, 471, 637, 648, 803, 826, 862, 886, 897, 909).
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 124, 125, 126.
+
 //! Implementation of the backend types using X11.
 //!
 //! This backend provides the appropriate backend implementations to run a Wayland compositor as an

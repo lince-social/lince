@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct StateHasher, struct Tracker.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 48, 54.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 18, 37.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 7.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 18,
+//   37.
+
 use nucleus::karma::CanonicalHash;
 use sqlx::{Connection, SqliteConnection};
 use tokio::sync::Mutex;

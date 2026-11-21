@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: const DEFAULT_TOTAL_BYTES, enum Area, fn share, fn total.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 8.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 39, 49, 109, 118, 130.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 8,
+//   9, 10, 11, 15, 23, 31, 35, 39, 49, 66, 84, 85, 86, 87, 88, 92, 93, 94, 95, 100, 109, 118, 130.
+
 use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;

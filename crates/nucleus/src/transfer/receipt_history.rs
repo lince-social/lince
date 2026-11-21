@@ -1,7 +1,29 @@
+// non-lean-yet
+// Scope: fn hash, fn source_key, struct Projection, fn outcome.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 263.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 83, 152, 154,
+//   156, 157, 159, 160, 199, 204, 207, 209, 211, 230, 238, 243, 246, 266, 267, 284, 286.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 113.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 10, 41, 142.
+// - [Clippy: clippy::redundant_clone] Move or borrow at the marked sites and check later uses.
+//   Sites 97, 98.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 10, 15,
+//   16, 17, 18, 19, 20, 21, 22, 23, 24, 41, 113, 114, 115, 119, 128, 130, 132, 133, 134, 135, 136,
+//   137, 138, 139, 142, 165, 166, 167, 168, 169, 173, 174, 175, 176, 180, 181, 182, 183, 184, 185,
+//   188.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites project: String
+//   (41), project_copy: String (142), source_key: String (10).
+
+use std::collections::{BTreeMap, BTreeSet};
+
+use serde::{Deserialize, Serialize};
+
 use super::receipt::{Content, PartyAttribution, Publication, Scope};
 use crate::karma::{CanonicalHash, canonical_hash};
-use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet};
 
 fn hash<T: Serialize>(domain: &str, value: &T) -> Result<CanonicalHash, String> {
     canonical_hash(domain, value).map_err(|error| error.to_string())

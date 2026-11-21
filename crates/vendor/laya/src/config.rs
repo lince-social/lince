@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct EncoderConfig, struct RopeParameters, struct RopeSpec, struct AgentConfig.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 39, 91.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 8, 9,
+//   10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 22, 24, 28, 29, 30, 34, 35, 39, 46, 73, 74, 75, 77, 79,
+//   81, 83, 91, 98.
+
 use crate::modernbert;
 use anyhow::{Context, Result};
 use serde::Deserialize;

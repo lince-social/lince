@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: enum WindowSurface, struct WindowInner, struct Window.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   set_activated:active (200).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (176, 326).
+
 #[cfg(feature = "xwayland")]
 use crate::{desktop::space::SpaceElement, xwayland::X11Surface};
 use crate::{

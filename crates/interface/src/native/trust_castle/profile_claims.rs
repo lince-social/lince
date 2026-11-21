@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct CachedCheck, struct OpenSnapshot, fn load_snapshot, fn cache.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 52, 57, 59, 80,
+//   84, 132, 139.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (36).
+
 use super::*;
 use nucleus::trust_analysis::{claims::Document, query::Query};
 

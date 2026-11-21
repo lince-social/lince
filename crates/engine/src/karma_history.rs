@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod effects, struct Reading, struct Evaluation, struct Evidence.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 124, 128, 133,
+//   137, 138.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 87, 162.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   12, 13, 14, 15, 16, 17, 18, 22, 23, 24, 25, 26, 30, 31, 32, 33, 34, 35, 36, 37, 38.
+
 use std::cell::RefCell;
 
 use nucleus::DecimalValue;

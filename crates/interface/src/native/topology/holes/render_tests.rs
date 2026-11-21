@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Clicks, struct Captured, fn update, fn click.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 35, 59, 69, 72.
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites 81.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (28, 31).
+
 use super::*;
 use bevy::{
     camera::{ImageRenderTarget, NormalizedRenderTarget, RenderTarget},

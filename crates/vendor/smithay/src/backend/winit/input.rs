@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct WinitInput, struct WinitVirtualDevice, struct WinitKeyboardInputEvent, struct
+//   WinitMouseMovedEvent.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::path::PathBuf;
 
 use winit::{

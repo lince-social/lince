@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: struct Castle, struct Pending, struct StartupStatus, struct PreparedImages.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 121, 246, 753.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (691).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   189, 192, 197, 204, 450.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (141, 173, 195, 198, 206, 265, 267, 268, 282, 293, 302, 304, 325, 329, 338, 342,
+//   356, 373, 374, 393, 420, 465, 474, 484, 487, 491, 493, 494, 496, 530, 533, 534, 537, 538, 549,
+//   550, 554, 560, 564, 567).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 600, 658, 659, 660, 661, 662, 664, 693.
+
 use crate::native::wake::WakeSignal;
 use bevy::{
     asset::AssetId,

@@ -1,6 +1,19 @@
-use crate::StoreError;
+// non-lean-yet
+// Scope: const RETENTION_DAYS, const MAX_PER_RECORD, enum Cause, struct Change.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   note_remote_win:displaced_local (58).
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 10.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 44, 52, 101, 139, 166.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 7,
+//   10, 11, 12, 16, 23, 33, 34, 35, 36, 37, 38, 39, 40, 41, 44, 52, 101, 139, 166.
+
 use chrono::{DateTime, Duration, Utc};
 use sqlx::{Row, Sqlite, SqlitePool, Transaction};
+
+use crate::StoreError;
 
 pub const RETENTION_DAYS: i64 = 7;
 

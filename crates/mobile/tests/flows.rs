@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn fixture, fn back_closes_menu_before_leaving_record_and_scope_reset_removes_history, fn
+//   private_drafts_restore_only_for_their_organ, fn
+//   mobile_record_sorts_keep_equal_titles_in_stable_order.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use engine::{

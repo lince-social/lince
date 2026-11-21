@@ -1,11 +1,33 @@
+// non-lean-yet
+// Scope: mod condition, fn protocol, const STATE_ACTIVE, const STATE_PAUSED.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option` value.
+//   Sites 228.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 534, 580.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   set_state:paused (416).
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 47, 75.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   106, 107, 128, 130, 237, 239, 345, 347, 442, 444, 667.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 147, 155, 162, 174, 200, 208, 316, 412, 490, 513, 526, 633, 723.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 189, 304.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 17, 18,
+//   20, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 41, 47, 48, 49, 50, 51, 55, 66, 67, 68,
+//   69, 70, 71, 75, 76, 77, 81, 87, 147, 155, 162, 174, 189, 190, 191, 192, 193, 194, 195, 196,
+//   197, 200, 208, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313, 316, 412, 490, 513, 526, 591,
+//   592, 593, 597, 601, 605, 633, 723.
+
 use chrono::{DateTime, Utc};
-use nucleus::DecimalValue;
-use nucleus::karma::{Cadence, Carry, Consequences, Gate};
+use nucleus::{
+    DecimalValue,
+    karma::{Cadence, Carry, Consequences, Gate},
+};
 use sqlx::{Row, SqlitePool};
 
-use crate::StoreError;
-use crate::exact::read_decimal;
-use crate::facts::instant;
+use crate::{StoreError, exact::read_decimal, facts::instant};
 
 mod condition;
 pub use condition::{RuleCondition, RuleConditionInput};

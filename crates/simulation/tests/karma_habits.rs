@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn run, fn
+//   the_instinct_import_uses_the_shared_runtime_and_replays_daily_completion_and_restart.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use std::future::Future;

@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct Function, macro exports.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use wasmi::{Instance, Store, StoreLimits, TypedFunc, WasmParams, WasmResults};
 
 #[derive(Clone, Copy)]

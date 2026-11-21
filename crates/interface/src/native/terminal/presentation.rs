@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Row, struct RunLabel, fn render, fn color.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 56, 57, 140.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   66, 69.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (14, 23, 67, 89, 115, 188, 191, 195, 199, 203, 207, 209).
+
 use super::*;
 use crate::host::performance::{self, Count, Stage};
 

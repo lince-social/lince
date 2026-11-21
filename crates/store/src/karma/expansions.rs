@@ -1,3 +1,28 @@
+// non-lean-yet
+// Scope: enum ScheduleCadenceKind, enum ScheduleEmissionKind, struct
+//   ScheduleOccurrenceExpansionCursor, struct ScheduleOccurrenceExpansionPage.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 338.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   127.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 393, 455.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 302, 316, 317,
+//   343, 345, 359, 361, 366.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 336.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 15, 38.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   157, 212.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   174, 273, 331, 448, 452.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 85, 99, 113, 127, 220.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 15, 16,
+//   17, 21, 38, 39, 40, 44, 61, 62, 63, 64, 65, 66, 67, 68, 69, 73, 74, 75, 85, 99, 113, 127, 220.
+
 use std::num::NonZeroU32;
 
 use chrono::{DateTime, TimeZone, Utc};
@@ -7,8 +32,10 @@ use nucleus::karma::{
 };
 use sqlx::{Row, Sqlite, SqlitePool, Transaction};
 
-use super::occurrences::{self, KarmaOccurrenceCommit, KarmaOccurrenceRow};
-use super::schedules::{self, ScheduleOccurrencePayload, StoredScheduleOccurrence};
+use super::{
+    occurrences::{self, KarmaOccurrenceCommit, KarmaOccurrenceRow},
+    schedules::{self, ScheduleOccurrencePayload, StoredScheduleOccurrence},
+};
 use crate::StoreError;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

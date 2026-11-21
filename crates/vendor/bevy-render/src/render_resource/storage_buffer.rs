@@ -1,3 +1,23 @@
+// non-lean-yet
+// Scope: struct StorageBuffer, struct DynamicStorageBuffer.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value. Sites
+//   134, 259.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   131, 229.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 132, 230.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 135, 230, 260.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   230.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   155, 286.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 37, 184.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 77, 82,
+//   90, 94, 98, 102, 112, 210, 215, 224, 229, 233, 243, 258, 277.
+
 use core::marker::PhantomData;
 
 use super::Buffer;

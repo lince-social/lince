@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: const TABLE, fn bound_sync_page, mod tests, struct ConversationPage.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 138, 141.
+// - [rustc probe: unreachable_pub] unreachable `pub` item. Sites 8.
+
 use crate::{
     Engine, EngineError,
     sync::{OpBatch, WireOp},

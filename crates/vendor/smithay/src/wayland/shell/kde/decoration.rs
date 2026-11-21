@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: trait KdeDecorationHandler, struct KdeDecorationState, struct
+//   KdeDecorationManagerGlobalData, macro delegate_kde_decoration.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 131.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 87, 135.
+
 //! KDE Window decoration manager
 //!
 //! This interface allows a compositor to announce support for KDE's legacy server-side decorations.

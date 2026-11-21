@@ -1,5 +1,15 @@
-use super::*;
+// non-lean-yet
+// Scope: struct Check.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 79, 189.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   51, 77, 185, 186.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (48, 59, 75, 79).
+
 use smithay::backend::allocator::Buffer;
+
+use super::*;
 
 #[derive(Default)]
 pub(super) struct Check {
@@ -51,7 +61,11 @@ impl Check {
         let center = std::array::from_fn(|axis| region.origin()[axis] + region.size()[axis] * 0.5);
         let modal = current.frame.input.modal;
         let fullscreen = current.frame.fullscreen;
-        let size = current.frame.dmabuf().ok_or_else(|| io::Error::other("The smoke-test output image is unavailable"))?.size();
+        let size = current
+            .frame
+            .dmabuf()
+            .ok_or_else(|| io::Error::other("The smoke-test output image is unavailable"))?
+            .size();
         let origin = current.frame.origin;
         let available = desktop
             .server
@@ -185,8 +199,22 @@ impl Check {
                     old_item.mapping.canvas.origin()[axis]
                         + old_item.mapping.canvas.size()[axis] * 0.5
                 });
-                desktop.output_presented(OutputId(1), previous.0, previous.1, renderer::capture::monotonic(), 0, false)?;
-                desktop.output_presented(item_output, latest.0.clone(), latest.1.clone(), renderer::capture::monotonic(), 0, false)?;
+                desktop.output_presented(
+                    OutputId(1),
+                    previous.0,
+                    previous.1,
+                    renderer::capture::monotonic(),
+                    0,
+                    false,
+                )?;
+                desktop.output_presented(
+                    item_output,
+                    latest.0.clone(),
+                    latest.1.clone(),
+                    renderer::capture::monotonic(),
+                    0,
+                    false,
+                )?;
                 desktop.pointer = old_center;
                 if !matches!(desktop.target(), input::Target::Application(target, _, output) if target == id && output == OutputId(1))
                 {
@@ -201,7 +229,14 @@ impl Check {
                         "The output that presented first did not adopt its new input snapshot",
                     ));
                 }
-                desktop.output_presented(OutputId(1), latest.0, latest.1, renderer::capture::monotonic(), 0, false)?;
+                desktop.output_presented(
+                    OutputId(1),
+                    latest.0,
+                    latest.1,
+                    renderer::capture::monotonic(),
+                    0,
+                    false,
+                )?;
                 desktop.pointer = old_center;
                 if matches!(desktop.target(), input::Target::Application(target, _, output) if target == id && output == OutputId(1))
                 {

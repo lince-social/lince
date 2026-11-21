@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn geometry, fn fixture, fn pointer, fn trigger.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use bevy::picking::{backend::HitData, pointer::Location};
 

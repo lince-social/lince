@@ -1,5 +1,10 @@
-use super::*;
+// non-lean-yet
+// Scope: struct Repository, fn executable, fn options, fn run.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::os::unix::fs::PermissionsExt;
+
+use super::*;
 
 struct Repository {
     directory: PathBuf,

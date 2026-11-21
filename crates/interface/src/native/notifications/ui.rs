@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn setup, fn render_badges, fn root, fn close.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 115.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (282, 328).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (36, 48, 51, 87, 126, 127, 130, 134, 135, 153, 171, 243, 313, 502, 505).
+
 use super::{
     NotificationAction, NotificationBadge, NotificationCenter, NotificationCount,
     NotificationPanel, NotificationToast, Notifications, ToastStack,

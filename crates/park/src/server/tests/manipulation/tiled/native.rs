@@ -1,10 +1,15 @@
-use super::*;
+// non-lean-yet
+// Scope: const DRAFT, const RECORD, fn root, fn settle.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy::prelude::{Entity, With};
 use lince_interface::{
     host::Direction,
     layout::desktop::{PlacementId, Workspace},
     native::{self, actions::Action},
 };
+
+use super::*;
 
 const DRAFT: &str = "Keep this native draft through mixed window movement";
 const RECORD: &str = "Retained mixed-row Record";
@@ -509,12 +514,25 @@ fn exercise(spatial: bool) {
                 .keyboard,
             "Clicking the visible draft did not focus its native editor"
         );
-        let editor = fixture.desktop.current.as_ref().unwrap().frame.input.editor.as_ref()
+        let editor = fixture
+            .desktop
+            .current
+            .as_ref()
+            .unwrap()
+            .frame
+            .input
+            .editor
+            .as_ref()
             .expect("The captured native text editor must publish its IME endpoint");
         let editor_owner = editor.owner;
         assert_ne!(editor.projection, 0);
         assert!(editor.caret[2] > 0 && editor.caret[3] > 0);
-        assert!(fixture.viewport().bounds.contains([f64::from(editor.caret[0]), f64::from(editor.caret[1])]));
+        assert!(
+            fixture
+                .viewport()
+                .bounds
+                .contains([f64::from(editor.caret[0]), f64::from(editor.caret[1])])
+        );
         for (code, pressed) in [
             (29, true),
             (107, true),

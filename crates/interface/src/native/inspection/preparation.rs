@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Member, struct Scene, struct Preparation, fn draw.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   105, 114.
+
 use super::{
     Castle, EditMode, ImageSand, Inspection, InspectionExcluded, Mark, Preview, Setting, Square,
     bounds, drawing, excluded, family, hidden, visit_connections,

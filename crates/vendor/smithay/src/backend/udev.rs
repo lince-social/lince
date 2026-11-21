@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct UdevBackend, enum UdevEvent, fn primary_gpu, fn all_gpus.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 197.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (197, 202).
+
 //! `udev` related functionality for automated device scanning
 //!
 //! This module mainly provides the [`UdevBackend`], which monitors available DRM devices and acts as

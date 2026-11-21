@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod held, mod host, mod pointer, struct Prepare.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 103, 106, 120,
+//   139, 240.
+
 use super::actions::Modifiers;
 use crate::host::input::KeyboardSnapshot;
 use bevy::{

@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct OutputNames, struct HandFocusRequest, struct OutputViews, fn presents.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (76, 159, 212, 215, 217, 247).
+
 use crate::{
     host::{OutputId, OutputViewport},
     native::{canvas::CanvasView, workspace::Workspaces},

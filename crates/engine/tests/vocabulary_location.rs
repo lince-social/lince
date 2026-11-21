@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn record, fn coordinates, fn link, fn location.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::manual_string_new] empty String is being created manually. Sites 498,
+//   536.
+
 #![cfg(test)]
 
 use engine::{

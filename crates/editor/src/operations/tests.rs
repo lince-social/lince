@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn folders_and_files_can_be_moved_without_overwriting_destinations, fn
+//   deletion_is_recoverable_and_undo_refuses_a_recreated_destination, fn
+//   mutations_refuse_root_and_parent_paths_and_replaced_entries, fn
+//   symlink_targets_outside_the_scope_are_never_changed.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[test]

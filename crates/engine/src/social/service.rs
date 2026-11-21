@@ -1,3 +1,32 @@
+// non-lean-yet
+// Scope: struct RequestHint, struct DocumentHint, struct StateHint, struct EnvelopeHint.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 138, 457, 462,
+//   646, 767, 770, 771, 838, 859, 891, 904, 1043, 1045, 1089, 1122, 1157, 1187.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 137, 377,
+//   757.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   1187.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 614, 615, 616.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 616.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 473, 646, 781, 795, 1054, 1055, 1056, 1057, 1077, 1087, 1122, 1129, 1156, 1187.
+// - [Clippy probe: clippy::manual_let_else] this could be rewritten as `let...else`. Sites 1009.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 137, 377, 757.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on a `Result` value.
+//   Sites 206.
+// - [Clippy probe: clippy::match_same_arms] these match arms have identical bodies. Sites 48, 56,
+//   85, 93.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 123, 182, 193, 958.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   123, 182, 193, 958.
+
 use super::*;
 use n0_future::{BufferedStreamExt, StreamExt};
 use nucleus::social::requests::EnvelopePurpose;

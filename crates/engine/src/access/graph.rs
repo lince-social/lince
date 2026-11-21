@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: enum Content, fn project_content, fn project.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 21, 22, 23, 25,
+//   26, 34, 35, 37, 57, 78, 80, 97, 99, 117, 118, 126, 127, 128, 129, 130, 136, 139, 140.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use std::borrow::Cow;
 

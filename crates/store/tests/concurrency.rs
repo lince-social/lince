@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn temp_db, fn a_long_write_survives_readers_arriving_throughout, fn
+//   two_writers_at_once_queue_rather_than_fail, fn
+//   read_then_write_transactions_running_at_once_all_commit.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 43, 76, 123.
+
 #![cfg(test)]
 
 use std::sync::Arc;

@@ -1,8 +1,27 @@
+// non-lean-yet
+// Scope: struct SenseRuleRow, struct NewSenseRule, fn create_sense_rule, fn active_sense_rules.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 46, 66, 101, 123.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   66, 123.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 66, 123.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 25, 54, 86, 114.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 16.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 8, 9,
+//   10, 11, 12, 13, 16, 17, 18, 19, 20, 21, 22, 25, 54, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 86,
+//   114.
+
 use nucleus::RecordKind;
 use sqlx::{Row, SqlitePool};
 
-use crate::StoreError;
-use crate::records::{self, NewRecord};
+use crate::{
+    StoreError,
+    records::{self, NewRecord},
+};
 
 #[derive(Debug, Clone)]
 pub struct SenseRuleRow {

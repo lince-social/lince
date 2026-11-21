@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: enum Command, fn row, fn scroll, fn icon.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 110, 119, 166,
+//   171, 180, 205, 428, 441, 443, 444, 462, 515, 534, 911, 921, 972, 1144, 1153, 1157, 1158.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   157, 159, 855, 858.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (52, 139, 231, 326, 411, 462, 465, 475, 476, 488, 534, 1151, 1154, 1162, 1214).
+
 use super::*;
 use crate::native::{
     actions::{Action, ActionButton},

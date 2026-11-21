@@ -1,22 +1,28 @@
+use nucleus::{DecimalValue, RecordKind};
+use protein::{Predicate, Protein, Source, matching_records};
 use std::collections::HashSet;
-
-use protein::{Predicate, Protein, Source};
+use store::{
+    Store,
+    records::{NewRecord, create},
+};
 
 #[tokio::test]
 async fn exact_identity_queries_preserve_filter_and_visibility_semantics() {
-    let store = store::Store::open_memory().await.unwrap();
-    let record = store::records::create(
+    const SLUG: &str = "apples";
+    let store = Store::open_memory().await.expect("Record fixture store");
+    let record = create(
         &store.pool,
-        store::records::NewRecord {
-            slug: Some("apples"),
-            kind: nucleus::RecordKind::Plain,
+        NewRecord {
+            slug: Some(SLUG),
+            kind: RecordKind::Plain,
             head: "Apples",
             body: "Fruit",
-            quantity: nucleus::DecimalValue::parse_inferred("9007199254740993").unwrap(),
+            quantity: DecimalValue::parse_inferred("9007199254740993")
+                .expect("exact fixture quantity"),
         },
     )
     .await
-    .unwrap();
+    .expect("create Record");
     let query = |predicate| Protein {
         source: Source::Record,
         filter: vec![predicate],
@@ -27,31 +33,29 @@ async fn exact_identity_queries_preserve_filter_and_visibility_semantics() {
         limit: Some(10),
     };
     let by_uid = query(Predicate::UidEq(record.uid.clone()));
-    let rows = protein::matching_records(&store, &by_uid, None)
+    let rows = matching_records(&store, &by_uid, None)
         .await
-        .unwrap();
-    assert_eq!(rows.len(), 1);
-    assert_eq!(rows[0].quantity, record.quantity);
+        .expect("read by UID");
+    let [row] = rows.as_slice() else {
+        panic!("expected one Record for {}, got {}", record.uid, rows.len());
+    };
+    assert_eq!(row.quantity, record.quantity);
     assert!(
-        protein::matching_records(&store, &by_uid, Some(&HashSet::new()))
+        matching_records(&store, &by_uid, Some(&HashSet::new()))
             .await
-            .unwrap()
+            .expect("read by UID within empty scope")
             .is_empty()
     );
-    let rows = protein::matching_records(&store, &query(Predicate::SlugEq("apples".into())), None)
+    let rows = matching_records(&store, &query(Predicate::SlugEq(SLUG.into())), None)
         .await
-        .unwrap();
-    assert_eq!(rows[0].uid, record.uid);
-    assert!(
-        protein::matching_records(&store, &query(Predicate::SlugEq(record.uid.clone())), None)
-            .await
-            .unwrap()
-            .is_empty()
-    );
-    assert!(
-        protein::matching_records(&store, &query(Predicate::UidEq("apples".into())), None)
-            .await
-            .unwrap()
-            .is_empty()
-    );
+        .expect("read by slug");
+    assert_eq!(rows.first().expect("slug matched").uid, record.uid);
+    for filter in [Predicate::SlugEq(record.uid), Predicate::UidEq(SLUG.into())] {
+        assert!(
+            matching_records(&store, &query(filter), None)
+                .await
+                .expect("read with mismatched identity type")
+                .is_empty()
+        );
+    }
 }

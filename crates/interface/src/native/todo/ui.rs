@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: enum Key, struct Rows, enum Part, struct Record.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 32, 78, 95, 97.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   131.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (29, 83, 96, 106).
+
 use super::*;
 use crate::native::retained::{Children as RetainedChildren, Presentation};
 

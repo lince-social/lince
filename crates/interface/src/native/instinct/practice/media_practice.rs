@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: const SAMPLE, struct State, fn handles, fn prepare.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 40, 44.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 99.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   43.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (24, 37, 40, 52, 55, 63, 107, 114, 139, 144, 147).
+
 use super::*;
 
 const SAMPLE: &str = "recordings/instinct-demo.wav";

@@ -3,6 +3,10 @@
 
 //! Misc helpers.
 
+// non-lean-yet
+// Scope: fn nearly_eq, fn nearly_zero, struct BoundingBox.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 pub(crate) fn nearly_eq(x: f32, y: f32) -> bool {
     (x - y).abs() < f32::EPSILON
 }

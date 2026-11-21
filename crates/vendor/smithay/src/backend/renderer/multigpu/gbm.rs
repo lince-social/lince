@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: enum Error, type Factory, struct GbmGlesBackend, struct GbmGlesDevice.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 142, 187, 363.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 140, 192, 194,
+//   314.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (375, 383).
+
 //! Implementation of the multi-gpu [`GraphicsApi`] using
 //! user provided GBM devices and OpenGL ES for rendering.
 

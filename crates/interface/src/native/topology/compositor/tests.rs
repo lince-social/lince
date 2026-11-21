@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn
+//   shadow_uses_the_actual_triangle_boundary_and_expands_it_without_mutating_source_geometry, fn
+//   clipped_holes_keep_both_boundaries_while_nonfinite_and_excess_geometry_is_refused, fn
+//   optional_shadow_obeys_existing_budget_and_owner_layers_then_releases_with_its_surface.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[test]

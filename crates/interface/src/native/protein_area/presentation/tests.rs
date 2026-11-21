@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod performance, fn fixture, fn editor, fn container.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use bevy::text::EditableText;
 use serde_json::json;

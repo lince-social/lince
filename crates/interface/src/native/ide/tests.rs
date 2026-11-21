@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: mod basics, mod crash_recovery, fn editor_schedule_runs_with_the_action_and_file_services,
+//   fn fixture.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::actions::Action;
 use bevy::text::{FontCx, LayoutCx, TextEdit};

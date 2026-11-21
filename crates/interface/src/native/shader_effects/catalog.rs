@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: fn decode, struct Draft, fn load, enum CatalogAction.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 77, 97, 170, 190,
+//   203, 208, 210, 254, 284, 290, 296, 303, 313, 314, 329, 330, 342, 350, 375, 392, 399, 400, 481.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   install:reload_active (168).
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites payload: String
+//   (186).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (97, 231, 259, 280, 284, 289, 334, 378, 388, 478).
+
 use super::*;
 use std::collections::{BTreeMap, BTreeSet};
 

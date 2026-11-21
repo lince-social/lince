@@ -1,6 +1,11 @@
 // Copyright 2025 the Parley Authors
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+// non-lean-yet
+// Scope: struct TestContext, fn verify_analysis, fn verify_analysis_with_override, fn
+//   test_line_break_override_none_matches_default.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use crate::analysis::Boundary;
 use crate::{FontContext, LayoutContext, RangedBuilder, StyleProperty, WordBreak};
 use alloc::{vec, vec::Vec};

@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct Origin, struct OrganOrigin, struct DeviceOrigin, struct PeerOrigin.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 45, 46, 63, 64,
+//   90, 127.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 108, 115,
+//   126, 135, 145.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 108, 115, 126, 135, 145.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 3.
+
 use serde::{Deserialize, Serialize};
 
 use super::*;

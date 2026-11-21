@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod support, fn pair, fn record, fn offer.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 856, 865, 885, 889.
+
 #![cfg(test)]
 
 mod support;

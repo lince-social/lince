@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: struct ConfigurationSand, fn loaded_in, fn inspect_storage, fn storage_visible.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 365, 458, 459,
+//   462, 511, 645, 697, 750, 758, 760, 801.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 374, 412,
+//   455, 540, 576.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   164, 290, 407, 614, 615, 737.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (117, 199, 280, 290, 296, 318, 472, 485, 493, 515, 516, 552, 571, 592, 600, 633,
+//   643, 660, 693, 702, 736, 759, 760, 770, 808, 809, 818, 829, 837, 850, 861, 867, 868, 877).
+
 use crate::i18n::{Language, Token as Tr};
 use crate::native::{actions::Action, sand_panel as panel};
 use bevy::{prelude::*, text::EditableText};

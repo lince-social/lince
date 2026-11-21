@@ -1,11 +1,31 @@
-use crate::{
-    config::{ProviderKind, Settings},
-    driver::Driver,
-};
+// non-lean-yet
+// Scope: fn bundled_executable, enum AuthKind, struct AuthMethod, struct Descriptor.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 181.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 124, 181, 185.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 17.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   62, 111.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 48, 162, 169, 178.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 41.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 11, 17,
+//   18, 19, 20, 24, 25, 26, 27, 31, 32, 33, 34, 35, 37, 41, 42, 43, 48, 162, 169, 178, 196.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites descriptor:
+//   String (162), load: String (48), method: String (169), validate: String (178).
+
 use genai::adapter::AdapterKind;
 use serde::{
     Deserialize, Serialize,
     de::{self, Visitor},
+};
+
+use crate::{
+    config::{ProviderKind, Settings},
+    driver::Driver,
 };
 
 pub fn bundled_executable() -> Option<std::path::PathBuf> {

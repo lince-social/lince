@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: const OUTPUT_LIMIT, fn directory, fn path, fn open.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 65.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 150.
+
 use crate::command::{Event, Run};
 use std::{
     fs::{File, OpenOptions},

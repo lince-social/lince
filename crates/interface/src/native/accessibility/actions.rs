@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: const MAX_ACTION_BYTES, struct Context, struct AssistedFocus, struct RevealIntent.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 272, 276, 339.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   context:interactive (126), owner_context:interactive (130).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (475, 488).
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 510.
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 486, 487.
+
 use super::*;
 use accesskit::{Action, ActionData, ActionRequest};
 use bevy::{ecs::change_detection::DetectChanges, input_focus::{InputFocus, FocusCause}, text::{EditableText, FontCx, LayoutCx, TextEdit}};

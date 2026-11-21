@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct VolumeDepth, fn source, fn preview, fn world_views.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (36, 68).
+
 use super::*;
 use bevy::core_pipeline::prepass::DepthPrepass;
 

@@ -1,5 +1,13 @@
-use crate::config::Intake;
+// non-lean-yet
+// Scope: struct Delegate, struct Source, struct Candidate, struct Directory.
+// BeautifulRust (baseline lines):
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 7,
+//   8, 10, 14, 15, 16, 17, 18, 22, 23, 24, 25, 26, 27, 31, 32, 33, 34, 38, 39, 40, 41, 42, 43, 44,
+//   45, 46, 47, 48, 53, 54, 55, 56, 58, 62, 63, 64, 65, 66, 67, 68, 69, 70, 75, 76, 77.
+
 use serde::{Deserialize, Serialize};
+
+use crate::config::Intake;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

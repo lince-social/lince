@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: trait Action, enum PracticeIntent, struct ControlOwner, struct TutorialControl.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 366, 471, 559.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (502, 510, 565, 571, 579, 587, 619, 621, 634, 651, 652, 655, 659, 680, 682, 688).
+
 use bevy::{
     input::keyboard::KeyboardInput,
     input_focus::{FocusedInput, InputFocus},

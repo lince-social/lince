@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod tests, struct Import, fn active, struct Inspect.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 43, 102, 117,
+//   195, 196, 362, 416, 438.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 120.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (127, 139, 149, 227, 375, 409, 431).
+
 use super::*;
 use cell::{ClientMessage, ServerMessage};
 

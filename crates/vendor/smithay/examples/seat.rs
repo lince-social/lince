@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct App, fn main, struct ClientState.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (47, 52, 58, 101).
+
 use std::sync::Arc;
 
 use smithay::input::{keyboard::FilterResult, Seat, SeatHandler, SeatState};

@@ -1,6 +1,26 @@
-use super::*;
+// non-lean-yet
+// Scope: fn relative.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 43, 113, 218.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 16, 84, 85, 205,
+//   209, 219, 220, 221, 222, 223.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   export:media (31).
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   58, 105, 252, 262.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 27.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 1.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 27.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   64, 68, 78, 101.
+
 use anicca::grammar::grammar::{self as ast, Declaration};
 use serde_json::Value;
+
+use super::*;
 
 fn relative(
     base: &str,

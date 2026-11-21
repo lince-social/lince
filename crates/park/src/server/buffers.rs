@@ -1,9 +1,16 @@
-use super::*;
+// non-lean-yet
+// Scope: struct Buffers.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use smithay::{
     backend::allocator::{Buffer, Format, Fourcc, Modifier, dmabuf::Dmabuf},
     delegate_dmabuf,
-    wayland::dmabuf::{DmabufFeedbackBuilder, DmabufGlobal, DmabufHandler, DmabufState, ImportNotifier},
+    wayland::dmabuf::{
+        DmabufFeedbackBuilder, DmabufGlobal, DmabufHandler, DmabufState, ImportNotifier,
+    },
 };
+
+use super::*;
 
 pub(super) struct Buffers {
     state: DmabufState,
@@ -22,20 +29,43 @@ impl Buffers {
 }
 
 impl Server {
-    pub fn enable_dmabuf_formats(&mut self, formats: impl IntoIterator<Item = Format>, device: impl FnOnce() -> Option<rustix::fs::Dev>) -> io::Result<()> {
+    pub fn enable_dmabuf_formats(
+        &mut self,
+        formats: impl IntoIterator<Item = Format>,
+        device: impl FnOnce() -> Option<rustix::fs::Dev>,
+    ) -> io::Result<()> {
         if self.state.dmabuf.global.is_none() {
             let mut accepted = Vec::new();
             for format in formats {
                 if format.modifier == Modifier::Linear
-                    && matches!(format.code, Fourcc::Argb8888 | Fourcc::Abgr8888 | Fourcc::Abgr2101010 | Fourcc::Abgr16161616f)
-                    && !accepted.contains(&format) { accepted.push(format); }
+                    && matches!(
+                        format.code,
+                        Fourcc::Argb8888
+                            | Fourcc::Abgr8888
+                            | Fourcc::Abgr2101010
+                            | Fourcc::Abgr16161616f
+                    )
+                    && !accepted.contains(&format)
+                {
+                    accepted.push(format);
+                }
             }
-            if accepted.is_empty() { return Ok(()); }
+            if accepted.is_empty() {
+                return Ok(());
+            }
             self.state.dmabuf.global = Some(if let Some(device) = device() {
-                let feedback = DmabufFeedbackBuilder::new(device, accepted.iter().copied()).build().map_err(io::Error::other)?;
-                self.state.dmabuf.state.create_global_with_default_feedback::<State>(&self.display.handle(), &feedback)
+                let feedback = DmabufFeedbackBuilder::new(device, accepted.iter().copied())
+                    .build()
+                    .map_err(io::Error::other)?;
+                self.state
+                    .dmabuf
+                    .state
+                    .create_global_with_default_feedback::<State>(&self.display.handle(), &feedback)
             } else {
-                self.state.dmabuf.state.create_global::<State>(&self.display.handle(), accepted.iter().copied())
+                self.state
+                    .dmabuf
+                    .state
+                    .create_global::<State>(&self.display.handle(), accepted.iter().copied())
             });
             self.state.dmabuf.formats = accepted;
         }
@@ -50,7 +80,11 @@ impl DmabufHandler for State {
 
     fn dmabuf_imported(&mut self, _: &DmabufGlobal, buffer: Dmabuf, notifier: ImportNotifier) {
         let size = buffer.size();
-        let bytes_per_pixel = if buffer.format().code == Fourcc::Abgr16161616f { 8 } else { 4 };
+        let bytes_per_pixel = if buffer.format().code == Fourcc::Abgr16161616f {
+            8
+        } else {
+            4
+        };
         if buffer.num_planes() != 1
             || !self.dmabuf.formats.contains(&buffer.format())
             || buffer.format().modifier != Modifier::Linear

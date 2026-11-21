@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct Body, struct PreparationMeasurements, struct MeshCollider, struct GeometryCache.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 95, 98, 99, 120,
+//   197, 199, 495, 498, 702.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 137, 188.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   177.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (219, 230, 367, 370, 374, 424, 437, 578, 619, 622, 630, 636, 650, 717).
+
 use super::{
     groups::{GroupPose, members},
     spatial,

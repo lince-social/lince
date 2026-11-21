@@ -1,5 +1,16 @@
-use nucleus::component::{ComponentState, RecordMode};
-use nucleus::karma::{Consequence, rule_field::RuleConsequence};
+// non-lean-yet
+// Scope: fn component_state_is_typed_and_round_trips_through_the_rule_editor, fn
+//   invalid_component_and_call_configuration_is_refused, fn
+//   automatic_call_defaults_to_audio_and_exposes_all_record_references.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 62.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 63, 71.
+
+use nucleus::{
+    component::{ComponentState, RecordMode},
+    karma::{Consequence, rule_field::RuleConsequence},
+};
 
 #[test]
 fn component_state_is_typed_and_round_trips_through_the_rule_editor() {

@@ -1,3 +1,49 @@
+// non-lean-yet
+// Scope: struct BatchingPlugin, struct GpuPreprocessingSupport, enum GpuPreprocessingMode, struct
+//   BatchedInstanceBuffers.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 1776, 1898, 1923.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   1850.
+// - [review: §8 Unsafe] Prove unchecked operations and prefer a checked API when equivalent. Sites
+//   get_unchecked (384, 3192).
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 1859.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 1781, 1791, 2346,
+//   2571, 2680, 2704, 3029, 3030, 3031, 3033.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   add_batch_set:indexed (1295), allocate:indexed (1251), batch_set_count:indexed (1275),
+//   get_next_batch_set_index:indexed (1326),
+//   get_or_create_work_item_buffer:enable_gpu_occlusion_culling (636),
+//   get_or_create_work_item_buffer:no_indirect_drawing (635),
+//   new:allow_copies_from_indirect_parameter_buffers (1235), push:indexed (730).
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 415, 483, 508, 716, 719, 1017, 1035, 1327, 1396, 1410, 1517, 1521, 1526, 1776, 1912,
+//   1958, 1988, 2056, 2158, 2165, 2174, 2231, 2390, 2391, 2399, 2400, 2513, 2514, 2537, 2542, 2543,
+//   2544, 2547, 2558, 2566, 2985, 2989, 3020, 3021.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   716, 719, 1035, 1327, 1396, 1410, 1521, 1912, 1958, 1988, 2056, 2158, 2165, 2174, 2231, 2390,
+//   2391, 2399, 2400, 2513, 2514, 2537, 2542, 2547, 2558, 2566, 2985, 2989, 3020, 3021.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 150, 546.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   2019, 2526.
+// - [Clippy: clippy::large_enum_variant] large size difference between variants. Sites 546.
+// - [Clippy: clippy::missing_assert_message] assert without any message. Sites 479, 1016, 2020,
+//   2550.
+// - [Clippy: clippy::redundant_clone] Move or borrow at the marked sites and check later uses.
+//   Sites 1308, 1318.
+// - [Clippy: clippy::unnecessary_semicolon] unnecessary semicolon. Sites 2029.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 1859, 2091.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 57, 116, 150, 179, 245, 273, 315,
+//   450, 546, 569, 591, 786, 898, 948, 977, 988, 1006, 1052, 1083, 1107, 1135, 1176, 1223, 1340,
+//   1368, 1403, 1417.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 57,
+//   407, 1628, 3089, 3097.
+
 //! Batching functionality when GPU preprocessing is in use.
 
 use alloc::sync::Arc;

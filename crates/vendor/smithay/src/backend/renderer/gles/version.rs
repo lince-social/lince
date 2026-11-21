@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: const GLES_3_0, const GLES_2_0, struct GlVersion, struct GlVersionParseError.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 93, 106, 116.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   53.
+
 use std::{
     ffi::{CStr, CString},
     os::raw::c_char,

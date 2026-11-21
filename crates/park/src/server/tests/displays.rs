@@ -1,8 +1,14 @@
-use super::*;
+// non-lean-yet
+// Scope: fn server, fn submit, fn proposed, fn apply_next.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
+use std::time::Instant;
+
 use lince_interface::host::display::{
     DisplayAction, DisplayConfiguration, DisplayOutcome, DisplayRequest,
 };
-use std::time::Instant;
+
+use super::*;
 
 fn server() -> Server {
     let mut server = Server::new([640, 480]).unwrap();
@@ -57,29 +63,48 @@ fn preview(server: &mut Server) -> u64 {
 }
 
 #[test]
-fn rotated_preview_timeout_restores_the_complete_configuration_and_status_updates_do_not_retire_its_token() {
+fn rotated_preview_timeout_restores_the_complete_configuration_and_status_updates_do_not_retire_its_token()
+ {
     let mut server = server();
     let before = server.display_snapshot();
     let mut heads = proposed(&server, 2.0);
     let settings = heads.get_mut(&OutputId(1)).unwrap().as_mut().unwrap();
     settings.rotation = lince_interface::host::mapping::QuarterTurn::Clockwise90;
     settings.position = [20, 10];
-    submit(&mut server, DisplayAction::Preview { revision: before.revision, heads });
+    submit(
+        &mut server,
+        DisplayAction::Preview {
+            revision: before.revision,
+            heads,
+        },
+    );
     assert!(apply_next(&mut server).test);
     assert!(!apply_next(&mut server).test);
     let preview = server.display_snapshot().preview.unwrap();
     let revision = server.display_snapshot().revision;
-    server.output_adaptive_sync(OutputId(1), lince_interface::host::display::AdaptiveSyncStatus {
-        support: lince_interface::host::display::AdaptiveSyncSupport::Supported,
-        prepared: Some(false), effective: Some(false), pending: false, reason: None });
+    server.output_adaptive_sync(
+        OutputId(1),
+        lince_interface::host::display::AdaptiveSyncStatus {
+            support: lince_interface::host::display::AdaptiveSyncSupport::Supported,
+            prepared: Some(false),
+            effective: Some(false),
+            pending: false,
+            reason: None,
+        },
+    );
     server.advance_display(Instant::now());
     assert_eq!(server.display_snapshot().revision, revision);
     assert_eq!(server.display_preview_token(), Some(preview.token));
     assert!(server.output_requests().is_empty());
     server.advance_display(preview.deadline + Duration::from_millis(1));
     let request = apply_next(&mut server);
-    assert!(server.output_configuration_recovery(&request) || server.display_preview_token().is_none());
-    assert_eq!(server.display_snapshot().configuration(), before.configuration());
+    assert!(
+        server.output_configuration_recovery(&request) || server.display_preview_token().is_none()
+    );
+    assert_eq!(
+        server.display_snapshot().configuration(),
+        before.configuration()
+    );
     assert_eq!(server.display_snapshot().outputs, before.outputs);
     assert!(server.display_snapshot().preview.is_none());
 }
@@ -116,11 +141,15 @@ fn late_preview_presentation_failure_uses_one_existing_rollback_and_retains_the_
     let before = server.display_snapshot().configuration();
     preview(&mut server);
     assert!(server.recover_display_preview("fixture scanout failure".into()));
-    assert!(server.recover_display_preview("a repeated observation must not restart recovery".into()));
+    assert!(
+        server.recover_display_preview("a repeated observation must not restart recovery".into())
+    );
     apply_next(&mut server);
     assert_eq!(server.display_snapshot().configuration(), before);
     assert!(server.display_snapshot().preview.is_none());
-    let DisplayOutcome::Failed(reason) = server.display_snapshot().response.unwrap().outcome else { panic!("A recovered failure must not be reported as a successful preview"); };
+    let DisplayOutcome::Failed(reason) = server.display_snapshot().response.unwrap().outcome else {
+        panic!("A recovered failure must not be reported as a successful preview");
+    };
     assert!(reason.contains("fixture scanout failure"));
     assert!(reason.contains("restored"));
     assert!(server.output_requests().is_empty());
@@ -399,8 +428,12 @@ fn output_suspension_expires_confirmation_without_ui_and_cannot_keep_a_stale_pre
     server.advance_display(deadline);
     for _ in 0..3 {
         let requests = server.output_requests();
-        if requests.is_empty() { break; }
-        for request in requests { server.output_configuration_finished(request.token, false); }
+        if requests.is_empty() {
+            break;
+        }
+        for request in requests {
+            server.output_configuration_finished(request.token, false);
+        }
     }
     let headless = server.display_snapshot();
     assert!(headless.heads.is_empty());
@@ -408,13 +441,18 @@ fn output_suspension_expires_confirmation_without_ui_and_cannot_keep_a_stale_pre
     assert!(headless.preview.is_none());
     assert!(server.display_timeout().is_none());
     assert!(server.output_requests().is_empty());
-    assert!(matches!(headless.response.unwrap().outcome, DisplayOutcome::Failed(_)));
-    server.configure_outputs(&[Monitor {
-        id: OutputId(8),
-        name: "Recovery-8".into(),
-        origin: [0, 0],
-        size: [640, 480],
-    }]).unwrap();
+    assert!(matches!(
+        headless.response.unwrap().outcome,
+        DisplayOutcome::Failed(_)
+    ));
+    server
+        .configure_outputs(&[Monitor {
+            id: OutputId(8),
+            name: "Recovery-8".into(),
+            origin: [0, 0],
+            size: [640, 480],
+        }])
+        .unwrap();
     server.registered_output_catalog().unwrap();
     server.advance_display(deadline + Duration::from_secs(60));
     let restored = server.display_snapshot();
@@ -425,7 +463,10 @@ fn output_suspension_expires_confirmation_without_ui_and_cannot_keep_a_stale_pre
     submit(&mut server, DisplayAction::Keep { token });
     let after = server.display_snapshot();
     assert_eq!(after.heads, restored.heads);
-    assert!(matches!(after.response.unwrap().outcome, DisplayOutcome::Failed(_)));
+    assert!(matches!(
+        after.response.unwrap().outcome,
+        DisplayOutcome::Failed(_)
+    ));
     assert!(server.output_requests().is_empty());
     assert!(server.display_timeout().is_none());
 }
@@ -640,61 +681,138 @@ fn a_selected_virtual_refresh_rate_reaches_the_public_wayland_output_metadata() 
 
 #[test]
 #[cfg(feature = "nested")]
-fn modeled_hdr_confirmation_refuses_unobserved_mismatched_and_pending_keep_preserves_failed_save_and_reverts_or_reloads_confirmed_intent() {
-    use lince_interface::host::{color::{ColorMode, OutputColor}, display::{AdaptiveSyncStatus, AdaptiveSyncSupport, ColorStatus}};
-    let hdr = OutputColor { mode: ColorMode::Hdr10, peak_nits: 1000 };
+fn modeled_hdr_confirmation_refuses_unobserved_mismatched_and_pending_keep_preserves_failed_save_and_reverts_or_reloads_confirmed_intent()
+ {
+    use lince_interface::host::{
+        color::{ColorMode, OutputColor},
+        display::{AdaptiveSyncStatus, AdaptiveSyncSupport, ColorStatus},
+    };
+    let hdr = OutputColor {
+        mode: ColorMode::Hdr10,
+        peak_nits: 1000,
+    };
     let directory = tempfile::tempdir().unwrap();
     for (index, (effective, pending, ready)) in [
-        (None, true, false), (Some(OutputColor::default()), false, false),
-        (Some(OutputColor { peak_nits: 900, ..hdr }), false, false),
-        (Some(hdr), true, false), (Some(hdr), false, true),
-    ].into_iter().enumerate() {
+        (None, true, false),
+        (Some(OutputColor::default()), false, false),
+        (
+            Some(OutputColor {
+                peak_nits: 900,
+                ..hdr
+            }),
+            false,
+            false,
+        ),
+        (Some(hdr), true, false),
+        (Some(hdr), false, true),
+    ]
+    .into_iter()
+    .enumerate()
+    {
         let path = directory.path().join(format!("color-{index}.json"));
         let initial = br#"{"keyboard":{"layout":"br"},"outputs":{"disconnected":{"enabled":false,"color":"hdr10","adaptive_sync":true}}}"#;
         std::fs::write(&path, initial).unwrap();
         let mut server = server();
         let before = server.display_snapshot();
         let name = before.heads[0].name.clone();
-        server.output_color(OutputId(1), ColorStatus { hdr10: true, prepared: Some(OutputColor::default()),
-            effective: Some(OutputColor::default()), revision: 1, ..Default::default() });
+        server.output_color(
+            OutputId(1),
+            ColorStatus {
+                hdr10: true,
+                prepared: Some(OutputColor::default()),
+                effective: Some(OutputColor::default()),
+                revision: 1,
+                ..Default::default()
+            },
+        );
         let mut heads = before.configuration();
         let candidate = heads.get_mut(&OutputId(1)).unwrap().as_mut().unwrap();
-        candidate.color = ColorMode::Hdr10; candidate.adaptive_sync = true;
-        submit(&mut server, DisplayAction::Preview { revision: before.revision, heads });
+        candidate.color = ColorMode::Hdr10;
+        candidate.adaptive_sync = true;
+        submit(
+            &mut server,
+            DisplayAction::Preview {
+                revision: before.revision,
+                heads,
+            },
+        );
         let test = server.output_requests().pop().unwrap();
         assert!(test.test);
         server.output_configuration_finished(test.token, true);
         let apply = server.output_requests().pop().unwrap();
         assert!(!apply.test);
         let mut modeled = before.heads.clone();
-        modeled[0].color = ColorMode::Hdr10; modeled[0].adaptive_sync = true;
+        modeled[0].color = ColorMode::Hdr10;
+        modeled[0].adaptive_sync = true;
         server.output_catalog(modeled).unwrap();
-        server.output_color(OutputId(1), ColorStatus { hdr10: true, prepared: Some(hdr), effective, pending, revision: 2, ..Default::default() });
-        server.output_adaptive_sync(OutputId(1), AdaptiveSyncStatus { support: AdaptiveSyncSupport::Supported,
-            prepared: Some(true), effective: Some(false), pending: true, reason: None });
+        server.output_color(
+            OutputId(1),
+            ColorStatus {
+                hdr10: true,
+                prepared: Some(hdr),
+                effective,
+                pending,
+                revision: 2,
+                ..Default::default()
+            },
+        );
+        server.output_adaptive_sync(
+            OutputId(1),
+            AdaptiveSyncStatus {
+                support: AdaptiveSyncSupport::Supported,
+                prepared: Some(true),
+                effective: Some(false),
+                pending: true,
+                reason: None,
+            },
+        );
         server.output_configuration_finished(apply.token, true);
         let preview = server.display_snapshot().preview.unwrap();
         assert_eq!(std::fs::read(&path).unwrap(), initial);
         let mut writes = 0;
         let id = server.display_snapshot().last_request + 1;
-        server.display_request(DisplayRequest { id, action: DisplayAction::Keep { token: preview.token } }, |_| {
-            writes += 1;
-            Err(io::Error::other("controlled color settings write failure"))
-        });
+        server.display_request(
+            DisplayRequest {
+                id,
+                action: DisplayAction::Keep {
+                    token: preview.token,
+                },
+            },
+            |_| {
+                writes += 1;
+                Err(io::Error::other("controlled color settings write failure"))
+            },
+        );
         assert_eq!(writes, usize::from(ready));
         assert_eq!(server.display_preview_token(), Some(preview.token));
-        assert_eq!(server.display_snapshot().preview.unwrap().deadline, preview.deadline);
+        assert_eq!(
+            server.display_snapshot().preview.unwrap().deadline,
+            preview.deadline
+        );
         assert_eq!(std::fs::read(&path).unwrap(), initial);
         let outcome = server.display_snapshot().response.unwrap().outcome;
-        assert!(matches!(outcome, DisplayOutcome::Failed(ref reason) if if ready { reason.contains("write failure") } else { reason.contains("HDR output") }));
+        assert!(
+            matches!(outcome, DisplayOutcome::Failed(ref reason) if if ready { reason.contains("write failure") } else { reason.contains("HDR output") })
+        );
         if ready {
             let id = server.display_snapshot().last_request + 1;
-            server.display_request(DisplayRequest { id, action: DisplayAction::Keep { token: preview.token } }, |heads| {
-                writes += 1;
-                crate::commands::Commands::save_outputs(&path, heads).map(|_| ())
-            });
+            server.display_request(
+                DisplayRequest {
+                    id,
+                    action: DisplayAction::Keep {
+                        token: preview.token,
+                    },
+                },
+                |heads| {
+                    writes += 1;
+                    crate::commands::Commands::save_outputs(&path, heads).map(|_| ())
+                },
+            );
             assert_eq!(writes, 2);
-            assert_eq!(server.display_snapshot().response.unwrap().outcome, DisplayOutcome::Kept);
+            assert_eq!(
+                server.display_snapshot().response.unwrap().outcome,
+                DisplayOutcome::Kept
+            );
             assert_eq!(server.kept_display_token(), Some(preview.token));
             let loaded = crate::commands::Commands::load(&path).unwrap();
             assert_eq!(loaded.outputs[&name].color, ColorMode::Hdr10);
@@ -702,15 +820,35 @@ fn modeled_hdr_confirmation_refuses_unobserved_mismatched_and_pending_keep_prese
             assert_eq!(loaded.keyboard.layout, "br");
             assert_eq!(loaded.outputs["disconnected"].color, ColorMode::Hdr10);
             assert!(!loaded.outputs["disconnected"].enabled);
-            submit(&mut server, DisplayAction::Keep { token: preview.token });
-            assert!(matches!(server.display_snapshot().response.unwrap().outcome, DisplayOutcome::Failed(_)));
+            submit(
+                &mut server,
+                DisplayAction::Keep {
+                    token: preview.token,
+                },
+            );
+            assert!(matches!(
+                server.display_snapshot().response.unwrap().outcome,
+                DisplayOutcome::Failed(_)
+            ));
         } else {
-            submit(&mut server, DisplayAction::Revert { token: preview.token });
+            submit(
+                &mut server,
+                DisplayAction::Revert {
+                    token: preview.token,
+                },
+            );
             let recovery = server.output_requests().pop().unwrap();
             assert!(server.output_configuration_recovery(&recovery));
-            assert!(server.apply_virtual_output_configuration(&recovery, [640, 480]).unwrap());
+            assert!(
+                server
+                    .apply_virtual_output_configuration(&recovery, [640, 480])
+                    .unwrap()
+            );
             server.output_configuration_finished(recovery.token, true);
-            assert_eq!(server.display_snapshot().configuration(), before.configuration());
+            assert_eq!(
+                server.display_snapshot().configuration(),
+                before.configuration()
+            );
             assert!(server.display_snapshot().preview.is_none());
             assert_eq!(std::fs::read(&path).unwrap(), initial);
         }
@@ -718,13 +856,29 @@ fn modeled_hdr_confirmation_refuses_unobserved_mismatched_and_pending_keep_prese
 }
 
 #[test]
-fn twenty_later_head_failures_reject_old_completions_and_restore_the_entire_multihead_configuration_once() {
+fn twenty_later_head_failures_reject_old_completions_and_restore_the_entire_multihead_configuration_once()
+ {
     let bounds = [1440u32, 960];
     let mut server = Server::new(bounds.map(|value| value as i32)).unwrap();
-    server.configure_scaled_outputs(&[
-        Monitor { id: OutputId(1), name: "Rollback-A".into(), origin: [0, 0], size: [640, 480] },
-        Monitor { id: OutputId(2), name: "Rollback-B".into(), origin: [640, 0], size: [640, 480] },
-    ], &BTreeMap::from([(OutputId(1), 1.0), (OutputId(2), 1.0)])).unwrap();
+    server
+        .configure_scaled_outputs(
+            &[
+                Monitor {
+                    id: OutputId(1),
+                    name: "Rollback-A".into(),
+                    origin: [0, 0],
+                    size: [640, 480],
+                },
+                Monitor {
+                    id: OutputId(2),
+                    name: "Rollback-B".into(),
+                    origin: [640, 0],
+                    size: [640, 480],
+                },
+            ],
+            &BTreeMap::from([(OutputId(1), 1.0), (OutputId(2), 1.0)]),
+        )
+        .unwrap();
     server.registered_output_catalog().unwrap();
     let original = server.display_snapshot();
     for _ in 0..20 {
@@ -733,34 +887,66 @@ fn twenty_later_head_failures_reject_old_completions_and_restore_the_entire_mult
         let first = proposed.get_mut(&OutputId(1)).unwrap().as_mut().unwrap();
         first.rotation = lince_interface::host::mapping::QuarterTurn::Clockwise90;
         first.scale = 1.25;
-        proposed.get_mut(&OutputId(2)).unwrap().as_mut().unwrap().position = [700, 20];
-        submit(&mut server, DisplayAction::Preview { revision: before.revision, heads: proposed.clone() });
+        proposed
+            .get_mut(&OutputId(2))
+            .unwrap()
+            .as_mut()
+            .unwrap()
+            .position = [700, 20];
+        submit(
+            &mut server,
+            DisplayAction::Preview {
+                revision: before.revision,
+                heads: proposed.clone(),
+            },
+        );
         let test = server.output_requests().pop().unwrap();
         assert!(test.test);
-        assert!(server.apply_virtual_output_configuration(&test, bounds).unwrap());
+        assert!(
+            server
+                .apply_virtual_output_configuration(&test, bounds)
+                .unwrap()
+        );
         server.output_configuration_finished(test.token, true);
         let apply = server.output_requests().pop().unwrap();
         assert!(!apply.test);
         let mut partial = before.configuration();
         partial.insert(OutputId(1), proposed[&OutputId(1)].clone());
-        assert!(server.install_virtual_outputs(before.heads.clone(), &partial, bounds, false).unwrap());
-        assert_ne!(server.display_snapshot().configuration(), before.configuration());
+        assert!(
+            server
+                .install_virtual_outputs(before.heads.clone(), &partial, bounds, false)
+                .unwrap()
+        );
+        assert_ne!(
+            server.display_snapshot().configuration(),
+            before.configuration()
+        );
         server.output_configuration_finished(apply.token, false);
         let recovery = server.output_requests().pop().unwrap();
         assert!(server.output_configuration_recovery(&recovery));
         assert!(!server.output_configuration_current(&apply));
         server.output_configuration_finished(apply.token, true);
         assert!(server.output_configuration_current(&recovery));
-        assert!(server.apply_virtual_output_configuration(&recovery, bounds).unwrap());
+        assert!(
+            server
+                .apply_virtual_output_configuration(&recovery, bounds)
+                .unwrap()
+        );
         server.output_configuration_finished(recovery.token, true);
         let after = server.display_snapshot();
         assert_eq!(after.configuration(), original.configuration());
         assert_eq!(after.outputs, original.outputs);
         assert!(after.preview.is_none());
-        assert!(matches!(after.response.unwrap().outcome, DisplayOutcome::Failed(_)));
+        assert!(matches!(
+            after.response.unwrap().outcome,
+            DisplayOutcome::Failed(_)
+        ));
         server.output_configuration_finished(apply.token, true);
         server.output_configuration_finished(recovery.token, true);
-        assert_eq!(server.display_snapshot().configuration(), original.configuration());
+        assert_eq!(
+            server.display_snapshot().configuration(),
+            original.configuration()
+        );
         assert!(server.output_requests().is_empty());
         assert!(server.display_timeout().is_none());
     }

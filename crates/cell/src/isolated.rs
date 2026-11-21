@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: impl CellRuntime, impl Cell.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 17, 22, 23, 25,
+//   26, 28, 57, 84.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 17, 22, 23, 25, 26, 28.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 11, 34.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   11, 34.
+
 use std::io::Error;
 use std::sync::Arc;
 

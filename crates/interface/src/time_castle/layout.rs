@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct BandLevel, struct Occurrence, struct Label, fn occurrences.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 71, 169, 173,
+//   376.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   42, 90, 128, 143, 163, 309.
+
 use super::*;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 

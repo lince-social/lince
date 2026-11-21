@@ -1,6 +1,16 @@
 // Copyright 2025 the Parley Authors
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+// non-lean-yet
+// Scope: struct Selection, enum AnchorBase, fn extend_selection.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 61.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   hard_line_end:extend (396), hard_line_start:extend (339), line_end:extend (376),
+//   line_start:extend (323), move_lines:extend (266), next_line:extend (242), next_visual:extend
+//   (180), next_visual_word:extend (222), previous_line:extend (252), previous_visual:extend (201),
+//   previous_visual_word:extend (232).
+
 use crate::BoundingBox;
 use crate::editing::Cursor;
 #[cfg(feature = "accesskit")]

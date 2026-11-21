@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn command, fn concept, fn record, fn
+//   assignment_accepts_selected_identities_and_keeps_earlier_assignments_when_write_meaning_changes.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use engine::{Engine, actions::Action};

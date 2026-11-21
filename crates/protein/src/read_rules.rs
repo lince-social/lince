@@ -1,11 +1,18 @@
+//! Composes Role read policy with a Person's saved read filter.
+
+use crate::{Predicate, ProteinError, role_authority::policy_for};
+use nucleus::valid_uid;
 use serde::{Deserialize, Serialize};
+use serde_json::from_str;
+use store::{Store, auth::person_access, sqlx::Error::Protocol};
 
-use crate::{Predicate, ProteinError};
-
+/// Concept conditions that admit or exclude Records.
 #[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ReadRules {
+    /// Conditions that must match to admit a Record.
     pub allow: Predicate,
+    /// Conditions that exclude a matching Record.
     pub block: Predicate,
 }
 
@@ -18,39 +25,55 @@ impl Default for ReadRules {
     }
 }
 
+/// Negates a condition, distributing negation over groups.
 pub fn negate(predicate: &Predicate) -> Predicate {
     match predicate {
         Predicate::All(children) => Predicate::Any(children.iter().map(negate).collect()),
         Predicate::Any(children) => Predicate::All(children.iter().map(negate).collect()),
-        Predicate::Not(child) => *child.clone(),
+        Predicate::Not(child) => child.as_ref().clone(),
         other => Predicate::Not(Box::new(other.clone())),
     }
 }
 
 impl ReadRules {
+    /// Builds the condition a Record must satisfy to be readable.
     pub fn predicate(&self) -> Predicate {
         Predicate::All(vec![self.allow.clone(), negate(&self.block)])
     }
 
+    /// Restores the two-part filter produced by [Self::predicate].
+    ///
+    /// Other filter forms become an allow condition with an empty block.
     pub fn from_predicate(predicate: Predicate) -> Self {
-        if let Predicate::All(children) = &predicate {
-            if let [allow, blocked] = children.as_slice() {
-                return Self {
-                    allow: allow.clone(),
-                    block: negate(blocked),
-                };
-            }
-        }
+        let allow = match predicate {
+            Predicate::All(children) => match <[Predicate; 2]>::try_from(children) {
+                Ok([allow, blocked]) => {
+                    return Self {
+                        allow,
+                        block: negate(&blocked),
+                    };
+                }
+                Err(children) => Predicate::All(children),
+            },
+            allow => allow,
+        };
         Self {
-            allow: predicate,
-            block: Predicate::Any(vec![]),
+            allow,
+            ..Self::default()
         }
     }
 
+    /// Checks the supported Concept conditions and tree size.
+    ///
+    /// # Errors
+    /// Returns an error for invalid conditions, depth, or combined node count.
     pub fn validate(&self) -> Result<(), ProteinError> {
+        const MAX_NODES: usize = 128;
+        const MAX_DEPTH: usize = 8;
+
         fn visit(predicate: &Predicate, depth: usize, nodes: &mut usize) -> bool {
             *nodes += 1;
-            if depth > 8 || *nodes > 128 {
+            if depth > MAX_DEPTH || *nodes > MAX_NODES {
                 return false;
             }
             match predicate {
@@ -61,7 +84,7 @@ impl ReadRules {
                     matches!(child.as_ref(), Predicate::ConceptIn(_))
                         && visit(child, depth + 1, nodes)
                 }
-                Predicate::ConceptIn(uid) => nucleus::valid_uid(uid, "c"),
+                Predicate::ConceptIn(uid) => valid_uid(uid, "c"),
                 _ => false,
             }
         }
@@ -69,30 +92,30 @@ impl ReadRules {
         if visit(&self.allow, 0, &mut nodes) && visit(&self.block, 0, &mut nodes) {
             Ok(())
         } else {
-            Err(store::sqlx::Error::Protocol(
+            Err(Protocol(
                 "Use at most 128 tag conditions and eight group levels.".into(),
             ))
         }
     }
 }
 
+/// Combines the Person's Role read conditions and personal read filter.
+///
+/// # Errors
+/// Returns an error if access cannot be read or a saved filter is invalid.
 pub async fn effective_predicate(
-    store: &store::Store,
+    store: &Store,
     person: &str,
 ) -> Result<Option<Predicate>, ProteinError> {
-    let Some(access) = store::auth::person_access(&store.pool, person).await? else {
+    let Some(access) = person_access(&store.pool, person).await? else {
         return Ok(None);
     };
     let mut filters = Vec::new();
-    if let Some(policy) = crate::role_authority::policy_for(store, person, None).await? {
+    if let Some(policy) = policy_for(store, person, None).await? {
         filters.push(policy.read);
     }
     if let Some(raw) = access.read_filter {
-        filters.push(
-            serde_json::from_str(&raw).map_err(|_| {
-                store::sqlx::Error::Protocol("Invalid personal read filter.".into())
-            })?,
-        );
+        filters.push(from_str(&raw).map_err(|_| Protocol("Invalid personal read filter.".into()))?);
     }
     Ok((!filters.is_empty()).then_some(Predicate::All(filters)))
 }

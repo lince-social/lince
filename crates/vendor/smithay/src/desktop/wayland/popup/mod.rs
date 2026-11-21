@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod grab, mod manager, enum PopupKind.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 39, 56.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (92, 94).
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 4, 5.
+
 mod grab;
 mod manager;
 

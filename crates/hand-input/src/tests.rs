@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: fn face_outputs_require_valid_shapes_and_select_highest_confidence, fn
+//   head_relative_pan_prioritizes_camera_right_and_obeys_neutral_zone, fn
+//   head_relative_pan_stops_and_reanchors_after_loss_or_stale_frames, fn open_landmarks.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 12, 13, 15, 36, 37, 60, 173, 174, 175, 176.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 58, 60, 162.
+
+use std::env::var_os;
+
 use super::*;
 
 #[test]
@@ -69,7 +81,9 @@ fn palm_orientation_rejects_back_edge_and_uncertain_handedness() {
     assert!(palm_facing_camera(&hand, 0.95));
     assert!(!palm_facing_camera(&hand, 0.05));
     assert!(!palm_facing_camera(&hand, 0.5));
-    for point in &mut hand { point[0] = -point[0]; }
+    for point in &mut hand {
+        point[0] = -point[0];
+    }
     assert!(palm_facing_camera(&hand, 0.05));
     hand[17] = hand[5];
     assert!(!palm_facing_camera(&hand, 0.05));
@@ -86,27 +100,70 @@ fn pinch_requires_close_thumb_and_index_at_a_valid_hand_scale() {
     assert!(!is_pinched(&hand));
     assert!(!is_pinched(&[[0.0; 3]; 21]));
     let mut tracker = PointerTracker::default();
-    let open = HandObservation { center: [0.5, 0.5], pointer: [0.5, 0.4], pinched: false };
-    let closed = HandObservation { pinched: true, ..open };
-    assert_eq!(tracker.update(&[open]), Some(PointerGesture::Hover(open.pointer)));
-    assert_eq!(tracker.update(&[closed]), Some(PointerGesture::Hover(closed.pointer)));
-    assert_eq!(tracker.update(&[closed]), Some(PointerGesture::Begin(closed.pointer)));
-    assert_eq!(tracker.update(&[closed]), Some(PointerGesture::Update(closed.pointer)));
+    let open = HandObservation {
+        center: [0.5, 0.5],
+        pointer: [0.5, 0.4],
+        pinched: false,
+    };
+    let closed = HandObservation {
+        pinched: true,
+        ..open
+    };
+    assert_eq!(
+        tracker.update(&[open]),
+        Some(PointerGesture::Hover(open.pointer))
+    );
+    assert_eq!(
+        tracker.update(&[closed]),
+        Some(PointerGesture::Hover(closed.pointer))
+    );
+    assert_eq!(
+        tracker.update(&[closed]),
+        Some(PointerGesture::Begin(closed.pointer))
+    );
+    assert_eq!(
+        tracker.update(&[closed]),
+        Some(PointerGesture::Update(closed.pointer))
+    );
     assert_eq!(tracker.update(&[]), Some(PointerGesture::Cancel));
     assert_eq!(tracker.update(&[closed]), None);
-    assert_eq!(tracker.update(&[open]), Some(PointerGesture::Hover(open.pointer)));
-    assert_eq!(tracker.update(&[closed]), Some(PointerGesture::Hover(closed.pointer)));
-    assert_eq!(tracker.update(&[closed]), Some(PointerGesture::Begin(closed.pointer)));
-    assert_eq!(tracker.update(&[open]), Some(PointerGesture::Update(open.pointer)));
-    assert_eq!(tracker.update(&[open]), Some(PointerGesture::End(open.pointer)));
+    assert_eq!(
+        tracker.update(&[open]),
+        Some(PointerGesture::Hover(open.pointer))
+    );
+    assert_eq!(
+        tracker.update(&[closed]),
+        Some(PointerGesture::Hover(closed.pointer))
+    );
+    assert_eq!(
+        tracker.update(&[closed]),
+        Some(PointerGesture::Begin(closed.pointer))
+    );
+    assert_eq!(
+        tracker.update(&[open]),
+        Some(PointerGesture::Update(open.pointer))
+    );
+    assert_eq!(
+        tracker.update(&[open]),
+        Some(PointerGesture::End(open.pointer))
+    );
     tracker.disarm();
     assert_eq!(tracker.update(&[closed]), None);
-    assert_eq!(tracker.update(&[open]), Some(PointerGesture::Hover(open.pointer)));
-    assert_eq!(tracker.update(&[closed]), Some(PointerGesture::Hover(closed.pointer)));
+    assert_eq!(
+        tracker.update(&[open]),
+        Some(PointerGesture::Hover(open.pointer))
+    );
+    assert_eq!(
+        tracker.update(&[closed]),
+        Some(PointerGesture::Hover(closed.pointer))
+    );
     assert_eq!(tracker.update(&[]), None);
     assert_eq!(tracker.update(&[closed]), None);
     assert_eq!(tracker.update(&[closed]), None);
-    assert_eq!(tracker.update(&[open]), Some(PointerGesture::Hover(open.pointer)));
+    assert_eq!(
+        tracker.update(&[open]),
+        Some(PointerGesture::Hover(open.pointer))
+    );
 }
 
 #[test]
@@ -199,7 +256,7 @@ fn downloaded_models_run() {
     );
     assert!(outputs.iter().flatten().all(|value| value.is_finite()));
     println!("Hand and face models inferred in {:?}", started.elapsed());
-    if let Some(path) = std::env::var_os("LINCE_HAND_TEST_IMAGE") {
+    if let Some(path) = var_os("LINCE_HAND_TEST_IMAGE") {
         let image = image::open(path).unwrap().to_rgb8();
         assert!(
             tracker.open_hand(&image).unwrap().is_some(),
@@ -212,18 +269,18 @@ fn downloaded_models_run() {
                 .is_some()
         );
     }
-    if let Some(path) = std::env::var_os("LINCE_HAND_CLOSED_TEST_IMAGE") {
+    if let Some(path) = var_os("LINCE_HAND_CLOSED_TEST_IMAGE") {
         let image = image::open(path).unwrap().to_rgb8();
         assert_eq!(tracker.open_hand(&image).unwrap(), None);
     }
-    if let Some(path) = std::env::var_os("LINCE_FACE_TEST_IMAGE") {
+    if let Some(path) = var_os("LINCE_FACE_TEST_IMAGE") {
         let image = image::open(path).unwrap().to_rgb8();
         assert!(
             tracker.head(&image).unwrap().is_some(),
             "Expected a face in the supplied image"
         );
     }
-    if let Some(path) = std::env::var_os("LINCE_TWO_PALMS_TEST_IMAGE") {
+    if let Some(path) = var_os("LINCE_TWO_PALMS_TEST_IMAGE") {
         let image = image::open(path).unwrap().to_rgb8();
         assert_eq!(
             tracker.open_hands(&image).unwrap().len(),

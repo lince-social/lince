@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: fn allowed, fn quoted, struct Table.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 43, 127, 133, 158, 187.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 34.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 29,
+//   34, 35, 36, 38, 39, 43, 106, 127, 133, 158, 187.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   129, 147.
+
 use serde_json::Value;
 use sqlx::{Row, SqliteConnection};
 

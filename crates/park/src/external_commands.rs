@@ -1,8 +1,16 @@
+// non-lean-yet
+// Scope: struct ExternalCommands, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   binding_allowed:inhibited (17), binding_allowed:locked (16), binding_allowed:modal (18),
+//   request:locked (40).
+
+use std::io;
+
 use lince_interface::host::{
     external::{Request, Settings, Snapshot},
     input::{InputOutcome, InputResponse},
 };
-use std::io;
 
 #[derive(Default)]
 pub(crate) struct ExternalCommands {
@@ -74,11 +82,12 @@ impl ExternalCommands {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use lince_interface::host::{
         external::{Action, Command},
         launch::Description,
     };
+
+    use super::*;
 
     fn settings() -> Settings {
         Settings(std::collections::BTreeMap::from([(

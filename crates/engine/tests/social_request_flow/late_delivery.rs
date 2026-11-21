@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod attachments, mod resend_races, mod discard_recovery, mod pending_keys.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 88, 99.
+
 use super::*;
 use nucleus::social::requests::PrivateDelivery;
 

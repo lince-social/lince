@@ -1,4 +1,21 @@
-use super::{Editor, allowed, text_state};
+// non-lean-yet
+// Scope: const MAX_TRANSFER, const MAX_VALUE, enum Destination, struct Target.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 394.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 127.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites decode: String
+//   (122).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (343, 363).
+
+use std::{
+    collections::VecDeque,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+};
+
 use bevy::{
     prelude::*,
     text::{EditableText, TextEdit},
@@ -7,13 +24,8 @@ use lince_interface::{
     host::{HostRequest, OutputId},
     native,
 };
-use std::{
-    collections::VecDeque,
-    sync::{
-        Arc,
-        atomic::{AtomicBool, Ordering},
-    },
-};
+
+use super::{Editor, allowed, text_state};
 
 pub const MAX_TRANSFER: usize = 1024 * 1024;
 pub const MAX_VALUE: usize = 16 * 1024;
@@ -71,8 +83,13 @@ impl Target {
 }
 
 fn mapping_revision(world: &World, output: OutputId) -> Option<Option<u64>> {
-    let snapshot = world.get_resource::<lince_interface::host::mapping::Snapshot>().filter(|snapshot| !snapshot.outputs().is_empty());
-    match snapshot { Some(snapshot) => Some(Some(snapshot.get(output)?.revision())), None => Some(None) }
+    let snapshot = world
+        .get_resource::<lince_interface::host::mapping::Snapshot>()
+        .filter(|snapshot| !snapshot.outputs().is_empty());
+    match snapshot {
+        Some(snapshot) => Some(Some(snapshot.get(output)?.revision())),
+        None => Some(None),
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -264,7 +281,10 @@ fn prepare(world: &mut World) {
                         .iter()
                         .any(|output| output.id == target.output && output.usable.is_some())
             });
-        if !window || !active_output || mapping_revision(world, target.output) != Some(target.mapping_revision) {
+        if !window
+            || !active_output
+            || mapping_revision(world, target.output) != Some(target.mapping_revision)
+        {
             world
                 .resource_mut::<Transfers>()
                 .replies
@@ -422,8 +442,9 @@ fn finish(world: &mut World) {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use bevy::ecs::system::RunSystemOnce;
+
+    use super::*;
 
     fn editor_request(world: &mut World, owner: Entity, value: &str) -> Request {
         let window = world.spawn(Window::default()).id();
@@ -486,34 +507,60 @@ mod tests {
 
     #[test]
     fn queued_drop_uses_its_output_mapping_and_rejects_a_replaced_lens_without_mutating_text() {
-        use lince_interface::host::{OutputViewport, Rectangle, mapping::{Mapping, QuarterTurn, Snapshot}, raster::RasterMapping};
+        use lince_interface::host::{
+            OutputViewport, Rectangle,
+            mapping::{Mapping, QuarterTurn, Snapshot},
+            raster::RasterMapping,
+        };
         let (mut world, owner) = super::super::tests::editing_world("unchanged");
         world.init_resource::<Transfers>();
         let mut request = editor_request(&mut world, owner, "rejected");
         let bounds = Rectangle::new([0.0; 2], [800.0, 600.0]).unwrap();
-        let output = OutputViewport { rotation: Default::default(), id: OutputId(1), bounds, usable: Some(bounds), physical_size: [800, 600],
-            raster: RasterMapping { origin: [0.0; 2], scale: [1.0; 2] }, workspace: 1 };
+        let output = OutputViewport {
+            rotation: Default::default(),
+            id: OutputId(1),
+            bounds,
+            usable: Some(bounds),
+            physical_size: [800, 600],
+            raster: RasterMapping {
+                origin: [0.0; 2],
+                scale: [1.0; 2],
+            },
+            workspace: 1,
+        };
         let old = Mapping::new(&output, QuarterTurn::Normal, 2.0, [400.0, 300.0], 1).unwrap();
-        let mut companion = output.clone(); companion.id = OutputId(2);
+        let mut companion = output.clone();
+        companion.id = OutputId(2);
         companion.bounds = Rectangle::new([800.0, 0.0], bounds.size()).unwrap();
-        companion.usable = Some(companion.bounds); companion.raster.origin = companion.bounds.origin();
+        companion.usable = Some(companion.bounds);
+        companion.raster.origin = companion.bounds.origin();
         let other = Mapping::new(&companion, QuarterTurn::Normal, 1.0, [1200.0, 300.0], 2).unwrap();
         world.insert_resource(Snapshot::new(2, [old.clone(), other]).unwrap());
         request.target.mapping_revision = Some(1);
         assert_eq!(mapping_revision(&world, OutputId(1)), Some(Some(1)));
         let unchanged_owner = request.target.clone();
-        let replacement = Mapping::new(&output, QuarterTurn::Normal, 4.0, [400.0, 300.0], 3).unwrap();
+        let replacement =
+            Mapping::new(&output, QuarterTurn::Normal, 4.0, [400.0, 300.0], 3).unwrap();
         world.insert_resource(Snapshot::new(3, [replacement]).unwrap());
-        assert!(!unchanged_owner.same_owner(&Target { mapping_revision: Some(3), ..unchanged_owner.clone() }));
+        assert!(!unchanged_owner.same_owner(&Target {
+            mapping_revision: Some(3),
+            ..unchanged_owner.clone()
+        }));
         enqueue(&mut world, request);
         assert_eq!(process(&mut world), (7, false));
-        assert_eq!(world.get::<EditableText>(owner).unwrap().value(), "unchanged");
+        assert_eq!(
+            world.get::<EditableText>(owner).unwrap().value(),
+            "unchanged"
+        );
         assert_eq!(mapping_revision(&world, OutputId(2)), None);
         let mut accepted = editor_request(&mut world, owner, "accepted");
         accepted.target.mapping_revision = Some(3);
         enqueue(&mut world, accepted);
         assert_eq!(process(&mut world), (7, true));
-        assert_eq!(world.get::<EditableText>(owner).unwrap().value(), "acceptedunchanged");
+        assert_eq!(
+            world.get::<EditableText>(owner).unwrap().value(),
+            "acceptedunchanged"
+        );
     }
 
     #[test]

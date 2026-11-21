@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn canonical, fn
+//   saving_and_reloading_during_move_or_resize_keeps_only_committed_scene_data.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (11).
+
 use super::*;
 use crate::{
     host::{Direction, Manipulation, WorkspaceLayout},

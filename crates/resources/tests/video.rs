@@ -1,8 +1,13 @@
-use lince_resources::{Library, Locator, MediaInput, Resource, SourceServer, video};
+// non-lean-yet
+// Scope: fn video_previews_and_retained_intervals_work_without_the_original_file.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::{
     fs,
     process::{Command, Stdio},
 };
+
+use lince_resources::{Library, Locator, MediaInput, Resource, SourceServer, video};
 
 #[test]
 #[ignore = "Requires FFmpeg from the native Nix development shell"]

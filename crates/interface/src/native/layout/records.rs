@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct Saved, struct Row, struct SavedLayouts, struct Restored.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 86, 93, 323.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (158, 199,
+//   221, 250).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   140.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (84, 140).
+
 use super::LayoutBox;
 use crate::native::{
     area::InfluenceArea,

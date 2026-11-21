@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn profile, fn wake_setup_persists_and_restarts_off_without_starting_models_or_agents, fn
+//   invalid_optional_wake_profile_remains_recoverable_without_disabling_dictation_settings.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn profile() -> speech::wake::Profile {

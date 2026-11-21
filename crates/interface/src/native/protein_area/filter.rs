@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: mod preparation, struct Subscription, struct ChangeMatches, struct Matches.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 44, 118, 168.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (144, 167, 169, 192).
+
 use super::*;
 use crate::native::{
     actions::{Action, ActionButton},

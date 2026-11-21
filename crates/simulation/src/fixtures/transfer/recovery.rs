@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: fn append, fn action, fn quantity, fn restore_person.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 104, 136.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   declined_invitation:replicated (64), grouped_correction_after_restart:replicated (118),
+//   private_correction_after_restart:replicated (90).
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 9, 46, 71, 98.
+// - [Clippy probe: clippy::missing_panics_doc] State the panic conditions for exported functions.
+//   Sites 64, 90.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   64, 90, 118.
+
 use engine::actions::Action;
 use nucleus::simulation::{Comparison, Evaluation, Predicate, Quantity};
 use serde_json::json;

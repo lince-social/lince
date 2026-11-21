@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn main, fn run, fn main.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 8.
+
 #[cfg(target_os = "linux")]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     std::thread::Builder::new()

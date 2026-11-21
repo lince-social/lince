@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn export, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites export: String
+//   (3).
+
 use super::{SandStyleKind, TOKENS, ThemeSettings, Token, TokenOverrides, TokenValue};
 
 pub fn export(

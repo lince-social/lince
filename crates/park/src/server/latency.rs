@@ -1,7 +1,15 @@
+// non-lean-yet
+// Scope: struct Pending, struct Applications, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (15).
+
+use std::time::Duration;
+
+use lince_interface::host::performance::{self, Count, InputStage, Stage};
+
 use super::*;
 use crate::runtime::latency::{Outputs, Stamp};
-use lince_interface::host::performance::{self, Count, InputStage, Stage};
-use std::time::Duration;
 
 struct Pending {
     stamp: Stamp,

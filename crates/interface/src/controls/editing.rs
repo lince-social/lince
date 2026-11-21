@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct TextEditingPlugin, fn attach_widget, fn commit, fn normalize.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy::{
     prelude::*,
     text::{EditableText, EditableTextSystems, TextEdit},

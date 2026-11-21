@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: enum Layer, enum KeyboardInteractivity, enum ExclusiveZone, struct Margins.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::cmp::Ordering;
 
 use wayland_protocols_wlr::layer_shell::v1::server::{zwlr_layer_shell_v1, zwlr_layer_surface_v1};

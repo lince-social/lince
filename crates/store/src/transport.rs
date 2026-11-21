@@ -1,11 +1,32 @@
-use crate::StoreError;
-use nucleus::transfer::transport::{Event, Journey, PICKUP_GRACE_MILLIS, Progress, Step};
+// non-lean-yet
+// Scope: fn invalid, fn journey, fn journey_on, fn terms_on.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 209, 252, 268, 269.
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option` value.
+//   Sites 184.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 10.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 41, 132, 187,
+//   189, 202.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 66, 92.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 66, 92.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 14, 19, 230, 234.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 14, 19,
+//   230, 234.
+
+use std::collections::BTreeMap;
+
 use nucleus::transfer::{
     disclosure::TransferItem,
-    transport::{Capacity, Direction, Terms},
+    transport::{Capacity, Direction, Event, Journey, PICKUP_GRACE_MILLIS, Progress, Step, Terms},
 };
 use sqlx::{Row, SqliteConnection, SqlitePool};
-use std::collections::BTreeMap;
+
+use crate::StoreError;
 
 fn invalid(message: impl ToString) -> StoreError {
     StoreError::Protocol(message.to_string())

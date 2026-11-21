@@ -1,3 +1,22 @@
+// non-lean-yet
+// Scope: impl Engine.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 89, 104, 203,
+//   204, 207, 238, 260, 261, 268, 269, 274, 292, 296, 368, 381, 478, 479, 481, 482, 483, 484, 485,
+//   488, 489, 490, 491, 492, 500, 508, 510, 511, 512, 513, 514, 519, 520, 521, 533, 559, 562, 563,
+//   591, 595, 689, 786.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 341, 453.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 91, 369.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 91, 369.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 341, 453.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value.
+//   Sites 424.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 
 impl Engine {

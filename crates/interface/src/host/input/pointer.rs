@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct PointerSettings, struct PointerCapabilities, struct PointerDevice, type
+//   PointerRequest.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites validate:
+//   String (13).
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]

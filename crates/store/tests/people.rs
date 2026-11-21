@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn record, fn person, fn a_person_nobody_has_touched_is_active, fn
+//   deactivating_stops_them_and_records_when.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 111.
+
 #![cfg(test)]
 
 use store::Store;

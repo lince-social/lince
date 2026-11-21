@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: const PAGE_SIZE, const ORIGINAL, const DRAFT, fn area_app.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::{
     app::CellHandle,

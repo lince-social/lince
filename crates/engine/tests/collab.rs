@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn cell, fn plain, fn pair_both_ways, fn wire_push.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::manual_string_new] empty String is being created manually. Sites 206.
+// - [Clippy probe: clippy::needless_collect] avoid using `collect()` when not needed. Sites 157.
+
 #![cfg(test)]
 
 use engine::Engine;

@@ -1,11 +1,22 @@
+// non-lean-yet
+// Scope: struct Model, struct Output, fn history, fn
+//   summaries_preserve_six_whole_recent_turns_and_original_transcript.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::await_holding_lock] Release the guard before awaiting if the transaction
+//   permits it. Sites 194.
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 102, 104, 106, 107, 112, 117, 124, 188, 190, 191, 193, 195, 267, 284, 355.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 125, 196.
+
 #![cfg(test)]
+
+use std::sync::Mutex;
 
 use fiote::{
     conversation::{self, Summary},
     provider::{Message, Provider, Reply, TextOutput, ToolDefinition},
 };
 use serde_json::json;
-use std::sync::Mutex;
 
 struct Model {
     requests: Mutex<Vec<Vec<Message>>>,

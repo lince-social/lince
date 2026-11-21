@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod area_reach, mod area_summary, mod appearance, mod compositor.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (238).
+
 use bevy::{
     ecs::{entity_disabling::Disabled, query::Allow},
     math::{DQuat, DVec2, DVec3},

@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct Security.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 18.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 18.
+
 use crate::auth::Failure;
 use axum::http::{HeaderMap, StatusCode, Uri, header};
 

@@ -1,3 +1,34 @@
+// non-lean-yet
+// Scope: mod admission, mod ask, mod ask_worker, mod authority.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 234, 235, 236,
+//   239, 240, 241, 242, 243, 244, 245, 247, 348, 396, 401, 407, 409, 424, 543, 553, 559, 645, 806,
+//   884, 987, 988, 1132, 1181, 1182, 1183, 1186, 1187, 1198, 1210, 1254, 1256, 1259, 1313, 1380,
+//   1382.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 178, 209,
+//   351, 353, 380, 382, 445, 1031, 1038, 1080.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   1123, 1181, 1257, 1277.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 74, 81.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 396, 472, 480, 542, 543, 562, 570, 719, 833, 842, 955, 961, 981, 987, 988, 990,
+//   999, 1003, 1004, 1014, 1015, 1018, 1072, 1081, 1083, 1089, 1090, 1092, 1101, 1123, 1124, 1125,
+//   1127, 1129, 1131, 1176, 1181, 1182, 1183, 1184, 1186, 1187, 1213, 1233, 1254, 1256, 1257, 1258,
+//   1269, 1270, 1271, 1277, 1278, 1279, 1281, 1360, 1380, 1382.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 178, 209, 351, 353, 380, 382, 445, 1031, 1038, 1080.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 88, 165, 182.
+// - [Clippy probe: clippy::missing_panics_doc] State the panic conditions for exported functions.
+//   Sites 73.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 73.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 4.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   12, 34, 47, 57, 58, 73, 88, 165, 182, 626.
+
 use crate::{Engine, EngineError, actions::ActionOutcome, trust::Signer};
 use base64::{Engine as _, engine::general_purpose::STANDARD as B64};
 use chrono::{DateTime, Utc};

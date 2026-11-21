@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod rows, struct Controls, struct Prepared, fn prepare.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 46, 47, 54, 116,
+//   212.
+
 use super::*;
 use crate::native::retained::Presentation;
 use ui::{Command, button, clear, picker, stack};

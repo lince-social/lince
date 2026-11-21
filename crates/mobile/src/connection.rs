@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: enum Event, enum Request, struct Connection.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 35, 48, 75, 143,
+//   172, 203.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 225, 233,
+//   239, 245.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites
+//   authenticate_location: String (219), login: String (228), logout: String (236), send: String
+//   (206), stop: String (242).
+
 use cell::{ClientMessage, ServerMessage};
 use lince_interface::wake::WakeSignal;
 use std::{

@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn cancelled_queued_speech_never_opens_output_or_reports_playback, fn
+//   sound_effects_are_bounded_and_bypass_preserves_original, fn
+//   sound_library_saves_non_destructive_effects_and_searches_paths, fn
+//   sound_paths_reject_traversal_and_non_audio_files.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::{
     dsp::{Distortion, Effects},
     library::{Clip, Library, suggestions, valid_path},

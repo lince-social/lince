@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: mod blockers, struct Forces, struct Destination, fn local.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 146, 196, 244,
+//   343.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (42).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   395, 467, 487, 522, 523, 530, 537, 543, 553, 579, 592, 608, 611, 621, 624, 674, 748, 749.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (81, 243, 448, 470, 484, 488, 504, 525, 533, 550, 566, 590, 605, 609, 614, 622,
+//   650, 658, 728).
+
 mod blockers;
 pub(crate) use blockers::{BlockerQuery, Blockers, blocked};
 

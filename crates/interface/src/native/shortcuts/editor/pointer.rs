@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct CapturePointer, fn button, fn capture.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (79).
+
 use super::*;
 use bevy::{
     input::mouse::MouseButtonInput,

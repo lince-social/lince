@@ -1,13 +1,21 @@
-use fiote::communication::decision::{
-    Input, Model,
-    laya::{Bundle, Driver, Thresholds},
-};
+// non-lean-yet
+// Scope: fn main.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites 99.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   132.
+
 use std::{
     path::PathBuf,
     sync::{
         Arc, Mutex,
         atomic::{AtomicBool, AtomicU64},
     },
+};
+
+use fiote::communication::decision::{
+    Input, Model,
+    laya::{Bundle, Driver, Thresholds},
 };
 
 #[tokio::main]

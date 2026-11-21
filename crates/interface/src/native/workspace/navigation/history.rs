@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct History, struct Selection, fn output, fn capture.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 35.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (72).
+
 use super::*;
 use crate::host::OutputId;
 use std::collections::{BTreeMap, BTreeSet};

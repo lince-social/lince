@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn fresh, fn
+//   a_first_free_canvas_transfer_stages_registration_without_focus_activation_or_draft_loss, fn
+//   a_fresh_free_item_round_trips_through_an_inactive_tiled_workspace_with_its_authored_home, fn
+//   an_unregistered_transient_moves_its_live_family_and_rejects_changed_captured_geometry.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn fresh() -> (World, Entity, Entity, Entity) {

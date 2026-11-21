@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn transfer_party_opens_the_actual_person_experience_without_discovery, fn
+//   ordinary_decision_and_claim_forms_match_the_engine_actions, fn
+//   donation_and_trade_presets_describe_addressed_routes, fn draft.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[cfg_attr(test, test)]

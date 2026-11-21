@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn loan_expiry_projects_unmet_needs_without_returning_physical_stock, fn
+//   optional_extension_and_early_return_change_only_projected_availability, fn
+//   simulating_a_linked_return_reopens_all_its_needs_once, fn
+//   remote_extension_waits_for_both_parties_and_replays_in_both_delivery_modes.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use nucleus::simulation::{Observation, ReplayStatus, Verdict};
 
 #[test]

@@ -1,10 +1,19 @@
+// non-lean-yet
+// Scope: struct Fixture, fn record, fn decimal, fn assertion_ops.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 530, 531, 1181, 1256.
+
 #![cfg(test)]
 
 use nucleus::{DecimalValue, RecordKind};
 use serde_json::{Value, json};
-use store::assertions::{self, AssertionQuantity, AssertionRole, AssertionRow, NewAssertion};
-use store::sqlx::Row;
-use store::{Store, sqlx};
+use store::{
+    Store,
+    assertions::{self, AssertionQuantity, AssertionRole, AssertionRow, NewAssertion},
+    sqlx,
+    sqlx::Row,
+};
 
 struct Fixture {
     store: Store,
@@ -126,7 +135,7 @@ async fn assert_payload(store: &Store, expected: &AssertionRow) {
             "object_uri": stored.object_uri,
             "role": stored.role,
             "quantity_mantissa": stored.quantity.map(|quantity| quantity.mantissa().to_string()),
-            "quantity_scale": stored.quantity.map(|quantity| quantity.scale()),
+            "quantity_scale": stored.quantity.map(nucleus::DecimalValue::scale),
             "unit_uid": stored.unit_uid,
             "unit_revision": stored.unit_revision,
             "asserted_by": stored.asserted_by,

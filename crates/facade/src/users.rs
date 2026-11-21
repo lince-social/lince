@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn snapshot.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use crate::{
     State,
     auth::{Failure, internal},

@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct Field, struct AppliedFieldSettings, struct SettingsObserved, struct
+//   PresentationLabel.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 76, 81, 120, 121,
+//   191, 212, 228, 245, 283, 358, 390, 397, 420, 449, 483, 494, 524, 598.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   420, 494.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (120, 121, 191, 212, 213, 228, 231, 347, 358, 377, 454, 463, 483, 524, 559, 576).
+
 use super::super::rows::property_containers as containers;
 use super::*;
 use crate::native::sand_settings::{

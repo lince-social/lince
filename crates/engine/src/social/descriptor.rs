@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: fn validate_settings, fn describe, fn validate.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 40, 101.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 28, 92.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 9, 11, 48, 49.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 48, 49.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 101.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 28, 92.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 
 pub(super) fn validate_settings(settings: &ServiceSettings) -> Result<(), EngineError> {

@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: const MAX_BYTES, struct Saved, fn read, fn write.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,

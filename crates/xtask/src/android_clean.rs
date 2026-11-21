@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: const RETIRED, fn run, fn candidates, fn remove.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::{
     ffi::OsString,
     fs,

@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct Draft, enum Field, enum UiCommand, fn capture.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 79, 119, 120,
+//   245, 246.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 98, 103,
+//   108.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (463).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (131, 135, 151, 158, 161, 173, 176, 244).
+
 use super::*;
 use nucleus::trust_analysis::{
     Filter,

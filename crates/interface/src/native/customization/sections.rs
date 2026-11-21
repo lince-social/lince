@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Expansion, struct Accordion, struct Section, struct HiddenTabIndex.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 68.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (51, 78, 79, 91, 101, 109).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 219.
+
 use super::*;
 use std::collections::BTreeSet;
 

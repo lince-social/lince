@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: fn activate, fn setup, fn review_message, fn
+//   visibility_policy_drafts_edit_conditions_without_saving_any_record_policy.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 25, 48, 49, 77,
+//   80, 84, 159, 167.
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites 23.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (53, 61, 77, 78, 107, 111, 116, 120, 130, 135, 141, 146, 159, 166, 177, 185, 200,
+//   204, 213, 219, 238, 239, 243, 247, 253).
+
 use super::*;
 
 fn activate(world: &mut World, parent: Entity, caption: &str) {

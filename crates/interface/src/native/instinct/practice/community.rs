@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: struct LocalService, struct State, struct Prepared, fn subjects.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 86, 91, 94, 98,
+//   101, 118, 123, 167, 179, 194, 207, 227, 241, 283, 295, 310, 315, 331, 349, 351, 352, 353, 354,
+//   355, 356, 359, 360, 443, 454, 464, 465, 510, 524, 563, 571, 575, 603, 646, 690, 850, 1001,
+//   1037, 1084, 1092.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   115, 178, 443, 454.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (70, 83, 86, 100, 101, 132, 135, 143, 153, 156, 166, 182, 187, 205, 345, 346, 354,
+//   359, 434, 443, 454, 484, 490, 561, 571, 575, 588, 589, 597, 603, 607, 609, 643, 647, 651, 690,
+//   698, 706, 712, 734, 737, 760, 768, 780, 788, 834, 842, 848, 850, 859, 873, 890, 898, 906, 914,
+//   923, 928, 933, 940, 945, 951, 957, 971, 977, 987, 995, 996, 1012, 1015, 1037, 1082, 1084, 1090,
+//   1092, 1118, 1124, 1129, 1130).
+
 use super::*;
 use serde_json::{Value, json};
 

@@ -1,9 +1,29 @@
+// non-lean-yet
+// Scope: const MAX_CONTEXT_BYTES, fn context_bytes, fn validate_context, fn run.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 282.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 165, 234, 253,
+//   260.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 218.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   160, 193.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 10, 41, 83, 93.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 8, 10,
+//   41, 83, 93.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites context_bytes:
+//   String (10), run: String (83), run_streamed: String (93), validate_context: String (41).
+
+use std::{collections::HashSet, time::Duration};
+
+use tokio::sync::watch;
+
 use crate::{
     provider::{DiscardText, Message, Provider, TextOutput},
     tools::Registry,
 };
-use std::{collections::HashSet, time::Duration};
-use tokio::sync::watch;
 
 pub const MAX_CONTEXT_BYTES: usize = 512 * 1024;
 

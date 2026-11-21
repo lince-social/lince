@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 1.
+
 pub use lince_interface::tokens::*;
 
 pub(crate) mod tests {

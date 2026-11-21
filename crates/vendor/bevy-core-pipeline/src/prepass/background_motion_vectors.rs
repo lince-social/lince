@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct NoBackgroundMotionVectors, struct BackgroundMotionVectorsPipelineId, struct
+//   BackgroundMotionVectorsBindGroup, struct BackgroundMotionVectorsPlugin.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 166, 192, 207.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 57, 75, 79, 86.
+
 //! Default background motion vector prepass.
 //!
 //! When a camera has [`MotionVectorPrepass`] but no [`NoBackgroundMotionVectors`], this module

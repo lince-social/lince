@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct Selection, struct Item, fn choices, fn ordered.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 94.
+
 use nucleus::DecimalValue;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;

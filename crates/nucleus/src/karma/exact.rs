@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: const MAX_DECIMAL_SCALE, const PARTS_PER_BILLION, struct FixedDecimal, fn validate_scale.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   105.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 16, 170.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 11,
+//   16, 21, 25, 31, 164, 167, 168, 170, 181.
+
 use std::{fmt, str::FromStr};
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de};

@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: const LEGACY_SAVE_SCRIPT, const COPY_SCRIPT, struct Options, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 74, 84.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites validate:
+//   String (95).
+
 use super::{Action, Capability, Description};
 
 const LEGACY_SAVE_SCRIPT: &str = r#"set -eu

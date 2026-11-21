@@ -1,12 +1,23 @@
+// non-lean-yet
+// Scope: fn instant, fn deactivate, fn standing_value, fn record.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 30, 182, 587, 592, 817.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   961.
+// - [Clippy: clippy::manual_string_new] empty String is being created manually. Sites 454.
+
 #![cfg(test)]
 
 use chrono::{DateTime, Utc};
 use nucleus::RecordKind;
 use serde_json::{Value, json};
-use store::Store;
-use store::people::{self, MAX_PERSON_EXTENSION_BYTES, MAX_STANDING_NOTE_BYTES, StandingChange};
-use store::session_access::{self, DeviceAdmission};
-use store::sqlx::SqliteConnection;
+use store::{
+    Store,
+    people::{self, MAX_PERSON_EXTENSION_BYTES, MAX_STANDING_NOTE_BYTES, StandingChange},
+    session_access::{self, DeviceAdmission},
+    sqlx::SqliteConnection,
+};
 
 fn instant() -> DateTime<Utc> {
     DateTime::parse_from_rfc3339("2026-09-07T12:34:56.123456789-03:00")

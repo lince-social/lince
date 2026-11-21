@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: struct Work, fn allocate.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 49, 54, 55, 57.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 67.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 12.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 6,
+//   7, 8, 9, 12.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites allocate:
+//   String (12).
+
 use super::{MAX_INSTANT_MS, TimeRange};
 use crate::DecimalValue;
 

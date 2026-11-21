@@ -1,3 +1,27 @@
+// non-lean-yet
+// Scope: mod admin_bootstrap, mod blob_sync, mod claim_recipes, mod configuration.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 101, 102, 106,
+//   110, 143, 166, 214, 229, 235, 236, 238, 243, 255, 260, 261, 262, 263, 271, 292, 295, 297, 298,
+//   299, 300, 301, 302, 303, 304, 305, 306, 307, 308, 318, 355, 376, 377, 453, 454, 488, 504, 505,
+//   507, 508, 510, 554, 628, 632, 642, 644.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   set_deletion_confirmation:enabled (80), set_deletion_confirmation:records (79),
+//   start_information:server (350).
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 101, 102, 106, 110, 214, 235, 260, 261, 262, 263, 271, 307, 376, 377, 454, 488, 504, 505,
+//   507, 508, 510.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 340.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option`
+//   value. Sites 620.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 71, 77, 87, 93, 134, 138, 348, 395.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 59, 124.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   1, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 59, 60, 61, 62, 63, 64, 65, 66, 67,
+//   71, 77, 87, 93, 99, 117, 118, 119, 120, 121, 124, 134, 138, 317, 348, 362, 366, 370, 374, 395.
+
 #![recursion_limit = "256"]
 
 pub mod admin_bootstrap;

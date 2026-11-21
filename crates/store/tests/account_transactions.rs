@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn record, fn person, fn generation, fn stored_generation.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 647, 697.
+// - [Clippy: clippy::string_add] you added something to a string. Consider using
+//   `String::push_str()` instead. Sites 226, 229.
+
 #![cfg(test)]
 
 use store::Store;

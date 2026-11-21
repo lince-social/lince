@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: const LOCK_SURFACE_ROLE, struct SessionLockState.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 66, 89, 99, 176.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (96, 98, 107, 134, 166).
+
 //! ext-session-lock lock.
 
 use std::sync::atomic::{AtomicBool, Ordering};

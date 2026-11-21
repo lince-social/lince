@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: struct MeasureRecords, mod assignees, mod availability, mod date_order.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 162, 165, 172,
+//   329, 378, 395, 396, 544, 559, 566, 567, 596, 615, 641, 658, 660, 712, 829, 831, 833, 855, 908,
+//   955, 967, 977, 993, 1007, 1054, 1116, 1317, 1327, 1342, 1386, 1412, 1514.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 549, 564.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites execute: String
+//   (1192).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (178, 321, 657, 1053, 1068, 1093, 1104, 1273, 1291, 1341).
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 22.
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 1465.
+
 #[derive(bevy::prelude::SystemSet, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) struct MeasureRecords;
 

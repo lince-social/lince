@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: const CREDITS, struct Settings, struct Routing, fn attach.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 55, 141, 154,
+//   155, 156, 160, 162, 174, 179, 184, 227, 241, 257, 331, 392, 398, 399, 417, 423, 465.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (70, 177, 186, 204, 231, 232, 290, 302, 303, 336, 409, 417, 451, 465, 467, 468,
+//   484, 489).
+
 use super::*;
 use cell::{
     fiote_communication::decision::ModelId,

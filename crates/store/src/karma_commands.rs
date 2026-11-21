@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Origin, struct State, fn get, fn save_tx.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 25, 42, 77, 86, 92.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 9, 10,
+//   11, 12, 13, 14, 18, 19, 20, 21, 22, 25, 42, 77, 86, 92.
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{Row, Sqlite, SqlitePool, Transaction};

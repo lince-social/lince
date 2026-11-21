@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn package, fn import.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 84.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 7.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   7.
+
 use std::collections::BTreeMap;
 use std::path::Path;
 

@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn recorder_selection_effects_and_placement_restore, fn
+//   recorder_rejects_untrusted_saved_paths_and_effects.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::actions::Action;
 

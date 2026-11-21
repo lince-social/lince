@@ -1,6 +1,13 @@
-use super::*;
-use rustix::time::{ClockId, clock_gettime};
+// non-lean-yet
+// Scope: fn quiet, fn cpu, fn
+//   external_pointer_motion_preserves_client_delivery_without_native_updates.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::sync::atomic::AtomicU64;
+
+use rustix::time::{ClockId, clock_gettime};
+
+use super::*;
 
 fn quiet(fixture: &mut Fixture, updates: &AtomicU64) {
     let deadline = Instant::now() + Duration::from_secs(15);

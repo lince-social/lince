@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn fixture, fn fill, fn cleared, fn
+//   private_backup_form_masks_secrets_blocks_copy_and_hands_off_once_before_exit.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn fixture(handoff: bool) -> (App, Entity) {

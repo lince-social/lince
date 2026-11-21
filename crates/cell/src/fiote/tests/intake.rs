@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn fiote, fn intake_ranks_direct_children_then_creation_instant_and_identity, fn
+//   intake_reparenting_changes_new_selection_without_changing_existing_threads, fn
+//   intake_uses_zero_child_candidates_and_reports_an_empty_hierarchy.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 99, 152.
+
 use super::*;
 
 async fn fiote(host: &Host, name: &str, parent: Option<&str>) -> String {

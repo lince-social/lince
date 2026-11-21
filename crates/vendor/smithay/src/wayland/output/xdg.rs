@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct Inner, struct XdgOutput.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 42, 43, 77, 78.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (56, 59, 98, 120).
+
 //! XDG Output advertising capabilities
 //!
 //! This protocol is meant for describing outputs in a way

@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod audience, mod detail, mod forms, mod karma.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 202.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (182, 202, 218, 227, 229, 231, 294, 340, 381, 382).
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 16.
+
 mod audience;
 mod detail;
 mod forms;

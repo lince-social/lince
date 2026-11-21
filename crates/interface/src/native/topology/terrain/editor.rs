@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: struct Editor, struct Panel, struct Field, struct Notice.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 129, 136, 138,
+//   141, 251, 272, 299, 319, 339, 367, 401, 429, 451, 495, 502, 593, 607, 612, 633, 634, 642, 649,
+//   673, 816, 822, 824, 825, 895, 949, 981, 1067, 1071, 1093, 1095, 1118, 1119, 1123, 1135.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 475.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   469, 907.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (92, 149, 160, 251, 261, 262, 265, 267, 271, 282, 286, 308, 320, 324, 328, 348,
+//   354, 358, 366, 372, 389, 405, 414, 437, 438, 444, 449, 453, 500, 526, 557, 603, 610, 615, 659,
+//   663, 681, 693, 697, 711, 728, 769, 805, 822, 825, 1023, 1030, 1035, 1036, 1039, 1053, 1055,
+//   1056, 1063, 1067, 1076, 1079, 1083, 1084, 1092, 1093, 1100, 1106, 1111, 1115).
+
 use super::*;
 use crate::native::actions::{Action, ActionButton};
 use bevy::picking::events::PointerScroll;

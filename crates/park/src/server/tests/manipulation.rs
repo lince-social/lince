@@ -1,5 +1,10 @@
-use super::*;
+// non-lean-yet
+// Scope: mod lifecycle, mod requests, mod tiled, fn opaque_buffer.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::io::Write;
+
+use super::*;
 
 #[path = "manipulation/lifecycle.rs"]
 mod lifecycle;
@@ -196,8 +201,9 @@ fn visible_client_pixels(desktop: &crate::desktop::Desktop, surface: SurfaceId) 
 #[test]
 #[ignore = "requires hardware Vulkan and EGL"]
 fn real_client_modifier_drags_use_the_worker_and_preserve_clicks_after_commit_and_escape() {
-    use crate::runtime::{CanvasWorker, Configuration, Input};
     use lince_interface::host::{DesktopAction, WorkspaceLayout};
+
+    use crate::runtime::{CanvasWorker, Configuration, Input};
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .thread_stack_size(32 * 1024 * 1024)

@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: const PARTICIPANTS_NAMESPACE, const SESSION_AUTHORITY_NAMESPACE, const MESSAGE_NAMESPACE,
+//   const DELIVERY_NAMESPACE.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 99, 148, 157, 207, 217.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 1.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 3, 4,
+//   5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 21, 22, 23, 24, 25, 26, 31, 32, 33, 34, 35, 36,
+//   37, 42, 43, 44, 45, 46, 47, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 66, 67, 68, 69, 70, 71, 72,
+//   77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 99, 100, 101, 102, 107,
+//   108, 109, 114, 115, 116, 121, 122, 123, 124, 125, 126, 127, 128, 129, 134, 135, 136, 137, 138,
+//   139, 140, 141, 142, 143, 148, 149, 150, 151, 152, 157, 158, 159, 160, 161, 166, 167, 168, 169,
+//   170, 171, 172, 173, 174, 179, 180, 181, 182, 183, 184, 185, 190, 191, 192, 193, 194, 195, 196,
+//   197, 198, 199, 200, 201, 202, 207, 208, 209, 210, 211, 212, 217, 218, 219, 220, 221, 222, 224,
+//   225, 227, 228, 229, 231, 232, 233, 234, 235, 236, 238, 239, 240, 241, 243, 244, 249, 257.
+
 use super::*;
 
 pub const PARTICIPANTS_NAMESPACE: &str = "lince.social.participants";

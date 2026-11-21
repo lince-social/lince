@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn act, fn policy, fn fixture, fn revision.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::manual_string_new] empty String is being created manually. Sites 44,
+//   907, 1302.
+
 #![cfg(test)]
 
 use engine::{

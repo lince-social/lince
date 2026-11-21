@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: mod checks, mod headers, mod persistence, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 61, 63, 125, 145,
+//   151, 189, 304, 329, 345, 408, 654, 706, 748, 796, 951, 956, 975, 1185, 1222.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (322, 360,
+//   514, 524, 894).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   61, 63, 980, 1077, 1100, 1237, 1239.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (1372, 1388, 1390, 1396, 1400, 1401, 1405, 1407, 1411).
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 2, 1361.
+
 use lince_interface::records::KANBAN_COLUMNS as COLUMNS;
 #[allow(
     clippy::unwrap_used,

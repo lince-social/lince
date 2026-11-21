@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct SecurityContextListenerSource.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 // TODO calloop source
 // - poll POLLHUP/POLLIN on close_fd
 // - poll for accept

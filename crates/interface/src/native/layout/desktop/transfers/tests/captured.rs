@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn an_inactive_captured_window_moves_without_retargeting_focus_or_recreating_its_editor,
+//   fn same_workspace_capture_reorders_rows_without_moving_the_wrong_focused_window, fn
+//   captured_transient_moves_its_original_live_family_once, fn
+//   a_changed_active_context_or_closed_source_rejects_before_any_partial_transfer.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[test]

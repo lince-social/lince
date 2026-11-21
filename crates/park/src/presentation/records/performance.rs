@@ -1,14 +1,22 @@
+// non-lean-yet
+// Scope: fn
+//   typing_proceeds_during_a_blocked_save_and_successful_completion_does_not_wake_native_work, fn
+//   automatic_profile_saves_record_caller_cost_and_durable_contents.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[test]
 #[ignore = "requires hardware Vulkan and EGL"]
 fn typing_proceeds_during_a_blocked_save_and_successful_completion_does_not_wake_native_work() {
-    use crate::runtime::{CanvasWorker, Completed, Configuration, Input};
+    use std::sync::{atomic::AtomicU64, mpsc};
+
     use bevy::{
         input::keyboard::{Key, KeyCode},
         input_focus::{FocusCause, InputFocus},
     };
-    use std::sync::{atomic::AtomicU64, mpsc};
+
+    use crate::runtime::{CanvasWorker, Completed, Configuration, Input};
 
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_all()

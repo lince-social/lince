@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct RasterMapping, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   20, 24, 30, 37, 45, 52, 58.
+
 use super::Rectangle;
 
 #[derive(Clone, Copy, Debug, PartialEq)]

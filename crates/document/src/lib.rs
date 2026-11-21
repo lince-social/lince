@@ -1,11 +1,38 @@
+// non-lean-yet
+// Scope: mod epub, mod pdf, mod pdf_online, mod resources.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 93, 274.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 69.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 116, 127, 128,
+//   143, 322, 370.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 75, 76, 82, 83, 84, 87, 90, 92, 93, 249, 254, 264, 265, 268, 271, 273, 274, 342, 352.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   82, 83, 84, 87, 249, 254, 264, 265, 268.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 82, 83, 84, 87, 249, 254, 264, 265, 268.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 17.
+// - [Clippy: clippy::large_enum_variant] large size difference between variants. Sites 102.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 69, 114, 167, 211, 220, 285, 351, 382, 393.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 108.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 1, 10,
+//   11, 12, 13, 14, 17, 19, 20, 24, 25, 26, 27, 31, 35, 39, 50, 51, 52, 53, 57, 58, 59, 63, 64, 65,
+//   66, 69, 108, 110, 114, 167, 211, 220, 285, 351, 382, 393.
+
 mod epub;
 mod pdf;
 mod pdf_online;
 mod resources;
 
+use std::{fs::File, io::Read, path::Path};
+
 use lince_resources::{Library, Locator, Resource};
 use serde::{Deserialize, Serialize};
-use std::{fs::File, io::Read, path::Path};
 
 pub const TILE_HEIGHT: u32 = 512;
 pub const TILE_OVERLAP: u32 = 2;

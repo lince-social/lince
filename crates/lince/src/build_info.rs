@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn print.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::io;
 
 pub fn print() -> io::Result<()> {

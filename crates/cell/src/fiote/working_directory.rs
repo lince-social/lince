@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: impl Host.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 14, 24.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use fiote::{acp, config::WorkingDirectory};
 use std::collections::BTreeSet;

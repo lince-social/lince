@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Field, struct Input, struct Form, fn form.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 47, 134, 167,
+//   175, 180, 206, 234, 270.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (151, 163, 174, 195).
+
 use super::*;
 pub(super) use lince_interface::organ::FieldKind as Kind;
 #[cfg(test)]

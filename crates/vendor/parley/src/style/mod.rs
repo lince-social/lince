@@ -3,6 +3,12 @@
 
 //! Rich styling support.
 
+// non-lean-yet
+// Scope: mod brush, mod font, mod styleset, enum WhiteSpaceCollapse.
+// BeautifulRust (baseline lines):
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 12.
+
 mod brush;
 mod font;
 mod styleset;

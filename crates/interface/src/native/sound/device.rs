@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: static CAPTURING, struct CaptureGuard, fn acquire, struct Capture.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 102, 105, 108,
+//   111, 114, 117, 120, 123, 126, 129, 132, 135, 277, 280, 283, 286, 289, 292, 295, 298, 301, 304,
+//   307, 310.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   play:replace (322).
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites devices: String
+//   (50, 242), open: String (238), open_on: String (256), start: String (46), start_on: String
+//   (64), start_when_available: String (68).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (150, 154, 216, 354, 364, 370, 378, 422).
+
 use super::library::{Clip, MAX_SECONDS};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use std::sync::{Arc, Mutex};

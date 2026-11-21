@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct LaboratoryRoot, struct SuspendedRoot, struct Suspended, struct Scope.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 112, 532, 595,
+//   615, 639, 669, 745.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (252, 322, 396, 574, 593, 714, 889).
+
 use super::{BehaviorRun, StressConfig, StressReport, stress::StressRun};
 use crate::native::{actions::Action, container::BoxRoot, edit_mode::label, workspace::Workspaces};
 use crate::testing::InterfaceSelection;

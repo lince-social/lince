@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: mod tests, struct Inputs, struct Tokens, struct Cache.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 186.
+
 use super::*;
 use crate::native::{
     canvas_host::authoring::AuthoredTokenUses,

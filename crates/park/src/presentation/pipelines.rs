@@ -1,6 +1,13 @@
-use super::*;
-use bevy::render::render_resource::PipelineCache;
+// non-lean-yet
+// Scope: struct Completion, fn install.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 18.
+
 use std::task::{Wake, Waker};
+
+use bevy::render::render_resource::PipelineCache;
+
+use super::*;
 
 struct Completion(WakeSignal);
 

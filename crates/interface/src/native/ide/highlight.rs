@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Syntax, fn install, fn update, fn color.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (46).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 22, 23, 25.
+
 use super::*;
 use bevy::{
     text::{EditableTextGeneration, TextLayoutInfo},

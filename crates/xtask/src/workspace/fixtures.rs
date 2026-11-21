@@ -1,9 +1,16 @@
-use super::{character, geometry};
-use crate::Result;
+// non-lean-yet
+// Scope: struct Asset, struct Frame, struct Object, struct Bookmark.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 628, 630.
+
+use std::{fs, path::Path};
+
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
-use std::{fs, path::Path};
+
+use super::{character, geometry};
+use crate::Result;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

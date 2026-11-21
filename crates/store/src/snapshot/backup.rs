@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct Cancellation, struct Backup, fn failed, fn copy_pages.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 36, 43, 61, 71, 79,
+//   86.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 91.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 91.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   105.
+
 use std::{
     path::Path,
     ptr::NonNull,

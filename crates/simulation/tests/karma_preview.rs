@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod karma, fn run, fn now, fn engine.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use std::future::Future;

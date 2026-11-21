@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: mod prepared, enum Shortcut, enum Scope, enum ModKey.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 871, 1071, 1163,
+//   1181.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites apply: String
+//   (1159), from_input: String (842), from_overrides: String (1147), parse: String (730),
+//   parse_desktop: String (734), reset: String (1180), set: String (1176), stage: String (1055),
+//   stage_modifier: String (1070), validate: String (997).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (838, 1136).
+
 use crate::host::external::Action as ExternalAction;
 use crate::native::actions::Modifiers;
 use bevy::prelude::*;

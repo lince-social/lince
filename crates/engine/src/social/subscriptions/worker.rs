@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: impl Engine.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 146, 147, 190,
+//   217.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   social_subscriptions_once:online (268).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   11.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 11, 23, 171, 193, 217, 219, 371.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 266.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   266.
+
 use super::*;
 
 impl Engine {

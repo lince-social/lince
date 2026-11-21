@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn compile.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   3, 10, 14, 34, 44, 50, 52, 54.
+// - [rustc: unreachable_pub] unreachable `pub` item. Sites 1.
+
 pub fn compile() {
     let output = std::path::PathBuf::from(
         std::env::var_os("OUT_DIR").expect("Cargo provides the Freedoom output directory"),

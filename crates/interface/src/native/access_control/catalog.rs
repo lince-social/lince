@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Rows, struct Snapshot, fn kind.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 56, 165.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   65, 67, 77, 85, 90, 91, 97, 100, 120, 147.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (120, 147).
+
 use super::Tab;
 use serde_json::Value;
 use std::{

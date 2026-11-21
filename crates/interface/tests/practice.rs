@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn runner, fn ticket, fn next_checks_completion_and_never_duplicates_pending_actions, fn
+//   skip_close_and_chapter_changes_invalidate_late_responses.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use lince_interface::practice::*;
 
 fn runner() -> Runner {

@@ -1,8 +1,44 @@
-use crate::component::ComponentState;
+// non-lean-yet
+// Scope: const MAX_BYTES, const MAX_PLACEMENTS, const MAX_STATE_PLACEMENTS, mod state.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 258.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 218.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   validate:configuring (163).
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 19, 127, 630, 708, 909, 927.
+// - [Clippy: clippy::large_enum_variant] large size difference between variants. Sites 630, 708,
+//   927.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 98, 163, 168, 350, 361, 381, 549, 740, 947, 961, 969, 977.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 8,
+//   9, 13, 14, 15, 19, 20, 21, 23, 24, 25, 26, 28, 29, 30, 31, 33, 34, 35, 37, 38, 39, 44, 85, 86,
+//   87, 88, 89, 90, 91, 92, 93, 94, 98, 127, 128, 129, 130, 132, 133, 135, 136, 137, 138, 140, 141,
+//   147, 148, 149, 150, 155, 156, 157, 158, 159, 163, 168, 289, 298, 328, 342, 343, 344, 345, 349,
+//   350, 361, 375, 376, 377, 381, 398, 399, 400, 401, 402, 403, 404, 421, 422, 423, 428, 429, 430,
+//   435, 436, 437, 438, 439, 455, 457, 459, 461, 463, 465, 467, 468, 469, 470, 471, 472, 473, 518,
+//   519, 520, 521, 522, 523, 528, 529, 530, 531, 532, 533, 534, 535, 540, 541, 542, 543, 544, 545,
+//   549, 630, 631, 632, 634, 635, 636, 638, 639, 640, 642, 643, 644, 646, 647, 648, 649, 650, 652,
+//   653, 654, 656, 657, 658, 659, 660, 662, 663, 664, 665, 666, 667, 669, 670, 671, 673, 674, 675,
+//   676, 678, 679, 680, 682, 683, 685, 686, 688, 689, 690, 692, 693, 695, 696, 698, 699, 701, 702,
+//   708, 709, 710, 711, 712, 714, 715, 716, 718, 719, 720, 721, 722, 724, 725, 726, 727, 728, 730,
+//   731, 736, 740, 909, 910, 911, 916, 917, 918, 919, 920, 921, 922, 927, 928, 929, 931, 932, 933,
+//   934, 936, 937, 939, 940, 942, 943, 947, 961, 969, 977.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites bounded: String
+//   (961), decode: String (350), encode: String (361), placement_id: String (977),
+//   request_identifier: String (969), validate: String (98, 163, 381, 549, 740), validate_registry:
+//   String (947), validate_snapshot: String (168).
+
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    ops::ControlFlow,
+};
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet};
-use std::ops::ControlFlow;
+
+use crate::component::ComponentState;
 
 pub const MAX_BYTES: usize = 256 * 1024;
 pub const MAX_PLACEMENTS: usize = 256;

@@ -1,12 +1,23 @@
+// non-lean-yet
+// Scope: fn add_record_concept, fn remove_record_concept, fn record_concepts, fn
+//   all_record_concepts.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 88, 313.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 11, 33, 41, 53, 71, 98, 117, 157, 167, 189, 257, 269, 350, 390.
+// - [Clippy: clippy::needless_question_mark] enclosing `Ok` and `?` operator are unneeded. Sites
+//   102.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 11, 33,
+//   41, 53, 71, 98, 117, 157, 167, 181, 182, 183, 184, 185, 186, 189, 212, 213, 214, 215, 216, 244,
+//   245, 246, 250, 251, 252, 253, 254, 257, 269, 350, 390.
+
 use std::collections::{BTreeMap, HashSet};
 
 use chrono::{DateTime, Utc};
 use nucleus::DecimalValue;
 use sqlx::{Row, SqlitePool};
 
-use crate::StoreError;
-use crate::exact::zero;
-use crate::facts::instant;
+use crate::{StoreError, exact::zero, facts::instant};
 
 pub async fn add_record_concept(
     pool: &SqlitePool,

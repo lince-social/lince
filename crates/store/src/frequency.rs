@@ -1,9 +1,28 @@
+// non-lean-yet
+// Scope: struct Frequency, struct NewFrequency, fn create, fn get.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 205.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 23, 107.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 114.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   113.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 26, 42, 81, 135, 145, 155.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 33.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 9, 10,
+//   11, 12, 13, 14, 15, 16, 17, 18, 22, 26, 33, 34, 35, 36, 37, 38, 39, 42, 81, 135, 145, 155.
+
 use chrono::{DateTime, Utc};
 use nucleus::karma::{Cadence, CadenceStep, CompiledSchedule, Slug, TimestampMs};
 use sqlx::SqlitePool;
 
-use crate::StoreError;
-use crate::karma::frequencies::{self, CreateFrequencyInput, FrequencyMutationCommit};
+use crate::{
+    StoreError,
+    karma::frequencies::{self, CreateFrequencyInput, FrequencyMutationCommit},
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Frequency {
@@ -99,9 +118,11 @@ pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<Frequency>, Stor
         ),
         None => None,
     };
-    let compiled = activation.as_ref().map_or(&revision.default_compiled, |activation| {
-        activation.epoch.compiled()
-    });
+    let compiled = activation
+        .as_ref()
+        .map_or(&revision.default_compiled, |activation| {
+            activation.epoch.compiled()
+        });
     let (cadence, anchor_at) = match &compiled.schedule {
         CompiledSchedule::Calendar { schedule } => (
             schedule.cadence.clone(),

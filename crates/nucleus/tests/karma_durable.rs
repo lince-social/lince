@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct ProgramMutationVocabulary, struct FrequencyDurableVocabulary, fn
+//   program_mutation_evidence_has_a_complete_stable_wire_vocabulary, fn
+//   program_mutation_evidence_omits_only_absent_optional_history.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 95, 96, 97, 167, 171, 172.
+
 #![cfg(test)]
 
 use std::collections::BTreeMap;

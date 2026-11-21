@@ -1,11 +1,19 @@
+// non-lean-yet
+// Scope: fn role, fn permission, fn read, fn replace.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 678, 924, 936, 989, 1001, 1184.
+
 #![cfg(test)]
 
 use std::time::Duration;
 
 use serde_json::json;
-use store::Store;
-use store::role_permissions::{self, PermissionIdentity, RolePermissionSet};
-use store::sqlx::{Sqlite, Transaction};
+use store::{
+    Store,
+    role_permissions::{self, PermissionIdentity, RolePermissionSet},
+    sqlx::{Sqlite, Transaction},
+};
 
 async fn role(store: &Store, name: &str) -> i64 {
     store::auth::ensure_role(&store.pool, name).await.unwrap()

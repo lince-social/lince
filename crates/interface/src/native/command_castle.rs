@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod history, mod tests, struct Settings, struct CommandCastle.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 74, 104, 215,
+//   252, 281, 320, 334, 387, 428, 447, 520, 522.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (85, 86, 144, 197, 289, 324, 332, 348, 359, 365, 408, 409, 415, 491, 500, 509,
+//   510, 528, 533).
+
 mod history;
 pub(crate) mod tests;
 

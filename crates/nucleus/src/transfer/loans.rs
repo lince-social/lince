@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct Interval, struct Reference, mod tests.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   20.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 13, 30, 45.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 8,
+//   9, 13, 30, 38, 39, 40, 41, 45.
+
 use chrono::DateTime;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};

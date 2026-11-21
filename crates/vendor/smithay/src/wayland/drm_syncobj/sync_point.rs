@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct DrmTimelineInner, struct DrmTimelineDeviceSpecific, struct DrmTimeline, struct
+//   DrmSyncPoint.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 180.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 199.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (26, 41, 96, 122, 136, 145, 155).
+
 use calloop::generic::Generic;
 use calloop::{EventSource, Interest, Mode, Poll, PostAction, Readiness, Token, TokenFactory};
 use drm::control::Device;

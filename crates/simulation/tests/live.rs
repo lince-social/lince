@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn act, fn rule, fn
+//   normal_cell_runs_karma_and_serves_cached_future_and_manual_work_through_protein, fn check_live.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use cell::{ClientMessage, ServerMessage};

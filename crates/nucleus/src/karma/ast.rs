@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: enum ProgramSchema, struct ProgramAst, struct ParameterDefinition, struct OutputRef.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 240.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 23, 90, 153, 167, 193, 204, 263, 279, 287, 315, 324, 334, 344, 353.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 23, 25,
+//   29, 30, 31, 32, 34, 36, 37, 39, 41, 45, 46, 47, 48, 54, 55, 56, 60, 61, 62, 66, 80, 82, 83, 84,
+//   90, 91, 92, 93, 95, 96, 97, 99, 100, 102, 103, 104, 105, 106, 108, 109, 110, 111, 112, 113,
+//   114, 115, 116, 117, 119, 120, 121, 122, 123, 124, 125, 126, 128, 129, 130, 131, 132, 134, 135,
+//   136, 137, 138, 139, 141, 142, 143, 144, 145, 146, 153, 154, 155, 159, 167, 168, 169, 171, 173,
+//   175, 176, 178, 179, 181, 182, 184, 185, 187, 193, 194, 195, 196, 197, 198, 204, 205, 206, 208,
+//   209, 211, 212, 213, 215, 216, 217, 218, 220, 222, 223, 224, 225, 230, 263, 264, 265, 269, 270,
+//   271, 273, 279, 280, 281, 287, 288, 289, 290, 291, 292, 293, 294, 295, 296, 297, 298, 299, 300,
+//   304, 305, 306, 307, 308, 309, 315, 316, 317, 318, 324, 325, 326, 327, 328, 334, 335, 336, 337,
+//   338, 344, 345, 346, 347, 353, 354, 355.
+
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};

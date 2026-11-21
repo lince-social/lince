@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn app, fn glyphs, fn latin_text_never_loads_the_cjk_font, fn
+//   a_text_span_loads_one_shared_font_without_copying_its_bytes.
+// BeautifulRust (baseline lines):
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 34, 35, 220, 221, 253, 254.
+
 use super::*;
 use bevy::text::{FontCx, LayoutCx};
 use std::sync::atomic::{AtomicUsize, Ordering};

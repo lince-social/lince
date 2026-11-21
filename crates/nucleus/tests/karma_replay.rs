@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn a_sealed_capsule_round_trips_and_replays_byte_identically, fn
+//   mutation_fails_at_the_precise_replay_boundary_even_after_resealing, fn
+//   replay_preserves_the_original_typed_evaluation_failure, fn
+//   replay_wire_vocabulary_has_a_golden_hash.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::redundant_clone] Move or borrow at the marked sites and check later uses.
+//   Sites 61, 73.
+
 #![cfg(test)]
 
 use std::collections::{BTreeMap, BTreeSet};

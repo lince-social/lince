@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: mod support, fn document, fn recognize_person, fn
+//   person_disclosure_needs_independent_recognition_and_never_adopts_keys_or_executes_transfers.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 pub mod support;

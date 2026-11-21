@@ -1,9 +1,15 @@
-use super::*;
-use serde_json::Value;
+// non-lean-yet
+// Scope: mod handoff, mod properties, struct Process, struct Toolkit.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::{
     fs::File,
     process::{Child, Stdio},
 };
+
+use serde_json::Value;
+
+use super::*;
 
 #[path = "toolkit/handoff.rs"]
 mod handoff;
@@ -35,7 +41,12 @@ impl Toolkit {
         Self::prepared(runtime, directory, spatial, None)
     }
 
-    fn prepared(runtime: &tokio::runtime::Runtime, directory: &Path, spatial: bool, before_launch: Option<fn(&Path)>) -> Self {
+    fn prepared(
+        runtime: &tokio::runtime::Runtime,
+        directory: &Path,
+        spatial: bool,
+        before_launch: Option<fn(&Path)>,
+    ) -> Self {
         let program = std::env::var_os("LINCE_PARK_TEST_QML")
             .expect("Set LINCE_PARK_TEST_QML to a Qt 6.8+ qml executable");
         let mut fixture = if spatial {
@@ -199,14 +210,39 @@ impl Toolkit {
                     .map(|window| (&window.title, window.mapped, window.parent))
                     .collect::<Vec<_>>(),
                 self.fixture.desktop.keys.keys().collect::<Vec<_>>(),
-                self.fixture.desktop.server.state.seat.get_keyboard().unwrap().modifier_state(),
+                self.fixture
+                    .desktop
+                    .server
+                    .state
+                    .seat
+                    .get_keyboard()
+                    .unwrap()
+                    .modifier_state(),
                 self.fixture.desktop.consumed_actions,
                 self.fixture.desktop.pending_output,
                 self.fixture.desktop.deferred.len(),
                 self.fixture.desktop.native_keyboard,
-                self.fixture.desktop.current.as_ref().map(|frame| (frame.frame.input.keyboard_modal, frame.frame.input.keyboard_capture)),
-                self.fixture.desktop.current.as_ref().and_then(|frame| frame.frame.geometry.as_ref()).and_then(|geometry| geometry.focused),
-                self.fixture.desktop.current.as_ref().map_or(0, |frame| frame.frame.input.bindings.iter().filter(|binding| binding.action.is_recent()).count()),
+                self.fixture.desktop.current.as_ref().map(|frame| (
+                    frame.frame.input.keyboard_modal,
+                    frame.frame.input.keyboard_capture
+                )),
+                self.fixture
+                    .desktop
+                    .current
+                    .as_ref()
+                    .and_then(|frame| frame.frame.geometry.as_ref())
+                    .and_then(|geometry| geometry.focused),
+                self.fixture
+                    .desktop
+                    .current
+                    .as_ref()
+                    .map_or(0, |frame| frame
+                        .frame
+                        .input
+                        .bindings
+                        .iter()
+                        .filter(|binding| binding.action.is_recent())
+                        .count()),
                 self.diagnostics()
             );
         }
@@ -381,8 +417,15 @@ impl Toolkit {
     fn world_position(&mut self, main: SurfaceId) -> bevy::math::DVec3 {
         self.inspect(move |canvas| {
             let world = canvas.world_mut();
-            let (entity, _, item) = world.query::<(bevy::prelude::Entity, &lince_interface::native::layout::desktop::ApplicationWindow, &lince_interface::native::canvas::CanvasItem)>()
-                .iter(world).find(|(_, window, _)| window.surface == main).unwrap();
+            let (entity, _, item) = world
+                .query::<(
+                    bevy::prelude::Entity,
+                    &lince_interface::native::layout::desktop::ApplicationWindow,
+                    &lince_interface::native::canvas::CanvasItem,
+                )>()
+                .iter(world)
+                .find(|(_, window, _)| window.surface == main)
+                .unwrap();
             lince_interface::native::topology::spatial(world, entity).position(item.position)
         })
     }
@@ -396,7 +439,12 @@ impl Toolkit {
             lince_interface::native::layout::desktop::focus::following(world, root)
         });
         if !following {
-            self.fixture.desktop.send(Input::Action(lince_interface::host::DesktopAction::ToggleFocus)).unwrap();
+            self.fixture
+                .desktop
+                .send(Input::Action(
+                    lince_interface::host::DesktopAction::ToggleFocus,
+                ))
+                .unwrap();
             self.tick("drag-follow");
         }
         self.inspect(move |canvas| {

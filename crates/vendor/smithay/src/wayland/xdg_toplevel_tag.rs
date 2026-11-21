@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct XdgToplevelTagSurfaceData, trait XdgToplevelTagHandler, struct
+//   XdgToplevelTagManager, macro delegate_xdg_toplevel_tag.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 77, 84, 116, 153,
+//   168.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 93, 97.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (77, 84, 147, 153, 162, 168).
+
 //! XDG Toplevel Tag
 //!
 //! This protocol allows clients to set a tag and description of a toplevel.

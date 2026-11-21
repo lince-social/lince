@@ -1,16 +1,32 @@
-use crate::{
-    Bounds, TileStore,
-    pack::{File, Format, Manifest},
-    source::normalize,
-};
-use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
+// non-lean-yet
+// Scope: struct Definition, struct Progress, struct Staging, fn prepare.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 89, 113, 128, 129.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 29, 63, 181.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 50.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 18, 19,
+//   20, 21, 22, 23, 24, 25, 26, 29, 50, 51, 52, 53, 54, 63, 181.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites prepare: String
+//   (63), read_definition: String (181), tiles: String (29).
+
 use std::{
     path::{Path, PathBuf},
     sync::{
         Arc,
         atomic::{AtomicBool, AtomicU64, Ordering},
     },
+};
+
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
+
+use crate::{
+    Bounds, TileStore,
+    pack::{File, Format, Manifest},
+    source::normalize,
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct Signaler, struct SignalToken, type WeakCallback, struct SignalInner.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 38.
+
 //! A general purpose signaling mechanism
 //!
 //! This mechanism allows inter-module communication, by letting your modules

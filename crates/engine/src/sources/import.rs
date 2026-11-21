@@ -1,3 +1,22 @@
+// non-lean-yet
+// Scope: fn identity, fn decimal, fn origin, struct Prepared.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 116, 120, 151,
+//   191, 193, 198, 220, 221, 224, 225, 232, 234, 238, 246, 265, 358, 390, 423, 424, 425, 540, 564,
+//   578, 629, 674, 691, 720, 741, 747, 810, 813, 818, 877, 885, 891, 960, 970.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   14, 65, 69, 73, 265, 334, 472, 493, 546, 547, 585, 591, 606, 673, 760, 810.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 276.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 14, 120, 170, 173, 205, 265, 334, 375, 379, 391, 394, 400, 472, 493, 513, 524,
+//   526, 531, 535, 585, 591, 606, 673, 677, 680, 760, 810, 847, 872, 921, 932, 946, 962, 970, 971.
+// - [Clippy probe: clippy::needless_borrows_for_generic_args] the borrowed expression implements
+//   the required traits. Sites 464.
+// - [Clippy probe: clippy::nonminimal_bool] this boolean expression can be simplified. Sites 680.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use crate::actions::Action;
 use lince_resources::{INSTANCE_NAMESPACE, SOURCE_NAMESPACE};

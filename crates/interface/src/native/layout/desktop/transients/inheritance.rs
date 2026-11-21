@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct Inheritance, struct RootOwners, struct Candidates, enum Owner.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   156, 157.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (106, 109).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 203.
+
 use super::*;
 
 #[derive(Resource)]

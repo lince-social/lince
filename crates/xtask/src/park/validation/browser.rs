@@ -1,5 +1,16 @@
+// non-lean-yet
+// Scope: fn run, fn run_into.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
+use std::{
+    env,
+    ffi::OsString,
+    fs,
+    path::{Path, PathBuf},
+    process::Command,
+};
+
 use super::{Result, error};
-use std::{env, ffi::OsString, fs, path::{Path, PathBuf}, process::Command};
 
 pub(super) fn run(arguments: &[OsString]) -> Result<()> {
     if arguments.is_empty() || arguments[0] == "--help" {
@@ -8,8 +19,14 @@ pub(super) fn run(arguments: &[OsString]) -> Result<()> {
         );
         return Ok(());
     }
-    let stamp = super::SystemTime::now().duration_since(super::UNIX_EPOCH).map_err(error)?.as_nanos();
-    let directory = env::current_dir().map_err(error)?.join("target/park-validation/browser").join(format!("{stamp}-{}", std::process::id()));
+    let stamp = super::SystemTime::now()
+        .duration_since(super::UNIX_EPOCH)
+        .map_err(error)?
+        .as_nanos();
+    let directory = env::current_dir()
+        .map_err(error)?
+        .join("target/park-validation/browser")
+        .join(format!("{stamp}-{}", std::process::id()));
     run_into(arguments, &directory).map(|_| ())
 }
 
@@ -53,17 +70,30 @@ pub(super) fn run_into(arguments: &[OsString], directory: &Path) -> Result<PathB
         .iter()
         .any(|argument| argument == "--capture-probe")
     {
-        super::prepare_capture_probe(&directory)?;
+        super::prepare_capture_probe(directory)?;
         command
             .arg("--capture-probe")
             .arg(directory.join("bin/capture-probe"));
     }
     super::logged(&mut command, &directory.join("browser-driver.log"))?;
-    let requested = arguments.windows(2).find(|pair| pair[0] == "--seconds").and_then(|pair| pair[1].to_str()?.parse::<u64>().ok()).unwrap_or(75);
-    let (status, _) = super::bounded(&mut command, std::time::Duration::from_secs(requested.saturating_add(900)))?;
+    let requested = arguments
+        .windows(2)
+        .find(|pair| pair[0] == "--seconds")
+        .and_then(|pair| pair[1].to_str()?.parse::<u64>().ok())
+        .unwrap_or(75);
+    let (status, _) = super::bounded(
+        &mut command,
+        std::time::Duration::from_secs(requested.saturating_add(900)),
+    )?;
     if status.success() {
-        let summary: serde_json::Value = serde_json::from_slice(&fs::read(directory.join("browser-driver.log")).map_err(error)?).map_err(error)?;
-        let run = PathBuf::from(summary["directory"].as_str().ok_or("Browser result has no run directory")?);
+        let summary: serde_json::Value =
+            serde_json::from_slice(&fs::read(directory.join("browser-driver.log")).map_err(error)?)
+                .map_err(error)?;
+        let run = PathBuf::from(
+            summary["directory"]
+                .as_str()
+                .ok_or("Browser result has no run directory")?,
+        );
         let run = fs::canonicalize(run).map_err(error)?;
         if !run.starts_with(fs::canonicalize(directory).map_err(error)?.join("runs")) {
             return Err("Browser result escaped its private run directory".into());

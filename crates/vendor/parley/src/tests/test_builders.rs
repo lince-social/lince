@@ -3,6 +3,10 @@
 
 //! Test that the various builders produce the same results.
 
+// non-lean-yet
+// Scope: const FONT_FAMILY_LIST, fn load_fonts, fn create_font_context, struct RangedOptions.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::{borrow::Cow, path::PathBuf, sync::Arc};
 
 use fontique::{Collection, CollectionOptions, FontStyle, FontWeight, FontWidth, SourceCache};

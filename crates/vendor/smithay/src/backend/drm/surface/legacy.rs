@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct State, struct LegacyDrmSurface, mod test.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 76.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 126, 130, 251,
+//   276, 312.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   commit:event (231), page_flip:event (336).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (126, 130, 134, 138, 147, 158, 178, 199, 226, 236, 237, 238, 343, 344, 377, 460,
+//   473, 474, 497).
+
 use drm::control::{connector, crtc, encoder, framebuffer, Device as ControlDevice, Mode, PageFlipFlags};
 
 use std::collections::HashSet;

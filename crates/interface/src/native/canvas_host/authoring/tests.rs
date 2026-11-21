@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn fixture, fn inspect, fn patch, fn
+//   layout_and_tokens_preserve_the_editor_draft_and_focus.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use api::authoring::{Change, PartEdit, Style};
 

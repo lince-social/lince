@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn choices_keep_agent_values_and_group_labels, fn
+//   settings_show_supported_controls_and_explain_missing_ones.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use serde_json::json;
 

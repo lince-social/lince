@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod support, fn members, fn members_with_writers, fn
+//   delayed_sibling_catchup_verifies_people_before_facts_and_includes_referenced_evidence.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 533.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 533.
+
 #![cfg(test)]
 
 mod support;

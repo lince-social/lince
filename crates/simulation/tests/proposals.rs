@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn run, struct Fixture, fn fixture, fn
+//   record_drafts_compare_one_base_preserve_background_events_and_replay.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use base64::Engine as _;

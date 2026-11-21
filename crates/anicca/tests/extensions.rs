@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn extensions_preserve_nested_values_and_resolve_the_record, fn
+//   extensions_reject_ambiguous_and_unbounded_data.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 11, 17, 20, 23, 24, 28.
+
 use std::collections::BTreeMap;
 
 use serde_json::json;

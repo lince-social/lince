@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: impl ContentTypeState, impl ContentTypeState, impl ContentTypeState.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (52, 121).
+
 use wayland_protocols::wp::content_type::v1::server::{
     wp_content_type_manager_v1::{self, WpContentTypeManagerV1},
     wp_content_type_v1::{self, WpContentTypeV1},

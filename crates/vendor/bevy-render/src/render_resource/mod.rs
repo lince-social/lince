@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: mod atomic_pod, mod batched_uniform_buffer, mod bind_group, mod bind_group_entries.
+// BeautifulRust (baseline lines):
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 70.
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 72.
+
 mod atomic_pod;
 mod batched_uniform_buffer;
 mod bind_group;

@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 /// A box to be laid out inline with text
+// non-lean-yet
+// Scope: struct InlineBox, enum InlineBoxKind.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #[derive(PartialEq, Debug, Clone)]
 pub struct InlineBox {
     /// User-specified identifier for the box, which can be used by the user to determine which box in

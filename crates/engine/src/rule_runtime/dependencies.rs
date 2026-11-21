@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Expansion.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   33.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 43.
+
 use std::collections::{BTreeMap, BTreeSet};
 
 pub(super) struct Expansion<'a> {

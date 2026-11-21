@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn key, fn terminal_input, fn
+//   typing_and_timer_advance_during_an_ordered_private_command_stream.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::{
     app::CellHandle,

@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn authenticated_public_connection_churn_remains_bounded_and_releases_slots.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 11.
+
 use super::*;
 use engine::wire::ALPN_SOCIAL;
 use nucleus::social::PublicRequest;

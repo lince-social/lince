@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: struct AgreementTargetInput, struct AgreementTargetOutcome, fn invalid, fn fingerprint.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 25.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 164.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 92.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   92.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 92.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 97.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 10, 11,
+//   12, 13, 17, 18, 19, 20, 21, 22, 97.
+
 use chrono::{DateTime, Utc};
 use nucleus::{Fact, transfer::AgreementGuard};
 use serde::{Deserialize, Serialize};

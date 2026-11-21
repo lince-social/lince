@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: type MicroKernelFn, type HMicroKernelFn, macro __one, macro __microkernel_fn_array_helper.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 pub type MicroKernelFn<T> = unsafe fn(
     usize,
     usize,

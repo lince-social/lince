@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod presentation, const MONTHS, const PER_DAY, fn button.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 103, 123, 126,
+//   449, 536.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   158, 279, 387, 403, 413.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (91, 98, 103, 105, 121, 223, 225, 309, 311, 316, 449).
+
 use super::*;
 use crate::native::{actions::ActionButton, icons::Tooltip, tokens::Token};
 use chrono::Datelike;

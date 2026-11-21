@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct LegacyDrmDevice, fn set_connector_state.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   new:disable_connectors (24), set_connector_state:enabled (162).
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 104.
+
 use std::collections::HashMap;
 use std::sync::{
     atomic::{AtomicBool, Ordering},

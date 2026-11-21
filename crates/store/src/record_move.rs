@@ -1,8 +1,18 @@
+// non-lean-yet
+// Scope: mod offers, fn to_contact, fn waiting_for_contact.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 7, 12.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 1, 7,
+//   12.
+
 pub mod offers;
 
-use crate::StoreError;
-use sqlx::SqlitePool;
 use std::collections::HashSet;
+
+use sqlx::SqlitePool;
+
+use crate::StoreError;
 
 pub async fn to_contact(pool: &SqlitePool, contact: &str) -> Result<HashSet<String>, StoreError> {
     Ok(sqlx::query_scalar::<_,String>("SELECT m.record_uid FROM record_move_member m JOIN record_move_offer o ON o.uid=m.offer_uid WHERE o.peer=? AND o.direction='outgoing' AND o.state IN ('transferring','complete')")

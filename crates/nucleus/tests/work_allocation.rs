@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn work, fn priorities_tie_in_parallel_then_wait_for_the_longest_range, fn
+//   randomized_distinct_priorities_never_overlap_and_completion_compacts_the_queue, fn
+//   allocation_rejects_negative_duration_and_overflow.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 67, 69, 70, 73.
+
 #![cfg(test)]
 
 use nucleus::{

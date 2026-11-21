@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct DataControlDeviceUserData.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 55, 56, 78, 79.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 19.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (61, 84, 91).
+
 use std::cell::RefCell;
 use std::sync::Arc;
 

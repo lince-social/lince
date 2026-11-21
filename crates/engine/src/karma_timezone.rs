@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: fn load_time_zone_artifact, const UTC_TZDB_VERSION, const UTC_TIME_ZONE_IDS, fn
+//   bundled_time_zone_provider.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 61.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 16.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 16.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 11, 45, 54.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 73.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   11, 41, 43, 45, 54.
+
 use std::{collections::BTreeMap, path::Path, sync::Arc};
 
 use nucleus::karma::{

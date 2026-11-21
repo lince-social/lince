@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod assets, mod diagram, mod live, mod markup.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 169, 192, 599,
+//   617, 635.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (472).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (193, 215, 345, 416, 431, 449, 637, 638).
+
 mod assets;
 mod diagram;
 mod live;

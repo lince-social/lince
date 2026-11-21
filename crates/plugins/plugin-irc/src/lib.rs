@@ -1,3 +1,32 @@
+// non-lean-yet
+// Scope: fn field, fn manifest, struct Settings, fn hash.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 95, 271, 282, 285, 308, 328, 330, 333, 519, 523.
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value. Sites
+//   299, 508.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 234, 236, 242,
+//   248, 252, 271, 308, 311, 328, 344.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 496.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   235, 238.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   74, 75, 121, 128, 198, 232, 254, 257, 258, 309, 329, 349, 351, 367, 378, 386, 390, 395, 459,
+//   470, 485, 489, 497, 502, 505, 509, 510, 511, 537, 539, 540.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 185, 262.
+// - [Clippy: clippy::nonminimal_bool] this boolean expression can be simplified. Sites 507.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 179.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 1, 33,
+//   179, 185, 262.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 350.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites handle: String
+//   (262), open: String (185).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   99, 414, 423.
+
 use nucleus::plugins::{
     Compatibility, Contribution, Field, FieldType, ImportedRecord, Manifest, PreparedPublication,
     PublishRecord,

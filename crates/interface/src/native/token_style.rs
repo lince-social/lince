@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod presentation, mod resolver, struct AppliedSize, fn kind.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   257, 258.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (266, 287, 362, 364, 368, 372, 376, 379, 387, 388, 390, 394, 403, 420, 422, 430,
+//   440, 464, 473, 482, 498, 531, 532, 536, 540, 596, 598, 599, 604, 605, 606, 616, 617, 618, 619,
+//   620, 621).
+
 use crate::native::{
     canvas::CanvasItem,
     sand_store::{SandKind, StoredSand},

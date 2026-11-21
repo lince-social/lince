@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: trait IsTabletEvent.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use crate::backend::input::{
     self as backend, TabletToolCapabilities, TabletToolDescriptor, TabletToolTipState, TabletToolType,
 };

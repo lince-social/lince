@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct Keys, struct Root, fn family.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::Order;
 use crate::{
     layout::desktop::PlacementId,

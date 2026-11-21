@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: mod info, enum Icon, struct IconButton, struct IconStyle.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 154, 156, 321,
+//   327, 330, 332, 381, 623, 824, 936, 938.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (500, 522,
+//   527).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   675, 676, 692.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (587, 589, 590, 606, 607, 611, 623, 626, 628, 629, 631, 632, 634, 638, 642, 646,
+//   650, 749, 750, 756, 757, 758, 759, 762, 769, 801, 803, 805, 811, 819, 821, 824, 826, 827, 829,
+//   832, 836, 839, 861, 863, 874, 876, 881, 884, 889, 891, 894, 930, 1008, 1009, 1010, 1011, 1013,
+//   1017, 1056, 1063, 1192, 1193, 1198, 1199).
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 564.
+
 use crate::native::{
     container::BoxRoot,
     effect::{HoverEvents, SandHoveredOff, SandHoveredOn},

@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn organ, fn pair, fn
+//   owner_relays_cursors_between_unconnected_participants_without_persisting_them, fn
+//   unknown_contacts_need_an_accepted_grant_and_revocation_hides_presence.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use engine::{Engine, actions::Action, presence::Cursor, trust::Signer};

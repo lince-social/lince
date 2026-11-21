@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct UiPipeline, fn init_ui_pipeline, struct UiPipelineKey.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 89, 90, 95, 104.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 7.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 15, 49.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 15, 16,
+//   17, 18, 21, 49, 50, 51.
+
 use bevy_asset::{load_embedded_asset, AssetServer, Handle};
 use bevy_ecs::prelude::*;
 use bevy_mesh::VertexBufferLayout;

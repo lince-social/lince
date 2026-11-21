@@ -1,12 +1,38 @@
-use super::acp;
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use std::io::Read;
+// non-lean-yet
+// Scope: const REGISTRY_URL, const MAX_REGISTRY, struct Registry, struct Agent.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 166, 167, 175, 177, 336, 345.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   66, 155.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 213, 246, 249,
+//   282, 283, 284.
+// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 336.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 32.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   67, 157.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   75, 106, 111, 115, 120.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 70, 101.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 11, 16,
+//   17, 18, 22, 23, 24, 25, 27, 32, 33, 34, 35, 36, 37, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 54,
+//   55, 56, 60, 61, 62, 66, 70, 101, 132, 155.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites parse: String
+//   (70), refresh: String (101).
+
 use std::{
     collections::{BTreeMap, BTreeSet},
+    io::Read,
     path::{Path, PathBuf},
     time::Duration,
 };
+
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+
+use super::acp;
 
 pub const REGISTRY_URL: &str =
     "https://cdn.agentclientprotocol.com/registry/v1/latest/registry.json";
@@ -254,7 +280,7 @@ impl Search {
             });
             let node = candidate_config
                 .as_ref()
-                .is_some_and(|config| config.requires_node());
+                .is_some_and(super::acp::Config::requires_node);
             let availability = if node {
                 Availability::RuntimeUnsupported
             } else if runtime_missing {
@@ -333,14 +359,13 @@ fn valid_distribution(distribution: &Value) -> bool {
             })
     };
     for route in ["npx", "uvx"] {
-        if let Some(package) = distribution[route]["package"].as_str() {
-            if package.len() > 256
+        if let Some(package) = distribution[route]["package"].as_str()
+            && (package.len() > 256
                 || !package
                     .bytes()
-                    .all(|byte| byte.is_ascii_alphanumeric() || b"@/._-+=".contains(&byte))
-            {
-                return false;
-            }
+                    .all(|byte| byte.is_ascii_alphanumeric() || b"@/._-+=".contains(&byte)))
+        {
+            return false;
         }
         if !args_valid(&distribution[route]["args"]) || !env_valid(&distribution[route]["env"]) {
             return false;

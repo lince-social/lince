@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn boundary, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   boundary:backwards (4).
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   17, 33.
+
 use icu_segmenter::WordSegmenter;
 use ropey::Rope;
 

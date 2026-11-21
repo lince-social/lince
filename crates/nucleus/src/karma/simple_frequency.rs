@@ -1,5 +1,19 @@
-use std::collections::{BTreeMap, BTreeSet};
-use std::num::NonZeroU32;
+// non-lean-yet
+// Scope: fn utc_provider, fn frequency_from_cadence.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   24.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 16, 68, 70, 74.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   51, 91.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 12, 24.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 12, 24.
+
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    num::NonZeroU32,
+};
 
 use super::{
     ArtifactTimeZoneProvider, Cadence, CadenceAst, CadenceStepAst, CivilDateTime, DurationBinding,

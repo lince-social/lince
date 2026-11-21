@@ -1,11 +1,27 @@
+// non-lean-yet
+// Scope: mod projection, fn create, fn get, fn set_record_place.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 164.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 98, 99, 105, 106,
+//   111, 118, 126, 130.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   validate_location_assertion_on:has_quantity (195), validate_location_assertion_on:has_unit
+//   (196).
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 10, 27, 40, 53, 65, 190.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 10, 27,
+//   40, 53, 65, 190.
+
 use nucleus::place::Place;
 use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;
 mod projection;
+use std::collections::{HashMap, HashSet};
+
 use nucleus::vocabulary::{LocationCandidate, SAVED_LOCATION_ROLE_UID, SavedLocation};
 pub use projection::{saved_locations_for_person, saved_locations_for_person_among};
-use std::collections::{HashMap, HashSet};
 
 pub async fn create(
     pool: &SqlitePool,

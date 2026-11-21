@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: enum Language, struct Catalog, macro messages, const ITHKUIL_LEXICON.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 61.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 61.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 6, 69.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   546.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 530.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 53.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 1, 6,
+//   8, 9, 10, 14, 16, 28, 36, 44, 53, 54, 60, 69, 70, 74, 77, 509, 510, 511, 517, 530, 556.
+
 #![forbid(unsafe_code)]
 
 use std::sync::{Arc, OnceLock};
@@ -567,8 +585,9 @@ pub fn native_text(value: &str) -> Option<&'static Arc<lince_ithkuil::Script>> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use tnil::gloss::{Gloss, GlossFlags};
+
+    use super::*;
 
     #[test]
     fn every_token_has_english_and_brazilian_portuguese() {

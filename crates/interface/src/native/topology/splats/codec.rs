@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: const MAX_FILE_BYTES, const MAX_DECODED_BYTES, const MAX_SPLATS, const APPEARANCE_BYTES.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   165, 167, 172, 173, 174, 175, 176, 291, 305, 313, 321, 325, 328, 331, 353.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (45, 172, 173, 174, 175, 176).
+
 use bevy::prelude::*;
 use bevy_gaussian_splatting::{Gaussian3d, PlanarGaussian3d};
 use serde::{Deserialize, Serialize};

@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: fn own_journey, fn invalid.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 127, 129, 196,
+//   220, 223, 256.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   143, 144.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 19.
+
 use crate::actions::{ActionOutcome, VerifiedActionAuthorship};
 use crate::{Engine, EngineError, actions::TransferPromiseInput};
 use nucleus::transfer::transport::Direction;

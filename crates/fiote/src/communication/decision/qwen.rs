@@ -1,8 +1,25 @@
-use super::{Admission, Choice, Information, Input, Model, Output};
-use crate::communication::models::{self, Artifact, Cache, Manifest};
-use candle_core::{Device, Tensor, quantized::gguf_file};
-use candle_transformers::models::quantized_qwen3::ModelWeights;
-use serde::Deserialize;
+// non-lean-yet
+// Scope: const ID, const REVISION, const WEIGHTS, const TOKENIZER.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 241.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 105, 223, 227,
+//   241.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 199.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   199.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   333, 334.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   151, 223, 280, 351.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 43.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 16, 17,
+//   43, 90, 99.
+// - [review: §5 Panics] Verify panic isolation boundary and preserve the failure contract. Sites
+//   352.
+
 use std::{
     path::PathBuf,
     sync::{
@@ -11,7 +28,14 @@ use std::{
     },
     time::{Duration, Instant},
 };
+
+use candle_core::{Device, Tensor, quantized::gguf_file};
+use candle_transformers::models::quantized_qwen3::ModelWeights;
+use serde::Deserialize;
 use tokenizers::Tokenizer;
+
+use super::{Admission, Choice, Information, Input, Model, Output};
+use crate::communication::models::{self, Artifact, Cache, Manifest};
 
 pub const ID: &str = "qwen3-decision";
 pub const REVISION: &str = "23749fefcc72300e3a2ad315e1317431b06b590a";

@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod tablet, trait Device, enum DeviceCapability, trait Event.
+// BeautifulRust (baseline lines):
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 41.
+
 //! Common traits for input backends to receive input from.
 
 use std::path::PathBuf;

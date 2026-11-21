@@ -1,5 +1,16 @@
-use crate::{Result, configuration::CameraPins};
+// non-lean-yet
+// Scope: struct BoardProfile, struct Psram, enum PsramMode, struct Camera.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 25.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 50, 61.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 7,
+//   8, 9, 10, 11, 12, 13, 18, 19, 20, 25, 26, 27, 32, 33, 34, 35, 38, 40, 50, 61.
+
 use serde::{Deserialize, Serialize};
+
+use crate::{Result, configuration::CameraPins};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod device, mod dsp, mod library, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 100, 131, 203,
+//   323, 358, 363, 368, 445, 454, 467.
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites open:directory → &Path (96).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (190, 201, 305, 315, 324, 463).
+
 pub(crate) mod device;
 pub mod dsp;
 pub mod library;

@@ -1,3 +1,24 @@
+// non-lean-yet
+// Scope: trait Draw, enum DrawError, struct DrawFunctionsInternal, struct DrawFunctions.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   76.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 101, 372.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 77, 329.
+// - [Clippy: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably fires.
+//   Sites 242.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 85.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 45, 224.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 35.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 57, 114, 293.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 45, 47,
+//   49, 51, 58, 59, 225, 226, 227.
+
 use bevy_material::labels::DrawFunctionId;
 
 use crate::render_phase::{PhaseItem, TrackedRenderPass};

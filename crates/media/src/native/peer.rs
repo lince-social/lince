@@ -1,9 +1,35 @@
-use std::collections::VecDeque;
-use std::sync::{
-    Arc, Mutex,
-    atomic::{AtomicBool, Ordering},
+// non-lean-yet
+// Scope: const MAX_SIGNALS, enum Signal, struct TurnServer, struct Network.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 160, 162, 163, 165, 167, 169, 263, 269, 422, 423, 467, 479, 486, 487, 489, 495.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 151, 225, 231,
+//   393.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   offer:restart (276).
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 418.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   150, 152.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 32, 98, 126, 134.
+// - [Clippy: clippy::large_enum_variant] large size difference between variants. Sites 134.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 211, 255, 276, 312, 366.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 43, 51, 134, 191.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 30, 32,
+//   33, 34, 35, 36, 37, 38, 43, 44, 45, 46, 47, 51, 52, 53, 54, 98, 99, 100, 101, 102, 106, 112,
+//   126, 127, 128, 129, 130, 131, 134, 135, 136, 191, 211, 251, 255, 260, 276, 312, 366.
+
+use std::{
+    collections::VecDeque,
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicBool, Ordering},
+    },
+    time::{Duration, Instant, SystemTime},
 };
-use std::time::{Duration, Instant, SystemTime};
 
 use opus_rs::OpusDecoder;
 use str0m::{
@@ -13,6 +39,7 @@ use str0m::{
     net::{Protocol, Receive},
 };
 
+pub use super::sources::Sources;
 use super::{
     codec::{MAX_PACKET, VideoDecoder},
     error,
@@ -24,8 +51,6 @@ use crate::{
     audio::{AudioFrame, FRAME_SAMPLES},
     video::{LatestVideo, VideoFrame},
 };
-
-pub use super::sources::Sources;
 
 pub const MAX_SIGNALS: usize = 64;
 #[derive(Debug, Clone)]

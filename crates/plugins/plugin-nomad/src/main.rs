@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: const USAGE, fn settings, fn main, fn run.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use lince_plugin_nomad::{manifest, settings::Settings, sync};
 use std::{
     path::{Path, PathBuf},

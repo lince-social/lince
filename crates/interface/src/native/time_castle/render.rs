@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: fn size, fn occurrence_points, fn occurrence_points_in, fn svg.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 271, 274, 276,
+//   370, 396, 454, 528, 580, 591.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   189, 301, 396.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (346, 447, 452, 453, 463, 547, 549, 566, 580, 592, 595, 620).
+
 use super::*;
 use crate::native::actions::Action;
 use bevy::{

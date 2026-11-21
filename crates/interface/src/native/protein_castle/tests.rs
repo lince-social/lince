@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn fixture, fn connected, fn until, fn
+//   nested_filters_keep_exact_quantities_and_reject_incomplete_drafts.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::actions::Action as InterfaceAction;
 use serde_json::json;

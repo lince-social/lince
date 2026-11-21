@@ -1,18 +1,50 @@
-use std::sync::{
-    Arc, Mutex,
-    atomic::{AtomicBool, Ordering},
-};
-use std::time::Instant;
+// non-lean-yet
+// Scope: enum AudioInput, fn audio_config, struct AudioCapture, struct EchoProcessor.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 94, 95, 193, 372, 374, 402, 403, 404, 405.
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 332, 339.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 60.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 38, 42, 161, 215.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 145, 191, 377, 385, 386, 390, 391, 393, 394, 395, 396, 397, 398, 399, 400, 401, 422.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   393, 394.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 385, 386, 393, 394, 397, 399.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   217, 219.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 18.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 24, 60, 66, 132, 139, 155, 169, 188, 213, 288, 320.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 55, 110, 166, 205.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 18, 19,
+//   20, 21, 24, 55, 60, 66, 99, 110, 132, 139, 155, 166, 169, 188, 205, 213, 288, 309, 320.
 
-use nokhwa::pixel_format::RgbFormat;
-use nokhwa::utils::{ApiBackend, CameraIndex, RequestedFormat, RequestedFormatType};
+use std::{
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicBool, Ordering},
+    },
+    time::Instant,
+};
+
+use nokhwa::{
+    pixel_format::RgbFormat,
+    utils::{ApiBackend, CameraIndex, RequestedFormat, RequestedFormatType},
+};
 use scrcap::CaptureDescriptor;
 use sonora::{AudioProcessing, Config, StreamConfig};
 
 use super::error;
-use crate::audio::{AudioFrame, FRAME_SAMPLES, SAMPLE_RATE};
-use crate::video::{LatestVideo, MAX_HEIGHT, MAX_WIDTH, VideoFrame};
-use crate::{MediaError, Result};
+use crate::{
+    MediaError, Result,
+    audio::{AudioFrame, FRAME_SAMPLES, SAMPLE_RATE},
+    video::{LatestVideo, MAX_HEIGHT, MAX_WIDTH, VideoFrame},
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AudioInput {
@@ -324,9 +356,13 @@ pub fn screens() -> Result<Vec<(u64, String)>> {
     }
     #[cfg(target_os = "windows")]
     {
-        use windows_sys::Win32::Foundation::{LPARAM, RECT};
-        use windows_sys::Win32::Graphics::Gdi::{EnumDisplayMonitors, HDC, HMONITOR};
-        use windows_sys::core::BOOL;
+        use windows_sys::{
+            Win32::{
+                Foundation::{LPARAM, RECT},
+                Graphics::Gdi::{EnumDisplayMonitors, HDC, HMONITOR},
+            },
+            core::BOOL,
+        };
         unsafe extern "system" fn count(_: HMONITOR, _: HDC, _: *mut RECT, data: LPARAM) -> BOOL {
             // SAFETY: The synchronous enumerator passes back the exclusive pointer to `total`.
             unsafe {

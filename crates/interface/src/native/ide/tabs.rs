@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct SavedPosition, struct Position, fn current, fn switch.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 24, 32, 43, 54,
+//   83, 86, 95.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   31, 33, 102, 105.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (43, 44, 70, 72).
+
 use super::*;
 
 #[derive(Clone, Default, Serialize, Deserialize)]

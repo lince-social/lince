@@ -1,5 +1,13 @@
-use super::*;
+// non-lean-yet
+// Scope: struct Resources.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (22).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (21, 35).
+
 use bevy::{pbr::ShadowView, render::RenderApp};
+
+use super::*;
 
 #[derive(Clone, Debug, serde::Serialize)]
 pub(crate) struct Resources {
@@ -16,23 +24,66 @@ pub(crate) struct Resources {
 
 impl Presentation {
     pub(crate) fn capture_test_resources(&mut self) -> Resources {
-        self.renderer.device.poll(wgpu::PollType::Wait {
-            submission_index: None, timeout: Some(std::time::Duration::from_secs(3)),
-        }).unwrap();
-        let report = self.renderer._instance.generate_report().expect("The capture fixture has no real WGPU resource report");
-        let gpu = [report.hub.textures, report.hub.texture_views, report.hub.buffers, report.hub.bind_groups, report.hub.samplers]
-            .map(|resource| [resource.num_kept_from_user, resource.num_allocated]);
-        let allocated_bytes = self.renderer.device.generate_allocator_report().map(|report| report.total_allocated_bytes);
+        self.renderer
+            .device
+            .poll(wgpu::PollType::Wait {
+                submission_index: None,
+                timeout: Some(std::time::Duration::from_secs(3)),
+            })
+            .unwrap();
+        let report = self
+            .renderer
+            ._instance
+            .generate_report()
+            .expect("The capture fixture has no real WGPU resource report");
+        let gpu = [
+            report.hub.textures,
+            report.hub.texture_views,
+            report.hub.buffers,
+            report.hub.bind_groups,
+            report.hub.samplers,
+        ]
+        .map(|resource| [resource.num_kept_from_user, resource.num_allocated]);
+        let allocated_bytes = self
+            .renderer
+            .device
+            .generate_allocator_report()
+            .map(|report| report.total_allocated_bytes);
         let world = self.app.world_mut();
-        let assets = [world.resource::<Assets<Image>>().len(), world.resource::<Assets<Mesh>>().len(), world.resource::<Assets<StandardMaterial>>().len()];
-        let cameras = world.query_filtered::<Entity, With<Camera>>().iter(world).count();
-        let sessions = world.get_resource::<lince_interface::host::capture::Status>().map_or(0, |status| status.sessions.len());
-        let indicators = world.query::<&Name>().iter(world).filter(|name| name.as_str() == "capture.active-indicator").count();
+        let assets = [
+            world.resource::<Assets<Image>>().len(),
+            world.resource::<Assets<Mesh>>().len(),
+            world.resource::<Assets<StandardMaterial>>().len(),
+        ];
+        let cameras = world
+            .query_filtered::<Entity, With<Camera>>()
+            .iter(world)
+            .count();
+        let sessions = world
+            .get_resource::<lince_interface::host::capture::Status>()
+            .map_or(0, |status| status.sessions.len());
+        let indicators = world
+            .query::<&Name>()
+            .iter(world)
+            .filter(|name| name.as_str() == "capture.active-indicator")
+            .count();
         let shadow_views = self.app.get_sub_app_mut(RenderApp).map_or(0, |render| {
             let world = render.world_mut();
-            world.query_filtered::<Entity, With<ShadowView>>().iter(world).count()
+            world
+                .query_filtered::<Entity, With<ShadowView>>()
+                .iter(world)
+                .count()
         });
-        Resources { assets, cameras, shadow_views, sessions, indicators, gpu, allocated_bytes, descriptors: std::fs::read_dir("/proc/self/fd").unwrap().count(),
-            retained_bytes: self.renderer.capture_test_bytes() }
+        Resources {
+            assets,
+            cameras,
+            shadow_views,
+            sessions,
+            indicators,
+            gpu,
+            allocated_bytes,
+            descriptors: std::fs::read_dir("/proc/self/fd").unwrap().count(),
+            retained_bytes: self.renderer.capture_test_bytes(),
+        }
     }
 }

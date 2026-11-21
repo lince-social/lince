@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod support, fn state, fn setup, fn
+//   a_queued_acknowledgement_does_not_show_a_retreat_or_pause_rules.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 45, 52, 59, 60.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (45, 56).
+
 use super as karma;
 use super::*;
 use crate::native::cell_bridge::CellBridge;

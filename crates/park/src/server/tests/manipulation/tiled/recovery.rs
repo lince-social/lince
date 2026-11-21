@@ -1,10 +1,16 @@
-use super::*;
+// non-lean-yet
+// Scope: const PROPERTY, const RECOVERED, fn inspect, fn root.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
+use std::collections::BTreeSet;
+
 use bevy::prelude::{Children, ComputedNode, Entity, InheritedVisibility, Text, Vec2, With};
 use lince_interface::{
     layout::desktop::{Item, PlacementId},
     native::{self as ui, canvas::CanvasItem},
 };
-use std::collections::BTreeSet;
+
+use super::*;
 
 const PROPERTY: &str = "park-live-recovery-property";
 const RECOVERED: &str = "Owner title received after reconnect";
@@ -278,7 +284,8 @@ fn records(runtime: &tokio::runtime::Runtime, fixture: &Fixture) -> BTreeSet<Str
 fn assertions(runtime: &tokio::runtime::Runtime, fixture: &Fixture) -> Vec<serde_json::Value> {
     let mut draft = ui::protein_castle::ProteinDraft::default();
     draft.query =
-        serde_json::json!({"source":"assertion", "where":[{"concept_in":PROPERTY}],"limit":512}).into();
+        serde_json::json!({"source":"assertion", "where":[{"concept_in":PROPERTY}],"limit":512})
+            .into();
     let mut rows = query(
         runtime,
         fixture,

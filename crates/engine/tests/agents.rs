@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn cell, fn person, fn an_agent_is_an_actor_beside_a_person_rather_than_a_kind_of_its_own,
+//   fn an_agent_says_which_person_is_answerable_for_it.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::manual_string_new] empty String is being created manually. Sites 17,
+//   117.
+
 #![cfg(test)]
 
 use engine::Engine;

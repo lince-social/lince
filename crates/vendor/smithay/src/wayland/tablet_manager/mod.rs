@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: const MANAGER_VERSION, mod tablet, mod tablet_seat, mod tablet_tool.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 130, 157, 209.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 223.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (130, 200, 205).
+
 //! Utilities for graphics tablet support
 //!
 //! This module provides helpers to handle graphics tablets.

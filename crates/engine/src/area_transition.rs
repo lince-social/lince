@@ -1,3 +1,22 @@
+// non-lean-yet
+// Scope: enum QuantityOperation, struct RecordChanges, struct RecordState, struct
+//   TransitionPreview.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 134, 136, 208,
+//   225, 254, 329, 337, 356, 413, 415.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 296, 403.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   377, 382.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 9.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 377, 382.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 296, 403.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   9, 10, 11, 12, 13, 14, 18, 26, 36, 46, 63, 87, 88, 89, 90, 92, 94, 98, 106, 123, 160, 161, 162,
+//   164, 166, 171, 172, 173, 174.
+
 use crate::{Engine, actions::ActionOutcome, error::EngineError};
 use chrono::{DateTime, Utc};
 use nucleus::{Cause, DecimalValue, NewFact};

@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: const SCHEMA, const MAX_BYTES, struct ParkReport, fn verdict.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   98, 115, 116, 117, 118, 124, 242, 247, 262.
+
 use serde_json::Value;
 use std::{fs::File, io::Read, path::Path};
 

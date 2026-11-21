@@ -1,3 +1,24 @@
+// non-lean-yet
+// Scope: type QueueReader, type QueueReaders, struct QueueRegistration, struct SyncService.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 52, 86, 88, 105,
+//   233, 236, 256.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (51).
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 221.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 88.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 24, 49, 61, 85, 104, 146, 151, 160, 187, 205, 216, 255.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 93, 168, 192.
+// - [Clippy probe: clippy::missing_panics_doc] State the panic conditions for exported functions.
+//   Sites 78, 93, 157, 168, 192.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 15, 30.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   15, 30, 78, 93, 157, 168, 192.
+
 use crate::{Engine, EngineError};
 use nucleus::sync::{Activity, Direction, Instance, Outcome, Overview, Pending, Queue, Summary};
 use std::{

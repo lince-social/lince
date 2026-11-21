@@ -1,11 +1,17 @@
-use super::Result;
+// non-lean-yet
+// Scope: fn load, fn markup, fn embed, fn is_svg.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
+use std::io::Cursor;
+
 use base64::{Engine, engine::general_purpose::STANDARD};
 use blitz_traits::net::Url;
 use quick_xml::{
     Reader, Writer,
     events::{BytesStart, Event},
 };
-use std::io::Cursor;
+
+use super::Result;
 
 pub(super) fn load(book: &rbook::Epub, url: &Url, depth: usize) -> Result<Vec<u8>> {
     if depth > 4 {

@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod local_record_preview, fn rich_text_preserves_code_and_resolves_record_link_targets, fn
+//   mermaid_renders_pixels_and_reports_invalid_diagrams, fn
+//   preview_keeps_the_same_editor_and_follows_its_changes.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[cfg(test)]

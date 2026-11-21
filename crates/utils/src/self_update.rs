@@ -1,3 +1,28 @@
+// non-lean-yet
+// Scope: const DEFAULT_RELEASES_API, const DEFAULT_DOWNLOAD_BASE, const MANIFEST_NAME, const
+//   SIGNATURE_NAME.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 332, 347, 348, 359.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 274, 275, 276,
+//   277, 278, 281, 583.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 18, 24, 58, 79.
+// - [Clippy: clippy::manual_is_multiple_of] manual implementation of `.is_multiple_of()`. Sites
+//   159.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   223.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 211, 525, 581, 649, 656.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 11, 12,
+//   14, 18, 19, 20, 24, 25, 26, 27, 31, 33, 35, 37, 39, 43, 45, 47, 49, 51, 53, 58, 59, 60, 61, 66,
+//   67, 68, 69, 70, 71, 72, 73, 74, 75, 79, 80, 81, 82, 99, 103, 118, 122, 127, 134, 141, 148, 168,
+//   178, 183, 189, 211, 230, 245, 506, 525, 581, 649, 656, 671, 672, 673, 679.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites check: String
+//   (525), download_and_apply: String (581).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   164.
+
 use ed25519_dalek::{Signature, VerifyingKey};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -297,8 +322,9 @@ fn replaceable_asset(asset: &ManifestAsset) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ed25519_dalek::{Signer, SigningKey};
+
+    use super::*;
 
     const MANIFEST: &[u8] = br#"{"version":"0.7.0","revision":"abcdef1234567890","channel":"rolling","assets":[{"name":"Lince_0.7.0_amd64.AppImage","url":"https://example/app.AppImage","sha256":"aa","target":"x86_64-unknown-linux-gnu","kind":"desktop"},{"name":"Lince_0.7.0_x64-setup.exe","url":"https://example/setup.exe","sha256":"bb","target":"x86_64-pc-windows-msvc","kind":"desktop"}]}"#;
 
@@ -504,7 +530,7 @@ fn verify_with_key(public_key_hex: &str, message: &[u8], signature_hex: &str) ->
 
 #[cfg(feature = "update-net")]
 pub mod net {
-    use std::time::Duration;
+    use std::{env::current_exe, time::Duration};
 
     use super::{
         AssetKind, Availability, UpdateCommand, UpdateError, UpdateStatus, evaluate_kind,
@@ -599,7 +625,7 @@ pub mod net {
 
     fn apply_bytes(bytes: &[u8]) -> Result<(), String> {
         let target = build_info::appimage_path()
-            .or_else(|| std::env::current_exe().ok())
+            .or_else(|| current_exe().ok())
             .ok_or_else(|| "cannot find the running program to replace".to_string())?;
         if target.starts_with("/nix/store") {
             return Err("running from the Nix store; update through the flake instead".into());
@@ -648,7 +674,7 @@ pub mod net {
 
     pub fn restart() -> std::io::Result<()> {
         let program = build_info::appimage_path()
-            .or_else(|| std::env::current_exe().ok())
+            .or_else(|| current_exe().ok())
             .unwrap_or_else(|| std::path::PathBuf::from("lince"));
         restart_program(&program)
     }

@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn fixture, fn message_tools_overlay_the_history_and_keep_the_composer_clear, fn
+//   streamed_tokens_stay_silent_and_completion_announces_once, fn
+//   private_social_threads_keep_plain_composition_participants_delivery_and_retained_history.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use serde_json::json;
 

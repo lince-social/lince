@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn row, fn input, enum Control, fn open.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 90, 91, 92, 151,
+//   260, 262, 263.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (91, 139, 155, 168, 175, 178, 180, 185, 193, 197, 207, 209, 211, 221, 235, 266,
+//   274).
+
 use super::*;
 use crate::native::actions::Action;
 pub(super) use crate::native::castle_feed::button;

@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: struct Heard, fn task, fn ready, fn clock.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 31, 55, 67, 116,
+//   120, 190, 221, 225, 266, 303, 324, 335, 362, 397, 399, 487, 505, 537, 547, 557, 571, 600, 618,
+//   656, 674.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   388.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (13, 18, 23, 30, 49, 51, 62, 67, 72, 85, 117, 140, 141, 152, 173, 186, 193, 194,
+//   197, 198, 204, 212, 219, 220, 232, 265, 311, 324, 335, 343, 345, 355, 356, 360, 361, 365, 366,
+//   368, 395, 405, 412, 422, 423, 425, 433, 443, 446, 449, 453, 459, 465, 473, 480, 487, 500, 519,
+//   530, 536, 545, 555, 558, 561, 569, 585, 589, 591, 607, 625, 630, 641, 663, 666, 688, 692).
+
 use super::*;
 use engine::actions::Action;
 use lince_interface::sound::{Cue, Output, Queue};

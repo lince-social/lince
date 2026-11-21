@@ -1,5 +1,16 @@
-use store::Store;
-use store::budget::{self, Area};
+// non-lean-yet
+// Scope: fn cell, fn the_default_budget_is_a_real_number_rather_than_unlimited, fn
+//   a_negative_budget_is_refused_rather_than_read_as_unlimited, fn
+//   quarantine_evicts_inside_its_share_and_keeps_the_newest.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 69.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 35.
+
+use store::{
+    Store,
+    budget::{self, Area},
+};
 
 async fn cell() -> Store {
     Store::open_memory().await.expect("in-memory store")

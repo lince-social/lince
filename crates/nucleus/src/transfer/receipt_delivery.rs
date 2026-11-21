@@ -1,7 +1,27 @@
-use super::receipt::{Document, ParticipationRequest};
-use crate::karma::{CanonicalHash, canonical_hash};
+// non-lean-yet
+// Scope: const DOMAIN, const MIME, const MAX_BYTES, const MAX_SECONDS.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 81, 260.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 108.
+// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 94.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 13, 52, 146.
+// - [Clippy: clippy::large_enum_variant] large size difference between variants. Sites 52.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 122, 130, 134.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 7,
+//   8, 9, 13, 14, 15, 16, 18, 19, 20, 21, 26, 38, 39, 40, 41, 42, 52, 53, 54, 59, 60, 61, 62, 63,
+//   64, 65, 69, 122, 130, 134, 146, 147, 149, 151, 152, 154, 155, 157, 158, 159, 160, 162, 163,
+//   165, 166, 167, 169, 170, 172, 173, 178, 188, 194.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites hash: String
+//   (130), parse: String (134), validate: String (122).
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
+use super::receipt::{Document, ParticipationRequest};
+use crate::karma::{CanonicalHash, canonical_hash};
 
 pub const DOMAIN: &str = "lince.transfer-receipt-delivery.v1";
 pub const MIME: &str = "application/vnd.lince.transfer-receipt+json";
@@ -91,16 +111,16 @@ impl Delivery {
                 if self.expires_at > document.expires_at() {
                     return Err("Delivery exceeds the artifact's reviewed term".into());
                 }
-                if let Document::Review(review) = document {
-                    if self.recipients.iter().any(|uid| {
+                if let Document::Review(review) = document
+                    && self.recipients.iter().any(|uid| {
                         uid != &review.scope.source.origin
                             && uid != &review.scope.giver
                             && uid != &review.scope.receiver
-                    }) {
-                        return Err(
-                            "Private reviews can go only to their named approving Organs".into(),
-                        );
-                    }
+                    })
+                {
+                    return Err(
+                        "Private reviews can go only to their named approving Organs".into(),
+                    );
                 }
             }
             Artifact::Participation(request) => {

@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod support, fn cell, fn plain, fn wire_push.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 mod support;

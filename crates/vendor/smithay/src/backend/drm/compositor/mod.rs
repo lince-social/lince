@@ -1,3 +1,25 @@
+// non-lean-yet
+// Scope: mod elements, mod frame_result, enum ScanoutBuffer, enum DrmFramebuffer.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 3328, 3355, 4285.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 217, 218, 219,
+//   244, 301, 302, 502, 503, 504, 505, 560, 561, 673, 904, 907, 912, 1160, 1191, 1209, 1214, 1229,
+//   1230, 1343, 1374, 1411, 1412, 1538, 1766, 1841, 1882, 1930, 1955, 2042, 2051, 2274, 2308, 2316,
+//   2329, 2351, 2355, 2402, 2833, 3210, 3223, 3440, 3525, 3571, 3605, 4009, 4049, 4327.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   test_color_format:vrr (2797), use_color_format:vrr (2814), use_vrr:vrr (2730).
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 206, 1115, 1301, 2837, 2939, 3039, 3473, 3729, 3932.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 3365.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (2987, 3385).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   4256, 4259.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (680, 1281, 1508, 1537, 1638, 1644, 1765, 2175, 2176, 2286, 2287, 2348, 2349,
+//   2367, 2534, 3210, 3223, 3229, 3354, 3537, 3581, 3612, 3645, 3698, 3708, 3718).
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 188.
+
 //! Composition for [`Element`]s using drm planes
 //!
 //! When possible composition can be (partially) offloaded to the display driver by assigning

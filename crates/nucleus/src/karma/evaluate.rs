@@ -1,3 +1,34 @@
+// non-lean-yet
+// Scope: enum EvaluationErrorCode, struct EvaluationError, struct EvaluationLimits, struct
+//   FrozenEvaluationContext.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 783.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   144.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 1288, 1289.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 194, 204, 205,
+//   207, 210, 212, 215, 243, 247, 261, 317, 331, 347, 360, 373, 375, 468, 474, 490, 495, 499, 506,
+//   540, 599, 607, 703, 709, 730, 747, 772, 778, 802, 824, 926, 932, 937, 987, 1344, 1350, 1356,
+//   1495, 1528.
+// - [Clippy: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably fires.
+//   Sites 521, 578, 687, 755.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 782, 807, 814.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 14, 79.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   177, 200, 233, 245, 472, 498, 546, 1496, 1527.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 144.
+// - [Clippy: clippy::nonminimal_bool] this boolean expression can be simplified. Sites 551, 557.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 14, 15,
+//   16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 31, 32, 33, 34, 36, 37, 49, 50, 51, 64, 66, 68,
+//   70, 72, 74, 79, 80, 81, 83, 84, 86, 88, 90, 92, 94, 96, 98, 100, 102, 107, 108, 109, 110, 112,
+//   114, 116, 118, 122, 123, 124, 125, 126, 127, 128, 132, 133, 134, 135, 136, 138, 140, 141, 144.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (246).
+
 use std::{cmp::Ordering, collections::BTreeMap, fmt};
 
 use serde::{Deserialize, Serialize};
@@ -518,7 +549,10 @@ fn evaluate_node(
     }
 }
 
-#[allow(clippy::too_many_arguments, reason = "Pass the rule, readings, and evaluation state explicitly")]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "Pass the rule, readings, and evaluation state explicitly"
+)]
 fn evaluate_threshold(
     node_id: &LocalId,
     inputs: &BTreeMap<LocalId, LiteralValue>,
@@ -575,7 +609,10 @@ fn evaluate_threshold(
     ))
 }
 
-#[allow(clippy::too_many_arguments, reason = "Pass the rule, readings, and evaluation state explicitly")]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "Pass the rule, readings, and evaluation state explicitly"
+)]
 fn evaluate_debounce(
     node_id: &LocalId,
     inputs: &BTreeMap<LocalId, LiteralValue>,
@@ -684,7 +721,10 @@ fn evaluate_debounce(
     ))
 }
 
-#[allow(clippy::too_many_arguments, reason = "Pass the rule, readings, and evaluation state explicitly")]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "Pass the rule, readings, and evaluation state explicitly"
+)]
 fn evaluate_cooldown(
     node_id: &LocalId,
     inputs: &BTreeMap<LocalId, LiteralValue>,
@@ -752,7 +792,10 @@ fn evaluate_cooldown(
     ))
 }
 
-#[allow(clippy::too_many_arguments, reason = "Pass the rule, readings, and evaluation state explicitly")]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "Pass the rule, readings, and evaluation state explicitly"
+)]
 fn evaluate_rate_limit(
     node_id: &LocalId,
     inputs: &BTreeMap<LocalId, LiteralValue>,

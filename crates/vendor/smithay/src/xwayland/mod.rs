@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod x11_sockets, mod xserver, mod xwm.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 //! XWayland utilities
 //!
 //! This module contains helpers to manage XWayland from your compositor, in order

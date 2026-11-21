@@ -1,5 +1,34 @@
-use image::RgbImage;
+// non-lean-yet
+// Scope: type Point, type Model, const FACE_INPUT_SIZE, struct HandObservation.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 110, 111, 112, 137, 140, 150, 152, 154, 155, 171, 174, 178, 182, 185, 213, 217, 218, 222,
+//   224, 225, 291, 292, 332, 348, 349, 353, 354, 378, 379.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 246.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 104, 105, 134, 135, 190, 191, 224, 225, 270, 271, 312, 313, 316, 317, 329, 330, 443, 449,
+//   482.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   104, 105, 316, 317, 443, 449, 482.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 330.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 17.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 88, 96, 122, 126, 130.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 26, 81, 398, 454.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 1, 5,
+//   10, 11, 12, 13, 17, 18, 19, 20, 21, 22, 26, 34, 39, 47, 81, 88, 96, 122, 126, 130, 398, 403,
+//   407, 454, 459, 463.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites head: String
+//   (96), load: String (88), observe_hands: String (130), open_hand: String (122), open_hands:
+//   String (126).
+
 use std::path::Path;
+
+use image::RgbImage;
 use tract_onnx::prelude::*;
 
 pub type Point = [f32; 2];
@@ -45,15 +74,29 @@ impl PointerTracker {
     }
 
     pub fn update(&mut self, hands: &[HandObservation]) -> Option<PointerGesture> {
-        let hand = hands.iter().filter(|hand| {
-            hand.center.iter().chain(hand.pointer.iter()).all(|value| value.is_finite() && (0.0..=1.0).contains(value))
-        }).max_by(|a, b| a.center[0].total_cmp(&b.center[0]));
-        let Some(hand) = hand else { return self.cancel(); };
-        if self.active && self.previous.is_some_and(|point| (point[0] - hand.center[0]).hypot(point[1] - hand.center[1]) > 0.15) {
+        let hand = hands
+            .iter()
+            .filter(|hand| {
+                hand.center
+                    .iter()
+                    .chain(hand.pointer.iter())
+                    .all(|value| value.is_finite() && (0.0..=1.0).contains(value))
+            })
+            .max_by(|a, b| a.center[0].total_cmp(&b.center[0]));
+        let Some(hand) = hand else {
+            return self.cancel();
+        };
+        if self.active
+            && self.previous.is_some_and(|point| {
+                (point[0] - hand.center[0]).hypot(point[1] - hand.center[1]) > 0.15
+            })
+        {
             return self.cancel();
         }
         if self.blocked {
-            if hand.pinched { return None; }
+            if hand.pinched {
+                return None;
+            }
             self.blocked = false;
         }
         self.previous = Some(hand.center);
@@ -61,7 +104,9 @@ impl PointerTracker {
         if hand.pinched == active {
             self.candidate = None;
         } else {
-            let count = self.candidate.filter(|(state, _)| *state == hand.pinched)
+            let count = self
+                .candidate
+                .filter(|(state, _)| *state == hand.pinched)
                 .map_or(1, |(_, count)| count.saturating_add(1));
             self.candidate = Some((hand.pinched, count));
             if count >= 2 {
@@ -111,11 +156,21 @@ impl HandTracker {
             pixels[plane_len + index] = f32::from(pixel[1]);
             pixels[2 * plane_len + index] = f32::from(pixel[0]);
         }
-        let input = Tensor::from_shape(&[1, 3, size, size], &pixels).map_err(|error| error.to_string())?;
-        let output = self.face.run(tvec!(input.into())).map_err(|error| error.to_string())?;
-        let values: Vec<Vec<f32>> = output.iter().map(|value| {
-            value.try_as_plain_ram().and_then(|value| value.as_slice::<f32>().map(|slice| slice.to_vec())).map_err(|error| error.to_string())
-        }).collect::<Result<_, _>>()?;
+        let input =
+            Tensor::from_shape(&[1, 3, size, size], &pixels).map_err(|error| error.to_string())?;
+        let output = self
+            .face
+            .run(tvec!(input.into()))
+            .map_err(|error| error.to_string())?;
+        let values: Vec<Vec<f32>> = output
+            .iter()
+            .map(|value| {
+                value
+                    .try_as_plain_ram()
+                    .and_then(|value| value.as_slice::<f32>().map(<[f32]>::to_vec))
+                    .map_err(|error| error.to_string())
+            })
+            .collect::<Result<_, _>>()?;
         decode_head(&values)
     }
 
@@ -124,7 +179,12 @@ impl HandTracker {
     }
 
     pub fn open_hands(&self, image: &RgbImage) -> Result<Vec<Point>, String> {
-        Ok(self.observe_hands(image)?.into_iter().filter(|hand| !hand.pinched).map(|hand| hand.center).collect())
+        Ok(self
+            .observe_hands(image)?
+            .into_iter()
+            .filter(|hand| !hand.pinched)
+            .map(|hand| hand.center)
+            .collect())
     }
 
     pub fn observe_hands(&self, image: &RgbImage) -> Result<Vec<HandObservation>, String> {
@@ -168,7 +228,11 @@ impl HandTracker {
                 break;
             }
             let outputs = run(&self.hand, crop(image, center, right, side, 224), 224)?;
-            if outputs.len() != 4 || outputs[0].len() != 63 || outputs[1].len() != 1 || outputs[2].len() != 1 {
+            if outputs.len() != 4
+                || outputs[0].len() != 63
+                || outputs[1].len() != 1
+                || outputs[2].len() != 1
+            {
                 return Err("Unexpected hand model outputs".into());
             }
             if !outputs[1][0].is_finite() || outputs[1][0] < 0.8 {
@@ -186,15 +250,30 @@ impl HandTracker {
             let x = palm_center.iter().map(|p| p[0]).sum::<f32>() / 5.0;
             let y = palm_center.iter().map(|p| p[1]).sum::<f32>() / 5.0;
             let down = [-right[1], right[0]];
-            let map = |x: f32, y: f32| [
-                (center[0] + (x / 224.0 - 0.5) * side * right[0] + (y / 224.0 - 0.5) * side * down[0]) / image.width() as f32,
-                (center[1] + (x / 224.0 - 0.5) * side * right[1] + (y / 224.0 - 0.5) * side * down[1]) / image.height() as f32,
-            ];
+            let map = |x: f32, y: f32| {
+                [
+                    (center[0]
+                        + (x / 224.0 - 0.5) * side * right[0]
+                        + (y / 224.0 - 0.5) * side * down[0])
+                        / image.width() as f32,
+                    (center[1]
+                        + (x / 224.0 - 0.5) * side * right[1]
+                        + (y / 224.0 - 0.5) * side * down[1])
+                        / image.height() as f32,
+                ]
+            };
             let point = map(x, y);
             let pointer = map(landmarks[8][0], landmarks[8][1]);
-            if point.iter().chain(pointer.iter()).all(|v| v.is_finite() && (0.0..=1.0).contains(v))
+            if point
+                .iter()
+                .chain(pointer.iter())
+                .all(|v| v.is_finite() && (0.0..=1.0).contains(v))
             {
-                hands.push(HandObservation { center: point, pointer, pinched });
+                hands.push(HandObservation {
+                    center: point,
+                    pointer,
+                    pinched,
+                });
                 if hands.len() == 2 {
                     break;
                 }
@@ -205,26 +284,38 @@ impl HandTracker {
 }
 
 fn decode_head(values: &[Vec<f32>]) -> Result<Option<Point>, String> {
-    if values.len() != 12 { return Err("Unexpected face model outputs".into()); }
+    if values.len() != 12 {
+        return Err("Unexpected face model outputs".into());
+    }
     let mut best: Option<(f32, Point)> = None;
     for (level, stride) in [8usize, 16, 32].into_iter().enumerate() {
         let grid = FACE_INPUT_SIZE / stride;
         let count = grid * grid;
-        if values[level].len() != count || values[level + 3].len() != count || values[level + 6].len() != count * 4 {
+        if values[level].len() != count
+            || values[level + 3].len() != count
+            || values[level + 6].len() != count * 4
+        {
             return Err("Unexpected face model output shapes".into());
         }
         for index in 0..count {
             let cls = values[level][index];
             let object = values[level + 3][index];
-            if !cls.is_finite() || !object.is_finite() { continue; }
+            if !cls.is_finite() || !object.is_finite() {
+                continue;
+            }
             let score = (cls.clamp(0.0, 1.0) * object.clamp(0.0, 1.0)).sqrt();
-            if score < 0.85 || best.as_ref().is_some_and(|(old, _)| *old >= score) { continue; }
+            if score < 0.85 || best.as_ref().is_some_and(|(old, _)| *old >= score) {
+                continue;
+            }
             let bbox = &values[level + 6][index * 4..index * 4 + 4];
             let point = [
                 ((index % grid) as f32 + bbox[0]) / grid as f32,
                 ((index / grid) as f32 + bbox[1]) / grid as f32,
             ];
-            if point.iter().all(|v| v.is_finite() && (0.0..=1.0).contains(v)) {
+            if point
+                .iter()
+                .all(|v| v.is_finite() && (0.0..=1.0).contains(v))
+            {
                 best = Some((score, point));
             }
         }
@@ -238,8 +329,8 @@ fn load(path: &Path) -> Result<Model, String> {
     }
     tract_onnx::onnx()
         .model_for_path(path)
-        .and_then(|model| model.into_optimized())
-        .and_then(|model| model.into_runnable())
+        .and_then(tract_onnx::prelude::InferenceModelExt::into_optimized)
+        .and_then(tract_onnx::prelude::IntoRunnable::into_runnable)
         .map_err(|error| format!("Could not load hand model: {error}"))
 }
 
@@ -253,7 +344,7 @@ fn run(model: &Model, pixels: Vec<f32>, size: usize) -> Result<Vec<Vec<f32>>, St
         .map(|value| {
             value
                 .try_as_plain_ram()
-                .and_then(|value| value.as_slice::<f32>().map(|slice| slice.to_vec()))
+                .and_then(|value| value.as_slice::<f32>().map(<[f32]>::to_vec))
                 .map_err(|e| e.to_string())
         })
         .collect()
@@ -356,7 +447,8 @@ fn is_open(points: &[[f32; 3]; 21]) -> bool {
 }
 
 fn palm_facing_camera(points: &[[f32; 3]; 21], handedness: f32) -> bool {
-    if !handedness.is_finite() || !(0.0..=1.0).contains(&handedness)
+    if !handedness.is_finite()
+        || !(0.0..=1.0).contains(&handedness)
         || (0.2..0.8).contains(&handedness)
         || points.iter().flatten().any(|value| !value.is_finite())
     {
@@ -370,7 +462,9 @@ fn palm_facing_camera(points: &[[f32; 3]; 21], handedness: f32) -> bool {
 }
 
 fn is_pinched(points: &[[f32; 3]; 21]) -> bool {
-    if points.iter().flatten().any(|value| !value.is_finite()) { return false; }
+    if points.iter().flatten().any(|value| !value.is_finite()) {
+        return false;
+    }
     let width = norm(vector(points[5], points[17]));
     width > 1.0
         && norm(vector(points[4], points[8])) < width * 0.35

@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn main.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut arguments = std::env::args_os().skip(1);
     let output = arguments.next().ok_or("Choose a PNG output path")?;

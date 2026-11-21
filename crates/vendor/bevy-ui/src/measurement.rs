@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct MeasureArgs, struct ResolvedAxis, fn resolve_axis, trait Measure.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 106.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 115, 134.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 21, 40, 106, 129.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 107,
+//   108, 109, 110, 111, 130.
+
 use bevy_ecs::{prelude::Component, reflect::ReflectComponent};
 use bevy_math::Vec2;
 use bevy_reflect::{std_traits::ReflectDefault, Reflect};

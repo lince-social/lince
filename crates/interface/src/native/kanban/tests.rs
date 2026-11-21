@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: mod room_mount, fn until, fn preset_uses_valid_connected_areas_and_editable_task_fields,
+//   fn setup_creation_transfer_and_exit_preserve_card_identity.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use super::checks::fixture;
 

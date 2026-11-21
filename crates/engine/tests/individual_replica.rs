@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn cell, fn secret, fn loopback, fn full_contact.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 92, 95, 187, 190, 280, 283, 430, 433, 498, 501, 667, 681, 721, 738, 741, 811, 814, 936,
+//   939, 1160, 1163.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 146, 261,
+//   785, 890, 1015.
+
 use std::sync::Arc;
 
 use engine::Engine;

@@ -1,7 +1,34 @@
-use crate::{Edit, MAX_FILE_BYTES, MAX_WINDOW_BYTES, Result, diff::changes};
+// non-lean-yet
+// Scope: struct Conflict, enum Resolution, struct SavePoint, struct EncodedSave.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   111, 184.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 343.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 185, 322, 370.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   undo:redo (240).
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   106, 107, 129, 308, 309, 354, 385, 418.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 11.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   131, 185.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 31, 79, 89, 111, 194, 198, 228, 240, 301, 315, 343, 363, 376, 381, 410.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 11, 16, 24, 56, 72, 392, 399.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 8,
+//   11, 12, 13, 16, 17, 18, 24, 25, 26, 31, 45, 46, 47, 48, 49, 50, 51, 52, 53, 56, 72, 79, 89,
+//   104, 111, 172, 175, 178, 181, 184, 187, 190, 194, 198, 228, 240, 254, 260, 267, 301, 306, 315,
+//   343, 363, 376, 381, 392, 399, 410.
+
+use std::sync::{Arc, Mutex};
+
 use loro::{LoroDoc, Subscription, TextDelta, UndoManager, cursor::Cursor};
 use ropey::Rope;
-use std::sync::{Arc, Mutex};
+
+use crate::{Edit, MAX_FILE_BYTES, MAX_WINDOW_BYTES, Result, diff::changes};
 
 #[derive(Clone, Debug)]
 pub struct Conflict {
@@ -121,8 +148,7 @@ impl Buffer {
         let update = disk
             .export_json_updates(&Default::default(), &disk.oplog_vv())
             .map_err(|error| error.to_string())?;
-        doc.import_json_updates(update)
-            .map_err(|e| e.to_string())?;
+        doc.import_json_updates(update).map_err(|e| e.to_string())?;
         disk.set_peer_id(LoroDoc::new().peer_id())
             .map_err(|e| e.to_string())?;
         let rope = Arc::new(Mutex::new(Rope::from_str(value)));

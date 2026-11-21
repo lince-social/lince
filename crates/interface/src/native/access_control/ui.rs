@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct UserForm, struct StandingEditor, struct RoleForm, struct RoleEdit.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 84, 175, 201,
+//   205, 287, 306, 316, 357, 361, 382, 398, 475, 480, 641, 642, 740, 767, 1084, 1186, 1539, 1619,
+//   1708, 1729.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (97, 161, 166, 175, 177, 185, 189, 212, 223, 234, 539, 559, 638, 645, 737, 759,
+//   765, 824, 971, 1048, 1049, 1271, 1274, 1306, 1488, 1544, 1575, 1590, 1595).
+
 use super::*;
 use crate::i18n::Token as Tr;
 use crate::native::{

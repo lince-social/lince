@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: mod kde, mod wlr_layer, mod xdg, enum PingError.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 61, 62, 72.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (71).
+
 //! Handler utilities for the various shell protocols
 //!
 //! Wayland, via its different protocol extensions, supports different kind of

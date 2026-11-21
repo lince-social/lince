@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct BackupHandoff, struct Form, struct Mask, struct BackupPlugin.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 15, 22.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (103).
+
 use crate::i18n::Token as Tr;
 use crate::native::{actions::Action, sand_panel as panel};
 use bevy::{prelude::*, text::EditableText};

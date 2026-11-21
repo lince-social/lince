@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: fn state, fn mutate, fn add, fn binding.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 191, 192, 201, 204, 213, 250, 328, 371, 372.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 38.
+// - [Clippy: clippy::panic_in_result_fn] Return the existing error type for recoverable failure.
+//   Sites 31.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites 90,
+//   223, 329.
+
 #![cfg(test)]
 
 use nucleus::{

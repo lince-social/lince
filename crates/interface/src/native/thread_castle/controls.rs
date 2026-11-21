@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Add, struct Confirmation, struct AskDelete, fn request.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 16, 23, 57, 62,
+//   164.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (28, 30, 32, 60, 172, 173, 175, 187, 194).
+
 use super::*;
 use crate::native::actions::{KeyBinding, KeyBindings, Modifiers};
 use bevy::input_focus::{FocusCause, InputFocus, tab_navigation::TabGroup};

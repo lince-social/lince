@@ -1,5 +1,11 @@
-use crate::{environment::environment_ready, server::Server};
+// non-lean-yet
+// Scope: fn probe, fn check_external_client, fn error.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 50.
+
 use std::{io, time::Instant};
+
+use crate::{environment::environment_ready, server::Server};
 
 pub fn probe() -> io::Result<()> {
     if !environment_ready() {
@@ -91,10 +97,22 @@ pub fn check_external_client() -> io::Result<()> {
     let mut state = Registry::default();
     queue.roundtrip(&mut state).map_err(error)?;
     if !state.0.iter().any(|interface| interface == "wl_compositor")
-        || !state.0.iter().any(|interface| interface == "zwlr_data_control_manager_v1")
-        || !state.0.iter().any(|interface| interface == "ext_data_control_manager_v1")
-        || state.0.iter().any(|interface| matches!(interface.as_str(),
-            "zwlr_output_power_manager_v1" | "zwlr_foreign_toplevel_manager_v1" | "zwlr_screencopy_manager_v1"))
+        || !state
+            .0
+            .iter()
+            .any(|interface| interface == "zwlr_data_control_manager_v1")
+        || !state
+            .0
+            .iter()
+            .any(|interface| interface == "ext_data_control_manager_v1")
+        || state.0.iter().any(|interface| {
+            matches!(
+                interface.as_str(),
+                "zwlr_output_power_manager_v1"
+                    | "zwlr_foreign_toplevel_manager_v1"
+                    | "zwlr_screencopy_manager_v1"
+            )
+        })
     {
         return Err(io::Error::other(
             "An external client did not receive only the expected desktop clipboard access",

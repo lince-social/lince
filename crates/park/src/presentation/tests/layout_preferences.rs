@@ -1,7 +1,14 @@
-use super::displays::{labelled, reveal, write};
-use super::shortcuts::{capture, click, named_button, settle};
-use super::*;
+// non-lean-yet
+// Scope: fn open, fn press, fn value, fn saved_preferences.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use lince_interface::native::actions::Action;
+
+use super::{
+    displays::{labelled, reveal, write},
+    shortcuts::{capture, click, named_button, settle},
+    *,
+};
 
 fn open(canvas: &mut Presentation, size: [u32; 2]) -> Entity {
     let control = named_button(canvas, "Edit window layout");

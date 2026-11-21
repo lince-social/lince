@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct EffectInput, fn select_effect, fn binding, fn effective.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 33, 41, 61, 65,
+//   77.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (17, 70, 121, 130, 195, 199).
+
 use super::*;
 
 #[derive(Component)]

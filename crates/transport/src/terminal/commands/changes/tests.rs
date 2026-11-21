@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn
+//   run_changes_coalesce_without_waking_history_or_unrelated_sources_and_release_registration, fn
+//   observers_do_not_keep_the_host_alive_and_notice_its_shutdown.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use std::time::Duration;
 

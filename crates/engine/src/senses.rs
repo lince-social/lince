@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: struct RemoteOpen, fn half, struct MatchRule, struct Draft.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 95, 183, 184,
+//   185.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 241.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 150.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 76, 123.
+// - [Clippy probe: clippy::needless_borrow] this expression creates a reference which is
+//   immediately dereferenced by the compiler. Sites 177.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 25, 26, 27, 28, 42, 43, 44, 45, 46, 76, 123.
+
 use serde::{Deserialize, Serialize};
 
 use crate::Engine;

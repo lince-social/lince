@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: struct Content, struct Clicks, struct Click, struct ButtonSand.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 92, 180, 226,
+//   228, 269, 446.
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites
+//   613.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (44, 62, 66, 77, 78, 79, 83, 102, 116, 125, 127, 137, 175, 181, 185, 189, 190,
+//   193, 195, 216, 218, 235, 243, 254, 255, 256, 260, 282, 305, 314, 319, 329, 344, 354, 363, 378,
+//   388, 393, 415, 420, 445, 459, 466, 478, 489, 492, 503, 507, 511, 529, 538, 547, 557, 604, 619,
+//   628).
+
 use bevy::{
     diagnostic::FrameCount,
     math::DVec2,

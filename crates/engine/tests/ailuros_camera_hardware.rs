@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: type Result, fn enabled, fn frames, fn
+//   camera_publishes_170_fresh_jpegs_tracks_viewers_and_recovers_after_revocation.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 89.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 163.
+// - [Clippy probe: clippy::manual_is_multiple_of] manual implementation of `.is_multiple_of()`.
+//   Sites 84.
+// - [Clippy probe: clippy::panic_in_result_fn] Return the existing error type for recoverable
+//   failure. Sites 99.
+
 #![cfg(test)]
 
 use engine::{

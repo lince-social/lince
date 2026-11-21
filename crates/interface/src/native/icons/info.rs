@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct TooltipIcon, struct Attachment, fn reserve, fn sync.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 33, 43, 57.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (78, 92, 100, 105, 133).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 49.
+
 use super::*;
 
 #[derive(Component)]

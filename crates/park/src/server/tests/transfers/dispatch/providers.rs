@@ -1,11 +1,20 @@
-use super::*;
-use crate::launch::{Application, Capability, Description};
-use serde_json::{Value, json};
+// non-lean-yet
+// Scope: struct Process, struct Provider, fn script, fn
+//   real_external_provider_reserves_restores_launches_and_captures_through_standard_wayland_interfaces.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Verify panic isolation boundary and preserve the failure contract. Sites
+//   279.
+
 use std::{
     os::unix::fs::PermissionsExt,
     path::{Path, PathBuf},
     process::Child,
 };
+
+use serde_json::{Value, json};
+
+use super::*;
+use crate::launch::{Application, Capability, Description};
 
 struct Process(Child);
 

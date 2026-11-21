@@ -1,6 +1,21 @@
-use crate::transfer::transport::Activity;
+// non-lean-yet
+// Scope: struct Area, struct Announcement, struct Filter.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 39, 40.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   39, 40.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 14, 26, 74, 108.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 8,
+//   9, 10, 14, 26, 47, 64, 65, 66, 67, 68, 69, 70, 74, 86, 99, 100, 101, 102, 103, 104, 108, 124.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites approximate:
+//   String (26), validate: String (14, 74, 108).
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
+use crate::transfer::transport::Activity;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]

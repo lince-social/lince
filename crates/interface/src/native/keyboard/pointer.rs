@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct State, fn prepare, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 85.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   53, 58.
+
 use super::*;
 use bevy::{input::mouse::MouseButtonInput, window::WindowEvent};
 use std::collections::VecDeque;

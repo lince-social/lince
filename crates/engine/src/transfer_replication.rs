@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: const TABLE.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 24, 62.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 211.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 170, 173, 188, 222, 223.
+
 use store::transfer_replication::{self as replication, Message};
 
 use crate::{Engine, EngineError, sync::WireOp};

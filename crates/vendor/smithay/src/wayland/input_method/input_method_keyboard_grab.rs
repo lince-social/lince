@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct InputMethodKeyboard, struct InputMethodKeyboardGrab, struct
+//   InputMethodKeyboardUserData.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (53, 54, 113).
+
 use std::{
     fmt,
     sync::{Arc, Mutex},

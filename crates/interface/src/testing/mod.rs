@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod ui, enum InterfaceSelection, struct Limits, struct Selector.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 172, 183, 275,
+//   307, 311, 312, 355.
+
 use std::{
     sync::{
         Arc,

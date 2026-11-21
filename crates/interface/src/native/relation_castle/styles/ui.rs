@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct Editor, enum Kind, enum Property, enum Field.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 172, 436, 464.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (168, 388, 391, 454, 478, 835).
+
 use super::*;
 use crate::native::{actions::Action, edit_mode::label, sand_panel};
 use bevy::text::EditableText;

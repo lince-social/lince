@@ -1,3 +1,23 @@
+// non-lean-yet
+// Scope: mod reference, const DEFAULT_VOCABULARY_UID, const TOPOS_UID, const
+//   SAVED_LOCATION_ROLE_UID.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 38, 275.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 17.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 3, 5,
+//   6, 7, 9, 17, 38, 39, 40, 41, 43, 44, 45, 46, 48, 49, 50, 52, 53, 55, 56, 58, 59, 61, 62, 63,
+//   65, 66, 67, 69, 70, 72, 74, 75, 77, 78, 79, 81, 82, 84, 86, 87, 89, 91, 92, 94, 95, 97, 98,
+//   100, 101, 103, 104, 105, 107, 108, 109, 111, 112, 113, 115, 116, 118, 119, 121, 122, 124, 125,
+//   126, 127, 129, 131, 132, 133, 134, 136, 137, 139, 140, 141, 142, 143, 144, 146, 147, 148, 149,
+//   151, 153, 155, 156, 157, 158, 159, 160, 162, 163, 164, 166, 167, 168, 170, 171, 176, 196, 197,
+//   198, 199, 200, 201, 202, 203, 204, 209, 210, 211, 212, 213, 214, 215, 220, 221, 222, 224, 229,
+//   230, 231, 232, 233, 238, 239, 240, 241, 242, 243, 244, 245, 250, 251, 252, 253, 258, 259, 260,
+//   261, 262, 267, 268, 269, 270, 275, 276, 277, 279, 280, 281, 282, 284, 285, 287, 288, 289, 291,
+//   292, 294, 295, 296, 298, 299, 300, 301, 306, 307, 308, 309, 310, 311, 312, 314, 318, 319, 320,
+//   321, 322, 323, 324.
+
 use serde::{Deserialize, Serialize};
 
 pub mod reference;

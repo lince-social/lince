@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: impl Host.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 71, 72, 73, 77,
+//   78, 84, 86, 91, 92.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 77, 78, 80, 91.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use fiote::{
     assistant::{Conversation, EntryReceipt},

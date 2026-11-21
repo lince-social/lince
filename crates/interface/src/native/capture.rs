@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod ui, mod status, mod sources, mod render.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 67.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   publish_windows:available (73).
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (78).
+
 use crate::native::{
     actions::Action,
     layout::{LayoutBox, LayoutRuntime, MAX_DEPTH, desktop::input_settings},

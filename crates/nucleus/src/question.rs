@@ -1,3 +1,26 @@
+// non-lean-yet
+// Scope: enum State, struct Question, fn choices, fn validate_schema.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 240, 380.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 57, 58, 59.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 319, 371.
+// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 207, 282, 330.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 6.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   265, 334.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 25, 56, 96, 293.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 7,
+//   8, 9, 10, 15, 16, 17, 18, 19, 20, 21, 25, 42, 56, 73, 96, 293.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites response:
+//   String (56), validate: String (25), validate_answers: String (293), validate_schema: String
+//   (96).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   153, 162, 163, 173, 207, 314.
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -102,7 +125,9 @@ pub fn validate_schema(schema: &Value) -> Result<(), String> {
     let fields = schema["properties"]
         .as_object()
         .ok_or("The question has no fields.")?;
-    let root = schema.as_object().ok_or("Use a flat question form smaller than 64 KiB.")?;
+    let root = schema
+        .as_object()
+        .ok_or("Use a flat question form smaller than 64 KiB.")?;
     if root.keys().any(|key| {
         ![
             "type",
@@ -204,10 +229,10 @@ pub fn validate_schema(schema: &Value) -> Result<(), String> {
             ("minLength", "maxLength"),
             ("minItems", "maxItems"),
         ] {
-            if let (Some(low), Some(high)) = (field[low].as_f64(), field[high].as_f64()) {
-                if low > high {
-                    return Err(format!("Conflicting limits for {name}"));
-                }
+            if let (Some(low), Some(high)) = (field[low].as_f64(), field[high].as_f64())
+                && low > high
+            {
+                return Err(format!("Conflicting limits for {name}"));
             }
         }
         let choice_field = if field["type"] == "array" {
@@ -279,13 +304,12 @@ pub fn validate_schema(schema: &Value) -> Result<(), String> {
             return Err("Use at most 64 choices per field.".into());
         }
     }
-    if let Some(required) = schema["required"].as_array() {
-        if required
+    if let Some(required) = schema["required"].as_array()
+        && required
             .iter()
             .any(|name| name.as_str().is_none_or(|name| !fields.contains_key(name)))
-        {
-            return Err("Required fields must exist in the form.".into());
-        }
+    {
+        return Err("Required fields must exist in the form.".into());
     }
     Ok(())
 }
@@ -298,7 +322,9 @@ pub fn validate_answers(schema: &Value, answers: &Value) -> Result<(), String> {
     let answers = answers
         .as_object()
         .ok_or("Answers must name the form fields.")?;
-    let fields = schema["properties"].as_object().ok_or("The question has no fields.")?;
+    let fields = schema["properties"]
+        .as_object()
+        .ok_or("The question has no fields.")?;
     if answers.keys().any(|key| !fields.contains_key(key)) {
         return Err("The answer contains an unknown field.".into());
     }
@@ -327,15 +353,14 @@ pub fn validate_answers(schema: &Value, answers: &Value) -> Result<(), String> {
                 if !choices.is_empty() && !choices.iter().any(|(_, value)| value == text) {
                     return Err(invalid());
                 }
-                if let Some(pattern) = field["pattern"].as_str() {
-                    if !regex::RegexBuilder::new(pattern)
+                if let Some(pattern) = field["pattern"].as_str()
+                    && !regex::RegexBuilder::new(pattern)
                         .size_limit(65_536)
                         .build()
                         .map_err(|_| invalid())?
                         .is_match(text)
-                    {
-                        return Err(invalid());
-                    }
+                {
+                    return Err(invalid());
                 }
                 let valid = match field["format"].as_str() {
                     Some("email") => text.split_once('@').is_some_and(|(local, host)| {
@@ -391,8 +416,9 @@ pub fn validate_answers(schema: &Value, answers: &Value) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use serde_json::json;
+
+    use super::*;
 
     fn question() -> Question {
         Question {

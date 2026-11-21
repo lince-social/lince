@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn renewed_authentication_uses_the_existing_form_without_losing_the_record_draft.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use bevy::text::EditableText;
 

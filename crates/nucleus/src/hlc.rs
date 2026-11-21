@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: const COUNTER_BITS, const COUNTER_MASK, static LAST, fn pack.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   26.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 17.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 17.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   39.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 3, 8,
+//   12, 16, 20, 22, 26, 43, 49.
+
 use std::sync::atomic::{AtomicI64, Ordering};
 
 pub const COUNTER_BITS: u32 = 16;

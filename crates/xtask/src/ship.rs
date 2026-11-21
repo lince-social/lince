@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Options, struct Receipt, struct Run, struct Tools.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 208, 232, 309,
+//   316.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   321.
+
 use std::{
     ffi::OsString,
     fs::{self, OpenOptions},

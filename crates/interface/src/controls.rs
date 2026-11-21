@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod editing, const BUTTON_BORDER_WIDTH, fn password_mask, fn protect_password.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites value: String
+//   (169).
+
 use crate::theme::{PURPLE, Typography};
 use bevy::{
     input_focus::tab_navigation::TabIndex,

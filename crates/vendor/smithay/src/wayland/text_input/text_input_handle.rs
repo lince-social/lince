@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct TextInput, struct TextInputHandle, struct TextInputUserData, struct Instance.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 76, 97.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   done:discard_state (140).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (74, 86, 97, 104, 116, 130, 141, 158, 169, 182, 229, 255, 259, 341).
+
 use std::mem;
 use std::sync::{Arc, Mutex};
 

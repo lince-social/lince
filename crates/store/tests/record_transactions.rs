@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn local_organ, fn record, fn op_count, fn
+//   preselected_creation_and_scalar_authoring_share_one_transaction.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use nucleus::RecordKind;

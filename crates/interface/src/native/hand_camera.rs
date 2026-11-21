@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct HandCameraPlugin, struct Controls, type Sample, fn discontinuous.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 512, 513, 514,
+//   515, 516, 634, 659, 673, 732, 787, 881, 888, 1022.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   407.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (153, 203, 205, 602, 966).
+
 use bevy::{math::DVec2, prelude::*};
 use lince_hand_input::{HandObservation, HandTracker, HeadRelativePan, Point, PointerGesture, PointerTracker};
 use std::{

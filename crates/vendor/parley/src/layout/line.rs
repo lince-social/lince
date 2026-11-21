@@ -1,6 +1,13 @@
 // Copyright 2021 the Parley Authors
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+// non-lean-yet
+// Scope: struct Line, struct LineMetrics, enum LineItem, enum PositionedLayoutItem.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 34, 77, 78, 99.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   78, 87, 91.
+
 use crate::layout::Style;
 use crate::layout::data::BreakReason;
 use crate::layout::data::{LayoutItemKind, LineData};

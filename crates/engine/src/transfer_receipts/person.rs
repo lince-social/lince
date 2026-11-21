@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: fn sign_person_consent, fn complete_signature.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 35, 92, 156.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 5.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   5.
+
 use super::*;
 use crate::{actions::Action, trust::Signer};
 use nucleus::transfer::receipt::{ApprovalRole, Command, Document, PersonApproval};

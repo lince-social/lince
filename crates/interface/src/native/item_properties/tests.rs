@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn runtime, fn scene, fn settle, fn record.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::{
     area::RecordProperties,

@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct Probe, fn slider, fn mouse, fn assert_value.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 148.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (193).
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites
+//   185.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   69.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (34, 42, 45, 47, 67, 94, 118, 139).
+
 use bevy::{
     diagnostic::FrameCount,
     input::{

@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: mod readings, mod list, mod panels, mod choices.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 295, 301, 318,
+//   329, 338, 407, 421, 434, 435, 446, 464, 479, 481, 488, 738, 1213, 1315, 1414, 1416.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (57, 124, 155,
+//   1089, 1143, 1335).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   171, 433, 443, 448, 462, 797, 1041, 1121, 1133, 1315.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (143, 185, 190, 293, 303, 314, 320, 325, 331, 336, 342, 356, 362, 369, 372, 380,
+//   385, 394, 402, 406, 414, 419, 428, 431, 441, 460, 461, 467, 493, 496, 505, 508, 509, 510, 517,
+//   573, 605, 666, 705, 732, 738, 756, 768, 789, 848, 877, 891, 908, 923, 927, 957, 960, 961, 983,
+//   985, 1033, 1043, 1050, 1101, 1109, 1176, 1202, 1214, 1217, 1218, 1224, 1237, 1306, 1356, 1364,
+//   1392, 1425, 1439, 1445, 1448).
+
 use super::*;
 use crate::native::{
     actions::ActionButton,

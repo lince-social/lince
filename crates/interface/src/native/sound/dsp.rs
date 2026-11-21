@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: enum Distortion, struct Effects.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]

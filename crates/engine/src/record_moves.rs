@@ -1,3 +1,23 @@
+// non-lean-yet
+// Scope: fn failure.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 34, 36, 39, 59,
+//   61, 65, 97, 122, 132, 159, 185, 250, 545, 546, 549, 554, 609.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   answer_record_move:accept (342).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   579, 629.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 572, 662.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 260, 579, 620, 629.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 11, 315, 342, 375, 393, 447, 483, 768, 789, 860.
+// - [Clippy probe: clippy::missing_panics_doc] State the panic conditions for exported functions.
+//   Sites 483.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   11, 315, 342, 375, 393, 447, 483, 768, 789, 860.
+
 use crate::{Engine, EngineError};
 use serde_json::{Value, json};
 use std::collections::{BTreeMap, BTreeSet};

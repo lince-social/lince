@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct RenderCheck, fn check_hidden_work, struct Exercise, fn exercise.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 60, 76, 164.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (205).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   122, 124.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (61, 75, 82, 83, 85, 94, 98, 118, 164, 169, 173, 176, 180, 181, 185, 207, 214).
+
 use bevy::{
     diagnostic::FrameCount,
     prelude::*,

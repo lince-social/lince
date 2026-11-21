@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: impl Host.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 26, 27.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites
+//   intake_selection: String (15).
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 26, 27.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 15.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   15.
+
 use super::*;
 use chrono::{DateTime, FixedOffset};
 use fiote::config::Intake;

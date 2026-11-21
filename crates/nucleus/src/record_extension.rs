@@ -1,6 +1,29 @@
+// non-lean-yet
+// Scope: const SCHEMA_NAMESPACE, const VALUES_NAMESPACE, const MAX_BYTES, enum FieldKind.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 401, 402, 403, 405, 409, 414, 418.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 230.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 11, 302.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 95, 153, 157, 172, 196, 219, 242.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 167, 280.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 6,
+//   7, 11, 12, 13, 14, 15, 16, 20, 28, 38, 45, 46, 47, 48, 49, 54, 55, 56, 58, 60, 65, 66, 67, 68,
+//   70, 72, 77, 78, 79, 95, 153, 157, 167, 172, 196, 219, 242, 280, 302, 303, 305, 307, 309, 310,
+//   311, 313, 314, 315, 316, 318, 319, 320, 321, 322, 323, 325, 330, 336, 337, 338, 339, 340, 344,
+//   345, 346, 347, 351, 352, 353, 354, 355, 356, 357, 360, 364.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites
+//   selected_choices: String (219), selection: String (196), update_from: String (153, 172),
+//   validate: String (95), validate_value: String (242), validated: String (157).
+
+use std::collections::{BTreeMap, BTreeSet};
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::{BTreeMap, BTreeSet};
 
 pub const SCHEMA_NAMESPACE: &str = "lince.extension-schema";
 pub const VALUES_NAMESPACE: &str = "lince.extension-values";
@@ -368,8 +391,9 @@ pub fn column_binding(value: &str) -> Option<(&str, &str)> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use serde_json::json;
+
+    use super::*;
 
     #[test]
     fn renamed_and_reordered_choices_preserve_ids_and_archived_choices_keep_values() {

@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: fn create_is_scoped_and_never_overwrites_an_existing_file, fn
+//   watchers_report_atomic_replacements_and_directory_creation, fn
+//   saves_preserve_bom_crlf_permissions_and_refuse_external_changes, fn
+//   invalid_utf8_binary_and_deleted_files_cannot_be_overwritten.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 132, 134.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 153, 162.
+
 use super::*;
 
 #[test]

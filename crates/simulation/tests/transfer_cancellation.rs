@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn independent_organs_cancel_remaining_work_and_keep_delivered_receipts.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use nucleus::simulation::{ReplayStatus, Verdict};
 
 #[test]

@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn invalidate_all_relationships, fn invalidate_relationship_for.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 66, 202, 217,
+//   297.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (200, 290).
+
 use std::collections::HashSet;
 
 use wayland_protocols::xdg::foreign::zv2::server::{

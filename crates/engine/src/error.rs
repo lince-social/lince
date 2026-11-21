@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: enum EngineError.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 4.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 33, 44.
+
 use std::fmt;
 
 #[derive(Debug)]

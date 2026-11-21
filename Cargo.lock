@@ -13532,6 +13532,7 @@ dependencies = [
  "libc",
  "lince-utils",
  "nucleus",
+ "protein-authority",
  "schemars 1.2.3",
  "sensei",
  "serde",
@@ -13540,6 +13541,17 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "protein-authority"
+version = "0.8.0"
+dependencies = [
+ "nucleus",
+ "schemars 1.2.3",
+ "sensei",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -15218,6 +15230,9 @@ checksum = "cd0b0ec5f1c1ca621c432a25813d8d60c88abe6d3e08a3eb9cf37d97a0fe3d73"
 [[package]]
 name = "sensei"
 version = "0.8.0"
+dependencies = [
+ "serde_json",
+]
 
 [[package]]
 name = "seq-macro"

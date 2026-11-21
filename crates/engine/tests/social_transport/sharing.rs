@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn peer, fn known, fn
+//   permissive_general_and_explicit_root_sharing_never_export_or_import_private_social_fields.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 21, 132, 235.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 169.
+
 use engine::{
     Engine,
     sync::{Delivery, OpBatch},

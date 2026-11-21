@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct Contact, struct Configuration, struct Storage, fn directory_bytes.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 92.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value.
+//   Sites 67.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 35, 79, 109.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   6, 7, 8, 9, 10, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 27, 28, 29, 30, 31, 35, 79, 109.
+
 use crate::CellRuntime;
 use serde_json::Value;
 use std::io;

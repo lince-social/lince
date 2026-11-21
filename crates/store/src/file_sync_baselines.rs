@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn load, fn save_on, fn remove.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 6, 15, 27.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 15,
+//   27.
+
 use crate::{
     StoreError,
     sqlx::{Sqlite, SqlitePool, Transaction},

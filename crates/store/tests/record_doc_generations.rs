@@ -1,8 +1,12 @@
+// non-lean-yet
+// Scope: fn record, fn metadata, fn snapshot, fn
+//   qualified_snapshots_are_bounded_and_use_exact_generation_and_revision.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use nucleus::RecordKind;
-use store::Store;
-use store::record_docs::Qualification;
+use store::{Store, record_docs::Qualification};
 
 async fn record(store: &Store, head: &str) -> String {
     store::records::create(

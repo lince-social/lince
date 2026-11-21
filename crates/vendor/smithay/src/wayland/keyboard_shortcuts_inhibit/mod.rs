@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod dispatch, type SeatId, struct SeatInhibitors, struct KeyboardShortcutsInhibitState.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 85, 111.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 225.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (97, 156).
+
 //! Protocol for inhibiting the compositor keyboard shortcuts
 //!
 //! This protocol specifies a way for a client to request the compositor

@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct Tasks, fn receive, fn edit, fn
+//   denied_live_autosave_recovers_with_the_same_reply_id_without_allowing_a_replay.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 159, 184.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 159.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 42, 47, 98, 102.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 261.
+
 use super::*;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use store::sqlx::Row;

@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: const JSON_BYTES, const LINES_BYTES, const CAPTURE_BYTES, const BATCH_ROWS.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 77, 84, 111, 125, 127, 198, 207.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 111, 125.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 12, 93, 105, 116, 136.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 59.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   6, 7, 8, 9, 10, 12, 42, 43, 44, 59, 62, 66, 93, 105, 116, 136, 197, 201, 213.
+
 use std::io::{Read, Write};
 use std::path::Path;
 

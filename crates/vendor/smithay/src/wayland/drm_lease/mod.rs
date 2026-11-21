@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct DrmLeaseState, struct DrmLeaseConnector, struct DrmLeaseRequestData, struct
+//   DrmLeaseRequest.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 145, 179, 433,
+//   465, 466, 681, 690, 691, 890, 895, 898, 899.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 486, 515.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (225, 228, 243, 257, 838, 844, 891).
+
 //! DRM Lease protocol
 //!
 //! This module provides helpers to handle the wp_drm_lease_v1 protocol,

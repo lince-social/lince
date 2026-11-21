@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn fixture, fn evaluate, fn
+//   combined_claim_checks_require_review_for_changed_meaning_period_and_audience, fn
+//   combined_claim_checks_never_compare_withdrawn_invalid_or_hidden_current_heads.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use nucleus::trust_analysis::{claims::*, contacts::Audience};
 

@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: mod display, mod features, mod preferences, mod publications.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 56.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 104, 422, 552.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   add_term_on:preferred (195), apply_dictionary:local (404), apply_dictionary_on:local (415),
+//   edit_term_on:preferred (234).
+// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 432.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 27, 37, 69, 74, 82, 90, 109, 126, 158, 189, 228, 262, 273, 292, 342, 378, 400, 411, 531.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 27, 37,
+//   69, 74, 82, 90, 109, 126, 158, 189, 228, 262, 273, 292, 342, 378, 400, 411, 531.
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 10, 11, 12, 13, 14, 15.
+
 mod display;
 mod features;
 mod preferences;
@@ -6,19 +23,20 @@ mod references;
 mod translations;
 mod versions;
 
+use std::collections::{HashMap, HashSet};
+
 pub use display::display_names;
 pub use features::*;
+use nucleus::vocabulary::{SAVED_LOCATION_ROLE_UID, Source, Term};
 pub use preferences::*;
 pub use publications::*;
 pub use references::*;
+use sqlx::{Row, SqliteConnection, SqlitePool};
 pub use translations::*;
+use unicode_normalization::UnicodeNormalization;
 pub use versions::*;
 
 use crate::StoreError;
-use nucleus::vocabulary::{SAVED_LOCATION_ROLE_UID, Source, Term};
-use sqlx::{Row, SqliteConnection, SqlitePool};
-use std::collections::{HashMap, HashSet};
-use unicode_normalization::UnicodeNormalization;
 
 fn invalid(message: &str) -> StoreError {
     StoreError::Protocol(message.into())
@@ -433,17 +451,15 @@ pub async fn apply_dictionary_on(
         .bind(&source.concept_uid)
         .fetch_optional(&mut *connection)
         .await?
-    {
-        if original.get::<String, _>("original_name") != source.original_name
+        && (original.get::<String, _>("original_name") != source.original_name
             || original.get::<String, _>("original_language") != source.original_language
             || original.get::<String, _>("definition") != source.definition
             || original.get::<String, _>("lingua_uid") != source.vocabulary_uid
-            || original.get::<Option<String>, _>("derived_from") != source.derived_from
-        {
-            return Err(invalid(
-                "A Vocabulary update cannot replace an existing source meaning",
-            ));
-        }
+            || original.get::<Option<String>, _>("derived_from") != source.derived_from)
+    {
+        return Err(invalid(
+            "A Vocabulary update cannot replace an existing source meaning",
+        ));
     }
     sqlx::query(
         "INSERT OR IGNORE INTO concept(uid,canonical_name,origin_organ,created_at) VALUES(?,?,?,?)",

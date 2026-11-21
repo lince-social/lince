@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: struct Instant, fn elapsed_millis, fn elapsed_millis.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (58).
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 15, 22, 29, 36, 43, 45.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 15, 36.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 15, 36, 43, 45.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   7, 10, 14, 41.
+
 use std::{
     ops::{Add, Sub},
     time::Duration,

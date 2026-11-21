@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct DeviceFd, trait DevPath.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 40.
+
 #![forbid(unsafe_op_in_unsafe_fn)]
 
 use std::{

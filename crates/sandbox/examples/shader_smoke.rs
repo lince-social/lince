@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Smoke, fn setup, fn inspect, fn main.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 44, 133, 172.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (126).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (22, 30, 37, 40, 43, 49, 81, 102, 103, 107, 115, 133, 147, 150, 166).
+
 use bevy::{
     prelude::*,
     render::view::screenshot::{Screenshot, ScreenshotCaptured, save_to_disk},

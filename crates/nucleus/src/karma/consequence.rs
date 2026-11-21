@@ -1,7 +1,22 @@
+// non-lean-yet
+// Scope: enum Consequence, fn public_subject, struct Consequences, mod tests.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 343.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 242.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 9.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 333.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 9, 10,
+//   11, 13, 15, 17, 19, 20, 22, 24, 26, 28, 29, 31, 32, 34, 35, 38, 40, 42, 44, 46, 48, 50, 52, 54,
+//   56, 57, 59, 60, 62, 63, 65, 66, 67, 69, 71, 72, 74, 76, 78, 80, 81, 82, 84, 85, 86, 87, 89, 90,
+//   91, 92, 94, 95, 96, 98, 100, 102, 103, 104, 106, 107, 108, 109, 110, 119, 147, 166, 173, 184,
+//   195, 214, 222, 330, 333, 353, 357, 361, 365, 369, 373, 377, 381, 388.
+
 use serde::{Deserialize, Serialize};
 
-use crate::DecimalValue;
-use crate::error::NucleusError;
+use crate::{DecimalValue, error::NucleusError};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case")]

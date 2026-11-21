@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn fixture, fn activate, fn name, fn settle.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 #![cfg(feature = "native-runtime")]

@@ -1,3 +1,22 @@
+// non-lean-yet
+// Scope: const MAX_DERIVED_OCCURRENCES, const MAX_SCAN_STEPS, const MS_PER_DAY, enum InvalidDay.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 216, 219, 280, 282, 329, 348, 349, 350, 353, 387.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 350, 353.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 17, 73, 626, 633.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   271.
+// - [Clippy: clippy::match_same_arms] these match arms have identical bodies. Sites 306, 307.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 162, 234, 400, 480, 502.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 17,
+//   19, 20, 21, 29, 30, 31, 32, 33, 34, 35, 36, 37, 41, 45, 56, 73, 75, 76, 77, 79, 80, 85, 86, 88,
+//   90, 92, 96, 105, 114, 121, 128, 135, 142, 147, 152, 157, 162, 230, 234, 285, 291, 400, 480,
+//   502, 587, 588, 589, 593, 597, 601, 626, 627, 628, 629, 633, 634, 635, 636.
+
 use chrono::{DateTime, Datelike, Duration, NaiveDate, NaiveDateTime, TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 

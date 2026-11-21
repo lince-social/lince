@@ -1,5 +1,14 @@
+// non-lean-yet
+// Scope: impl State, impl State.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (29).
+
+use smithay::wayland::foreign_toplevel_list::{
+    ForeignToplevelListHandler, ForeignToplevelListState,
+};
+
 use super::*;
-use smithay::wayland::foreign_toplevel_list::{ForeignToplevelListHandler, ForeignToplevelListState};
 
 impl ForeignToplevelListHandler for State {
     fn foreign_toplevel_list_state(&mut self) -> &mut ForeignToplevelListState {
@@ -13,9 +22,10 @@ impl State {
         self.sync_workspaces();
         self.sync_output_control();
         self.foreign_handles.retain(|id, handle| {
-            let keep = self.windows.get(id).is_some_and(|window| {
-                window.mapped && window.role.wl_surface().is_alive()
-            });
+            let keep = self
+                .windows
+                .get(id)
+                .is_some_and(|window| window.mapped && window.role.wl_surface().is_alive());
             if !keep {
                 handle.send_closed();
             }
@@ -26,9 +36,16 @@ impl State {
                 continue;
             }
             let (title, app_id) = with_states(window.role.wl_surface(), |states| {
-                let metadata = states.data_map.get::<XdgToplevelSurfaceData>().unwrap()
-                    .lock().unwrap_or_else(|error| error.into_inner());
-                (bounded(metadata.title.as_deref().unwrap_or_default()), bounded(metadata.app_id.as_deref().unwrap_or_default()))
+                let metadata = states
+                    .data_map
+                    .get::<XdgToplevelSurfaceData>()
+                    .unwrap()
+                    .lock()
+                    .unwrap_or_else(|error| error.into_inner());
+                (
+                    bounded(metadata.title.as_deref().unwrap_or_default()),
+                    bounded(metadata.app_id.as_deref().unwrap_or_default()),
+                )
             });
             if let Some(handle) = self.foreign_handles.get(id) {
                 if handle.title() != title || handle.app_id() != app_id {

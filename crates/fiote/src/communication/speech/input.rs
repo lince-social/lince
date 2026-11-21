@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: struct Quality, struct Startup, mod tests.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 60, 77, 78, 88.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 10, 16, 17, 39, 47, 59.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 9, 36.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 2, 29.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 2, 9,
+//   29, 36.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites push: String
+//   (9, 36).
+
 #[derive(Default)]
 pub struct Quality {
     samples: usize,

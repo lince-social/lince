@@ -1,6 +1,40 @@
-use crate::StoreError;
+// non-lean-yet
+// Scope: fn anchor_posting_authority_on, fn device_state, fn put_device_state_on, fn
+//   put_snippet_on.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 250, 253, 259, 261, 263, 266, 268, 271, 273, 337, 343.
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value. Sites
+//   540.
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option` value.
+//   Sites 431.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 329, 343, 614,
+//   621.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   anchor_profile_authority_on:ending (567).
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 71, 292, 542, 544, 559.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 542.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 479.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   12, 123, 135, 637, 707.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 5, 47, 59, 102, 236, 304, 312, 439, 444, 458, 484, 499, 564, 696, 771, 780, 792, 803,
+//   826, 837, 847.
+// - [Clippy: clippy::needless_question_mark] enclosing `Ok` and `?` operator are unneeded. Sites
+//   51.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 479.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 47,
+//   59, 102, 236, 304, 312, 439, 444, 458, 479, 480, 481, 484, 499, 564, 696, 763, 764, 765, 766,
+//   767, 768, 771, 780, 792, 803, 826, 837, 847.
+
 use nucleus::social::{Search, Snippet};
 use sqlx::{Row, Sqlite, SqlitePool, Transaction};
+
+use crate::StoreError;
 
 pub async fn anchor_posting_authority_on(
     tx: &mut Transaction<'_, Sqlite>,

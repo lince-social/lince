@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod packages, mod tests, mod ui, struct Document.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 29, 32, 78, 206,
+//   229, 233, 262, 316, 318, 321, 327, 367, 394, 399, 421, 462, 482, 507, 540, 553.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 52, 70, 85.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (97, 212, 218, 227, 231, 247, 318, 325, 330, 331, 345, 356, 371, 379, 389, 518,
+//   526, 537, 541, 544, 547, 558, 561).
+
 use std::sync::Arc;
 mod packages;
 #[cfg(test)]

@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: const MAX_PACKET, const PROTOCOL_VERSION, enum Command, struct Packet.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 209, 210, 276,
+//   279, 287, 315, 316, 317, 325, 326, 338, 349.
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites serve:token → &str (175).
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 107, 141,
+//   150, 160, 266.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites start: String
+//   (258).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   288, 327, 416.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (288, 327, 416).
+
 use super::*;
 use base64::{Engine, prelude::BASE64_STANDARD};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};

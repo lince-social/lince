@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod dumb, mod gbm, enum ExportBuffer, trait ExportFramebuffer.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (81, 87).
+
 //! Trait and data structures to describe types, that can be exported to a drm framebuffer
 
 use std::{

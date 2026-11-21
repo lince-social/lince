@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod styles, struct RelationLink, fn config, fn spawn.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use crate::native::{
     actions::Action,
     area::{AreaShape, InfluenceArea},

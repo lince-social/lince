@@ -1,10 +1,31 @@
-use std::collections::BTreeMap;
-use std::sync::{
-    Arc, Mutex,
-    atomic::{AtomicBool, Ordering},
-    mpsc,
+// non-lean-yet
+// Scope: enum Command, enum Event, struct Session, struct Connection.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 85, 147, 236,
+//   241, 315, 440, 450, 457, 466, 484.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites 59,
+//   61.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 20, 28.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   132, 192.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 55, 129.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 20, 28, 47.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 20, 21,
+//   22, 23, 24, 25, 28, 29, 30, 31, 33, 34, 35, 36, 37, 39, 40, 41, 43, 44, 47, 55, 129, 135, 138,
+//   141.
+
+use std::{
+    collections::BTreeMap,
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicBool, Ordering},
+        mpsc,
+    },
+    time::{Duration, Instant},
 };
-use std::time::{Duration, Instant};
 
 use super::{
     capture::{AudioCapture, AudioInput, EchoProcessor, ScreenCapture},

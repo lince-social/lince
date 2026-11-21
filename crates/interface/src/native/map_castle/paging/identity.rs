@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Scope, struct Context, struct Key, struct Prepared.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 22, 23, 24, 25,
+//   131, 136, 137, 156, 160, 164, 185, 189, 194.
+
 use super::*;
 use crate::native::protein_area::{Config, FeedVersion};
 

@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct AbsolutePreference, type AbsolutePreferences, fn validate_absolute, struct
+//   AbsoluteDevice.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites validate:
+//   String (13), validate_absolute: String (33).
+
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 

@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: fn invalid.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 77, 86, 102, 103.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 84.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 84.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 7.
+
 use chrono::{DateTime, Utc};
 use nucleus::karma::scheduled_change::{BoundaryInput, DateInput, Purpose};
 use nucleus::karma::{Consequence, DurationMs};

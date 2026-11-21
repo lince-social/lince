@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct QueryObservation, struct QueryProbe, fn boundary, fn step.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites 24.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   34.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (44, 45, 93).
+
 use super::*;
 use std::sync::Arc;
 

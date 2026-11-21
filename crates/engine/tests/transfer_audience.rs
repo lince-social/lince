@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod support, const START, struct Fixture, fn fixture.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 mod support;

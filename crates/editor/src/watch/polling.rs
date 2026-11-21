@@ -1,9 +1,21 @@
-use super::*;
+// non-lean-yet
+// Scope: struct State, struct Polling, struct Fingerprint, fn fingerprint.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 66, 73, 80, 94,
+//   101.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites 48.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   56, 61, 108, 123, 132.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 1.
+
 use std::{
     collections::BTreeMap,
     sync::Condvar,
     time::{Duration, Instant, SystemTime},
 };
+
+use super::*;
 
 #[derive(Default)]
 struct State {

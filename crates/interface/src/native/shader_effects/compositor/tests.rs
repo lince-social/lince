@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn fixture, fn draft, fn
+//   appearance_fields_apply_independently_preserve_invalid_and_conflicting_drafts_and_cancel_explicitly,
+//   fn replaced_canvas_and_locked_controls_cannot_apply_an_older_appearance_action.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn fixture() -> (World, Entity, [Entity; 3]) {

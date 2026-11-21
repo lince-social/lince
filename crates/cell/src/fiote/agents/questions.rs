@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: struct Anchor, fn recover, struct Waiting, fn ask.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 42, 43, 64, 76,
+//   79, 99, 122, 136, 162, 171, 177, 197, 205.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites
+//   answer_question: String (185).
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 42, 122, 162, 171, 197, 205.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 12.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 17, 18, 107, 136.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+// - [rustc probe: unreachable_pub] unreachable `pub` item. Sites 155, 185.
+
 use super::*;
 
 #[derive(Serialize, Deserialize)]

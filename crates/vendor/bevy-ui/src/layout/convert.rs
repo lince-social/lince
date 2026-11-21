@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn from_node, mod tests.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 488, 489.
+// - [rustc: unreachable_pub] unreachable `pub` item. Sites 93.
+
 use taffy::style_helpers;
 
 use crate::{

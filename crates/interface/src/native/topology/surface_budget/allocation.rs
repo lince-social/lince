@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Entry, struct Grant, fn extent, fn bytes.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   109, 114, 117, 133, 136, 153, 154, 162, 163, 164, 165.
+
 use super::Request;
 use bevy::prelude::*;
 use std::collections::BTreeSet;

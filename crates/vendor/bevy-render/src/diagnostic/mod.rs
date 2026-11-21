@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: mod erased_render_asset_diagnostic_plugin, mod internal, mod
+//   mesh_allocator_diagnostic_plugin, mod render_asset_diagnostic_plugin.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 252.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 145.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 75, 176.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   139, 140.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 187, 194, 257, 266, 301, 310.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 65, 70, 214, 236.
+
 //! Infrastructure for recording render diagnostics.
 //!
 //! For more info, see [`RenderDiagnosticsPlugin`].

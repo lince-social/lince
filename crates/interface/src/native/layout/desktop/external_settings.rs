@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod draft, mod presentation, struct Page, struct PageState.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 316, 452, 453,
+//   539, 620, 637.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 512, 541.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (167, 170, 173, 175, 391, 397, 404, 410, 443, 445, 471).
+
 use super::{
     HostRequests,
     input_settings::{button, caption, disable, feedback, field, next_request, text},

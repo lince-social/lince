@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: mod archive, mod http, mod input, mod library.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 101, 102, 104,
+//   106.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   148, 149, 151.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 42, 96, 112, 144, 161.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 1, 7,
+//   9, 11, 21, 22, 23, 24, 25, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 42, 72, 73, 74, 75, 76, 81,
+//   82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 96, 112, 144, 161, 171.
+
 mod archive;
 mod http;
 pub use http::HttpFile;

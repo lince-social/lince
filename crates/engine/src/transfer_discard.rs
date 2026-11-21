@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: impl Engine.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 67, 76.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 58.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 58.
+
 use crate::{
     Engine, EngineError,
     actions::{ActionOutcome, VerifiedActionAuthorship},

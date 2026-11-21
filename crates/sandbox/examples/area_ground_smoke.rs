@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn exercise, fn main.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   86.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (47, 66, 76, 108, 110, 120).
+
 use bevy::{
     diagnostic::FrameCount,
     math::DVec2,

@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: const DEFAULT_WASM_SIMD128, const DEFAULT_WASM_SIMD128, static WASM_SIMD128, fn
+//   get_wasm_simd128.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check SAFETY proof and trait invariants. Sites 55, 56.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   set_wasm_simd128:enable (18).
+
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use core::sync::atomic::{AtomicBool, Ordering::Relaxed};

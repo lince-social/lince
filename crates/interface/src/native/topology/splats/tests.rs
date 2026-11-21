@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn ply, fn converts_all_supported_degrees_and_property_orders_without_clamping, fn
+//   invalid_clouds_and_ply_fail_without_silent_reduction, fn
+//   accepts_upstream_padding_and_accounts_for_splat_extent.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use bevy_gaussian_splatting::{Gaussian3d, PlanarGaussian3d, io::codec::CloudCodec};
 use std::io::Cursor;

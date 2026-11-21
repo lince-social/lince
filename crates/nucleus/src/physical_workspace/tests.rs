@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: fn configuration, fn runtime, fn evidence, fn interaction.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 115, 121, 213, 215, 228, 230, 236, 238, 245, 246, 251, 290, 293, 309, 318, 320, 323, 343,
+//   344, 421.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 92, 261.
+// - [rustc: unreachable_pub] unreachable `pub` item. Sites 3.
+
 use super::*;
 
 pub fn configuration() -> Configuration {

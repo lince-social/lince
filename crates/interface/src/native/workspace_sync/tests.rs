@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn panel_fixture, fn
+//   shared_snapshots_preserve_personal_cameras_selection_and_policy_drafts, fn
+//   a_separate_permitted_view_does_not_accept_frames_from_the_shared_subscription, fn
+//   closing_a_workspace_panel_removes_its_personal_replica_and_feed_state.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use bevy::ecs::system::RunSystemOnce;
 

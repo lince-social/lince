@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: fn finished, fn voice_setup_is_explicit_bounded_and_cancelled_id_cannot_start_later, fn
+//   incompatible_voice_directory_reports_failure_without_claiming_installation, fn
+//   actual_english_voice_import_synthesis_and_cancel_use_the_registered_rust_engine.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 198.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 195, 196, 198.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   196, 198.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 196.
+
 use super::*;
 
 async fn finished(service: &Service, job: &str) -> Job {

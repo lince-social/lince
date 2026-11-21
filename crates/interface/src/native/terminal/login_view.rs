@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct LoginView, struct Recipients, fn sync, fn poll.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 29, 30, 46, 60,
+//   114, 115, 126, 183.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (62, 71, 76, 100, 138, 141, 159, 160, 165, 177, 186, 193).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 150.
+
 use super::*;
 use std::time::{Duration, Instant};
 

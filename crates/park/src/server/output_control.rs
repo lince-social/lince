@@ -1,6 +1,15 @@
-use super::*;
-pub use lince_interface::host::display::{OutputHead, OutputMode, OutputSettings};
+// non-lean-yet
+// Scope: mod shell, struct OutputRequest, struct Tracked, struct Binding.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 214, 232, 278,
+//   314, 340, 469, 474, 495, 506, 524, 630, 693, 732, 846, 878.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   output_configuration_finished:accepted (393).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   693.
+
 use lince_interface::host::display::{AdaptiveSyncStatus, AdaptiveSyncSupport, ColorStatus};
+pub use lince_interface::host::display::{OutputHead, OutputMode, OutputSettings};
 use smithay::reexports::wayland_server::{
     DataInit, Dispatch, GlobalDispatch, New, WEnum, protocol::wl_output,
 };
@@ -15,6 +24,8 @@ use wayland_protocols_wlr::output_management::v1::server::{
     zwlr_output_manager_v1::{self as manager, ZwlrOutputManagerV1 as Manager},
     zwlr_output_mode_v1::ZwlrOutputModeV1 as ModeObject,
 };
+
+use super::*;
 
 mod shell;
 
@@ -159,8 +170,12 @@ fn valid_configuration(
 }
 
 impl Control {
-    pub(super) fn revision(&self) -> u64 { u64::from(self.serial) }
-    pub(super) fn snapshot_heads(&self) -> &[OutputHead] { &self.catalog }
+    pub(super) fn revision(&self) -> u64 {
+        u64::from(self.serial)
+    }
+    pub(super) fn snapshot_heads(&self) -> &[OutputHead] {
+        &self.catalog
+    }
     pub(super) fn new(display: &DisplayHandle) -> Self {
         display.create_global::<State, Manager, _>(4, ());
         Self {
@@ -196,7 +211,10 @@ impl Server {
                 let output = &registered.output;
                 let mode = output.current_mode()?;
                 let position = output.current_location();
-                Some(OutputHead { color: Default::default(), adaptive_sync: Default::default(), rotation: output_rotation(output.current_transform())?,
+                Some(OutputHead {
+                    color: Default::default(),
+                    adaptive_sync: Default::default(),
+                    rotation: output_rotation(output.current_transform())?,
                     id: *id,
                     name: output.name(),
                     modes: vec![OutputMode {
@@ -229,7 +247,12 @@ impl Server {
         if !self.output_configuration_current(request) {
             return Ok(false);
         }
-        self.install_virtual_outputs(self.state.output_control.catalog.clone(), &request.heads, bounds, request.test)
+        self.install_virtual_outputs(
+            self.state.output_control.catalog.clone(),
+            &request.heads,
+            bounds,
+            request.test,
+        )
     }
 
     pub(crate) fn install_virtual_outputs(
@@ -251,7 +274,11 @@ impl Server {
                 return Ok(false);
             };
             if let Some(settings) = settings {
-                if settings.adaptive_sync || settings.color != lince_interface::host::color::ColorMode::Srgb { return Ok(false); }
+                if settings.adaptive_sync
+                    || settings.color != lince_interface::host::color::ColorMode::Srgb
+                {
+                    return Ok(false);
+                }
                 let Some(index) = head.modes.iter().position(|mode| mode == &settings.mode) else {
                     return Ok(false);
                 };
@@ -261,8 +288,7 @@ impl Server {
                     .zip(settings.logical_size())
                     .zip(bounds)
                     .any(|((position, size), bound)| {
-                        f64::from(*position) + f64::from(size)
-                            > f64::from(bound)
+                        f64::from(*position) + f64::from(size) > f64::from(bound)
                     })
                 {
                     return Ok(false);
@@ -324,8 +350,14 @@ impl Server {
     pub fn output_catalog(&mut self, catalog: Vec<OutputHead>) -> io::Result<()> {
         validate_catalog(&catalog)?;
         if self.state.output_control.catalog != catalog {
-            self.state.output_control.adaptive_sync.retain(|id, _| catalog.iter().any(|head| head.id == *id));
-            self.state.output_control.color.retain(|id, _| catalog.iter().any(|head| head.id == *id));
+            self.state
+                .output_control
+                .adaptive_sync
+                .retain(|id, _| catalog.iter().any(|head| head.id == *id));
+            self.state
+                .output_control
+                .color
+                .retain(|id, _| catalog.iter().any(|head| head.id == *id));
             self.state.output_control.catalog = catalog;
             self.state.output_control.serial = smithay::utils::SERIAL_COUNTER.next_serial().into();
             self.state.sync_output_control();
@@ -335,13 +367,41 @@ impl Server {
     }
 
     pub(crate) fn output_adaptive_sync(&mut self, id: OutputId, status: AdaptiveSyncStatus) {
-        if !self.state.output_control.catalog.iter().any(|head| head.id == id)
-            || self.state.output_control.adaptive_sync.get(&id) == Some(&status) { return; }
-        let previous = self.state.output_control.adaptive_sync.insert(id, status.clone());
+        if !self
+            .state
+            .output_control
+            .catalog
+            .iter()
+            .any(|head| head.id == id)
+            || self.state.output_control.adaptive_sync.get(&id) == Some(&status)
+        {
+            return;
+        }
+        let previous = self
+            .state
+            .output_control
+            .adaptive_sync
+            .insert(id, status.clone());
         if previous.as_ref().and_then(|status| status.effective) != status.effective {
-            for binding in self.state.output_control.bindings.iter().filter(|binding| !binding.stopped && binding.manager.is_alive()) {
-                if let Some(tracked) = binding.heads.get(&id).filter(|tracked| tracked.object.version() >= 4 && tracked.object.is_alive()) {
-                    tracked.object.adaptive_sync(if status.effective == Some(true) { head::AdaptiveSyncState::Enabled } else { head::AdaptiveSyncState::Disabled });
+            for binding in self
+                .state
+                .output_control
+                .bindings
+                .iter()
+                .filter(|binding| !binding.stopped && binding.manager.is_alive())
+            {
+                if let Some(tracked) = binding
+                    .heads
+                    .get(&id)
+                    .filter(|tracked| tracked.object.version() >= 4 && tracked.object.is_alive())
+                {
+                    tracked
+                        .object
+                        .adaptive_sync(if status.effective == Some(true) {
+                            head::AdaptiveSyncState::Enabled
+                        } else {
+                            head::AdaptiveSyncState::Disabled
+                        });
                     binding.manager.done(self.state.output_control.serial);
                 }
             }
@@ -350,8 +410,16 @@ impl Server {
     }
 
     pub(crate) fn output_color(&mut self, id: OutputId, status: ColorStatus) {
-        if !self.state.output_control.catalog.iter().any(|head| head.id == id)
-            || self.state.output_control.color.get(&id) == Some(&status) { return; }
+        if !self
+            .state
+            .output_control
+            .catalog
+            .iter()
+            .any(|head| head.id == id)
+            || self.state.output_control.color.get(&id) == Some(&status)
+        {
+            return;
+        }
         self.state.output_control.color.insert(id, status);
         self.state.refresh_color_feedback();
         self.state.presentation_changed();
@@ -359,7 +427,12 @@ impl Server {
 
     #[cfg(feature = "nested")]
     pub(crate) fn output_color_revisions(&self) -> BTreeMap<OutputId, u64> {
-        self.state.output_control.color.iter().map(|(id, status)| (*id, status.revision)).collect()
+        self.state
+            .output_control
+            .color
+            .iter()
+            .map(|(id, status)| (*id, status.revision))
+            .collect()
     }
 
     pub fn output_requests(&mut self) -> Vec<OutputRequest> {
@@ -460,9 +533,11 @@ impl State {
                 let mut tracked = if let Some(tracked) = binding.heads.remove(&head.id) {
                     tracked
                 } else {
-                    let Ok(object) =
-                        client.create_resource::<Head, _, State>(&self.handle, binding.manager.version(), head.id)
-                    else {
+                    let Ok(object) = client.create_resource::<Head, _, State>(
+                        &self.handle,
+                        binding.manager.version(),
+                        head.id,
+                    ) else {
                         continue;
                     };
                     binding.manager.head(&object);
@@ -514,11 +589,21 @@ impl State {
                         tracked.object.current_mode(mode);
                     }
                     tracked.object.position(head.position[0], head.position[1]);
-                    tracked.object.transform(output_transform(head.rotation).into());
+                    tracked
+                        .object
+                        .transform(output_transform(head.rotation).into());
                     tracked.object.scale(head.scale);
                     if tracked.object.version() >= 4 {
-                        let active = self.output_control.adaptive_sync.get(&head.id).is_some_and(|status| status.effective == Some(true));
-                        tracked.object.adaptive_sync(if active { head::AdaptiveSyncState::Enabled } else { head::AdaptiveSyncState::Disabled });
+                        let active = self
+                            .output_control
+                            .adaptive_sync
+                            .get(&head.id)
+                            .is_some_and(|status| status.effective == Some(true));
+                        tracked.object.adaptive_sync(if active {
+                            head::AdaptiveSyncState::Enabled
+                        } else {
+                            head::AdaptiveSyncState::Disabled
+                        });
                     }
                 }
                 tracked.snapshot = head.clone();
@@ -689,7 +774,10 @@ impl Dispatch<Configuration, ()> for State {
                 config.heads.insert(
                     head.id,
                     Some(Draft {
-                        settings: OutputSettings { color: head.color, adaptive_sync: head.adaptive_sync, rotation: head.rotation,
+                        settings: OutputSettings {
+                            color: head.color,
+                            adaptive_sync: head.adaptive_sync,
+                            rotation: head.rotation,
                             mode: head.modes[index].clone(),
                             position: head.position,
                             scale: head.scale,
@@ -882,15 +970,33 @@ impl Dispatch<Settings, SettingsData> for State {
             }
             settings::Request::SetPosition { x, y } => draft.settings.position = [x, y],
             settings::Request::SetAdaptiveSync { state: adaptive } => match adaptive {
-                WEnum::Value(head::AdaptiveSyncState::Enabled) => draft.settings.adaptive_sync = true,
-                WEnum::Value(head::AdaptiveSyncState::Disabled) => draft.settings.adaptive_sync = false,
-                _ => resource.post_error(settings::Error::InvalidAdaptiveSyncState, "Invalid adaptive-sync state"),
+                WEnum::Value(head::AdaptiveSyncState::Enabled) => {
+                    draft.settings.adaptive_sync = true
+                }
+                WEnum::Value(head::AdaptiveSyncState::Disabled) => {
+                    draft.settings.adaptive_sync = false
+                }
+                _ => resource.post_error(
+                    settings::Error::InvalidAdaptiveSyncState,
+                    "Invalid adaptive-sync state",
+                ),
             },
             settings::Request::SetTransform { transform } => match transform {
-                WEnum::Value(wl_output::Transform::Normal) => draft.settings.rotation = lince_interface::host::mapping::QuarterTurn::Normal,
-                WEnum::Value(wl_output::Transform::_90) => draft.settings.rotation = lince_interface::host::mapping::QuarterTurn::Clockwise90,
-                WEnum::Value(wl_output::Transform::_180) => draft.settings.rotation = lince_interface::host::mapping::QuarterTurn::UpsideDown,
-                WEnum::Value(wl_output::Transform::_270) => draft.settings.rotation = lince_interface::host::mapping::QuarterTurn::Clockwise270,
+                WEnum::Value(wl_output::Transform::Normal) => {
+                    draft.settings.rotation = lince_interface::host::mapping::QuarterTurn::Normal
+                }
+                WEnum::Value(wl_output::Transform::_90) => {
+                    draft.settings.rotation =
+                        lince_interface::host::mapping::QuarterTurn::Clockwise90
+                }
+                WEnum::Value(wl_output::Transform::_180) => {
+                    draft.settings.rotation =
+                        lince_interface::host::mapping::QuarterTurn::UpsideDown
+                }
+                WEnum::Value(wl_output::Transform::_270) => {
+                    draft.settings.rotation =
+                        lince_interface::host::mapping::QuarterTurn::Clockwise270
+                }
                 WEnum::Value(_) => draft.valid = false,
                 WEnum::Unknown(_) => resource.post_error(
                     settings::Error::InvalidTransform,

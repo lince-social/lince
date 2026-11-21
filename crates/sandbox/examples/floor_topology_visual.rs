@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct Output, struct Captured, fn output, fn step.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 42, 43, 69, 78,
+//   81.
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites 67.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   85.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (56, 68, 84, 104, 105, 115, 129, 150, 177, 178, 179).
+
 use bevy::{
     camera::{ImageRenderTarget, RenderTarget},
     math::DVec2,

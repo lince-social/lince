@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct GbmBuffer, struct GbmAllocator, enum GbmConvertError.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 312.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   from_bo:implicit (93), from_bo_with_node:implicit (105).
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (309).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   356, 360, 364.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (300, 342, 367, 382).
+
 //! Module for Buffers created using [libgbm](gbm).
 //!
 //! The re-exported [`GbmDevice`](gbm::Device) implements the [`Allocator`] trait

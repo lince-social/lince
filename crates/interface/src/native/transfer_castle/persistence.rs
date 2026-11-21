@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct SavedTransferCastle, fn snapshot.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 75.
+
 use super::*;
 
 #[derive(Clone, Serialize, Deserialize)]

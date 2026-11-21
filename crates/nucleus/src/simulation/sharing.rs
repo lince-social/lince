@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct TransferSource, struct Assumption, enum Kind, struct SelectedResult.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 24.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 6,
+//   7, 8, 9, 11, 16, 17, 18, 19, 24, 25, 30, 31, 32, 33, 34, 39, 40, 41, 42, 43, 44, 45, 46, 47,
+//   51, 59, 93.
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]

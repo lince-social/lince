@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: const PASSWORD, const SECRET, fn engine, fn plain.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use {
     engine::{Engine, actions::Action},
     nucleus::RecordKind,

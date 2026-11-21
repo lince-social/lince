@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod history, fn destination, fn reorder_destination, fn reorder.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (49, 54, 59).
+
 use super::*;
 
 mod history;

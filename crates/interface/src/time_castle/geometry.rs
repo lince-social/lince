@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Geometry, fn transverse.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   46.
+
 use super::{Settings, TimeRange};
 
 pub struct Geometry {

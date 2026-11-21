@@ -1,4 +1,13 @@
-use lince_resources::Library;
+// non-lean-yet
+// Scope: struct Server, fn response, fn
+//   fresh_fragments_share_bytes_and_stale_responses_validate_then_change, fn
+//   no_store_and_vary_star_leave_no_persisted_response.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 256.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites 30,
+//   31.
+// - [Clippy: clippy::manual_let_else] this could be rewritten as `let...else`. Sites 34.
+
 use std::{
     io::{Read, Write},
     net::TcpListener,
@@ -8,6 +17,8 @@ use std::{
     },
     thread,
 };
+
+use lince_resources::Library;
 
 struct Server {
     uri: String,

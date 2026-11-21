@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn save, fn write_record, fn wait_for, fn origins.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 102.
+
 use engine::{
     Engine,
     actions::Action,

@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod support, fn
+//   private_outgoing_policy_splits_exactly_and_corrections_reverse_recorded_effects, fn
+//   private_conversion_is_exact_and_rejects_incompatible_units.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 mod support;

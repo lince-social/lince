@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn capture_filters_inherited_ui_mesh_camera_and_shadow_contributors_then_restores_them, fn
+//   transient_private_roots_and_disabled_cached_contributors_are_filtered_without_changing_saved_policy,
+//   fn cached_targets_require_public_source_provenance_for_every_writer_even_when_inactive, fn
+//   detached_shader_meshes_spheres_and_preview_targets_follow_all_semantic_sources.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use std::any::TypeId;
 

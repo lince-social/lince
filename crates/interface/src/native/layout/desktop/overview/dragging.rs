@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct Destination, struct WindowDrag, fn install, fn rectangle.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 223.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (168, 175, 207, 220, 375, 379, 412, 440, 516).
+
 use super::*;
 use crate::layout::desktop::{DropSlot, OverviewSettings, edge_scroll};
 use bevy::picking::pointer::{PointerButton, PointerId};

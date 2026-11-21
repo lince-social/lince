@@ -1,3 +1,30 @@
+// non-lean-yet
+// Scope: const LN_EPS, const HEAD_DIM, const MASK_FILL, struct HeadLayer.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 211.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   160.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 210.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 25, 82, 102, 131.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 139.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 54, 197, 207.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   197.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 130, 160.
+// - [Clippy: clippy::redundant_clone] Move or borrow at the marked sites and check later uses.
+//   Sites 209.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 25, 82, 102, 131.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 114, 124.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 114,
+//   120, 121, 124, 125, 126, 130, 160, 226.
+
 use crate::modernbert::ModernBert;
 use anyhow::Result;
 use candle_core::{D, DType, Device, IndexOp, Tensor};

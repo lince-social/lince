@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: impl Engine, impl Engine.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 75, 78, 93.
+
 use crate::{Engine, EngineError};
 
 impl Engine {

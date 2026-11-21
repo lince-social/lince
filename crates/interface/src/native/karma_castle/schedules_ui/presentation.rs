@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: enum Key, enum Part, struct Panel, fn clear.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 38.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (36, 39, 42, 104).
+
 use super::*;
 use crate::native::retained::{Children as RetainedChildren, Presentation};
 

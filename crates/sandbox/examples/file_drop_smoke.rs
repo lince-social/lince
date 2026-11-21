@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct Exercise, const FILES, fn capture, fn exercise.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 180.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (254).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   108, 109.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (51, 104, 113, 128, 134, 141, 142, 145, 147, 151, 156, 224, 225, 226, 231, 258,
+//   260, 266, 268).
+
 use bevy::{
     prelude::*,
     render::view::screenshot::{Screenshot, ScreenshotCaptured, save_to_disk},

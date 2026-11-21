@@ -1,6 +1,35 @@
-use crate::DecimalValue;
-use serde::{Deserialize, Serialize};
+// non-lean-yet
+// Scope: mod bindings, mod reserved, mod spatial, const CLEANING.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 605, 651, 715, 739, 869, 886.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 87, 89, 91, 142.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   142.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 27, 216.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   99, 101.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 177, 294, 447, 568.
+// - [Clippy: clippy::redundant_clone] Move or borrow at the marked sites and check later uses.
+//   Sites 868.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 7,
+//   9, 11, 13, 14, 16, 17, 18, 19, 20, 21, 22, 27, 29, 30, 31, 32, 36, 48, 49, 50, 151, 152, 153,
+//   157, 158, 159, 163, 177, 189, 216, 217, 218, 219, 220, 221, 226, 227, 228, 229, 231, 236, 237,
+//   239, 240, 241, 242, 244, 246, 251, 252, 253, 254, 259, 260, 261, 264, 273, 288, 294, 331, 398,
+//   403, 414, 420, 440, 447, 495, 499, 568.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites compile: String
+//   (568), validate: String (177, 294, 447).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   549.
+
 use std::collections::BTreeMap;
+
+use serde::{Deserialize, Serialize};
+
+use crate::DecimalValue;
 
 pub mod bindings;
 mod reserved;

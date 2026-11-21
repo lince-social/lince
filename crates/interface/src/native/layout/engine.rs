@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct LayoutRuntime, fn rules, fn text_rules, fn text_extent.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   205, 228, 229, 231, 291, 292, 340, 341, 344, 346, 392, 393, 397, 401, 409, 427, 428, 441, 442,
+//   447, 562, 563, 564, 592, 594, 595, 683.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (72, 75, 163, 164, 165, 179, 180, 188, 489, 509, 516, 532).
+
 use super::{LayoutBox, MAX_DEPTH, Overflow, Rules, Sizing, solver};
 use crate::native::{canvas::CanvasItem, sand_text::SandText, workspace::WorkspaceMember};
 use bevy::{

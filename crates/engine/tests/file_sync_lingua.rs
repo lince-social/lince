@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn user_file, fn configured, fn copy_user_file, fn hello.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 160, 959.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 136.
+
 #![cfg(test)]
 
 use engine::{

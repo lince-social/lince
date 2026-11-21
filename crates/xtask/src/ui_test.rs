@@ -1,8 +1,13 @@
-use crate::{Result, ui_process};
-use lince_interface::testing::{Backend, Dispatch, Limits, Route, Runner, Selector, Step};
-use quick_xml::{Reader, events::Event};
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
+// non-lean-yet
+// Scope: const PACKAGE, const OUTPUT_LIMIT, enum Target, struct ValueExpectation.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 34, 35, 382, 509,
+//   525, 561, 562, 564, 568, 683, 709, 822.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 156, 161,
+//   165, 439, 739, 740, 785, 787, 864, 868, 870.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   151.
+
 use std::{
     collections::BTreeMap,
     ffi::OsString,
@@ -11,6 +16,13 @@ use std::{
     process::Command,
     time::{Duration, Instant},
 };
+
+use lince_interface::testing::{Backend, Dispatch, Limits, Route, Runner, Selector, Step};
+use quick_xml::{Reader, events::Event};
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+
+use crate::{Result, ui_process};
 
 const PACKAGE: &str = "social.lince.mobile.debug";
 const OUTPUT_LIMIT: usize = 2 * 1024 * 1024;
@@ -229,10 +241,10 @@ fn parse(xml: &str) -> Result<Vec<Node>> {
     for node in &mut nodes {
         if editing && node.editable && node.focused {
             node.name = "Editor".into();
-        } else if let Some(value) = &mut node.value {
-            if let Some((_, content)) = value.split_once(':') {
-                *value = content.strip_prefix(' ').unwrap_or(content).to_string();
-            }
+        } else if let Some(value) = &mut node.value
+            && let Some((_, content)) = value.split_once(':')
+        {
+            *value = content.strip_prefix(' ').unwrap_or(content).to_string();
         }
     }
     Ok(nodes)
@@ -412,7 +424,9 @@ impl Android {
                 }
                 let [left, top, right, bottom] = match action.scroll_bounds {
                     Some(region) => scroll_region(&snapshot.nodes, region)?,
-                    None => scroll.bounds.ok_or("Reveal ScrollView has no visible bounds")?,
+                    None => scroll
+                        .bounds
+                        .ok_or("Reveal ScrollView has no visible bounds")?,
                 };
                 let (from, to) = match action.direction.as_deref().unwrap_or("down") {
                     "down" => (top + (bottom - top) * 3 / 4, top + (bottom - top) / 4),

@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn install, fn retire_empty, mod tests.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy::{
     prelude::*,
     render::{

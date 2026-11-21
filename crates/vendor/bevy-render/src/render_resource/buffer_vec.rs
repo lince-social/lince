@@ -1,3 +1,32 @@
+// non-lean-yet
+// Scope: struct RawBufferVec, struct AtomicRawBufferVec, struct BufferVec, struct UninitBufferVec.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 116, 183, 209, 254, 350, 356, 371, 565, 662, 958.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   413, 554.
+// - [Clippy: clippy::multiple_unsafe_ops_per_block] Separate independent safety obligations where
+//   clearer. Sites 436.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 566.
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 436.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 109, 116, 162, 210, 250, 251, 254, 336, 351, 356, 371, 391, 441, 458, 466, 544, 555, 568,
+//   594, 614, 617, 634, 657, 663, 672, 713, 801, 891.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   336, 351, 544, 555, 568, 594, 614, 634, 657, 672, 713.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 979.
+// - [Clippy: clippy::missing_assert_message] assert without any message. Sites 419, 939, 968.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 196, 649.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 40, 270, 491, 689, 825.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 103,
+//   232, 236, 240, 249, 981, 983, 985.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   912.
+
 use core::{iter, marker::PhantomData, ops::Range, slice};
 
 use crate::{

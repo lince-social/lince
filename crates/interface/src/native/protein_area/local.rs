@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn owns, fn interrupt, fn failed, fn sendable.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 53, 82, 83, 113.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (82, 96, 111).
+
 use super::*;
 use crate::native::cell_bridge::Sender;
 

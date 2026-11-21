@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct Band, struct Motion, struct MotionQuery, fn update.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 20, 81, 186, 203,
+//   205, 206.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   155, 164.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (74, 129).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 128.
+
 use super::*;
 use lince_interface::motion::Spring;
 use std::time::Instant;

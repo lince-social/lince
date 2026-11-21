@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: struct Scene, fn target, fn scene, fn equivalent.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 190, 202, 248, 249, 280, 287, 323, 330, 331, 332, 333, 334, 335, 336, 337, 338, 339, 340,
+//   341, 342, 343, 354, 367, 470, 474, 482, 483, 484, 594, 652, 653, 686, 688, 697, 706, 718, 741,
+//   745, 750, 753.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 63, 72, 83, 85, 486, 491.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   72.
+// - [Clippy: clippy::match_same_arms] these match arms have identical bodies. Sites 374, 395, 526,
+//   542.
+// - [Clippy: clippy::unnecessary_semicolon] unnecessary semicolon. Sites 641.
+
 use super::*;
 use crate::{
     CalculatedClip, ComputedStackIndex, GlobalZIndex, OverrideClip, UiRect, UiStack, Val, ZIndex,

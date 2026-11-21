@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: const SAMPLES, struct Demo, fn label, fn compose.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 139.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (157).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (53, 62, 76, 122, 131, 156, 159, 164, 177).
+
 use bevy::{
     diagnostic::FrameCount,
     math::DVec2,

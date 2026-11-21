@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Pause, fn pause, struct Answer, fn
+//   contact_reconstruction_rechecks_conversation_consent_and_device_authority.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 156, 157, 316, 336, 337, 423, 424.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 24.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 251.
+
 use super::*;
 use std::{
     sync::{

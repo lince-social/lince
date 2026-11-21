@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Discovery, fn config, fn settings, fn for_organ.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 12, 64, 79.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   5, 6, 7, 8, 9, 12, 64, 79.
+
 use std::io::{Error, Result};
 use store::Store;
 

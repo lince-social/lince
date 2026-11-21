@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: fn batch, fn gradients_match_finite_differences_with_detached_targets, fn
+//   teacher_tracks_updated_encoder_by_ema, fn
+//   learns_against_frozen_teacher_without_constant_embeddings.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 114.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 6.
+
 use super::*;
 
 fn batch() -> Vec<Transition<2, 1>> {

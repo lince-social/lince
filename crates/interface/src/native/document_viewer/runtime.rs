@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn display_width, fn update, fn refresh, fn request.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 49, 50, 119, 159,
+//   183, 215, 371, 382.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (28, 44, 54, 64, 89, 91, 92, 130, 159, 163, 197, 201, 207, 223, 235, 242, 244,
+//   253, 254, 258, 259, 264, 270, 275, 291, 303, 307, 316, 322, 327, 334, 335, 362, 370, 385, 395).
+
 use super::*;
 use bevy::{
     asset::RenderAssetUsages,

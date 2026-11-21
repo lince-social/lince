@@ -1,6 +1,21 @@
+// non-lean-yet
+// Scope: mod tests, fn requires_node, fn environment, fn executable.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 9.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 82, 113, 141.
+// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 157, 174, 183.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 138.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 1.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 138.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites resolve: String
+//   (138).
+
+use std::{io::Read, path::Path};
+
 use super::*;
-use std::io::Read;
-use std::path::Path;
 
 #[cfg(test)]
 mod tests {
@@ -154,13 +169,12 @@ pub fn resolve(config: &Config) -> Result<PathBuf, String> {
         .get("PATH")
         .map(std::ffi::OsString::from)
         .or_else(|| std::env::var_os("PATH"));
-    if let Some(path) = path {
-        if let Some(found) = std::env::split_paths(&path)
+    if let Some(path) = path
+        && let Some(found) = std::env::split_paths(&path)
             .map(|directory| directory.join(&config.command))
             .find(|path| executable(path))
-        {
-            return found.canonicalize().map_err(|error| error.to_string());
-        }
+    {
+        return found.canonicalize().map_err(|error| error.to_string());
     }
     Err(format!(
         "The agent executable '{}' was not found. Install it or choose its full path in Agent options, then check the connection again. Restart Lince after installing an agent.",
@@ -171,22 +185,21 @@ pub fn resolve(config: &Config) -> Result<PathBuf, String> {
 pub(super) fn account() -> String {
     #[cfg(unix)]
     {
-        if let Ok(status) = std::fs::read_to_string("/proc/self/status") {
-            if let Some(uid) = status
+        if let Ok(status) = std::fs::read_to_string("/proc/self/status")
+            && let Some(uid) = status
                 .lines()
                 .find_map(|line| line.strip_prefix("Uid:"))
                 .and_then(|line| line.split_whitespace().nth(1))
-            {
-                return format!("runtime uid {uid}");
-            }
+        {
+            return format!("runtime uid {uid}");
         }
-        if let Ok(output) = std::process::Command::new("id").arg("-u").output() {
-            if output.status.success() {
-                return format!(
-                    "runtime uid {}",
-                    String::from_utf8_lossy(&output.stdout).trim()
-                );
-            }
+        if let Ok(output) = std::process::Command::new("id").arg("-u").output()
+            && output.status.success()
+        {
+            return format!(
+                "runtime uid {}",
+                String::from_utf8_lossy(&output.stdout).trim()
+            );
         }
     }
     "runtime account unavailable".into()

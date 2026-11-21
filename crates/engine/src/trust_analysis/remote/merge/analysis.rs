@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod tests, fn claim_checks.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 25, 27, 46, 52, 53, 66, 67, 68, 69, 70.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use nucleus::trust_analysis::{claims, query};
 

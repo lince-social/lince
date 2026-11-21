@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: trait XdgToplevelIconHandler, struct ToplevelIconCachedState, struct IconData, struct
+//   XdgToplevelIconUserData.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 98, 223, 236,
+//   278, 360, 361, 369.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (75, 78, 123, 124, 134, 146, 151, 165, 177, 181, 231, 253, 277, 285).
+
 //! XDG Toplevel Icon
 //!
 //! This protocol allows clients to set icons for their toplevel surfaces either via the XDG icon stock (using an icon name), or from pixel data.

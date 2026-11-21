@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn aggregate, fn snapshot.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use store::sqlx::{Column, Row, Sqlite, Transaction};
 

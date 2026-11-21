@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: fn nested_parents.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 46.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   nested_parents:replicated (6).
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 14.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   6.
+
 use serde_json::json;
 
 use super::routes::invocation;

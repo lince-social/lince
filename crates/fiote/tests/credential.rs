@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn a_credential_says_where_it_came_from_and_never_prints_its_secret, fn
+//   an_absent_or_empty_environment_variable_is_no_credential.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use fiote::{CredentialSource, ProviderCredential};
 
 #[test]

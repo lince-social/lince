@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: enum TransferKind.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 28, 63, 64.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   46, 80, 81.
+
 use super::*;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

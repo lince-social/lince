@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct ImageNodeTextureAtlasLayout, struct ImageNodeAssetChangedSystems, fn
+//   mark_images_as_changed_if_their_assets_changed, fn update_texture_atlas_layout_components.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 81.
+
 //! Utility types and systems for rendering of image nodes.
 
 use bevy_asset::{asset_changed::AssetChanged, AsAssetId, AssetId, Handle};

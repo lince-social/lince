@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: Expose the xtask target-cache budget pass as a standalone CLI.
+// BeautifulRust (baseline lines):
+// - [manual: §3 Ownership, §6 Idioms] Sites 5–13. The command collects remaining OS
+//   arguments for a borrowed-slice API. Let the shared parser consume an iterator only
+//   if both entry points preserve option validation, usage, and exit statuses.
+
 #[path = "../../crates/xtask/src/prune/budget.rs"]
 mod budget;
 

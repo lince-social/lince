@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn fixture, fn body, fn shape_entities, fn matches_visible_shape.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (10, 58, 65, 80, 97, 98, 101, 104, 114, 116, 122, 125, 444).
+
 use super::*;
 use crate::{
     host::Manipulation,

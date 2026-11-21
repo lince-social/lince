@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: enum Source, fn baseline, fn baseline_matches, fn display.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 15.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (59).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   21.
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{borrow::Cow, fmt::Write};

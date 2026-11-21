@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod grab, struct TouchHandle, struct TouchInternal, struct TouchSlotState.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 58, 60, 61, 267,
+//   565, 598.
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites
+//   657.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (238, 245, 250, 259, 265, 274, 296, 306, 332, 344, 358, 368, 378, 393, 563).
+
 //! Touch-related types for smithay's input abstraction
 
 use std::collections::HashMap;

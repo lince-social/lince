@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: struct Control, trait Provider, struct Collection, fn test_source.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 72, 96, 97, 98,
+//   99, 105, 144.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 93, 103, 108.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 108.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 32.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 13, 65.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   13, 28, 32, 40, 54, 55, 56, 62, 65, 66, 124.
+
 use crate::EngineError;
 use async_trait::async_trait;
 use nucleus::knowledge::{

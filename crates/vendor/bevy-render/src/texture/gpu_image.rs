@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: struct GpuImage.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option` value.
+//   Sites 159.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   186.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 52, 102, 157,
+//   166.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   191.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 66.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 18, 19,
+//   20, 21, 22, 23.
+
 use crate::{
     render_asset::{AssetExtractionError, PrepareAssetError, RenderAsset},
     render_resource::{DefaultImageSampler, Sampler, Texture, TextureView},

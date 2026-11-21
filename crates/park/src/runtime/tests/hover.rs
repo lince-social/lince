@@ -1,8 +1,14 @@
-use super::super::*;
-use bevy::prelude::*;
-use lince_interface::host::FileDragContext;
-use lince_interface::native;
+// non-lean-yet
+// Scope: mod scroll, fn frame, fn
+//   a_stationary_file_hover_wakes_a_quiet_worker_once_and_activates_only_after_acknowledgement.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::time::{Duration, Instant};
+
+use bevy::prelude::*;
+use lince_interface::{host::FileDragContext, native};
+
+use super::super::*;
 
 mod scroll;
 

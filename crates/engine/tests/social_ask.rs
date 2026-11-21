@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: mod churn, struct ContactNetwork, fn command, fn known.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 180, 181, 185, 287, 301, 655.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 239.
+
 #![cfg(test)]
 
 use engine::{Engine, EngineError, social::Network};

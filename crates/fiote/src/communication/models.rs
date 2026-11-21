@@ -1,5 +1,22 @@
-use serde::Serialize;
-use sha2::{Digest, Sha256};
+// non-lean-yet
+// Scope: struct Artifact, struct Manifest, struct Cache, fn digest.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 295, 298.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 132.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 178, 290.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   342, 385, 386, 456, 473, 486.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 43, 108, 124, 262.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 29.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 13, 14,
+//   15, 16, 20, 21, 22, 23, 24, 25, 29, 31, 34, 43, 84, 89, 102, 108, 124, 262.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites acquire: String
+//   (124), check_cancel: String (262), new: String (43), verified_file: String (108).
+
 use std::{
     io::{Read, Write},
     path::{Path, PathBuf},
@@ -8,6 +25,9 @@ use std::{
         atomic::{AtomicBool, AtomicU64, Ordering},
     },
 };
+
+use serde::Serialize;
+use sha2::{Digest, Sha256};
 
 #[derive(Debug, Clone, Copy, Serialize)]
 pub struct Artifact {

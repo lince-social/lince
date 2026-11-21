@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod model, mod tests, struct Media, struct OwnsMediaScroll.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 164, 172, 181,
+//   185.
+
 mod model;
 #[cfg(test)]
 mod tests;

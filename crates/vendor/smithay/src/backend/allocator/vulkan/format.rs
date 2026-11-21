@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: macro vk_format_table.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 //! Format conversions between Vulkan and DRM formats.
 
 /// Macro to generate format conversions between Vulkan and FourCC format codes.

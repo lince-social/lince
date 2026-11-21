@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn dwell_fires_once_and_leaving_or_crossing_a_thumbnail_resets_its_clock, fn
+//   a_hover_keeps_its_captured_deadline_and_rejects_unrepresentable_deadlines, fn
+//   edge_speed_is_bounded_elapsed_time_based_and_can_be_disabled, fn
+//   portable_overview_preferences_are_validated_and_round_trip.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[test]

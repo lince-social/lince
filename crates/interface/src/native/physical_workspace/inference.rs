@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct Route, struct Job, struct Jobs, fn target.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 60, 68, 104, 150,
+//   151, 158, 164, 177, 325, 386, 387, 388, 393, 394, 397.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   151, 255.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (117, 255, 340, 353, 361, 371).
+
 use super::*;
 use std::sync::Arc;
 

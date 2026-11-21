@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Wave, fn message, trait Pending, struct Owners.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 130, 171.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (45).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   180, 241.
+
 use super::{CONNECTION, CellMessage};
 use bevy::ecs::message::{MessageCursor, Messages};
 use bevy::prelude::{Component, Entity, FromWorld, QueryState, World};

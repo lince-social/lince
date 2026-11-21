@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct Preview, struct Previews, const LIMIT, fn bounds.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::{
     canvas::{CanvasItem, CanvasView},

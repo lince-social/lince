@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct PreviewBorder, fn scene, fn copy, fn snapshot.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 9, 17, 22, 35,
+//   64, 74.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (43, 81, 124, 203).
+
 use bevy::{prelude::*, text::EditableText};
 
 #[derive(Component, Clone, Copy)]

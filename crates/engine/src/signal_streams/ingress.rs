@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: enum Credential, struct PublisherSession, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 75, 88, 96, 155.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 65, 134.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 8.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 217, 221, 223, 226, 227, 229, 233, 234, 237, 239.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 65, 134.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 14, 53, 91, 108, 125, 129, 138.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 8, 40.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   8, 9, 10, 14, 32, 40, 53, 87, 91, 108, 121, 125, 129, 138.
+
 use super::{MAX_PAYLOAD, Metadata, Publisher, Snapshot, invalid};
 use crate::{Engine, EngineError, ailuros};
 use serde_json::{Value, json};

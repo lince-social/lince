@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: const REPUBLISH_INTERVAL, fn spawn_runner, fn supervised, fn spawn_social.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 13, 57, 134, 189,
+//   252.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 237.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 237.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 57.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 253.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   7, 60, 88, 102, 115, 132, 165, 185, 240, 266.
+
 use std::time::Duration;
 
 use crate::CellRuntime;

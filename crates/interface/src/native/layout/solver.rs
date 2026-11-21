@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct Item, fn keep_shape, fn arrange, fn solve.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   28, 29, 30, 39, 40, 41, 53, 54, 56, 67, 69, 79, 81, 82, 83, 87, 89, 92, 93, 94, 103, 104, 107,
+//   111, 112, 114, 117, 128, 132, 135, 137, 142, 143, 145, 149, 151, 153, 156.
+
 use super::{Arrangement, Rules, Sizing};
 use bevy::prelude::*;
 

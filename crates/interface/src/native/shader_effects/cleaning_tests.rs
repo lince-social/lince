@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: fn typed_capture_sources_keep_all_shader_owners_and_ignore_preview_identity, fn
+//   cleaning_preset_converts_an_existing_floor_without_losing_its_record_source_or_mapping, fn
+//   cleaning_reset_preserves_explicit_sources_and_mappings_and_resumes_freeze, fn until.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (167).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 12.
+
 use super::*;
 use crate::native::{canvas_host::Identity, topology::rooms, workspace::WorkspaceMember};
 use std::sync::Arc;

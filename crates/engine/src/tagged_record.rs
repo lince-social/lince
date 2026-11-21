@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: impl Engine.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use crate::{Engine, actions::ActionOutcome, error::EngineError};
 use chrono::{DateTime, Utc};
 

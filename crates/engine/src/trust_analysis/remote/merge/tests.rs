@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn packet, fn
+//   merged_originals_accept_exact_budgets_and_refuse_overflow_without_partial_insertion.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 35, 41.
+
 use super::*;
 use nucleus::trust_analysis::contacts::{Audience, Document, Statement};
 

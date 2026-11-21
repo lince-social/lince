@@ -1,6 +1,26 @@
-use crate::provider::{DiscardText, Message, Provider, TextOutput};
+// non-lean-yet
+// Scope: struct Summary, fn fingerprint, fn fingerprint_bytes, struct Checkpoint.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 28, 36, 51, 57, 271, 276, 281, 294, 314, 316, 360, 365, 367.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 34, 56, 78, 149,
+//   365.
+// - [Clippy: clippy::format_push_string] `format!(..)` appended to existing `String`. Sites 81, 82.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   14, 158, 403.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 12, 26, 49, 91, 418.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 7,
+//   8, 9, 12, 18, 26, 42, 43, 44, 45, 49, 91, 198, 418.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites apply: String
+//   (26, 49), compact: String (418), fingerprint: String (12), prepare: String (91).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   337, 339.
+
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+
+use crate::provider::{DiscardText, Message, Provider, TextOutput};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Summary {

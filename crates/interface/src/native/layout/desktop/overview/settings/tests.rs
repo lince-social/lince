@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn fixture, fn activate, fn edit, fn
+//   unavailable_host_feedback_preserves_valid_settings_and_the_unsaved_draft.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn fixture(directory: &std::path::Path) -> (App, Entity) {

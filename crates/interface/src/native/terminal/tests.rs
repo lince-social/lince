@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn native_terminal_opens_renders_output_and_closes_after_removal, fn
+//   terminal_runs_coalesce_ascii_without_losing_wide_character_positions.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::sand_panel::tests::{app, connect, settle};
 

@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: struct Limits, enum Error, fn decode, fn canonical_bytes.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 63, 64, 90,
+//   195, 201, 207, 212.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   173, 177, 190, 195, 215, 216.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 31.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 173, 177, 190, 195, 215, 216.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 63, 64, 90, 195, 201, 207, 212.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 45, 71, 95.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   10, 11, 12, 13, 14, 15, 31, 32, 33, 34, 45, 71, 95.
+
 use std::collections::BTreeMap;
 use std::fmt;
 use std::io::{self, Write};

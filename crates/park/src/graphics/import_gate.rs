@@ -1,10 +1,24 @@
-use super::*;
+// non-lean-yet
+// Scope: struct Semaphore, struct Gate, fn ready, fn pixels.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 18, 63, 70, 81, 86,
+//   90, 96, 101, 110.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 64, 65, 71, 72,
+//   76, 77.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (32, 52, 58, 59, 63, 70, 81, 86, 93, 98, 102, 103, 110).
+
 use std::{
     os::fd::{AsFd, AsRawFd, OwnedFd},
-    sync::{atomic::{AtomicBool, Ordering}, mpsc::{SyncSender, sync_channel}},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        mpsc::{SyncSender, sync_channel},
+    },
     thread::JoinHandle,
     time::Duration,
 };
+
+use super::*;
 
 struct Semaphore {
     handle: vk::Semaphore,
@@ -15,7 +29,9 @@ struct Semaphore {
 impl Drop for Semaphore {
     fn drop(&mut self) {
         // SAFETY: The semaphore's device is still alive. The queue retains it through any submitted signal.
-        unsafe { self.device.destroy_semaphore(self.handle, None); }
+        unsafe {
+            self.device.destroy_semaphore(self.handle, None);
+        }
     }
 }
 
@@ -30,44 +46,75 @@ impl Gate {
     pub(crate) fn release(mut self) {
         self.signal();
         self.completion.as_ref().unwrap().wait_for_probe().unwrap();
-        assert!(!self.expired.load(Ordering::Acquire), "The private producer gate expired before the test released it");
+        assert!(
+            !self.expired.load(Ordering::Acquire),
+            "The private producer gate expired before the test released it"
+        );
     }
 
     fn signal(&mut self) {
         let _ = self.release.try_send(());
-        if let Some(signal) = self.signal.take() { let _ = signal.join(); }
+        if let Some(signal) = self.signal.take() {
+            let _ = signal.join();
+        }
     }
 }
 
 impl Drop for Gate {
     fn drop(&mut self) {
         self.signal();
-        if let Some(completion) = &self.completion { let _ = completion.wait_for_probe(); }
+        if let Some(completion) = &self.completion {
+            let _ = completion.wait_for_probe();
+        }
     }
 }
 
 pub(crate) fn ready(image: &Dmabuf) -> bool {
     image.handles().all(|fd| {
-        let mut poll = [rustix::event::PollFd::new(&fd, rustix::event::PollFlags::IN)];
-        rustix::event::poll(&mut poll, Some(&rustix::time::Timespec { tv_sec: 0, tv_nsec: 0 })).unwrap();
+        let mut poll = [rustix::event::PollFd::new(
+            &fd,
+            rustix::event::PollFlags::IN,
+        )];
+        rustix::event::poll(
+            &mut poll,
+            Some(&rustix::time::Timespec {
+                tv_sec: 0,
+                tv_nsec: 0,
+            }),
+        )
+        .unwrap();
         poll[0].revents().contains(rustix::event::PollFlags::IN)
     })
 }
 
 pub(crate) fn pixels(renderer: &VulkanRenderer, color: wgpu::Color) -> (ExportedImage, Gate) {
-    let image = renderer.clear(renderer.create_shared_image(320, 240).unwrap(), color).unwrap();
+    let image = renderer
+        .clear(renderer.create_shared_image(320, 240).unwrap(), color)
+        .unwrap();
     image.wait_for_probe().unwrap();
     assert!(ready(&image.dmabuf));
     let event = Arc::new(synchronization::Event {
         // SAFETY: The renderer owns the live device and the event keeps it alive.
-        event: unsafe { renderer.raw_device.create_event(&vk::EventCreateInfo::default(), None) }.unwrap(),
+        event: unsafe {
+            renderer
+                .raw_device
+                .create_event(&vk::EventCreateInfo::default(), None)
+        }
+        .unwrap(),
         device: renderer.raw_device.clone(),
         _owner: renderer.device.clone(),
     });
-    let mut export = vk::ExportSemaphoreCreateInfo::default().handle_types(vk::ExternalSemaphoreHandleTypeFlags::SYNC_FD);
+    let mut export = vk::ExportSemaphoreCreateInfo::default()
+        .handle_types(vk::ExternalSemaphoreHandleTypeFlags::SYNC_FD);
     let semaphore = Semaphore {
         // SAFETY: The live device enables semaphore FD export and `export` lives through the call.
-        handle: unsafe { renderer.raw_device.create_semaphore(&vk::SemaphoreCreateInfo::default().push_next(&mut export), None) }.unwrap(),
+        handle: unsafe {
+            renderer.raw_device.create_semaphore(
+                &vk::SemaphoreCreateInfo::default().push_next(&mut export),
+                None,
+            )
+        }
+        .unwrap(),
         device: renderer.raw_device.clone(),
         _owner: renderer.device.clone(),
     };
@@ -76,39 +123,87 @@ pub(crate) fn pixels(renderer: &VulkanRenderer, color: wgpu::Color) -> (Exported
     let timed_out = expired.clone();
     let held = event.clone();
     let signal = std::thread::spawn(move || {
-        if wait.recv_timeout(Duration::from_secs(2)).is_err() { timed_out.store(true, Ordering::Release); }
+        if wait.recv_timeout(Duration::from_secs(2)).is_err() {
+            timed_out.store(true, Ordering::Release);
+        }
         // SAFETY: This thread is the only host writer and owns an Arc to the live event.
         unsafe { held.device.set_event(held.event) }.unwrap();
     });
-    let mut gate = Gate { release, signal: Some(signal), expired, completion: None };
+    let mut gate = Gate {
+        release,
+        signal: Some(signal),
+        expired,
+        completion: None,
+    };
     // SAFETY: The borrowed HAL queue and semaphore share a device. This probe owns
     // submission and retains the semaphore until the queued signal completes.
-    unsafe { renderer.queue.as_hal::<Vulkan>() }.unwrap().add_signal_semaphore(semaphore.handle, None);
-    renderer.submit_raw("private_client_producer_gate", |command| {
-        // SAFETY: The recording command buffer and host-signaled event share a device.
-        // The queue retains the event until the submission completes.
-        unsafe {
-            renderer.raw_device.cmd_wait_events(command, &[event.event], vk::PipelineStageFlags::HOST, vk::PipelineStageFlags::ALL_COMMANDS, &[], &[], &[]);
-        }
-    }).unwrap();
-    let semaphores = khr::external_semaphore_fd::Device::new(&renderer.raw_instance, &renderer.raw_device);
+    unsafe { renderer.queue.as_hal::<Vulkan>() }
+        .unwrap()
+        .add_signal_semaphore(semaphore.handle, None);
+    renderer
+        .submit_raw("private_client_producer_gate", |command| {
+            // SAFETY: The recording command buffer and host-signaled event share a device.
+            // The queue retains the event until the submission completes.
+            unsafe {
+                renderer.raw_device.cmd_wait_events(
+                    command,
+                    &[event.event],
+                    vk::PipelineStageFlags::HOST,
+                    vk::PipelineStageFlags::ALL_COMMANDS,
+                    &[],
+                    &[],
+                    &[],
+                );
+            }
+        })
+        .unwrap();
+    let semaphores =
+        khr::external_semaphore_fd::Device::new(&renderer.raw_instance, &renderer.raw_device);
     // SAFETY: The live binary semaphore was created for SYNC_FD export and its signal is queued.
-    let fd = unsafe { semaphores.get_semaphore_fd(&vk::SemaphoreGetFdInfoKHR::default().semaphore(semaphore.handle).handle_type(vk::ExternalSemaphoreHandleTypeFlags::SYNC_FD)) };
+    let fd = unsafe {
+        semaphores.get_semaphore_fd(
+            &vk::SemaphoreGetFdInfoKHR::default()
+                .semaphore(semaphore.handle)
+                .handle_type(vk::ExternalSemaphoreHandleTypeFlags::SYNC_FD),
+        )
+    };
     renderer.retain((event, semaphore));
     let fd = fd.unwrap();
-    assert!(fd >= 0, "The pending semaphore must export a sync file descriptor");
+    assert!(
+        fd >= 0,
+        "The pending semaphore must export a sync file descriptor"
+    );
     // SAFETY: Successful export transferred ownership of this descriptor to us.
     let fd = unsafe { OwnedFd::from_raw_fd(fd) };
     gate.completion = Some(renderer.completion.track(&renderer.queue).unwrap());
-    assert!(rustix::io::fcntl_getfd(&fd).unwrap().contains(rustix::io::FdFlags::CLOEXEC));
+    assert!(
+        rustix::io::fcntl_getfd(&fd)
+            .unwrap()
+            .contains(rustix::io::FdFlags::CLOEXEC)
+    );
     #[repr(C)]
-    struct Import { flags: u32, fd: i32 }
+    struct Import {
+        flags: u32,
+        fd: i32,
+    }
     const IMPORT: rustix::ioctl::Opcode = rustix::ioctl::opcode::write::<Import>(b'b', 3);
     for plane in image.dmabuf.handles() {
         // SAFETY: Import matches the kernel's DMA_BUF_IOCTL_IMPORT_SYNC_FILE ABI. The
         // plane and sync-file descriptors stay open through the ioctl.
-        unsafe { rustix::ioctl::ioctl(plane.as_fd(), rustix::ioctl::Setter::<IMPORT, _>::new(Import { flags: 2, fd: fd.as_raw_fd() })) }.unwrap();
+        unsafe {
+            rustix::ioctl::ioctl(
+                plane.as_fd(),
+                rustix::ioctl::Setter::<IMPORT, _>::new(Import {
+                    flags: 2,
+                    fd: fd.as_raw_fd(),
+                }),
+            )
+        }
+        .unwrap();
     }
-    assert!(!ready(&image.dmabuf), "The private DMA-BUF did not acquire the producer fence");
+    assert!(
+        !ready(&image.dmabuf),
+        "The private DMA-BUF did not acquire the producer fence"
+    );
     (image, gate)
 }

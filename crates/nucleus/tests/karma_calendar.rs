@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct FakeTimeZoneProvider, fn civil, fn time, fn instant.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 557.
+
 #![cfg(test)]
 
 use std::collections::BTreeMap;

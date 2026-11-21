@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn state, fn component, fn capture, fn descriptors.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (92, 97, 102, 108, 116, 121, 127, 133, 139).
+
 use super::*;
 use serde::{Serialize, de::DeserializeOwned};
 

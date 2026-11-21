@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn untagged_srgb_keeps_identity_primaries_and_the_existing_transfer_characteristic, fn
+//   p3_uses_d65_chromaticities_preserves_neutral_white_and_does_not_silently_treat_its_red_as_srgb,
+//   fn source_reference_white_is_anchored_and_invalid_or_unimplemented_volumes_are_refused, fn
+//   pq_uses_absolute_luminance_and_the_extended_working_space_keeps_highlights.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[test]

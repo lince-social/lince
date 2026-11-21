@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: type WireSlot, fn spawn, fn rebind, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 70, 83, 119, 130,
+//   131, 133, 134, 137, 140, 141.
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites spawn:key_dir → &Path (10).
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 119, 130, 131, 133, 134, 140, 141, 184, 186, 187.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 201, 203, 204.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   8, 10.
+
 use crate::{
     CellRuntime,
     discovery::{Discovery, of as discovery_of},

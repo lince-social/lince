@@ -1,3 +1,34 @@
+// non-lean-yet
+// Scope: const ELAPSED_SCHEDULE_OCCURRENCE_HASH_DOMAIN, const OCCURRENCE_BATCH_HASH_DOMAIN, const
+//   SEMANTIC_SCHEDULE_TICK_HASH_DOMAIN, const MAX_OCCURRENCE_BATCH_PAGE_TICKS.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   96, 435, 701, 717, 845, 1460.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 1416.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 121, 173, 1107,
+//   1188, 1228, 1332, 1370, 1375, 1402, 1417, 1418.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   new:allow_bounded_degradation (587).
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 22, 57, 63, 70, 261, 957, 987, 1005.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   109, 443, 711, 734, 846, 1470, 1481.
+// - [Clippy: clippy::manual_let_else] this could be rewritten as `let...else`. Sites 1310.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 96, 127, 142, 176, 283, 296, 346, 383, 435, 538, 701, 717, 783, 858, 1034, 1086, 1203.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 15, 16,
+//   17, 18, 22, 23, 24, 25, 26, 27, 28, 32, 43, 57, 59, 63, 65, 70, 71, 72, 76, 77, 78, 79, 80, 81,
+//   82, 96, 127, 131, 135, 142, 176, 261, 263, 267, 268, 269, 270, 271, 283, 296, 322, 323, 324,
+//   325, 326, 327, 328, 329, 330, 346, 383, 413, 435, 457, 461, 465, 469, 473, 477, 481, 526, 538,
+//   554, 558, 575, 583, 597, 603, 619, 633, 637, 641, 645, 666, 671, 677, 683, 701, 717, 763, 767,
+//   771, 775, 779, 783, 834, 835, 836, 837, 838, 839, 840, 841, 845, 858, 899, 945, 946, 947, 948,
+//   949, 950, 951, 952, 957, 958, 959, 960, 961, 962, 963, 964, 987, 988, 989, 990, 991, 992, 993,
+//   994, 995, 996, 997, 998, 999, 1000, 1005, 1006, 1007, 1008, 1009, 1011, 1012, 1013, 1015, 1016,
+//   1017, 1022, 1023, 1024, 1028, 1029, 1030, 1034, 1061, 1062, 1063, 1064, 1068, 1069, 1070, 1086,
+//   1203, 1383, 1384, 1385, 1386, 1409, 1416, 1430, 1436, 1440, 1444, 1448, 1455, 1460, 1525, 1526,
+//   1527, 1528.
+
 use std::{
     cmp::Reverse,
     collections::{BTreeMap, BTreeSet, BinaryHeap},

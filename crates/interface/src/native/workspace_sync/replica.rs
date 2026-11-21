@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct Snapshot, fn canvas_item, fn install, enum Restore.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 62, 311, 322,
+//   355.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   115.
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 315.
+
 use super::*;
 use serde::Deserialize;
 use std::ops::ControlFlow;

@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: static DEFAULTS, fn settings, struct Help, struct HelpSource.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   192, 213.
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 231, 237.
+
 use super::*;
 use crate::native::shortcuts::{Settings, Shortcut};
 use std::{collections::HashSet, sync::LazyLock};

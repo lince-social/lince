@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn inspect, fn inspections_preserve_fresh_results_without_broadcasting_data_changes, fn
+//   inspection_shares_read_access_and_mutations_still_wait_for_readers, fn
+//   failed_and_unauthorized_inspections_do_not_trigger_refreshes.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 64, 134, 145, 158, 262.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 20, 155.
+
 use engine::{Engine, actions::Action};
 use serde_json::{Value, json};
 use std::{sync::Arc, time::Duration};

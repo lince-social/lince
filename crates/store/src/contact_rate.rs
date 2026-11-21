@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: enum RateKind, struct RateState, fn parse_time, fn backing_off.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 125.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 7.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 77, 105, 159, 187.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 8,
+//   9, 10, 14, 62, 63, 64, 65, 66, 67, 68, 77, 105, 159, 187.
+
 use chrono::{DateTime, Duration, Utc};
 use sqlx::{Row, SqlitePool};
 
@@ -122,11 +133,11 @@ pub async fn spend(
     let mut count = 0_i64;
     if let Some(row) = row {
         let stored: String = row.get("window_start");
-        if let Some(stamp) = parse_time(&stored) {
-            if now.signed_duration_since(stamp) < kind.window() {
-                window_start = stamp;
-                count = row.get("count");
-            }
+        if let Some(stamp) = parse_time(&stored)
+            && now.signed_duration_since(stamp) < kind.window()
+        {
+            window_start = stamp;
+            count = row.get("count");
         }
     }
     count += 1;

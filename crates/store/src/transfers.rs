@@ -1,24 +1,122 @@
-use chrono::{DateTime, Utc};
-pub use nucleus::transfer::TransferLocationSnapshot;
-use nucleus::transfer::{
-    OccurrenceClaimRole, OpenPromiseReusePolicy, TransferActivationEvidence,
-    TransferAgreementTransitionEvidence, TransferDependencyEdge, TransferDependencyNode,
-    TransferDependencyScope, TransferDependencyUpstreamKind, TransferInvitationLifecycleEvidence,
-    TransferOccurrenceApplicationEvidence, TransferOccurrenceClaimEvidence,
-    TransferOccurrenceDisputeEvidence, TransferOccurrenceSettlementApplicationEvidence,
-    TransferOccurrenceSettlementCompensationEvidence, TransferOccurrenceSettlementEvidence,
-    TransferOccurrenceSnapshot, TransferRemainderPolicy, TransferRevisionDependency,
-    TransferRevisionEvidence, TransferRevisionInvitation, TransferRevisionParty,
-    TransferRevisionPromise, TransferRevisionSnapshot, TransferRevisionTerms,
-    TransferSourceGroupLoserEvidence, TransferSourceGroupResultEvidence,
-};
-use nucleus::{Cause, Fact, NewFact, PromiseState, RecordKind};
-use sqlx::sqlite::SqliteRow;
-use sqlx::{Row, Sqlite, SqlitePool, Transaction};
+// non-lean-yet
+// Scope: mod agreement_target, mod participation, mod history_terms, mod karma_snapshot.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 7624, 7700, 7701.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 3024, 3098, 3144, 4782, 5280, 5422, 5582, 6215, 6750, 6763, 7002,
+//   7813, 8069, 8349, 8396, 8439, 8452.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 875, 956, 1267,
+//   1299, 1361, 2253, 2325, 2336, 2596, 3262, 3625, 4354, 4355, 4469, 4566, 5116, 5118, 5119, 5120,
+//   5131, 5134, 5264, 6076, 6082, 6083, 6089, 6095, 6105, 6107, 6111, 6119, 6122, 6273, 6338, 6339,
+//   6342, 6350, 6353, 6450, 6503, 6504, 6540, 6573, 6616, 6648, 6649, 6650, 6653, 6660, 6663, 6738,
+//   6910, 6911, 6912, 6913, 6922, 6925, 7185, 7334, 7400, 7403, 7405, 7413, 7481, 7644, 7645, 7646,
+//   7647, 7648, 7650, 7654, 7664, 7667, 7668, 7687, 7688, 7689, 7690, 7691, 7692, 7693, 7706, 7709,
+//   7710, 7981, 7982, 7983, 7984, 7985, 7986, 7994, 7997, 8000, 8177, 8178, 8179, 8188, 8191, 8192.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 272, 500, 653, 676, 1041, 2050, 2106, 2195, 2388, 2488, 2552, 2631, 2690, 2717, 2738,
+//   2860, 3031, 3103, 3108, 3155, 3363, 3485, 3640, 3659, 3772, 3792, 3881, 3901, 4016, 4035, 4605,
+//   4786, 4789, 4790, 4875, 4876, 4877, 4973, 5122, 5262, 5342, 5352, 5353, 5361, 5362, 5393, 5426,
+//   5536, 5786, 6392, 6405, 6580, 6638, 6725, 6728, 6730, 6731, 6756, 6769, 6914, 7024, 7330, 7377,
+//   7396, 7442, 8356, 8402, 8445, 8457.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   4789, 4790, 4876, 4877, 5122, 5262, 5361.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 272, 500, 676, 1041, 2050, 2488, 2552, 2631, 2690, 2717, 2738, 3031, 3103,
+//   3108, 3155, 3363, 3640, 3659, 3772, 3792, 3881, 3901, 4016, 4035, 4605, 4786, 4789, 4790, 4875,
+//   4876, 4877, 4973, 5122, 5262, 5342, 5361, 5362, 5393, 5426, 5536, 5786, 6580, 6756, 6769, 6914,
+//   7024, 7330, 7396, 8356, 8402, 8445, 8457.
+// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 5979.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 239, 1405, 1495, 1552, 1604, 1710, 1753, 1791, 1838, 1911, 1975, 2009.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   1362, 7293.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   481, 2471, 3344, 3481, 3986, 4804, 4853, 4961, 5400, 5765, 7478, 8305.
+// - [Clippy: clippy::missing_assert_message] assert without any message. Sites 4051, 4737.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 254, 279, 303, 329, 358, 382, 406, 432, 2021, 2454, 2658, 2837, 2873, 2909, 2920, 2950,
+//   2965, 2978, 3000, 3012, 3039, 3051, 3067, 3115, 3131, 3164, 3180, 3192, 3525, 3665, 3798, 3907,
+//   4144, 4157, 4170, 4280, 4615, 4681, 4758, 4766, 4774, 4797, 4825, 4838, 4904, 5299, 5323, 5467,
+//   5479, 5493, 5505, 5560, 5683, 5695, 6231, 6247, 6280, 6287, 6455, 6475, 6775, 6791, 6806, 6847,
+//   6854, 7035, 7051, 7063, 7075, 7089, 7103, 7194, 7205, 7229, 7452, 7829, 7844, 7858, 7872, 7911,
+//   7918, 8082, 8125, 8132, 8299, 8319, 8332, 8365, 8378, 8410, 8423, 8463, 8477, 8511.
+// - [Clippy: clippy::needless_question_mark] enclosing `Ok` and `?` operator are unneeded. Sites
+//   258.
+// - [Clippy: clippy::struct_excessive_bools] more than 3 bools in a struct. Sites 1669.
+// - [Clippy: clippy::unnecessary_map_or] this `map_or` can be simplified. Sites 1123.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 50, 1452.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 27, 33,
+//   34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 50, 51, 52, 53, 54, 55, 56, 57, 58, 62,
+//   63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 80, 81, 82, 83, 84, 85, 89, 90, 91, 92,
+//   93, 94, 95, 96, 97, 98, 99, 100, 104, 105, 106, 107, 108, 109, 110, 114, 115, 116, 117, 118,
+//   119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 140,
+//   141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 158, 159, 160, 161, 162,
+//   163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 177, 178, 179, 180, 181, 182, 183, 184,
+//   185, 186, 187, 188, 192, 193, 194, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 211, 212,
+//   213, 214, 215, 216, 217, 218, 219, 220, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234,
+//   235, 239, 240, 241, 242, 243, 245, 246, 247, 249, 250, 254, 279, 303, 329, 358, 382, 406, 432,
+//   1405, 1406, 1407, 1408, 1409, 1410, 1414, 1439, 1440, 1441, 1442, 1443, 1444, 1445, 1446, 1447,
+//   1448, 1449, 1452, 1453, 1454, 1455, 1456, 1460, 1461, 1462, 1466, 1467, 1468, 1469, 1470, 1471,
+//   1472, 1476, 1477, 1478, 1479, 1480, 1481, 1485, 1486, 1487, 1488, 1489, 1490, 1491, 1495, 1496,
+//   1497, 1498, 1499, 1500, 1505, 1506, 1507, 1508, 1509, 1510, 1511, 1512, 1513, 1514, 1515, 1516,
+//   1517, 1518, 1519, 1520, 1524, 1525, 1526, 1527, 1528, 1529, 1530, 1531, 1532, 1536, 1537, 1538,
+//   1539, 1540, 1541, 1542, 1543, 1544, 1545, 1546, 1547, 1548, 1552, 1553, 1554, 1555, 1556, 1557,
+//   1562, 1563, 1564, 1565, 1566, 1567, 1568, 1572, 1573, 1574, 1575, 1576, 1577, 1578, 1579, 1580,
+//   1581, 1582, 1586, 1587, 1588, 1589, 1590, 1591, 1592, 1593, 1597, 1598, 1599, 1600, 1604, 1605,
+//   1606, 1607, 1608, 1609, 1614, 1615, 1616, 1617, 1618, 1622, 1623, 1624, 1625, 1626, 1627, 1628,
+//   1629, 1630, 1631, 1632, 1633, 1634, 1638, 1639, 1640, 1641, 1642, 1643, 1644, 1645, 1646, 1650,
+//   1651, 1652, 1653, 1654, 1658, 1659, 1660, 1661, 1662, 1663, 1664, 1665, 1669, 1670, 1671, 1672,
+//   1673, 1674, 1675, 1676, 1677, 1678, 1679, 1680, 1681, 1682, 1683, 1684, 1685, 1686, 1687, 1688,
+//   1689, 1690, 1691, 1692, 1693, 1694, 1695, 1696, 1700, 1701, 1702, 1703, 1704, 1705, 1706, 1710,
+//   1711, 1712, 1713, 1714, 1715, 1717, 1718, 1723, 1724, 1725, 1726, 1727, 1728, 1729, 1733, 1734,
+//   1735, 1736, 1737, 1738, 1739, 1740, 1741, 1745, 1746, 1747, 1748, 1749, 1753, 1754, 1755, 1759,
+//   1760, 1761, 1762, 1763, 1764, 1765, 1769, 1770, 1771, 1772, 1773, 1774, 1778, 1779, 1780, 1781,
+//   1785, 1786, 1787, 1791, 1792, 1793, 1794, 1798, 1799, 1800, 1801, 1802, 1803, 1807, 1808, 1809,
+//   1810, 1811, 1812, 1813, 1814, 1815, 1819, 1820, 1821, 1822, 1823, 1824, 1825, 1826, 1830, 1831,
+//   1832, 1833, 1834, 1838, 1839, 1840, 1844, 1845, 1846, 1847, 1848, 1849, 1850, 1851, 1852, 1853,
+//   1854, 1855, 1856, 1857, 1861, 1862, 1863, 1864, 1865, 1866, 1867, 1868, 1869, 1870, 1871, 1872,
+//   1873, 1874, 1875, 1876, 1877, 1878, 1879, 1880, 1881, 1882, 1883, 1887, 1888, 1889, 1890, 1891,
+//   1892, 1893, 1894, 1895, 1896, 1897, 1901, 1902, 1903, 1904, 1905, 1906, 1907, 1911, 1912, 1913,
+//   1917, 1918, 1919, 1920, 1921, 1922, 1923, 1924, 1925, 1929, 1930, 1931, 1932, 1933, 1934, 1935,
+//   1939, 1940, 1941, 1942, 1946, 1947, 1948, 1949, 1950, 1954, 1955, 1956, 1957, 1958, 1959, 1960,
+//   1961, 1962, 1963, 1964, 1965, 1969, 1970, 1971, 1975, 1976, 1977, 1981, 1982, 1983, 1984, 1985,
+//   1986, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 2002, 2003, 2004, 2005, 2009, 2010,
+//   2011, 2021, 2454, 2658, 2837, 2867, 2868, 2869, 2870, 2873, 2909, 2920, 2950, 2965, 2978, 3000,
+//   3012, 3039, 3051, 3067, 3085, 3086, 3087, 3088, 3089, 3090, 3091, 3092, 3093, 3094, 3095, 3115,
+//   3131, 3164, 3180, 3192, 3525, 3665, 3798, 3907, 4144, 4157, 4170, 4280, 4615, 4681, 4758, 4766,
+//   4774, 4797, 4825, 4838, 4904, 5299, 5323, 5467, 5479, 5493, 5505, 5560, 5683, 5695, 6231, 6247,
+//   6280, 6287, 6455, 6475, 6775, 6791, 6806, 6847, 6854, 7035, 7051, 7063, 7075, 7089, 7103, 7194,
+//   7205, 7229, 7452, 7829, 7844, 7858, 7872, 7911, 7918, 8082, 8125, 8132, 8299, 8319, 8332, 8365,
+//   8378, 8410, 8423, 8463, 8477, 8511.
+
 use std::collections::HashSet;
 
-use crate::StoreError;
-use crate::records::{self, NewRecord};
+use chrono::{DateTime, Utc};
+pub use nucleus::transfer::TransferLocationSnapshot;
+use nucleus::{
+    Cause, Fact, NewFact, PromiseState, RecordKind,
+    transfer::{
+        OccurrenceClaimRole, OpenPromiseReusePolicy, TransferActivationEvidence,
+        TransferAgreementTransitionEvidence, TransferDependencyEdge, TransferDependencyNode,
+        TransferDependencyScope, TransferDependencyUpstreamKind,
+        TransferInvitationLifecycleEvidence, TransferOccurrenceApplicationEvidence,
+        TransferOccurrenceClaimEvidence, TransferOccurrenceDisputeEvidence,
+        TransferOccurrenceSettlementApplicationEvidence,
+        TransferOccurrenceSettlementCompensationEvidence, TransferOccurrenceSettlementEvidence,
+        TransferOccurrenceSnapshot, TransferRemainderPolicy, TransferRevisionDependency,
+        TransferRevisionEvidence, TransferRevisionInvitation, TransferRevisionParty,
+        TransferRevisionPromise, TransferRevisionSnapshot, TransferRevisionTerms,
+        TransferSourceGroupLoserEvidence, TransferSourceGroupResultEvidence,
+    },
+};
+use sqlx::{Row, Sqlite, SqlitePool, Transaction, sqlite::SqliteRow};
+
+use crate::{
+    StoreError,
+    records::{self, NewRecord},
+};
 
 mod agreement_target;
 mod participation;
@@ -1120,10 +1218,7 @@ fn validate_dependency_inputs(dependencies: &[TransferDependencyInput]) -> Resul
             ));
         }
         if dependency.scope == TransferDependencyScope::Promise
-            && dependency
-                .promise_uid
-                .as_deref()
-                .map_or(true, str::is_empty)
+            && dependency.promise_uid.as_deref().is_none_or(str::is_empty)
         {
             return Err(sqlx::Error::Protocol(
                 "promise-scoped dependency requires a promise uid".into(),
@@ -1166,7 +1261,7 @@ fn normalized_dependency_state(value: &str) -> Result<&str, StoreError> {
         value
     };
     PromiseState::parse(value)
-        .map(|state| state.as_str())
+        .map(nucleus::PromiseState::as_str)
         .ok_or_else(|| sqlx::Error::Protocol(format!("unknown dependency state `{value}`")))
 }
 
@@ -5976,14 +6071,13 @@ where
             ));
         }
 
-        if let Some(exchange) = &promise.exchange {
-            if exchange.giver != requested.giver_person_uid
-                || exchange.receiver != requested.receiver_person_uid
-            {
-                return Err(sqlx::Error::Protocol(
-                    "activation must use the agreed exchange route".into(),
-                ));
-            }
+        if let Some(exchange) = &promise.exchange
+            && (exchange.giver != requested.giver_person_uid
+                || exchange.receiver != requested.receiver_person_uid)
+        {
+            return Err(sqlx::Error::Protocol(
+                "activation must use the agreed exchange route".into(),
+            ));
         }
         let opposite = if let Some(uid) = requested.opposite_promise_uid.as_deref() {
             let opposite = activation_promise(&mut tx, &input.transfer_uid, uid).await?;

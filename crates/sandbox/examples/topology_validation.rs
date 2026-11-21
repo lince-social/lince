@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: struct Trial, fn fixture, fn sweep, fn mesh_pick.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 219, 232, 234,
+//   376, 620, 623.
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites
+//   630.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   85, 86, 87, 201, 568, 569, 577, 578, 652.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (80, 106, 133, 142, 148, 183, 204, 218, 222, 229, 230, 268, 275, 281, 287, 292,
+//   296, 310, 313, 323, 342, 350, 381, 382, 386, 389, 400, 401, 404, 410, 413, 418, 434, 442, 448,
+//   473, 485, 513, 533, 534, 537, 542, 545, 547, 554, 602, 607, 610, 658).
+
 use avian3d::{
     character_controller::move_and_slide::{
         MoveAndSlide, MoveAndSlideConfig, MoveAndSlideHitResponse,

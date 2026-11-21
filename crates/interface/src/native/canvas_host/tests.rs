@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn fixture, fn
+//   ephemeral_canvas_decorations_do_not_become_authored_placements_or_hide_committed_previews, fn
+//   malformed_native_groups_reject_before_changing_widgets, fn
+//   missing_workspaces_reject_capture_and_edits_before_changing_canvas_state.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use engine::{Engine, actions::Action};
 use std::sync::Arc;

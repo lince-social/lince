@@ -1,6 +1,31 @@
+// non-lean-yet
+// Scope: const FORMAT, const PROTOCOL, const MAX_BYTES, const MAX_ITEMS.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 138.
+// - [Clippy: clippy::collapsible_match] this `if` can be collapsed into the outer `match`. Sites
+//   240.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 13, 27, 48, 313, 391.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 149, 283.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 6,
+//   7, 8, 9, 13, 14, 15, 20, 21, 22, 27, 28, 29, 30, 31, 36, 37, 38, 39, 41, 43, 48, 49, 50, 51,
+//   52, 53, 54, 55, 56, 58, 60, 61, 62, 63, 65, 66, 67, 68, 69, 74, 80, 86, 97, 98, 99, 100, 101,
+//   103, 104, 106, 107, 108, 110, 115, 116, 117, 118, 119, 120, 124, 135, 149, 273, 283, 303, 304,
+//   305, 306, 313, 315, 316, 317, 321, 324, 327, 345, 346, 347, 348, 349, 350, 352, 354, 356, 358,
+//   360, 364, 365, 366, 367, 368, 372, 373, 374, 375, 376, 377, 381, 382, 383, 384, 385, 386, 391,
+//   392, 393, 394, 395, 397, 398, 399, 401, 402, 403, 404, 406, 407, 408, 410, 411, 413, 414, 415,
+//   417, 418, 420, 421, 423, 424, 426, 427, 429, 430, 432, 433, 435, 439, 449, 450, 451, 452, 453,
+//   458, 459, 460, 465, 466, 467, 468, 469, 474, 475, 476, 481, 482, 483, 484, 485, 490, 491, 496,
+//   497, 498, 499, 500, 501, 506, 507, 508, 509, 510.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites validate:
+//   String (149), validate_values: String (283).
+
+use std::collections::BTreeSet;
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::BTreeSet;
 
 pub const FORMAT: &str = "lince.plugin.v1";
 pub const PROTOCOL: &str = "lince.plugin-rpc.v1";

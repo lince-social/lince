@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct Fixture, fn all, fn q, fn target.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 82, 553.
+
 #![cfg(test)]
 
 use std::collections::BTreeSet;

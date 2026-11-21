@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn fresh_and_reopened_schema_has_no_superseded_storage, fn
+//   concept_lookups_keep_diamond_descendants_and_alias_ambiguity, fn
+//   namespace_lookup_excludes_deleted_records_and_other_extensions.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 115, 122, 129, 137.
+
 use store::Store;
 
 #[tokio::test]

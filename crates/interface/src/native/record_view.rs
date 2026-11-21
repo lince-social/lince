@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct RecordEditor, struct AutoSave, struct RecordsView, struct RecordViewPlugin.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 44, 127, 129,
+//   130, 138, 189, 295, 348, 380.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (254, 268, 330, 353, 354, 357, 366, 370, 371, 499, 554, 570, 576, 582, 617, 633,
+//   639, 659, 672, 678, 685, 709, 713, 719, 732, 745, 751, 757, 778, 785, 789, 795).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 92, 169, 496.
+
 use crate::native::{
     canvas::CanvasItem,
     cell_bridge::{CellBridge, CellMessage, RECORDS, ReceiveCell},

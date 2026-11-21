@@ -1,14 +1,29 @@
+// non-lean-yet
+// Scope: fn same_nodes, struct Visual, struct Node.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 89, 112, 133,
+//   147, 149.
+
 use super::*;
 
 #[cfg(feature = "native-presentation")]
 impl WindowSnapshot {
     pub(crate) fn same_semantics(&self, other: &Self) -> bool {
-        self.id == other.id && self.surface == other.surface && self.mapped == other.mapped
-            && self.title == other.title && self.app_id == other.app_id && self.parent == other.parent
-            && self.geometry == other.geometry && self.minimum == other.minimum && self.maximum == other.maximum
-            && same_nodes(&self.nodes, &other.nodes) && self.popups.len() == other.popups.len()
+        self.id == other.id
+            && self.surface == other.surface
+            && self.mapped == other.mapped
+            && self.title == other.title
+            && self.app_id == other.app_id
+            && self.parent == other.parent
+            && self.geometry == other.geometry
+            && self.minimum == other.minimum
+            && self.maximum == other.maximum
+            && same_nodes(&self.nodes, &other.nodes)
+            && self.popups.len() == other.popups.len()
             && self.popups.iter().zip(&other.popups).all(|(left, right)| {
-                left.surface == right.surface && left.origin == right.origin && same_nodes(&left.nodes, &right.nodes)
+                left.surface == right.surface
+                    && left.origin == right.origin
+                    && same_nodes(&left.nodes, &right.nodes)
             })
     }
 }
@@ -18,16 +33,36 @@ fn same_nodes(left: &[SurfaceNode], right: &[SurfaceNode]) -> bool {
     fn region(left: &Option<RegionAttributes>, right: &Option<RegionAttributes>) -> bool {
         match (left, right) {
             (None, None) => true,
-            (Some(left), Some(right)) => left.rects.iter().map(|(kind, rect)| (matches!(kind, smithay::wayland::compositor::RectangleKind::Add), rect))
-                .eq(right.rects.iter().map(|(kind, rect)| (matches!(kind, smithay::wayland::compositor::RectangleKind::Add), rect))),
+            (Some(left), Some(right)) => left
+                .rects
+                .iter()
+                .map(|(kind, rect)| {
+                    (
+                        matches!(kind, smithay::wayland::compositor::RectangleKind::Add),
+                        rect,
+                    )
+                })
+                .eq(right.rects.iter().map(|(kind, rect)| {
+                    (
+                        matches!(kind, smithay::wayland::compositor::RectangleKind::Add),
+                        rect,
+                    )
+                })),
             _ => false,
         }
     }
-    left.len() == right.len() && left.iter().zip(right).all(|(left, right)| {
-        left.surface == right.surface && left.origin == right.origin && left.layout == right.layout
-            && left.scale == right.scale && left.transform == right.transform && left.color == right.color
-            && left.content.size == right.content.size && region(&left.input, &right.input) && region(&left.opaque, &right.opaque)
-    })
+    left.len() == right.len()
+        && left.iter().zip(right).all(|(left, right)| {
+            left.surface == right.surface
+                && left.origin == right.origin
+                && left.layout == right.layout
+                && left.scale == right.scale
+                && left.transform == right.transform
+                && left.color == right.color
+                && left.content.size == right.content.size
+                && region(&left.input, &right.input)
+                && region(&left.opaque, &right.opaque)
+        })
 }
 
 #[derive(PartialEq)]
@@ -51,11 +86,17 @@ struct Node {
 
 impl Visual {
     pub(super) fn same_semantics(&self, other: &Self) -> bool {
-        self.geometry == other.geometry && self.minimum == other.minimum && self.maximum == other.maximum
+        self.geometry == other.geometry
+            && self.minimum == other.minimum
+            && self.maximum == other.maximum
             && self.nodes.len() == other.nodes.len()
             && self.nodes.iter().zip(&other.nodes).all(|(left, right)| {
-                left.surface == right.surface && left.origin == right.origin && left.layout == right.layout
-                    && left.input == right.input && left.opaque == right.opaque && left.color == right.color
+                left.surface == right.surface
+                    && left.origin == right.origin
+                    && left.layout == right.layout
+                    && left.input == right.input
+                    && left.opaque == right.opaque
+                    && left.color == right.color
             })
     }
 

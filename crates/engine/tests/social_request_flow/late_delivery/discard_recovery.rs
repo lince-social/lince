@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn old_mailbox_discard_intent_survives_new_keys_and_reopen_without_a_false_refusal.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 49.
+
 use super::*;
 
 #[tokio::test]

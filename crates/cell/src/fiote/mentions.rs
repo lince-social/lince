@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: fn linked_reference, fn references, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   16, 18, 40, 46, 52, 64, 65, 67, 75, 77.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 153.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use std::collections::BTreeSet;
 

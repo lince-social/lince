@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct State, struct Edits, fn has_undo, fn capture.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 33, 34, 37, 57,
+//   58, 76, 96, 106.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (99, 184, 195).
+
 use super::*;
 use crate::native::topology::rooms::WorldPlacement;
 use crate::native::{protein_area::RecordBinding, topology};

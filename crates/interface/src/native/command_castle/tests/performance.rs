@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod mixed_stream, struct Driver, fn playback, fn has_text.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 mod mixed_stream;
 use std::sync::{

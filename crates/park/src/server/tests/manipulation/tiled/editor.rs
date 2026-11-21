@@ -1,5 +1,10 @@
-use super::*;
+// non-lean-yet
+// Scope: mod scenes, fn value, fn wait, fn connect.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy::text::EditableText;
+
+use super::*;
 
 #[path = "editor/scenes.rs"]
 mod scenes;
@@ -100,8 +105,7 @@ fn wait(
                         .get::<bevy::prelude::ComputedNode>(entity)
                         .map(|node| (node.size(), node.content_box())),
                     world.get::<bevy::prelude::UiGlobalTransform>(entity),
-                    world
-                        .get::<bevy::ui::CalculatedClip>(entity),
+                    world.get::<bevy::ui::CalculatedClip>(entity),
                     world.get::<bevy::ui::widget::TextScroll>(entity),
                     world
                         .get::<EditableText>(entity)

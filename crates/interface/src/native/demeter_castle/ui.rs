@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn button, fn choice_button, fn label, fn row.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 62, 98, 244, 309,
+//   341, 354, 407, 414, 469, 485, 617, 725, 819, 966, 1178, 1201, 1238.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (23, 28, 43, 47, 54, 61, 93, 98, 130, 244, 389, 731, 927).
+
 use super::*;
 use nucleus::demeter::{Unit, production};
 

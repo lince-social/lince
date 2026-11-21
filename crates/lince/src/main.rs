@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: mod admin, mod build_info, mod fiote_laboratory, mod lingua.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 214, 233, 238,
+//   288, 290, 318, 322, 360, 362, 404, 417, 431, 443, 590.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 35, 78.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (319, 342,
+//   392, 406, 414).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   54, 346.
+
 #![forbid(unsafe_code)]
 #![recursion_limit = "256"]
 

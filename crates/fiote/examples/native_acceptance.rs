@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: fn main.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 18, 40, 60, 73,
+//   98.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites 41,
+//   74.
+
+use std::sync::Arc;
+
 use fiote::{
     communication::{
         auth::{Account, Auth, MemoryCredential, Session},
@@ -6,7 +16,6 @@ use fiote::{
     config::Settings,
     provider::{Message, Provider},
 };
-use std::sync::Arc;
 use tokio::sync::Mutex;
 
 #[tokio::main]

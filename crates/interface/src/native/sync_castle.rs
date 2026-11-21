@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: mod blobs, mod directories, mod offers, mod plugins.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 151, 204, 206,
+//   243, 252, 468, 531, 550, 558, 601, 727, 729, 960, 1003, 1004, 1061.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (203, 213,
+//   222, 387, 400, 519, 566, 570, 705, 747, 759).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   550.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (809, 811, 815, 820, 861, 865, 867, 871, 877, 882, 900, 904, 920, 923, 927, 931,
+//   935, 958, 980, 987, 998, 1000, 1035, 1036, 1043, 1046, 1048, 1054, 1059, 1062, 1063, 1066,
+//   1074, 1082, 1085).
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 772.
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 523.
+
 use crate::host::performance::{self, Count, Span, Stage};
 use crate::native::{
     actions::Action,

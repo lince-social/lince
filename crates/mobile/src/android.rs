@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: static NEXT, static EDITOR, static EVENTS, static WAKE.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 534.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 580, 588.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   discovery:enabled (429), locate_once:enabled (39), location:enabled (23).
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 293.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites
+//   accessibility_snapshot: String (246), choose_file: String (291), choose_map_pack: String (51),
+//   discovery: String (429), locate_once: String (39), location: String (23), open_link: String
+//   (259), restart: String (621), save_file: String (313), scan: String (441).
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (450, 454).
+
 use bevy::{prelude::*, text::EditableText};
 use jni::{Env, JValue, JavaVM, jni_sig, jni_str, objects::JObject, refs::Global};
 use jni_legacy::{

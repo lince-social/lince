@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod rows, struct Feedback, enum WindowSource, struct WindowView.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 116, 117, 118,
+//   252.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (176, 180, 184, 244, 261).
+
 use super::*;
 use bevy::ecs::query::QueryState;
 use std::collections::HashMap;

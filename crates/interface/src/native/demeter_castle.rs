@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: mod catalog, mod editor, mod persistence, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 224, 307, 354,
+//   359, 379, 400, 414, 425, 509, 515, 522, 530, 531, 545, 548, 575, 577, 588, 632, 640, 671, 693,
+//   722, 738, 767, 799, 810, 887, 892, 909, 1008, 1042.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (76, 77, 78, 248, 259, 268, 359, 390, 496, 509, 521, 535, 536, 544, 559, 570, 585,
+//   603, 610, 614, 625, 640, 667, 678, 685, 692, 706, 721, 737, 754, 760, 766, 783, 786, 790, 810,
+//   861, 874, 878, 887, 891, 941, 1022, 1028).
+
 mod catalog;
 mod editor;
 mod persistence;

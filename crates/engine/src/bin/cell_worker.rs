@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn main, fn usage, fn run, fn loopback_addrs.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 97, 140, 167.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 97, 167.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 9.
+
 use std::process::ExitCode;
 use std::sync::Arc;
 

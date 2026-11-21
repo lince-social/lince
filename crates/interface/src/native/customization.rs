@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: mod export, mod sections, mod layout, mod programs.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 192, 259, 314,
+//   649, 912, 1491.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   186, 302, 360, 749, 1307, 1335, 1500.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (431, 454, 489, 516, 556, 573, 643, 766, 767, 777, 804, 805, 811, 854, 912, 922,
+//   955, 988, 991, 1234, 1236, 1240, 1247, 1253, 1258, 1262, 1275, 1279, 1282, 1298, 1315, 1319,
+//   1325, 1330, 1338, 1342, 1349, 1363, 1373, 1381, 1389, 1392, 1406, 1483, 1490, 1494).
+
 use crate::native::{
     actions::{Action, ActionButton},
     edit_mode::{EditMode, label},

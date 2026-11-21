@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct EGLContext, enum ContextPriority, struct GlAttributes, enum GlProfile.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check SAFETY proof and trait invariants. Sites 84.
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 293, 308, 418, 446,
+//   493.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 342, 346.
+
 //! EGL context related structs
 use std::{
     os::raw::c_int,

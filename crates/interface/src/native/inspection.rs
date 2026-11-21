@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod drawing, mod preparation, struct Inspection, struct Connection.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 238, 636.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   290, 297.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (630, 638, 640, 644, 648, 726, 775, 819, 820, 824, 834, 835, 838, 839, 840, 842,
+//   843).
+
 use crate::native::{
     actions::{Action, ActionButton},
     castle::Castle,

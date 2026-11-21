@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn hidden_withdrawal_never_restores_an_old_path_or_discloses_its_revision.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[test]

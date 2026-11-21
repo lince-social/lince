@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: enum Page, struct Navigation.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]

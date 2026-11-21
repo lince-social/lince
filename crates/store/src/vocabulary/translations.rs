@@ -1,7 +1,20 @@
-use super::{StoreError, invalid};
+// non-lean-yet
+// Scope: fn read_translations, fn export_translations_on, fn preview_translations_on, fn
+//   import_translations_on.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 124.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 80.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 6, 33, 66, 119.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 33,
+//   66, 119.
+
 use nucleus::vocabulary::TranslationPackage;
 use serde_json::{Value, json};
 use sqlx::SqliteConnection;
+
+use super::{StoreError, invalid};
 
 pub fn read_translations(raw: &str) -> Result<TranslationPackage, StoreError> {
     if raw.len() > 4 * 1024 * 1024 {

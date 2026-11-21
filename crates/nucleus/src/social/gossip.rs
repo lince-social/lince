@@ -1,6 +1,16 @@
-use super::{Delegation, PostingAuthority, Snippet};
+// non-lean-yet
+// Scope: const NAMESPACE, const MAX_PEERS, const MAX_ENTRIES, const MAX_PAYLOAD_BYTES.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 35.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 6,
+//   7, 8, 12, 13, 14, 19, 20, 21, 22, 27, 28, 29, 30, 35, 36, 37, 39, 40, 41, 43, 44, 45, 50, 57,
+//   65.
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
+use super::{Delegation, PostingAuthority, Snippet};
 
 pub const NAMESPACE: &str = "lince.social.gossip";
 pub const MAX_PEERS: usize = 32;

@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: struct Capture, fn exercise, fn main.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 144, 187, 207,
+//   223, 249, 270.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (343).
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites
+//   335.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   127.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (35, 53, 59, 61, 64, 87, 115, 121, 123, 139, 143, 148, 152, 156, 182, 186, 189,
+//   198, 211, 218, 222, 231, 238, 244, 247, 248, 261, 274, 278, 297, 298, 306, 319, 322, 324).
+
 use bevy::{
     a11y::AccessibilityNode,
     diagnostic::FrameCount,

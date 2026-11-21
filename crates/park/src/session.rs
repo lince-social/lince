@@ -1,9 +1,27 @@
-use crate::{
-    desktop::{Desktop, error, renderer::Composition},
-    launch::Application,
-    runtime::{CanvasWorker, Completed, Configuration, Input},
-    server::{Monitor, Server},
+// non-lean-yet
+// Scope: mod display, mod devices, mod gles_timing, mod power.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 228, 231.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 188, 225, 228,
+//   232, 234, 236, 241, 301, 307, 317, 323, 333, 336, 408, 410, 412, 441, 669, 680, 753, 770, 783,
+//   841, 883, 888, 889, 900, 902, 909, 926, 986, 1024.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 304, 610.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   1161, 1164, 1168.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (723, 823, 967, 972, 985).
+
+use std::{
+    collections::{BTreeMap, HashMap, HashSet},
+    io,
+    path::PathBuf,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+    time::Instant,
 };
+
 use lince_interface::{
     activation::InstanceGuard,
     host::{DesktopAction, OutputId, WakeSignal},
@@ -22,11 +40,11 @@ use smithay::{
         },
         egl::{EGLContext, EGLDisplay},
         input::{
-            AbsolutePositionEvent, Axis, AxisSource, ButtonState, Event as _, InputEvent, KeyState,
-            KeyboardKeyEvent, PointerAxisEvent, PointerButtonEvent, PointerMotionEvent,
-            GestureBeginEvent, GestureEndEvent, GestureSwipeUpdateEvent, GesturePinchUpdateEvent,
-            TouchEvent,
-            TabletToolProximityEvent, TabletToolTipEvent, TabletToolButtonEvent, ProximityState, TabletToolTipState,
+            AbsolutePositionEvent, Axis, AxisSource, ButtonState, Event as _, GestureBeginEvent,
+            GestureEndEvent, GesturePinchUpdateEvent, GestureSwipeUpdateEvent, InputEvent,
+            KeyState, KeyboardKeyEvent, PointerAxisEvent, PointerButtonEvent, PointerMotionEvent,
+            ProximityState, TabletToolButtonEvent, TabletToolProximityEvent, TabletToolTipEvent,
+            TabletToolTipState, TouchEvent,
         },
         libinput::{LibinputInputBackend, LibinputSessionInterface},
         renderer::{
@@ -47,33 +65,30 @@ use smithay::{
     },
     utils::DeviceFd,
 };
-use std::{
-    collections::{BTreeMap, HashMap, HashSet},
-    io,
-    path::PathBuf,
-    sync::{
-        Arc,
-        atomic::{AtomicBool, Ordering},
-    },
-    time::Instant,
+
+use crate::{
+    desktop::{Desktop, error, renderer::Composition},
+    launch::Application,
+    runtime::{CanvasWorker, Completed, Configuration, Input},
+    server::{Monitor, Server},
 };
 
-mod display;
 mod devices;
+mod display;
 mod gles_timing;
-mod power;
 mod pacing;
+mod power;
 mod readiness;
+#[cfg(all(test, feature = "server-tests"))]
+pub(crate) use devices::absolute::reject_removed_calibration;
+pub(crate) use devices::tablet::Report as TabletReport;
+use display::{OutputPlan, PlannedOutput};
 #[cfg(all(test, feature = "server-tests"))]
 pub(crate) use power::Frame as PowerFrame;
 #[cfg(all(test, feature = "server-tests"))]
-pub(crate) use power::request_current as power_request_current;
-#[cfg(all(test, feature = "server-tests"))]
 pub(crate) use power::State as PowerState;
-pub(crate) use devices::tablet::Report as TabletReport;
 #[cfg(all(test, feature = "server-tests"))]
-pub(crate) use devices::absolute::reject_removed_calibration;
-use display::{OutputPlan, PlannedOutput};
+pub(crate) use power::request_current as power_request_current;
 
 struct Queued {
     id: OutputId,
@@ -87,7 +102,9 @@ struct Queued {
 
 impl Queued {
     fn trace(&self, event: &str, at: u64, hardware_clock: Option<bool>) {
-        if let (Some(started), Some(render)) = (self.composition_started, self.frame.frame.traced_render) {
+        if let (Some(started), Some(render)) =
+            (self.composition_started, self.frame.frame.traced_render)
+        {
             crate::presentation::frame_trace::record(serde_json::json!({"event":event,
                 "render":render, "output":self.id.0, "composition_started_us":started,
                 "frame":self.frame.sequence,
@@ -244,7 +261,12 @@ pub fn run(
         allocator,
         exporter,
         Some(gbm),
-        [Fourcc::Argb8888, Fourcc::Xrgb8888, Fourcc::Abgr2101010, Fourcc::Argb2101010],
+        [
+            Fourcc::Argb8888,
+            Fourcc::Xrgb8888,
+            Fourcc::Abgr2101010,
+            Fourcc::Argb2101010,
+        ],
         formats,
     );
     let command_file = configuration.directory.join("park.json");
@@ -284,10 +306,13 @@ pub fn run(
     handle
         .insert_source(notifier_drm, |event, metadata, events| match event {
             DrmEvent::VBlank(crtc) => {
-                let time = metadata.as_ref().and_then(|metadata| match metadata.time {
-                    smithay::backend::drm::DrmEventTime::Monotonic(time) => Some((time, true)),
-                    smithay::backend::drm::DrmEventTime::Realtime(_) => None,
-                }).unwrap_or_else(|| (crate::desktop::renderer::capture::monotonic(), false));
+                let time = metadata
+                    .as_ref()
+                    .and_then(|metadata| match metadata.time {
+                        smithay::backend::drm::DrmEventTime::Monotonic(time) => Some((time, true)),
+                        smithay::backend::drm::DrmEventTime::Realtime(_) => None,
+                    })
+                    .unwrap_or_else(|| (crate::desktop::renderer::capture::monotonic(), false));
                 events.push(Event::Presented(crtc, time.0, time.1));
             }
             DrmEvent::Error(error) => events.push(Event::Error(error.to_string())),
@@ -374,14 +399,19 @@ pub fn run(
                     Event::Session(SessionEvent::ActivateSession) => {
                         hardware.resume(&mut desktop, &mut libinput)?;
                     }
-                    Event::Presented(crtc, presentation_time, hardware_clock) if hardware.active && session.is_active() => {
+                    Event::Presented(crtc, presentation_time, hardware_clock)
+                        if hardware.active && session.is_active() =>
+                    {
                         let mut color_fallback = None;
                         if let Some(screen) = hardware.screens.get_mut(&crtc) {
                             let submitted = match screen.output.frame_submitted() {
                                 Ok(submitted) => submitted,
                                 Err(failure) => {
                                     screen.pending = false;
-                                    if !desktop.server.recover_display_preview(failure.to_string()) { return Err(error(failure)); }
+                                    if !desktop.server.recover_display_preview(failure.to_string())
+                                    {
+                                        return Err(error(failure));
+                                    }
                                     desktop.redraw = true;
                                     None
                                 }
@@ -389,41 +419,95 @@ pub fn run(
                             if let Some(queued) = submitted {
                                 let now = Instant::now();
                                 let observed = if hardware_clock {
-                                    now.checked_sub(crate::desktop::renderer::capture::monotonic()
-                                        .saturating_sub(presentation_time)).unwrap_or(now)
-                                } else { now };
+                                    now.checked_sub(
+                                        crate::desktop::renderer::capture::monotonic()
+                                            .saturating_sub(presentation_time),
+                                    )
+                                    .unwrap_or(now)
+                                } else {
+                                    now
+                                };
                                 screen.pacing.presented(observed);
-                                lince_interface::host::performance::presented(queued.id, presentation_time, hardware_clock);
+                                lince_interface::host::performance::presented(
+                                    queued.id,
+                                    presentation_time,
+                                    hardware_clock,
+                                );
                                 if crate::runtime::tracing_frames() {
-                                    let observed = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)
-                                        .unwrap_or_default().as_secs_f64();
+                                    let observed = std::time::SystemTime::now()
+                                        .duration_since(std::time::UNIX_EPOCH)
+                                        .unwrap_or_default()
+                                        .as_secs_f64();
                                     let clock = if hardware_clock { "drm" } else { "dispatch" };
-                                    eprintln!("Park scanout: {} {:.9} {observed:.6} {clock}", queued.id.0, presentation_time.as_secs_f64());
+                                    eprintln!(
+                                        "Park scanout: {} {:.9} {observed:.6} {clock}",
+                                        queued.id.0,
+                                        presentation_time.as_secs_f64()
+                                    );
                                 }
-                                let current = queued.power.current(&desktop.server, screen.id, screen.power.epoch)
-                                    && queued.scene.locked == desktop.server.locked();
+                                let current = queued.power.current(
+                                    &desktop.server,
+                                    screen.id,
+                                    screen.power.epoch,
+                                ) && queued.scene.locked == desktop.server.locked();
                                 if current {
-                                    queued.trace("presented", crate::presentation::frame_trace::micros(presentation_time), Some(hardware_clock));
-                                    display::observe_adaptive_sync(hardware.outputs.device(), crtc, &mut screen.adaptive_sync, queued.adaptive_sync);
-                                    desktop.server.output_adaptive_sync(screen.id, screen.adaptive_sync.clone());
-                                    if display::color::observe(hardware.outputs.device(), screen, &queued.color) {
+                                    queued.trace(
+                                        "presented",
+                                        crate::presentation::frame_trace::micros(presentation_time),
+                                        Some(hardware_clock),
+                                    );
+                                    display::observe_adaptive_sync(
+                                        hardware.outputs.device(),
+                                        crtc,
+                                        &mut screen.adaptive_sync,
+                                        queued.adaptive_sync,
+                                    );
+                                    desktop.server.output_adaptive_sync(
+                                        screen.id,
+                                        screen.adaptive_sync.clone(),
+                                    );
+                                    if display::color::observe(
+                                        hardware.outputs.device(),
+                                        screen,
+                                        &queued.color,
+                                    ) {
                                         color_fallback = screen.color.status.reason.clone();
                                     }
-                                    desktop.server.output_color(screen.id, screen.color.status.clone());
-                                    if let Some(message) = power::presented(hardware.outputs.device(), screen, crtc, queued.power.epoch, queued.scene.locked, &mut desktop.server) {
+                                    desktop
+                                        .server
+                                        .output_color(screen.id, screen.color.status.clone());
+                                    if let Some(message) = power::presented(
+                                        hardware.outputs.device(),
+                                        screen,
+                                        crtc,
+                                        queued.power.epoch,
+                                        queued.scene.locked,
+                                        &mut desktop.server,
+                                    ) {
                                         desktop.send(Input::Feedback(message))?;
                                     }
                                 } else {
                                     if crate::runtime::tracing_frames() {
-                                        eprintln!("Park completion unconfirmed: {} epoch {} current_epoch {} protected {} locked {}",
-                                            screen.id.0, queued.power.epoch, screen.power.epoch, queued.scene.locked, desktop.server.locked());
+                                        eprintln!(
+                                            "Park completion unconfirmed: {} epoch {} current_epoch {} protected {} locked {}",
+                                            screen.id.0,
+                                            queued.power.epoch,
+                                            screen.power.epoch,
+                                            queued.scene.locked,
+                                            desktop.server.locked()
+                                        );
                                     }
-                                    if screen.power.on { screen.power.reconfigure(); }
+                                    if screen.power.on {
+                                        screen.power.reconfigure();
+                                    }
                                     screen.output.reset_buffers();
                                     desktop.redraw = true;
                                 }
                                 screen.protected = current && queued.scene.locked;
-                                let stale = desktop.pending.as_ref().or(desktop.current.as_ref())
+                                let stale = desktop
+                                    .pending
+                                    .as_ref()
+                                    .or(desktop.current.as_ref())
                                     .is_some_and(|latest| !Arc::ptr_eq(latest, &queued.frame));
                                 desktop.output_presented(
                                     queued.id,
@@ -440,7 +524,9 @@ pub fn run(
                         if let Some(reason) = color_fallback {
                             if !desktop.server.recover_display_preview(reason.clone()) {
                                 hardware.rescan(&mut desktop.server)?;
-                                desktop.send(Input::Feedback(format!("HDR output could not be confirmed; SDR was restored. {reason}")))?;
+                                desktop.send(Input::Feedback(format!(
+                                    "HDR output could not be confirmed; SDR was restored. {reason}"
+                                )))?;
                             }
                             desktop.redraw = true;
                         }
@@ -458,7 +544,9 @@ pub fn run(
                         desktop.size = hardware.size;
                         desktop.invalidate_outputs()?;
                     }
-                    Event::Input(event) if hardware.active && session.is_active() && vt_request.is_none() => {
+                    Event::Input(event)
+                        if hardware.active && session.is_active() && vt_request.is_none() =>
+                    {
                         hardware.input(&mut desktop, event, &mut vt_request, &mut vt_keys)?
                     }
                     Event::Error(message) => eprintln!("Park display: {message}"),
@@ -476,11 +564,17 @@ pub fn run(
                         hardware.pause(&mut desktop, &mut libinput, &mut vt_keys)?;
                         lock_frame_pending = false;
                         if let Err(failure) = session.change_vt(vt) {
-                            if session.is_active() { hardware.resume(&mut desktop, &mut libinput)?; }
-                            desktop.send(Input::Feedback(format!("Could not switch virtual terminal: {failure}")))?;
+                            if session.is_active() {
+                                hardware.resume(&mut desktop, &mut libinput)?;
+                            }
+                            desktop.send(Input::Feedback(format!(
+                                "Could not switch virtual terminal: {failure}"
+                            )))?;
                         }
                     }
-                    Err(failure) => desktop.send(Input::Feedback(format!("Could not determine the active virtual terminal: {failure}")))?,
+                    Err(failure) => desktop.send(Input::Feedback(format!(
+                        "Could not determine the active virtual terminal: {failure}"
+                    )))?,
                 }
             }
             if activation.take_show() {
@@ -495,59 +589,88 @@ pub fn run(
             if hardware.active {
                 hardware.flush_estimated(&mut desktop, started.elapsed().as_millis() as u32)?;
                 let submission_ready = match hardware.flush_prepared(&mut desktop.server) {
-                    Ok(invalidated) => { desktop.redraw |= invalidated; true },
+                    Ok(invalidated) => {
+                        desktop.redraw |= invalidated;
+                        true
+                    }
                     Err(failure) => {
-                        if !desktop.server.recover_display_preview(failure.to_string()) { return Err(failure); }
+                        if !desktop.server.recover_display_preview(failure.to_string()) {
+                            return Err(failure);
+                        }
                         desktop.redraw = true;
                         false
                     }
                 };
-                if lock_frame_pending && composition.ready() && hardware.screens.values().all(|screen| !screen.power.on || !screen.pending && screen.protected) {
+                if lock_frame_pending
+                    && composition.ready()
+                    && hardware
+                        .screens
+                        .values()
+                        .all(|screen| !screen.power.on || !screen.pending && screen.protected)
+                {
                     desktop.server.lock_presented();
                     lock_frame_pending = false;
                 }
-                if submission_ready && hardware.configurations.is_empty() && hardware.screens.values().any(|screen| !screen.pending) && composition.ready() {
-                desktop.accept(&mut composition, &mut hardware.renderer)?;
-                if let Some(completed) = desktop.pending.as_ref().or(desktop.current.as_ref()).cloned() {
-                    composition.enable_client_formats(&hardware.renderer, &mut desktop.server, &completed.frame)?;
-                }
-                if desktop.rendering().is_some() {
-                    if hardware.color_ready() && desktop.opening_ready() && let Some(applications) = applications.take() {
-                        for application in applications {
-                            match desktop.server.spawn_foreground(application, &socket) {
-                                Ok(child) => children.push(child),
-                                Err(error) => {
-                                    let message = format!(
-                                        "Could not start the requested application: {error}"
-                                    );
-                                    eprintln!("{message}");
-                                    let _ = desktop.send(Input::Feedback(message));
+                if submission_ready
+                    && hardware.configurations.is_empty()
+                    && hardware.screens.values().any(|screen| !screen.pending)
+                    && composition.ready()
+                {
+                    desktop.accept(&mut composition, &mut hardware.renderer)?;
+                    if let Some(completed) = desktop
+                        .pending
+                        .as_ref()
+                        .or(desktop.current.as_ref())
+                        .cloned()
+                    {
+                        composition.enable_client_formats(
+                            &hardware.renderer,
+                            &mut desktop.server,
+                            &completed.frame,
+                        )?;
+                    }
+                    if desktop.rendering().is_some() {
+                        if hardware.color_ready()
+                            && desktop.opening_ready()
+                            && let Some(applications) = applications.take()
+                        {
+                            for application in applications {
+                                match desktop.server.spawn_foreground(application, &socket) {
+                                    Ok(child) => children.push(child),
+                                    Err(error) => {
+                                        let message = format!(
+                                            "Could not start the requested application: {error}"
+                                        );
+                                        eprintln!("{message}");
+                                        let _ = desktop.send(Input::Feedback(message));
+                                    }
                                 }
                             }
                         }
-                    }
-                    if desktop.redraw && !hardware.screens.is_empty() {
-                        let submitted = match hardware.render(
-                            &mut composition,
-                            &mut desktop,
-                        ) {
-                            Ok(submitted) => submitted,
-                            Err(failure) => {
-                                if !desktop.server.recover_display_preview(failure.to_string()) { return Err(failure); }
-                                desktop.redraw = true;
-                                false
+                        if desktop.redraw && !hardware.screens.is_empty() {
+                            let submitted = match hardware.render(&mut composition, &mut desktop) {
+                                Ok(submitted) => submitted,
+                                Err(failure) => {
+                                    if !desktop.server.recover_display_preview(failure.to_string())
+                                    {
+                                        return Err(failure);
+                                    }
+                                    desktop.redraw = true;
+                                    false
+                                }
+                            };
+                            lock_frame_pending = submitted && desktop.server.locked();
+                            if lock_frame_pending
+                                && composition.ready()
+                                && hardware.screens.values().all(|screen| {
+                                    !screen.power.on || !screen.pending && screen.protected
+                                })
+                            {
+                                desktop.server.lock_presented();
+                                lock_frame_pending = false;
                             }
-                        };
-                        lock_frame_pending = submitted && desktop.server.locked();
-                        if lock_frame_pending
-                            && composition.ready()
-                            && hardware.screens.values().all(|screen| !screen.power.on || !screen.pending && screen.protected)
-                        {
-                            desktop.server.lock_presented();
-                            lock_frame_pending = false;
                         }
                     }
-                }
                 }
                 if hardware.color_ready() {
                     let ready = desktop.ready();
@@ -560,10 +683,27 @@ pub fn run(
             composition.capture(&mut hardware.renderer, &mut desktop, hardware.active)?;
             lince_interface::host::performance::flush_if_due();
             if desktop.running {
-                let _timing = lince_interface::host::performance::Span::new(lince_interface::host::performance::Stage::EventLoopWait);
+                let _timing = lince_interface::host::performance::Span::new(
+                    lince_interface::host::performance::Stage::EventLoopWait,
+                );
                 event_loop
-                    .dispatch(desktop.repeat_timeout().into_iter().chain(hardware.configuration_timeout()).chain(hardware.power_timeout()).chain(desktop.server.output_power_timeout()).chain(desktop.server.display_timeout()).chain(desktop.server.control_timeout()).chain(desktop.scene_timeout())
-                        .chain(desktop.server.capture_timeout()).chain(composition.capture_timeout()).chain(readiness.timeout()).chain(hardware.callback_timeout()).min(), &mut events)
+                    .dispatch(
+                        desktop
+                            .repeat_timeout()
+                            .into_iter()
+                            .chain(hardware.configuration_timeout())
+                            .chain(hardware.power_timeout())
+                            .chain(desktop.server.output_power_timeout())
+                            .chain(desktop.server.display_timeout())
+                            .chain(desktop.server.control_timeout())
+                            .chain(desktop.scene_timeout())
+                            .chain(desktop.server.capture_timeout())
+                            .chain(composition.capture_timeout())
+                            .chain(readiness.timeout())
+                            .chain(hardware.callback_timeout())
+                            .min(),
+                        &mut events,
+                    )
                     .map_err(error)?;
             }
         }
@@ -581,20 +721,37 @@ pub fn run(
 }
 
 impl Hardware {
-    fn pause(&mut self, desktop: &mut Desktop, libinput: &mut Libinput, vt_keys: &mut HashSet<u32>) -> io::Result<()> {
-        if !self.active { return Ok(()); }
+    fn pause(
+        &mut self,
+        desktop: &mut Desktop,
+        libinput: &mut Libinput,
+        vt_keys: &mut HashSet<u32>,
+    ) -> io::Result<()> {
+        if !self.active {
+            return Ok(());
+        }
         self.active = false;
         self.devices.active(false);
         vt_keys.clear();
-        desktop.server.tablet_reset(crate::desktop::renderer::capture::monotonic().as_millis() as u32);
+        desktop
+            .server
+            .tablet_reset(crate::desktop::renderer::capture::monotonic().as_millis() as u32);
         for screen in self.screens.values_mut() {
             screen.pacing.cancel();
             lince_interface::host::performance::retire_output(screen.id);
-            screen.power.pause(&mut desktop.server, screen.pending && screen.prepared.is_none());
-            if let Some(prepared) = screen.prepared.take() { self.retired.push(prepared); }
+            screen.power.pause(
+                &mut desktop.server,
+                screen.pending && screen.prepared.is_none(),
+            );
+            if let Some(prepared) = screen.prepared.take() {
+                self.retired.push(prepared);
+            }
             screen.adaptive_sync.effective = None;
             screen.adaptive_sync.pending = false;
-            screen.adaptive_sync.reason = Some("The physical session is inactive; adaptive sync will be confirmed after resume.".into());
+            screen.adaptive_sync.reason = Some(
+                "The physical session is inactive; adaptive sync will be confirmed after resume."
+                    .into(),
+            );
             screen.color.invalidate();
         }
         self.publish_adaptive_sync(&mut desktop.server);
@@ -605,9 +762,13 @@ impl Hardware {
     }
 
     fn resume(&mut self, desktop: &mut Desktop, libinput: &mut Libinput) -> io::Result<()> {
-        if self.active { return Ok(()); }
+        if self.active {
+            return Ok(());
+        }
         self.outputs.activate(true).map_err(error)?;
-        libinput.resume().map_err(|_| io::Error::other("Could not resume input"))?;
+        libinput
+            .resume()
+            .map_err(|_| io::Error::other("Could not resume input"))?;
         self.active = true;
         self.devices.active(true);
         self.resume_output_requests(&desktop.server);
@@ -623,35 +784,64 @@ impl Hardware {
         desktop.event(smithay::backend::winit::WinitEvent::Focus(true))
     }
 
-    fn tablet_input<E>(&mut self, desktop: &mut Desktop, event: &E, phase: lince_interface::host::input::TabletPhase)
-    where E: smithay::backend::input::TabletToolEvent<LibinputInputBackend> + smithay::reexports::input::event::tablet_tool::TabletToolEventTrait {
+    fn tablet_input<E>(
+        &mut self,
+        desktop: &mut Desktop,
+        event: &E,
+        phase: lince_interface::host::input::TabletPhase,
+    ) where
+        E: smithay::backend::input::TabletToolEvent<LibinputInputBackend>
+            + smithay::reexports::input::event::tablet_tool::TabletToolEventTrait,
+    {
         if let Some(report) = self.devices.tablet_event(event, phase)
-            && let Some(reason) = desktop.tablet_event(report) { self.devices.tablet_problem(&event.device(), reason); }
+            && let Some(reason) = desktop.tablet_event(report)
+        {
+            self.devices.tablet_problem(&event.device(), reason);
+        }
     }
     fn configure_pointer(&mut self, desktop: &mut Desktop) -> io::Result<()> {
         let protected = !self.active || desktop.server.locked();
         self.devices.absolute_contacts(desktop.touch_devices());
         if let Some(requests) = &mut desktop.pointer_requests {
-            for request in requests.drain(..) { self.devices.request(request, protected); }
+            for request in requests.drain(..) {
+                self.devices.request(request, protected);
+            }
         }
         if let Some(requests) = &mut desktop.absolute_requests {
             for request in requests.drain(..) {
                 match request {
-                    lince_interface::host::input::AbsoluteCommand::Save(request) => self.devices.absolute_request(request, protected),
-                    lince_interface::host::input::AbsoluteCommand::Reload(request) => self.devices.absolute_reload(request, protected),
+                    lince_interface::host::input::AbsoluteCommand::Save(request) => {
+                        self.devices.absolute_request(request, protected)
+                    }
+                    lince_interface::host::input::AbsoluteCommand::Reload(request) => {
+                        self.devices.absolute_reload(request, protected)
+                    }
                 }
             }
         }
-        let idle = desktop.buttons.is_empty() && desktop.grabbed.is_none()
-            && !desktop.server.pointer_grabbed() && !desktop.server.dragging();
-        self.devices.advance(protected, idle, |settings, expected| desktop.save_pointer(settings, expected));
-        self.devices.advance_absolute(protected, |settings, expected| desktop.save_devices(settings, expected), || desktop.load_devices());
+        let idle = desktop.buttons.is_empty()
+            && desktop.grabbed.is_none()
+            && !desktop.server.pointer_grabbed()
+            && !desktop.server.dragging();
+        self.devices.advance(protected, idle, |settings, expected| {
+            desktop.save_pointer(settings, expected)
+        });
+        self.devices.advance_absolute(
+            protected,
+            |settings, expected| desktop.save_devices(settings, expected),
+            || desktop.load_devices(),
+        );
         desktop.gesture_support(self.devices.gestures_available())?;
         desktop.absolute_settings(self.devices.absolute_snapshot())?;
         desktop.pointer_settings(self.devices.snapshot())
     }
 
-    fn output_plan(&mut self, server: &Server, preferences: &BTreeMap<String, crate::commands::OutputPreference>, strict: bool) -> io::Result<OutputPlan> {
+    fn output_plan(
+        &mut self,
+        server: &Server,
+        preferences: &BTreeMap<String, crate::commands::OutputPreference>,
+        strict: bool,
+    ) -> io::Result<OutputPlan> {
         let resources = self.outputs.device().resource_handles().map_err(error)?;
         let mut connected = Vec::new();
         let mut catalog = Vec::new();
@@ -672,34 +862,79 @@ impl Hardware {
                 id
             });
             let preference = preferences.get(&name).cloned().unwrap_or_default();
-            let modes: Vec<_> = info.modes().iter().copied().filter(|mode| {
-                let (width, height) = mode.size();
-                width > 0 && height > 0 && width <= 16384 && height <= 16384
-            }).take(128).collect();
-            if modes.is_empty() { continue; }
-            catalog.push(crate::server::OutputHead { color: preference.color, adaptive_sync: preference.adaptive_sync, rotation: preference.rotation, id, name: name.clone(),
-                modes: modes.iter().map(|mode| {
-                    let mode_value = smithay::output::Mode::from(*mode);
-                    crate::server::OutputMode { size: [mode_value.size.w, mode_value.size.h], refresh_mhz: mode_value.refresh,
-                        preferred: mode.mode_type().contains(ModeTypeFlags::PREFERRED) }
-                }).collect(), current: None, position: preference.position.unwrap_or([0, 0]), scale: preference.scale });
-            if !preference.enabled { continue; }
+            let modes: Vec<_> = info
+                .modes()
+                .iter()
+                .copied()
+                .filter(|mode| {
+                    let (width, height) = mode.size();
+                    width > 0 && height > 0 && width <= 16384 && height <= 16384
+                })
+                .take(128)
+                .collect();
+            if modes.is_empty() {
+                continue;
+            }
+            catalog.push(crate::server::OutputHead {
+                color: preference.color,
+                adaptive_sync: preference.adaptive_sync,
+                rotation: preference.rotation,
+                id,
+                name: name.clone(),
+                modes: modes
+                    .iter()
+                    .map(|mode| {
+                        let mode_value = smithay::output::Mode::from(*mode);
+                        crate::server::OutputMode {
+                            size: [mode_value.size.w, mode_value.size.h],
+                            refresh_mhz: mode_value.refresh,
+                            preferred: mode.mode_type().contains(ModeTypeFlags::PREFERRED),
+                        }
+                    })
+                    .collect(),
+                current: None,
+                position: preference.position.unwrap_or([0, 0]),
+                scale: preference.scale,
+            });
+            if !preference.enabled {
+                continue;
+            }
             let matches = |mode: &&control::Mode| {
                 preference.mode.is_none_or(|size| {
                     let (width, height) = mode.size();
                     size == [u32::from(width), u32::from(height)]
                 }) && preference.refresh_mhz.is_none_or(|refresh| {
-                    let difference = (i64::from(smithay::output::Mode::from(**mode).refresh) - i64::from(refresh)).abs();
-                    if strict { difference == 0 } else { difference <= 500 }
+                    let difference = (i64::from(smithay::output::Mode::from(**mode).refresh)
+                        - i64::from(refresh))
+                    .abs();
+                    if strict {
+                        difference == 0
+                    } else {
+                        difference <= 500
+                    }
                 })
             };
-            let Some(mode) = modes.iter().filter(matches)
+            let Some(mode) = modes
+                .iter()
+                .filter(matches)
                 .find(|mode| mode.mode_type().contains(ModeTypeFlags::PREFERRED))
                 .or_else(|| modes.iter().find(matches))
-                .or_else(|| (!strict).then(|| modes.iter().find(|mode| mode.mode_type().contains(ModeTypeFlags::PREFERRED)).or_else(|| modes.first())).flatten()).copied()
+                .or_else(|| {
+                    (!strict)
+                        .then(|| {
+                            modes
+                                .iter()
+                                .find(|mode| mode.mode_type().contains(ModeTypeFlags::PREFERRED))
+                                .or_else(|| modes.first())
+                        })
+                        .flatten()
+                })
+                .copied()
             else {
                 if preference.mode.is_some() || preference.refresh_mhz.is_some() {
-                    return Err(io::Error::other(format!("Requested mode is unavailable on {name}")));
+                    return Err(io::Error::other(format!(
+                        "Requested mode is unavailable on {name}"
+                    )));
                 }
                 continue;
             };
@@ -712,12 +947,22 @@ impl Hardware {
             for encoder in info.encoders() {
                 let encoder = self.outputs.device().get_encoder(*encoder).map_err(error)?;
                 for crtc in resources.filter_crtcs(encoder.possible_crtcs()) {
-                    if !choices.contains(&crtc) { choices.push(crtc); }
+                    if !choices.contains(&crtc) {
+                        choices.push(crtc);
+                    }
                 }
             }
-            if let Some(index) = existing.and_then(|existing| choices.iter().position(|crtc| *crtc == existing)) { choices.swap(0, index); }
+            if let Some(index) =
+                existing.and_then(|existing| choices.iter().position(|crtc| *crtc == existing))
+            {
+                choices.swap(0, index);
+            }
             let Some(crtc) = choices.first().copied() else {
-                if strict { return Err(io::Error::other(format!("No display controller is available for {name}"))); }
+                if strict {
+                    return Err(io::Error::other(format!(
+                        "No display controller is available for {name}"
+                    )));
+                }
                 continue;
             };
             catalog.last_mut().unwrap().current = modes.iter().position(|current| *current == mode);
@@ -727,13 +972,25 @@ impl Hardware {
         let assignments = display::assign_controllers(&controller_choices);
         let mut assigned = Vec::new();
         for (mut connected, assignment) in connected.into_iter().zip(assignments) {
-            if let Some(crtc) = assignment { connected.0 = crtc; assigned.push(connected); }
-            else if strict { return Err(io::Error::other("The requested outputs cannot share the available display controllers")); }
-            else if let Some(head) = catalog.iter_mut().find(|head| head.id == connected.3) { head.current = None; }
+            if let Some(crtc) = assignment {
+                connected.0 = crtc;
+                assigned.push(connected);
+            } else if strict {
+                return Err(io::Error::other(
+                    "The requested outputs cannot share the available display controllers",
+                ));
+            } else if let Some(head) = catalog.iter_mut().find(|head| head.id == connected.3) {
+                head.current = None;
+            }
         }
         let connected = assigned;
         if connected.is_empty() {
-            let plan = OutputPlan { screens: Vec::new(), catalog, size: self.size, strict };
+            let plan = OutputPlan {
+                screens: Vec::new(),
+                catalog,
+                size: self.size,
+                strict,
+            };
             plan.validate()?;
             return Ok(plan);
         }
@@ -744,7 +1001,9 @@ impl Hardware {
             .map(|(_, _, mode, id, name)| {
                 let (width, current_height) = mode.size();
                 let preference = preferences.get(name).cloned().unwrap_or_default();
-                let source = preference.rotation.source_size([u32::from(width), u32::from(current_height)]);
+                let source = preference
+                    .rotation
+                    .source_size([u32::from(width), u32::from(current_height)]);
                 let logical_width = (f64::from(source[0]) / preference.scale).round() as i32;
                 let logical_height = (f64::from(source[1]) / preference.scale).round() as i32;
                 let origin = preference.position.unwrap_or([x, 0]);
@@ -760,39 +1019,77 @@ impl Hardware {
             })
             .collect();
         if x <= 0 || height <= 0 || x > 16384 || height > 16384 {
-            return Err(io::Error::other("Combined logical output bounds exceed Park's supported size"));
+            return Err(io::Error::other(
+                "Combined logical output bounds exceed Park's supported size",
+            ));
         }
         let mut screens = Vec::new();
         for ((crtc, info, mode, id, _), monitor) in connected.into_iter().zip(&monitors) {
-            let scale = preferences.get(&monitor.name).map_or(1.0, |preference| preference.scale);
-            let rotation = preferences.get(&monitor.name).map_or(Default::default(), |preference| preference.rotation);
-            let output = server.output(id).filter(|output| output.name() == monitor.name).unwrap_or_else(|| {
-                smithay::output::Output::new(monitor.name.clone(), smithay::output::PhysicalProperties {
-                    size: (0, 0).into(), subpixel: smithay::output::Subpixel::Unknown, make: "Lince".into(), model: "Park".into(),
-                })
-            });
+            let scale = preferences
+                .get(&monitor.name)
+                .map_or(1.0, |preference| preference.scale);
+            let rotation = preferences
+                .get(&monitor.name)
+                .map_or(Default::default(), |preference| preference.rotation);
+            let output = server
+                .output(id)
+                .filter(|output| output.name() == monitor.name)
+                .unwrap_or_else(|| {
+                    smithay::output::Output::new(
+                        monitor.name.clone(),
+                        smithay::output::PhysicalProperties {
+                            size: (0, 0).into(),
+                            subpixel: smithay::output::Subpixel::Unknown,
+                            make: "Lince".into(),
+                            model: "Park".into(),
+                        },
+                    )
+                });
             let actual_mode = smithay::output::Mode::from(mode);
             if output.current_mode().is_none() {
-                output.change_current_state(Some(actual_mode), Some(crate::server::output_transform(rotation)), Some(smithay::output::Scale::Fractional(scale)),
-                    Some((monitor.origin[0], monitor.origin[1]).into()));
+                output.change_current_state(
+                    Some(actual_mode),
+                    Some(crate::server::output_transform(rotation)),
+                    Some(smithay::output::Scale::Fractional(scale)),
+                    Some((monitor.origin[0], monitor.origin[1]).into()),
+                );
                 output.set_preferred(actual_mode);
             }
-            if let Some(head) = catalog.iter_mut().find(|head| head.id == id) { head.position = monitor.origin; }
-            let adaptive_sync = preferences.get(&monitor.name).is_some_and(|preference| preference.adaptive_sync);
-            let color = preferences.get(&monitor.name).map_or(Default::default(), |preference| preference.color);
-            screens.push(PlannedOutput { crtc, connector: info.handle(), mode, id, output, monitor: monitor.clone(), scale, rotation, adaptive_sync, color, color_restore: None });
+            if let Some(head) = catalog.iter_mut().find(|head| head.id == id) {
+                head.position = monitor.origin;
+            }
+            let adaptive_sync = preferences
+                .get(&monitor.name)
+                .is_some_and(|preference| preference.adaptive_sync);
+            let color = preferences
+                .get(&monitor.name)
+                .map_or(Default::default(), |preference| preference.color);
+            screens.push(PlannedOutput {
+                crtc,
+                connector: info.handle(),
+                mode,
+                id,
+                output,
+                monitor: monitor.clone(),
+                scale,
+                rotation,
+                adaptive_sync,
+                color,
+                color_restore: None,
+            });
         }
         let size = [x as u32, height as u32];
-        let plan = OutputPlan { screens, catalog, size, strict };
+        let plan = OutputPlan {
+            screens,
+            catalog,
+            size,
+            strict,
+        };
         plan.validate()?;
         Ok(plan)
     }
 
-    fn render(
-        &mut self,
-        composition: &mut Composition,
-        desktop: &mut Desktop,
-    ) -> io::Result<bool> {
+    fn render(&mut self, composition: &mut Composition, desktop: &mut Desktop) -> io::Result<bool> {
         let Some(completed) = desktop
             .pending
             .as_ref()
@@ -803,42 +1100,84 @@ impl Hardware {
         };
         if self.native_color.is_none() {
             let ready = composition.linear_color_available()
-                && completed.frame.encoding == lince_interface::host::color::NativeEncoding::LinearRelative;
+                && completed.frame.encoding
+                    == lince_interface::host::color::NativeEncoding::LinearRelative;
             self.native_color = Some(ready);
-            if ready { desktop.server.enable_hdr_color_management()?; }
-            else { desktop.server.enable_sdr_color_management(); }
+            if ready {
+                desktop.server.enable_hdr_color_management()?;
+            } else {
+                desktop.server.enable_sdr_color_management();
+            }
             self.rescan(&mut desktop.server)?;
         }
         let viewports = desktop.server.output_viewports();
         for screen in self.screens.values_mut() {
-            if !screen.power.on { continue; }
-            if screen.pending { continue; }
-            let Some((_, viewport)) = viewports.iter().find(|(_, viewport)| viewport.id == screen.id) else { continue };
+            if !screen.power.on {
+                continue;
+            }
+            if screen.pending {
+                continue;
+            }
+            let Some((_, viewport)) = viewports
+                .iter()
+                .find(|(_, viewport)| viewport.id == screen.id)
+            else {
+                continue;
+            };
             let source = viewport.source_size();
             let size = (source[0] as i32, source[1] as i32);
             let format = screen.color.format();
-            if screen.texture.as_ref().is_none_or(|texture| texture.size().w != size.0 || texture.size().h != size.1 || texture.format() != Some(format)) {
-                screen.texture = Some(self.renderer.create_buffer(format, size.into()).map_err(error)?);
+            if screen.texture.as_ref().is_none_or(|texture| {
+                texture.size().w != size.0
+                    || texture.size().h != size.1
+                    || texture.format() != Some(format)
+            }) {
+                screen.texture = Some(
+                    self.renderer
+                        .create_buffer(format, size.into())
+                        .map_err(error)?,
+                );
             }
             let texture = screen.texture.as_mut().unwrap();
-            let composition_started = (completed.frame.traced_render.is_some() && !desktop.server.locked())
-                .then(crate::presentation::frame_trace::timestamp);
-            let gpu_sample = composition_started.zip(completed.frame.traced_render)
-                .and_then(|(started, render)| self.gles_timing.begin(&mut self.renderer, render, screen.id.0, started));
-            let host_started = composition_started.map(|_| crate::presentation::frame_trace::timestamp());
-            let owner_started = composition_started.map(|_| crate::presentation::frame_trace::owner_cpu_timestamp());
+            let composition_started = (completed.frame.traced_render.is_some()
+                && !desktop.server.locked())
+            .then(crate::presentation::frame_trace::timestamp);
+            let gpu_sample = composition_started
+                .zip(completed.frame.traced_render)
+                .and_then(|(started, render)| {
+                    self.gles_timing
+                        .begin(&mut self.renderer, render, screen.id.0, started)
+                });
+            let host_started =
+                composition_started.map(|_| crate::presentation::frame_trace::timestamp());
+            let owner_started = composition_started
+                .map(|_| crate::presentation::frame_trace::owner_cpu_timestamp());
             let rendered_scene = (|| {
                 let mut target = self.renderer.bind(texture).map_err(error)?;
-                composition.render_output(&mut self.renderer, &mut target, viewport, &mut desktop.server, Some(completed.as_ref()), desktop.pointer, screen.color.output())
+                composition.render_output(
+                    &mut self.renderer,
+                    &mut target,
+                    viewport,
+                    &mut desktop.server,
+                    Some(completed.as_ref()),
+                    desktop.pointer,
+                    screen.color.output(),
+                )
             })();
             let presented = match rendered_scene {
                 Ok(presented) => Arc::new(presented),
                 Err(failure) => {
-                    if let Some(sample) = gpu_sample { self.gles_timing.cancel(&mut self.renderer, sample); }
+                    if let Some(sample) = gpu_sample {
+                        self.gles_timing.cancel(&mut self.renderer, sample);
+                    }
                     return Err(failure);
                 }
             };
-            let element = crate::desktop::renderer::output_element(&self.renderer, texture.clone(), viewport.raster.scale[0]);
+            let element = crate::desktop::renderer::output_element(
+                &self.renderer,
+                texture.clone(),
+                viewport.raster.scale[0],
+            );
             let elements = [element];
             let frame = screen
                 .output
@@ -850,8 +1189,9 @@ impl Hardware {
                 )
                 .map_err(error);
             let host_returned = host_started.map(|_| crate::presentation::frame_trace::timestamp());
-            let owner_cpu_us = owner_started.map(|started|
-                crate::presentation::frame_trace::owner_cpu_timestamp().saturating_sub(started));
+            let owner_cpu_us = owner_started.map(|started| {
+                crate::presentation::frame_trace::owner_cpu_timestamp().saturating_sub(started)
+            });
             let mut hardware_query_queued = false;
             if let Some(sample) = gpu_sample {
                 if frame.is_ok() {
@@ -861,56 +1201,80 @@ impl Hardware {
                 }
             }
             let frame = frame?;
-            if let (Some((started, render)), Some((host_started, host_returned))) =
-                (composition_started.zip(completed.frame.traced_render), host_started.zip(host_returned))
-            {
-                crate::presentation::frame_trace::record(serde_json::json!({"event":"gles-host-return",
+            if let (Some((started, render)), Some((host_started, host_returned))) = (
+                composition_started.zip(completed.frame.traced_render),
+                host_started.zip(host_returned),
+            ) {
+                crate::presentation::frame_trace::record(
+                    serde_json::json!({"event":"gles-host-return",
                     "render":render, "output":screen.id.0, "composition_started_us":started,
                     "frame":completed.sequence, "started_us":host_started,
                     "monotonic_us":host_returned, "damaged":!frame.is_empty,
                     "owner_cpu_us":owner_cpu_us,
                     "hardware_query_queued":hardware_query_queued,
                     "sampled_native_render":presented.native_render,
-                    "native_image_available":completed.frame.has_output_image(screen.id)}));
+                    "native_image_available":completed.frame.has_output_image(screen.id)}),
+                );
             }
             if !frame.is_empty {
                 screen.pacing.cancel();
                 let needs_sync = frame.needs_sync();
-                let rendered_sync = if let smithay::backend::drm::compositor::PrimaryPlaneElement::Swapchain(
+                let rendered_sync =
+                    if let smithay::backend::drm::compositor::PrimaryPlaneElement::Swapchain(
                         element,
                     ) = &frame.primary_element
-                {
-                    Some(element.sync.clone())
-                } else { None };
+                    {
+                        Some(element.sync.clone())
+                    } else {
+                        None
+                    };
                 drop(frame);
                 let queued = Queued {
-                        id: screen.id,
-                        frame: completed.clone(),
-                        scene: presented.clone(),
-                        composition_started,
-                        adaptive_sync: screen.adaptive_sync.prepared,
-                        color: screen.color.submitted(),
-                        power: power::Frame::capture(&desktop.server, screen.id, screen.power.epoch)
-                            .ok_or_else(|| io::Error::other("The rendered output owner was retired before submission."))?,
-                    };
+                    id: screen.id,
+                    frame: completed.clone(),
+                    scene: presented.clone(),
+                    composition_started,
+                    adaptive_sync: screen.adaptive_sync.prepared,
+                    color: screen.color.submitted(),
+                    power: power::Frame::capture(&desktop.server, screen.id, screen.power.epoch)
+                        .ok_or_else(|| {
+                            io::Error::other(
+                                "The rendered output owner was retired before submission.",
+                            )
+                        })?,
+                };
                 if !power::may_submit(screen, &desktop.server)
-                    || !queued.power.current(&desktop.server, screen.id, screen.power.epoch)
+                    || !queued
+                        .power
+                        .current(&desktop.server, screen.id, screen.power.epoch)
                     || queued.scene.locked != desktop.server.locked()
                 {
                     let sync = rendered_sync.unwrap_or_else(|| presented.sync.clone());
                     if !sync.is_reached() {
                         let watch = composition.watch(sync.clone())?;
-                        self.retired.push(Prepared { frame: queued, sync, _watch: watch });
+                        self.retired.push(Prepared {
+                            frame: queued,
+                            sync,
+                            _watch: watch,
+                        });
                     }
                     power::cancel_unsent(screen, &mut desktop.server);
                     continue;
                 }
                 if let Some(sync) = rendered_sync.filter(|sync| needs_sync && !sync.is_reached()) {
                     let watch = composition.watch(sync.clone())?;
-                    screen.prepared = Some(Prepared { frame: queued, sync, _watch: watch });
+                    screen.prepared = Some(Prepared {
+                        frame: queued,
+                        sync,
+                        _watch: watch,
+                    });
                 } else {
                     if queued.composition_started.is_some() {
-                        queued.trace("queue-attempt", crate::presentation::frame_trace::timestamp(), None);
+                        queued.trace(
+                            "queue-attempt",
+                            crate::presentation::frame_trace::timestamp(),
+                            None,
+                        );
                     }
                     screen.output.queue_frame(queued).map_err(error)?;
                     presented.submitted(&mut desktop.server, Some(screen.id));
@@ -918,16 +1282,26 @@ impl Hardware {
                 screen.pending = true;
             } else {
                 drop(frame);
-                if let Some(power) = power::Frame::capture(&desktop.server, screen.id, screen.power.epoch)
+                if let Some(power) =
+                    power::Frame::capture(&desktop.server, screen.id, screen.power.epoch)
                     && power::may_submit(screen, &desktop.server)
                     && presented.locked == desktop.server.locked()
                 {
-                    screen.pacing.defer(Instant::now(), Queued {
-                        id: screen.id, frame: completed.clone(), scene: presented,
-                        composition_started: None,
-                        adaptive_sync: None, color: screen.color.submitted(), power,
-                    });
-                    lince_interface::host::performance::count(lince_interface::host::performance::Count::UnchangedFrameDeferred);
+                    screen.pacing.defer(
+                        Instant::now(),
+                        Queued {
+                            id: screen.id,
+                            frame: completed.clone(),
+                            scene: presented,
+                            composition_started: None,
+                            adaptive_sync: None,
+                            color: screen.color.submitted(),
+                            power,
+                        },
+                    );
+                    lince_interface::host::performance::count(
+                        lince_interface::host::performance::Count::UnchangedFrameDeferred,
+                    );
                 }
             }
         }
@@ -936,25 +1310,49 @@ impl Hardware {
     }
 
     fn callback_timeout(&self) -> Option<std::time::Duration> {
-        if !self.active { return None; }
+        if !self.active {
+            return None;
+        }
         let now = Instant::now();
-        self.screens.values().filter(|screen| screen.power.on && !screen.pending)
-            .filter_map(|screen| screen.pacing.timeout(now)).min()
+        self.screens
+            .values()
+            .filter(|screen| screen.power.on && !screen.pending)
+            .filter_map(|screen| screen.pacing.timeout(now))
+            .min()
     }
 
     fn flush_estimated(&mut self, desktop: &mut Desktop, time: u32) -> io::Result<()> {
         let now = Instant::now();
         for screen in self.screens.values_mut() {
-            if !screen.power.on { screen.pacing.cancel(); continue; }
-            if screen.pending { continue; }
-            let Some(queued) = screen.pacing.take_due(now) else { continue; };
-            if !queued.power.current(&desktop.server, screen.id, screen.power.epoch)
+            if !screen.power.on {
+                screen.pacing.cancel();
+                continue;
+            }
+            if screen.pending {
+                continue;
+            }
+            let Some(queued) = screen.pacing.take_due(now) else {
+                continue;
+            };
+            if !queued
+                .power
+                .current(&desktop.server, screen.id, screen.power.epoch)
                 || queued.scene.locked != desktop.server.locked()
-            { continue; }
+            {
+                continue;
+            }
             screen.protected = queued.scene.locked;
-            lince_interface::host::performance::count(lince_interface::host::performance::Count::UnchangedFrameDelivered);
-            desktop.output_presented(screen.id, queued.frame, queued.scene,
-                crate::desktop::renderer::capture::monotonic(), time, false)?;
+            lince_interface::host::performance::count(
+                lince_interface::host::performance::Count::UnchangedFrameDelivered,
+            );
+            desktop.output_presented(
+                screen.id,
+                queued.frame,
+                queued.scene,
+                crate::desktop::renderer::capture::monotonic(),
+                time,
+                false,
+            )?;
         }
         Ok(())
     }
@@ -968,11 +1366,22 @@ impl Hardware {
                 power::cancel_unsent(screen, server);
                 continue;
             }
-            if screen.prepared.as_ref().is_some_and(|prepared| !prepared.frame.power.current(server, screen.id, screen.power.epoch)) {
+            if screen.prepared.as_ref().is_some_and(|prepared| {
+                !prepared
+                    .frame
+                    .power
+                    .current(server, screen.id, screen.power.epoch)
+            }) {
                 let prepared = screen.prepared.take().unwrap();
                 if crate::runtime::tracing_frames() {
-                    eprintln!("Park prepared frame retired: {} epoch {} current_epoch {} protected {} locked {}",
-                        screen.id.0, prepared.frame.power.epoch, screen.power.epoch, prepared.frame.scene.locked, server.locked());
+                    eprintln!(
+                        "Park prepared frame retired: {} epoch {} current_epoch {} protected {} locked {}",
+                        screen.id.0,
+                        prepared.frame.power.epoch,
+                        screen.power.epoch,
+                        prepared.frame.scene.locked,
+                        server.locked()
+                    );
                 }
                 self.retired.push(prepared);
                 screen.pending = false;
@@ -981,11 +1390,19 @@ impl Hardware {
                 invalidated = true;
                 continue;
             }
-            if screen.prepared.as_ref().is_some_and(|prepared| prepared.sync.is_reached()) {
+            if screen
+                .prepared
+                .as_ref()
+                .is_some_and(|prepared| prepared.sync.is_reached())
+            {
                 let prepared = screen.prepared.take().unwrap();
                 let scene = prepared.frame.scene.clone();
                 if prepared.frame.composition_started.is_some() {
-                    prepared.frame.trace("fence-ready-queue-attempt", crate::presentation::frame_trace::timestamp(), None);
+                    prepared.frame.trace(
+                        "fence-ready-queue-attempt",
+                        crate::presentation::frame_trace::timestamp(),
+                        None,
+                    );
                 }
                 if let Err(failure) = screen.output.queue_frame(prepared.frame) {
                     screen.pending = false;
@@ -1006,97 +1423,200 @@ impl Hardware {
     ) -> io::Result<()> {
         desktop.flush_touch()?;
         self.devices.absolute_contacts(desktop.touch_devices());
-        if matches!(&event, InputEvent::Keyboard { .. } | InputEvent::PointerMotion { .. }
-            | InputEvent::PointerMotionAbsolute { .. } | InputEvent::PointerButton { .. }
-            | InputEvent::PointerAxis { .. } | InputEvent::GestureSwipeBegin { .. }
-            | InputEvent::GestureSwipeUpdate { .. } | InputEvent::GestureSwipeEnd { .. }
-            | InputEvent::GesturePinchBegin { .. } | InputEvent::GesturePinchUpdate { .. }
-            | InputEvent::GesturePinchEnd { .. } | InputEvent::GestureHoldBegin { .. }
-            | InputEvent::GestureHoldEnd { .. } | InputEvent::TouchDown { .. } | InputEvent::TouchMotion { .. }
-            | InputEvent::TouchUp { .. } | InputEvent::TabletToolAxis { .. } | InputEvent::TabletToolProximity { .. }
-            | InputEvent::TabletToolTip { .. } | InputEvent::TabletToolButton { .. }) { desktop.server.activity(); }
+        if matches!(
+            &event,
+            InputEvent::Keyboard { .. }
+                | InputEvent::PointerMotion { .. }
+                | InputEvent::PointerMotionAbsolute { .. }
+                | InputEvent::PointerButton { .. }
+                | InputEvent::PointerAxis { .. }
+                | InputEvent::GestureSwipeBegin { .. }
+                | InputEvent::GestureSwipeUpdate { .. }
+                | InputEvent::GestureSwipeEnd { .. }
+                | InputEvent::GesturePinchBegin { .. }
+                | InputEvent::GesturePinchUpdate { .. }
+                | InputEvent::GesturePinchEnd { .. }
+                | InputEvent::GestureHoldBegin { .. }
+                | InputEvent::GestureHoldEnd { .. }
+                | InputEvent::TouchDown { .. }
+                | InputEvent::TouchMotion { .. }
+                | InputEvent::TouchUp { .. }
+                | InputEvent::TabletToolAxis { .. }
+                | InputEvent::TabletToolProximity { .. }
+                | InputEvent::TabletToolTip { .. }
+                | InputEvent::TabletToolButton { .. }
+        ) {
+            desktop.server.activity();
+        }
         match event {
             InputEvent::DeviceAdded { device } => {
                 if let Some(generation) = self.devices.generation(device.sysname()) {
-                    desktop.tablet_device_removed(device.sysname(), generation, crate::desktop::renderer::capture::monotonic().as_millis() as u32);
+                    desktop.tablet_device_removed(
+                        device.sysname(),
+                        generation,
+                        crate::desktop::renderer::capture::monotonic().as_millis() as u32,
+                    );
                 }
                 desktop.touch_device_removed(device.sysname());
                 self.devices.added(device.clone());
                 if device.has_capability(smithay::reexports::input::DeviceCapability::TabletTool)
                     && let Some(snapshot) = self.devices.absolute_device(&device)
-                    && !desktop.server.tablet_device(snapshot.generation, smithay::wayland::tablet_manager::TabletDescriptor::from(&device)) {
-                    self.devices.tablet_problem(&device, "Park's tablet inventory is full; this device is unavailable.");
+                    && !desktop.server.tablet_device(
+                        snapshot.generation,
+                        smithay::wayland::tablet_manager::TabletDescriptor::from(&device),
+                    )
+                {
+                    self.devices.tablet_problem(
+                        &device,
+                        "Park's tablet inventory is full; this device is unavailable.",
+                    );
                 }
             }
             InputEvent::DeviceRemoved { device } => {
-                if !self.devices.registered(&device) { return Ok(()); }
+                if !self.devices.registered(&device) {
+                    return Ok(());
+                }
                 desktop.touch_device_removed(device.sysname());
                 if let Some(snapshot) = self.devices.absolute_device(&device) {
-                    desktop.tablet_device_removed(device.sysname(), snapshot.generation, crate::desktop::renderer::capture::monotonic().as_millis() as u32);
+                    desktop.tablet_device_removed(
+                        device.sysname(),
+                        snapshot.generation,
+                        crate::desktop::renderer::capture::monotonic().as_millis() as u32,
+                    );
                 }
-                desktop.cancel_device_gestures(device.sysname(), crate::desktop::renderer::capture::monotonic().as_millis() as u32);
+                desktop.cancel_device_gestures(
+                    device.sysname(),
+                    crate::desktop::renderer::capture::monotonic().as_millis() as u32,
+                );
                 self.devices.removed(device.sysname());
             }
             InputEvent::TouchDown { event } => {
                 if let Some(device) = self.devices.absolute_device(&event.device()) {
                     let point = event.position_transformed((1, 1).into());
-                    desktop.touch_down(&device, event.slot().into(), [point.x, point.y], event.time_msec());
+                    desktop.touch_down(
+                        &device,
+                        event.slot().into(),
+                        [point.x, point.y],
+                        event.time_msec(),
+                    );
                 }
             }
             InputEvent::TouchMotion { event } => {
                 if let Some(device) = self.devices.absolute_device(&event.device()) {
                     let point = event.position_transformed((1, 1).into());
-                    desktop.touch_motion(&device, event.slot().into(), [point.x, point.y], event.time_msec());
+                    desktop.touch_motion(
+                        &device,
+                        event.slot().into(),
+                        [point.x, point.y],
+                        event.time_msec(),
+                    );
                 }
             }
             InputEvent::TouchUp { event } => {
-                if let Some(device) = self.devices.absolute_device(&event.device()) { desktop.touch_up(&device, event.slot().into(), event.time_msec()); }
+                if let Some(device) = self.devices.absolute_device(&event.device()) {
+                    desktop.touch_up(&device, event.slot().into(), event.time_msec());
+                }
             }
-            InputEvent::TouchCancel { event } => { if self.devices.registered(&event.device()) { desktop.cancel_touch(); } }
-            InputEvent::TouchFrame { event } => { if self.devices.registered(&event.device()) { desktop.server.touch_frame(); } }
+            InputEvent::TouchCancel { event } => {
+                if self.devices.registered(&event.device()) {
+                    desktop.cancel_touch();
+                }
+            }
+            InputEvent::TouchFrame { event } => {
+                if self.devices.registered(&event.device()) {
+                    desktop.server.touch_frame();
+                }
+            }
             InputEvent::TabletToolProximity { event } => {
-                let phase = if event.state() == ProximityState::In { lince_interface::host::input::TabletPhase::Enter } else { lince_interface::host::input::TabletPhase::Leave };
+                let phase = if event.state() == ProximityState::In {
+                    lince_interface::host::input::TabletPhase::Enter
+                } else {
+                    lince_interface::host::input::TabletPhase::Leave
+                };
                 self.tablet_input(desktop, &event, phase);
             }
             InputEvent::TabletToolAxis { event } => {
-                self.tablet_input(desktop, &event, lince_interface::host::input::TabletPhase::Motion);
+                self.tablet_input(
+                    desktop,
+                    &event,
+                    lince_interface::host::input::TabletPhase::Motion,
+                );
             }
             InputEvent::TabletToolTip { event } => {
-                let phase = lince_interface::host::input::TabletPhase::Tip(TabletToolTipEvent::tip_state(&event) == TabletToolTipState::Down);
+                let phase = lince_interface::host::input::TabletPhase::Tip(
+                    TabletToolTipEvent::tip_state(&event) == TabletToolTipState::Down,
+                );
                 self.tablet_input(desktop, &event, phase);
             }
             InputEvent::TabletToolButton { event } => {
-                let phase = lince_interface::host::input::TabletPhase::Button { code: event.button(), pressed: TabletToolButtonEvent::button_state(&event) == ButtonState::Pressed };
+                let phase = lince_interface::host::input::TabletPhase::Button {
+                    code: event.button(),
+                    pressed: TabletToolButtonEvent::button_state(&event) == ButtonState::Pressed,
+                };
                 self.tablet_input(desktop, &event, phase);
             }
             InputEvent::GestureSwipeBegin { event } => {
                 self.devices.gesture(event.device().sysname(), 0, true);
-                desktop.gesture_swipe_begin(event.device().sysname(), event.fingers(), event.time_msec());
+                desktop.gesture_swipe_begin(
+                    event.device().sysname(),
+                    event.fingers(),
+                    event.time_msec(),
+                );
             }
             InputEvent::GestureSwipeUpdate { event } => {
-                desktop.gesture_swipe_update(event.device().sysname(), [event.delta_x(), event.delta_y()], event.time_msec());
+                desktop.gesture_swipe_update(
+                    event.device().sysname(),
+                    [event.delta_x(), event.delta_y()],
+                    event.time_msec(),
+                );
             }
             InputEvent::GestureSwipeEnd { event } => {
-                desktop.gesture_swipe_end(event.device().sysname(), event.cancelled(), event.time_msec());
+                desktop.gesture_swipe_end(
+                    event.device().sysname(),
+                    event.cancelled(),
+                    event.time_msec(),
+                );
                 self.devices.gesture(event.device().sysname(), 0, false);
             }
             InputEvent::GesturePinchBegin { event } => {
                 self.devices.gesture(event.device().sysname(), 1, true);
-                desktop.gesture_pinch_begin(event.device().sysname(), event.fingers(), event.time_msec());
+                desktop.gesture_pinch_begin(
+                    event.device().sysname(),
+                    event.fingers(),
+                    event.time_msec(),
+                );
             }
             InputEvent::GesturePinchUpdate { event } => {
-                desktop.gesture_pinch_update(event.device().sysname(), [event.delta_x(), event.delta_y()], event.scale(), event.rotation(), event.time_msec());
+                desktop.gesture_pinch_update(
+                    event.device().sysname(),
+                    [event.delta_x(), event.delta_y()],
+                    event.scale(),
+                    event.rotation(),
+                    event.time_msec(),
+                );
             }
             InputEvent::GesturePinchEnd { event } => {
-                desktop.gesture_pinch_end(event.device().sysname(), event.cancelled(), event.time_msec());
+                desktop.gesture_pinch_end(
+                    event.device().sysname(),
+                    event.cancelled(),
+                    event.time_msec(),
+                );
                 self.devices.gesture(event.device().sysname(), 1, false);
             }
             InputEvent::GestureHoldBegin { event } => {
                 self.devices.gesture(event.device().sysname(), 2, true);
-                desktop.gesture_hold_begin(event.device().sysname(), event.fingers(), event.time_msec());
+                desktop.gesture_hold_begin(
+                    event.device().sysname(),
+                    event.fingers(),
+                    event.time_msec(),
+                );
             }
             InputEvent::GestureHoldEnd { event } => {
-                desktop.gesture_hold_end(event.device().sysname(), event.cancelled(), event.time_msec());
+                desktop.gesture_hold_end(
+                    event.device().sysname(),
+                    event.cancelled(),
+                    event.time_msec(),
+                );
                 self.devices.gesture(event.device().sysname(), 2, false);
             }
             InputEvent::Keyboard { event } => {
@@ -1126,7 +1646,11 @@ impl Hardware {
                 let _timing = crate::runtime::latency::Dispatch::device(event.time());
                 let delta = event.delta();
                 let unaccelerated = event.delta_unaccel();
-                desktop.relative_motion([delta.x, delta.y], [unaccelerated.x, unaccelerated.y], event.time());
+                desktop.relative_motion(
+                    [delta.x, delta.y],
+                    [unaccelerated.x, unaccelerated.y],
+                    event.time(),
+                );
                 let displayed = desktop.displayed_pointer();
                 let mut proposed = [displayed[0] + delta.x, displayed[1] + delta.y];
                 self.clamp_pointer(&mut proposed);
@@ -1149,14 +1673,17 @@ impl Hardware {
                     event.state() == ButtonState::Pressed,
                     event.time_msec(),
                 )?;
-            },
+            }
             InputEvent::PointerAxis { event } => {
                 let _timing = crate::runtime::latency::Dispatch::device(event.time());
                 let mut delta = [0.0; 2];
                 let mut frame = AxisFrame::new(event.time_msec()).source(event.source());
                 for (index, axis) in [Axis::Horizontal, Axis::Vertical].into_iter().enumerate() {
-                    if event.source() == AxisSource::Finger && let Some(amount) = event.amount(axis) {
-                        self.devices.scroll(event.device().sysname(), index as u8, amount != 0.0);
+                    if event.source() == AxisSource::Finger
+                        && let Some(amount) = event.amount(axis)
+                    {
+                        self.devices
+                            .scroll(event.device().sysname(), index as u8, amount != 0.0);
                     }
                     delta[index] = event
                         .amount(axis)
@@ -1204,8 +1731,14 @@ impl Hardware {
 
 impl Drop for Hardware {
     fn drop(&mut self) {
-        for prepared in self.retired.iter().chain(self.screens.values().filter_map(|screen| screen.prepared.as_ref())) {
-            if !prepared.sync.is_reached() { let _ = prepared.sync.wait(); }
+        for prepared in self.retired.iter().chain(
+            self.screens
+                .values()
+                .filter_map(|screen| screen.prepared.as_ref()),
+        ) {
+            if !prepared.sync.is_reached() {
+                let _ = prepared.sync.wait();
+            }
         }
     }
 }

@@ -1,3 +1,25 @@
+// non-lean-yet
+// Scope: struct Scenario, struct Limits, fn default_rule_evaluations, struct Cell.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 199, 278, 288.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 424.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 98.
+// - [Clippy probe: clippy::manual_range_contains] manual `!RangeInclusive::contains`
+//   implementation. Sites 329.
+// - [Clippy probe: clippy::match_same_arms] these match arms have identical bodies. Sites 506, 539,
+//   559.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 198, 206, 488.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 22, 27, 28, 30, 32, 33, 34, 55, 56, 58, 60, 61, 66,
+//   67, 68, 69, 74, 75, 76, 81, 82, 83, 84, 89, 90, 91, 92, 93, 98, 99, 100, 101, 103, 104, 106,
+//   107, 109, 110, 112, 113, 115, 116, 118, 119, 120, 122, 124, 125, 126, 128, 130, 131, 132, 134,
+//   135, 136, 137, 138, 139, 141, 142, 144, 145, 146, 147, 149, 150, 151, 152, 153, 155, 156, 158,
+//   159, 160, 161, 163, 164, 166, 167, 168, 169, 171, 172, 174, 175, 176, 178, 179, 180, 182, 183,
+//   198, 206, 488.
+
 use std::collections::BTreeSet;
 
 use engine::actions::Action;

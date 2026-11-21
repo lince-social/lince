@@ -1,10 +1,30 @@
+// non-lean-yet
+// Scope: struct Reference, fn references, enum State, struct Unresolved.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 172, 175, 217, 226, 227.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 53, 54, 55, 57,
+//   59, 113, 150, 152, 159, 161, 164, 166, 167, 171, 177, 179, 193, 199, 205, 207, 213, 225, 227.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 73.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 21, 93.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 10, 11,
+//   12, 13, 14, 15, 16, 17, 18, 21, 73, 74, 75, 76, 80, 81, 82, 83, 87, 88, 89, 90, 93.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites references:
+//   String (21), resolve: String (93).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   220.
+
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
+
+use serde::{Deserialize, Serialize};
+
 use super::{
     receipt::{Content, Event, Publication, Scope},
     receipt_history::{self, Projection},
 };
 use crate::karma::CanonicalHash;
-use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Reference {

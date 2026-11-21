@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct Scalar32, struct Scalar64, struct Vector, enum Reason.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 443.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (444, 452, 453).
+
 use super::*;
 use crate::native::{
     area::Direction,

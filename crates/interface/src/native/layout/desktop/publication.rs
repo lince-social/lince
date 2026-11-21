@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: type Corners, struct ResolvedItem, fn clip_matches, fn assign_clip.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   290.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (279, 284).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 278.
+
 use super::*;
 
 pub(super) type Corners = [[f64; 2]; 4];

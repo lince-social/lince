@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: trait BufferHandler.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 //! Buffer management traits.
 //!
 //! This module provides the [`BufferHandler`] trait to notify compositors that a

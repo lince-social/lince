@@ -1,7 +1,20 @@
+// non-lean-yet
+// Scope: fn six_devices_exchange_voice_over_fifteen_mesh_links.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 18, 19.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 68, 69.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   68.
+// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 83.
+
 #![cfg(feature = "native")]
 
-use std::collections::{BTreeMap, BTreeSet};
-use std::time::Duration;
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    time::Duration,
+};
 
 use lince_media::{
     audio::FRAME_SAMPLES,

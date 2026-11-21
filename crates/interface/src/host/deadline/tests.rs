@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn repeated_requests_keep_the_first_deadline_and_independent_owners_both_fire, fn
+//   cancellation_and_drop_release_the_target_without_a_late_wake, fn
+//   replacing_the_callback_cannot_retain_the_previous_target, fn
+//   a_fired_callback_can_rearm_before_its_task_finishes.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[tokio::test]

@@ -1,8 +1,17 @@
-use super::*;
+// non-lean-yet
+// Scope: struct Client, enum Control, fn run.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 344.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   449.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (73, 84, 155, 156, 230, 257, 258, 262, 272, 363, 405).
+
 use std::{
     io::{Seek, SeekFrom, Write},
     os::fd::AsFd,
 };
+
 use wayland_client::{
     Connection, Dispatch, EventQueue, QueueHandle, delegate_noop,
     protocol::{
@@ -14,6 +23,8 @@ use wayland_protocols::xdg::shell::client::{
     xdg_popup, xdg_positioner, xdg_surface, xdg_toplevel, xdg_wm_base,
 };
 use wayland_protocols_wlr::layer_shell::v1::client::{zwlr_layer_shell_v1, zwlr_layer_surface_v1};
+
+use super::*;
 
 #[derive(Default)]
 struct Client {
@@ -171,7 +182,8 @@ pub(super) fn run(
             client.popup = Some((surface, xdg, popup));
         }
         if let Err(error) = connection.flush()
-            && !matches!(&error, wayland_client::backend::WaylandError::Io(error) if error.kind() == std::io::ErrorKind::WouldBlock) {
+            && !matches!(&error, wayland_client::backend::WaylandError::Io(error) if error.kind() == std::io::ErrorKind::WouldBlock)
+        {
             return Err(failure(error.to_string()));
         }
         queue
@@ -193,7 +205,8 @@ pub(super) fn run(
             .map_err(|error| failure(error.to_string()))?;
             if poll[0].revents().contains(rustix::event::PollFlags::IN) {
                 if let Err(error) = read.read() {
-                    if matches!(&error, wayland_client::backend::WaylandError::Io(error) if error.kind() == std::io::ErrorKind::WouldBlock) {
+                    if matches!(&error, wayland_client::backend::WaylandError::Io(error) if error.kind() == std::io::ErrorKind::WouldBlock)
+                    {
                         continue;
                     }
                     if stop.load(Ordering::Acquire) {

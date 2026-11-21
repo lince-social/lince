@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: mod auto_directional_navigation, mod interaction_states, mod measurement, mod update.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 101.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 97.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 16, 17,
+//   21, 24.
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 42, 43, 44, 48, 49, 50, 51, 70.
+
 #![expect(missing_docs, reason = "Not all docs are written yet, see #3492.")]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![doc(

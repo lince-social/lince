@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod persistence, mod tests, mod ui, struct RecorderCastle.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 95.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (95, 107, 146).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 169.
+
 mod persistence;
 #[cfg(test)]
 mod tests;

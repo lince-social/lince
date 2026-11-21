@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: mod admission, fn pose, fn close, fn
+//   room_wall_mount_preserves_all_kanban_parts_headers_undo_and_serialized_placement.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::{
     canvas_host::Identity,

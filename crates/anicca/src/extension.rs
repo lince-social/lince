@@ -1,5 +1,16 @@
-use std::collections::HashSet;
-use std::fmt::Write;
+// non-lean-yet
+// Scope: fn project, fn validate, fn text, fn object.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 36, 71.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   116, 124, 135, 185, 200.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   102.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 8, 155.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 8, 155.
+
+use std::{collections::HashSet, fmt::Write};
 
 use serde_json::{Map, Value};
 

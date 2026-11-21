@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn criterion_benchmark.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use criterion::{criterion_group, criterion_main, Criterion};
 use smithay::utils::user_data::UserDataMap;
 

@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: const MANAGER_VERSION, struct WpRelativePointerHandle, struct RelativePointerUserData,
+//   struct RelativePointerManagerState.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 151, 187, 211,
+//   212.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (117, 128, 148, 209, 276).
+
 //! Utilities for relative pointer support
 //!
 //! [PointerHandle::relative_motion] sends relative pointer events to any

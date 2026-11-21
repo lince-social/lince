@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: type DeferredPrepassViewQueryData, fn early_deferred_prepass, fn late_deferred_prepass, fn
+//   run_deferred_prepass_system.
+// BeautifulRust (baseline lines):
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 35, 38, 69, 72, 120.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 67.
+
 use bevy_camera::{MainPassResolutionOverride, Viewport};
 use bevy_ecs::prelude::*;
 use bevy_render::occlusion_culling::OcclusionCulling;

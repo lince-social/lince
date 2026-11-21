@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn historical_meaning_references_survive_new_definitions_without_equivalence_by_label.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use store::Store;
 
 #[tokio::test]

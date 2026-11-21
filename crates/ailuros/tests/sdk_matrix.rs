@@ -1,11 +1,18 @@
+// non-lean-yet
+// Scope: fn setting, fn compile, fn
+//   actual_sdk_resets_test_mode_and_board_settings_between_compilations.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 15, 32, 35.
+
 #![cfg(test)]
+
+use std::{env::var_os, fs, path::Path};
 
 use lince_ailuros::{
     profile,
     project::{self, FirmwareMode, Toolchain},
     serial::Cancellation,
 };
-use std::{fs, path::Path};
 
 fn setting(cache: &str, name: &str) -> String {
     cache
@@ -20,7 +27,7 @@ fn setting(cache: &str, name: &str) -> String {
 fn compile(root: &Path, mode: FirmwareMode) -> String {
     eprintln!("Checking SDK project {} in {mode:?} mode", root.display());
     let cancellation = Cancellation::default();
-    let toolchain = if std::env::var_os("IDF_PATH").is_some() {
+    let toolchain = if var_os("IDF_PATH").is_some() {
         Toolchain::Environment
     } else {
         Toolchain::Nix
@@ -64,7 +71,7 @@ fn compile(root: &Path, mode: FirmwareMode) -> String {
 #[ignore = "Compiles ESP-IDF 5.5.2 through the pinned Nix SDK; never flashes hardware"]
 fn actual_sdk_resets_test_mode_and_board_settings_between_compilations() {
     let directory = tempfile::tempdir().unwrap();
-    let output = std::env::var_os("AILUROS_SDK_MATRIX_OUTPUT").map(std::path::PathBuf::from);
+    let output = var_os("AILUROS_SDK_MATRIX_OUTPUT").map(std::path::PathBuf::from);
     let directory = output.as_deref().unwrap_or(directory.path());
     if output.is_some() {
         fs::create_dir(directory).unwrap();

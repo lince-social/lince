@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: const MAX_BYTES, struct Picture, fn spawn, fn url.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 85.
+
 use super::raster::{self, Pixels};
 use super::*;
 use base64::Engine;

@@ -1,5 +1,12 @@
-use similar::{ChangeTag, TextDiff};
+// non-lean-yet
+// Scope: struct Edit, fn changes.
+// BeautifulRust (baseline lines):
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 6,
+//   7, 11, 39.
+
 use std::{ops::Range, time::Duration};
+
+use similar::{ChangeTag, TextDiff};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Edit {

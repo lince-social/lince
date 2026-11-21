@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct Exercise, fn main, fn activate, fn edit.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 223.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (36).
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites
+//   229.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (37, 61, 71, 73, 82, 110, 118, 127, 140, 141, 145, 153, 155, 156, 157, 162, 163,
+//   164, 169, 173, 179, 180, 181, 182, 186, 198, 205, 206, 221).
+
 use bevy::{
     diagnostic::FrameCount,
     input::{

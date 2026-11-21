@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn center, fn drag, fn
+//   actual_overview_pointer_drag_reorders_rows_transfers_once_and_cancels_without_losing_native_content,
+//   fn
+//   actual_first_free_canvas_drag_preserves_unmanaged_sands_in_active_inactive_and_spatial_views.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn center(canvas: &Presentation, entity: Entity) -> Vec2 {

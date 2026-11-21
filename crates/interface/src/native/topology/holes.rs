@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: type Polygon, struct Layer, struct Layers, struct Contexts.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 305, 336, 371,
+//   404, 411, 681.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (268, 708).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   207, 397, 598, 607, 650.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (681, 685, 691).
+
 use crate::native::{
     area::InfluenceArea,
     canvas::CanvasItem,

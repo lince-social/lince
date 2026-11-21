@@ -1,10 +1,17 @@
-use lince_map::{
-    Settings, TileStore,
-    region::{self, Progress},
-};
+// non-lean-yet
+// Scope: fn main.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 16, 17, 18.
+
 use std::{
     path::PathBuf,
     sync::{Arc, atomic::AtomicBool},
+};
+
+use lince_map::{
+    Settings, TileStore,
+    region::{self, Progress},
 };
 
 #[tokio::main]

@@ -1,10 +1,18 @@
+// non-lean-yet
+// Scope: fn record, fn scope, fn accepted_at, fn
+//   the_real_migration_has_strict_immutable_receipt_tables.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 101, 633.
+
 #![cfg(test)]
 
 use chrono::{DateTime, Utc};
 use nucleus::RecordKind;
 use serde_json::json;
-use store::Store;
-use store::operation_receipts::{NewOperationReceipt, OperationReceiptKey, ReceiptWrite};
+use store::{
+    Store,
+    operation_receipts::{NewOperationReceipt, OperationReceiptKey, ReceiptWrite},
+};
 
 async fn record(store: &Store, kind: RecordKind, head: &str) -> String {
     store::records::create(

@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: mod support, fn route, fn repeated_items_follow_their_routes_and_settle_independently, fn
+//   changing_a_route_requires_fresh_agreement_before_activation.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 mod support;

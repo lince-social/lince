@@ -1,3 +1,23 @@
+// non-lean-yet
+// Scope: mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 31, 35, 38, 88,
+//   157, 222, 230, 286, 288, 291, 292, 335, 340, 348, 390, 398, 425, 427, 430.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 363.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 282, 291, 329, 348, 421, 430, 469, 563, 653.
+// - [Clippy probe: clippy::if_not_else] unnecessary `!=` operation. Sites 411.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 643.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 363.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on a `Result`
+//   value. Sites 29.
+// - [Clippy probe: clippy::needless_collect] avoid using `collect()` when not needed. Sites 158.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 644.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use fiote::connection::{self, Connection, Profiles};
 

@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn merge_review, fn documents.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 9, 23, 39, 45,
+//   59, 63, 72, 84.
+
 use super::{Document, Review, view};
 
 fn merge_review(current: view::Bundle<'_>, incoming: view::Bundle<'_>) -> Result<Review, String> {

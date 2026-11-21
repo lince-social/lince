@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: mod catalog, mod tests, mod ui, const SOURCES.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 244, 259, 287,
+//   294, 332, 390, 418, 428, 439, 492, 493, 520, 531, 537, 542, 587, 628, 636, 637, 644, 652, 687,
+//   708, 739, 744, 760, 866, 874, 950, 1010, 1013, 1214, 1216, 1237, 1241.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   314, 332, 344, 414, 415, 984, 996, 1132, 1214, 1236, 1237, 1247.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (182, 188, 230, 240, 249, 258, 264, 278, 293, 313, 323, 331, 353, 354, 369, 378,
+//   394, 971, 981, 983, 1006, 1095, 1130, 1168, 1199, 1235, 1247, 1255, 1262, 1270, 1292, 1299).
+
 use std::sync::Arc;
 mod catalog;
 #[cfg(test)]

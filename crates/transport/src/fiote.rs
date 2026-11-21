@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: trait Service.
+// BeautifulRust (baseline lines):
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   3, 4, 20, 24.
+
 use async_trait::async_trait;
 
 #[async_trait]

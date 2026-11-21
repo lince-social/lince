@@ -1,3 +1,28 @@
+// non-lean-yet
+// Scope: const FRAME, const PRE_ROLL, const END_SILENCE, const START_FRAMES.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 68, 189, 210.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 198, 250, 283.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 107.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 232.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   232.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 12.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 56.
+// - [Clippy: clippy::print_stdout] Check CLI, Cargo, fixture, or library output contract before
+//   changing output. Sites 295.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 23.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 12, 13,
+//   14, 15, 16, 18, 19, 23, 37, 41, 56.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites push: String
+//   (56).
+
 use std::collections::VecDeque;
 
 const FRAME: usize = 256;

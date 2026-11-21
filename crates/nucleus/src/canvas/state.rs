@@ -1,5 +1,34 @@
-use super::*;
+// non-lean-yet
+// Scope: struct SavedReceipt, struct State, fn undo_field, fn authored_binding.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 238, 341, 856, 870, 921, 941, 961, 1053, 1108.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 861, 931, 1101,
+//   1125.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 184, 192, 193,
+//   197, 205, 212, 218, 230, 286, 311, 320, 331, 348, 353, 365, 367, 390, 400, 403, 424, 426, 427,
+//   431, 435, 450, 451, 462, 467, 492, 507, 511, 520, 570, 589, 602, 610, 667, 786.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 1036.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites 88,
+//   221, 222, 233, 282, 1049.
+// - [Clippy: clippy::if_not_else] unnecessary `!=` operation. Sites 557.
+// - [Clippy: clippy::if_not_else] unnecessary boolean `not` operation. Sites 692, 727.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 44, 76, 93, 106, 134, 145, 180, 255.
+// - [Clippy: clippy::rc_buffer] Check whether a shared slice or str suffices. Sites 39.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 1.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 36, 37,
+//   44, 76, 93, 106, 134, 141, 145, 180, 247, 255.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites handle: String
+//   (180), mark_saved: String (255), new: String (44), normalize_applied_snapshot: String (76),
+//   refresh_registry: String (93), reserve_workspace_id: String (134), synchronize: String (106),
+//   validate: String (145).
+
 use std::sync::Arc;
+
+use super::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

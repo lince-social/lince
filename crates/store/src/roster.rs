@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: struct StoredRoster, fn map, fn get, fn put.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 15.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 26, 36, 62, 89, 107, 127, 139, 147, 164, 182, 193, 216, 238, 259, 279, 290.
+// - [Clippy: clippy::needless_question_mark] enclosing `Ok` and `?` operator are unneeded. Sites
+//   131.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 231.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 7,
+//   8, 9, 10, 11, 12, 26, 36, 62, 89, 107, 127, 139, 147, 164, 182, 193, 216, 231, 232, 233, 234,
+//   235, 238, 259, 279, 290.
+
 use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;

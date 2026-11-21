@@ -1,10 +1,34 @@
-use crate::geometry::{MAX_DATA_ZOOM, Tile};
-use bytes::Bytes;
-use flate2::{Compression, read::GzDecoder, write::GzEncoder};
-use futures::{StreamExt, stream};
-use geozero::mvt::{Message, Tile as VectorTile};
-use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
+// non-lean-yet
+// Scope: const MAX_TILE_BYTES, const MAX_DECODED_BYTES, const PUBLIC_SERVER, fn quota_lock.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 222, 608, 683, 684, 768, 822.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 293, 294, 339,
+//   374, 399, 483.
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites download:tiles → &[T] (514).
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 211, 215, 457, 474, 487, 549, 626, 710, 722, 767, 804, 805, 817, 822, 823, 824.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   710, 822.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   369.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   119, 395, 445, 468, 628, 636, 669, 715, 724.
+// - [Clippy: clippy::match_same_arms] these match arms have identical bodies. Sites 529, 530.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 85, 91, 255, 282, 360, 619.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 242.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 20, 21,
+//   22, 51, 52, 53, 54, 55, 56, 57, 58, 76, 85, 91, 134, 177, 178, 179, 180, 181, 182, 183, 184,
+//   187, 229, 242, 255, 278, 282, 323, 360, 512, 619.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites load: String
+//   (360), new: String (255), normalize: String (619), save_atomic: String (85), validate: String
+//   (91), validate_sources: String (282).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   680.
+
 use std::{
     collections::{BTreeMap, HashMap},
     io::{Read, Write},
@@ -15,7 +39,16 @@ use std::{
     },
     time::Duration,
 };
+
+use bytes::Bytes;
+use flate2::{Compression, read::GzDecoder, write::GzEncoder};
+use futures::{StreamExt, stream};
+use geozero::mvt::{Message, Tile as VectorTile};
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use tokio::sync::{Mutex as AsyncMutex, OnceCell, Semaphore};
+
+use crate::geometry::{MAX_DATA_ZOOM, Tile};
 
 pub const MAX_TILE_BYTES: usize = 8 * 1024 * 1024;
 pub const MAX_DECODED_BYTES: usize = 16 * 1024 * 1024;
@@ -29,7 +62,7 @@ pub(crate) fn quota_lock(root: &Path) -> Arc<AsyncMutex<()>> {
     let mut gates = GATES
         .get_or_init(Mutex::default)
         .lock()
-        .unwrap_or_else(|error| error.into_inner());
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     gates.retain(|_, gate| gate.strong_count() > 0);
     if let Some(gate) = gates.get(&path).and_then(Weak::upgrade) {
         return gate;
@@ -324,7 +357,7 @@ impl TileStore {
         let states = self
             .progress
             .lock()
-            .unwrap_or_else(|error| error.into_inner());
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let mut result = Progress {
             total: tiles.len(),
             ..Default::default()
@@ -350,7 +383,7 @@ impl TileStore {
         let mut states = self
             .progress
             .lock()
-            .unwrap_or_else(|error| error.into_inner());
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if states.len() >= 50_512 && !states.contains_key(&tile) {
             states.retain(|_, progress| !progress.finished && progress.error.is_none());
         }

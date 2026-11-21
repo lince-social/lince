@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: enum Control, fn close_tab, fn save, fn save_as.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 194, 224, 247,
+//   258, 269, 359, 430, 513, 514, 522, 540, 546.
+// - [review: §3 Ownership] Check whether the borrowed container can expose a narrower view. Sites
+//   close_tab:path → &Path (467).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   192, 278, 340, 456, 489.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (122, 123, 136, 161, 164, 167, 181, 184, 230, 232, 247, 260, 269, 298, 308, 316,
+//   328, 362, 364, 391, 401, 406, 416, 424, 426, 440, 451, 468, 471, 476, 481, 559).
+
 use super::*;
 use crate::native::actions::Action;
 use lince_editor::{Edit, Resolution};

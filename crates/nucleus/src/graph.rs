@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct Edge, fn topo_order, fn topo_order_indices, fn topological.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 29, 53, 54, 61, 66, 69, 71, 72, 73, 79, 95, 135, 137, 154, 158, 159, 162, 165, 166, 168,
+//   169, 170, 173, 175, 176, 181, 183, 186, 187, 202, 230, 264.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 29, 95, 115, 117,
+//   187, 202.
+// - [Clippy: clippy::needless_range_loop] the loop variable `i` is used to index `done`. Sites 78.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 5,
+//   6, 7, 11, 19, 28, 32, 86, 124.
+
 use std::collections::{HashMap, HashSet, VecDeque};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -210,7 +222,7 @@ mod tests {
     use super::*;
 
     fn s(v: &[&str]) -> Vec<String> {
-        v.iter().map(|x| x.to_string()).collect()
+        v.iter().map(std::string::ToString::to_string).collect()
     }
 
     #[test]

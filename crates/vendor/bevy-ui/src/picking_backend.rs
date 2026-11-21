@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: struct UiPickingCamera, struct UiPickingSettings, struct UiPickingPlugin, struct
+//   NodeQuery.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 160, 164.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 160.
+// - [Clippy: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably fires.
+//   Sites 60.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 268, 295.
+// - [Clippy: clippy::manual_is_variant_and] called `.map() != Some()`. Sites 188.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 47, 76, 87.
+
 //! A picking backend for UI nodes.
 //!
 //! # Usage

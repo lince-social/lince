@@ -1,20 +1,60 @@
+// non-lean-yet
+// Scope: struct Job, enum Work, struct Reply, struct Handle.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 38.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 18.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   92, 95.
+
+use std::{
+    io::{self, Read, Write},
+    os::{
+        fd::{AsFd, OwnedFd},
+        unix::net::UnixStream,
+    },
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+        mpsc::{self, Receiver, SyncSender},
+    },
+    thread::{self, JoinHandle},
+    time::{Duration, Instant},
+};
+
 use super::super::transfer::MAX_TRANSFER;
-use std::{io::{self, Read, Write}, os::{fd::{AsFd, OwnedFd}, unix::net::UnixStream},
-    sync::{Arc, atomic::{AtomicBool, Ordering}, mpsc::{self, Receiver, SyncSender}},
-    thread::{self, JoinHandle}, time::{Duration, Instant}};
 
-struct Job { token: u64, stream: UnixStream, cancelled: Arc<AtomicBool> }
-enum Work { Read(Job), Stop }
+struct Job {
+    token: u64,
+    stream: UnixStream,
+    cancelled: Arc<AtomicBool>,
+}
+enum Work {
+    Read(Job),
+    Stop,
+}
 
-pub(super) struct Reply { pub token: u64, pub result: Result<Vec<u8>, String> }
+pub(super) struct Reply {
+    pub token: u64,
+    pub result: Result<Vec<u8>, String>,
+}
 
 #[derive(Clone)]
 pub(super) struct Handle(SyncSender<Work>);
 
 impl Handle {
-    pub(super) fn submit(&self, token: u64, stream: UnixStream, cancelled: Arc<AtomicBool>) -> io::Result<()> {
+    pub(super) fn submit(
+        &self,
+        token: u64,
+        stream: UnixStream,
+        cancelled: Arc<AtomicBool>,
+    ) -> io::Result<()> {
         stream.set_nonblocking(true)?;
-        self.0.try_send(Work::Read(Job { token, stream, cancelled }))
+        self.0
+            .try_send(Work::Read(Job {
+                token,
+                stream,
+                cancelled,
+            }))
             .map_err(|_| io::Error::other("The native drop reader is busy"))
     }
 }
@@ -36,20 +76,43 @@ impl Reader {
         notify.set_nonblocking(true)?;
         let stopped = Arc::new(AtomicBool::new(false));
         let stopping = stopped.clone();
-        let thread = thread::Builder::new().name("park-drop-reader".into()).spawn(move || {
-            while !stopping.load(Ordering::Acquire) {
-                let Ok(Work::Read(job)) = jobs.recv() else { break };
-                let result = read(job.stream, &job.cancelled, &stopping, Duration::from_secs(2));
-                if results.try_send(Reply { token: job.token, result }).is_err() {
-                    job.cancelled.store(true, Ordering::Release);
+        let thread = thread::Builder::new()
+            .name("park-drop-reader".into())
+            .spawn(move || {
+                while !stopping.load(Ordering::Acquire) {
+                    let Ok(Work::Read(job)) = jobs.recv() else {
+                        break;
+                    };
+                    let result = read(
+                        job.stream,
+                        &job.cancelled,
+                        &stopping,
+                        Duration::from_secs(2),
+                    );
+                    if results
+                        .try_send(Reply {
+                            token: job.token,
+                            result,
+                        })
+                        .is_err()
+                    {
+                        job.cancelled.store(true, Ordering::Release);
+                    }
+                    let _ = notify.write(&[1]);
                 }
-                let _ = notify.write(&[1]);
-            }
-        })?;
-        Ok(Self { handle: Handle(sender), replies, wake, stopped, thread: Some(thread) })
+            })?;
+        Ok(Self {
+            handle: Handle(sender),
+            replies,
+            wake,
+            stopped,
+            thread: Some(thread),
+        })
     }
 
-    pub(super) fn descriptor(&self) -> io::Result<OwnedFd> { self.wake.as_fd().try_clone_to_owned() }
+    pub(super) fn descriptor(&self) -> io::Result<OwnedFd> {
+        self.wake.as_fd().try_clone_to_owned()
+    }
 
     pub(super) fn drain(&mut self) -> Vec<Reply> {
         let mut buffer = [0; 64];
@@ -58,7 +121,11 @@ impl Reader {
     }
 
     pub(super) fn failed(&self) -> bool {
-        !self.stopped.load(Ordering::Acquire) && self.thread.as_ref().is_some_and(|thread| thread.is_finished())
+        !self.stopped.load(Ordering::Acquire)
+            && self
+                .thread
+                .as_ref()
+                .is_some_and(|thread| thread.is_finished())
     }
 }
 
@@ -66,36 +133,65 @@ impl Drop for Reader {
     fn drop(&mut self) {
         self.stopped.store(true, Ordering::Release);
         let _ = self.handle.0.try_send(Work::Stop);
-        if let Some(thread) = self.thread.take() { let _ = thread.join(); }
+        if let Some(thread) = self.thread.take() {
+            let _ = thread.join();
+        }
     }
 }
 
-fn read(mut stream: UnixStream, cancelled: &AtomicBool, stopped: &AtomicBool, timeout: Duration) -> Result<Vec<u8>, String> {
+fn read(
+    mut stream: UnixStream,
+    cancelled: &AtomicBool,
+    stopped: &AtomicBool,
+    timeout: Duration,
+) -> Result<Vec<u8>, String> {
     let deadline = Instant::now() + timeout;
     let mut bytes = Vec::new();
     let mut buffer = [0; 16384];
     loop {
-        if cancelled.load(Ordering::Acquire) || stopped.load(Ordering::Acquire) { return Err("The native drop was cancelled.".into()); }
+        if cancelled.load(Ordering::Acquire) || stopped.load(Ordering::Acquire) {
+            return Err("The native drop was cancelled.".into());
+        }
         let remaining = deadline.saturating_duration_since(Instant::now());
-        if remaining.is_zero() { return Err("The drop source did not finish within two seconds.".into()); }
+        if remaining.is_zero() {
+            return Err("The drop source did not finish within two seconds.".into());
+        }
         let wait = remaining.min(Duration::from_millis(50));
-        let timeout = rustix::time::Timespec { tv_sec: wait.as_secs() as i64, tv_nsec: i64::from(wait.subsec_nanos()) };
-        let mut descriptors = [rustix::event::PollFd::new(&stream, rustix::event::PollFlags::IN)];
+        let timeout = rustix::time::Timespec {
+            tv_sec: wait.as_secs() as i64,
+            tv_nsec: i64::from(wait.subsec_nanos()),
+        };
+        let mut descriptors = [rustix::event::PollFd::new(
+            &stream,
+            rustix::event::PollFlags::IN,
+        )];
         match rustix::event::poll(&mut descriptors, Some(&timeout)) {
             Ok(_) => {}
             Err(rustix::io::Errno::INTR) => continue,
             Err(error) => return Err(format!("Could not read the drop source: {error}")),
         }
-        if descriptors[0].revents().is_empty() { continue; }
-        let room = (MAX_TRANSFER + 1).saturating_sub(bytes.len()).min(buffer.len());
-        if room == 0 { return Err("The dropped data exceeds 1 MiB.".into()); }
+        if descriptors[0].revents().is_empty() {
+            continue;
+        }
+        let room = (MAX_TRANSFER + 1)
+            .saturating_sub(bytes.len())
+            .min(buffer.len());
+        if room == 0 {
+            return Err("The dropped data exceeds 1 MiB.".into());
+        }
         match stream.read(&mut buffer[..room]) {
             Ok(0) => return Ok(bytes),
             Ok(count) => {
                 bytes.extend_from_slice(&buffer[..count]);
-                if bytes.len() > MAX_TRANSFER { return Err("The dropped data exceeds 1 MiB.".into()); }
+                if bytes.len() > MAX_TRANSFER {
+                    return Err("The dropped data exceeds 1 MiB.".into());
+                }
             }
-            Err(error) if matches!(error.kind(), io::ErrorKind::WouldBlock | io::ErrorKind::Interrupted) => {}
+            Err(error)
+                if matches!(
+                    error.kind(),
+                    io::ErrorKind::WouldBlock | io::ErrorKind::Interrupted
+                ) => {}
             Err(error) => return Err(format!("Could not read the drop source: {error}")),
         }
     }
@@ -113,7 +209,10 @@ mod tests {
         drop(writer);
         let cancelled = AtomicBool::new(false);
         let stopped = AtomicBool::new(false);
-        assert_eq!(read(source, &cancelled, &stopped, Duration::from_secs(1)).unwrap(), "Olá 世界".as_bytes());
+        assert_eq!(
+            read(source, &cancelled, &stopped, Duration::from_secs(1)).unwrap(),
+            "Olá 世界".as_bytes()
+        );
         let (source, _writer) = UnixStream::pair().unwrap();
         assert!(read(source, &cancelled, &stopped, Duration::ZERO).is_err());
         cancelled.store(true, Ordering::Release);
@@ -125,8 +224,18 @@ mod tests {
     fn oversized_sources_are_stopped_at_the_transfer_bound() {
         let (source, mut writer) = UnixStream::pair().unwrap();
         source.set_nonblocking(true).unwrap();
-        let writing = thread::spawn(move || { let _ = writer.write_all(&vec![b'a'; MAX_TRANSFER + 1]); });
-        assert!(read(source, &AtomicBool::new(false), &AtomicBool::new(false), Duration::from_secs(2)).is_err());
+        let writing = thread::spawn(move || {
+            let _ = writer.write_all(&vec![b'a'; MAX_TRANSFER + 1]);
+        });
+        assert!(
+            read(
+                source,
+                &AtomicBool::new(false),
+                &AtomicBool::new(false),
+                Duration::from_secs(2)
+            )
+            .is_err()
+        );
         writing.join().unwrap();
     }
 
@@ -136,6 +245,10 @@ mod tests {
         let handle = reader.handle.clone();
         drop(reader);
         let (stream, _other) = UnixStream::pair().unwrap();
-        assert!(handle.submit(1, stream, Arc::new(AtomicBool::new(false))).is_err());
+        assert!(
+            handle
+                .submit(1, stream, Arc::new(AtomicBool::new(false)))
+                .is_err()
+        );
     }
 }

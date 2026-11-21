@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: mod projection, struct Prepared, struct Member, struct Movement.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 201, 206, 237,
+//   255, 409, 430, 493, 516, 535, 539, 540, 541, 554.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites commit: String
+//   (562), prepare_captured: String (440), prepare_creation: String (373), prepare_identity: String
+//   (358), prepare_move: String (419), prepare_numbered_move: String (397), prepare_selection:
+//   String (383), workspace_action: String (685).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (332, 548, 618, 623, 630, 636).
+
 use super::*;
 use crate::layout::desktop::{DropSlot, TransferKind, Workspace as Model};
 use crate::native::workspace::allocation::{self, Numbered};

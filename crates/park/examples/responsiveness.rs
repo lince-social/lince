@@ -1,10 +1,18 @@
-use lince_interface::{host::DesktopAction, native::app::CellHandle};
-use lince_park::runtime::{CanvasWorker, Completed, Configuration, Input};
+// non-lean-yet
+// Scope: fn wait, fn main.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 100, 101, 114.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 50, 67, 76,
+//   128, 143.
+
 use std::{
     path::PathBuf,
     sync::Arc,
     time::{Duration, Instant},
 };
+
+use lince_interface::{host::DesktopAction, native::app::CellHandle};
+use lince_park::runtime::{CanvasWorker, Completed, Configuration, Input};
 
 fn wait(worker: &CanvasWorker, serial: u64, deadline: Instant) -> Result<Completed, String> {
     loop {

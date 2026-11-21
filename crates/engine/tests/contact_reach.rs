@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn cell, fn scratch, fn secret, fn mailable.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 113, 121.
+// - [Clippy probe: clippy::missing_assert_message] assert without any message. Sites 95, 162.
+
 use std::sync::Arc;
 
 use engine::Engine;

@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct HookId, struct Hook, struct InnerId.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 25, 26.
+
 use std::sync::Arc;
 
 crate::utils::ids::id_gen!(hooks_id);

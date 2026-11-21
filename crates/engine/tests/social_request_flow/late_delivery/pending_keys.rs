@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn envelope, fn mailbox_stored_message_rewraps_after_recipient_key_replacement, fn routed,
+//   fn import_once.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use nucleus::social::requests::{DELIVERY_NAMESPACE, MESSAGE_NAMESPACE, PARTICIPANTS_NAMESPACE};
 

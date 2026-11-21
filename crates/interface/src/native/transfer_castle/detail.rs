@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn section, fn evidence, fn fact, fn blockers.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 74, 124, 310,
+//   311, 376, 560, 562, 773, 780, 787, 788, 789, 790, 792, 812, 913, 940, 963, 981, 1004, 1038,
+//   1180, 1182, 1232, 1254, 1259, 1261, 1389, 1391, 1400.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   81, 128, 287, 528, 841, 898, 908, 1004, 1082, 1158, 1323.
+
 use super::*;
 use model::FieldKind;
 use ui::{Command, button, row, stack};

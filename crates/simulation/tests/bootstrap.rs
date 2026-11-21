@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn audience, fn run, fn
+//   generated_authority_is_reproducible_and_distinct_from_live_bootstrap, fn
+//   copied_database_keeps_its_authority_and_source_state.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use simulation::{artifacts, fixtures, scenario::Database, world::World};

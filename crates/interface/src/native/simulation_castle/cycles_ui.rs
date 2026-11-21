@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn time, fn describe.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 45.
+
 use nucleus::simulation::{CycleKind, RuleCycle};
 
 fn time(ms: i64) -> String {

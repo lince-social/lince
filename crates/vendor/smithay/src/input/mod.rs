@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod keyboard, mod pointer, mod touch, trait SeatHandler.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 293, 334, 439,
+//   447, 576, 584, 651, 659.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 272.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (430, 447, 455, 567, 584, 592, 643, 659, 666).
+
 //!
 //! Input abstractions
 //!

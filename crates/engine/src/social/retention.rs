@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: const DELIVERY_WINDOW, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 46, 116, 129,
+//   147.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   195, 242.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 62, 66, 79, 80, 92, 95, 116, 147, 195, 242, 246, 330, 373, 390, 413, 429, 430,
+//   431, 432, 457, 536, 552, 562, 571, 586, 605, 606, 651, 655.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option`
+//   value. Sites 118.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1, 2.
+
 use super::*;
 use nucleus::social::requests::*;
 use store::sqlx::Row;

@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct Presentation, struct View, struct Details, struct RowLabel.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 210, 227, 240,
+//   309, 314.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (102, 123, 197, 213, 232, 236, 237, 243, 260, 267, 280, 289, 306, 331, 344, 382,
+//   396).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 161.
+
 use super::*;
 use crate::native::layout::desktop::input_settings::{caption, prepared::Prepared};
 use bevy::ecs::query::QueryState;

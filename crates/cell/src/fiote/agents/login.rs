@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: fn start, fn finish.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 13, 58, 61, 72,
+//   77, 79, 119, 149.
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites finish:id → &str (23), finish:record → &str (22).
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 58, 72, 79, 119, 149.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 
 pub(in crate::fiote) async fn start(agents: &Agents, record: &str) -> Result<String, String> {

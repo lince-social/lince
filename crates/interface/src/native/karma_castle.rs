@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: mod ailuros_ui, mod commands_ui, mod history_ui, mod incoming.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 56, 365, 384,
+//   385, 387, 390, 396, 425, 427, 485, 492, 507, 533, 552, 557, 566, 603, 667, 710, 717, 725, 746.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   442, 469, 548, 679.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (247, 249, 252, 275, 280, 338, 343, 362, 368, 373, 401, 410, 417, 432, 444, 518,
+//   543, 548, 611, 627, 648, 660, 701, 749, 761, 762, 764, 769, 780, 786, 789, 803, 806, 809, 816).
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 10.
+
 use lince_interface::karma as model;
 use std::sync::Arc;
 mod ailuros_ui;

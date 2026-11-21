@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct LibSeatSessionImpl, struct LibSeatSession, struct LibSeatSessionNotifier, enum
+//   Error.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 132, 248.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 98, 186, 196.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 239.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (71, 75, 86, 218, 231, 250, 253, 264, 267, 276).
+
 //!
 //! Implementation of the [`Session`] trait through the libseat.
 //!

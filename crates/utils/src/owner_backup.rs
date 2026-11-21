@@ -1,13 +1,38 @@
+// non-lean-yet
+// Scope: const CHUNK_BYTES, const MAX_DATABASE_BYTES, const MAX_KEYRING_BYTES, const
+//   MAX_MANIFEST_BYTES.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 232, 233, 234.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 20, 22, 161, 179, 191, 231, 235, 264, 268.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   161, 179, 231, 264.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 61.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   146.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   148, 178, 207, 257.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 29, 94, 211, 245.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 13, 14,
+//   15, 16, 17, 26, 29, 39, 51, 52, 53, 61, 62, 63, 64, 65, 70, 71, 72, 73, 78, 79, 80, 81, 82, 94,
+//   211, 245.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   146, 156, 157, 159, 160, 161, 219, 220, 252.
+
+use std::{
+    collections::BTreeSet,
+    io::{self, Read, Write},
+};
+
 use chacha20poly1305::{
     XChaCha20Poly1305,
     aead::{Aead, Payload},
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::{
-    collections::BTreeSet,
-    io::{self, Read, Write},
-};
 use zeroize::Zeroizing;
 
 pub const CHUNK_BYTES: usize = 1024 * 1024;

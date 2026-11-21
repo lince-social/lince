@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: const RECORD_UID, const FACT_UID, const CONCEPT_UID, fn
+//   valid_program_has_stable_hash_order_and_serde_round_trip.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use std::collections::{BTreeMap, BTreeSet};

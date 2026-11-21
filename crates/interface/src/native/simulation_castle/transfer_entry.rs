@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn prepare, fn open, fn open_balance, fn group_balance.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 71, 237, 294,
+//   355.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   15, 346.
+
 use super::*;
 use serde_json::Value;
 use simulation::assumptions::TransferSource;

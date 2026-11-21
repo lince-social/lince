@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn fixture, fn click, fn load_errors_are_shown_without_panicking, fn
+//   pages_embed_records_and_navigation_is_independent_and_bounded.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::container::BoxRoot;
 #[cfg(feature = "instinct")]

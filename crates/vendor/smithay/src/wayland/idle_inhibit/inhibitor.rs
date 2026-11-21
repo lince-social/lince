@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct IdleInhibitorState.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 39.
+
 //! idle-inhibit inhibitor.
 
 use _idle_inhibit::zwp_idle_inhibitor_v1::{Request, ZwpIdleInhibitorV1};

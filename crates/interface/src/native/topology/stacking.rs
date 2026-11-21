@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod inputs, struct Order, struct Plane, struct OrderedCamera.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy::{
     core_pipeline::core_3d::Transparent3d,
     prelude::*,

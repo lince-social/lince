@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct Source, struct Snapshot.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 86, 90, 109.
+
 use nucleus::karma::CanonicalHash;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use simulation::scenario::Scenario;

@@ -1,8 +1,19 @@
-use std::collections::VecDeque;
-use std::io::{ErrorKind, Read, Write};
-use std::net::{SocketAddr, TcpStream, UdpSocket};
-use std::sync::Arc;
-use std::time::Duration;
+// non-lean-yet
+// Scope: enum Stream, struct Socket.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   open:tcp (28).
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   75.
+// - [rustc: unreachable_pub] unreachable `pub` item. Sites 20, 28, 56, 88, 102, 128.
+
+use std::{
+    collections::VecDeque,
+    io::{ErrorKind, Read, Write},
+    net::{SocketAddr, TcpStream, UdpSocket},
+    sync::Arc,
+    time::Duration,
+};
 
 use turn_client_proto::{api::TurnConfig, tcp::TurnClientTcp, udp::TurnClientUdp};
 use turn_client_rustls::TurnClientRustls;

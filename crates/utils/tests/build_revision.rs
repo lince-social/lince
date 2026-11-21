@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn executable_revision_is_trimmed_and_cannot_be_replaced.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #[test]
 fn executable_revision_is_trimmed_and_cannot_be_replaced() {
     use utils::build_info::{revision, revision_is_stamped, set_revision, short_revision};

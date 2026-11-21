@@ -1,4 +1,15 @@
-use super::*;
+// non-lean-yet
+// Scope: mod tree, struct Mapping, const SHADER, struct ClientMaterial.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 140, 199, 227,
+//   400, 404.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   295, 306.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (251, 394, 399, 413, 420).
+
+use std::collections::{HashMap, HashSet};
+
 use bevy::{
     asset::AssetId,
     render::{
@@ -10,7 +21,8 @@ use bevy::{
 };
 use lince_interface::host::SurfaceId;
 use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
-use std::collections::{HashMap, HashSet};
+
+use super::*;
 
 mod tree;
 
@@ -26,7 +38,10 @@ struct Mapping {
 
 impl Default for Mapping {
     fn default() -> Self {
-        let [color_red, color_green, color_blue, color_curve] = lince_interface::host::color::Description::default().uniforms().map(Vec4::from_array);
+        let [color_red, color_green, color_blue, color_curve] =
+            lince_interface::host::color::Description::default()
+                .uniforms()
+                .map(Vec4::from_array);
         Self {
             u: Vec4::new(0.0, 1.0, 0.0, 0.0),
             v: Vec4::new(0.0, 0.0, 1.0, 0.0),
@@ -56,7 +71,6 @@ impl UiMaterial for ClientMaterial {
 }
 
 #[derive(Resource, ExtractResource, Clone, Default)]
-
 #[extract_app(bevy::render::RenderApp)]
 struct Textures(HashMap<AssetId<Image>, wgpu::Texture>);
 
@@ -131,7 +145,10 @@ fn prepare(
         }
     });
     for (id, texture) in &textures.0 {
-        if images.get(*id).is_some_and(|image| &*image.texture == texture) {
+        if images
+            .get(*id)
+            .is_some_and(|image| &*image.texture == texture)
+        {
             continue;
         }
         images.insert(
@@ -178,7 +195,12 @@ impl Presentation {
         let root = self.canvas_root()?;
         let world = self.app.world_mut();
         let workspace = native::laboratory::scope(world)
-            .filter(|(owner, _, temporary, _)| *owner == root && world.get::<native::workspace::Workspaces>(root).is_some_and(|spaces| spaces.active == *temporary))
+            .filter(|(owner, _, temporary, _)| {
+                *owner == root
+                    && world
+                        .get::<native::workspace::Workspaces>(root)
+                        .is_some_and(|spaces| spaces.active == *temporary)
+            })
             .map(|(_, _, _, previous)| previous)
             .unwrap_or(
                 world
@@ -186,13 +208,11 @@ impl Presentation {
                     .ok_or_else(|| input_failure("the workspace is unavailable"))?
                     .active,
             );
-        let image = world
-            .resource_mut::<Assets<Image>>()
-            .add(imported_image(
-                1,
-                1,
-                wgpu::TextureFormat::Bgra8Unorm,
-            ));
+        let image = world.resource_mut::<Assets<Image>>().add(imported_image(
+            1,
+            1,
+            wgpu::TextureFormat::Bgra8Unorm,
+        ));
         let material = world
             .resource_mut::<Assets<ClientMaterial>>()
             .add(ClientMaterial {
@@ -391,8 +411,7 @@ impl Presentation {
             *world
                 .resource_mut::<Assets<Image>>()
                 .get_mut(&window.image)
-                .unwrap() =
-                imported_image(source.width(), source.height(), source.format());
+                .unwrap() = imported_image(source.width(), source.height(), source.format());
             world
                 .resource_mut::<Assets<ClientMaterial>>()
                 .get_mut(&window.material)

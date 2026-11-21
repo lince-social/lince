@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn refresh.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 26.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   64, 65, 66.
+
 use super::*;
 
 pub(super) fn refresh(world: &mut World, root: Entity, workspace: u64) {

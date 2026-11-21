@@ -1,3 +1,52 @@
+// non-lean-yet
+// Scope: struct Link, fn node_id, fn save, fn read.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 25, 144, 160,
+//   196, 200, 206, 216, 224, 225, 233, 264, 353, 426, 447, 458, 466, 467, 469, 470, 517, 557, 588,
+//   589, 591, 595, 600, 601, 616, 617, 663, 677, 689, 715, 716, 733, 734, 772, 773, 792, 793, 826,
+//   935, 936, 947, 948, 964, 988, 1051, 1052, 1054, 1068, 1069, 1085, 1086, 1111, 1113, 1117, 1153,
+//   1154, 1155, 1230, 1293, 1300.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (73).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   466, 499, 507, 510, 701, 709, 727, 744.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (140, 170, 175, 278, 309, 451, 586, 705, 748, 840, 929, 933, 1006, 1031, 1046,
+//   1102, 1138, 1145, 1270, 1282).
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 118, 315.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 754, 1099.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 1099.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 469.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 71, 72, 353.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 229, 230, 231, 232, 237, 238, 240, 241, 265, 268, 273, 327, 338, 418, 466, 472,
+//   477, 499, 507, 510, 528, 544, 547, 548, 550, 557, 564, 570, 575, 649, 663, 677, 694, 701, 709,
+//   727, 744, 787, 803, 807, 811, 815, 818, 844, 849, 854, 858, 862, 874, 889, 938, 988, 998, 999,
+//   1010, 1011, 1023, 1133, 1180, 1185, 1197, 1198, 1199, 1213, 1219, 1230, 1239, 1248, 1259, 1266,
+//   1323, 1337.
+// - [Clippy probe: clippy::missing_assert_message] assert without any message. Sites 171, 229, 230,
+//   231, 237, 238, 243, 252, 258, 267, 295, 296, 297, 298, 303, 440, 442, 526, 527, 543, 547, 548,
+//   549, 563, 569, 574, 641, 648, 690, 706, 707, 708, 723, 750, 751, 752, 758, 759, 760, 761, 763,
+//   764, 765, 781, 782, 786, 802, 810, 835, 836, 848, 857, 871, 872, 873, 1007, 1008, 1118, 1122,
+//   1132, 1133, 1134, 1141, 1149, 1176, 1180, 1183, 1196, 1197, 1198, 1199, 1208, 1218, 1238, 1246,
+//   1253, 1258, 1271, 1272, 1273, 1278, 1311, 1312, 1319, 1323, 1325, 1338, 1339.
+// - [Clippy probe: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or
+//   document retained invariants. Sites 138, 152, 168, 174, 179, 192, 228, 236, 240, 241, 255, 261,
+//   270, 277, 281, 284, 289, 294, 307, 317, 408, 414, 416, 424, 437, 440, 450, 483, 488, 491, 495,
+//   506, 509, 512, 525, 543, 546, 552, 566, 577, 585, 604, 611, 623, 627, 639, 646, 695, 703, 707,
+//   721, 722, 740, 742, 746, 750, 756, 760, 761, 765, 778, 780, 783, 809, 817, 820, 839, 846, 856,
+//   864, 870, 876, 896, 901, 904, 914, 927, 932, 951, 958, 970, 981, 1004, 1007, 1030, 1044, 1064,
+//   1074, 1080, 1092, 1098, 1101, 1109, 1117, 1119, 1128, 1137, 1144, 1175, 1183, 1195, 1221, 1246,
+//   1252, 1268, 1276, 1281, 1291, 1310, 1316, 1324, 1329, 1330, 1342.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 94, 99.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   94, 95, 96, 99, 100, 101, 102, 103, 106, 110, 114.
+
 use std::{
     collections::BTreeMap,
     sync::{Arc, Weak},

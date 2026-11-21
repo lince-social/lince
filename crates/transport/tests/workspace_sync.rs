@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn two_live_views_receive_host_changes_and_revoke_without_further_snapshots, fn
+//   workspace_feeds_are_bounded_and_replacement_retains_other_presence.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 51, 52, 119.
+
 use engine::{
     Engine,
     actions::Action,

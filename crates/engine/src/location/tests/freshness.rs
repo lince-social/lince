@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: fn authority_renewal_cannot_grant_local_approval_change_scope_or_refresh_an_expired_reply,
+//   fn challenge_bound_capture_age_survives_clock_offsets_but_rejects_replay_and_old_epochs, fn
+//   suspended_or_disconnected_leases_stop_without_restoring_capture_or_approval, fn
+//   challenges_are_bounded_and_reading_a_view_cannot_renew_them.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 66, 70.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 70.
+
 use super::*;
 
 #[tokio::test]

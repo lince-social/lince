@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct DnDGrab, struct OfferData, struct DndDataOffer, fn handle_dnd.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 77, 99, 183, 184,
+//   266, 526.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (130, 145, 187, 188, 198, 233, 236, 251, 399, 491, 551).
+
 use std::{
     cell::RefCell,
     fmt,

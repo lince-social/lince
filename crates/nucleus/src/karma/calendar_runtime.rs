@@ -1,3 +1,26 @@
+// non-lean-yet
+// Scope: const CALENDAR_SCHEDULE_OCCURRENCE_HASH_DOMAIN, enum CalendarScheduleOccurrenceSchema,
+//   struct CalendarCursor, enum CalendarCursorResolution.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 274, 296, 309, 311.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   220.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 233, 234, 287,
+//   299, 303, 317.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 244, 265, 308, 313.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 13, 61, 107, 114.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   275, 294.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 40, 78, 161, 190, 220.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 10, 13,
+//   15, 19, 28, 32, 36, 40, 61, 62, 63, 65, 67, 69, 71, 72, 74, 78, 107, 108, 109, 114, 115, 116,
+//   120, 121, 122, 124, 126, 128, 129, 130, 131, 133, 135, 139, 140, 141, 142, 143, 144, 145, 146,
+//   161, 190, 220.
+
 use std::num::NonZeroU32;
 
 use serde::{Deserialize, Serialize};

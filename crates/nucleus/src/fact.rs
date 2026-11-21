@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: enum CauseKind, struct Cause, struct NewFact, fn decimal_from_f64.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   117, 122.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 9.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   119, 123.
+// - [Clippy: clippy::format_push_string] `format!(..)` appended to existing `String`. Sites 185.
+// - [Clippy: clippy::redundant_clone] Move or borrow at the marked sites and check later uses.
+//   Sites 217.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 9, 10,
+//   11, 12, 13, 14, 15, 16, 17, 18, 19, 23, 38, 56, 57, 58, 62, 68, 74, 80, 89, 90, 91, 92, 93, 94,
+//   95, 96, 100, 112, 117, 122, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 155, 175,
+//   190.
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};

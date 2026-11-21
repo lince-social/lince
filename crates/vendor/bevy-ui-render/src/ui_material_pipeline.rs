@@ -1,3 +1,32 @@
+// non-lean-yet
+// Scope: struct UiMaterialPlugin, struct UiMaterialMeta, struct UiMaterialVertex, struct
+//   UiMaterialBatch.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 526, 583, 584, 585, 604.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   494.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 243, 294, 603.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 368.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 157, 158, 163,
+//   176, 295, 649, 722.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 534, 602, 734.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   534, 602.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 3, 4, 10, 20, 21, 24.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 333, 356, 368, 378, 379, 380, 381, 382, 383, 384, 644.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 37, 84, 102, 113, 121, 228, 250,
+//   276, 300, 312, 616.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 84,
+//   102, 103, 104, 105, 106, 107, 113, 116, 122, 123, 124, 125, 184, 221, 228, 250, 276, 300, 301,
+//   302, 303, 304, 305, 306, 307, 329, 494, 616, 617, 618, 619, 669.
+
 use crate::clipping::clip_polygon;
 use crate::ui_material::{MaterialNode, UiMaterial, UiMaterialKey};
 use crate::*;

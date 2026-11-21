@@ -1,3 +1,26 @@
+// non-lean-yet
+// Scope: struct Receipt, struct Pending, struct ReceiptGroup, fn receipts.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 77, 91, 222.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 40, 41, 42, 43,
+//   71, 78, 79, 102, 119, 126, 187, 218.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 154.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 50, 171.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 12, 146.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 12, 13,
+//   14, 18, 19, 20, 21, 22, 26, 27, 28, 29, 30, 31, 32, 33, 34, 38, 50, 146, 147, 148, 149, 154,
+//   155, 156, 157, 158, 159, 163, 164, 165, 166, 167, 168, 171.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites claim_heads:
+//   String (171), receipts: String (50).
+
+use std::collections::{BTreeMap, BTreeSet};
+
+use serde::Serialize;
+
 use super::{Identity, claims};
 use crate::{
     karma::CanonicalHash,
@@ -6,8 +29,6 @@ use crate::{
         receipt_history::{self, Provenance},
     },
 };
-use serde::Serialize;
-use std::collections::{BTreeMap, BTreeSet};
 
 pub struct Receipt<'a> {
     pub document: &'a receipt::Document,
@@ -41,7 +62,12 @@ impl ReceiptGroup {
             occurrence: self.occurrence.clone(),
             giver: self.giver.clone(),
             receiver: self.receiver.clone(),
-            copies: self.history.outcomes.iter().flat_map(|outcome| outcome.copies.iter().cloned()).collect(),
+            copies: self
+                .history
+                .outcomes
+                .iter()
+                .flat_map(|outcome| outcome.copies.iter().cloned())
+                .collect(),
             partial: self.partial,
         }
     }

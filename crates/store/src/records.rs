@@ -1,12 +1,55 @@
+// non-lean-yet
+// Scope: const MAX_EXTENSION_BYTES, const MAX_EXTENSION_KEYS, const MAX_EXTENSION_NAME_BYTES,
+//   struct BoundedWriter.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   1477, 1514.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 146.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 981.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   read:with_body (189).
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 166, 493, 539, 847.
+// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 386, 739, 1767.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 176.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   941, 1488, 1527.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   953, 1437, 1457.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 87, 91, 186, 246, 272, 276, 288, 379, 431, 440, 472, 504, 514, 522, 530, 543, 569, 578,
+//   588, 604, 621, 638, 650, 665, 675, 692, 720, 726, 769, 783, 804, 821, 839, 860, 879, 1022,
+//   1226, 1323, 1334, 1477, 1504, 1514, 1543, 1557, 1584, 1599, 1625, 1660, 1685, 1711, 1722, 1755,
+//   1761, 1788, 1806, 1840, 1865, 1875, 1899, 1908, 1966, 1974.
+// - [Clippy: clippy::needless_borrows_for_generic_args] the borrowed expression implements the
+//   required traits. Sites 400, 411.
+// - [Clippy: clippy::needless_question_mark] enclosing `Ok` and `?` operator are unneeded. Sites
+//   432, 589.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 264, 455, 461, 466, 563, 599, 832,
+//   1547.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 11, 12,
+//   13, 86, 87, 89, 91, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132,
+//   136, 140, 176, 177, 178, 179, 180, 181, 186, 246, 264, 265, 266, 267, 268, 269, 272, 276, 288,
+//   379, 431, 440, 455, 456, 457, 461, 462, 463, 466, 467, 468, 469, 472, 504, 514, 522, 530, 543,
+//   563, 564, 565, 566, 569, 578, 588, 599, 600, 601, 604, 621, 638, 650, 665, 675, 692, 720, 726,
+//   769, 783, 804, 821, 832, 833, 834, 835, 836, 839, 860, 879, 1022, 1226, 1323, 1334, 1477, 1504,
+//   1514, 1543, 1547, 1553, 1557, 1584, 1599, 1625, 1660, 1685, 1711, 1722, 1755, 1761, 1788, 1806,
+//   1840, 1865, 1875, 1899, 1908, 1966, 1974.
+
 use std::io::{self, Write};
 
 use nucleus::{DecimalValue, RecordKind};
 use serde_json::{Map, Value};
 use sqlx::{Row, Sqlite, SqlitePool, Transaction};
 
-use crate::StoreError;
-use crate::exact::{decimal_columns, read_decimal};
-use crate::sync_ops::OpKind;
+use crate::{
+    StoreError,
+    exact::{decimal_columns, read_decimal},
+    sync_ops::OpKind,
+};
 
 pub const MAX_EXTENSION_BYTES: usize = 1024 * 1024;
 pub const MAX_EXTENSION_KEYS: usize = 4096;
@@ -256,7 +299,9 @@ pub async fn set_file_origin_on(
     .execute(&mut **tx)
     .await?;
     if updated.rows_affected() != 1 {
-        return Err(protocol("This Record already has a file origin or is unavailable"));
+        return Err(protocol(
+            "This Record already has a file origin or is unavailable",
+        ));
     }
     Ok(())
 }
@@ -383,10 +428,10 @@ pub async fn create_with_uid_on(
     organ_uid: &str,
     replica_root: Option<&str>,
 ) -> Result<RecordRow, StoreError> {
-    if let Some(slug) = new.slug {
-        if !nucleus::valid_slug(slug) {
-            return Err(protocol(format!("invalid slug `{slug}`")));
-        }
+    if let Some(slug) = new.slug
+        && !nucleus::valid_slug(slug)
+    {
+        return Err(protocol(format!("invalid slug `{slug}`")));
     }
     validate_creation_origin_on(tx, uid, organ_uid, replica_root).await?;
     let now = nucleus::execution::now().to_rfc3339();
@@ -487,9 +532,10 @@ pub async fn grouping(
     let query = format!(
         "SELECT r.uid, {unit}, {identity} FROM record r WHERE r.deleted_at IS NULL ORDER BY r.created_at, r.uid"
     );
-    let rows = sqlx::query_as::<_, (String, Option<String>, Option<String>)>(sqlx::AssertSqlSafe(query))
-        .fetch_all(pool)
-        .await?;
+    let rows =
+        sqlx::query_as::<_, (String, Option<String>, Option<String>)>(sqlx::AssertSqlSafe(query))
+            .fetch_all(pool)
+            .await?;
     nucleus::performance::add("record-grouping-rows", rows.len() as u64);
     Ok(rows
         .into_iter()
@@ -567,12 +613,17 @@ pub struct RecordRouting {
 }
 
 pub async fn routing(pool: &SqlitePool, uid: &str) -> Result<Option<RecordRouting>, StoreError> {
-    let row: Option<(String, Option<String>, Option<String>)> =
-        sqlx::query_as("SELECT kind, organ_uid, file_origin FROM record WHERE uid = ? AND deleted_at IS NULL")
-            .bind(uid)
-            .fetch_optional(pool)
-            .await?;
-    Ok(row.map(|(kind, organ_uid, file_origin)| RecordRouting { kind, organ_uid, file_origin }))
+    let row: Option<(String, Option<String>, Option<String>)> = sqlx::query_as(
+        "SELECT kind, organ_uid, file_origin FROM record WHERE uid = ? AND deleted_at IS NULL",
+    )
+    .bind(uid)
+    .fetch_optional(pool)
+    .await?;
+    Ok(row.map(|(kind, organ_uid, file_origin)| RecordRouting {
+        kind,
+        organ_uid,
+        file_origin,
+    }))
 }
 
 pub async fn organ_uid(pool: &SqlitePool, uid: &str) -> Result<Option<String>, StoreError> {
@@ -736,10 +787,10 @@ pub async fn restore_on(
             "This Record moved to another Organ and cannot be restored from its source",
         ));
     }
-    if let Some(slug) = slug {
-        if !nucleus::valid_slug(slug) {
-            return Err(protocol(format!("invalid slug `{slug}`")));
-        }
+    if let Some(slug) = slug
+        && !nucleus::valid_slug(slug)
+    {
+        return Err(protocol(format!("invalid slug `{slug}`")));
     }
     let deleted =
         sqlx::query_scalar::<_, i64>("SELECT deleted_at IS NOT NULL FROM record WHERE uid = ?")
@@ -1485,7 +1536,9 @@ pub async fn extension_number(
     let raw: Option<String> = sqlx::query_scalar(
         "SELECT substr(fds, 1, ?) FROM record_extension WHERE record_uid = ? AND namespace = ?",
     )
-    .bind(i64::try_from(MAX_EXTENSION_BYTES + 1).expect("the extension limit fits a SQLite integer"))
+    .bind(
+        i64::try_from(MAX_EXTENSION_BYTES + 1).expect("the extension limit fits a SQLite integer"),
+    )
     .bind(record_uid)
     .bind(namespace)
     .fetch_optional(pool)
@@ -1524,7 +1577,9 @@ pub async fn numeric_extensions_for_records(
         "SELECT record_uid, namespace, substr(fds, 1, ?) AS fds FROM record_extension
          WHERE record_uid IN (SELECT value FROM json_each(?)) ORDER BY record_uid, namespace",
     )
-    .bind(i64::try_from(MAX_EXTENSION_BYTES + 1).expect("the extension limit fits a SQLite integer"))
+    .bind(
+        i64::try_from(MAX_EXTENSION_BYTES + 1).expect("the extension limit fits a SQLite integer"),
+    )
     .bind(selected)
     .fetch_all(pool)
     .await?;
@@ -1764,10 +1819,10 @@ pub async fn set_slug_on(
     slug: Option<&str>,
 ) -> Result<(), StoreError> {
     require_active_on(tx, uid).await?;
-    if let Some(slug) = slug {
-        if !nucleus::valid_slug(slug) {
-            return Err(protocol(format!("invalid slug `{slug}`")));
-        }
+    if let Some(slug) = slug
+        && !nucleus::valid_slug(slug)
+    {
+        return Err(protocol(format!("invalid slug `{slug}`")));
     }
     let now = nucleus::execution::now().to_rfc3339();
     let res = sqlx::query(

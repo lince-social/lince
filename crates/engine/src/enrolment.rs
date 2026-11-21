@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: struct Joining, trait CellTransport.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 100, 139, 159,
+//   176, 189, 204, 231.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 99, 130, 138, 158, 175, 188, 203, 230, 309.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 76, 83, 133, 151, 184, 199, 214, 220, 244, 266, 365.
+// - [Clippy probe: clippy::missing_panics_doc] State the panic conditions for exported functions.
+//   Sites 83, 129, 133, 151, 171, 184, 199, 266.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   25, 26, 46, 49, 55, 56, 60, 61, 62, 63, 64, 76, 83, 129, 133, 151, 171, 184, 199, 214, 220,
+//   244, 266, 365.
+
 use crate::error::EngineError;
 use crate::pairing::EnrolmentInvite;
 use crate::roster::{ROOT_KEY_ID, RosterOutcome, SignedRoster};

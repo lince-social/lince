@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct Form, enum Command, fn input, fn button.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 230, 231, 457,
+//   464.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   92, 257, 294, 295, 317, 409, 424.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (47, 308, 379, 467).
+
 use super::*;
 use crate::host::performance::{self, Count, Stage};
 use crate::native::{

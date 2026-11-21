@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct BatchedInstanceBuffer, fn clear_batched_cpu_instance_buffers, fn
+//   batch_and_prepare_sorted_render_phase, fn batch_and_prepare_binned_render_phase.
+// BeautifulRust (baseline lines):
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 80, 111.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 29.
+
 //! Batching functionality when GPU preprocessing isn't in use.
 
 use bevy_derive::{Deref, DerefMut};

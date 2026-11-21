@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn signed_owner_retirement_syncs_to_enrolled_devices_and_fresh_requests_recover_authority,
+//   fn signed_owner_retirement_reaches_a_deleted_context_through_own_sync, fn retirement_case.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use nucleus::social::requests::SESSION_AUTHORITY_NAMESPACE;
 

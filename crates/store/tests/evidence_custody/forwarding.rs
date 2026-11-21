@@ -1,6 +1,16 @@
-use super::*;
+// non-lean-yet
+// Scope: fn enabled, fn queue, fn
+//   forwarding_queue_prioritizes_controls_caps_eight_jobs_and_never_retries_more_than_three_times,
+//   fn
+//   forwarding_restart_keeps_attempt_count_and_cancelled_commit_races_keep_the_true_acknowledgment.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 65, 92, 96.
+
 use nucleus::trust_analysis::custody::forwarding::SourceMode;
 use store::evidence_forwarding as outbox;
+
+use super::*;
 
 async fn enabled() -> Fixture {
     let f = fixture(Store::open_memory().await.unwrap()).await;
@@ -27,9 +37,11 @@ async fn queue(f: &Fixture, index: u32, control: bool, series_index: u32) -> (St
     let mut offer = f.offer.clone();
     std::mem::swap(&mut offer.sender, &mut offer.custodian);
     offer.nonce = nucleus::new_uid("cust");
-    offer.artifact = nucleus::karma::canonical_hash("lince.test.queued.original.v1", &index).unwrap();
+    offer.artifact =
+        nucleus::karma::canonical_hash("lince.test.queued.original.v1", &index).unwrap();
     offer.deliver_by = f.now + 100;
-    let series = nucleus::karma::canonical_hash("lince.test.queued.series.v1", &series_index).unwrap();
+    let series =
+        nucleus::karma::canonical_hash("lince.test.queued.series.v1", &series_index).unwrap();
     let mut tx = store::write_tx(&f.store.pool).await.unwrap();
     let record = outbox::queue_on(
         &mut tx,

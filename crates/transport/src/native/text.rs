@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct Arguments, struct Edit.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 31, 103, 105,
+//   109.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   61, 66, 71.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 78, 98.
+
 use base64::{Engine as _, engine::general_purpose::STANDARD as B64};
 use engine::{
     actions::Action,

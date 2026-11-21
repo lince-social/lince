@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn show.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy::prelude::*;
 
 pub fn show(world: &mut World, parent: Entity, text: &str) {

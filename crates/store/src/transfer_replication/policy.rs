@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn bootstrap_sql, fn bootstrap, fn capture_condition, fn prepare.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   54.
+
 use serde_json::Value;
 use sqlx::SqliteConnection;
 

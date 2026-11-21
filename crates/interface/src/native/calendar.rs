@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: mod persistence, mod picker, mod projection, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 286, 300, 332,
+//   333, 348, 354, 361, 371, 380, 381.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (217, 218, 227, 302, 307, 311, 312, 316, 317, 321, 322, 324, 330, 333, 335, 340,
+//   344, 348, 391, 392).
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 5.
+
 use lince_interface::calendar as model;
 mod persistence;
 mod picker;

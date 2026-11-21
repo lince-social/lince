@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn gemv, fn mixed_gemv_colmajor, fn mixed_gemv_rowmajor.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 168, 401.
+
 use core::slice::from_raw_parts_mut;
 
 use num_traits::{One, Zero};

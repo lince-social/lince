@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod space, mod wayland.
+// BeautifulRust (baseline lines):
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 55.
+
 //! Desktop management helpers
 //!
 //! This module contains helpers to organize and interact with desktop-style shells.

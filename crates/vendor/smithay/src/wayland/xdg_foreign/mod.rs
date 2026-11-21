@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod handlers, trait XdgForeignHandler, struct XdgForeignHandle, struct
+//   XdgExportedUserData.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 123, 128.
+
 //! Implementation `xdg_foreign` protocol
 //!
 //! ```rs

@@ -1,5 +1,7 @@
-use super::schedules::frame_pixels;
-use super::*;
+// non-lean-yet
+// Scope: fn advance, fn mixed_daily_phases_publish_measured_work_and_complete_pixels.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy::{input::keyboard::Key, input_focus::InputFocus, math::DVec2};
 use lince_interface::{
     host::{
@@ -11,6 +13,8 @@ use lince_interface::{
         sand_store::{SandKind, spawn_sand},
     },
 };
+
+use super::{schedules::frame_pixels, *};
 
 fn advance(canvas: &mut Presentation, frames: usize) {
     for _ in 0..frames {

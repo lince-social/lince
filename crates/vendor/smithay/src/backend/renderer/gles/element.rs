@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct PixelShaderElement, struct TextureShaderElement.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 //! RenderElements specific to using a `GlesRenderer`
 
 use crate::{

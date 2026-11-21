@@ -1,11 +1,25 @@
-use crate::Result;
-use regex::{Regex, RegexBuilder};
-use ropey::Rope;
-use serde::{Deserialize, Serialize};
+// non-lean-yet
+// Scope: struct Options, struct Pattern, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   find:backwards (114).
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 35, 69, 110, 136.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 25.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 11, 12,
+//   13, 25, 31, 35, 55, 69, 110, 136.
+
 use std::{
     ops::Range,
     sync::atomic::{AtomicBool, Ordering},
 };
+
+use regex::{Regex, RegexBuilder};
+use ropey::Rope;
+use serde::{Deserialize, Serialize};
+
+use crate::Result;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Options {

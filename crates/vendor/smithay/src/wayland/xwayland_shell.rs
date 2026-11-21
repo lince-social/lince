@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: const XWAYLAND_SHELL_ROLE, const VERSION, struct XWaylandShellState, struct
+//   XWaylandSurfaceUserData.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 111, 289, 291,
+//   303.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (289).
+
 //! Helpers for handling the xwayland shell protocol
 //!
 //! # Example

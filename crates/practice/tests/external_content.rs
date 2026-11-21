@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn handbook_and_practice_are_external_and_optional.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::{path::PathBuf, process::Command};
 
 #[test]

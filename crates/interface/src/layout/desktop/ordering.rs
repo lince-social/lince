@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct InfluenceOrder, struct Ranked, struct Selected.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   83, 85, 87, 89, 91.
+
 use super::PlacementId;
 
 #[derive(Default)]

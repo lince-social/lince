@@ -1,25 +1,42 @@
-#![cfg(test)]
+use nucleus::{
+    DecimalValue, RecordKind,
+    performance::{Reading, install},
+    shader_effect::bindings::NumericField,
+};
+use protein::{
+    Aggregate, AggregateOp, ExtensionInclude, GroupBy, Include, Order, Predicate, Protein, Source,
+    authority::RolePolicy, execute, execute_for, matching_among, matching_records,
+    relation_context, select_records, shader_inputs::Request,
+};
+use serde_json::{Value, json, to_value};
+use std::{
+    collections::HashSet,
+    sync::atomic::{AtomicU64, Ordering},
+};
+use store::{
+    Store, auth,
+    records::{
+        NewRecord, RecordBody, RecordRow, RecordSelection, create, get, read, set_extension,
+        set_text,
+    },
+    role_policies,
+    sqlx::query as sql,
+};
 
-use nucleus::RecordKind;
-use protein::{Aggregate, AggregateOp, GroupBy, Include, Order, Predicate, Protein, Source};
-use serde_json::{Value, json};
-use std::collections::HashSet;
-use std::sync::atomic::{AtomicU64, Ordering};
-use store::records::{RecordBody, RecordRow, RecordSelection};
-
-async fn record(store: &store::Store, slug: &str, head: &str, body: &str) -> RecordRow {
-    store::records::create(
+async fn record(store: &Store, slug: &str, head: &str, body: &str) -> RecordRow {
+    create(
         &store.pool,
-        store::records::NewRecord {
+        NewRecord {
             slug: Some(slug),
             kind: RecordKind::Plain,
             head,
             body,
-            quantity: nucleus::DecimalValue::parse_inferred("9007199254740993.125").unwrap(),
+            quantity: DecimalValue::parse_inferred("9007199254740993.125")
+                .expect("fixture quantity"),
         },
     )
     .await
-    .unwrap()
+    .expect("create Record fixture")
 }
 
 fn metadata<Body>(row: &RecordRow<Body>) -> Value {
@@ -45,7 +62,7 @@ fn query(uid: &str) -> Protein {
 
 #[tokio::test]
 async fn partial_reads_distinguish_unloaded_empty_and_complete_bodies() {
-    let store = store::Store::open_memory().await.unwrap();
+    let store = Store::open_memory().await.unwrap();
     let first = record(
         &store,
         "first-projection",
@@ -61,13 +78,11 @@ async fn partial_reads_distinguish_unloaded_empty_and_complete_bodies() {
         RecordSelection::Token("first-projection"),
         RecordSelection::Uids(&ids),
     ] {
-        let full = store::records::read::<String>(&store.pool, selection, true)
+        let full = read::<String>(&store.pool, selection, true).await.unwrap();
+        let partial = read::<Option<String>>(&store.pool, selection, false)
             .await
             .unwrap();
-        let partial = store::records::read::<Option<String>>(&store.pool, selection, false)
-            .await
-            .unwrap();
-        let loaded = store::records::read::<Option<String>>(&store.pool, selection, true)
+        let loaded = read::<Option<String>>(&store.pool, selection, true)
             .await
             .unwrap();
         assert_eq!(full.len(), partial.len());
@@ -79,49 +94,43 @@ async fn partial_reads_distinguish_unloaded_empty_and_complete_bodies() {
             assert!(partial.body.required().is_err());
             assert_eq!(loaded.body.required().unwrap(), full.body);
             assert_eq!(
-                store::records::get(&store.pool, &full.uid)
-                    .await
-                    .unwrap()
-                    .unwrap()
-                    .body,
+                get(&store.pool, &full.uid).await.unwrap().unwrap().body,
                 full.body
             );
         }
     }
-    let loaded =
-        store::records::read::<Option<String>>(&store.pool, RecordSelection::Uid(&empty.uid), true)
-            .await
-            .unwrap();
-    assert_eq!(loaded[0].body.as_deref(), Some(""));
+    let loaded = read::<Option<String>>(&store.pool, RecordSelection::Uid(&empty.uid), true)
+        .await
+        .unwrap();
+    let [loaded] = loaded.as_slice() else {
+        panic!("expected one Record with a loaded empty body")
+    };
+    assert_eq!(loaded.body.as_deref(), Some(""));
     assert!(
-        store::records::read::<String>(&store.pool, RecordSelection::Uid(&empty.uid), false)
+        read::<String>(&store.pool, RecordSelection::Uid(&empty.uid), false)
             .await
             .is_err()
     );
     assert!(
-        store::records::read::<Option<String>>(&store.pool, RecordSelection::Uids(&[]), false)
+        read::<Option<String>>(&store.pool, RecordSelection::Uids(&[]), false)
             .await
             .unwrap()
             .is_empty()
     );
     let excessive = vec![first.uid.as_str(); 10001];
     assert!(
-        store::records::read::<Option<String>>(
-            &store.pool,
-            RecordSelection::Uids(&excessive),
-            false
-        )
-        .await
-        .is_err()
+        read::<Option<String>>(&store.pool, RecordSelection::Uids(&excessive), false)
+            .await
+            .is_err()
     );
 }
 
 #[tokio::test]
 async fn projected_queries_match_full_results_for_filters_orders_includes_and_pagination() {
-    let store = store::Store::open_memory().await.unwrap();
+    let store = Store::open_memory().await.unwrap();
     let first = record(&store, "projection-a", "Beta title", "café 👩‍💻 z").await;
     let second = record(&store, "projection-b", "Alpha title", "a description").await;
-    store::records::set_extension(
+    set_extension(
         &store.pool,
         &first.uid,
         "work",
@@ -133,6 +142,24 @@ async fn projected_queries_match_full_results_for_filters_orders_includes_and_pa
         Predicate::UidEq(first.uid.clone()),
         Predicate::UidEq(second.uid.clone()),
     ]);
+    let include = Include {
+        extension: Some(ExtensionInclude {
+            namespace: "work".into(),
+        }),
+        relation_context: Some(relation_context::Include::default()),
+        numeric_fields: vec![Request {
+            record: first.uid.clone(),
+            field: NumericField::Quantity,
+        }],
+        ..Default::default()
+    };
+    let fields: [&[&str]; 5] = [
+        &[],
+        &["uid", "head", "quantity"],
+        &["body", "body", "head"],
+        &["unknown"],
+        &["head", "extension", "relation_context", "numeric_values"],
+    ];
     for filter in [
         vec![base.clone()],
         vec![base.clone(), Predicate::TextContains("café".into())],
@@ -151,56 +178,38 @@ async fn projected_queries_match_full_results_for_filters_orders_includes_and_pa
             vec![Order::Asc("head".into())],
             vec![Order::Asc("unknown".into())],
         ] {
-            let mut query = query(&first.uid);
-            query.filter = filter.clone();
-            query.order = order;
-            query.include = Include {
-                extension: Some(protein::ExtensionInclude {
-                    namespace: "work".into(),
-                }),
-                relation_context: Some(protein::relation_context::Include::default()),
-                numeric_fields: vec![protein::shader_inputs::Request {
-                    record: first.uid.clone(),
-                    field: nucleus::shader_effect::bindings::NumericField::Quantity,
-                }],
-                ..Default::default()
+            let mut query = Protein {
+                source: Source::Record,
+                filter: filter.clone(),
+                order,
+                include: include.clone(),
+                fields: None,
+                aggregate: None,
+                limit: None,
             };
-            let mut full_query = query.clone();
-            full_query.fields = None;
-            let full = protein::execute(&store, &full_query).await.unwrap();
-            for fields in [
-                Vec::new(),
-                ["uid", "head", "quantity"].map(str::to_owned).into(),
-                ["body", "body", "head"].map(str::to_owned).into(),
-                vec!["unknown".into()],
-                ["head", "extension", "relation_context", "numeric_values"]
-                    .map(str::to_owned)
-                    .into(),
-            ] {
-                query.fields = Some(fields.clone());
+            let full = execute(&store, &query).await.unwrap();
+            for fields in fields {
+                query.fields = Some(fields.iter().map(|field| (*field).into()).collect());
                 let mut expected = full.clone();
                 for row in &mut expected {
                     row.as_object_mut().unwrap().retain(|field, _| {
-                        field == "uid" || field == "kind" || fields.contains(field)
+                        field == "uid" || field == "kind" || fields.contains(&field.as_str())
                     });
                 }
-                assert_eq!(protein::execute(&store, &query).await.unwrap(), expected);
+                assert_eq!(execute(&store, &query).await.unwrap(), expected);
                 query.limit = Some(1);
                 assert_eq!(
-                    protein::execute(&store, &query).await.unwrap(),
-                    expected.iter().take(1).cloned().collect::<Vec<_>>()
+                    execute(&store, &query).await.unwrap(),
+                    expected.get(..1).unwrap_or(&expected)
                 );
                 query.limit = None;
                 if let Some(first) = expected.first() {
                     query.include.record_after = Some(first["uid"].as_str().unwrap().into());
-                    assert_eq!(
-                        protein::execute(&store, &query).await.unwrap(),
-                        expected.iter().skip(1).cloned().collect::<Vec<_>>()
-                    );
+                    assert_eq!(execute(&store, &query).await.unwrap(), expected[1..]);
                     query.include.record_after = None;
                 }
             }
-            let complete = protein::select_records(&store, &query, None).await.unwrap();
+            let complete = select_records(&store, &query, None).await.unwrap();
             for row in complete {
                 assert_eq!(
                     row.body,
@@ -220,23 +229,21 @@ async fn projected_queries_match_full_results_for_filters_orders_includes_and_pa
         op: AggregateOp::Count,
         by: GroupBy::Total,
     });
-    let full = protein::execute(&store, &aggregate).await.unwrap();
+    let full = execute(&store, &aggregate).await.unwrap();
     aggregate.fields = Some(Vec::new());
-    assert_eq!(protein::execute(&store, &aggregate).await.unwrap(), full);
+    assert_eq!(execute(&store, &aggregate).await.unwrap(), full);
     let among = HashSet::from([first.uid.clone(), second.uid.clone()]);
     assert_eq!(
-        protein::matching_among(&store, &aggregate, &among)
-            .await
-            .unwrap(),
+        matching_among(&store, &aggregate, &among).await.unwrap(),
         among
     );
-    store::sqlx::query("UPDATE record SET deleted_at = '2026-11-05' WHERE uid = ?")
+    sql("UPDATE record SET deleted_at = '2026-11-05' WHERE uid = ?")
         .bind(&first.uid)
         .execute(&store.pool)
         .await
         .unwrap();
     assert!(
-        protein::execute(&store, &query(&first.uid))
+        execute(&store, &query(&first.uid))
             .await
             .unwrap()
             .is_empty()
@@ -245,7 +252,7 @@ async fn projected_queries_match_full_results_for_filters_orders_includes_and_pa
 
 #[tokio::test]
 async fn delegated_body_policies_and_revocation_remain_fresh() {
-    let store = store::Store::open_memory().await.unwrap();
+    let store = Store::open_memory().await.unwrap();
     let target = record(
         &store,
         "delegated-projection",
@@ -253,9 +260,9 @@ async fn delegated_body_policies_and_revocation_remain_fresh() {
         "permit café",
     )
     .await;
-    let person = store::records::create(
+    let person = create(
         &store.pool,
-        store::records::NewRecord {
+        NewRecord {
             slug: None,
             kind: RecordKind::Person,
             head: "Reader",
@@ -266,81 +273,59 @@ async fn delegated_body_policies_and_revocation_remain_fresh() {
     .await
     .unwrap()
     .uid;
-    let role = store::auth::ensure_role(&store.pool, "projection-reader")
+    let role = auth::ensure_role(&store.pool, "projection-reader")
         .await
         .unwrap();
-    store::auth::compare_and_set_role(&store.pool, &person, Some(role), 0)
+    auth::compare_and_set_role(&store.pool, &person, Some(role), 0)
         .await
         .unwrap();
-    let permission = store::auth::ensure_permission(&store.pool, "record", "read")
+    let permission = auth::ensure_permission(&store.pool, "record", "read")
         .await
         .unwrap();
-    store::auth::grant(&store.pool, role, permission)
-        .await
-        .unwrap();
-    let policy = protein::authority::RolePolicy {
+    auth::grant(&store.pool, role, permission).await.unwrap();
+    let policy = RolePolicy {
         read: Predicate::TextContains("permit".into()),
         grants: Vec::new(),
     };
-    let stored =
-        store::role_policies::set(&store.pool, role, &serde_json::to_value(policy).unwrap(), 0)
-            .await
-            .unwrap();
-    let query = query(&target.uid);
-    let rows = protein::execute_for(&store, &query, Some(&person))
+    let stored = role_policies::set(&store.pool, role, &to_value(policy).unwrap(), 0)
         .await
         .unwrap();
+    let query = query(&target.uid);
+    let scoped = || execute_for(&store, &query, Some(&person));
+    let rows = scoped().await.unwrap();
     assert_eq!(rows.len(), 1);
     assert_eq!(rows[0]["uid"], target.uid);
-    store::records::set_text(&store.pool, &target.uid, None, Some("no longer allowed"))
+    set_text(&store.pool, &target.uid, None, Some("no longer allowed"))
         .await
         .unwrap();
-    assert!(
-        protein::execute_for(&store, &query, Some(&person))
-            .await
-            .unwrap()
-            .is_empty()
-    );
-    let policy = protein::authority::RolePolicy {
-        read: Predicate::UidEq(target.uid.clone()),
+    assert!(scoped().await.unwrap().is_empty());
+    let policy = RolePolicy {
+        read: Predicate::UidEq(target.uid),
         grants: Vec::new(),
     };
-    store::role_policies::set(
+    role_policies::set(
         &store.pool,
         role,
-        &serde_json::to_value(policy).unwrap(),
+        &to_value(policy).unwrap(),
         stored.revision,
     )
     .await
     .unwrap();
-    assert_eq!(
-        protein::execute_for(&store, &query, Some(&person))
-            .await
-            .unwrap()
-            .len(),
-        1
-    );
-    store::auth::revoke(&store.pool, role, permission)
-        .await
-        .unwrap();
-    assert!(
-        protein::execute_for(&store, &query, Some(&person))
-            .await
-            .unwrap()
-            .is_empty()
-    );
+    assert_eq!(scoped().await.unwrap().len(), 1);
+    auth::revoke(&store.pool, role, permission).await.unwrap();
+    assert!(scoped().await.unwrap().is_empty());
 }
 
 #[tokio::test]
 #[ignore = "isolated decoded-body work accounting"]
 async fn isolated_body_dependency_accounting() {
     static BYTES: AtomicU64 = AtomicU64::new(0);
-    fn observe(reading: nucleus::performance::Reading) {
-        if let nucleus::performance::Reading::Count("record-read-body-bytes", bytes) = reading {
+    fn observe(reading: Reading) {
+        if let Reading::Count("record-read-body-bytes", bytes) = reading {
             BYTES.fetch_add(bytes, Ordering::Relaxed);
         }
     }
-    let store = store::Store::open_memory().await.unwrap();
+    let store = Store::open_memory().await.unwrap();
     let target = record(
         &store,
         "counted-projection",
@@ -348,61 +333,57 @@ async fn isolated_body_dependency_accounting() {
         &"café 👩‍💻\n".repeat(100),
     )
     .await;
-    assert!(nucleus::performance::install(observe));
+    assert!(install(observe));
     let base = query(&target.uid);
-    let mut cases = vec![(base.clone(), false)];
-    let mut changed = base.clone();
-    changed.fields = Some(Vec::new());
-    cases.push((changed, false));
-    let mut changed = base.clone();
-    changed.fields = Some(vec!["body".into()]);
-    cases.push((changed, true));
-    let mut changed = base.clone();
-    changed.fields = Some(vec!["unknown".into()]);
-    cases.push((changed, true));
-    let mut changed = base.clone();
-    changed
-        .filter
+    let with_fields = |fields: &[&str]| Protein {
+        fields: Some(fields.iter().map(|field| (*field).into()).collect()),
+        ..base.clone()
+    };
+    let order_by = |field: &str| Protein {
+        order: vec![Order::Asc(field.into())],
+        ..base.clone()
+    };
+    let mut text = base.clone();
+    text.filter
         .push(Predicate::All(vec![Predicate::Not(Box::new(
             Predicate::TextContains("absent".into()),
         ))]));
-    cases.push((changed, true));
-    for field in ["body", "description", "unknown"] {
-        let mut changed = base.clone();
-        changed.order = vec![Order::Asc(field.into())];
-        cases.push((changed, true));
-    }
-    let mut changed = base.clone();
-    changed.order = vec![Order::Asc("head".into())];
-    cases.push((changed, false));
-    let mut changed = base.clone();
-    changed.fields = None;
-    changed.order = vec![Order::Asc("body".into())];
-    changed.aggregate = Some(Aggregate {
+    let mut aggregate = order_by("body");
+    aggregate.fields = None;
+    aggregate.aggregate = Some(Aggregate {
         op: AggregateOp::Count,
         by: GroupBy::Total,
     });
-    cases.push((changed, false));
-    let mut changed = base.clone();
-    changed.fields = Some(vec!["extension".into()]);
-    changed.include.extension = Some(protein::ExtensionInclude {
+    let mut extra = with_fields(&["extension"]);
+    extra.include.extension = Some(ExtensionInclude {
         namespace: "work".into(),
     });
-    cases.push((changed, false));
+    let cases = [
+        (base.clone(), false),
+        (with_fields(&[]), false),
+        (with_fields(&["body"]), true),
+        (with_fields(&["unknown"]), true),
+        (text, true),
+        (order_by("body"), true),
+        (order_by("description"), true),
+        (order_by("unknown"), true),
+        (order_by("head"), false),
+        (aggregate, false),
+        (extra, false),
+    ];
+    let body_bytes = u64::try_from(target.body.len()).expect("fixture size fits the counter");
     for (index, (query, needs_body)) in cases.iter().enumerate() {
         BYTES.store(0, Ordering::Relaxed);
-        protein::execute(&store, query).await.unwrap();
+        execute(&store, query).await.unwrap();
         let bytes = BYTES.load(Ordering::Relaxed);
         if *needs_body {
-            assert!(bytes >= target.body.len() as u64, "case {index}: {bytes}");
+            assert!(bytes >= body_bytes, "case {index}: {bytes}");
         } else {
             assert_eq!(bytes, 0, "case {index}");
         }
     }
     BYTES.store(0, Ordering::Relaxed);
-    let full = protein::matching_records(&store, &base, None)
-        .await
-        .unwrap();
+    let full = matching_records(&store, &base, None).await.unwrap();
     assert_eq!(full[0].body, target.body);
-    assert_eq!(BYTES.load(Ordering::Relaxed), target.body.len() as u64);
+    assert_eq!(BYTES.load(Ordering::Relaxed), body_bytes);
 }

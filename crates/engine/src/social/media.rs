@@ -1,3 +1,24 @@
+// non-lean-yet
+// Scope: const MAX_IMAGE_BYTES, fn image_work, fn decode, fn validate_public_image.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 13, 167, 168,
+//   233, 238, 242, 245, 257, 344, 345, 346, 352, 353.
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites social_import_image:path → &str (266), social_prepare_image_asset:bytes → &[T]
+//   (134).
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 15, 22, 23,
+//   27, 33, 52, 68, 71, 79, 101, 112, 129, 351.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 303.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 303.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 11.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 232, 236.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 15, 22, 23, 27, 33, 52, 68, 71, 79, 101, 112, 129, 351.
+
 use super::*;
 use std::io::{Cursor, Read};
 

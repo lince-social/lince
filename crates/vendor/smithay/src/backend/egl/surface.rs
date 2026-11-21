@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct EGLSurface.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check SAFETY proof and trait invariants. Sites 44.
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 77, 98, 126, 135,
+//   186, 196, 214, 261.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (194).
+
 //! EGL surface related structs
 
 use std::fmt;

@@ -1,8 +1,40 @@
-use super::*;
-use crate::optimization::{Status, decimal};
+// non-lean-yet
+// Scope: const MAX_TASKS, struct Material, enum StageKind, struct Stage.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 310.
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value. Sites
+//   465, 532.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 328, 501, 504,
+//   522, 523, 529, 530, 589.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   project:buy_all (209).
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 391, 427, 434, 440, 442, 489, 558, 572, 613, 636.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   427, 434, 440, 442, 489.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 427, 440, 442, 489, 558, 572, 636.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 20.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 108, 203.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 1.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 10,
+//   11, 12, 13, 20, 21, 23, 24, 28, 30, 32, 33, 34, 36, 38, 42, 44, 45, 46, 47, 48, 49, 50, 51, 52,
+//   53, 54, 55, 56, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 77, 79, 83, 84, 85,
+//   86, 87, 88, 89, 90, 91, 95, 96, 97, 98, 99, 100, 108, 203.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites project: String
+//   (203), validate: String (108).
+
+use std::collections::BTreeMap;
+
 use chrono::{Datelike, Days, NaiveDate};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+
+use super::*;
+use crate::optimization::{Status, decimal};
 
 pub const MAX_TASKS: usize = 10_000;
 

@@ -1,5 +1,18 @@
-use crate::rules::{Finding, Rule};
+// non-lean-yet
+// Scope: Legacy Rust comment scanner and stripper exercised by the scanner tests.
+// BeautifulRust (baseline lines):
+// - [manual: §6 Idioms] Sites 11–13, 113–119. Rely on Rule's identical extension default
+//   and combine the raw-string guard with the end-position lookup.
+// - [manual: §4 Types, §10 Documentation] Sites 29–35, 54–132. Keep comment ranges and
+//   safety-proof continuation state private or document their UTF-8 boundary invariant.
+// - [manual: §5 Errors, §11 Tests] Sites 157–207, 278–291. Preserve the whitespace needed
+//   between tokens and raw-string bytes when removing a comment. An escaped newline inside
+//   a string currently advances the byte cursor without incrementing its line counter.
+//   Cover these cases before using the legacy stripper on source again.
+
 use std::path::Path;
+
+use crate::rules::{Finding, Rule};
 
 pub struct NoComments;
 
@@ -111,11 +124,12 @@ pub fn comments_in(source: &str) -> Vec<Comment> {
         }
 
         let previous = if at == 0 { b' ' } else { bytes[at - 1] };
-        if matches!(byte, b'b' | b'c' | b'r') && !is_word(previous) {
-            if let Some(next) = raw_string_end(bytes, at, &mut line) {
-                at = next;
-                continue;
-            }
+        if matches!(byte, b'b' | b'c' | b'r')
+            && !is_word(previous)
+            && let Some(next) = raw_string_end(bytes, at, &mut line)
+        {
+            at = next;
+            continue;
         }
 
         if byte == b'"' {
@@ -183,7 +197,10 @@ pub fn strip(source: &str) -> String {
             dropped_before = true;
         } else if text.is_empty()
             && dropped_before
-            && kept.last().map(|line| line.is_empty()).unwrap_or(true)
+            && kept
+                .last()
+                .map(std::string::String::is_empty)
+                .unwrap_or(true)
         {
             dropped_before = false;
         } else {
@@ -197,7 +214,11 @@ pub fn strip(source: &str) -> String {
         at = end + 1;
     }
 
-    while kept.last().map(|line| line.is_empty()).unwrap_or(false) {
+    while kept
+        .last()
+        .map(std::string::String::is_empty)
+        .unwrap_or(false)
+    {
         kept.pop();
     }
 
@@ -206,6 +227,35 @@ pub fn strip(source: &str) -> String {
         out.push('\n');
     }
     out
+}
+
+/// Removes ordinary comments while preserving documentation, safety, and attribution.
+pub fn strip_ordinary(source: &str) -> String {
+    let mut output = String::with_capacity(source.len());
+    let mut cursor = 0;
+    for comment in comments_in(source) {
+        let text = &source[comment.start..comment.end];
+        if comment.permitted
+            || text.contains("SAFETY:")
+            || text.starts_with("//!")
+            || text.starts_with("/*!")
+            || text.starts_with("///") && !text.starts_with("////")
+            || text.starts_with("/**") && !text.starts_with("/***") && text != "/**/"
+            || text.trim_end() == "// non-lean-yet"
+            || text.contains("rustfmt::skip")
+        {
+            continue;
+        }
+        output.push_str(&source[cursor..comment.start]);
+        // A block comment separates tokens even when it touches both of them.
+        if comment.opener == "/*" {
+            output.push(' ');
+        }
+        output.extend(text.chars().filter(|&c| matches!(c, '\n' | '\r')));
+        cursor = comment.end;
+    }
+    output.push_str(&source[cursor..]);
+    output
 }
 
 fn is_word(byte: u8) -> bool {
@@ -264,7 +314,7 @@ fn raw_string_end(bytes: &[u8], start: usize, line: &mut usize) -> Option<usize>
                 .iter()
                 .skip(at + 1)
                 .take(hashes)
-                .filter(|byte| **byte == b'#')
+                .take_while(|byte| **byte == b'#')
                 .count();
             if closed == hashes {
                 return Some(at + 1 + hashes);
@@ -279,7 +329,10 @@ fn string_end(bytes: &[u8], start: usize, line: &mut usize) -> usize {
     let mut at = start + 1;
     while at < bytes.len() {
         match bytes[at] {
-            b'\\' => at += 2,
+            b'\\' => {
+                *line += usize::from(bytes.get(at + 1) == Some(&b'\n'));
+                at += 2;
+            }
             b'\n' => {
                 *line += 1;
                 at += 1;

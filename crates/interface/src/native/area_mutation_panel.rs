@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct QuantityMode, enum Property, struct Field, fn field_values.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 48, 224, 226.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (118, 125,
+//   276).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (321, 323, 326, 336, 341, 354, 356, 357, 370, 374, 379, 387).
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 285.
+
 use crate::native::{area::InfluenceArea, area_mutation, edit_mode::label};
 use bevy::{a11y::AccessibilityNode, prelude::*, text::EditableText};
 

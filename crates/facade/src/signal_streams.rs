@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: fn denied, fn token, fn publish, fn ailuros_publish.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 63, 91, 142, 209,
+//   214, 225, 233, 237.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 53, 65, 93,
+//   99, 205, 206, 211, 216.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 61, 89, 207, 212.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 53, 65, 93, 99, 205, 206, 211, 216.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 129.
+
 use crate::{
     State,
     auth::{self, Failure},

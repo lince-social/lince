@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: const MAX_POLICY_BYTES, const MAX_POLICY_ROWS, const MAX_TOTAL_POLICY_BYTES, struct
+//   RolePolicyRow.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   135, 166.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   151, 195, 196, 197.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   103, 204, 206, 208.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 130, 135, 159, 166, 236, 248, 290, 299, 308, 316.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 8, 9,
+//   10, 13, 14, 15, 16, 130, 135, 159, 166, 236, 248, 290, 299, 308, 316.
+
 use std::io::{self, Write};
 
 use serde_json::Value;

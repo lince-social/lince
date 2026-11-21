@@ -1,5 +1,24 @@
-use super::{HEADER, compile, compile_with_budget, compile_with_callback_budget};
+// non-lean-yet
+// Scope: const MESH_TYPES, const MESH_SHADE, const DEFORM_SPHERE, const GENERATED_TRIANGLE.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 222.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 13, 22, 56, 91.
+// - [Clippy: clippy::field_reassign_with_default] field assignment outside of initializer for an
+//   instance created with Default::default(). Sites 414.
+// - [Clippy: clippy::format_push_string] `format!(..)` appended to existing `String`. Sites 354.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 104, 162, 209.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 5,
+//   6, 7, 8, 9, 13, 15, 16, 17, 22, 24, 25, 26, 31, 33, 35, 37, 42, 43, 44, 49, 50, 51, 56, 57, 59,
+//   60, 64, 75, 77, 78, 91, 92, 93, 104, 133, 150, 162, 209.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites mesh_entry:
+//   String (104), validate: String (162), validate_program: String (209).
+
 use serde::{Deserialize, Serialize};
+
+use super::{HEADER, compile, compile_with_budget, compile_with_callback_budget};
 
 pub const MESH_TYPES: &str = "struct MeshVertex { position: vec3<f32>, normal: vec3<f32>, uv: vec2<f32> }; struct MeshPoint { local_position: vec3<f32>, world_position: vec3<f32>, normal: vec3<f32>, uv: vec2<f32> };\n";
 pub const MESH_SHADE: &str = "fn shade_mesh(point: MeshPoint, inputs: ShaderInputs) -> vec4<f32> { let color = vec3<f32>(0.15, 0.4, 0.8) + abs(point.normal) * 0.2; return vec4<f32>(color, 1.0); }";

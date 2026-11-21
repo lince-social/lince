@@ -1,7 +1,12 @@
-use super::*;
+// non-lean-yet
+// Scope: mod handoff, mod lifecycle, fn field, fn configure.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy::prelude::*;
 use lince_interface::native as ui;
 use smithay::backend::winit::WinitEvent;
+
+use super::*;
 
 #[path = "scenes/handoff.rs"]
 mod handoff;

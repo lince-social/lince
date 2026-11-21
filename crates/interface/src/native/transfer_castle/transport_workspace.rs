@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct Surface, enum Navigate, fn button, fn scope.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 47, 136, 137,
+//   187, 298, 473, 555, 609, 682.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (561, 572, 573, 576, 586, 589, 593, 604, 607, 623, 626, 631, 636, 644, 650, 655,
+//   657, 669, 674, 675, 680, 693, 704, 705, 709).
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 509.
+
 use super::*;
 use crate::transfers::workspace::{Panel, Workflow, Workspace};
 

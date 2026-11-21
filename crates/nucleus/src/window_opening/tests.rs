@@ -1,19 +1,48 @@
+// non-lean-yet
+// Scope: fn rule, fn sparse_override_keeps_explicit_false_and_exact_requested_dimensions, fn
+//   area_conditions_and_application_metadata_share_exact_matching_without_inferred_authority, fn
+//   known_extensions_validate_before_reporting_a_revision.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 47, 64, 66, 68.
+
+use serde_json::json;
+
 use super::*;
 use crate::property_rule::Property;
-use serde_json::json;
 
 fn rule() -> Rule {
     Rule {
-        revision: 1, enabled: true, match_all: true,
-        conditions: vec![PropertyRule { property: Property::ApplicationId, value: "org.example.Editor".into() }],
-        properties: Properties { width: Some(Dimension::Fraction([1, 2])), floating: Some(false), ..Default::default() },
+        revision: 1,
+        enabled: true,
+        match_all: true,
+        conditions: vec![PropertyRule {
+            property: Property::ApplicationId,
+            value: "org.example.Editor".into(),
+        }],
+        properties: Properties {
+            width: Some(Dimension::Fraction([1, 2])),
+            floating: Some(false),
+            ..Default::default()
+        },
     }
 }
 
 #[test]
 fn sparse_override_keeps_explicit_false_and_exact_requested_dimensions() {
-    let base = Properties { workspace: Some(42), floating: Some(true), focus: Some(true), width: Some(Dimension::Fraction([1, 3])), ..Default::default() };
-    let override_ = Properties { floating: Some(false), focus: Some(false), height: Some(Dimension::Pixels(720)), ..Default::default() };
+    let base = Properties {
+        workspace: Some(42),
+        floating: Some(true),
+        focus: Some(true),
+        width: Some(Dimension::Fraction([1, 3])),
+        ..Default::default()
+    };
+    let override_ = Properties {
+        floating: Some(false),
+        focus: Some(false),
+        height: Some(Dimension::Pixels(720)),
+        ..Default::default()
+    };
     let result = override_.over(&base);
     assert_eq!(result.workspace, Some(42));
     assert_eq!(result.width, Some(Dimension::Fraction([1, 3])));
@@ -27,7 +56,10 @@ fn sparse_override_keeps_explicit_false_and_exact_requested_dimensions() {
 #[test]
 fn area_conditions_and_application_metadata_share_exact_matching_without_inferred_authority() {
     let mut rule = rule();
-    rule.conditions.push(PropertyRule { property: Property::Title, value: "Owner document".into() });
+    rule.conditions.push(PropertyRule {
+        property: Property::Title,
+        value: "Owner document".into(),
+    });
     assert!(rule.matches(&json!({"head":"Owner document","app_id":"org.example.Editor"})));
     assert!(!rule.matches(&json!({"head":"Other","app_id":"org.example.Editor"})));
     assert!(!rule.matches(&json!({"head":"Owner document","app_id":"org.example.editor"})));
@@ -35,7 +67,10 @@ fn area_conditions_and_application_metadata_share_exact_matching_without_inferre
     assert!(rule.matches(&json!({"head":"Other","app_id":"org.example.Editor"})));
     rule.enabled = false;
     assert!(!rule.matches(&json!({"head":"Owner document","app_id":"org.example.Editor"})));
-    let quantity = PropertyRule { property: Property::Quantity, value: "0.10".into() };
+    let quantity = PropertyRule {
+        property: Property::Quantity,
+        value: "0.10".into(),
+    };
     assert!(quantity.matches(&json!({"quantity":"0.1"})));
     assert!(!quantity.matches(&json!({"quantity":"0.1000000001"})));
 }
@@ -54,11 +89,31 @@ fn known_extensions_validate_before_reporting_a_revision() {
 
 #[test]
 fn malformed_and_oversized_preferences_never_match() {
-    for dimension in [Dimension::Fraction([0, 1]), Dimension::Fraction([1, 0]), Dimension::Fraction([2, 1]), Dimension::Pixels(0), Dimension::Pixels(100_001)] {
-        assert!(Properties { width: Some(dimension), ..Default::default() }.validate().is_err());
+    for dimension in [
+        Dimension::Fraction([0, 1]),
+        Dimension::Fraction([1, 0]),
+        Dimension::Fraction([2, 1]),
+        Dimension::Pixels(0),
+        Dimension::Pixels(100_001),
+    ] {
+        assert!(
+            Properties {
+                width: Some(dimension),
+                ..Default::default()
+            }
+            .validate()
+            .is_err()
+        );
     }
     for output in [String::new(), "bad\noutput".into(), "x".repeat(513)] {
-        assert!(Properties { output: Some(output), ..Default::default() }.validate().is_err());
+        assert!(
+            Properties {
+                output: Some(output),
+                ..Default::default()
+            }
+            .validate()
+            .is_err()
+        );
     }
     let mut invalid = rule();
     invalid.conditions[0].value = "x".repeat(4097);
@@ -67,6 +122,12 @@ fn malformed_and_oversized_preferences_never_match() {
     invalid = rule();
     invalid.conditions = vec![invalid.conditions[0].clone(); 33];
     assert!(invalid.validate().is_err());
-    invalid.conditions = vec![PropertyRule { property: Property::Title, value: "x".repeat(4096) }; 32];
+    invalid.conditions = vec![
+        PropertyRule {
+            property: Property::Title,
+            value: "x".repeat(4096)
+        };
+        32
+    ];
     assert!(invalid.validate().is_err());
 }

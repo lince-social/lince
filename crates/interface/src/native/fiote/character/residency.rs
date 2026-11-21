@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Group, struct Demand, struct Saved, fn restore.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 66, 79.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (117).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 88.
+
 use super::*;
 use crate::native::topology::surface_budget::residency::Target;
 use std::collections::BTreeMap;

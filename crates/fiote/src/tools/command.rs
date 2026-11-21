@@ -1,17 +1,34 @@
-use super::Tool;
-use crate::provider::ToolDefinition;
-use async_trait::async_trait;
-use serde::Deserialize;
-use serde_json::{Value, json};
+// non-lean-yet
+// Scope: const OUTPUT_LIMIT, const MAX_TIMEOUT_MS, struct RunCommand, struct Arguments.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 64.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 115.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 24.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 19.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 19, 24.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites new: String
+//   (24).
+
 use std::{
     path::{Path, PathBuf},
     process::Stdio,
     time::Duration,
 };
+
+use async_trait::async_trait;
+use serde::Deserialize;
+use serde_json::{Value, json};
 use tokio::{
     io::{AsyncRead, AsyncReadExt},
     process::Command,
 };
+
+use super::Tool;
+use crate::provider::ToolDefinition;
 
 const OUTPUT_LIMIT: usize = 32 * 1024;
 const MAX_TIMEOUT_MS: u64 = 21_600_000;

@@ -1,9 +1,24 @@
-use crate::{StoreError, transfer_receipts::Saved};
+// non-lean-yet
+// Scope: fn invalid, fn index_on, fn checked, struct Candidate.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 8.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 27, 38.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 12, 32, 78.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 72.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 12, 32,
+//   72, 73, 74, 75, 78.
+
 use nucleus::transfer::{
     receipt::Document,
     receipt_history::{self, Projection},
 };
 use sqlx::{SqliteConnection, SqlitePool};
+
+use crate::{StoreError, transfer_receipts::Saved};
 
 fn invalid(error: impl ToString) -> StoreError {
     StoreError::Protocol(error.to_string())
@@ -24,7 +39,7 @@ pub async fn index_on(
     };
     for row in receipt_history::project(&bundle.publication).map_err(invalid)? {
         sqlx::query("INSERT INTO transfer_receipt_event(record_uid,version,event_id,source_key,source_binding,slot_id,outcome_id,semantic_hash,parent_outcome,need_outcome,issuer_organ) VALUES(?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(record_uid,version,event_id) DO NOTHING")
-            .bind(record).bind(version as i64).bind(row.event.as_str()).bind(row.source.as_str()).bind(row.binding.as_str()).bind(row.slot.as_str()).bind(row.outcome.as_str()).bind(row.semantic.as_str()).bind(row.parent.as_ref().map(|value|value.as_str())).bind(row.need.as_ref().map(|value|value.as_str())).bind(row.issuer).execute(&mut *connection).await?;
+            .bind(record).bind(version as i64).bind(row.event.as_str()).bind(row.source.as_str()).bind(row.binding.as_str()).bind(row.slot.as_str()).bind(row.outcome.as_str()).bind(row.semantic.as_str()).bind(row.parent.as_ref().map(nucleus::karma::CanonicalHash::as_str)).bind(row.need.as_ref().map(nucleus::karma::CanonicalHash::as_str)).bind(row.issuer).execute(&mut *connection).await?;
     }
     Ok(())
 }

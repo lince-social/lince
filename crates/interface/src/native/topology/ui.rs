@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: enum TopologyAction, struct Controls, struct Inspector, struct ImportPath.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   234, 236, 241, 247, 257.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (224, 431, 432, 504).
+
 use super::spatial;
 use crate::native::actions::{Action, ActionButton};
 use bevy::prelude::*;

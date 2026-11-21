@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn a_trusted_roster_verifies_sibling_facts_without_a_separate_introduction.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use engine::actions::Action;
 use engine::roster::{CellEntry, ROOT_KEY_ID, RosterOutcome, full_capabilities};
 use engine::trust::{Signer, adopt_key, verify_fact};

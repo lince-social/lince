@@ -1,10 +1,27 @@
+// non-lean-yet
+// Scope: fn protocol, const STATE_APPLIED, const STATE_VOID, struct Entry.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 262.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 54.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 87, 95, 103, 112, 137, 159, 234, 316.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 149, 222, 308.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 13, 14,
+//   17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 32, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48,
+//   49, 50, 54, 55, 56, 60, 66, 87, 95, 103, 112, 137, 149, 150, 151, 152, 153, 154, 155, 156, 159,
+//   222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 234, 308, 309, 310, 311, 312, 313, 316.
+
 use chrono::{DateTime, Utc};
 use nucleus::DecimalValue;
 use sqlx::{Row, SqlitePool};
 
-use crate::StoreError;
-use crate::exact::{decimal_columns, read_decimal};
-use crate::facts::instant;
+use crate::{
+    StoreError,
+    exact::{decimal_columns, read_decimal},
+    facts::instant,
+};
 
 fn protocol(message: &str) -> StoreError {
     sqlx::Error::Protocol(message.to_string())

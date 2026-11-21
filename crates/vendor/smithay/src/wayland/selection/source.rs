@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct SelectionSource, enum SelectionSourceProvider, struct CompositorSelectionProvider.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 82, 86, 90, 94.
+// - [review: §3 Ownership] Check whether the borrowed container can expose a narrower view. Sites
+//   contains_mime_type:mime_type → &str (56).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (59, 60, 63, 64, 67, 68, 71, 72, 81, 82, 85, 86, 89, 90, 93, 94).
+
 use std::os::unix::io::{AsFd, OwnedFd};
 
 use wayland_protocols::ext::data_control::v1::server::ext_data_control_source_v1::ExtDataControlSourceV1;

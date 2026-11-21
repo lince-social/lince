@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn fixture, fn membership_is_additive_revisioned_and_shown_for_credential_free_actors, fn
+//   renamed_management_role_preserves_recovery_without_reseeding_its_name.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use engine::{Engine, actions::Action};

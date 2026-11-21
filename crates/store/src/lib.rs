@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: mod access_snapshot, mod action_intents, mod artifact_deliveries, mod assertions.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 118, 156, 199, 204, 210, 215.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 1, 2,
+//   3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,
+//   28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51,
+//   52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75,
+//   76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99,
+//   100, 101, 102, 111, 112, 116, 118, 137, 144, 152, 156, 199, 204, 210, 215.
+
 pub mod access_snapshot;
 pub mod action_intents;
 pub mod artifact_deliveries;
@@ -101,11 +113,13 @@ pub mod trust_queries;
 pub mod visibility;
 pub mod vocabulary;
 
-use sqlx::SqlitePool;
-use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use std::str::FromStr;
 
 pub use sqlx;
+use sqlx::{
+    SqlitePool,
+    sqlite::{SqliteConnectOptions, SqlitePoolOptions},
+};
 
 #[derive(Debug, Clone)]
 pub struct Store {
@@ -124,7 +138,11 @@ pub async fn write_tx(
     };
     let mut tx = {
         let _begin = nucleus::performance::Span::new("store-write-begin-await");
-        sqlx::Transaction::begin(connection, Some(sqlx::SqlSafeStr::into_sql_str("BEGIN IMMEDIATE"))).await?
+        sqlx::Transaction::begin(
+            connection,
+            Some(sqlx::SqlSafeStr::into_sql_str("BEGIN IMMEDIATE")),
+        )
+        .await?
     };
     let _sequence = nucleus::performance::Span::new("store-write-sequence-await");
     sqlx::query("UPDATE commit_sequence SET value = value + 1 WHERE id = 1")

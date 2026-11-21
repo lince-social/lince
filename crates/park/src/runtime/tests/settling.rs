@@ -1,7 +1,13 @@
-use super::super::*;
+// non-lean-yet
+// Scope: fn quiet, fn quiet_pointer_input_publishes_once_without_unowned_followup_frames.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
+use std::time::{Duration, Instant};
+
 use bevy::prelude::*;
 use lince_interface::native;
-use std::time::{Duration, Instant};
+
+use super::super::*;
 
 fn quiet(worker: &CanvasWorker, serial: u64) -> u64 {
     let deadline = Instant::now() + Duration::from_secs(20);

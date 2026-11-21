@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: mod library, mod storage, mod tests, mod ui.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 138, 189, 205,
+//   239, 323, 326, 328, 330, 332, 337, 393, 430, 448, 488, 492, 495, 527, 528, 536, 539, 548, 551,
+//   552, 564, 578, 587.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (69).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   528, 552, 571, 572.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (290, 561).
+
 mod library;
 mod storage;
 #[cfg(test)]

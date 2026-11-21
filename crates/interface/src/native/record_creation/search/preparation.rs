@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct AssertionInput, struct Inputs, fn matches_text, struct PreparedFilter.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::assertion_editor::{self, DraftInput};
 

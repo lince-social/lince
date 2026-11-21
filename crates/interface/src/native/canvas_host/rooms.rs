@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn validate.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::topology::rooms::Member;
 use std::collections::HashSet;

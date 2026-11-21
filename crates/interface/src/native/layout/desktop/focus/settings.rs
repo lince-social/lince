@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Page, enum Change, fn install, fn panel.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   270.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (59, 60, 65, 82, 86, 96, 102, 105, 115, 211, 213, 218, 272).
+
 use super::{CursorWarpSupport, policy};
 use crate::{
     host::input::FocusPolicy,

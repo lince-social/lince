@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: mod support, fn ordinary_runtime_resolves_and_fires_a_brazilian_local_date, fn at, fn
+//   boundary.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use chrono::{DateTime, Utc};

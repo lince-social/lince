@@ -1,3 +1,27 @@
+// non-lean-yet
+// Scope: struct Cursor, struct Regression, struct Summary, struct Reduction.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 106, 262, 263,
+//   304, 353, 359, 368, 382, 391.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 203.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 97, 103, 108, 115, 141.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 121.
+// - [Clippy probe: clippy::manual_is_multiple_of] manual implementation of `.is_multiple_of()`.
+//   Sites 49, 65.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 203.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 171, 186, 190, 324.
+// - [Clippy probe: clippy::needless_borrows_for_generic_args] the borrowed expression implements
+//   the required traits. Sites 369.
+// - [Clippy probe: clippy::print_stdout] Check CLI, Cargo, fixture, or library output contract
+//   before changing output. Sites 313.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   10, 11, 12, 13, 14, 19, 20, 21, 26, 27, 28, 29, 30, 31, 32, 37, 38, 39, 40, 41, 42, 43, 44, 47,
+//   165, 166, 168, 171, 186, 190, 324.
+
 use std::path::{Path, PathBuf};
 
 use nucleus::simulation::{ReplayStatus, Verdict, Version};

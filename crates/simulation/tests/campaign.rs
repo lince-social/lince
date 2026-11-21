@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn run, fn campaign_check_selection_has_an_independent_cursor_and_unverified_results, fn
+//   completed_cases_resume_without_repeating_their_indices, fn
+//   reduction_removes_irrelevant_inputs_and_reexecutes_the_same_failure.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 fn run(work: impl Future<Output = ()> + Send + 'static) {

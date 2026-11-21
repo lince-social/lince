@@ -1,9 +1,29 @@
-use crate::Result;
+// non-lean-yet
+// Scope: const MAX_TOOL_BYTES, fn spawn, struct Process, fn launch.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 55.
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites run:command → &[T] (89), run:directory → &Path (90).
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 33, 72.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   119, 125.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 10, 88.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 82.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 8, 10,
+//   82, 83, 84, 85, 88.
+
 use std::{path::Path, process::Stdio, sync::OnceLock, time::Duration};
+
 use tokio::{
     io::{AsyncRead, AsyncReadExt, AsyncWriteExt},
     process::{Child, Command},
 };
+
+use crate::Result;
 
 pub const MAX_TOOL_BYTES: usize = 2 * 1024 * 1024;
 

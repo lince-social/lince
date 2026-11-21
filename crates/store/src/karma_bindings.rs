@@ -1,9 +1,16 @@
+// non-lean-yet
+// Scope: fn apply, fn invalid, fn resolve, fn bind.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 8, 28, 129, 147.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 8, 28,
+//   129, 147.
+
+pub use nucleus::karma::ConditionBinding as ReferenceBinding;
 use nucleus::karma::{Condition, ConditionError, ReferenceKind, TypedUid};
 use sqlx::{Row, Sqlite, Transaction};
 
 use crate::StoreError;
-
-pub use nucleus::karma::ConditionBinding as ReferenceBinding;
 
 pub fn apply(source: &str, bindings: &[ReferenceBinding]) -> Result<Condition, ConditionError> {
     let condition = Condition::parse(source)?;

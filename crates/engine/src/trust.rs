@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: struct Signer, fn load_or_create_secret, fn keys_of, fn verify_bytes_strict.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 123.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 62.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   30, 31.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 273, 274.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 62.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 51, 60, 97, 126, 157, 188, 202, 272.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 13.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   13, 15, 16, 20, 28, 35, 39, 43, 47, 51, 60, 97, 118, 126, 157, 188, 202, 272.
+
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD as B64;
 use ed25519_dalek::{Signature, Signer as _, SigningKey, Verifier as _, VerifyingKey};

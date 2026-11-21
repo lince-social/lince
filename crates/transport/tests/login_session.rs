@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn fixture, fn query, fn
+//   an_unlocked_long_read_allows_live_edits_and_rechecks_login_before_returning, fn
+//   revocation_stops_queries_collaboration_and_actions_but_keeps_local_owner_access.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 89, 130, 148, 182.
+
 #![cfg(test)]
 
 use engine::{Engine, actions::Action, private_password::PasswordInput};

@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn appearance_is_saved_and_reduced_motion_overrides_animation, fn
+//   static_avatars_share_the_scaled_image_without_loading_3d, fn
+//   svg_has_transparency_and_keeps_its_silhouette_at_small_sizes, fn
+//   packaged_model_has_skinning_and_every_named_behavior_clip.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[test]

@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn fixture, fn click, fn settle, fn finished.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use cell::FioteService;
 use cell::speech::Service;

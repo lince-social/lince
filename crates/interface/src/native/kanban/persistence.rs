@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct SavedKanban, fn snapshot.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 59.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (41).
+
 use super::*;
 
 #[derive(Clone, Serialize, Deserialize)]

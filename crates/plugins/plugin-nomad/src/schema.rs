@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct Resource, struct Tier, struct Category, enum Categories.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 //! NOMAD HTTP response shapes. Unknown upstream fields are deliberately tolerated.
 use serde::{Deserialize, Serialize};
 

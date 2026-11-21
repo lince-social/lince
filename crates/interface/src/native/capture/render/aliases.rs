@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct ExternalAliases, struct PreparedAliases, fn prepare, fn copy.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 67.
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 44.
+
 use super::*;
 use crate::native::topology::surface_render::{CaptureOrigins, CompletedCaptures};
 use bevy::{

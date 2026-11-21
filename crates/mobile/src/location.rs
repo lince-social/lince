@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct LocationPlugin, struct Overlay, fn authenticate, fn close.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 35, 83, 122, 139,
+//   156.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites locate_once:
+//   String (207), open_reference: String (58).
+
 use bevy::prelude::*;
 use engine::location::clock::Instant;
 use lince_interface::location::{self as ui, Request};

@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn client_consent_signs_only_the_public_scope_and_cannot_impersonate_another_person.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use nucleus::transfer::receipt::{PersonApproval, PublicPerson};

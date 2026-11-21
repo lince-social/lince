@@ -3,6 +3,15 @@
 
 //! Overrides for line-break opportunities.
 
+// non-lean-yet
+// Scope: struct LineBreakContext, type LineBreakOverrideFn, static CHROMIUM_LINE_BREAK_OVERRIDE, fn
+//   chromium_override.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   with_pairs:allow_break (188).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   140, 199, 201, 203, 229, 233, 246, 253.
+
 use core::ops::RangeInclusive;
 
 /// Context for a potential line break opportunity between two adjacent code points.

@@ -1,3 +1,28 @@
+// non-lean-yet
+// Scope: mod endpoint, mod evaluation, mod input, mod local.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 236.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   236.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 16, 23, 32, 45, 92.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   215, 217, 235.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 205, 209.
+// - [Clippy: clippy::struct_excessive_bools] more than 3 bools in a struct. Sites 53.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 1, 2,
+//   3, 4, 5, 6, 7, 8, 9, 16, 18, 19, 23, 25, 26, 27, 28, 32, 34, 35, 36, 37, 38, 39, 40, 41, 45,
+//   47, 48, 49, 53, 54, 55, 56, 57, 58, 60, 62, 64, 65, 66, 67, 68, 72, 73, 74, 75, 76, 77, 81, 82,
+//   83, 84, 85, 86, 87, 88, 92, 93, 94, 96, 97, 98, 99, 100, 102, 103, 105, 106, 107, 108, 109,
+//   111, 112, 113, 115, 116, 117, 119, 120, 121, 123, 124, 125, 126, 127, 129, 130, 132, 133, 135,
+//   136, 137, 139, 140, 141, 143, 144, 145, 147, 148, 150, 151, 152, 154, 155, 156, 158, 159, 160,
+//   161, 162, 164, 165, 167, 168, 173, 175, 177, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188,
+//   189, 190, 194, 196, 197, 198, 199, 201, 202, 205, 209.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites decode_audio:
+//   String (209), validate_audio: String (205).
+
 pub mod endpoint;
 pub mod evaluation;
 pub mod input;
@@ -8,9 +33,10 @@ pub mod segment;
 pub mod voice;
 pub mod wake;
 
-use crate::config::Secret;
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 use serde::{Deserialize, Serialize};
+
+use crate::config::Secret;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Mode {

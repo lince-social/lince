@@ -1,5 +1,37 @@
-use serde::{Deserialize, Serialize};
+// non-lean-yet
+// Scope: mod features, const HISTORY_SAMPLES, const NOTICE, const LICENSE.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 67, 311, 315, 316, 317, 318, 322, 347, 353, 378, 379, 381, 404, 430, 461.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   28, 165.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 57, 167.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 310.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 45, 77, 83, 209, 212, 322, 399, 401, 402, 404, 489.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   83, 402, 404.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 402.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   100, 129.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 28, 96, 105, 165, 197.
+// - [Clippy: clippy::print_stdout] Check CLI, Cargo, fixture, or library output contract before
+//   changing output. Sites 427.
+// - [Clippy: clippy::redundant_clone] Move or borrow at the marked sites and check later uses.
+//   Sites 474.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 145.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 8, 9,
+//   10, 11, 12, 14, 15, 20, 21, 22, 23, 24, 28, 96, 105, 145, 159, 160, 161, 165, 182, 186, 197.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites enroll: String
+//   (28), from_bytes: String (96), new: String (165), push: String (197), validate: String (105).
+
 use std::collections::VecDeque;
+
+use serde::{Deserialize, Serialize};
 
 #[path = "wake/features.rs"]
 mod features;

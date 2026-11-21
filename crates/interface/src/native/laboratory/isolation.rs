@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct LaboratoryOwner, struct OwnerAccess, fn belongs, fn temporary_owner.
+// BeautifulRust (baseline lines):
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 157.
+
 use super::workspace::{Laboratory, LaboratoryRoot, SuspendedRoot};
 use crate::native::workspace::WorkspaceMember;
 use bevy::{ecs::system::SystemParam, prelude::*};

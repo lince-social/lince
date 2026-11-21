@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: const CREDITS.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use crate::native::credits::Attribution;
 
 pub(crate) const CREDITS: &[Attribution] = &[

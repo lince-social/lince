@@ -1,8 +1,16 @@
-use super::geometry::Glb;
-use crate::Result;
+// non-lean-yet
+// Scope: fn accessor_references, fn view_references, fn index, fn global.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   225.
+
+use std::collections::{BTreeMap, BTreeSet};
+
 use glam::{Mat4, Vec3};
 use serde_json::{Value, json};
-use std::collections::{BTreeMap, BTreeSet};
+
+use super::geometry::Glb;
+use crate::Result;
 
 fn accessor_references(
     document: &mut Value,

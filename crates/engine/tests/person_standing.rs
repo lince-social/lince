@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn cell, fn become_sibling_of, fn pair, fn deliver_to_sibling.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use engine::Engine;

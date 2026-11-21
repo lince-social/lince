@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct RuleCondition, struct RuleConditionInput, struct Snapshot.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 32, 58.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 50.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 12, 14,
+//   15, 19, 20, 21, 39, 50.
+
 use std::{
     fmt,
     ops::{Deref, DerefMut},

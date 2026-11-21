@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod tests, struct Automation, enum Command, fn send.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 54, 114, 148,
+//   149, 188, 239, 242, 246, 268, 271, 274, 332, 423, 431.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (52, 58, 75, 82, 85, 118, 135, 153, 165, 173, 177, 192, 194, 219, 224, 230, 233).
+
 use std::collections::{HashSet, VecDeque};
 
 use cell::{ClientMessage, ServerMessage};

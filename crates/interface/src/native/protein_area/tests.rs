@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: mod virtualized_edit, fn
+//   protein_cards_open_typed_person_and_organ_experience_without_discovery, fn
+//   speech_cancellation_uses_the_owning_cell_and_never_falls_back_after_disconnect, fn
+//   stopping_room_producers_after_owned_entities_are_removed_is_idempotent.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use bevy::math::DVec2;
 use serde_json::json;

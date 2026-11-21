@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn stop_targets_only_the_captured_live_session_and_uses_the_existing_host_queue, fn
+//   status_does_not_claim_recording_and_controls_track_session_teardown.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[test]

@@ -7,15 +7,15 @@ fn scan_reference(
     concept_names: &HashMap<String, String>,
 ) -> Vec<Value> {
     let max_hops = links.depth.max(1);
-    let mut frontier: HashSet<String> = HashSet::from([record_uid.to_string()]);
-    let mut visited: HashSet<String> = frontier.clone();
-    let mut seen_links: HashSet<String> = HashSet::new();
+    let mut frontier = HashSet::from([record_uid]);
+    let mut visited = frontier.clone();
+    let mut seen_links = HashSet::new();
     let mut out = Vec::new();
     for hop in 1..=max_hops {
-        let mut next: HashSet<String> = HashSet::new();
+        let mut next = HashSet::new();
         for link in rows {
-            let outgoing = frontier.contains(&link.subject_uid);
-            let incoming = frontier.contains(&link.object_uid);
+            let outgoing = frontier.contains(link.subject_uid.as_str());
+            let incoming = frontier.contains(link.object_uid.as_str());
             if !outgoing && !incoming {
                 continue;
             }
@@ -26,14 +26,14 @@ fn scan_reference(
                 continue;
             }
             let other = if outgoing {
-                link.object_uid.clone()
+                link.object_uid.as_str()
             } else {
-                link.subject_uid.clone()
+                link.subject_uid.as_str()
             };
-            if !visited.contains(&other) {
-                next.insert(other.clone());
+            if !visited.contains(other) {
+                next.insert(other);
             }
-            if !seen_links.insert(link.uid.clone()) {
+            if !seen_links.insert(link.uid.as_str()) {
                 continue;
             }
             out.push(json!({
@@ -52,7 +52,7 @@ fn scan_reference(
         if next.is_empty() {
             break;
         }
-        visited.extend(next.iter().cloned());
+        visited.extend(next.iter().copied());
         frontier = next;
     }
     out
@@ -61,11 +61,12 @@ fn scan_reference(
 #[test]
 fn indexed_traversal_matches_the_full_scan_for_order_direction_depth_cycles_and_parallel_edges() {
     let names = HashMap::from([("kind-0".into(), "Resolved meaning".into())]);
+    let quantity = nucleus::DecimalValue::parse_inferred("2.5").expect("fixture quantity");
     for seed in 0..32u64 {
         let mut state = seed + 1;
         let mut next = || {
             state = state.wrapping_mul(6364136223846793005).wrapping_add(1);
-            (state >> 32) as usize
+            state >> 32
         };
         let mut edges = Vec::new();
         for index in 0..48 {
@@ -75,8 +76,7 @@ fn indexed_traversal_matches_the_full_scan_for_order_direction_depth_cycles_and_
                 object_uid: format!("record-{}", next() % 12),
                 predicate_uid: format!("kind-{}", index % 2),
                 predicate: "Fallback meaning".into(),
-                quantity: (index % 2 == 0)
-                    .then(|| nucleus::DecimalValue::parse_inferred("2.5").unwrap()),
+                quantity: (index % 2 == 0).then_some(quantity),
                 unit_uid: None,
                 created_at: format!("2026-01-01T00:00:{index:02}Z"),
             });

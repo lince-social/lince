@@ -1,5 +1,11 @@
-use super::super::*;
+// non-lean-yet
+// Scope: fn frame, fn key, fn request, fn
+//   confirmed_logout_save_failure_is_recoverable_and_trusted_shutdown_saves_through_an_open_dialog.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::time::{Duration, Instant};
+
+use super::super::*;
 
 fn frame(worker: &CanvasWorker, serial: u64, modal: bool) {
     let deadline = Instant::now() + Duration::from_secs(30);

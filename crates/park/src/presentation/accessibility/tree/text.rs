@@ -1,6 +1,14 @@
-use super::*;
+// non-lean-yet
+// Scope: fn project, fn cluster_bounds, fn exported_selection, struct Projection.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 56, 73, 167.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   74, 166, 167, 320, 326, 335, 336, 340.
+
 use accesskit::{TextDirection, TextPosition, TextSelection};
 use lince_interface::host::performance::{self, Count, Stage};
+
+use super::*;
 
 pub(super) fn project(
     world: &World,

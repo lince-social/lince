@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: const TITLE, const UPDATED, const RUN, fn results_are.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 33, 47.
+
 use super::*;
 use crate::native::{
     app::CellHandle,

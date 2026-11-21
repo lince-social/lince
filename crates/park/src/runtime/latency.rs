@@ -1,9 +1,16 @@
-use lince_interface::host::OutputId;
-use lince_interface::host::performance::{self, Count, InputStage, InputTrace, Stage};
+// non-lean-yet
+// Scope: static NEXT_ORIGIN, fn monotonic, struct Stamp, struct Dispatch.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::{
     cell::Cell,
     sync::atomic::{AtomicU64, Ordering},
     time::{Duration, Instant},
+};
+
+use lince_interface::host::{
+    OutputId,
+    performance::{self, Count, InputStage, InputTrace, Stage},
 };
 
 thread_local! { static CURRENT: Cell<Option<Stamp>> = const { Cell::new(None) }; }

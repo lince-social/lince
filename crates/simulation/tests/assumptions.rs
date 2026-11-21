@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn optional_transfer_runs_use_each_owners_unapplied_remainder, fn
+//   delayed_receipt_does_not_hide_a_temporary_shortage, fn
+//   optional_comparisons_keep_the_same_snapshot_and_existing_karma.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use engine::actions::Action;
 use nucleus::simulation::{
     CheckDefinition, CheckOptions, Comparison, Evaluation, FailureMode, Predicate, Quantity,

@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct FractionalScaleManagerState, trait FractionalScaleHandler, type
+//   FractionalScaleStateUserData, struct FractionalScaleState.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 98.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 266.
+
 //! Utilities for handling the `wp_fractional_scale` protocol
 //!
 //! ## How to use it

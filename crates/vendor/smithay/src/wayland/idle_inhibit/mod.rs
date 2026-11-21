@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod inhibitor, const MANAGER_VERSION, struct IdleInhibitManagerState, trait
+//   IdleInhibitHandler.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 71, 114.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 136.
+
 //! Utilities for handling the `zwp_idle_inhibit` protocol
 //!
 //! ## How to use it

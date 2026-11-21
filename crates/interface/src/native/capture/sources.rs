@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod storage, mod tests, struct Links, struct Nodes.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   105.
+
 use super::*;
 use bevy::ecs::{
     entity_disabling::Disabled,

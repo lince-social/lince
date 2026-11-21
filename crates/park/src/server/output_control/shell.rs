@@ -1,9 +1,17 @@
-use super::*;
+// non-lean-yet
+// Scope: struct Shell, struct Work, enum Phase, struct Preview.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 89, 90, 91, 102,
+//   103, 104, 194, 244, 304, 339, 384, 394, 543.
+
+use std::time::{Duration, Instant};
+
 use lince_interface::host::display::{
     DisplayAction, DisplayConfiguration, DisplayIdentification, DisplayOutcome, DisplayPreview,
     DisplayRequest, DisplayResponse, DisplaySnapshot,
 };
-use std::time::{Duration, Instant};
+
+use super::*;
 
 #[derive(Default)]
 pub(super) struct Shell {
@@ -219,7 +227,10 @@ impl Server {
                             "These display changes are no longer awaiting confirmation.".into(),
                         ),
                     );
-                } else if !lince_interface::host::display::color_confirmation_ready(&self.state.output_control.catalog, &self.state.output_control.color) {
+                } else if !lince_interface::host::display::color_confirmation_ready(
+                    &self.state.output_control.catalog,
+                    &self.state.output_control.color,
+                ) {
                     self.display_response(request.id, DisplayOutcome::Failed("Wait for the HDR output to be confirmed before keeping these settings, or revert.".into()));
                 } else if let Err(error) = persist(&self.state.output_control.catalog) {
                     self.display_response(
@@ -388,12 +399,42 @@ impl Server {
     }
 
     pub fn recover_display_preview(&mut self, reason: String) -> bool {
-        if self.state.output_control.shell.work.as_ref().is_some_and(|work| matches!(work.phase, Phase::Revert { .. })) { return true; }
-        let Some(preview) = self.state.output_control.shell.preview.as_ref().filter(|preview| !preview.state.reverting) else { return false; };
+        if self
+            .state
+            .output_control
+            .shell
+            .work
+            .as_ref()
+            .is_some_and(|work| matches!(work.phase, Phase::Revert { .. }))
+        {
+            return true;
+        }
+        let Some(preview) = self
+            .state
+            .output_control
+            .shell
+            .preview
+            .as_ref()
+            .filter(|preview| !preview.state.reverting)
+        else {
+            return false;
+        };
         let request = preview.request;
         let before = preview.before.clone();
-        self.recover_display(request, before, 0, Some(format!("The display preview failed: {reason}. Previous settings were restored.")));
-        self.state.output_control.shell.work.as_ref().is_some_and(|work| matches!(work.phase, Phase::Revert { .. }))
+        self.recover_display(
+            request,
+            before,
+            0,
+            Some(format!(
+                "The display preview failed: {reason}. Previous settings were restored."
+            )),
+        );
+        self.state
+            .output_control
+            .shell
+            .work
+            .as_ref()
+            .is_some_and(|work| matches!(work.phase, Phase::Revert { .. }))
     }
 
     fn recover_display(
@@ -539,7 +580,10 @@ fn fallback_settings(head: &OutputHead) -> Option<OutputSettings> {
         .and_then(|index| head.modes.get(index))
         .or_else(|| head.modes.iter().find(|mode| mode.preferred))
         .or_else(|| head.modes.first())?;
-    Some(OutputSettings { color: head.color, adaptive_sync: head.adaptive_sync, rotation: head.rotation,
+    Some(OutputSettings {
+        color: head.color,
+        adaptive_sync: head.adaptive_sync,
+        rotation: head.rotation,
         mode: mode.clone(),
         position: head.position,
         scale: head.scale,

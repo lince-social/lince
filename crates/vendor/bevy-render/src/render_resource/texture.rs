@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Texture, struct TextureView, struct SurfaceTexture, struct Sampler.
+// BeautifulRust (baseline lines):
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 45.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 84.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 84, 89.
+
 use crate::renderer::{wgpu_wrapper, RenderDevice, RenderQueue};
 use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::{

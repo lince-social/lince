@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod support, fn pair, fn
+//   saved_delivery_modes_are_validated_and_visible_through_the_contact_query, fn
+//   saved_mail_records_the_sharing_authority_used_to_prepare_it.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 136.
+
 #![cfg(test)]
 
 mod support;

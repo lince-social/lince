@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: const ACTIONS, struct Panel, fn panel, fn item_panel.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 29, 51.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (25, 58).
+
 use super::*;
 
 const ACTIONS: [(DesktopAction, &str); 8] = [

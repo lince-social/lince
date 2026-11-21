@@ -1,9 +1,20 @@
+// non-lean-yet
+// Scope: mod capture, mod color, struct View, trait RasterRect.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 456.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 154, 294, 295,
+//   303, 304, 373, 412, 419, 539, 564, 565, 609, 622, 637, 725, 728, 752, 753, 756, 782, 785, 794,
+//   795, 807, 812, 822, 829, 832, 836, 882, 960, 962, 986, 1001, 1026, 1028, 1052, 1061, 1086.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   136, 137, 138, 139, 850, 851, 852, 1091, 1094.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (555).
+
 use super::*;
 #[path = "renderer/capture.rs"]
 pub(crate) mod capture;
 #[path = "renderer/color.rs"]
 mod color;
-use crate::server::SurfaceNode;
 use lince_interface::host::raster::RasterMapping;
 use smithay::{
     backend::{
@@ -18,6 +29,8 @@ use smithay::{
     utils::{Buffer, Physical, Rectangle as Rect, Size, Transform},
     wayland::{compositor::with_states, dmabuf::get_dmabuf},
 };
+
+use crate::server::SurfaceNode;
 
 struct View {
     texture: GlesTexture,
@@ -183,35 +196,78 @@ pub(crate) struct Presented {
 
 impl Presented {
     pub(crate) fn submitted(&self, server: &mut Server, output: Option<OutputId>) {
-        for (_, nodes) in self.callbacks.iter().filter(|(target, _)| output.is_none_or(|output| target.is_none_or(|target| target == output))) {
+        for (_, nodes) in self.callbacks.iter().filter(|(target, _)| {
+            output.is_none_or(|output| target.is_none_or(|target| target == output))
+        }) {
             server.frame_started_nodes(nodes);
         }
     }
 }
 
 impl Composition {
-    pub(crate) fn enable_client_formats(&mut self, renderer: &GlesRenderer, server: &mut Server, frame: &crate::presentation::Frame) -> io::Result<()> {
-        use smithay::backend::allocator::{Format, Modifier};
+    pub(crate) fn enable_client_formats(
+        &mut self,
+        renderer: &GlesRenderer,
+        server: &mut Server,
+        frame: &crate::presentation::Frame,
+    ) -> io::Result<()> {
         use std::os::unix::fs::{FileTypeExt, MetadataExt};
-        if self.linear_color_available() && frame.encoding == lince_interface::host::color::NativeEncoding::LinearRelative {
+
+        use smithay::backend::allocator::{Format, Modifier};
+        if self.linear_color_available()
+            && frame.encoding == lince_interface::host::color::NativeEncoding::LinearRelative
+        {
             server.enable_hdr_color_management()?;
-        } else { server.enable_sdr_color_management(); }
+        } else {
+            server.enable_sdr_color_management();
+        }
         let supported = renderer.egl_context().dmabuf_texture_formats();
-        let device = || smithay::backend::egl::EGLDevice::device_for_display(renderer.egl_context().display()).ok()
-            .and_then(|device| device.render_device_path().or_else(|_| device.drm_device_path()).ok())
-            .and_then(|path| std::fs::metadata(path).ok())
-            .filter(|metadata| metadata.file_type().is_char_device())
-            .map(|metadata| metadata.rdev());
-        server.enable_dmabuf_formats(frame.client_formats.iter().copied().map(|code| Format { code, modifier: Modifier::Linear })
-            .filter(|candidate| supported.iter().any(|format| format == candidate)), device)?;
+        let device = || {
+            smithay::backend::egl::EGLDevice::device_for_display(renderer.egl_context().display())
+                .ok()
+                .and_then(|device| {
+                    device
+                        .render_device_path()
+                        .or_else(|_| device.drm_device_path())
+                        .ok()
+                })
+                .and_then(|path| std::fs::metadata(path).ok())
+                .filter(|metadata| metadata.file_type().is_char_device())
+                .map(|metadata| metadata.rdev())
+        };
+        server.enable_dmabuf_formats(
+            frame
+                .client_formats
+                .iter()
+                .copied()
+                .map(|code| Format {
+                    code,
+                    modifier: Modifier::Linear,
+                })
+                .filter(|candidate| supported.iter().any(|format| format == candidate)),
+            device,
+        )?;
         Ok(())
     }
 
-    pub(super) fn output_raster(canvas: Option<&crate::presentation::Frame>, output: OutputId, target: RasterMapping) -> io::Result<RasterMapping> {
-        let Some(snapshot) = canvas.map(|canvas| &canvas.input.mappings) else { return Ok(target); };
-        if snapshot.outputs().is_empty() { return Ok(target); }
-        snapshot.get(output).ok_or_else(|| io::Error::other("The presented output mapping is unavailable."))?
-            .composition_raster(target).ok_or_else(|| io::Error::other("The compositor cannot compose this final output transform."))
+    pub(super) fn output_raster(
+        canvas: Option<&crate::presentation::Frame>,
+        output: OutputId,
+        target: RasterMapping,
+    ) -> io::Result<RasterMapping> {
+        let Some(snapshot) = canvas.map(|canvas| &canvas.input.mappings) else {
+            return Ok(target);
+        };
+        if snapshot.outputs().is_empty() {
+            return Ok(target);
+        }
+        snapshot
+            .get(output)
+            .ok_or_else(|| io::Error::other("The presented output mapping is unavailable."))?
+            .composition_raster(target)
+            .ok_or_else(|| {
+                io::Error::other("The compositor cannot compose this final output transform.")
+            })
     }
 
     pub(crate) fn new(wake: lince_interface::host::WakeSignal) -> io::Result<Self> {
@@ -249,14 +305,14 @@ impl Composition {
         renderer: &mut GlesRenderer,
         frame: &crate::presentation::Frame,
     ) -> io::Result<()> {
-        let started = frame.traced_render.map(|_| crate::presentation::frame_trace::timestamp());
+        let started = frame
+            .traced_render
+            .map(|_| crate::presentation::frame_trace::timestamp());
         let mut canvases = HashMap::new();
         if let Some(buffer) = frame.dmabuf() {
             canvases.insert(
-            frame.output.unwrap_or(OutputId(1)),
-            renderer
-                .import_dmabuf(buffer, None)
-                .map_err(error)?,
+                frame.output.unwrap_or(OutputId(1)),
+                renderer.import_dmabuf(buffer, None).map_err(error)?,
             );
         }
         for output in &frame.outputs {
@@ -285,12 +341,25 @@ impl Composition {
         self.import_source(renderer, node, false)
     }
 
-    fn import_source(&mut self, renderer: &mut GlesRenderer, node: &SurfaceNode, retained: bool) -> io::Result<bool> {
+    fn import_source(
+        &mut self,
+        renderer: &mut GlesRenderer,
+        node: &SurfaceNode,
+        retained: bool,
+    ) -> io::Result<bool> {
         let retained = if retained {
-            let Some(image) = crate::graphics::retained_capture(&node.content).map_err(io::Error::other)? else { return Ok(false); };
-            if !image.image.ready().map_err(error)? { return Ok(false); }
+            let Some(image) =
+                crate::graphics::retained_capture(&node.content).map_err(io::Error::other)?
+            else {
+                return Ok(false);
+            };
+            if !image.image.ready().map_err(error)? {
+                return Ok(false);
+            }
             Some(image)
-        } else { None };
+        } else {
+            None
+        };
         let key = (node.surface.clone(), node.content.version);
         self.touched.insert(key.clone());
         if self.views.contains_key(&key) {
@@ -313,25 +382,44 @@ impl Composition {
                 "The surface exceeds the compositor import budget",
             ));
         }
-        let buffer_format = retained.as_ref().map(|image| image.image.dmabuf.format().code)
-            .or_else(|| get_dmabuf(node.content.buffer()).ok().map(|buffer| buffer.format().code));
-        let bytes_per_pixel = if buffer_format == Some(Fourcc::Abgr16161616f) { 8 } else { 4 };
+        let buffer_format = retained
+            .as_ref()
+            .map(|image| image.image.dmabuf.format().code)
+            .or_else(|| {
+                get_dmabuf(node.content.buffer())
+                    .ok()
+                    .map(|buffer| buffer.format().code)
+            });
+        let bytes_per_pixel = if buffer_format == Some(Fourcc::Abgr16161616f) {
+            8
+        } else {
+            4
+        };
         let pending_bytes: u64 = self
             .copies
             .values()
             .map(|copy| {
                 let size = copy.view.texture.size();
-                let bytes = if copy.view.texture.format() == Some(Fourcc::Abgr16161616f) { 8 } else { 4 };
-                (size.w.max(0) as u64).saturating_mul(size.h.max(0) as u64).saturating_mul(bytes)
+                let bytes = if copy.view.texture.format() == Some(Fourcc::Abgr16161616f) {
+                    8
+                } else {
+                    4
+                };
+                (size.w.max(0) as u64)
+                    .saturating_mul(size.h.max(0) as u64)
+                    .saturating_mul(bytes)
             })
             .sum();
         if self.copies.len() >= 128
             || self.acquiring.len() >= 128 && !self.acquiring.contains_key(&key)
-            || pending_bytes.saturating_add(pixels.saturating_mul(bytes_per_pixel)) > 256 * 1024 * 1024
+            || pending_bytes.saturating_add(pixels.saturating_mul(bytes_per_pixel))
+                > 256 * 1024 * 1024
         {
             return Ok(false);
         }
-        if retained.is_none() && let Ok(dmabuf) = get_dmabuf(node.content.buffer()) {
+        if retained.is_none()
+            && let Ok(dmabuf) = get_dmabuf(node.content.buffer())
+        {
             for fd in dmabuf.handles() {
                 let mut poll = [rustix::event::PollFd::new(
                     &fd,
@@ -364,10 +452,14 @@ impl Composition {
         let size: Size<i32, Buffer> = (node.content.size[0], node.content.size[1]).into();
         let damage = node.buffer_damage_since(self.imports.get(&node.surface).copied());
         let source = if let Some(image) = &retained {
-            renderer.import_dmabuf(&image.image.dmabuf, Some(&damage)).map_err(error)?
+            renderer
+                .import_dmabuf(&image.image.dmabuf, Some(&damage))
+                .map_err(error)?
         } else {
-            renderer.import_buffer(node.content.buffer(), None, &damage)
-                .ok_or_else(|| io::Error::other("unsupported layer buffer"))?.map_err(error)?
+            renderer
+                .import_buffer(node.content.buffer(), None, &damage)
+                .ok_or_else(|| io::Error::other("unsupported layer buffer"))?
+                .map_err(error)?
         };
         self.imports
             .insert(node.surface.clone(), node.damage.current_commit());
@@ -377,9 +469,7 @@ impl Composition {
             Some(Fourcc::Abgr8888) => Fourcc::Abgr8888,
             _ => Fourcc::Argb8888,
         };
-        let mut texture: GlesTexture = renderer
-            .create_buffer(copy_format, size)
-            .map_err(error)?;
+        let mut texture: GlesTexture = renderer.create_buffer(copy_format, size).map_err(error)?;
         let fence = {
             let mut target = renderer.bind(&mut texture).map_err(error)?;
             let dimensions: Size<i32, Physical> = (size.w, size.h).into();
@@ -481,7 +571,15 @@ impl Composition {
         pointer: [f64; 2],
     ) -> io::Result<Presented> {
         self.render_view(
-            renderer, target, size, transform, server, canvas, pointer, None, Default::default(),
+            renderer,
+            target,
+            size,
+            transform,
+            server,
+            canvas,
+            pointer,
+            None,
+            Default::default(),
         )
     }
 
@@ -527,42 +625,101 @@ impl Composition {
     ) -> io::Result<Presented> {
         self.prepare_color(renderer)?;
         if color.mode == lince_interface::host::color::ColorMode::Hdr10
-            && !matches!(target.format(), Some(Fourcc::Abgr2101010 | Fourcc::Xbgr2101010 | Fourcc::Argb2101010 | Fourcc::Xrgb2101010)) {
-            return Err(io::Error::other("HDR10 output requires a ten-bit final render target"));
+            && !matches!(
+                target.format(),
+                Some(
+                    Fourcc::Abgr2101010
+                        | Fourcc::Xbgr2101010
+                        | Fourcc::Argb2101010
+                        | Fourcc::Xrgb2101010
+                )
+            )
+        {
+            return Err(io::Error::other(
+                "HDR10 output requires a ten-bit final render target",
+            ));
         }
         if color.mode == lince_interface::host::color::ColorMode::Hdr10
-            && canvas.is_some_and(|canvas| canvas.frame.encoding != lince_interface::host::color::NativeEncoding::LinearRelative) {
-            return Err(io::Error::other("HDR output requires a precision-preserving native scene"));
+            && canvas.is_some_and(|canvas| {
+                canvas.frame.encoding
+                    != lince_interface::host::color::NativeEncoding::LinearRelative
+            })
+        {
+            return Err(io::Error::other(
+                "HDR output requires a precision-preserving native scene",
+            ));
         }
         if !self.linear_color_available() {
             if color.mode != lince_interface::host::color::ColorMode::Srgb {
-                return Err(io::Error::other(self.color_failure.clone().unwrap_or_else(|| "The linear output pipeline is unavailable".into())));
+                return Err(io::Error::other(self.color_failure.clone().unwrap_or_else(
+                    || "The linear output pipeline is unavailable".into(),
+                )));
             }
-            return self.render_scene(renderer, target, size, transform, server, canvas, pointer, view);
+            return self.render_scene(
+                renderer, target, size, transform, server, canvas, pointer, view,
+            );
         }
-        self.linear_targets.retain(|id, _| id.is_none() || server.output_viewports().iter().any(|(_, output)| Some(output.id) == *id));
+        self.linear_targets.retain(|id, _| {
+            id.is_none()
+                || server
+                    .output_viewports()
+                    .iter()
+                    .any(|(_, output)| Some(output.id) == *id)
+        });
         let key = view.map(|view| view.id);
-        let mut linear = self.linear_targets.remove(&key).filter(|texture| texture.size().w == size.w && texture.size().h == size.h);
+        let mut linear = self
+            .linear_targets
+            .remove(&key)
+            .filter(|texture| texture.size().w == size.w && texture.size().h == size.h);
         if linear.is_none() {
-            let bytes = self.linear_targets.values().map(|texture| texture.size().w.max(0) as u64 * texture.size().h.max(0) as u64 * 8).sum::<u64>();
-            let candidate = u64::try_from(size.w).ok().zip(u64::try_from(size.h).ok())
-                .and_then(|(width, height)| width.checked_mul(height)).and_then(|pixels| pixels.checked_mul(8));
-            if candidate.and_then(|candidate| bytes.checked_add(candidate)).is_none_or(|bytes| bytes > 256 * 1024 * 1024) {
-                return Err(io::Error::other("Linear output targets exceed the 256 MiB compositor budget"));
+            let bytes = self
+                .linear_targets
+                .values()
+                .map(|texture| texture.size().w.max(0) as u64 * texture.size().h.max(0) as u64 * 8)
+                .sum::<u64>();
+            let candidate = u64::try_from(size.w)
+                .ok()
+                .zip(u64::try_from(size.h).ok())
+                .and_then(|(width, height)| width.checked_mul(height))
+                .and_then(|pixels| pixels.checked_mul(8));
+            if candidate
+                .and_then(|candidate| bytes.checked_add(candidate))
+                .is_none_or(|bytes| bytes > 256 * 1024 * 1024)
+            {
+                return Err(io::Error::other(
+                    "Linear output targets exceed the 256 MiB compositor budget",
+                ));
             }
-            linear = Some(renderer.create_buffer(Fourcc::Abgr16161616f, (size.w, size.h).into()).map_err(error)?);
+            linear = Some(
+                renderer
+                    .create_buffer(Fourcc::Abgr16161616f, (size.w, size.h).into())
+                    .map_err(error)?,
+            );
         }
         let mut linear = linear.unwrap();
         self.linear_composition = true;
         let result = (|| {
             let mut intermediate = renderer.bind(&mut linear).map_err(error)?;
-            self.render_scene(renderer, &mut intermediate, size, Transform::Normal, server, canvas, pointer, view)
+            self.render_scene(
+                renderer,
+                &mut intermediate,
+                size,
+                Transform::Normal,
+                server,
+                canvas,
+                pointer,
+                view,
+            )
         })();
         self.linear_composition = false;
         let result = result.and_then(|mut scene| {
             let sync = self.encode_output(renderer, target, &linear, size, transform, color)?;
             scene.sync = sync.clone();
-            self.submitted_watch = if sync.is_reached() { None } else { Some(self.watch(sync.clone())?) };
+            self.submitted_watch = if sync.is_reached() {
+                None
+            } else {
+                Some(self.watch(sync.clone())?)
+            };
             self.submitted = Some(sync);
             Ok(scene)
         });
@@ -584,7 +741,15 @@ impl Composition {
         self.prepare_color(renderer)?;
         self.touched.clear();
         if server.locked() {
-            return self.render_lock(renderer, target, size, transform, server, canvas.map(|canvas| &canvas.frame), view);
+            return self.render_lock(
+                renderer,
+                target,
+                size,
+                transform,
+                server,
+                canvas.map(|canvas| &canvas.frame),
+                view,
+            );
         }
         self.lock_frames.clear();
         self.views.retain(|(surface, _), _| surface.is_alive());
@@ -629,14 +794,25 @@ impl Composition {
                 for node in &nodes {
                     match self.import(renderer, node) {
                         Ok(imported) => ready &= imported,
-                        Err(failure) => { eprintln!("A Park tablet cursor could not be imported: {failure}"); server.reject_surface(surface); ready = false; break; }
+                        Err(failure) => {
+                            eprintln!("A Park tablet cursor could not be imported: {failure}");
+                            server.reject_surface(surface);
+                            ready = false;
+                            break;
+                        }
                     }
                 }
                 if ready { nodes } else { Vec::new() }
-            } else { Vec::new() };
+            } else {
+                Vec::new()
+            };
             tablet_callbacks.push((Some(tablet.output), nodes.clone()));
-            tablet_cursors.push(TabletCursor { tool: tablet.tool, output: tablet.output, owner: tablet.owner,
-                cursor: capture::Cursor::new(tablet.image, nodes, tablet.point) });
+            tablet_cursors.push(TabletCursor {
+                tool: tablet.tool,
+                output: tablet.output,
+                owner: tablet.owner,
+                cursor: capture::Cursor::new(tablet.image, nodes, tablet.point),
+            });
         }
         let drag_nodes = server.drag_nodes();
         let mut drag_ready = true;
@@ -897,10 +1073,7 @@ impl Composition {
         let sync = {
             let mut frame = renderer.render(target, size, transform).map_err(error)?;
             frame
-                .clear(
-                    self.sdr_solid([0.08, 0.08, 0.08, 1.0]),
-                    &[damage],
-                )
+                .clear(self.sdr_solid([0.08, 0.08, 0.08, 1.0]), &[damage])
                 .map_err(error)?;
             for (_, output) in server
                 .output_viewports()
@@ -913,7 +1086,11 @@ impl Composition {
                     mapping.rectangle(output.bounds).intersection(damage)
                 };
                 if let Some(clip) = clip {
-                    let output_mapping = Self::output_raster(canvas.map(|canvas| &canvas.frame), output.id, mapping)?;
+                    let output_mapping = Self::output_raster(
+                        canvas.map(|canvas| &canvas.frame),
+                        output.id,
+                        mapping,
+                    )?;
                     let native_drawn = self.draw_output(
                         &mut frame,
                         canvas.map(|canvas| &canvas.frame),
@@ -931,23 +1108,53 @@ impl Composition {
                     let _ = native_drawn;
                 }
             }
-            if let Some(output) = server.output_viewports().into_iter().map(|(_, output)| output)
-                .find(|output| Some(output.id) == pointer_output && view.is_none_or(|view| view.id == output.id))
+            if let Some(output) = server
+                .output_viewports()
+                .into_iter()
+                .map(|(_, output)| output)
+                .find(|output| {
+                    Some(output.id) == pointer_output
+                        && view.is_none_or(|view| view.id == output.id)
+                })
             {
-                let pointer_mapping = Self::output_raster(canvas.map(|canvas| &canvas.frame), output.id, mapping)?;
+                let pointer_mapping =
+                    Self::output_raster(canvas.map(|canvas| &canvas.frame), output.id, mapping)?;
                 if let Some(clip) = mapping.rectangle(output.bounds).intersection(damage) {
                     self.capture_cursor_draw(&mut frame, &presented.cursor, pointer_mapping, clip)?;
                     if drag_ready {
-                        self.draw_scaled(&mut frame, &presented.drag, pointer_mapping.point(pointer), pointer_mapping.scale, clip)?;
+                        self.draw_scaled(
+                            &mut frame,
+                            &presented.drag,
+                            pointer_mapping.point(pointer),
+                            pointer_mapping.scale,
+                            clip,
+                        )?;
                     }
                 }
             }
             if !presented.tablets.is_empty() {
-                for (_, output) in server.output_viewports().into_iter().filter(|(_, output)| view.is_none_or(|view| view.id == output.id)) {
-                    let output_mapping = Self::output_raster(canvas.map(|canvas| &canvas.frame), output.id, mapping)?;
+                for (_, output) in server
+                    .output_viewports()
+                    .into_iter()
+                    .filter(|(_, output)| view.is_none_or(|view| view.id == output.id))
+                {
+                    let output_mapping = Self::output_raster(
+                        canvas.map(|canvas| &canvas.frame),
+                        output.id,
+                        mapping,
+                    )?;
                     if let Some(clip) = mapping.rectangle(output.bounds).intersection(damage) {
-                        for tablet in presented.tablets.iter().filter(|tablet| tablet.output == output.id) {
-                            self.capture_cursor_draw(&mut frame, &tablet.cursor, output_mapping, clip)?;
+                        for tablet in presented
+                            .tablets
+                            .iter()
+                            .filter(|tablet| tablet.output == output.id)
+                        {
+                            self.capture_cursor_draw(
+                                &mut frame,
+                                &tablet.cursor,
+                                output_mapping,
+                                clip,
+                            )?;
                         }
                     }
                 }
@@ -979,12 +1186,18 @@ impl Composition {
         let surfaces = server.lock_surfaces();
         let revision = server.lock_stamp();
         self.lock_frames.retain(|id, (stamp, previous)| {
-            *stamp == revision && previous.iter().all(|node| node.surface.is_alive())
-                && surfaces.iter().any(|(current, _, nodes)| current == id && !nodes.is_empty())
+            *stamp == revision
+                && previous.iter().all(|node| node.surface.is_alive())
+                && surfaces
+                    .iter()
+                    .any(|(current, _, nodes)| current == id && !nodes.is_empty())
         });
-        self.touched.extend(surfaces.iter().flat_map(|(_, _, nodes)| {
-            nodes.iter().map(|node| (node.surface.clone(), node.content.version))
-        }));
+        self.touched
+            .extend(surfaces.iter().flat_map(|(_, _, nodes)| {
+                nodes
+                    .iter()
+                    .map(|node| (node.surface.clone(), node.content.version))
+            }));
         let mut ready = Vec::new();
         for (id, origin, nodes) in surfaces
             .into_iter()
@@ -1008,9 +1221,14 @@ impl Composition {
             .map_err(error)?;
         for (id, origin, nodes) in &ready {
             let output_mapping = Self::output_raster(canvas, *id, mapping)?;
-            let clip = server.output_viewports().into_iter().find(|(_, output)| output.id == *id)
+            let clip = server
+                .output_viewports()
+                .into_iter()
+                .find(|(_, output)| output.id == *id)
                 .and_then(|(_, output)| mapping.rectangle(output.bounds).intersection(damage));
-            let Some(clip) = clip else { continue; };
+            let Some(clip) = clip else {
+                continue;
+            };
             self.draw_scaled(
                 &mut frame,
                 nodes,

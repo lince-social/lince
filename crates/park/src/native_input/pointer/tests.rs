@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn clip, fn node, fn
+//   stacked_hits_capture_every_nonblocking_recipient_and_refuse_disabled_or_overflowed_targets, fn
+//   held_guards_allow_geometry_motion_but_retire_replaced_actions_and_terminate_cancelled_buttons_once.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn clip(rect: Rect) -> CalculatedClip {
@@ -36,7 +42,10 @@ fn stacked_hits_capture_every_nonblocking_recipient_and_refuse_disabled_or_overf
     let mut world = World::new();
     let first = world.spawn_empty().id();
     let second = world.spawn_empty().id();
-    let mut snapshot = Snapshot { targets: vec![node(first, false), node(second, true)], ..default() };
+    let mut snapshot = Snapshot {
+        targets: vec![node(first, false), node(second, true)],
+        ..default()
+    };
     let captured = snapshot.target([50.0; 2]).unwrap();
     assert_eq!(captured.geometry.len(), 2);
     snapshot.targets[1].actions.push((second, first, 7));
@@ -50,18 +59,25 @@ fn stacked_hits_capture_every_nonblocking_recipient_and_refuse_disabled_or_overf
 }
 
 #[test]
-fn held_guards_allow_geometry_motion_but_retire_replaced_actions_and_terminate_cancelled_buttons_once() {
+fn held_guards_allow_geometry_motion_but_retire_replaced_actions_and_terminate_cancelled_buttons_once()
+ {
     use bevy::input::mouse::MouseButton;
     let mut world = World::new();
     let entity = world.spawn_empty().id();
     let original = node(entity, true);
     let mut moved = original.clone();
-    moved.transform = UiGlobalTransform::from(bevy::math::Affine2::from_translation(Vec2::splat(400.0)));
+    moved.transform =
+        UiGlobalTransform::from(bevy::math::Affine2::from_translation(Vec2::splat(400.0)));
     moved.clip = Some(clip(Rect::from_corners(Vec2::ZERO, Vec2::splat(800.0))));
     assert!(original.same_owner(&moved));
     moved.actions.push((entity, entity, 1));
     assert!(!original.same_owner(&moved));
-    let target = Snapshot { targets: vec![original], ..default() }.target([50.0; 2]).unwrap();
+    let target = Snapshot {
+        targets: vec![original],
+        ..default()
+    }
+    .target([50.0; 2])
+    .unwrap();
     let mut held = Held::default();
     assert!(held.press(MouseButton::Left, target.clone()));
     assert!(!held.press(MouseButton::Left, target.clone()));
@@ -79,17 +95,27 @@ fn queued_hits_survive_clip_changes_only_while_the_original_recipient_and_mappin
     let mut world = World::new();
     let entity = world.spawn_empty().id();
     let behind = world.spawn_empty().id();
-    let mut snapshot = Snapshot { targets: vec![node(entity, true), node(behind, true)], ..default() };
+    let mut snapshot = Snapshot {
+        targets: vec![node(entity, true), node(behind, true)],
+        ..default()
+    };
     let original = snapshot.target([50.0; 2]).unwrap();
-    snapshot.targets[0].clip = Some(clip(Rect::from_corners(Vec2::splat(40.0), Vec2::splat(60.0))));
+    snapshot.targets[0].clip = Some(clip(Rect::from_corners(
+        Vec2::splat(40.0),
+        Vec2::splat(60.0),
+    )));
     assert!(original.same_hit(&snapshot.target([50.0; 2]).unwrap()));
     snapshot.targets[0].clip = Some(clip(Rect::from_corners(Vec2::ZERO, Vec2::splat(40.0))));
     assert!(!original.same_hit(&snapshot.target([50.0; 2]).unwrap()));
-    snapshot.targets[0].clip = Some(clip(Rect::from_corners(Vec2::splat(40.0), Vec2::splat(60.0))));
+    snapshot.targets[0].clip = Some(clip(Rect::from_corners(
+        Vec2::splat(40.0),
+        Vec2::splat(60.0),
+    )));
     snapshot.targets[0].actions.push((entity, entity, 1));
     assert!(!original.same_hit(&snapshot.target([50.0; 2]).unwrap()));
     snapshot.targets[0].actions.clear();
-    snapshot.targets[0].transform = UiGlobalTransform::from(bevy::math::Affine2::from_translation(Vec2::splat(51.0)));
+    snapshot.targets[0].transform =
+        UiGlobalTransform::from(bevy::math::Affine2::from_translation(Vec2::splat(51.0)));
     assert!(!original.same_hit(&snapshot.target([50.0; 2]).unwrap()));
     snapshot.targets[0].transform = original.geometry[0].transform;
     snapshot.targets[0].eligible = false;
@@ -110,9 +136,16 @@ fn rounded_clipped_rotated_scaled_and_projected_node_hits_keep_their_real_source
     target.bounds = Some(Rectangle::new([1000.0, 50.0], [400.0, 300.0]).unwrap());
     assert!(target.hit([1025.0, 75.0]));
     assert!(!target.hit([25.0, 25.0]));
-    target.clip = Some(clip(Rect::from_corners(Vec2::new(40.0, 0.0), Vec2::splat(100.0))));
+    target.clip = Some(clip(Rect::from_corners(
+        Vec2::new(40.0, 0.0),
+        Vec2::splat(100.0),
+    )));
     assert!(!target.hit([1005.0, 75.0]));
-    target.transform = UiGlobalTransform::from(bevy::math::Affine2::from_scale_angle_translation(Vec2::ONE, std::f32::consts::FRAC_PI_4, Vec2::splat(50.0)));
+    target.transform = UiGlobalTransform::from(bevy::math::Affine2::from_scale_angle_translation(
+        Vec2::ONE,
+        std::f32::consts::FRAC_PI_4,
+        Vec2::splat(50.0),
+    ));
     assert!(target.hit([1025.0, 75.0]));
     assert!(!target.hit([1001.0, 51.0]));
     target.transform =
@@ -141,13 +174,25 @@ fn rounded_clipped_rotated_scaled_and_projected_node_hits_keep_their_real_source
 #[test]
 fn clipped_snapshot_rejection_preserves_possible_hits_under_transform_and_clip_changes() {
     let clip = Rect::from_corners(Vec2::ZERO, Vec2::splat(100.0));
-    let shape = ComputedNode { size: Vec2::splat(60.0), inverse_scale_factor: 1.0, ..default() };
+    let shape = ComputedNode {
+        size: Vec2::splat(60.0),
+        inverse_scale_factor: 1.0,
+        ..default()
+    };
     for scale in [Vec2::ONE, Vec2::splat(0.01), Vec2::new(-2.0, 0.5)] {
         for angle in [0.0, std::f32::consts::FRAC_PI_4] {
-            for center in [Vec2::splat(50.0), Vec2::new(129.99999, 50.0), Vec2::new(500.0, 50.0)] {
-                let transform = UiGlobalTransform::from(bevy::math::Affine2::from_scale_angle_translation(scale, angle, center));
+            for center in [
+                Vec2::splat(50.0),
+                Vec2::new(129.99999, 50.0),
+                Vec2::new(500.0, 50.0),
+            ] {
+                let transform = UiGlobalTransform::from(
+                    bevy::math::Affine2::from_scale_angle_translation(scale, angle, center),
+                );
                 let rejected = clipped_out(&shape, transform, clip);
-                if angle == 0.0 && center.x == 500.0 { assert!(rejected); }
+                if angle == 0.0 && center.x == 500.0 {
+                    assert!(rejected);
+                }
                 for x in 0..=40 {
                     for y in 0..=40 {
                         let point = Vec2::new(x as f32, y as f32) * 2.5;
@@ -161,7 +206,22 @@ fn clipped_snapshot_rejection_preserves_possible_hits_under_transform_and_clip_c
     }
     let transform = UiGlobalTransform::from_translation(Vec2::splat(500.0));
     assert!(clipped_out(&shape, transform, clip));
-    assert!(!clipped_out(&shape, transform, Rect::from_corners(Vec2::splat(450.0), Vec2::splat(550.0))));
-    assert!(!clipped_out(&shape, UiGlobalTransform::from_translation(Vec2::splat(f32::NAN)), clip));
-    assert!(!clipped_out(&shape, transform, Rect { min: Vec2::splat(f32::NEG_INFINITY), max: Vec2::splat(f32::INFINITY) }));
+    assert!(!clipped_out(
+        &shape,
+        transform,
+        Rect::from_corners(Vec2::splat(450.0), Vec2::splat(550.0))
+    ));
+    assert!(!clipped_out(
+        &shape,
+        UiGlobalTransform::from_translation(Vec2::splat(f32::NAN)),
+        clip
+    ));
+    assert!(!clipped_out(
+        &shape,
+        transform,
+        Rect {
+            min: Vec2::splat(f32::NEG_INFINITY),
+            max: Vec2::splat(f32::INFINITY)
+        }
+    ));
 }

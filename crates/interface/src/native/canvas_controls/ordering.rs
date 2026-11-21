@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct OrderState, fn needs_metadata, fn priority, fn has_order.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::{CanvasToolbar, ToolbarOrder, ToolbarScroll};
 use crate::native::icons::{AnchoredTooltip, InlineTooltip, TooltipIcon};
 use bevy::{ecs::query::QueryState, prelude::*};

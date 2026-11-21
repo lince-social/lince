@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: struct PreparedEvent, fn measurement, fn need_content, fn public_predecessor.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 36, 37, 117, 165,
+//   168, 297, 298, 299, 459, 469, 480, 502, 561, 566, 587, 588.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 345.
+// - [Clippy probe: clippy::if_not_else] unnecessary boolean `not` operation. Sites 600.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 89.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 345.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+// - [rustc probe: unreachable_pub] unreachable `pub` item. Sites 16.
+
 use super::*;
 use nucleus::transfer::receipt::{
     Content, Document, Event, EventRequest, EventSource, SignedEvent, Stage,

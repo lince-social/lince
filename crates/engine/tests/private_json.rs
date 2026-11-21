@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn decode, fn private_json_rejects_duplicate_decoded_keys_at_every_depth, fn
+//   private_json_rejects_trailing_and_malformed_input, fn
+//   private_json_preserves_exact_integer_limits_and_refuses_overflow.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use engine::private_json::{self, Error, Limits};
 use engine::private_requests::{RequestError, RequestLimits};
 use serde_json::{Value, json};

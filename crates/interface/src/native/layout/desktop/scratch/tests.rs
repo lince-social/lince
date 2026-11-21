@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn fixture, fn other, fn
+//   scratch_availability_follows_live_memberships_across_inactive_workspaces_and_replacements, fn
+//   scratch_commands_move_one_live_item_and_hide_its_family_without_client_minimization.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 pub(super) fn fixture() -> (World, Entity, Entity, Entity) {

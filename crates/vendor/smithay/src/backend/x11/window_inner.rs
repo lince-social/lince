@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct CursorState, struct WindowInner.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   set_cursor_visible:visible (261).
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 79.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (93, 237, 263, 275, 283).
+
 /**
 A note for future contributors and maintainers:
 

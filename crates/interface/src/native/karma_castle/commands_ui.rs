@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: mod presentation, struct Commands, struct Input, enum Command.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 150, 220, 249,
+//   264, 269, 271, 272, 274, 288, 327.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (126).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   137, 138, 228, 318.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (98, 114, 115, 155, 200, 208, 213, 219, 234, 239, 241, 244, 246, 281, 309, 312,
+//   319, 326).
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 351.
+
 use bevy::{ecs::entity_disabling::Disabled, prelude::*, text::EditableText};
 
 use super::*;

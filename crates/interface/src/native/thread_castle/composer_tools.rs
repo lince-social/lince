@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct ComposerTools, fn create.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy::{a11y::AccessibilityNode, prelude::*, ui_widgets::Activate};
 
 #[derive(Component)]

@@ -1,10 +1,20 @@
-use super::contacts::{
-    Audience, CheckedDisclosure, Document, RelationKind, Statement, permitted_edges,
-};
-use super::paths::{Policy, search};
-use super::*;
-use base64::{Engine as _, engine::general_purpose::STANDARD};
+// non-lean-yet
+// Scope: fn identity, fn context, fn disclosure, fn mutual.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 75, 111, 143, 196, 244, 259, 290.
+// - [Clippy: clippy::redundant_clone] Move or borrow at the marked sites and check later uses.
+//   Sites 191.
+
 use std::collections::BTreeMap;
+
+use base64::{Engine as _, engine::general_purpose::STANDARD};
+
+use super::{
+    contacts::{Audience, CheckedDisclosure, Document, RelationKind, Statement, permitted_edges},
+    paths::{Policy, search},
+    *,
+};
 
 fn identity(seed: u128) -> Identity {
     Identity::Organ(format!("r_{}", crate::ulid_from(1, seed)))

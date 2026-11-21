@@ -1,3 +1,24 @@
+// non-lean-yet
+// Scope: const MAX_COMMANDS_PER_RECEIPT, const CONFIGURATION_NAMESPACE, const
+//   CONFIGURATION_VERSION, const MAX_LISTEN_ADDR_BYTES.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   from_accept_credentials:accept_credentials (460).
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 445.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 34, 57, 83, 88, 93, 108, 125, 133, 146, 154, 387, 449, 454.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 445.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 370, 431, 439.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   9, 10, 11, 12, 13, 34, 35, 36, 37, 38, 39, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69,
+//   70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 83, 84, 88, 89, 93, 94, 95, 96, 97, 98, 99, 100, 101,
+//   102, 103, 104, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 125, 126,
+//   127, 128, 129, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 146, 147, 148, 149, 150, 154,
+//   155, 156, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 173, 198, 225, 251, 261, 370, 379,
+//   387, 388, 389, 390, 394, 396, 404, 411, 431, 439, 449, 450, 454, 455, 456, 460.
+
 use std::fmt;
 use std::net::SocketAddr;
 use std::str::FromStr;

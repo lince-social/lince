@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct XdgDecorationState, struct XdgDecorationManagerGlobalData, trait
+//   XdgDecorationHandler, macro delegate_xdg_decoration.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 153, 255, 292,
+//   297.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 108.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (242, 244, 254, 302).
+
 //! XDG Window decoration manager
 //!
 //! This interface allows a compositor to announce support for server-side decorations.

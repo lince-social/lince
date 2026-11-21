@@ -1,3 +1,23 @@
+// non-lean-yet
+// Scope: enum PrepareAssetError, struct AssetExtractionSystems, enum AssetExtractionError, trait
+//   RenderAsset.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 312.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 364.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 20, 33.
+// - [Clippy: clippy::match_same_arms] these match arms have identical bodies. Sites 331, 340.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 76, 100.
+// - [Clippy: clippy::unnecessary_semicolon] unnecessary semicolon. Sites 361.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 79, 91, 311, 397.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 118, 188, 220, 379, 509, 532.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 20, 22,
+//   24, 35, 37, 157, 158, 229, 233, 237, 241, 245, 249, 492, 498, 510.
+
 use crate::{
     render_resource::AsBindGroupError, Extract, ExtractSchedule, MainWorld, Render, RenderApp,
     RenderStartup, RenderSystems, Res,

@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: struct Frame, struct PreparedFrame, struct Captured, struct Job.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 111, 200, 203,
+//   218, 283, 285, 286, 291.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 181.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites capture_once:
+//   String (172), prepare_frame: String (64), submit_frame: String (53), submit_prepared_frame:
+//   String (93).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   205, 275.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (104, 205, 211, 275, 317).
+
 use super::*;
 use base64::{Engine, prelude::BASE64_STANDARD};
 use std::sync::{

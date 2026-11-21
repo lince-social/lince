@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct Insets, struct InsetModal, fn logical, fn modal.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy::prelude::*;
 
 #[derive(Resource, Default)]

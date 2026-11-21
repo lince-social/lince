@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: mod requests, mod replies, mod recovery, mod speech_scope.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 81, 109, 118,
+//   159, 178, 179, 421, 422, 543, 559, 890, 913, 917, 933, 960, 962, 985, 1012, 1044, 1098, 1145,
+//   1163, 1193, 1259, 1261, 1283, 1313.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (157).
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites
+//   454, 970, 1005, 1152, 1225, 1250.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   453, 455.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (543, 559, 561, 871, 884, 886, 905, 906, 925, 967, 972, 977, 991, 1019, 1038,
+//   1051, 1052, 1078, 1104, 1126, 1127, 1150, 1155, 1168, 1184, 1186, 1198, 1217, 1223, 1241, 1267,
+//   1275, 1277, 1290, 1320).
+
 use crate::native::{app::CellHandle, wake::WakeSignal};
 use bevy::prelude::*;
 use cell::{ClientMessage, ServerMessage};

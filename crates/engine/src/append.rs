@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: fn append_one, fn append_one_in_transaction, fn append_all.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 36, 49, 73, 76.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 27, 40, 64,
+//   80.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 9, 55.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   9, 55.
+
 use chrono::{DateTime, Utc};
 use nucleus::{Fact, NewFact};
 use store::Store;

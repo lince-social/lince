@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn offline_mailbox_first_registration_after_expiry_retains_the_exact_ending.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 26.
+
 use super::*;
 use base64::Engine as _;
 

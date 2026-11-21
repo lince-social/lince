@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct SubscriptionRefused, struct Watched, fn watched, struct Feed.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 60, 121, 134,
+//   143, 158.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   92.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (129).
+
 use super::*;
 use cell::{ClientMessage, ServerMessage};
 use std::collections::HashMap;

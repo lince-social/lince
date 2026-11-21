@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod support, fn draft, fn draft_with_plan, fn level.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 108, 126, 179.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 108, 126.
+
 #![cfg(test)]
 
 mod support;

@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct AreaInputPlugin, struct Gesture, fn canvas_point, fn regular.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 96, 165.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   402.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (143, 170, 184, 210, 219, 231, 281, 282, 326, 327, 345, 399).
+
 use crate::native::actions::Action;
 use crate::native::{
     area::{AreaShape, InfluenceArea, MAX_POINTS, ShapeKind},

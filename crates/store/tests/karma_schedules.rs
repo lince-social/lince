@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: const PERSON_UID, fn demand_policy, struct FakeProvider, fn
+//   leases_are_fenced_occurrences_are_unique_and_restart_rebuild_is_exact.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 248, 250, 518, 710.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 349, 917, 924,
+//   936, 943.
+// - [Clippy: clippy::unnecessary_wraps] this function's return value is unnecessarily wrapped by
+//   `Option`. Sites 947.
+
 #![cfg(test)]
 
 use std::{
@@ -15,21 +26,26 @@ use nucleus::karma::{
     ScheduleCursorLifecycle, ScheduleWorkloadUpperBounds, SchedulerCalibration, Slug, TimeZoneId,
     TimeZoneProvider, TimestampMs, TzdbRevision, TzdbVersion,
 };
-use store::Store;
-use store::karma::expansions::{
-    expand_pending_schedule_occurrences, expand_schedule_occurrence,
-    get_cursor as get_expansion_cursor, has_pending_schedule_occurrences,
-};
-use store::karma::frequencies::{
-    ActivateFrequencyInput, CreateFrequencyInput, FrequencyHandleRow, FrequencyMutationCommit,
-    PauseFrequencyInput, SetFrequencyParametersInput, activate, create, pause, set_parameters,
-};
-use store::karma::schedules::{
-    CursorCompletion, CursorMaterialization, ScheduleClaim, ScheduleDemandPolicy, claim_due,
-    complete_calendar, complete_elapsed, get_calendar_cursor, get_cursor, get_occurrence,
-    list_armed_deadlines, materialize_calendar_cursor, materialize_elapsed_cursor,
-    reconcile_active_schedule_cursors, record_deadline_admission,
-    supersede_inactive_frequency_cursors,
+use store::{
+    Store,
+    karma::{
+        expansions::{
+            expand_pending_schedule_occurrences, expand_schedule_occurrence,
+            get_cursor as get_expansion_cursor, has_pending_schedule_occurrences,
+        },
+        frequencies::{
+            ActivateFrequencyInput, CreateFrequencyInput, FrequencyHandleRow,
+            FrequencyMutationCommit, PauseFrequencyInput, SetFrequencyParametersInput, activate,
+            create, pause, set_parameters,
+        },
+        schedules::{
+            CursorCompletion, CursorMaterialization, ScheduleClaim, ScheduleDemandPolicy,
+            claim_due, complete_calendar, complete_elapsed, get_calendar_cursor, get_cursor,
+            get_occurrence, list_armed_deadlines, materialize_calendar_cursor,
+            materialize_elapsed_cursor, reconcile_active_schedule_cursors,
+            record_deadline_admission, supersede_inactive_frequency_cursors,
+        },
+    },
 };
 
 const PERSON_UID: &str = "r_01APS3NDEKTSV4RRFFQ69G5FAV";
@@ -626,8 +642,22 @@ async fn calendar_cursor_requires_its_pinned_provider_and_persists_typed_pause()
         resolutions: provider.resolutions.clone(),
     };
     let before = store.state_hash().await.unwrap();
-    assert!(store::karma::schedules::list_armed_demanded_calendar_deadlines(&store.pool, &foreign_provider).await.unwrap().is_empty());
-    assert_eq!(store::karma::schedules::list_armed_demanded_calendar_deadlines(&store.pool, &provider).await.unwrap().len(), 1);
+    assert!(
+        store::karma::schedules::list_armed_demanded_calendar_deadlines(
+            &store.pool,
+            &foreign_provider
+        )
+        .await
+        .unwrap()
+        .is_empty()
+    );
+    assert_eq!(
+        store::karma::schedules::list_armed_demanded_calendar_deadlines(&store.pool, &provider)
+            .await
+            .unwrap()
+            .len(),
+        1
+    );
     assert_eq!(store.state_hash().await.unwrap(), before);
     assert!(matches!(
         row.cursor,

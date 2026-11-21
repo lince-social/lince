@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Person, struct Fixture, fn engine, fn run_async_test.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 235.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 235.
+
 use engine::Engine;
 use engine::actions::{
     Action, TransferDependencyInput, TransferDependencyScopeInput,

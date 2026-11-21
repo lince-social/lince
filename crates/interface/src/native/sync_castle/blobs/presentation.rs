@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: enum Recipient, struct Rows, struct TransferRow, struct FileList.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 48, 120, 155,
+//   164, 171, 179, 216, 237, 283, 314, 336, 362, 378.
+
 use super::*;
 use crate::host::performance::{self, Count, Stage};
 use crate::native::retained;

@@ -1,3 +1,35 @@
+// non-lean-yet
+// Scope: const MAX_CALENDAR_SEARCH_STEPS, const MAX_TIME_ZONE_ID_BYTES, const
+//   MAX_TZDB_VERSION_BYTES, struct CivilDateTime.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 166, 167, 168.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   627.
+// - [Clippy: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably fires.
+//   Sites 24.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 858.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   858.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 346, 448, 456, 477, 486, 495, 530, 546.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   646.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   49, 163.
+// - [Clippy: clippy::missing_assert_message] assert without any message. Sites 652.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 25, 47, 71, 129, 143, 235, 294, 374, 413, 512, 518, 627.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 21, 25,
+//   47, 67, 71, 126, 129, 143, 179, 183, 187, 191, 232, 235, 246, 291, 294, 311, 338, 339, 340,
+//   346, 347, 348, 349, 350, 351, 352, 353, 371, 374, 385, 410, 413, 423, 448, 449, 450, 451, 456,
+//   457, 458, 459, 461, 462, 463, 464, 466, 467, 468, 469, 470, 477, 478, 479, 480, 486, 487, 488,
+//   489, 490, 495, 496, 497, 499, 500, 501, 503, 504, 505, 509, 510, 512, 518, 530, 531, 532, 533,
+//   534, 538, 539, 540, 541, 546, 547, 548, 549, 550, 552, 553, 554, 555, 557, 558, 559, 561, 562,
+//   563, 565, 566, 567, 568, 573, 575, 576, 578, 598, 612, 613, 614, 615, 616, 617, 618, 619, 620,
+//   621, 622, 623, 627.
+
 use std::{
     collections::BTreeSet,
     fmt,
@@ -21,7 +53,10 @@ const MAX_TZDB_VERSION_BYTES: usize = 64;
 pub struct CivilDateTime(NaiveDateTime);
 
 impl CivilDateTime {
-    #[allow(clippy::too_many_arguments, reason = "Calendar construction takes the explicit scheduling parameters")]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "Calendar construction takes the explicit scheduling parameters"
+    )]
     pub fn new(
         year: i32,
         month: u32,

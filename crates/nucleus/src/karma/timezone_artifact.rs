@@ -1,3 +1,24 @@
+// non-lean-yet
+// Scope: const TZDB_ARTIFACT_HASH_DOMAIN, const MAX_TZDB_ARTIFACT_BYTES, const
+//   MAX_TZDB_ARTIFACT_ZONES, const MAX_TZDB_SEGMENTS_PER_ZONE.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 134, 280, 281.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 329, 350, 351.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 49.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 19.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   253, 259, 261, 282.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   467.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 34, 93, 308, 327, 334, 377, 382, 401.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 11, 12,
+//   13, 14, 19, 21, 25, 27, 29, 30, 34, 88, 89, 93, 294, 308, 327, 334, 338, 371, 377, 382, 401,
+//   414.
+
 use std::{collections::BTreeMap, num::NonZeroU64};
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de};

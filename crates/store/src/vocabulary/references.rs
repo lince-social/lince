@@ -1,7 +1,18 @@
-use super::invalid;
-use crate::StoreError;
+// non-lean-yet
+// Scope: fn current_meaning_reference_on, fn conversion_reference_on, fn meaning_reference_on.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   44, 47.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 6, 23, 53.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 23,
+//   53.
+
 use nucleus::vocabulary::{DefinitionVersion, reference::MeaningReference};
 use sqlx::SqliteConnection;
+
+use super::invalid;
+use crate::StoreError;
 
 pub async fn current_meaning_reference_on(
     connection: &mut SqliteConnection,

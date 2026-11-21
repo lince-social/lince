@@ -1,3 +1,26 @@
+// non-lean-yet
+// Scope: mod discovery, mod recipes, struct Snapshot, struct AuthorityStamp.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 45, 50, 55, 64,
+//   68, 69, 70, 274, 380, 381, 399, 404, 452, 483, 508, 554, 564, 565, 579, 714, 725, 762, 828,
+//   900, 901, 917, 922.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 676, 696.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   765.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 333, 688, 701, 757, 760, 764, 765.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 764.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 288, 289, 765.
+// - [Clippy probe: clippy::manual_is_multiple_of] manual implementation of `.is_multiple_of()`.
+//   Sites 688.
+// - [Clippy probe: clippy::manual_let_else] this could be rewritten as `let...else`. Sites 736.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 676, 696.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use crate::actions::{ActionOutcome, VerifiedActionAuthorship};
 use chrono::{DateTime, Utc};

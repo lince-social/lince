@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: mod drafts, mod feeds, mod persistence, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 229, 237, 238,
+//   268, 276, 364, 366, 375, 413, 419, 443, 453, 455, 456, 461, 545, 572, 581, 590, 608, 609, 610,
+//   680, 684, 713, 723, 728, 891, 926, 927, 934, 963, 999, 1005, 1008, 1017, 1030, 1046, 1052,
+//   1063, 1079, 1092, 1112, 1184, 1197, 1210, 1226, 1263, 1270, 1294, 1335, 1361, 1364, 1496, 1497.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (353).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   295, 302, 309, 313, 314, 601, 605, 606, 746, 759, 782, 803, 806, 814, 824, 838, 839, 851, 858,
+//   874, 878.
+
 mod drafts;
 mod feeds;
 mod persistence;

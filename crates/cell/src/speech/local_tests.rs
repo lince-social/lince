@@ -1,3 +1,22 @@
+// non-lean-yet
+// Scope: fn recording, fn configured, fn finished, mod speech_reference.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 250, 273.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (5, 26, 27, 30, 38, 41, 51, 52, 60, 238, 245, 254, 260, 262, 263, 264, 267, 277).
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 6, 146.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 146.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 242, 258.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 262.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on a `Result` value.
+//   Sites 100.
+// - [Clippy probe: clippy::print_stdout] Check CLI, Cargo, fixture, or library output contract
+//   before changing output. Sites 133, 159, 292.
+
 use super::*;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 

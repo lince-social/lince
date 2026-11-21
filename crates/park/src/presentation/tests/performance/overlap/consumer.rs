@@ -1,4 +1,8 @@
-use super::*;
+// non-lean-yet
+// Scope: fn process_cpu_ns, struct Consumer.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 35, 38.
+
 use smithay::{
     backend::{
         allocator::{Buffer, Fourcc},
@@ -10,6 +14,8 @@ use smithay::{
     },
     utils::{Physical, Rectangle, Size, Transform},
 };
+
+use super::*;
 
 pub(super) fn process_cpu_ns() -> u64 {
     let time = rustix::time::clock_gettime(rustix::time::ClockId::ProcessCPUTime);

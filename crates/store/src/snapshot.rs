@@ -1,11 +1,20 @@
+// non-lean-yet
+// Scope: mod backup, mod cache, mod hashing, enum Value.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 21.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 38, 42.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 21, 22,
+//   23, 24, 25, 26, 31, 32, 33, 34, 38, 42.
+
 mod backup;
 mod cache;
 mod hashing;
 
-pub use cache::StateHasher;
-
 use std::path::Path;
 
+pub use cache::StateHasher;
 use serde::{Deserialize, Serialize};
 use sqlx::{Column, Row, TypeInfo, ValueRef};
 

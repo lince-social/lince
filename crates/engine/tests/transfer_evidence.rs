@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod analysis, mod ordinary_delivery, mod public_history, mod published_events.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 327,
+//   1196, 1634.
+
 #![cfg(test)]
 
 #[path = "transfer_evidence/analysis.rs"]

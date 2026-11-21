@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod gpu_preprocessing, mod no_gpu_preprocessing, struct NoAutomaticBatching, struct
+//   BatchSetMeta.
+// BeautifulRust (baseline lines):
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 108, 132, 144, 164.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 26.
+
 use bevy_ecs::{
     component::Component,
     entity::Entity,

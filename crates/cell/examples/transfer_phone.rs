@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: type Result, struct Identity, struct Fixture, struct Login.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 130, 134, 139,
+//   144, 157, 178, 253, 294, 304, 315, 318, 333, 403, 404, 406, 410, 459, 486, 492, 493.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 486, 492, 493.
+
 use cell::{Cell, CellOptions};
 use engine::{
     Engine,

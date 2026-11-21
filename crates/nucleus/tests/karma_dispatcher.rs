@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn three_millisecond_and_five_hour_deadlines_never_share_a_polling_cadence, fn
+//   replacement_is_lazy_fenced_and_destroys_empty_resolution_lanes, fn
+//   host_and_grant_admission_apply_each_explicit_overload_policy, fn
+//   entry_and_lane_limits_are_deterministic_in_deadline_order.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 38, 81, 99, 125, 152, 171, 310, 331, 370, 371, 414.
+
 #![cfg(test)]
 
 use std::num::{NonZeroU32, NonZeroUsize};

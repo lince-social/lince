@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn independent_bindings_and_scalar_preferences_merge_without_text_or_list_splicing, fn
+//   removed_override_and_explicit_unbound_are_different_choices, fn
+//   conflicting_preset_and_rule_order_lists_are_atomic_fields, fn
+//   identical_edits_are_not_conflicts_and_review_work_is_bounded.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use serde_json::json;
 

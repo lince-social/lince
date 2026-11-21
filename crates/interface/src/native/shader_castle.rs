@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod tests, struct ShaderCastle, struct ShaderFeed, struct ShaderCastlePlugin.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 122, 171, 239,
+//   258, 378.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (69, 70, 89, 163, 167, 178, 206, 217, 251, 256, 259, 269, 278, 357, 390, 393).
+
 use crate::native::{
     actions::Action,
     castle_feed::{self, Frame},

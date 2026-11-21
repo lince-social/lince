@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn fixture, fn activate, fn edit, fn
+//   gesture_save_merges_other_layout_and_binding_changes_and_loads_at_restart.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn fixture(directory: &std::path::Path) -> (App, Entity) {

@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn public_document, fn approved_review, fn person_approval_form, fn verification_message.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 98, 268, 286,
+//   316, 319, 328, 330, 331, 342, 343, 415, 426, 767, 1007, 1081.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (268, 332, 448, 744, 870, 1081).
+
 use super::*;
 use model::FieldKind;
 use ui::{Command, button, row};

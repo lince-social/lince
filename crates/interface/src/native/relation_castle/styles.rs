@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod preparation, mod tests, mod ui, struct Settings.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (366, 381).
+
 mod preparation;
 #[cfg(test)]
 mod tests;

@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn fixture, fn
+//   controls_save_captured_preferences_preserve_newer_edits_and_cancel_without_another_request, fn
+//   replaced_device_invalid_matrix_and_unsupported_host_preserve_the_draft_without_sending, fn
+//   reported_tool_buttons_have_a_simple_cycle_and_saved_file_reload_has_its_own_request.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::host::{OutputId, display::OutputHead, input::InputResponse};
 

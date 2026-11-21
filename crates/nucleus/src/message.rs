@@ -1,3 +1,26 @@
+// non-lean-yet
+// Scope: mod restoration, const MAX_CONTENT_BYTES, const MAX_PARTS, const CHUNK_BYTES.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   169.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 182, 185, 187,
+//   189, 190, 201, 202.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 174.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 14, 37.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   199.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   73.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 67, 80, 169.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 8, 9,
+//   10, 14, 15, 16, 18, 19, 21, 22, 24, 25, 26, 27, 29, 30, 31, 37, 38, 39, 41, 42, 44, 45, 47, 48,
+//   49, 50, 51, 52, 54, 55, 56, 60, 67, 80, 169, 212.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites decode: String
+//   (67), describe: String (169), validate: String (80).
+
 use base64::{Engine, prelude::BASE64_STANDARD};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};

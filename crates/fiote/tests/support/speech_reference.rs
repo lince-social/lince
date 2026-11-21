@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: mod tests.
+// BeautifulRust (baseline lines):
+// - [rustc probe: unreachable_pub] unreachable `pub` item. Sites 1.
+
 pub use fiote::speech::evaluation::words;
 
 #[cfg(test)]

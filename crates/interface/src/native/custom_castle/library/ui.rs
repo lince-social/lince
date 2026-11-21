@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct View, struct PasswordMask, fn show, fn refresh.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 77, 130, 131,
+//   132, 133, 134, 135, 155.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (77, 79, 108, 128, 139, 152, 155, 169, 174, 207, 221).
+
 use super::*;
 use bevy::text::EditableText;
 

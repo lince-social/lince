@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: const FIRST_KEY, const SECOND_KEY, fn command, fn inspect.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use serde_json::Value;

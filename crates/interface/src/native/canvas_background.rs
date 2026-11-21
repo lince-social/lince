@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct CanvasColors, fn color, fn current, fn for_workspace.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 317.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (300, 341, 361, 390).
+
 use crate::native::{
     canvas::CanvasView,
     container::BoxRoot,

@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: const DEFAULT_MIN_TILE_SIDE, const MAX_DAMAGE_TO_DAMAGE_BBOX_RATIO, const
+//   TILE_DAMAGE_GAP_FRACTION, struct DamageShaper.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   144, 152, 177, 230, 238, 239, 242.
+
 use std::mem;
 
 use crate::utils::{Physical, Rectangle, Size};

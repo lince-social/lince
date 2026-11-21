@@ -1,10 +1,25 @@
-use super::{Result, run};
-use crate::serial::Cancellation;
+// non-lean-yet
+// Scope: const RUST_TOOLCHAIN, const RUST_VERSION, const RUST_TARGET, fn configuration_digest.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 154, 155, 156, 157, 158, 471.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   137, 153, 170, 172, 235, 309.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 112, 116, 335.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 297.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 9, 10,
+//   11, 112, 116, 297, 298, 299, 300, 335.
+
 use std::{
     fs,
     path::{Path, PathBuf},
     process::Command,
 };
+
+use super::{Result, run};
+use crate::serial::Cancellation;
 
 pub const RUST_TOOLCHAIN: &str = "esp-1.93.0.0";
 pub const RUST_VERSION: &str = "1.93.0.0";

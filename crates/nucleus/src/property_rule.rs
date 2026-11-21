@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: enum Property, struct PropertyRule.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option` value.
+//   Sites 75.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 5.
+// - [Clippy: clippy::manual_is_variant_and] called `.ok().is_some_and(..)` on a `Result` value.
+//   Sites 79.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 6,
+//   7, 8, 9, 10, 11, 15, 24, 46, 54, 55, 56, 60, 64.
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 

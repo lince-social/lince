@@ -1,5 +1,10 @@
-use super::*;
+// non-lean-yet
+// Scope: fn panel_visible, fn modal_usable, fn frame, fn filter_unchanged.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use smithay::{backend::input::Axis, input::pointer::AxisFrame};
+
+use super::*;
 
 pub(super) fn panel_visible(fixture: &mut Fixture) {
     let size = Vec2::from_array(fixture.size.map(|value| value as f32));

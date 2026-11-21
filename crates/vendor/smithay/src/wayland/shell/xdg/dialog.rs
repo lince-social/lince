@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct XdgDialogState, trait XdgDialogHandler, macro delegate_xdg_dialog, fn set_modal.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 112, 191, 221,
+//   227, 233.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (178, 180, 190, 237, 252, 254, 271, 273).
+
 //! XDG Dialog Windows
 //!
 //! This interface allows a compositor to announce support for xdg-dialog toplevel hints, eg. modal hint.

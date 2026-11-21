@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: const RETAINED_NAMESPACE, const EFFECTIVE_DECISIONS, fn occupies_slot, fn live_slots_on.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 82, 491, 539,
+//   543, 610, 611, 654, 660, 661.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   81, 82, 121, 132, 145, 152, 421, 543, 555, 585, 587, 610, 668.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 81, 82, 121, 132, 145, 152, 177, 208, 209, 213, 216, 217, 233, 242, 243, 249,
+//   254, 259, 287, 297, 301, 308, 312, 318, 319, 345, 363, 375, 384, 421, 539, 543, 546, 555, 585,
+//   587, 610, 635, 668.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 439.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1, 2.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   439.
+
 use super::*;
 use nucleus::social::requests::*;
 use std::collections::BTreeMap;

@@ -1,3 +1,23 @@
+// non-lean-yet
+// Scope: struct RenderDevice, mod tests.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   107.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 113.
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 76, 90, 97.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 80.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 288, 317.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 130.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 64, 109, 138, 147, 188, 195, 204, 212, 218, 224, 236, 249, 257, 268,
+//   279.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 20.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 31,
+//   277, 287, 298.
+
 use super::RenderQueue;
 use crate::render_resource::{
     BindGroup, BindGroupLayout, Buffer, ComputePipeline, RawMeshPipelineDescriptor,

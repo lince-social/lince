@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: const PRESETS, fn
+//   explicitly_replacing_a_free_fraction_keeps_the_new_intent_through_mode_round_trips, fn tiled,
+//   fn presets_cycle_per_item_without_changing_neighbors_or_height.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::layout::desktop::tests::{id, item, viewport};
 

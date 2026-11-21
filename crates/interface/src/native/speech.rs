@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: mod incoming, mod readiness, const CREDITS, struct Composer.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 105, 320, 336,
+//   456, 525, 582, 602, 608, 663, 786, 893, 903, 916, 947.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 392.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   500.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (142, 372, 375, 377, 399, 400, 405, 460, 468, 503, 530, 576, 580, 611, 663, 818,
+//   821, 864, 880, 889, 890, 892, 924, 938, 944, 958, 964).
+
 use crate::native::{actions::Action, sand_panel as panel};
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 use bevy::{prelude::*, text::EditableText};

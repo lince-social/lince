@@ -1,3 +1,22 @@
+// non-lean-yet
+// Scope: mod preparation, struct StoredSchema, struct StoredValues, struct Managed.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 162, 208, 211,
+//   217, 229, 241, 282, 297, 334, 521, 546, 563, 658, 659, 660, 661, 725, 824, 875, 882, 891, 1010.
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites apply_extension_values:id → &str (771), save_extension_schema:id → &str (488).
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   inspect_extensions:catalog (192).
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 317.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 275.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 513, 573.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 72, 189.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   72, 189.
+
 mod preparation;
 
 use crate::{

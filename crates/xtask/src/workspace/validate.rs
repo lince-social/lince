@@ -1,7 +1,10 @@
-use super::fixtures::{Bundle, digest};
-use crate::Result;
-use glam::{Mat4, Vec3};
-use serde_json::{Value, json};
+// non-lean-yet
+// Scope: fn require, fn read, fn finite, fn rotation.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 661.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   67, 124, 198, 304, 305, 311, 758, 855, 857.
+
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs::{self, File},
@@ -9,6 +12,12 @@ use std::{
     path::{Component, Path},
     time::Instant,
 };
+
+use glam::{Mat4, Vec3};
+use serde_json::{Value, json};
+
+use super::fixtures::{Bundle, digest};
+use crate::Result;
 
 fn require(condition: bool, message: impl Into<String>) -> Result<()> {
     if condition {

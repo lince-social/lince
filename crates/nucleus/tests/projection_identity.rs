@@ -1,5 +1,14 @@
-use nucleus::karma::{CanonicalHash, canonical_hash};
-use nucleus::projection::{Context, ExecutionIdentity, Window};
+// non-lean-yet
+// Scope: fn identity_preserves_key_encoding_and_actor_isolation, fn
+//   execution_identity_rejects_malformed_fingerprints.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::redundant_clone] Move or borrow at the marked sites and check later uses.
+//   Sites 22.
+
+use nucleus::{
+    karma::{CanonicalHash, canonical_hash},
+    projection::{Context, ExecutionIdentity, Window},
+};
 
 #[test]
 fn identity_preserves_key_encoding_and_actor_isolation() {

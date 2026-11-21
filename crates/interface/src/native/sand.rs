@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Square, struct ImageSand, struct InBox, struct Borderless.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (222, 227, 230, 234, 236, 245, 247, 250, 251, 311, 316).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 160.
+
 use bevy::{
     input_focus::{FocusCause, FocusGained, FocusLost, InputFocus},
     prelude::*,

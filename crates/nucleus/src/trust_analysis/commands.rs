@@ -1,11 +1,27 @@
+// non-lean-yet
+// Scope: struct ContactDraft, struct ProfileVersion, struct ContactReview, enum Command.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 63.
+// - [Clippy: clippy::large_enum_variant] large size difference between variants. Sites 63.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 45.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 12, 13,
+//   14, 16, 17, 18, 20, 22, 24, 29, 30, 31, 36, 37, 38, 39, 40, 41, 45, 63, 64, 65, 67, 68, 70, 71,
+//   73, 74, 76, 77, 79, 80, 81, 83, 84, 85, 87, 88, 90, 92, 93, 95, 97, 98, 100, 102, 103, 105,
+//   107, 108, 110, 112, 113, 114, 116, 117, 119, 120, 122, 123, 125, 130, 151.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites hash: String
+//   (45).
+
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+
 use super::{
     Identity,
     contacts::{Audience, Document},
     paths,
 };
 use crate::karma::{CanonicalHash, canonical_hash};
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]

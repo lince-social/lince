@@ -1,3 +1,34 @@
+// non-lean-yet
+// Scope: mod config, mod bert, mod model, mod modernbert.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 231, 233, 237, 238, 257, 260, 268, 298, 424.
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value. Sites
+//   403, 411.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   189.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 220, 221, 405.
+// - [Clippy: clippy::trivially_copy_pass_by_ref] Consider a value parameter for small Copy inputs.
+//   Sites 416.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 268, 302, 379.
+// - [review: §3 Ownership] Check whether the borrowed container can expose a narrower view. Sites
+//   system_one:questions → &[T] (192).
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 237, 240, 279, 411, 428.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   237, 240.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 29, 69.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 104, 143, 189, 315.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 96.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 1, 2,
+//   3, 4, 5, 22, 23, 24, 29, 30, 31, 32, 33, 34, 36, 37, 38, 39, 40, 41, 43, 44, 45, 50, 51, 55,
+//   56, 57, 58, 62, 63, 64, 69, 70, 71, 72, 73, 77, 78, 79, 80, 81, 83, 87, 88, 89, 90, 91, 92, 93,
+//   96, 100, 104, 143, 189, 315, 371.
+
 pub mod config;
 pub mod bert;
 pub mod model;

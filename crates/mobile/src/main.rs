@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn main.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 fn main() -> Result<(), std::io::Error> {
     let directory = std::env::args_os()
         .nth(1)

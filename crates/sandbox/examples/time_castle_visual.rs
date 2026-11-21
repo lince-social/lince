@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: struct Output, struct Captured, fn output, fn step.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 53, 54, 81, 85,
+//   151, 166, 319, 380, 468, 469, 611, 617, 618, 687, 963, 981, 984, 996, 1001, 1004, 1072, 1135.
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites
+//   149.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   89, 175, 812.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (31, 67, 88, 105, 111, 113, 164, 182, 184, 204, 218, 223, 242, 247, 249, 270, 285,
+//   296, 298, 307, 311, 331, 349, 351, 354, 365, 368, 371, 372, 375, 376, 380, 381, 396, 439, 441,
+//   446, 458, 459, 483, 500, 515, 517, 537, 539, 559, 567, 583, 587, 611, 615, 618, 621, 622, 638,
+//   648, 653, 678, 679, 680, 687, 721, 722, 726, 730, 744, 757, 775, 779, 806, 828, 832, 839, 857,
+//   872, 884, 889, 896, 900, 907, 912, 923, 938, 942, 949, 950, 954, 961, 969, 987, 992, 995, 1013,
+//   1016, 1036, 1066, 1068, 1079, 1085, 1098, 1125, 1127, 1131, 1137, 1150, 1151, 1174, 1181, 1187,
+//   1217, 1244, 1255).
+
 use bevy::{
     camera::{ImageRenderTarget, RenderTarget},
     core_pipeline::tonemapping::DebandDither,

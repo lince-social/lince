@@ -1,3 +1,35 @@
+// non-lean-yet
+// Scope: const MAX_CHILD_BYTES, const MAX_DIRECTORY_PATH_BYTES, const MAX_DIRECTORY_COMPONENTS,
+//   enum PrivateFileError.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 399.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 355.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   328, 336, 445.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 151, 152, 153, 157, 158, 159.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 9, 38.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 328, 445.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 355.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 246, 295, 348.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 718, 770,
+//   813, 920.
+// - [Clippy probe: clippy::unnecessary_cast] casting to the same type is unnecessary (`i64` ->
+//   `i64`). Sites 157, 158, 159.
+// - [Clippy probe: clippy::unnecessary_cast] casting to the same type is unnecessary (`u64` ->
+//   `u64`). Sites 151, 152, 153.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 125.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 89.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   4, 5, 6, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 32, 33, 34, 38, 39, 40, 41, 43, 44, 46,
+//   47, 48, 49, 51, 52, 89, 246, 295, 348.
+
 use std::fmt;
 use std::path::Path;
 

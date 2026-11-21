@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: enum Status, struct Source, struct Row, struct Rows.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 56, 131, 132,
+//   139, 141, 142, 143, 151, 168, 265.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (128, 161, 166, 179, 187, 228).
+
 use super::*;
 use crate::native::retained;
 use std::collections::HashMap;

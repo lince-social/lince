@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct InteractionDisabled, fn on_add_disabled, fn on_remove_disabled, struct Pressed.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 33, 41, 66, 77, 85, 92, 108, 116, 124, 131.
+// - [Clippy: clippy::match_bool] `match` on a boolean expression. Sites 70.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 33, 41, 42, 66, 77, 85, 92, 108, 116, 124, 131.
+
 /// This module contains components that are used to track the interaction state of UI widgets.
 use bevy_a11y::AccessibilityNode;
 use bevy_ecs::{

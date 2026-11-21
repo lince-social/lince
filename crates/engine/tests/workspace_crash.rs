@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn act, fn workspace_crash_child, fn
+//   killed_host_rolls_back_consequences_and_retries_the_durable_review_once.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 175.
+
 #![cfg(test)]
 
 use engine::{

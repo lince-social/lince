@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: enum Intent, struct Marker, enum Kind, struct Pending.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 296, 301, 369,
+//   370, 374, 400, 432, 435, 501, 612, 682, 685, 686, 687, 774, 900, 903, 905, 907, 916, 917, 919,
+//   920, 935, 937, 938, 943, 1102, 1114, 1129, 1194, 1330, 1332, 1429, 1443, 1476, 1524, 1537,
+//   1648, 1736, 1737, 1738, 1755, 1756, 1763, 1770.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 846.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites apply: String
+//   (598), observe: String (367).
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (1056, 1222,
+//   1248, 1428, 1432, 1464, 1484).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   735, 769, 1755, 1809.
+
 use crate::{
     app::{self, Mobile},
     navigation::Page,

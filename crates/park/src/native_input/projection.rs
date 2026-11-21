@@ -1,9 +1,19 @@
-use super::*;
+// non-lean-yet
+// Scope: struct View, enum Source, struct Context, struct CaptureState.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 547, 607, 624.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (93, 581).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   130, 285, 286, 287, 296, 302, 305, 311, 313, 314, 316, 352, 354, 360, 361, 362, 363, 365, 367,
+//   368, 369, 370, 371, 372, 374, 379, 380, 381, 382, 383, 509, 510, 511, 538, 539, 540.
+
 use bevy::asset::AssetId;
 use lince_interface::host::{
     GeometrySnapshot, ItemGeometry, ItemId, OutputId, OutputViewport, Rectangle,
     raster::RasterMapping,
 };
+
+use super::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct View {
@@ -17,7 +27,8 @@ pub(crate) struct View {
 
 impl View {
     fn same_owner(&self, other: &Self) -> bool {
-        self.root == other.root && self.output == other.output
+        self.root == other.root
+            && self.output == other.output
             && (self.root.is_some() || self.image == other.image)
     }
 }
@@ -59,18 +70,27 @@ impl Context {
             && self.view.same_owner(&other.view)
             && match (&self.owner, &other.owner) {
                 (Some(a), Some(b)) => a.same_owner(b),
-                (None, None) => self.camera == other.camera && self.image == other.image
-                    && match (&self.source, &other.source) {
-                        (Source::Final, Source::Final) => true,
-                        (Source::Sand { owner: a, .. }, Source::Sand { owner: b, .. }) => a == b,
-                        _ => false,
-                    },
+                (None, None) => {
+                    self.camera == other.camera
+                        && self.image == other.image
+                        && match (&self.source, &other.source) {
+                            (Source::Final, Source::Final) => true,
+                            (Source::Sand { owner: a, .. }, Source::Sand { owner: b, .. }) => {
+                                a == b
+                            }
+                            _ => false,
+                        }
+                }
                 _ => false,
             }
     }
 
     fn same_session(&self, other: &Self) -> bool {
-        if self.owner.is_some() && other.owner.is_some() { self.same_owner(other) } else { self == other }
+        if self.owner.is_some() && other.owner.is_some() {
+            self.same_owner(other)
+        } else {
+            self == other
+        }
     }
 }
 
@@ -90,7 +110,10 @@ pub(crate) fn prepare(world: &mut World, view: Option<View>) {
     if changed {
         let mut state = world.resource_mut::<CaptureState>();
         state.context = None;
-        state.generation = state.generation.checked_add(1).expect("native editor session");
+        state.generation = state
+            .generation
+            .checked_add(1)
+            .expect("native editor session");
         super::cancel(world);
     }
 }
@@ -145,9 +168,16 @@ fn resolve(
     }
     let owner = if let Some(root) = view.root {
         let owner = native::accessibility::owner_context(world, entity, true)?;
-        if owner.root != root || owner.output() != Some(view.output) || local_view(world, &view).is_none() { return None; }
+        if owner.root != root
+            || owner.output() != Some(view.output)
+            || local_view(world, &view).is_none()
+        {
+            return None;
+        }
         Some(owner)
-    } else { None };
+    } else {
+        None
+    };
     let camera = world
         .get::<bevy::ui::ComputedUiTargetCamera>(entity)?
         .get()?;
@@ -483,13 +513,14 @@ impl<'a> AccessibilityProjection<'a> {
         }
         if let Some(clip) = self.clip {
             let vertices = corners.map(|corner| (corner, ()));
-            let polygon = bevy::ui_render::clipping::clip_polygon(
-                Some(clip), &vertices, |(), (), _| (),
-            );
+            let polygon =
+                bevy::ui_render::clipping::clip_polygon(Some(clip), &vertices, |(), (), _| ());
             let (first, ()) = *polygon.first()?;
-            let (low, high) = polygon.iter().fold((first, first), |(low, high), (point, ())| {
-                (low.min(*point), high.max(*point))
-            });
+            let (low, high) = polygon
+                .iter()
+                .fold((first, first), |(low, high), (point, ())| {
+                    (low.min(*point), high.max(*point))
+                });
             corners = [
                 low,
                 Vec2::new(high.x, low.y),
@@ -533,10 +564,26 @@ pub(crate) fn accessibility_points(
     AccessibilityProjection::new(world, view, geometry, entity)?.points(local)
 }
 
-pub(crate) fn accessibility_bounds(world: &World, view: &View, geometry: Option<&GeometrySnapshot>, entity: Entity, local: Option<Rect>) -> Option<Rectangle> {
+pub(crate) fn accessibility_bounds(
+    world: &World,
+    view: &View,
+    geometry: Option<&GeometrySnapshot>,
+    entity: Entity,
+    local: Option<Rect>,
+) -> Option<Rectangle> {
     let points = accessibility_points(world, view, geometry, entity, local)?;
-    let low = std::array::from_fn(|axis| points.iter().map(|point| point[axis]).fold(f64::INFINITY, f64::min));
-    let high: [f64; 2] = std::array::from_fn(|axis| points.iter().map(|point| point[axis]).fold(f64::NEG_INFINITY, f64::max));
+    let low = std::array::from_fn(|axis| {
+        points
+            .iter()
+            .map(|point| point[axis])
+            .fold(f64::INFINITY, f64::min)
+    });
+    let high: [f64; 2] = std::array::from_fn(|axis| {
+        points
+            .iter()
+            .map(|point| point[axis])
+            .fold(f64::NEG_INFINITY, f64::max)
+    });
     Rectangle::new(low, std::array::from_fn(|axis| high[axis] - low[axis]))
 }
 
@@ -578,7 +625,10 @@ pub(super) fn capture(world: &mut World, geometry: Option<&GeometrySnapshot>) ->
         _ => false,
     };
     if !same_session {
-        state.generation = state.generation.checked_add(1).expect("native editor session");
+        state.generation = state
+            .generation
+            .checked_add(1)
+            .expect("native editor session");
     }
     let target = context
         .as_ref()
@@ -603,7 +653,9 @@ pub(super) fn current(world: &mut World, requested: &Editor) -> Option<Editor> {
         return None;
     }
     let context = state.context.as_ref()?;
-    if world.get_resource::<bevy::input_focus::InputFocus>()?.get() != Some(context.entity) { return None; }
+    if world.get_resource::<bevy::input_focus::InputFocus>()?.get() != Some(context.entity) {
+        return None;
+    }
     let view = state.view.clone()?;
     let local = local_view(world, &view);
     if context.owner.is_some() {
@@ -629,7 +681,7 @@ pub(super) fn current(world: &mut World, requested: &Editor) -> Option<Editor> {
                 ItemId::Native(id),
             )?;
             Some(translated(current, view.origin)?)
-        },
+        }
         None => None,
     };
     let live = resolve(world, view, entity, item)?;
@@ -648,8 +700,9 @@ mod lifetime;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use lince_interface::host::ContentMapping;
+
+    use super::*;
 
     fn item() -> ItemGeometry {
         ItemGeometry {

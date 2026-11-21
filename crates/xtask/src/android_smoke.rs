@@ -1,9 +1,10 @@
-use crate::{Result, ui_process};
-use base64::{Engine as _, engine::general_purpose::STANDARD};
-use lince_interface::testing::{
-    Backend, Dispatch, Limits, Route, Runner as Driver, Selector, Step,
-};
-use serde_json::{Value, json};
+// non-lean-yet
+// Scope: const PACKAGE, const COMPONENT, const OUTPUT_LIMIT, struct Runner.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 89.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 209, 299,
+//   305.
+
 use std::{
     ffi::OsString,
     fs,
@@ -12,6 +13,14 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
+
+use base64::{Engine as _, engine::general_purpose::STANDARD};
+use lince_interface::testing::{
+    Backend, Dispatch, Limits, Route, Runner as Driver, Selector, Step,
+};
+use serde_json::{Value, json};
+
+use crate::{Result, ui_process};
 
 const PACKAGE: &str = "social.lince.mobile.smoketest";
 const COMPONENT: &str = "social.lince.mobile.smoketest/social.lince.mobile.MainActivity";
@@ -291,27 +300,25 @@ impl Runner {
                     ));
                 }
                 for line in logs.lines().rev() {
-                    if let Some((_, body)) = line.split_once("LINCE_SMOKE ") {
-                        if let Ok(reply) = serde_json::from_str::<Value>(body) {
-                            if reply["id"] == self.sequence {
-                                fs::write(
-                                    self.output.join("snapshot.json"),
-                                    serde_json::to_vec_pretty(&reply).map_err(|_| {
-                                        ReplyFailure::Uncertain(
-                                            "Smoke snapshot could not be encoded".into(),
-                                        )
-                                    })?,
-                                )
-                                .map_err(|_| {
+                    if let Some((_, body)) = line.split_once("LINCE_SMOKE ")
+                        && let Ok(reply) = serde_json::from_str::<Value>(body)
+                    {
+                        if reply["id"] == self.sequence {
+                            fs::write(
+                                self.output.join("snapshot.json"),
+                                serde_json::to_vec_pretty(&reply).map_err(|_| {
                                     ReplyFailure::Uncertain(
-                                        "Smoke snapshot could not be saved".into(),
+                                        "Smoke snapshot could not be encoded".into(),
                                     )
-                                })?;
-                                if let Some(error) = reply["error"].as_str() {
-                                    return Err(ReplyFailure::Rejected(error.into()));
-                                }
-                                return Ok(reply);
+                                })?,
+                            )
+                            .map_err(|_| {
+                                ReplyFailure::Uncertain("Smoke snapshot could not be saved".into())
+                            })?;
+                            if let Some(error) = reply["error"].as_str() {
+                                return Err(ReplyFailure::Rejected(error.into()));
                             }
+                            return Ok(reply);
                         }
                     }
                 }
@@ -616,8 +623,9 @@ pub(crate) fn run(root: &Path, args: &[OsString]) -> Result<()> {
 #[cfg(test)]
 #[cfg(unix)]
 mod tests {
-    use super::*;
     use std::os::unix::fs::PermissionsExt;
+
+    use super::*;
 
     struct Directory(PathBuf);
 

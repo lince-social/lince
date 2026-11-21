@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: mod geometry, struct Row, struct LastLayout, struct EditorSize.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 87, 182, 183,
+//   210, 224, 239, 255, 271, 278, 291, 364, 374, 384, 396, 425, 448, 459, 466, 477, 493, 516, 522,
+//   533, 634, 697, 698, 763, 823, 851, 857, 858, 860, 866, 881, 900, 901, 909, 910, 933, 948, 949,
+//   952, 955, 960, 961, 1019, 1146, 1149, 1152, 1155, 1164, 1165, 1167, 1191, 1250, 1251, 1252,
+//   1253, 1291, 1308, 1392.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (1323, 1441,
+//   1579).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   136, 483, 914, 1093, 1168.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (459, 466, 477, 505, 522, 533, 600, 607, 634, 643, 650, 670, 702, 1120, 1123,
+//   1128, 1166, 1209, 1213, 1253, 1297, 1314, 1394, 1532).
+
 mod geometry;
 
 use super::*;

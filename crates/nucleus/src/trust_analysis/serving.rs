@@ -1,10 +1,40 @@
+// non-lean-yet
+// Scope: const NAMESPACE, const CHUNK_BYTES, const MAX_ARTIFACT_BYTES, const MAX_STORAGE_BYTES.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 319.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 94.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 247, 296, 297, 306, 325, 327.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   306, 325.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 17, 40, 136, 265.
+// - [Clippy: clippy::large_enum_variant] large size difference between variants. Sites 40.
+// - [Clippy: clippy::manual_is_multiple_of] manual implementation of `.is_multiple_of()`. Sites
+//   297.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   305.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 54, 66, 83, 86, 105, 149, 187, 238, 291, 315.
+// - [Clippy: clippy::unnecessary_semicolon] unnecessary semicolon. Sites 77.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 9, 10,
+//   11, 12, 13, 17, 18, 19, 20, 24, 40, 41, 42, 43, 47, 54, 66, 83, 86, 89, 92, 105, 117, 118, 119,
+//   124, 125, 127, 129, 130, 131, 136, 138, 139, 143, 149, 175, 176, 177, 178, 179, 180, 181, 182,
+//   183, 187, 198, 238, 265, 266, 267, 269, 270, 271, 273, 274, 276, 277, 283, 284, 285, 286, 287,
+//   291, 315.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites assemble:
+//   String (315), bytes: String (83), decode: String (291), expires_at: String (54), hash: String
+//   (86, 238), parse: String (105), term_boundary: String (187), validate: String (66, 149).
+
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+
 use super::{Filter, Identity, claims, contacts};
 use crate::{
     karma::{CanonicalHash, canonical_hash},
     transfer::receipt,
 };
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
 
 pub const NAMESPACE: &str = "lince.evidence-serving";
 pub const CHUNK_BYTES: usize = 65536;
@@ -91,7 +121,12 @@ impl Artifact {
     }
     pub fn allows_reader(&self, reader: &Identity) -> bool {
         match self {
-            Self::Receipt(document) => document.public_bundle().is_some_and(|bundle| bundle.publication.scope.audience.allows(reader, &Identity::Organ(bundle.publication.scope.source.origin.clone()))),
+            Self::Receipt(document) => document.public_bundle().is_some_and(|bundle| {
+                bundle.publication.scope.audience.allows(
+                    reader,
+                    &Identity::Organ(bundle.publication.scope.source.origin.clone()),
+                )
+            }),
             Self::Contact(document) => document
                 .statement
                 .audience

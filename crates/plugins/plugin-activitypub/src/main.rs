@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn main, fn run.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 13, 16.
+
 use std::path::PathBuf;
 
 #[tokio::main(flavor = "current_thread")]

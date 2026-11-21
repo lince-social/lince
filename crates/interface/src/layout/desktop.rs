@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: mod gestures, mod overview, mod ordering, mod placement.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 913.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   set_minimized:minimized (268).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   247, 330, 331, 595, 596, 597, 598, 599, 607, 653, 657, 686, 729, 730, 731, 739, 741, 742, 747,
+//   750, 757, 758, 784, 785, 839, 850, 851, 973, 981, 990, 1032, 1035, 1036, 1037, 1040, 1041,
+//   1051, 1058, 1059, 1070, 1071, 1076, 1115, 1124, 1127, 1128, 1182, 1209, 1216, 1221, 1222, 1270,
+//   1271, 1272, 1279, 1283, 1284, 1295, 1296.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (690, 713, 1001, 1063, 1079, 1135, 1275).
+
 use super::{LIMIT, Rules};
 use crate::host::{Direction, Rectangle, WorkspaceLayout};
 use serde::{Deserialize, Serialize};

@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: fn publish.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 45, 49, 61, 65,
+//   108, 144, 202.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 105.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 10.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 2.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   10.
+
 use super::network::{Close, Request};
 use super::*;
 use crate::wire::Wire;

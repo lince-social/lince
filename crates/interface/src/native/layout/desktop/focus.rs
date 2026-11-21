@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod memory, mod policy, mod settings, struct FocusState.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 62.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   651, 655, 832, 833.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (100, 105, 110, 354, 373, 405, 531, 604, 608, 621, 625, 688, 691, 789, 793, 809,
+//   864, 882, 886).
+
 use super::*;
 use crate::host::Direction;
 use bevy::math::{DVec2, DVec3};

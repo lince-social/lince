@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct Page, enum Change, fn install, fn panel.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 159, 184, 185,
+//   294, 356, 357, 377, 379, 388, 428.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 163, 296.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   434, 450.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (105, 117, 118, 152, 153, 172, 178, 183, 197, 198, 211, 256, 281, 297, 307, 347,
+//   375, 387, 428, 440, 478, 482).
+
 use super::{
     HostRequests,
     input_settings::{button, disable, feedback, field, next_request, text},

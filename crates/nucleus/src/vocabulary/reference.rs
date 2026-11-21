@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: struct MeaningReference, struct ConversionReference, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 84, 85, 116.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   new:withdrawn (33).
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   64, 113.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 27, 71, 99, 127.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 8,
+//   9, 10, 11, 16, 17, 18, 19, 20, 21, 22, 23, 27, 71, 99, 127, 142.
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};

@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: impl Engine.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 48, 62, 130, 143,
+//   178, 182, 268, 280, 328.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 226, 232, 250, 255, 313, 324, 325, 343, 344.
+
 use super::{Engine, EngineError, invalid};
 use nucleus::knowledge::{DEPENDENCY_LIMIT, Item, Selection};
 use protein::authority::Operation;

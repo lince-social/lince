@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct View, fn spatial, fn synchronize, fn present.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (80, 149, 193, 199, 258).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 320.
+
 use super::presentation::{WorldCamera, origin};
 use bevy::{math::DVec3, prelude::*};
 use serde::{Deserialize, Serialize};

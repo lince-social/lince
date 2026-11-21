@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn render_elements_from_surface_tree, enum WaylandSurfaceTexture, struct
+//   WaylandSurfaceRenderElement.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 235, 240.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (115, 130, 220).
+
 //! Element to render a wayland surface
 //!
 //! # Why use this implementation

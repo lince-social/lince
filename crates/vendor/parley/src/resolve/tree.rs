@@ -2,6 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 //! Hierarchical tree based style application.
+// non-lean-yet
+// Scope: struct StyleTreeNode, enum ItemKind, struct TreeStyleBuilder, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 41, 183.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (193).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   41, 152, 157, 191, 209.
+
 use alloc::{string::String, vec::Vec};
 
 use crate::style::WhiteSpaceCollapse;

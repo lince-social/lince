@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn record, fn revise, fn
+//   assertions_pin_definitions_and_units_through_edits_and_quantity_changes, fn
+//   record_history_preserves_content_and_paginates_without_recording_noops.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 118, 119, 155, 156, 157, 158, 159, 268, 306, 411, 417, 418, 422, 423.
+
 #![cfg(test)]
 
 use nucleus::RecordKind;

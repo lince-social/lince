@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod dispatch, struct ContentTypeSurfaceCachedState, struct ContentTypeSurfaceData, struct
+//   ContentTypeUserData.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 173.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (147).
+
 //! Implementation of wp_content_type protocol
 //!
 //! ### Example

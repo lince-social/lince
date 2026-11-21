@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn apply.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 33, 190, 195,
+//   213, 219, 247, 273, 280, 321.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (351).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   199, 226, 232, 241, 372.
+
 use super::*;
 
 pub(super) fn apply(

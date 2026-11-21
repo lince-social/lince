@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: mod preview, enum SandKind, struct StoredSand, struct SandCredits.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 424, 553.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (353, 356,
+//   394).
+
 use crate::i18n::Token as Tr;
 pub(crate) mod preview;
 

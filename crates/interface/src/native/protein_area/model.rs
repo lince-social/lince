@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: enum SpawnPlacement, struct Config.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 205, 215.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites query: String
+//   (200).
+
 use crate::native::protein_castle::ProteinDraft;
 pub use lince_interface::records::{Binding, OverflowMode, Source};
 use serde::{Deserialize, Serialize};

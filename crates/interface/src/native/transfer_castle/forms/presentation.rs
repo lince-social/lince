@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct Prepared, enum Footer, struct Disclosure, fn prepare.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 197.
+
 use super::*;
 use summary::Summary;
 

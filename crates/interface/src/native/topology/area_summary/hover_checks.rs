@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn unchanged, fn
+//   stable_behavior_hover_retains_layout_and_follows_pointer_and_edit_changes.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   58, 61.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (6, 7, 48, 52, 63, 67, 73, 74, 80, 83).
+
 use super::*;
 use bevy::picking::{backend::HitData, hover::HoverMap, pointer::PointerId};
 

@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn private_admin_catalog_exact_operation_permission_matrix, fn
+//   private_admin_catalog_permissions_are_unique_existing_tuples_without_legacy_extras, fn
+//   private_admin_catalog_unknown_tags_aliases_and_implicit_admin_routes_refuse, fn
+//   private_admin_catalog_every_entry_requires_current_authority_and_a_separate_consumer.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::collections::BTreeSet;
 use std::net::SocketAddr;
 

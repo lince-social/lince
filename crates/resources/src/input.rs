@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: struct MediaInput.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 37, 48, 50, 51.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   26, 41.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 10.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 3.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 3, 4,
+//   5, 10.
+
 use crate::{Library, RangeReader, Resource, Result, SourceServer, address};
 
 pub struct MediaInput {

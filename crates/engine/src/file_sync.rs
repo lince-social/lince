@@ -1,3 +1,41 @@
+// non-lean-yet
+// Scope: mod lingua, mod directory, const MARKDOWN_EXTENSION, const MISSING_TICKS_BEFORE_DELETE.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 153, 241, 243,
+//   276, 285, 296, 315, 336, 354, 359, 362, 370, 381, 390, 414, 415, 421, 430, 432, 435, 437, 464,
+//   472, 488, 489, 501, 509, 518, 520, 551, 629, 631, 633, 634, 635, 657, 677, 685, 695, 700, 715,
+//   725, 769, 770, 774, 799, 804, 820, 821, 831, 832, 833, 834, 881, 1010, 1012, 1013, 1014, 1045,
+//   1050, 1058, 1090, 1092, 1101, 1127, 1216, 1217, 1218, 1219, 1228, 1309, 1393, 1395, 1419, 1453,
+//   1454, 1484.
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites spawn_watch:dir → &Path (1347), spawn_watch:organ_uid → &str (1348).
+// - [Clippy: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably fires.
+//   Sites 661.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   343, 354, 359.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 1393, 1453.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 192, 209,
+//   343, 375, 503, 706, 840, 1161, 1169, 1252, 1259.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 19.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 161, 656, 912, 921.
+// - [Clippy probe: clippy::if_not_else] unnecessary boolean `not` operation. Sites 263.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 343, 354, 359.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value.
+//   Sites 1083.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 102, 1363.
+// - [Clippy probe: clippy::missing_panics_doc] State the panic conditions for exported functions.
+//   Sites 909, 918.
+// - [Clippy probe: clippy::needless_borrow] this expression creates a reference which is
+//   immediately dereferenced by the compiler. Sites 450.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   19, 21, 22, 26, 51, 58, 64, 65, 66, 67, 68, 69, 73, 74, 75, 102, 909, 918, 1345, 1361, 1363,
+//   1424, 1507.
+
 mod lingua;
 mod directory;
 pub use directory::{DirectorySync, Request, Status};

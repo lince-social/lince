@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn preview, fn output, fn control, fn
+//   recipe_serving_is_deliberate_rolls_only_within_the_permit_and_stops_on_pause_revoke_and_stop.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 114, 117.
+
 use super::*;
 use super::{
     discovery::{discover, question},

@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod data, const USAGE, fn dispatch, fn read_source.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 27, 45.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites dispatch:
+//   String (11).
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (21).
+
 mod data;
 
 use std::collections::BTreeSet;

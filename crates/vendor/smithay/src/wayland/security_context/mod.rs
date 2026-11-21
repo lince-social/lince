@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod listener_source, const MANAGER_VERSION, trait SecurityContextHandler, struct
+//   SecurityContextState.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 86.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 91.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (168, 211).
+
 //! Utilities for handling the security context protocol
 
 use std::{

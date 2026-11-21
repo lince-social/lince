@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: fn upgrade, fn send, fn drive, fn send_ping.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 29, 37, 75, 76,
+//   78, 85.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 31, 37,
+//   106, 192.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 27, 37, 75, 76.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 154, 155, 158, 159, 162.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 31, 37, 106, 192.
+// - [Clippy probe: clippy::unnecessary_semicolon] unnecessary semicolon. Sites 98, 151.
+
 use std::time::Duration;
 
 use axum::{

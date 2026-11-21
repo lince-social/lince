@@ -1,3 +1,23 @@
+// non-lean-yet
+// Scope: fn generation, fn ed_key, fn curve_key, fn validate_device_request.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 7, 17, 26,
+//   251, 253, 284.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   162, 164, 266, 268.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 252.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 162, 164, 266, 268.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 7, 17, 26, 251, 253, 284.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 33, 70, 91, 122, 154, 188, 257, 275, 312.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 2.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   33, 70, 91, 122, 154, 188, 257, 275, 312.
+
 use super::*;
 use nucleus::social::requests::*;
 

@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn engine, fn privileged_actor, fn
+//   local_no_auth_mode_is_unrestricted_for_every_auth_action, fn
+//   each_auth_action_denies_an_actor_without_its_permission.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::implicit_clone] Make an intentional owned clone explicit. Sites 74, 88,
+//   97, 100, 112, 124, 160, 174, 235.
+
 #![cfg(test)]
 
 use engine::Engine;

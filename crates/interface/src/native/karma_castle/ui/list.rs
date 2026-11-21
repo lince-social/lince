@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct Snapshot, struct List, struct Position, struct Presented.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 92, 99, 101, 108,
+//   142, 235, 339, 345.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   41, 45, 48, 73, 79, 146, 226, 271, 272, 305, 323.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (89, 91, 94, 122, 129, 133, 201, 261, 279, 351, 366).
+
 use super::*;
 
 #[derive(Default)]

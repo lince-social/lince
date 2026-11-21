@@ -1,3 +1,27 @@
+// non-lean-yet
+// Scope: struct BindGroup, trait AsBindGroup, enum AsBindGroupError, struct PreparedBindGroup.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 759.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   826, 850.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 830, 837, 876.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 671, 674, 681,
+//   686.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 690, 692, 759.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   690, 692.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 645, 782, 800.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 540, 592.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 656, 711, 725, 730.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 514,
+//   578, 638, 650, 652, 657, 658, 783, 784, 785, 786, 787, 801, 802, 803, 804.
+// - [rustc: unreachable_pub] unreachable `pub` item. Sites 916.
+
 use crate::{
     material_bind_groups::FallbackBuffer,
     render_asset::RenderAssets,

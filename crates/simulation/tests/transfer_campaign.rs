@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn sibling_pairing_and_delayed_contact_bootstrap_recover_without_policy_conflicts, fn
+//   competing_reservations_keep_the_winning_commitment_and_refuse_excess, fn
+//   acceptance_workload_sizes_are_bounded_and_preserve_delivery_workflows, fn
+//   declined_invitations_and_correction_retries_survive_real_restart_and_exact_replay.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use nucleus::simulation::{ReplayStatus, Verdict};
 
 #[test]

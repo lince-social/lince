@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn fixture, fn settle, fn value, fn
+//   drafts_cancel_and_save_against_the_original_output_and_saved_revision.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::host::{OutputViewport, Rectangle, magnification::{Head, Response}, raster::RasterMapping};
 

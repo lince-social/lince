@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn organs_query, fn cell_with_contact, fn local_organ_has_no_contact_sidecar, fn
+//   organ_records_support_the_sands_register_edit_and_delete_actions.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use engine::Engine;

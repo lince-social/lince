@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: fn cell, fn secret, fn sibling_delivery_checkpoints_survive_restart_and_report_revocation,
+//   fn peer_port_settings_reject_invalid_values_without_changing_the_saved_port.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 1642.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 1642.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 40, 75, 86, 213, 223, 358, 424, 451, 531, 534, 585, 621, 636, 640, 857, 961, 987, 1049,
+//   1105, 1166, 1246, 1249, 1414, 1460, 1473, 1529, 1541.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 562, 563, 564, 568.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 1026.
+
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 

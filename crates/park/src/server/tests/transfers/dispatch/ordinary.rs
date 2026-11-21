@@ -1,11 +1,20 @@
-use super::*;
-use serde_json::{Value, json};
+// non-lean-yet
+// Scope: struct Process, struct Ordinary, fn
+//   real_browser_and_terminal_keep_native_typing_popups_fullscreen_clipboard_and_file_drop.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Verify panic isolation boundary and preserve the failure contract. Sites
+//   363.
+
 use std::{
     io::{BufRead, BufReader},
     os::unix::process::CommandExt,
     process::{Child, ChildStdin, Stdio},
     sync::mpsc,
 };
+
+use serde_json::{Value, json};
+
+use super::*;
 
 struct Process(Child);
 

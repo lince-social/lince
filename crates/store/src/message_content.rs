@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: fn invalid, fn save, fn save_on, fn load.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 112.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 5, 75.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 67, 103, 120.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 9, 15, 54, 125, 155.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 9, 15,
+//   54, 125, 155.
+
 use nucleus::message::{self, MessagePart, StoredPart};
 use serde_json::json;
 use sqlx::{Error, Sqlite, SqliteConnection, SqlitePool, Transaction};

@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn received_group_corrections_preserve_unrelated_edits_and_replay_once, fn
+//   independent_private_groups_match_optional_scenarios_and_replay.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use nucleus::simulation::{ReplayStatus, Verdict};
 
 #[test]

@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: impl Engine.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 93.
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites present_component:target → &str (154).
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 210.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 210.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   8.
+
 use nucleus::component::{ComponentState, Presentation};
 use serde::Deserialize;
 use tokio::sync::broadcast;

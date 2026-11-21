@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod hdr, enum NativeEncoding, enum ColorMode, struct OutputColor.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   174, 180, 181, 185, 186, 190.
+
 use serde::{Deserialize, Serialize};
 
 mod hdr;

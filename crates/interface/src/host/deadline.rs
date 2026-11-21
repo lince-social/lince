@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct WakeDeadline, struct Pending, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 41, 42, 53.
+
 use super::{WakeSignal, performance};
 use std::{
     sync::{

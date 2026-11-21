@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: mod tests, mod ui, mod tracking, enum Outcome.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (78).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (122, 123).
+
 use crate::native::{
     area::InfluenceArea,
     workspace::{WorkspaceMember, Workspaces},

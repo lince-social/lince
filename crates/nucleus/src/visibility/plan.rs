@@ -1,6 +1,25 @@
-use super::{Condition, Data, Policy};
+// non-lean-yet
+// Scope: const MAX_STAGES, const MAX_LIFETIME_MS, const MAX_BYTES, const PRIVATE_NAMESPACE.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 82, 83.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 49.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 110, 133.
+// - [Clippy: clippy::large_enum_variant] large size difference between variants. Sites 133.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 32, 98.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 6,
+//   7, 8, 12, 13, 14, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 32, 80, 90, 91, 92, 93, 94, 98, 110,
+//   111, 112, 113, 114, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 133, 134, 135, 136, 138,
+//   139, 141, 142, 143, 145, 146, 147, 148, 150, 151, 152, 153.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites commitment:
+//   String (98), validate: String (32).
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
+use super::{Condition, Data, Policy};
 
 pub const MAX_STAGES: usize = 8;
 pub const MAX_LIFETIME_MS: i64 = 7 * 24 * 60 * 60 * 1000;

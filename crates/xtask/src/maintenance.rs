@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod browser, mod fiote, type Result, fn dispatch.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   15, 17, 19.
+
 use std::{ffi::OsString, path::Path};
 
 #[cfg(target_os = "linux")]

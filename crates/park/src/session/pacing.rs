@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct Pacing, mod tests.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::time::{Duration, Instant};
 
 pub(super) struct Pacing<T> {

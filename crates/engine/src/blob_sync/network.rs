@@ -1,3 +1,23 @@
+// non-lean-yet
+// Scope: enum Request, struct Response, struct Close.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 115, 196, 209,
+//   213, 286, 293, 427.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 186, 198.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 194.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 40, 56, 102.
+// - [Clippy probe: clippy::let_and_return] returning the result of a `let` binding from a block.
+//   Sites 187.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 186, 198.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 80, 141.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   80, 141.
+
 use super::*;
 use crate::wire::{DIAL_TIMEOUT, Wire};
 use iroh::endpoint::Connection;

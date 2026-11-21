@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: fn guest, fn query, fn
+//   local_status_uses_the_common_history_and_remote_users_cannot_read_or_clear_it, fn
+//   shared_events_refresh_changes_without_facts_and_stop_when_the_engine_closes.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 46, 73, 94, 107, 257, 386.
+// - [Clippy probe: clippy::implicit_clone] Make an intentional owned clone explicit. Sites 21.
+// - [Clippy probe: clippy::manual_let_else] this could be rewritten as `let...else`. Sites 108.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 64.
+// - [Clippy probe: clippy::redundant_clone] Move or borrow at the marked sites and check later
+//   uses. Sites 24.
+
 #![cfg(test)]
 
 use engine::{Engine, actions::Action};

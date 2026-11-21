@@ -1,12 +1,44 @@
-use super::*;
-use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
-use portable_pty::{ChildKiller, CommandBuilder, MasterPty, PtySize, native_pty_system};
+// non-lean-yet
+// Scope: struct TerminalRequest, struct TerminalFrame, struct State, struct LoginTerminal.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 108.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   53, 141, 192, 205.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 107, 125, 134, 135, 159, 173, 193, 206.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 60, 188, 194.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 109, 174, 179, 184.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   179.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites 93,
+//   98, 117.
+// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 162.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   148.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 53, 141.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 1.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 39.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 12, 13,
+//   14, 15, 16, 17, 18, 19, 23, 24, 25, 26, 27, 28, 39, 53, 141, 192, 205.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites exchange:
+//   String (141), start: String (53).
+
 use std::{
     collections::VecDeque,
     io::{Read, Write},
     sync::Mutex as SyncMutex,
 };
+
+use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
+use portable_pty::{ChildKiller, CommandBuilder, MasterPty, PtySize, native_pty_system};
 use zeroize::Zeroize;
+
+use super::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TerminalRequest {
@@ -159,15 +191,15 @@ impl LoginTerminal {
                 .unwrap()
                 .resize(size)
                 .map_err(|error| error.to_string())?;
-            if !bytes.is_empty() {
-                if let Err(error) = self.input.try_send(bytes) {
-                    let mut bytes = match error {
-                        std::sync::mpsc::TrySendError::Full(bytes)
-                        | std::sync::mpsc::TrySendError::Disconnected(bytes) => bytes,
-                    };
-                    bytes.zeroize();
-                    return Err("Login input is busy. Try again.".into());
-                }
+            if !bytes.is_empty()
+                && let Err(error) = self.input.try_send(bytes)
+            {
+                let mut bytes = match error {
+                    std::sync::mpsc::TrySendError::Full(bytes)
+                    | std::sync::mpsc::TrySendError::Disconnected(bytes) => bytes,
+                };
+                bytes.zeroize();
+                return Err("Login input is busy. Try again.".into());
             }
         }
         let state = self.state.lock().unwrap();

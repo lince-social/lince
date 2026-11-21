@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: CLI installation and newline-delimited file export RPC.
+// BeautifulRust (baseline lines):
+// - [manual: §3 Ownership] Match arguments from the iterator and borrow the install path directly.
+//   The current length check proves both indexes are in bounds. Sites 14–16, 23–24.
+// - [manual: §5 Errors] Preserve serde and I/O causes along with the CLI's displayed diagnostics.
+//   Sites 34–35, 55, 57–61.
+// - [manual: §7 Async] Use synchronous buffered I/O for the sequential RPC loop. Preserve size
+//   limit, newline framing, EOF, and per-response flush. Sites 5–6, 26–33, 55–61.
+
 use nucleus::plugins::{PROTOCOL, RpcRequest, RpcResponse};
 use std::path::PathBuf;
 use tokio::io::{AsyncWriteExt, BufReader};

@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct DraftFields, struct AssertionFields.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 60.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 60.
+
 use super::{EngineError, invalid};
 use nucleus::DecimalValue;
 use serde_json::Value;

@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: mod analysis, mod claims, mod custody_controls, mod profile_claims.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 332, 372, 373,
+//   470, 473, 475, 483, 508, 510, 565, 566, 587, 631, 633, 695, 700, 703, 709, 713, 718, 722, 726,
+//   730, 811, 813, 821, 1113, 1270.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 477, 499,
+//   513, 528.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (203, 309, 591, 637, 681, 745, 751, 758, 768, 785, 964, 1063, 1109, 1110, 1140,
+//   1146, 1171, 1261).
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 29.
+
 use crate::native::{
     actions::Action,
     cell_bridge::{CellMessage, ReceiveCell},

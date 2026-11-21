@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: mod cache, mod handlers, mod transaction, mod tree.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 438, 668, 717,
+//   722.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 726.
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites
+//   439.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (438, 457, 467, 485, 495, 512, 522, 634).
+
 //! Utilities for handling surfaces, subsurfaces and regions
 //!
 //! This module provides automatic handling of surfaces, subsurfaces

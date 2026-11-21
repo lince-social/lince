@@ -1,3 +1,36 @@
+// non-lean-yet
+// Scope: enum Pipeline, struct CachedPipeline, struct ShaderCacheWake, enum CachedPipelineState.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 302, 313, 406, 424, 442, 475, 642, 1005.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   597.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 97, 100, 102,
+//   628.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 603, 631, 660, 672, 673, 718, 788, 800, 801, 852, 863, 864, 903,
+//   923.
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 186.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 152, 222, 225,
+//   354, 653, 658, 738, 781, 786, 849, 934, 1019, 1022, 1025, 1078, 1115, 1134.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   new:synchronous_pipeline_compilation (324).
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   136, 654, 655, 657, 782, 783, 785, 850, 851.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 43, 71.
+// - [Clippy: clippy::match_same_arms] these match arms have identical bodies. Sites 1143, 1144.
+// - [Clippy: clippy::unimplemented] `unimplemented` should not be present in production code. Sites
+//   166.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 9.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 158.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 49, 242.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 44, 45,
+//   46, 49, 50, 51, 597.
+
 use bevy_material::descriptor::{
     BindGroupLayoutDescriptor, CachedComputePipelineId, ComputePipelineDescriptor,
     MeshPipelineDescriptor, PipelineDescriptor, RenderPipelineDescriptor,

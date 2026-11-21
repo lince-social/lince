@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: const MIN_RFC3339_MILLIS, const MAX_RFC3339_MILLIS, struct DurationMs, struct TimestampMs.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   74.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   61.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 39, 59.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 16, 19,
+//   21, 25, 29, 36, 39, 49, 53, 59.
+
 use std::fmt;
 
 use chrono::{DateTime, SecondsFormat, TimeZone, Utc};

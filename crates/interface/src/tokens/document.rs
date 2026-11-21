@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct ThemeDocument, enum Entry, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites export: String
+//   (31), parse: String (69).
+
 use super::{ColorScheme, SandStyleKind, TOKENS, ThemeSettings, Token, TokenOverrides, TokenValue};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;

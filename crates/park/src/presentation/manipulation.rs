@@ -1,5 +1,12 @@
-use super::*;
+// non-lean-yet
+// Scope: struct Active, struct Request, enum Event.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (54, 56, 85).
+
 use native::layout::desktop::manipulation::{self, pointer};
+
+use super::*;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Active {
@@ -27,7 +34,9 @@ pub enum Event {
 
 impl Presentation {
     pub fn manipulation(&mut self, event: Event) -> Result<(), ProbeFailure> {
-        if self.suspended() { return Ok(()); }
+        if self.suspended() {
+            return Ok(());
+        }
         match event {
             Event::Begin(request) => {
                 if self.manipulation_snapshot().is_some() || request.active.token == 0 {

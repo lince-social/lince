@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Frame, struct Day, struct Month, fn sources.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 56, 100, 120,
+//   139, 175, 176, 189, 233.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (45, 48, 49, 67, 68, 96, 97, 117, 118, 124, 134, 136, 179, 219).
+
 use super::*;
 use crate::native::retained::Presentation;
 use std::sync::Arc;

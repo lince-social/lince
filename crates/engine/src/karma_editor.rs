@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: fn invalid, fn check_source, fn check_request.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 336, 346, 392,
+//   396.
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites revise_karma_field:request_id → &str (225), revise_karma_field:uid → &str
+//   (222), save_karma_rule:request_id → &str (46).
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 313, 315, 332, 338.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option`
+//   value. Sites 350.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 12.
+
 use chrono::{DateTime, Utc};
 use nucleus::karma::rule_field::{RuleConsequence, RuleFieldInput, RuleFieldKind};
 use nucleus::karma::{Cadence, Carry, Gate};

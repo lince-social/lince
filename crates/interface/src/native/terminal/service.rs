@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct Service, fn update, fn receive.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 50, 78, 113, 184,
+//   186, 187, 193.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   76.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (98, 113, 133, 138, 151, 159, 162, 175, 193, 203, 244, 258).
+
 use super::*;
 use bevy::ecs::query::QueryState;
 

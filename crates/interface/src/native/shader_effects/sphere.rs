@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct SphereMaterial, struct SphereEffect, struct RecordSphere, struct Geometry.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 190, 215, 219,
+//   224, 227, 248.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (53, 56).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (93, 159, 238, 247).
+
 use super::*;
 use bevy::{asset::embedded_asset, render::render_resource::AsBindGroup, shader::ShaderRef};
 

@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: const ALPHABET, fn ulid_from, fn new_uid, fn valid_uid.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 8.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 4, 8, 14.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 14.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 3, 13,
+//   19, 29.
+
 const ALPHABET: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
 pub fn ulid_from(millis: u64, entropy: u128) -> String {

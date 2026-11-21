@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn click, fn backend, fn
+//   working_directory_summary_reports_own_inherited_unset_and_invalid_values, fn
+//   working_directory_draft_survives_polling_and_resets_when_switching_fiotes.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::super::tests::{deliver, fixture_status, panel_fixture};
 use super::*;
 

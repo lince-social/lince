@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn catalogue.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 pub fn catalogue() -> Vec<super::Case> {
     let mut cases = Vec::new();
     super::interface::laboratory_cases(&mut cases);

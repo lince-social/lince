@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod raster, struct NativeDrawing, struct DrawingSurface, struct View.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 114, 158, 176,
+//   223, 262, 315, 552, 571, 663, 718, 730, 731, 880, 962.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (114, 117, 120, 125, 130, 131, 135, 138, 142, 148, 152, 178, 179, 190, 228, 229,
+//   247, 273, 571, 649, 663, 684, 686, 688, 692, 700, 702, 704, 718, 719, 741, 743, 745, 857, 939).
+
 mod raster;
 
 use crate::native::actions::Action;

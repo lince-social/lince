@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Local, fn start, fn assert_live, fn assert_stopped.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 27.
+
 use nucleus::location::{Command, Settings, SourceKind};
 use std::sync::Arc;
 

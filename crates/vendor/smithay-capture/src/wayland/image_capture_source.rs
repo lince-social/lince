@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: static NEXT_SOURCE_ID, struct ImageCaptureSourceInner, struct
+//   ImageCaptureSourceWeakHandle, struct ImageCaptureSource.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   101.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 102.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 98, 166, 205,
+//   267, 315, 375.
+// - [Clippy: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably fires.
+//   Sites 171, 281.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 172, 282.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 32, 37,
+//   45, 64, 77, 81, 85, 89, 95, 101, 117, 118, 123, 126, 131, 134, 172, 177, 182, 189, 204, 209,
+//   214, 216, 282, 287, 292, 299, 314, 319, 324, 326, 392, 412, 436.
+
 use std::sync::{
     atomic::{AtomicBool, AtomicUsize, Ordering},
     Arc, Mutex,

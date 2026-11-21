@@ -1,3 +1,23 @@
+// non-lean-yet
+// Scope: struct NewSignedActionIntent, struct StoredSignedActionIntent, fn insert_pending, fn
+//   mark_committed.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 232.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 237.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 237.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   39.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 33, 73, 138, 164, 185, 203, 219.
+// - [Clippy: clippy::needless_question_mark] enclosing `Ok` and `?` operator are unneeded. Sites
+//   223.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 8, 9,
+//   10, 11, 12, 13, 14, 15, 16, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 33, 73, 138, 164, 185,
+//   203, 219.
+
 use chrono::{DateTime, Utc};
 use nucleus::Fact;
 use sqlx::{Row, Sqlite, SqlitePool, Transaction};

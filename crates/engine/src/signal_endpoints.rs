@@ -1,3 +1,26 @@
+// non-lean-yet
+// Scope: enum Request, struct Submission, struct Reading, struct Receipt.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 335, 361, 367,
+//   368, 405, 568, 586.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 92, 127,
+//   131, 132, 231, 409, 479.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 415.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 13.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 120.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 92, 127, 131, 132, 231, 409, 479.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 147, 426, 437.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 80.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   13, 14, 15, 16, 18, 19, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 35, 36, 37, 38, 40, 41,
+//   42, 48, 49, 50, 51, 56, 57, 59, 61, 62, 63, 64, 65, 66, 70, 72, 74, 75, 76, 77, 98, 147, 426,
+//   437.
+
 use chrono::{DateTime, Utc};
 use nucleus::{Cause, DecimalValue, NewFact, RecordKind};
 use p256::ecdsa::{Signature, VerifyingKey, signature::Verifier};

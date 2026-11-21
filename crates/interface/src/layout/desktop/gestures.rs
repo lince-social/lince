@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct DropSlot, struct Gesture, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 63, 68, 191, 193,
+//   293.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   188, 212, 214, 221, 233, 238, 241, 242, 243, 245, 247, 248, 250, 252, 254, 255, 257, 258, 259,
+//   260.
+
 use super::*;
 use crate::host::Manipulation;
 

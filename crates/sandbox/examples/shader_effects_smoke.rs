@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Smoke, struct SolidSurface, fn setup, fn inspect.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 40, 99, 121, 194,
+//   259, 272.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (33, 39, 41, 44, 45, 102, 112, 152, 153, 194, 229, 232, 235, 240, 253, 255, 261,
+//   266).
+
 use bevy::{
     prelude::*,
     render::view::screenshot::{Screenshot, ScreenshotCaptured, save_to_disk},

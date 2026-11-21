@@ -1,3 +1,22 @@
+// non-lean-yet
+// Scope: fn binding_bytes, mod tests, fn validate_binding, fn control_on.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 176, 211, 233,
+//   291, 373, 448, 467, 469, 495, 497.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   175, 201, 211, 223, 288, 291, 306, 330, 405.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 47, 68, 69, 74, 75, 77, 96, 97, 98, 101, 102, 175, 201, 205, 211, 217, 223, 231,
+//   232, 233, 291, 306, 330, 332, 339, 342, 343, 344, 345, 348, 349, 373, 380, 385, 386, 405, 443,
+//   448, 490, 499.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 106, 356.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 2, 3.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   106, 356.
+// - [rustc probe: unreachable_pub] unreachable `pub` item. Sites 6.
+
 use super::profile::validate_profile;
 use super::*;
 use nucleus::social::requests::*;

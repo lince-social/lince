@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn transclusion_is_distinct_from_links_images_and_literal_code, fn
+//   rich_text_preserves_code_and_resolves_record_link_targets.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(feature = "models")]
 
 use lince_interface::markup;

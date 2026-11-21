@@ -1,6 +1,10 @@
 // Copyright 2024 the Parley Authors
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+// non-lean-yet
+// Scope: mod asserts, struct ColorBrush.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use peniko::Color;
 
 pub(crate) mod asserts;

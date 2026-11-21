@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod actions, mod navigation, mod operations, mod persistence.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (262, 267, 273, 294, 295).
+
 use crate::i18n::Token as Tr;
 mod actions;
 mod navigation;

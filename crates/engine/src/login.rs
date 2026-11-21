@@ -1,3 +1,24 @@
+// non-lean-yet
+// Scope: mod workspace, const DUMMY_HASH, const SESSION_TTL, const IDLE_TTL.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 167, 179, 327.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   access_scope:write (281), run:write (159).
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 146, 243,
+//   245, 326, 334, 365, 376.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 286.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 146, 243, 245, 326, 334, 365, 376.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on a `Result`
+//   value. Sites 99.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 125, 149, 156, 173, 190, 279, 313, 385.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 78.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   18, 78, 87, 94, 98, 105, 113, 117, 121, 125, 149, 156, 173, 190, 279, 313, 385.
+
 use std::collections::HashMap;
 use std::future::Future;
 use std::sync::Arc;

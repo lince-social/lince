@@ -1,6 +1,12 @@
 // Copyright 2021 the Parley Authors
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+// non-lean-yet
+// Scope: enum FontVariations, enum FontFeatures.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   40, 74.
+
 use alloc::borrow::Cow;
 
 pub use crate::setting::{FontFeature, FontVariation};

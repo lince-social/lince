@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: fn speech_controls_are_local_and_work_without_a_fiote, fn
+//   record_cursors_are_ephemeral_identified_and_removed_on_departure, fn
+//   cursor_updates_need_a_join_and_have_payload_limits, fn setup.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 35, 36, 42, 68, 69, 128, 185, 295, 321, 322, 451, 477, 507, 537, 598, 649, 692.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 205, 222,
+//   312, 393, 462, 545, 558, 567, 579, 663, 749.
+
 #![cfg(test)]
 
 use std::sync::Arc;

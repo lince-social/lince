@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: trait SpecializedRenderPipeline, struct SpecializedRenderPipelines, trait
+//   SpecializedComputePipeline, struct SpecializedComputePipelines.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 243, 248.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 69, 124, 202,
+//   231, 248.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 143, 195.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 221.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 51, 106, 153.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 174.
+
 use bevy_material::descriptor::{
     CachedComputePipelineId, CachedRenderPipelineId, ComputePipelineDescriptor,
     RenderPipelineDescriptor,

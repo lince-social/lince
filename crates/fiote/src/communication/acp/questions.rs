@@ -1,3 +1,25 @@
+// non-lean-yet
+// Scope: struct QuestionRequest, enum Answer, struct PendingQuestion, type Questions.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   144.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 150.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 66, 103, 118,
+//   140.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 15.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   45, 110, 154.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 74, 144.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 1.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 5,
+//   6, 7, 8, 9, 10, 15, 16, 18, 20, 21, 74, 135, 144.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites
+//   answer_question: String (144), response: String (74).
+
 use super::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

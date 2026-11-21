@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: fn sealed, fn entry, fn recipient, fn
+//   envelope_identity_expiry_and_sender_are_authenticated_and_retries_are_stable.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 448.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 325, 355, 659, 676.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 382.
+
 #![cfg(test)]
 
 use std::sync::Arc;

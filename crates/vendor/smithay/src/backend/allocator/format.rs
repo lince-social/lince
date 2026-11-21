@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: macro format_tables, struct FormatSet, struct FormatSetIntersection, struct FormatSetIter.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 440.
+
 //! Format info tables for DRM formats.
 //!
 //! This module provides three functions, [`get_opaque`], [`has_alpha`] and [`get_bpp`].

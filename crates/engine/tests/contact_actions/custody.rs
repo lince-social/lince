@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod forwarding, struct Fixture, fn fixture, fn all_known.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 122, 163.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 122, 163.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 266.
+
 use super::*;
 #[path = "custody/forwarding.rs"]
 mod forwarding;

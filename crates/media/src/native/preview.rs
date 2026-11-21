@@ -1,18 +1,44 @@
-use std::sync::{
-    Arc, Mutex,
-    atomic::{AtomicBool, Ordering},
-    mpsc,
+// non-lean-yet
+// Scope: struct Choice, struct Devices, enum Command, struct Status.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 81, 82, 136, 156,
+//   270.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 420, 446.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites 79,
+//   80, 158.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 33.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   129.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 70, 126.
+// - [Clippy: clippy::struct_excessive_bools] more than 3 bools in a struct. Sites 50.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 18, 24, 33, 50, 61.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 18, 19,
+//   20, 24, 25, 26, 27, 28, 29, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 50, 51, 52,
+//   53, 54, 55, 56, 57, 58, 61, 65, 66, 70, 126, 132, 231.
+
+use std::{
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicBool, Ordering},
+        mpsc,
+    },
+    time::{Duration, Instant},
 };
-use std::time::{Duration, Instant};
 
 use super::{
     capture::{self, AudioCapture, AudioInput, CameraCapture, EchoProcessor, ScreenCapture},
     error,
     playback::{self, Playback},
 };
-use crate::audio::{AudioFrame, FRAME_SAMPLES};
-use crate::video::{LatestVideo, VideoFrame};
-use crate::{MediaError, Result};
+use crate::{
+    MediaError, Result,
+    audio::{AudioFrame, FRAME_SAMPLES},
+    video::{LatestVideo, VideoFrame},
+};
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct Choice {

@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn cell, fn plain, fn person, trait PipeBump.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value.
+//   Sites 101.
+// - [Clippy probe: clippy::needless_collect] avoid using `collect()` when not needed. Sites 572,
+//   612, 616.
+
 #![cfg(test)]
 
 use engine::Engine;

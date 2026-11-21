@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod preparation, mod properties, struct Attachment, struct Stream.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 48, 116, 157,
+//   166.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (148).
+
 use super::*;
 use bevy::ecs::message::MessageCursor;
 use std::collections::HashMap;

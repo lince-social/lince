@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn cell, fn know, fn introduction_opens_only_a_fresh_root_after_each_organ_accepts, fn
+//   forged_or_misaddressed_invitations_never_create_grants.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 22, 242, 243.
+
 #![cfg(test)]
 
 use std::sync::Arc;

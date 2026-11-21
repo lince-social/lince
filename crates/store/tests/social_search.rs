@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn document, fn put, fn ids, fn unrelated_entries.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 57, 106, 111.
+
 #![cfg(test)]
 
 use nucleus::social::{AuthorMode, Direction, PostState, Search, Snippet};

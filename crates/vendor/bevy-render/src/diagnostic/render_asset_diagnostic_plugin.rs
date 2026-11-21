@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: struct RenderAssetDiagnosticPlugin, struct RenderAssetMeasurements, fn
+//   add_render_asset_measurement, fn measure_render_asset.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 66.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 61.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 13.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 13, 19,
+//   26.
+
 use core::{any::type_name, marker::PhantomData};
 
 use bevy_app::{Plugin, PreUpdate};

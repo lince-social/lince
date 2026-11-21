@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: const REPORT_LIMIT, struct Reports, fn create, fn usage.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   24.
+
 use bevy::prelude::*;
 
 const REPORT_LIMIT: usize = 16;

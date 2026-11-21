@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn a_full_vt_queue_keeps_the_original_offset_and_defers_the_next_read.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[tokio::test]

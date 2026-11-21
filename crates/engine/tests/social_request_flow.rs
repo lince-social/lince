@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: mod late_delivery, struct Hosts, fn command, fn person.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 870, 873, 1152.
+// - [Clippy probe: clippy::manual_string_new] empty String is being created manually. Sites 623.
+
 #![cfg(test)]
 
 use engine::{Engine, EngineError, actions::Action, social::Network};

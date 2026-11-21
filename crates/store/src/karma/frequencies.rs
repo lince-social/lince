@@ -1,15 +1,54 @@
+// non-lean-yet
+// Scope: const REQUEST_HASH_DOMAIN, const MAX_REQUEST_ID_BYTES, struct FrequencyHandleRow, struct
+//   FrequencyRevisionRow.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option` value.
+//   Sites 207.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   173, 319, 755.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 1422, 1470, 1519, 1702, 1706.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 251, 252, 253,
+//   257, 414, 415, 416, 420, 421, 423, 425, 523, 525, 551, 553, 797, 827, 828, 829, 832, 838, 1050,
+//   1052, 1097, 1103, 1106, 1109, 1111, 1113, 1164, 1416.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   revise_with_schedule:restart (323).
+// - [Clippy: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably fires.
+//   Sites 963, 1235.
+// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 514, 1004, 1034,
+//   1035.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 108.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   288, 454, 856, 1131.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   1651, 1655.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 131, 143, 156, 173, 307, 319, 559, 571, 624, 636, 689, 701, 755, 876, 891, 905, 916, 928,
+//   945.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 123.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 23, 24,
+//   25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 38, 39, 40, 41, 42, 43, 44, 48, 49, 50, 54, 55, 56, 57,
+//   58, 62, 63, 64, 65, 66, 67, 71, 72, 73, 74, 75, 76, 77, 81, 82, 83, 84, 85, 86, 87, 91, 92, 93,
+//   94, 95, 96, 100, 101, 102, 103, 104, 108, 109, 110, 111, 113, 114, 115, 117, 118, 123, 124,
+//   125, 126, 127, 128, 131, 143, 156, 173, 307, 319, 559, 571, 624, 636, 689, 701, 755, 876, 891,
+//   905, 916, 928, 945.
+
 use std::collections::BTreeMap;
 
 use chrono::{DateTime, TimeZone, Utc};
-use nucleus::karma::DispatcherResourceGrant;
-use nucleus::karma::{
-    CanonicalHash, CompiledFrequency, DefinitionStatus, FrequencyActivationCause,
-    FrequencyActivationEpoch, FrequencyAst, FrequencyMutationAction, FrequencyMutationEvidence,
-    FrequencyMutationEvidenceSchema, FrequencyParameterValue, HostTimerCapabilities, LocalId,
-    ReferenceKind, ScheduleDemandCapacity, TimeZoneProvider, TimestampMs, TypedUid, canonical_hash,
-    canonical_json_bytes, format_frequency, parse_frequency,
+use nucleus::{
+    Cause, CauseKind, Fact, NewFact, RecordKind,
+    karma::{
+        CanonicalHash, CompiledFrequency, DefinitionStatus, DispatcherResourceGrant,
+        FrequencyActivationCause, FrequencyActivationEpoch, FrequencyAst, FrequencyMutationAction,
+        FrequencyMutationEvidence, FrequencyMutationEvidenceSchema, FrequencyParameterValue,
+        HostTimerCapabilities, LocalId, ReferenceKind, ScheduleDemandCapacity, TimeZoneProvider,
+        TimestampMs, TypedUid, canonical_hash, canonical_json_bytes, format_frequency,
+        parse_frequency,
+    },
 };
-use nucleus::{Cause, CauseKind, Fact, NewFact, RecordKind};
 use serde::{Deserialize, Serialize};
 use sqlx::{Row, Sqlite, SqlitePool, Transaction};
 
@@ -511,12 +550,12 @@ async fn activate_saved_tx(
                 .map(|row| row.cursor);
         }
     }
-    if starting_cursor.is_none() {
-        if let nucleus::karma::CompiledSchedule::Elapsed { schedule } = &compiled.schedule {
-            starting_cursor = Some(schedules::StoredScheduleCursor::Elapsed {
-                cursor: schedule.cursor(None, schedule.anchor()).map_err(boundary)?,
-            });
-        }
+    if starting_cursor.is_none()
+        && let nucleus::karma::CompiledSchedule::Elapsed { schedule } = &compiled.schedule
+    {
+        starting_cursor = Some(schedules::StoredScheduleCursor::Elapsed {
+            cursor: schedule.cursor(None, schedule.anchor()).map_err(boundary)?,
+        });
     }
     let activated_at = TimestampMs::from_millis(now.timestamp_millis()).map_err(boundary)?;
     let epoch = FrequencyActivationEpoch::new(
@@ -960,7 +999,10 @@ pub async fn list_activations(
     .collect()
 }
 
-#[allow(clippy::too_many_arguments, reason = "The Store boundary passes the transaction, epoch, and mutation inputs separately")]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "The Store boundary passes the transaction, epoch, and mutation inputs separately"
+)]
 async fn mutate_epoch<F>(
     pool: &SqlitePool,
     request_id: &str,
@@ -1001,14 +1043,13 @@ where
             "retired Karma Frequencies cannot change activation",
         ));
     }
-    if action != FrequencyMutationAction::Activate {
-        if current.status != DefinitionStatus::Active
-            || current.active_revision_hash.as_ref() != Some(selected_revision_hash)
-        {
-            return Err(protocol(
-                "Karma Frequency parameter mutation requires the expected active revision",
-            ));
-        }
+    if action != FrequencyMutationAction::Activate
+        && (current.status != DefinitionStatus::Active
+            || current.active_revision_hash.as_ref() != Some(selected_revision_hash))
+    {
+        return Err(protocol(
+            "Karma Frequency parameter mutation requires the expected active revision",
+        ));
     }
     let definition = get_revision_tx(&mut tx, selected_revision_hash)
         .await?
@@ -1031,15 +1072,13 @@ where
         ),
         None => None,
     };
-    if was_active {
-        if let Some(previous) = &previous_activation {
-            if previous.epoch.definition_revision_hash() == selected_revision_hash
-                && previous.epoch.compiled() == &compiled
-            {
-                return Err(protocol(
-                    "Karma Frequency activation does not change effective configuration",
-                ));
-            }
+    if was_active && let Some(previous) = &previous_activation {
+        if previous.epoch.definition_revision_hash() == selected_revision_hash
+            && previous.epoch.compiled() == &compiled
+        {
+            return Err(protocol(
+                "Karma Frequency activation does not change effective configuration",
+            ));
         }
     }
 
@@ -1232,7 +1271,10 @@ async fn insert_activation(
     Ok(())
 }
 
-#[allow(clippy::too_many_arguments, reason = "The insert binds distinct persisted request fields")]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "The insert binds distinct persisted request fields"
+)]
 async fn insert_request(
     tx: &mut Transaction<'_, Sqlite>,
     request_id: &str,

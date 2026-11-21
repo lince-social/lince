@@ -1,21 +1,30 @@
-use super::*;
-use bevy::{
-    input::{
-        keyboard::{Key, NativeKey},
-        mouse::{MouseButton, MouseScrollUnit},
-        touch::TouchPhase,
-    },
+// non-lean-yet
+// Scope: enum Target, struct DeferredPointer, enum Deferred, struct DeferredInput.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 266, 269, 278,
+//   407, 443, 466, 491, 545, 569, 821, 951, 959, 1006.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   68, 70, 71, 118, 120, 153, 154, 230, 233, 237, 368, 381, 414, 649, 652.
+
+use bevy::input::{
+    keyboard::{Key, NativeKey},
+    mouse::{MouseButton, MouseScrollUnit},
+    touch::TouchPhase,
 };
 use lince_interface::{host::SurfaceId, native::actions::Modifiers};
-use smithay::reexports::wayland_server::Resource;
 use smithay::{
     backend::input::{
         AbsolutePositionEvent, Axis, AxisSource, ButtonState, Event, InputEvent, KeyState,
         KeyboardKeyEvent, PointerAxisEvent, PointerButtonEvent,
     },
     input::pointer::AxisFrame,
-    reexports::winit::{keyboard::PhysicalKey, platform::scancode::PhysicalKeyExtScancode},
+    reexports::{
+        wayland_server::Resource,
+        winit::{keyboard::PhysicalKey, platform::scancode::PhysicalKeyExtScancode},
+    },
 };
+
+use super::*;
 
 #[derive(Clone, PartialEq)]
 pub(crate) enum Target {
@@ -48,34 +57,63 @@ pub(crate) struct DeferredInput {
 
 impl DeferredInput {
     pub(crate) fn new(event: Deferred) -> Self {
-        Self { event, stamp: crate::runtime::latency::Stamp::current(), enqueued: lince_interface::host::performance::start() }
+        Self {
+            event,
+            stamp: crate::runtime::latency::Stamp::current(),
+            enqueued: lince_interface::host::performance::start(),
+        }
     }
 
     pub(crate) fn merge(&mut self, event: &Deferred) -> bool {
-        if !self.event.merge_axis(event) { return false; }
-        self.stamp = crate::runtime::latency::Stamp::earliest(self.stamp, crate::runtime::latency::Stamp::current());
+        if !self.event.merge_axis(event) {
+            return false;
+        }
+        self.stamp = crate::runtime::latency::Stamp::earliest(
+            self.stamp,
+            crate::runtime::latency::Stamp::current(),
+        );
         true
     }
 }
 
 impl Deferred {
     pub(crate) fn merge_axis(&mut self, next: &Self) -> bool {
-        let (Self::Axis(delta, frame, point), Self::Axis(incoming, next_frame, next_point)) = (self, next) else { return false; };
-        if point != next_point || frame.source != next_frame.source || frame.relative_direction != next_frame.relative_direction
-            || frame.stop != (false, false) || next_frame.stop != (false, false) {
+        let (Self::Axis(delta, frame, point), Self::Axis(incoming, next_frame, next_point)) =
+            (self, next)
+        else {
+            return false;
+        };
+        if point != next_point
+            || frame.source != next_frame.source
+            || frame.relative_direction != next_frame.relative_direction
+            || frame.stop != (false, false)
+            || next_frame.stop != (false, false)
+        {
             return false;
         }
         let sum = std::array::from_fn::<_, 2, _>(|axis| delta[axis] + incoming[axis]);
-        let axes = (frame.axis.0 + next_frame.axis.0, frame.axis.1 + next_frame.axis.1);
-        if !axes.0.is_finite() || !axes.1.is_finite() || (0..2).any(|axis| !sum[axis].is_finite()
-            || delta[axis] != 0.0 && incoming[axis] != 0.0 && delta[axis].is_sign_positive() != incoming[axis].is_sign_positive()) {
+        let axes = (
+            frame.axis.0 + next_frame.axis.0,
+            frame.axis.1 + next_frame.axis.1,
+        );
+        if !axes.0.is_finite()
+            || !axes.1.is_finite()
+            || (0..2).any(|axis| {
+                !sum[axis].is_finite()
+                    || delta[axis] != 0.0
+                        && incoming[axis] != 0.0
+                        && delta[axis].is_sign_positive() != incoming[axis].is_sign_positive()
+            })
+        {
             return false;
         }
         let v120 = match (frame.v120, next_frame.v120) {
             (Some(a), Some(b)) => {
-                let (Some(x), Some(y)) = (a.0.checked_add(b.0), a.1.checked_add(b.1)) else { return false; };
+                let (Some(x), Some(y)) = (a.0.checked_add(b.0), a.1.checked_add(b.1)) else {
+                    return false;
+                };
                 Some((x, y))
-            },
+            }
             (None, None) => None,
             _ => return false,
         };
@@ -89,15 +127,21 @@ impl Deferred {
 
 impl Desktop {
     pub(crate) fn input_pending(&self) -> bool {
-        if self.logout_pending { return true; }
+        if self.logout_pending {
+            return true;
+        }
         #[cfg(feature = "session")]
-        if self.absolute_waiting() { return true; }
+        if self.absolute_waiting() {
+            return true;
+        }
         self.pending_output.is_some()
     }
 
     pub(crate) fn move_pointer(&mut self, proposed: [f64; 2], time: u32) -> io::Result<()> {
         let _timing = crate::runtime::latency::Dispatch::new();
-        if proposed.iter().any(|value| !value.is_finite()) { return Err(io::Error::other("Pointer coordinates must be finite.")); }
+        if proposed.iter().any(|value| !value.is_finite()) {
+            return Err(io::Error::other("Pointer coordinates must be finite."));
+        }
         let previous = self.displayed_pointer();
         let proposed = self.logical_point(proposed);
         let constrained = self.pointer_target.as_ref().and_then(|(surface, local)| {
@@ -108,22 +152,38 @@ impl Desktop {
             let (mapping, size) = popup.or_else(|| {
                 let current = self.frame_at(self.pointer)?;
                 let (window, node) = current.windows.iter().find_map(|window| {
-                    window.nodes.iter().find(|node| &node.surface == surface).map(|node| (window, node))
+                    window
+                        .nodes
+                        .iter()
+                        .find(|node| &node.surface == surface)
+                        .map(|node| (window, node))
                 })?;
-                let item = current.frame.geometry.as_ref()?.items.iter().find(|item| item.id == ItemId::Application(window.id))?;
+                let item = current
+                    .frame
+                    .geometry
+                    .as_ref()?
+                    .items
+                    .iter()
+                    .find(|item| item.id == ItemId::Application(window.id))?;
                 Some((&item.mapping, node.layout.size))
             })?;
             let previous = mapping.surface_point_unbounded(self.pointer)?;
             let next = mapping.surface_point_unbounded(proposed)?;
             let position = std::array::from_fn(|axis| local[axis] + next[axis] - previous[axis]);
-            let position = self.server.constrain_pointer(surface, *local, position, size);
-            mapping.canvas_point(std::array::from_fn(|axis| previous[axis] + position[axis] - local[axis]))
+            let position = self
+                .server
+                .constrain_pointer(surface, *local, position, size);
+            mapping.canvas_point(std::array::from_fn(|axis| {
+                previous[axis] + position[axis] - local[axis]
+            }))
         });
         self.pointer = constrained.unwrap_or(proposed);
         self.display_pointer = Some(self.displayed_point(self.pointer));
         let moved = self.displayed_pointer() != previous;
         if moved {
-            self.pointer_epoch = self.pointer_epoch.checked_add(1)
+            self.pointer_epoch = self
+                .pointer_epoch
+                .checked_add(1)
                 .ok_or_else(|| io::Error::other("Park pointer epochs exhausted"))?;
         }
         self.motion(time)?;
@@ -137,30 +197,53 @@ impl Desktop {
     pub(crate) fn relative_motion(&mut self, delta: [f64; 2], unaccelerated: [f64; 2], time: u64) {
         let delta = self.logical_delta(delta);
         let unaccelerated = self.logical_delta(unaccelerated);
-        let Some((surface, _)) = &self.pointer_target else { return };
-        let mapping = self.popups.iter().find(|popup| popup.nodes.iter().any(|node| &node.surface == surface))
+        let Some((surface, _)) = &self.pointer_target else {
+            return;
+        };
+        let mapping = self
+            .popups
+            .iter()
+            .find(|popup| popup.nodes.iter().any(|node| &node.surface == surface))
             .map(|popup| &popup.mapping)
             .or_else(|| {
                 let current = self.frame_at(self.pointer)?;
-                let window = current.windows.iter().find(|window| window.nodes.iter().any(|node| &node.surface == surface))?;
-                current.frame.geometry.as_ref()?.items.iter()
+                let window = current
+                    .windows
+                    .iter()
+                    .find(|window| window.nodes.iter().any(|node| &node.surface == surface))?;
+                current
+                    .frame
+                    .geometry
+                    .as_ref()?
+                    .items
+                    .iter()
                     .find(|item| item.id == ItemId::Application(window.id))
                     .map(|item| &item.mapping)
             });
         let Some(mapping) = mapping else { return };
-        let Some(current) = mapping.surface_point_unbounded(self.pointer) else { return };
-        let converted = |delta: [f64; 2]| mapping.surface_point_unbounded(
-            std::array::from_fn(|axis| self.pointer[axis] + delta[axis]),
-        ).map(|next| std::array::from_fn(|axis| next[axis] - current[axis]));
-        let Some(delta) = converted(delta) else { return };
-        let Some(unaccelerated) = converted(unaccelerated) else { return };
-        self.server.relative_motion(
-            delta, unaccelerated, time,
-        );
+        let Some(current) = mapping.surface_point_unbounded(self.pointer) else {
+            return;
+        };
+        let converted = |delta: [f64; 2]| {
+            mapping
+                .surface_point_unbounded(std::array::from_fn(|axis| {
+                    self.pointer[axis] + delta[axis]
+                }))
+                .map(|next| std::array::from_fn(|axis| next[axis] - current[axis]))
+        };
+        let Some(delta) = converted(delta) else {
+            return;
+        };
+        let Some(unaccelerated) = converted(unaccelerated) else {
+            return;
+        };
+        self.server.relative_motion(delta, unaccelerated, time);
     }
 
     pub(crate) fn event(&mut self, event: WinitEvent) -> io::Result<()> {
-        if matches!(&event, WinitEvent::Input(_)) { self.server.activity(); }
+        if matches!(&event, WinitEvent::Input(_)) {
+            self.server.activity();
+        }
         match event {
             WinitEvent::CloseRequested => self.logout()?,
             WinitEvent::Redraw => self.redraw = true,
@@ -245,7 +328,9 @@ impl Desktop {
         Ok(())
     }
 
-    pub(crate) fn target(&self) -> Target { self.target_at(self.pointer) }
+    pub(crate) fn target(&self) -> Target {
+        self.target_at(self.pointer)
+    }
 
     pub(crate) fn target_at(&self, point: [f64; 2]) -> Target {
         let fullscreen = self
@@ -289,15 +374,16 @@ impl Desktop {
         {
             return target;
         }
-        if let Some(surface) = self.popups.iter().rev()
+        if let Some(surface) = self
+            .popups
+            .iter()
+            .rev()
             .filter(|popup| popup.owner == renderer::PopupOwner::Native)
-            .find_map(|popup| popup.hit(point)) {
+            .find_map(|popup| popup.hit(point))
+        {
             return Target::Popup(surface);
         }
-        let canvas = self
-            .clips
-            .iter()
-            .any(|(_, clip)| clip.contains(point));
+        let canvas = self.clips.iter().any(|(_, clip)| clip.contains(point));
         if let Some(current) = self.frame_at(point)
             && current.frame.owns_modal_pointer(point)
         {
@@ -358,14 +444,26 @@ impl Desktop {
         Target::Native
     }
 
-    pub(crate) fn target_position(&self, target: Target, point: [f64; 2]) -> Option<(WlSurface, [f64; 2])> {
+    pub(crate) fn target_position(
+        &self,
+        target: Target,
+        point: [f64; 2],
+    ) -> Option<(WlSurface, [f64; 2])> {
         match target {
-            Target::Popup(surface) => self.popups.iter().find(|popup|
-                popup.owner == renderer::PopupOwner::Native && popup.nodes.iter().any(|node| node.surface == surface))
+            Target::Popup(surface) => self
+                .popups
+                .iter()
+                .find(|popup| {
+                    popup.owner == renderer::PopupOwner::Native
+                        && popup.nodes.iter().any(|node| node.surface == surface)
+                })
                 .and_then(|popup| {
                     let node = popup.nodes.iter().find(|node| node.surface == surface)?;
                     let point = popup.point(point);
-                    Some((surface, std::array::from_fn(|axis| point[axis] - f64::from(node.origin[axis]))))
+                    Some((
+                        surface,
+                        std::array::from_fn(|axis| point[axis] - f64::from(node.origin[axis])),
+                    ))
                 }),
             Target::Application(id, surface, output) => {
                 self.frame_at(point).and_then(|current| {
@@ -418,12 +516,8 @@ impl Desktop {
                     Some((
                         surface,
                         [
-                            point[0]
-                                - f64::from(layer.origin[0])
-                                - f64::from(node.origin[0]),
-                            point[1]
-                                - f64::from(layer.origin[1])
-                                - f64::from(node.origin[1]),
+                            point[0] - f64::from(layer.origin[0]) - f64::from(node.origin[0]),
+                            point[1] - f64::from(layer.origin[1]) - f64::from(node.origin[1]),
                         ],
                     ))
                 }),
@@ -442,17 +536,27 @@ impl Desktop {
         } else {
             self.grabbed.clone().unwrap_or_else(|| self.target())
         };
-        let native_motion = matches!(target, Target::Native) || self.manipulation.owns() || self.server.dragging()
-            || self.current.as_ref().is_none_or(|current| current.frame.input.pointer_motion
-                || current.frame.input.modal || current.frame.input.keyboard_modal || current.frame.input.keyboard_capture
-                || current.frame.input.overview)
-            || self.magnification.snapshot.heads.iter().any(|head| head.requested > 1.0 || head.effective.is_some_and(|factor| factor > 1.0));
+        let native_motion = matches!(target, Target::Native)
+            || self.manipulation.owns()
+            || self.server.dragging()
+            || self.current.as_ref().is_none_or(|current| {
+                current.frame.input.pointer_motion
+                    || current.frame.input.modal
+                    || current.frame.input.keyboard_modal
+                    || current.frame.input.keyboard_capture
+                    || current.frame.input.overview
+            })
+            || self.magnification.snapshot.heads.iter().any(|head| {
+                head.requested > 1.0 || head.effective.is_some_and(|factor| factor > 1.0)
+            });
         let native_position = self.native_position();
         if self.pointer_sent != Some((native_position, native_motion)) {
             let wake = native_motion || self.pointer_sent.is_none_or(|(_, native)| native);
-            self.pointer_stamp = self
-                .worker
-                .pointer_with_epoch(native_position.map(|value| value as f32), self.pointer_epoch, wake)?;
+            self.pointer_stamp = self.worker.pointer_with_epoch(
+                native_position.map(|value| value as f32),
+                self.pointer_epoch,
+                wake,
+            )?;
             self.pointer_sent = Some((native_position, native_motion));
         }
         if self.manipulation.owns() {
@@ -476,21 +580,41 @@ impl Desktop {
             return Ok(());
         }
         let native = matches!(self.target(), Target::Native);
-        let output = self.frame_at(self.pointer).and_then(|current| current.frame.geometry.as_ref())
-            .and_then(|geometry| geometry.outputs.iter().find(|output| output.bounds.contains(self.pointer)))
+        let output = self
+            .frame_at(self.pointer)
+            .and_then(|current| current.frame.geometry.as_ref())
+            .and_then(|geometry| {
+                geometry
+                    .outputs
+                    .iter()
+                    .find(|output| output.bounds.contains(self.pointer))
+            })
             .map(|output| output.id);
-        if native && self.server.dragging() && !self.input_pending()
+        if native
+            && self.server.dragging()
+            && !self.input_pending()
             && let Some(output) = output
-            && self.current.as_ref().and_then(|current| current.frame.output).is_some_and(|current| current != output)
+            && self
+                .current
+                .as_ref()
+                .and_then(|current| current.frame.output)
+                .is_some_and(|current| current != output)
         {
             let serial = self.send_tracked(Input::Output(output))?;
             self.pending_output = Some((serial, Some(output)));
             self.server.native_drop_target(None);
         }
-        let target = (native && !self.input_pending()).then(|| {
-            self.frame_at(self.pointer)?.frame.input.drop_target.clone()
-        }).flatten().filter(|target| Some(target.output) == output
-            && target.pointer.iter().zip(self.pointer).all(|(target, actual)| (target - actual).abs() < 2.0));
+        let target = (native && !self.input_pending())
+            .then(|| self.frame_at(self.pointer)?.frame.input.drop_target.clone())
+            .flatten()
+            .filter(|target| {
+                Some(target.output) == output
+                    && target
+                        .pointer
+                        .iter()
+                        .zip(self.pointer)
+                        .all(|(target, actual)| (target - actual).abs() < 2.0)
+            });
         self.server.native_drop_target(target);
         Ok(())
     }
@@ -499,11 +623,22 @@ impl Desktop {
         self.button_captured(button, pressed, time, None)
     }
 
-    fn button_captured(&mut self, button: u32, pressed: bool, time: u32, native: Option<crate::native_input::PointerTarget>) -> io::Result<()> {
+    fn button_captured(
+        &mut self,
+        button: u32,
+        pressed: bool,
+        time: u32,
+        native: Option<crate::native_input::PointerTarget>,
+    ) -> io::Result<()> {
         let _timing = crate::runtime::latency::Dispatch::new();
         #[cfg(feature = "session")]
         if !self.server.locked() && self.absolute_waiting() {
-            return self.defer_absolute(Deferred::Button(button, pressed, time, self.deferred_pointer()));
+            return self.defer_absolute(Deferred::Button(
+                button,
+                pressed,
+                time,
+                self.deferred_pointer(),
+            ));
         }
         #[cfg(feature = "session")]
         self.cancel_desktop_gesture()?;
@@ -515,9 +650,17 @@ impl Desktop {
             self.server.pointer_button(button, pressed, time);
             return Ok(());
         }
-        let retain_application_focus = pressed && self.current.as_ref().is_some_and(|current| !current.frame.input.focus_policy.click)
+        let retain_application_focus = pressed
+            && self
+                .current
+                .as_ref()
+                .is_some_and(|current| !current.frame.input.focus_policy.click)
             && matches!(self.target(), Target::Application(..));
-        if self.pending_output.is_none() && pressed && self.buttons.is_empty() && !retain_application_focus {
+        if self.pending_output.is_none()
+            && pressed
+            && self.buttons.is_empty()
+            && !retain_application_focus
+        {
             let output = self
                 .frame_at(self.pointer)
                 .and_then(|current| current.frame.geometry.as_ref())
@@ -540,20 +683,38 @@ impl Desktop {
             }
         }
         if self.pending_output.is_some() {
-            return self.defer(Deferred::Button(button, pressed, time, self.deferred_pointer()));
+            return self.defer(Deferred::Button(
+                button,
+                pressed,
+                time,
+                self.deferred_pointer(),
+            ));
         }
-        let target = if self.server.dragging() { self.target() } else { self.grabbed.clone().unwrap_or_else(|| self.target()) };
+        let target = if self.server.dragging() {
+            self.target()
+        } else {
+            self.grabbed.clone().unwrap_or_else(|| self.target())
+        };
         let native = if pressed && matches!(target, Target::Native) {
-            let captured = native.or_else(|| self.frame_at(self.pointer).and_then(|frame| frame.frame.input.native_pointer.target(self.pointer)));
-            let Some(captured) = captured else { return Ok(()); };
+            let captured = native.or_else(|| {
+                self.frame_at(self.pointer)
+                    .and_then(|frame| frame.frame.input.native_pointer.target(self.pointer))
+            });
+            let Some(captured) = captured else {
+                return Ok(());
+            };
             Some(captured)
-        } else { native };
+        } else {
+            native
+        };
         if pressed && self.begin_pointer_manipulation(button, &target, time)? {
             return Ok(());
         }
         if pressed && self.server.popup_grab_active() {
             let surface = match &target {
-                Target::Application(_, surface, _) | Target::Layer(_, surface) | Target::Popup(surface) => Some(surface),
+                Target::Application(_, surface, _)
+                | Target::Layer(_, surface)
+                | Target::Popup(surface) => Some(surface),
                 _ => None,
             };
             if surface.is_none_or(|surface| !self.server.popup_target(surface)) {
@@ -583,18 +744,36 @@ impl Desktop {
                 }
                 let position = self.native_position().map(|value| value as f32);
                 let event = if let Some(target) = native.filter(|_| pressed) {
-                    Input::CapturedButton(mouse_button(button), pressed, position, self.pointer_stamp, target)
-                } else { Input::Button(mouse_button(button), pressed, position, self.pointer_stamp) };
+                    Input::CapturedButton(
+                        mouse_button(button),
+                        pressed,
+                        position,
+                        self.pointer_stamp,
+                        target,
+                    )
+                } else {
+                    Input::Button(mouse_button(button), pressed, position, self.pointer_stamp)
+                };
                 let serial = self.send_tracked(event)?;
                 if pressed {
                     self.pending_focus = Some((serial, None));
                 }
-                if self.current.as_ref().is_some_and(|current| current.frame.input.keyboard_modal_triggers.iter().any(|bounds| bounds.contains(self.pointer))) {
+                if self.current.as_ref().is_some_and(|current| {
+                    current
+                        .frame
+                        .input
+                        .keyboard_modal_triggers
+                        .iter()
+                        .any(|bounds| bounds.contains(self.pointer))
+                }) {
                     self.pending_output = Some((serial, None));
                 }
             }
             Target::Application(id, source, _) => {
-                let click_focus = self.current.as_ref().is_none_or(|current| current.frame.input.focus_policy.click);
+                let click_focus = self
+                    .current
+                    .as_ref()
+                    .is_none_or(|current| current.frame.input.focus_policy.click);
                 let focus_serial = if pressed && click_focus {
                     self.layer_focus = None;
                     let serial = self.send_tracked(Input::Application(id))?;
@@ -603,7 +782,10 @@ impl Desktop {
                 } else {
                     None
                 };
-                if let (Some(serial), Some(focus_serial)) = (self.server.pointer_button_serial(button, pressed, time), focus_serial) {
+                if let (Some(serial), Some(focus_serial)) = (
+                    self.server.pointer_button_serial(button, pressed, time),
+                    focus_serial,
+                ) {
                     self.remember_pointer_press(button, id, source, serial, focus_serial);
                 }
             }
@@ -660,24 +842,38 @@ impl Desktop {
             return self.locked_key(code, pressed, time);
         }
         #[cfg(feature = "session")]
-        if self.absolute_waiting() { return self.defer_absolute(Deferred::Key(code, pressed, time)); }
+        if self.absolute_waiting() {
+            return self.defer_absolute(Deferred::Key(code, pressed, time));
+        }
         if self.pending_output.is_some() {
             return self.defer(Deferred::Key(code, pressed, time));
         }
         let physical =
             bevy::winit::converters::convert_physical_key_code(PhysicalKey::from_scancode(code));
         let repeat = pressed && self.keys.contains_key(&code);
-        let modal = self.current.as_ref().is_some_and(|current| current.frame.input.keyboard_modal);
-        if modal && pressed { self.modal_keys.insert(code); }
+        let modal = self
+            .current
+            .as_ref()
+            .is_some_and(|current| current.frame.input.keyboard_modal);
+        if modal && pressed {
+            self.modal_keys.insert(code);
+        }
         let modal_key = self.modal_keys.contains(&code);
         let mut action = None;
         let consumed = self.consumed.contains(&code);
         let inhibited = self.server.shortcuts_inhibited();
         let ordered_native = {
             #[cfg(feature = "session")]
-            { self.replaying_absolute() && self.native_keyboard && self.server.native_ready() && !self.server.input_method_grabbed() }
+            {
+                self.replaying_absolute()
+                    && self.native_keyboard
+                    && self.server.native_ready()
+                    && !self.server.input_method_grabbed()
+            }
             #[cfg(not(feature = "session"))]
-            { false }
+            {
+                false
+            }
         };
         let manipulating = self.manipulation.active();
         let pointer_dragging = self.server.pointer_dragging();
@@ -703,27 +899,58 @@ impl Desktop {
                             }
                 })
                 .filter(|binding| match binding.action {
-                    DesktopAction::External(action) => external.binding_allowed(action, false, inhibited, modal),
-                    _ => !inhibited || matches!(binding.action, DesktopAction::Lock | DesktopAction::Logout | DesktopAction::OpenOperation),
+                    DesktopAction::External(action) => {
+                        external.binding_allowed(action, false, inhibited, modal)
+                    }
+                    _ => {
+                        !inhibited
+                            || matches!(
+                                binding.action,
+                                DesktopAction::Lock
+                                    | DesktopAction::Logout
+                                    | DesktopAction::OpenOperation
+                            )
+                    }
                 })
         };
         let event = if repeat {
             let event = self.server.key_symbol(code)?;
-            action = binding(&event).filter(|binding| binding.repeat && !modal_key && self.consumed_actions.get(&code) == Some(&binding.action)).map(|binding| binding.action);
+            action = binding(&event)
+                .filter(|binding| {
+                    binding.repeat
+                        && !modal_key
+                        && self.consumed_actions.get(&code) == Some(&binding.action)
+                })
+                .map(|binding| binding.action);
             event
         } else {
             self.server.keyboard(code, pressed, time, |event| {
                 if pressed {
                     action = binding(event).map(|binding| binding.action);
                 }
-                cancel_manipulation = manipulating && pressed
+                cancel_manipulation = manipulating
+                    && pressed
                     && event.symbol == smithay::input::keyboard::keysyms::KEY_Escape
-                    && !event.modifiers.alt && !event.modifiers.ctrl && !event.modifiers.shift && !event.modifiers.logo;
-                cancel_pointer_drag = pointer_dragging && pressed
+                    && !event.modifiers.alt
+                    && !event.modifiers.ctrl
+                    && !event.modifiers.shift
+                    && !event.modifiers.logo;
+                cancel_pointer_drag = pointer_dragging
+                    && pressed
                     && event.symbol == smithay::input::keyboard::keysyms::KEY_Escape
-                    && !event.modifiers.alt && !event.modifiers.ctrl && !event.modifiers.shift && !event.modifiers.logo;
-                if cancel_pointer_drag { action = None; }
-                consumed || modal_key || ordered_native || action.is_some() || cancel_manipulation || cancel_pointer_drag
+                    && !event.modifiers.alt
+                    && !event.modifiers.ctrl
+                    && !event.modifiers.shift
+                    && !event.modifiers.logo;
+                if cancel_pointer_drag {
+                    action = None;
+                }
+                consumed
+                    || modal_key
+                    || ordered_native
+                    || action.is_some()
+                    || cancel_manipulation
+                    || cancel_pointer_drag
             })?
         };
         if cancel_manipulation {
@@ -731,7 +958,9 @@ impl Desktop {
             self.cancel_manipulation()?;
         }
         if cancel_pointer_drag {
-            if !modal_key { self.consumed.insert(code); }
+            if !modal_key {
+                self.consumed.insert(code);
+            }
             self.cancel_pointer_drag(time)?;
         }
         if let Some(action) = action {
@@ -746,9 +975,10 @@ impl Desktop {
                     self.restore_modifiers()?;
                     self.recent_key(code, pressed, repeat, &event)?;
                 }
-                DesktopAction::OpenTerminal | DesktopAction::OpenLauncher | DesktopAction::Lock | DesktopAction::External(_) => {
-                    self.command(action, repeat)
-                }
+                DesktopAction::OpenTerminal
+                | DesktopAction::OpenLauncher
+                | DesktopAction::Lock
+                | DesktopAction::External(_) => self.command(action, repeat),
                 _ => {
                     let serial = self.send_tracked(Input::Action(action))?;
                     if matches!(
@@ -782,11 +1012,22 @@ impl Desktop {
                     }
                 }
             }
-            if !repeat { self.consumed_actions.insert(code, action); }
-        } else if !pressed && self.consumed_actions.get(&code).is_some_and(|action| action.is_recent()) {
+            if !repeat {
+                self.consumed_actions.insert(code, action);
+            }
+        } else if !pressed
+            && self
+                .consumed_actions
+                .get(&code)
+                .is_some_and(|action| action.is_recent())
+        {
             self.recent_key(code, pressed, repeat, &event)?;
-        } else if self.native_keyboard && !consumed
-            && self.server.native_ready() && (modal_key || repeat || ordered_native) && (modal_key || !self.server.input_method_grabbed()) {
+        } else if self.native_keyboard
+            && !consumed
+            && self.server.native_ready()
+            && (modal_key || repeat || ordered_native)
+            && (modal_key || !self.server.input_method_grabbed())
+        {
             self.native_key(code, pressed, repeat, &event)?;
         }
         if pressed {
@@ -815,10 +1056,15 @@ impl Desktop {
 
     fn locked_key(&mut self, code: u32, pressed: bool, time: u32) -> io::Result<()> {
         self.focus()?;
-        let physical = bevy::winit::converters::convert_physical_key_code(PhysicalKey::from_scancode(code));
+        let physical =
+            bevy::winit::converters::convert_physical_key_code(PhysicalKey::from_scancode(code));
         let repeat = pressed && self.keys.contains_key(&code);
         let consumed = self.consumed.contains(&code);
-        let bindings = self.current.as_ref().map(|current| current.frame.input.hardware_bindings.clone()).unwrap_or_default();
+        let bindings = self
+            .current
+            .as_ref()
+            .map(|current| current.frame.input.hardware_bindings.clone())
+            .unwrap_or_default();
         let external = &self.external;
         let binding = |event: &crate::server::KeyEvent| {
             bindings.iter().find(|binding| {
@@ -833,18 +1079,26 @@ impl Desktop {
         let mut action = None;
         let event = if repeat {
             let event = self.server.key_symbol(code)?;
-            action = binding(&event).filter(|binding| binding.repeat && self.consumed_actions.get(&code) == Some(&binding.action)).map(|binding| binding.action);
+            action = binding(&event)
+                .filter(|binding| {
+                    binding.repeat && self.consumed_actions.get(&code) == Some(&binding.action)
+                })
+                .map(|binding| binding.action);
             event
         } else {
             self.server.keyboard(code, pressed, time, |event| {
-                if pressed { action = binding(event).map(|binding| binding.action); }
+                if pressed {
+                    action = binding(event).map(|binding| binding.action);
+                }
                 consumed || action.is_some()
             })?
         };
         if let Some(action) = action {
             self.consumed.insert(code);
             self.command(action, repeat);
-            if !repeat { self.consumed_actions.insert(code, action); }
+            if !repeat {
+                self.consumed_actions.insert(code, action);
+            }
         }
         if pressed {
             self.keys.insert(code, event);
@@ -866,36 +1120,92 @@ impl Desktop {
         Ok(())
     }
 
-    fn recent_key(&mut self, code: u32, pressed: bool, repeat: bool, event: &crate::server::KeyEvent) -> io::Result<()> {
-        let physical = bevy::winit::converters::convert_physical_key_code(PhysicalKey::from_scancode(code));
-        let label = self.keyboard_snapshot.as_ref().and_then(|snapshot| snapshot.labels.get(&format!("{physical:?}")));
-        let serial = self.send_tracked(Input::Key { physical, logical: logical(label, None, event.symbol), text: None, pressed, repeat })?;
+    fn recent_key(
+        &mut self,
+        code: u32,
+        pressed: bool,
+        repeat: bool,
+        event: &crate::server::KeyEvent,
+    ) -> io::Result<()> {
+        let physical =
+            bevy::winit::converters::convert_physical_key_code(PhysicalKey::from_scancode(code));
+        let label = self
+            .keyboard_snapshot
+            .as_ref()
+            .and_then(|snapshot| snapshot.labels.get(&format!("{physical:?}")));
+        let serial = self.send_tracked(Input::Key {
+            physical,
+            logical: logical(label, None, event.symbol),
+            text: None,
+            pressed,
+            repeat,
+        })?;
         self.pending_output = Some((serial, None));
         self.native_keyboard = false;
         Ok(())
     }
 
-    pub(crate) fn native_key(&mut self, code: u32, pressed: bool, repeat: bool, event: &crate::server::KeyEvent) -> io::Result<()> {
+    pub(crate) fn native_key(
+        &mut self,
+        code: u32,
+        pressed: bool,
+        repeat: bool,
+        event: &crate::server::KeyEvent,
+    ) -> io::Result<()> {
         #[cfg(all(test, feature = "session"))]
         if self.replaying_absolute() {
-            eprintln!("Absolute native key: code={code}, pressed={pressed}, native={}, focused={}, locked={}, consumed={}, pending={}, symbol={}",
-                self.native_keyboard, self.focused, self.server.locked(), self.consumed.contains(&code), self.input_pending(), event.symbol);
+            eprintln!(
+                "Absolute native key: code={code}, pressed={pressed}, native={}, focused={}, locked={}, consumed={}, pending={}, symbol={}",
+                self.native_keyboard,
+                self.focused,
+                self.server.locked(),
+                self.consumed.contains(&code),
+                self.input_pending(),
+                event.symbol
+            );
         }
-        if !self.native_keyboard || !self.focused || self.server.locked()
-            || self.consumed.contains(&code) || self.input_pending() { return Ok(()); }
-        let physical = bevy::winit::converters::convert_physical_key_code(PhysicalKey::from_scancode(code));
-        let capture = self.current.as_ref().is_some_and(|current| current.frame.input.keyboard_capture
-            || !current.frame.input.keyboard_modal && self.modal_keys.contains(&code));
-        let text = if capture { self.compose.reset(); None } else { self.compose.text(event, pressed, repeat) };
-        let label = self.keyboard_snapshot.as_ref().and_then(|snapshot| snapshot.labels.get(&format!("{physical:?}")));
+        if !self.native_keyboard
+            || !self.focused
+            || self.server.locked()
+            || self.consumed.contains(&code)
+            || self.input_pending()
+        {
+            return Ok(());
+        }
+        let physical =
+            bevy::winit::converters::convert_physical_key_code(PhysicalKey::from_scancode(code));
+        let capture = self.current.as_ref().is_some_and(|current| {
+            current.frame.input.keyboard_capture
+                || !current.frame.input.keyboard_modal && self.modal_keys.contains(&code)
+        });
+        let text = if capture {
+            self.compose.reset();
+            None
+        } else {
+            self.compose.text(event, pressed, repeat)
+        };
+        let label = self
+            .keyboard_snapshot
+            .as_ref()
+            .and_then(|snapshot| snapshot.labels.get(&format!("{physical:?}")));
         let logical = native_logical(label, text.as_deref(), event);
-        self.send(Input::Key { physical, logical, text, pressed, repeat })
+        self.send(Input::Key {
+            physical,
+            logical,
+            text,
+            pressed,
+            repeat,
+        })
     }
 
     #[cfg(feature = "session")]
     pub(crate) fn repeat_timeout(&self) -> Option<Duration> {
-        self.repeat.map(|(_, deadline)| deadline.saturating_duration_since(Instant::now()))
-            .into_iter().chain(self.server.idle_timeout()).chain(self.server.native_timeout()).min()
+        self.repeat
+            .map(|(_, deadline)| deadline.saturating_duration_since(Instant::now()))
+            .into_iter()
+            .chain(self.server.idle_timeout())
+            .chain(self.server.native_timeout())
+            .min()
     }
 
     #[cfg(feature = "session")]
@@ -918,21 +1228,30 @@ impl Desktop {
             Instant::now()
                 + Duration::from_secs_f64(1.0 / f64::from(self.keyboard.repeat_rate.max(1))),
         ));
-        if !self.input_pending() && (self.native_keyboard || self.consumed.contains(&code))
-        {
+        if !self.input_pending() && (self.native_keyboard || self.consumed.contains(&code)) {
             self.key(code, true, time)?;
         }
         Ok(())
     }
 
     fn defer(&mut self, event: Deferred) -> io::Result<()> {
-        if self.deferred.back_mut().is_some_and(|previous| previous.merge(&event)) {
+        if self
+            .deferred
+            .back_mut()
+            .is_some_and(|previous| previous.merge(&event))
+        {
             return Ok(());
         }
         if self.deferred.len() >= 128 {
-            if matches!(event, Deferred::Axis(..)) { self.scroll_pressure(); return Ok(()); }
+            if matches!(event, Deferred::Axis(..)) {
+                self.scroll_pressure();
+                return Ok(());
+            }
             #[cfg(feature = "session")]
-            { self.recover_input_pressure(); return Ok(()); }
+            {
+                self.recover_input_pressure();
+                return Ok(());
+            }
             #[cfg(not(feature = "session"))]
             return Err(io::Error::other("the Park deferred input queue is full"));
         }
@@ -942,23 +1261,42 @@ impl Desktop {
 
     pub(crate) fn scroll_pressure(&mut self) {
         if !self.scroll_saturated {
-            eprintln!("Park scroll input is saturated; pending input is retained while the canvas catches up.");
+            eprintln!(
+                "Park scroll input is saturated; pending input is retained while the canvas catches up."
+            );
         }
         self.scroll_saturated = true;
     }
 
     fn deferred_pointer(&self) -> DeferredPointer {
         let target = self.grabbed.clone().unwrap_or_else(|| self.target());
-        let native = matches!(target, Target::Native).then(|| self.frame_at(self.pointer)?.frame.input.native_pointer.target(self.pointer)).flatten();
-        DeferredPointer { point: self.pointer, mapping: self.input_mapping_stamp(self.pointer),
-            target, native }
+        let native = matches!(target, Target::Native)
+            .then(|| {
+                self.frame_at(self.pointer)?
+                    .frame
+                    .input
+                    .native_pointer
+                    .target(self.pointer)
+            })
+            .flatten();
+        DeferredPointer {
+            point: self.pointer,
+            mapping: self.input_mapping_stamp(self.pointer),
+            target,
+            native,
+        }
     }
 
     fn deferred_pointer_current(&self, point: &DeferredPointer) -> bool {
         point.mapping == self.input_mapping_stamp(point.point)
             && point.target == self.grabbed.clone().unwrap_or_else(|| self.target())
-            && (!matches!(point.target, Target::Native) || point.native.as_ref().is_some_and(|target|
-                self.frame_at(point.point).and_then(|frame| frame.frame.input.native_pointer.target(point.point)).as_ref() == Some(target)))
+            && (!matches!(point.target, Target::Native)
+                || point.native.as_ref().is_some_and(|target| {
+                    self.frame_at(point.point)
+                        .and_then(|frame| frame.frame.input.native_pointer.target(point.point))
+                        .as_ref()
+                        == Some(target)
+                }))
     }
 
     pub(crate) fn restore_modifiers(&self) -> io::Result<()> {
@@ -971,10 +1309,17 @@ impl Desktop {
             let physical = bevy::winit::converters::convert_physical_key_code(
                 PhysicalKey::from_scancode(*code),
             );
-            let label = self.keyboard_snapshot.as_ref().and_then(|snapshot| snapshot.labels.get(&format!("{physical:?}")));
+            let label = self
+                .keyboard_snapshot
+                .as_ref()
+                .and_then(|snapshot| snapshot.labels.get(&format!("{physical:?}")));
             let logical = logical(label, None, event.symbol);
             if label.is_some_and(|label| label.is_modifier)
-                || matches!(logical, Key::Control | Key::Shift | Key::Alt | Key::Super | Key::AltGraph) {
+                || matches!(
+                    logical,
+                    Key::Control | Key::Shift | Key::Alt | Key::Super | Key::AltGraph
+                )
+            {
                 pressed.push((physical, logical));
             }
         }
@@ -985,7 +1330,12 @@ impl Desktop {
         self.axis_captured(delta, frame, None)
     }
 
-    fn axis_captured(&mut self, delta: [f64; 2], frame: AxisFrame, native: Option<crate::native_input::PointerTarget>) -> io::Result<()> {
+    fn axis_captured(
+        &mut self,
+        delta: [f64; 2],
+        frame: AxisFrame,
+        native: Option<crate::native_input::PointerTarget>,
+    ) -> io::Result<()> {
         let _timing = crate::runtime::latency::Dispatch::new();
         #[cfg(feature = "session")]
         if !self.server.locked() && self.absolute_waiting() {
@@ -1007,40 +1357,68 @@ impl Desktop {
             Target::Native => {
                 let position = self.native_position().map(|value| value as f32);
                 let delta = delta.map(|value| -value as f32);
-                let target = native.or_else(|| self.frame_at(self.pointer)?.frame.input.native_pointer.target(self.pointer));
+                let target = native.or_else(|| {
+                    self.frame_at(self.pointer)?
+                        .frame
+                        .input
+                        .native_pointer
+                        .target(self.pointer)
+                });
                 if let Some(target) = target {
-                    match self.worker.input(Input::CapturedScroll(delta, MouseScrollUnit::Pixel, TouchPhase::Moved, position, self.pointer_stamp, target)) {
-                        Ok(_) => {},
+                    match self.worker.input(Input::CapturedScroll(
+                        delta,
+                        MouseScrollUnit::Pixel,
+                        TouchPhase::Moved,
+                        position,
+                        self.pointer_stamp,
+                        target,
+                    )) {
+                        Ok(_) => {}
                         Err(std::sync::mpsc::TrySendError::Full(_)) => {
                             self.scroll_pressure();
                         }
                         Err(std::sync::mpsc::TrySendError::Disconnected(_)) => {
-                            return Err(io::Error::other("The Park canvas disconnected during scroll delivery."));
+                            return Err(io::Error::other(
+                                "The Park canvas disconnected during scroll delivery.",
+                            ));
                         }
                     }
                 }
-            },
-            Target::Application(..) | Target::Layer(..) | Target::Popup(..) => self.server.pointer_axis(frame),
+            }
+            Target::Application(..) | Target::Layer(..) | Target::Popup(..) => {
+                self.server.pointer_axis(frame)
+            }
             Target::Empty => {}
         }
         Ok(())
     }
 
     pub(crate) fn replay_event(&mut self, event: DeferredInput) -> io::Result<()> {
-        lince_interface::host::performance::record_since(lince_interface::host::performance::Stage::DeferredInputWait, event.enqueued);
+        lince_interface::host::performance::record_since(
+            lince_interface::host::performance::Stage::DeferredInputWait,
+            event.enqueued,
+        );
         let _timing = crate::runtime::latency::Dispatch::resume(event.stamp);
         let position = self.pointer;
         let result = match event.event {
             Deferred::Button(button, pressed, time, point) => {
                 self.pointer = point.point;
-                if self.deferred_pointer_current(&point) || !pressed && self.buttons.contains(&button) {
+                if self.deferred_pointer_current(&point)
+                    || !pressed && self.buttons.contains(&button)
+                {
                     self.button_captured(button, pressed, time, point.native)
-                } else { Ok(()) }
+                } else {
+                    Ok(())
+                }
             }
             Deferred::Key(code, pressed, time) => self.key(code, pressed, time),
             Deferred::Axis(delta, frame, point) => {
                 self.pointer = point.point;
-                if self.deferred_pointer_current(&point) { self.axis_captured(delta, frame, point.native) } else { Ok(()) }
+                if self.deferred_pointer_current(&point) {
+                    self.axis_captured(delta, frame, point.native)
+                } else {
+                    Ok(())
+                }
             }
         };
         self.pointer = position;
@@ -1093,19 +1471,40 @@ pub(super) fn mouse_button(button: u32) -> MouseButton {
     }
 }
 
-fn native_logical(label: Option<&lince_interface::host::input::KeyLabel>, text: Option<&str>, event: &crate::server::KeyEvent) -> Key {
+fn native_logical(
+    label: Option<&lince_interface::host::input::KeyLabel>,
+    text: Option<&str>,
+    event: &crate::server::KeyEvent,
+) -> Key {
     let identity = if event.modifiers.ctrl || event.modifiers.alt || event.modifiers.logo {
-        smithay::input::keyboard::Keysym::from(event.symbol).key_char().filter(|character| !character.is_control()).map(|character| character.to_string())
-    } else { None };
+        smithay::input::keyboard::Keysym::from(event.symbol)
+            .key_char()
+            .filter(|character| !character.is_control())
+            .map(|character| character.to_string())
+    } else {
+        None
+    };
     logical(label, text.or(identity.as_deref()), event.symbol)
 }
 
-pub(super) fn logical(label: Option<&lince_interface::host::input::KeyLabel>, text: Option<&str>, symbol: u32) -> Key {
+pub(super) fn logical(
+    label: Option<&lince_interface::host::input::KeyLabel>,
+    text: Option<&str>,
+    symbol: u32,
+) -> Key {
     if let Some(label) = label.filter(|label| label.is_modifier) {
-        if label.modifiers.control { return Key::Control; }
-        if label.modifiers.alt { return Key::Alt; }
-        if label.modifiers.shift { return Key::Shift; }
-        if label.modifiers.super_key { return Key::Super; }
+        if label.modifiers.control {
+            return Key::Control;
+        }
+        if label.modifiers.alt {
+            return Key::Alt;
+        }
+        if label.modifiers.shift {
+            return Key::Shift;
+        }
+        if label.modifiers.super_key {
+            return Key::Super;
+        }
     }
     use smithay::input::keyboard::keysyms;
     match symbol {
@@ -1139,7 +1538,9 @@ pub(super) fn logical(label: Option<&lince_interface::host::input::KeyLabel>, te
         keysyms::KEY_Control_L | keysyms::KEY_Control_R => Key::Control,
         keysyms::KEY_Alt_L | keysyms::KEY_Alt_R => Key::Alt,
         keysyms::KEY_Shift_L | keysyms::KEY_Shift_R => Key::Shift,
-        keysyms::KEY_Super_L | keysyms::KEY_Super_R | keysyms::KEY_Meta_L | keysyms::KEY_Meta_R => Key::Super,
+        keysyms::KEY_Super_L | keysyms::KEY_Super_R | keysyms::KEY_Meta_L | keysyms::KEY_Meta_R => {
+            Key::Super
+        }
         _ => text
             .map(|text| Key::Character(text.into()))
             .unwrap_or(Key::Unidentified(NativeKey::Unidentified)),
@@ -1151,12 +1552,25 @@ mod tests {
     use super::*;
 
     fn deferred_axis(delta: f64, source: AxisSource, stop: bool, point: f64) -> Deferred {
-        let mut frame = AxisFrame::new(1).source(source).value(Axis::Vertical, delta);
-        if source == AxisSource::Wheel { frame = frame.v120(Axis::Vertical, 120); }
-        if stop { frame = frame.stop(Axis::Vertical); }
-        Deferred::Axis([0.0, delta], frame, DeferredPointer {
-            point: [point, 10.0], mapping: Some((OutputId(1), 1)), target: Target::Native, native: None,
-        })
+        let mut frame = AxisFrame::new(1)
+            .source(source)
+            .value(Axis::Vertical, delta);
+        if source == AxisSource::Wheel {
+            frame = frame.v120(Axis::Vertical, 120);
+        }
+        if stop {
+            frame = frame.stop(Axis::Vertical);
+        }
+        Deferred::Axis(
+            [0.0, delta],
+            frame,
+            DeferredPointer {
+                point: [point, 10.0],
+                mapping: Some((OutputId(1), 1)),
+                target: Target::Native,
+                native: None,
+            },
+        )
     }
 
     #[test]
@@ -1178,16 +1592,25 @@ mod tests {
             assert!(!event.merge(&deferred_axis(-3.0, AxisSource::Wheel, false, 10.0)));
         }
         assert_eq!(event.enqueued, enqueued);
-        assert_eq!(event.stamp.unwrap().age(Duration::from_millis(100)), Some(Duration::from_millis(50)));
-        let Deferred::Axis(delta, _, _) = event.event else { panic!("Missing deferred scroll"); };
+        assert_eq!(
+            event.stamp.unwrap().age(Duration::from_millis(100)),
+            Some(Duration::from_millis(50))
+        );
+        let Deferred::Axis(delta, _, _) = event.event else {
+            panic!("Missing deferred scroll");
+        };
         assert_eq!(delta, [0.0, 6.0]);
     }
 
     #[test]
     fn deferred_scroll_batches_preserve_discrete_values_targets_and_touchpad_stop_boundaries() {
         let mut event = deferred_axis(3.0, AxisSource::Wheel, false, 10.0);
-        for _ in 0..1000 { assert!(event.merge_axis(&deferred_axis(3.0, AxisSource::Wheel, false, 10.0))); }
-        let Deferred::Axis(delta, frame, _) = &event else { panic!("Missing deferred axis"); };
+        for _ in 0..1000 {
+            assert!(event.merge_axis(&deferred_axis(3.0, AxisSource::Wheel, false, 10.0)));
+        }
+        let Deferred::Axis(delta, frame, _) = &event else {
+            panic!("Missing deferred axis");
+        };
         assert_eq!(*delta, [0.0, 3003.0]);
         assert_eq!(frame.axis, (0.0, 3003.0));
         assert_eq!(frame.v120, Some((0, 120120)));
@@ -1200,45 +1623,93 @@ mod tests {
         assert!(!touchpad.merge_axis(&Deferred::Key(30, true, 1)));
     }
 
-
     #[test]
     fn command_character_identity_does_not_commit_composition_text() {
         use smithay::input::keyboard::{ModifiersState, keysyms};
-        for symbol in [keysyms::KEY_a, keysyms::KEY_c, keysyms::KEY_v, keysyms::KEY_x, keysyms::KEY_z] {
-            let event = crate::server::KeyEvent { symbol, text: None, modifiers: ModifiersState { ctrl: true, ..Default::default() } };
-            assert_eq!(native_logical(None, None, &event), Key::Character(char::from_u32(symbol).unwrap().to_string().into()));
+        for symbol in [
+            keysyms::KEY_a,
+            keysyms::KEY_c,
+            keysyms::KEY_v,
+            keysyms::KEY_x,
+            keysyms::KEY_z,
+        ] {
+            let event = crate::server::KeyEvent {
+                symbol,
+                text: None,
+                modifiers: ModifiersState {
+                    ctrl: true,
+                    ..Default::default()
+                },
+            };
+            assert_eq!(
+                native_logical(None, None, &event),
+                Key::Character(char::from_u32(symbol).unwrap().to_string().into())
+            );
         }
         for symbol in [keysyms::KEY_a, keysyms::KEY_dead_acute] {
-            let event = crate::server::KeyEvent { symbol, text: None, modifiers: ModifiersState::default() };
-            assert_eq!(native_logical(None, None, &event), Key::Unidentified(NativeKey::Unidentified));
+            let event = crate::server::KeyEvent {
+                symbol,
+                text: None,
+                modifiers: ModifiersState::default(),
+            };
+            assert_eq!(
+                native_logical(None, None, &event),
+                Key::Unidentified(NativeKey::Unidentified)
+            );
         }
     }
 
     #[test]
     fn hardware_symbols_reach_native_controls_with_the_same_physical_evdev_identity() {
         let mut server = crate::server::Server::new([640, 480]).unwrap();
-        server.configure_keyboard(lince_interface::host::input::KeyboardSettings { layout: "us".into(), ..Default::default() }).unwrap();
+        server
+            .configure_keyboard(lince_interface::host::input::KeyboardSettings {
+                layout: "us".into(),
+                ..Default::default()
+            })
+            .unwrap();
         let snapshot = server.keyboard_snapshot();
         for (code, expected) in [
-            (224, Key::BrightnessDown), (225, Key::BrightnessUp),
-            (115, Key::AudioVolumeUp), (114, Key::AudioVolumeDown),
-            (113, Key::AudioVolumeMute), (248, Key::MicrophoneVolumeMute),
-            (163, Key::MediaTrackNext), (165, Key::MediaTrackPrevious),
+            (224, Key::BrightnessDown),
+            (225, Key::BrightnessUp),
+            (115, Key::AudioVolumeUp),
+            (114, Key::AudioVolumeDown),
+            (113, Key::AudioVolumeMute),
+            (248, Key::MicrophoneVolumeMute),
+            (163, Key::MediaTrackNext),
+            (165, Key::MediaTrackPrevious),
         ] {
-            let physical = bevy::winit::converters::convert_physical_key_code(PhysicalKey::from_scancode(code));
+            let physical = bevy::winit::converters::convert_physical_key_code(
+                PhysicalKey::from_scancode(code),
+            );
             let event = server.key_symbol(code).unwrap();
-            assert_eq!(logical(snapshot.labels.get(&format!("{physical:?}")), None, event.symbol), expected);
+            assert_eq!(
+                logical(
+                    snapshot.labels.get(&format!("{physical:?}")),
+                    None,
+                    event.symbol
+                ),
+                expected
+            );
         }
     }
 
     #[test]
-    fn configured_symbols_and_modifier_roles_reach_native_controls_without_changing_physical_keys() {
+    fn configured_symbols_and_modifier_roles_reach_native_controls_without_changing_physical_keys()
+    {
         let mut server = crate::server::Server::new([640, 480]).unwrap();
-        let mut settings = lince_interface::host::input::KeyboardSettings { layout: "us".into(), options: "caps:escape".into(), ..Default::default() };
+        let mut settings = lince_interface::host::input::KeyboardSettings {
+            layout: "us".into(),
+            options: "caps:escape".into(),
+            ..Default::default()
+        };
         server.configure_keyboard(settings.clone()).unwrap();
         let snapshot = server.keyboard_snapshot();
         let event = server.key_symbol(58).unwrap();
-        assert_eq!(logical(snapshot.labels.get("CapsLock"), None, event.symbol), Key::Escape);
+        assert_eq!(
+            logical(snapshot.labels.get("CapsLock"), None, event.symbol),
+            Key::Escape
+        );
         settings.options = "caps:ctrl_modifier".into();
         server.configure_keyboard(settings).unwrap();
         let snapshot = server.keyboard_snapshot();
@@ -1246,11 +1717,26 @@ mod tests {
         assert!(snapshot.labels["CapsLock"].modifiers.control);
         let event = server.keyboard(58, true, 1, |_| true).unwrap();
         assert!(event.modifiers.ctrl);
-        assert_eq!(logical(snapshot.labels.get("CapsLock"), None, event.symbol), Key::Control);
+        assert_eq!(
+            logical(snapshot.labels.get("CapsLock"), None, event.symbol),
+            Key::Control
+        );
         server.keyboard(58, false, 2, |_| true).unwrap();
-        server.configure_keyboard(lince_interface::host::input::KeyboardSettings { layout: "br".into(), ..Default::default() }).unwrap();
+        server
+            .configure_keyboard(lince_interface::host::input::KeyboardSettings {
+                layout: "br".into(),
+                ..Default::default()
+            })
+            .unwrap();
         let snapshot = server.keyboard_snapshot();
         let event = server.key_symbol(39).unwrap();
-        assert_eq!(logical(snapshot.labels.get("Semicolon"), event.text.as_deref(), event.symbol), Key::Character("ç".into()));
+        assert_eq!(
+            logical(
+                snapshot.labels.get("Semicolon"),
+                event.text.as_deref(),
+                event.symbol
+            ),
+            Key::Character("ç".into())
+        );
     }
 }

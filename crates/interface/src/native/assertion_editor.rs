@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod completion, mod preparation, mod syntax, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 259, 412, 416,
+//   418, 426, 480, 484, 569, 599, 635, 642.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (131, 158, 195, 220, 235, 236, 248, 256, 265, 278, 300, 301, 303, 374, 386, 407,
+//   424, 434, 456, 459, 460, 470, 476, 493, 521, 594, 614, 629, 633, 647, 651, 657).
+
 use std::sync::Arc;
 use bevy::{
     input_focus::{FocusCause, InputFocus},

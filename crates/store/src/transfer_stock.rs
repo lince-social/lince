@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: fn invalid, struct Input, struct Limit, fn get.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 62, 72, 93, 207.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 9.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 40, 52, 126, 159.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 40, 52, 159.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 30, 46, 112, 198, 228, 276.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 14, 15,
+//   16, 17, 18, 19, 23, 24, 25, 26, 27, 30, 46, 112, 198, 228, 276.
+
 use chrono::{DateTime, Utc};
 use nucleus::DecimalValue;
 use serde::{Deserialize, Serialize};
@@ -122,7 +138,9 @@ where
 {
     if input.request_id.trim().is_empty()
         || input.request_id.len() > 200
-        || input.minimum.is_some_and(|value| value.is_negative())
+        || input
+            .minimum
+            .is_some_and(nucleus::DecimalValue::is_negative)
         || input.expected_version >= i64::MAX as u64
     {
         return Err(invalid(

@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn reserve_change, fn finish_change.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   29.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (40, 63, 70).
+
 use super::*;
 use std::path::Path;
 

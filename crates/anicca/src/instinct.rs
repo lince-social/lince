@@ -1,5 +1,16 @@
-use crate::{Diagnostic, ProjectedRecord};
+// non-lean-yet
+// Scope: struct Requirement, fn validate.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 10.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 4.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 5,
+//   6, 7, 10.
+
 use std::collections::{BTreeMap, BTreeSet};
+
+use crate::{Diagnostic, ProjectedRecord};
 
 pub struct Requirement<'a> {
     pub slug: &'a str,

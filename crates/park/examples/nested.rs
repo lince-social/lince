@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn main, fn main.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 60, 63, 107.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   21, 62, 76.
+
 #[cfg(target_os = "linux")]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     use std::{ffi::OsStr, path::PathBuf, time::Duration};

@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: enum Field, struct Form, struct Editing, enum InputField.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 77, 80, 148, 220,
+//   238, 242, 243, 273, 278, 285, 286, 288, 419, 557, 637, 655, 656, 658, 663, 774, 781, 788, 795,
+//   870, 961, 964, 965, 981, 987, 999, 1000, 1001, 1002, 1057, 1061, 1066, 1088, 1114, 1117, 1118,
+//   1123, 1124.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   74, 940, 941, 942.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (257, 548, 555, 557, 659, 660, 870, 1020, 1057, 1141, 1144).
+
 use std::collections::BTreeMap;
 
 use bevy::{prelude::*, text::EditableText};

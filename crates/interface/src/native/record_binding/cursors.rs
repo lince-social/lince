@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod state, type Map, struct Key, struct KeyRef.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 107, 139, 173,
+//   222.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   126, 154.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (155, 173).
+
 use super::*;
 use bevy::platform::collections::Equivalent;
 use std::hash::{Hash, Hasher};

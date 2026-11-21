@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: fn add, fn command, fn send, fn publish.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 82.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   counteroffer:replicated (180), open_offer:replicated (292), private_trade:replicated (378),
+//   trade:replicated (60).
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 68, 296,
+//   397.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 8, 187, 308, 316, 322, 385.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 306, 307, 308.
+// - [Clippy probe: clippy::missing_panics_doc] State the panic conditions for exported functions.
+//   Sites 180, 292, 378.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   60, 180, 292, 378.
+
 use crate::scenario::{Check, Event, Input, Scenario};
 use super::routes::invocation;
 use nucleus::simulation::{Comparison, Predicate, Quantity};

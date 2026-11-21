@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct Job, struct Jobs, struct ComputeRequests, struct ComputeStatus.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 49, 126, 127,
+//   292.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   257, 269.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (152, 189, 197, 258, 259, 270, 271, 311, 336).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 202.
+
 use super::*;
 use bevy::render::{
     RenderStartup,

@@ -1,3 +1,23 @@
+// non-lean-yet
+// Scope: struct X11Surface, const MWM_HINTS_FLAGS_FIELD, const MWM_HINTS_DECORATIONS_FIELD, const
+//   MWM_HINTS_DECORATIONS.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 172, 322, 353,
+//   358, 363, 368.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   new:override_redirect (165), set_activated:activated (545), set_fullscreen:fullscreen (521),
+//   set_mapped:mapped (219), set_maximized:maximized (497), set_suspended:suspended (533).
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 122, 138.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   488, 489.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (103, 104, 213, 225, 255, 260, 267, 281, 322, 333, 343, 348, 353, 358, 363, 368,
+//   373, 380, 388, 393, 398, 408, 424, 440, 453, 462, 471, 480, 487, 561, 580, 613, 698, 707, 718,
+//   751, 758, 766, 792, 826, 837, 860, 919, 999, 1038, 1053, 1071, 1081, 1089, 1095, 1101, 1107,
+//   1113, 1119, 1125, 1131, 1137, 1143, 1149, 1155, 1161, 1167, 1173, 1181, 1187, 1193, 1199, 1205,
+//   1211, 1223).
+
 use crate::{
     backend::input::KeyState,
     input::{

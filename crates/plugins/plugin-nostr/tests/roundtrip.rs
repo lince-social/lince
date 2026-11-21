@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Relay, fn note, fn install, fn cell.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 39, 40, 41, 44, 45, 46.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 60.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 112.
+
 #![cfg(test)]
 
 use engine::Engine;

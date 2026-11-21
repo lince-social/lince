@@ -1,19 +1,47 @@
-use crate::config::Secret;
-use openidconnect::{
-    ClientId, IssuerUrl, Nonce, PkceCodeChallenge, PkceCodeVerifier,
-    core::{CoreIdToken, CoreIdTokenVerifier, CoreJsonWebKeySet},
-};
-use serde::{Deserialize, Serialize};
+// non-lean-yet
+// Scope: const PROVIDER, const RESOURCE, const SCOPES, struct Account.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 431, 467.
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value. Sites
+//   244.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 73, 211, 275,
+//   305, 390, 391, 395, 579.
+// - [Clippy: clippy::manual_is_variant_and] called `.ok().is_some_and(..)` on a `Result` value.
+//   Sites 459.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   39, 52, 118, 127, 134, 172, 174, 182, 183, 205, 207, 208, 211, 218, 227, 232, 238, 299, 301,
+//   350, 373, 408, 416, 427, 444, 500, 502, 548, 552.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 37, 49, 112, 149, 152, 224, 284, 331, 405, 533, 567.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 69, 86, 358, 561.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 18, 19,
+//   24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 37, 49, 54, 60, 61, 65, 66, 69, 86, 112, 149, 152, 224,
+//   284, 331, 358, 359, 405, 533, 561, 562, 563, 564, 567.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites at: String
+//   (152), begin: String (224), decode: String (37), encode: String (49), finish: String (405),
+//   host_id: String (533), http_client: String (112), production: String (149), refresh: String
+//   (284), revoke: String (331), token: String (567).
+
 use std::{
     path::Path,
     sync::Arc,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
+
+use openidconnect::{
+    ClientId, IssuerUrl, Nonce, PkceCodeChallenge, PkceCodeVerifier,
+    core::{CoreIdToken, CoreIdTokenVerifier, CoreJsonWebKeySet},
+};
+use serde::{Deserialize, Serialize};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpListener,
     sync::Mutex,
 };
+
+use crate::config::Secret;
 
 pub const PROVIDER: &str = "chatgpt";
 pub const RESOURCE: &str = "https://api.openai.com/v1";

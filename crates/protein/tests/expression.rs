@@ -1,19 +1,27 @@
-use engine::Engine;
-use engine::actions::Action;
-use nucleus::{PromiseState, RecordKind};
+use chrono::{TimeDelta, Utc};
+use engine::{Engine, actions::Action};
+use nucleus::{
+    PromiseState, RecordKind,
+    karma::{Cadence, Consequence},
+    new_uid,
+};
 
-use protein::{FactsInclude, Include, Order, Predicate, Protein, Source};
+use protein::{
+    FactsInclude, Include, Order, Predicate, Protein, Source, decision_queue, execute, focus_queue,
+};
+use serde_json::{from_value, json};
+use store::{exact, records::NewRecord};
 
 async fn engine() -> Engine {
     let engine = Engine::open_memory().await.expect("engine opens");
     store::records::create(
         &engine.store.pool,
-        store::records::NewRecord {
+        NewRecord {
             slug: Some("me"),
             kind: RecordKind::Person,
             head: "me",
             body: "",
-            quantity: store::exact::one(),
+            quantity: exact::one(),
         },
     )
     .await
@@ -41,9 +49,9 @@ async fn create(e: &Engine, slug: &str, quantity: f64) -> String {
 #[tokio::test]
 async fn focus_queue_is_a_protein() {
     let e = engine().await;
-    create(&e, "exercise", -1.0).await;
-    create(&e, "shower", -1.0).await;
-    create(&e, "breakfast", -1.0).await;
+    for slug in ["exercise", "shower", "breakfast"] {
+        create(&e, slug, -1.0).await;
+    }
     create(&e, "someday", 0.0).await;
 
     e.act(
@@ -56,36 +64,28 @@ async fn focus_queue_is_a_protein() {
     )
     .await
     .unwrap();
-    e.act(
-        Action::AssertRecord {
-            subject: "exercise".into(),
-            predicate: "before".into(),
-            object: Some("shower".into()),
-            quantity: None,
-            unit: None,
-        },
-        None,
-    )
-    .await
-    .unwrap();
-    e.act(
-        Action::AssertRecord {
-            subject: "shower".into(),
-            predicate: "before".into(),
-            object: Some("breakfast".into()),
-            quantity: None,
-            unit: None,
-        },
-        None,
-    )
-    .await
-    .unwrap();
-
-    let queue = protein::execute(&e.store, &protein::focus_queue("before"))
+    for (subject, object) in [("exercise", "shower"), ("shower", "breakfast")] {
+        e.act(
+            Action::AssertRecord {
+                subject: subject.into(),
+                predicate: "before".into(),
+                object: Some(object.into()),
+                quantity: None,
+                unit: None,
+            },
+            None,
+        )
         .await
         .unwrap();
-    let slugs: Vec<&str> = queue.iter().map(|r| r["slug"].as_str().unwrap()).collect();
-    assert_eq!(slugs, vec!["exercise", "shower", "breakfast"]);
+    }
+
+    let queue = execute(&e.store, &focus_queue("before")).await.unwrap();
+    assert!(
+        queue
+            .iter()
+            .map(|row| &row["slug"])
+            .eq(["exercise", "shower", "breakfast"].iter())
+    );
 
     e.act(
         Action::SetQuantity {
@@ -96,9 +96,7 @@ async fn focus_queue_is_a_protein() {
     )
     .await
     .unwrap();
-    let queue = protein::execute(&e.store, &protein::focus_queue("before"))
-        .await
-        .unwrap();
+    let queue = execute(&e.store, &focus_queue("before")).await.unwrap();
     assert_eq!(queue[0]["slug"], "shower", "next task takes the focus");
     assert_eq!(queue.len(), 2);
 }
@@ -109,36 +107,22 @@ async fn concept_dag_filter_and_provenance_include() {
     let apples = create(&e, "apples.stock", -2.0).await;
     create(&e, "hammer", -1.0).await;
 
-    e.act(
-        Action::CreateConcept {
-            lingua: "g_local".into(),
-            name: "food".into(),
-            parents: vec![],
-        },
-        None,
-    )
-    .await
-    .unwrap();
-    e.act(
-        Action::CreateConcept {
-            lingua: "g_local".into(),
-            name: "fruit".into(),
-            parents: vec!["food".into()],
-        },
-        None,
-    )
-    .await
-    .unwrap();
-    e.act(
-        Action::CreateConcept {
-            lingua: "g_local".into(),
-            name: "apple".into(),
-            parents: vec!["fruit".into()],
-        },
-        None,
-    )
-    .await
-    .unwrap();
+    for (name, parent) in [
+        ("food", None),
+        ("fruit", Some("food")),
+        ("apple", Some("fruit")),
+    ] {
+        e.act(
+            Action::CreateConcept {
+                lingua: "g_local".into(),
+                name: name.into(),
+                parents: parent.into_iter().map(str::to_owned).collect(),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    }
     let apple_uid = store::concepts::resolve(&e.store.pool, "apple")
         .await
         .unwrap()
@@ -150,7 +134,7 @@ async fn concept_dag_filter_and_provenance_include() {
     let p = Protein {
         source: Source::Record,
         filter: vec![
-            Predicate::QuantityLt(store::exact::zero()),
+            Predicate::QuantityLt(exact::zero()),
             Predicate::ConceptIn("food".into()),
         ],
         fields: None,
@@ -162,7 +146,7 @@ async fn concept_dag_filter_and_provenance_include() {
         order: vec![],
         limit: None,
     };
-    let rows = protein::execute(&e.store, &p).await.unwrap();
+    let rows = execute(&e.store, &p).await.unwrap();
     assert_eq!(rows.len(), 1);
     assert_eq!(rows[0]["slug"], "apples.stock");
     let facts = rows[0]["facts"].as_array().unwrap();
@@ -177,17 +161,17 @@ async fn decision_queue_protein_and_decide_action() {
     e.act(
         Action::CreateRecurrence {
             target: apples.clone(),
-            consequences: vec![nucleus::karma::Consequence::Ask {
+            consequences: vec![Consequence::Ask {
                 question: Some("send reorder proposal?".into()),
-                options: Vec::new(),
+                options: vec![],
             }],
             condition: Some("@apples.stock".into()),
             gate: Some("<3".into()),
             carry: Some("one".into()),
             note: None,
-            cadence: nucleus::karma::Cadence::every_days(1),
-            anchor_at: Some((chrono::Utc::now() - chrono::TimeDelta::minutes(1)).to_rfc3339()),
-            request_id: Some(nucleus::new_uid("req")),
+            cadence: Cadence::every_days(1),
+            anchor_at: Some((Utc::now() - TimeDelta::minutes(1)).to_rfc3339()),
+            request_id: Some(new_uid("req")),
         },
         None,
     )
@@ -195,25 +179,20 @@ async fn decision_queue_protein_and_decide_action() {
     .unwrap();
     e.append_user(&apples, -1.0).await.unwrap();
 
-    let queue = protein::execute(&e.store, &protein::decision_queue())
-        .await
-        .unwrap();
+    let queue = execute(&e.store, &decision_queue()).await.unwrap();
     assert_eq!(queue.len(), 1);
     assert_eq!(queue[0]["question"], "send reorder proposal?");
 
-    let decision_uid = queue[0]["uid"].as_str().unwrap().to_string();
     e.act(
         Action::Decide {
-            decision: decision_uid,
+            decision: queue[0]["uid"].as_str().unwrap().into(),
             answer: "yes".into(),
         },
         None,
     )
     .await
     .unwrap();
-    let queue = protein::execute(&e.store, &protein::decision_queue())
-        .await
-        .unwrap();
+    let queue = execute(&e.store, &decision_queue()).await.unwrap();
     assert!(queue.is_empty());
 }
 
@@ -228,7 +207,7 @@ async fn promise_lifecycle_through_actions() {
                 record: "@apples.stock".into(),
                 delta: 5.0,
                 window_end: Some("2026-07-10T18:00:00Z".into()),
-                party: Some("me".to_string()),
+                party: Some("me".into()),
                 open: true,
             },
             None,
@@ -256,7 +235,7 @@ async fn promise_lifecycle_through_actions() {
     let err = e
         .act(
             Action::PromiseTransition {
-                promise: promise.clone(),
+                promise,
                 to: PromiseState::Open,
             },
             None,
@@ -273,21 +252,21 @@ async fn promise_lifecycle_through_actions() {
         order: vec![],
         limit: None,
     };
-    let rows = protein::execute(&e.store, &p).await.unwrap();
+    let rows = execute(&e.store, &p).await.unwrap();
     assert_eq!(rows.len(), 1);
     assert_eq!(rows[0]["delta"], 5.0);
 }
 
-#[tokio::test]
-async fn the_wire_format_is_json_all_the_way() {
-    let json = serde_json::json!({
+#[test]
+fn the_wire_format_is_json_all_the_way() {
+    let json = json!({
         "source": "record",
         "where": [ { "quantity_lt": "0.0" }, { "kind_eq": "plain" } ],
         "include": { "facts": { "limit": 3 } },
         "order": [ { "link": { "kind": "before", "higher": "from" } }, { "asc": "created_at" } ],
         "limit": 10
     });
-    let parsed: Protein = serde_json::from_value(json).unwrap();
+    let parsed: Protein = from_value(json).unwrap();
     assert!(matches!(parsed.source, Source::Record));
     assert_eq!(parsed.filter.len(), 2);
     assert!(matches!(parsed.order[0], Order::Link(_)));

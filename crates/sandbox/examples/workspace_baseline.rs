@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: const AREA_TARGET, const SAND_START, const AREA_STRENGTH, struct Baseline.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 509, 510, 556,
+//   592, 594, 595.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (354, 583,
+//   585).
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites 76.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (86, 89, 94, 116, 128, 140, 142, 168, 169, 285, 287, 324, 348, 362, 365, 368, 393,
+//   397, 418, 419, 476, 477, 478, 480, 491, 492, 504, 521, 531, 559, 561, 567, 578, 639).
+
 use avian3d::prelude::Sleeping;
 use bevy::{
     diagnostic::FrameCount,

@@ -1,3 +1,22 @@
+// non-lean-yet
+// Scope: mod gbm, struct GpuManager, enum Error, trait GraphicsApi.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check SAFETY proof and trait invariants. Sites 1577.
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 872, 1208, 1347,
+//   1355, 1384, 2241.
+// - [review: §8 Unsafe] Prove unchecked operations and prefer a checked API when equivalent. Sites
+//   transmute (1209, 1356, 2242).
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 2042.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 1572.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 1945.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (2040).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (424, 485, 553, 561, 565, 566, 588, 592, 603, 616, 925, 945, 1163, 1193, 1362,
+//   1468, 1620, 1653, 1674, 1692, 1730, 1791, 1794, 1797, 1800, 1819, 1828, 1847, 1871, 1878, 1893,
+//   1898, 2115, 2142, 2203, 2320, 2462, 2464, 2472, 2542, 2608, 2623, 2625, 2628, 2633, 2646, 2659,
+//   2660, 2662, 2665, 2791, 2846, 2900, 2931).
+
 //!
 //! This module aims to make multi-gpu setups easier to handle for compositors.
 //!

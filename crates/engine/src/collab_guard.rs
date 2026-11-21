@@ -1,3 +1,48 @@
+// non-lean-yet
+// Scope: struct Limits, enum GuardError, struct AcceptedDoc, struct PreparedDelta.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 189, 211, 266,
+//   314, 352, 815, 838, 856.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 127, 141,
+//   183, 217, 228, 234, 240, 256, 265, 312, 361, 508, 520, 563, 685, 766, 926, 1027, 1045, 1073,
+//   1137, 1154.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   943.
+// - [review: §5 Panics] Verify panic isolation boundary and preserve the failure contract. Sites
+//   496, 500.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 174, 185, 337, 441, 581, 592, 595, 646, 687, 717, 729, 735, 744, 746, 773, 828,
+//   829, 837, 840, 843, 852, 855, 859, 861, 878, 889, 905, 980, 1903, 2594.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 337, 744, 837, 840, 843, 852, 855, 859, 861, 878, 905, 980.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 687, 717, 744, 746, 773, 828, 829, 889.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 940.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 51.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 943, 1318, 1324, 1696, 1714, 1803, 1809, 1820, 1826, 1827, 1839, 1840, 1852,
+//   1857, 1864, 1865, 1885, 1889, 1895, 1896, 1915, 1916, 1922, 1933, 1935, 1948, 1953, 1955, 1956,
+//   1957, 1958, 1959, 1980, 1986, 2024, 2110, 2129, 2155, 2161, 2408, 2411, 2428, 2437, 2446, 2447,
+//   2448, 2449, 2470, 2482, 2488, 2489, 2506, 2512, 2513, 2514, 2515, 2516, 2517, 2524, 2525, 2526,
+//   2541, 2542, 2543, 2544, 2545, 2546, 2569.
+// - [Clippy probe: clippy::manual_let_else] this could be rewritten as `let...else`. Sites 1548.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 127, 141, 183, 217, 228, 234, 240, 256, 265, 312, 361, 508, 520, 563, 685, 766, 926,
+//   1027, 1045, 1073, 1137, 1154.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 102, 106, 134, 214, 220, 249, 279, 403.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 1549.
+// - [Clippy probe: clippy::rc_buffer] Check whether a shared slice or str suffices. Sites 87, 88.
+// - [Clippy probe: clippy::redundant_clone] Move or borrow at the marked sites and check later
+//   uses. Sites 1954, 2341.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 82, 92.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61,
+//   62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 82, 92, 102, 106, 134, 198, 202, 206, 210, 214, 220,
+//   249, 279, 399, 403, 407, 411, 415, 419, 423, 427, 431, 435.
+
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::io::{self, Write};

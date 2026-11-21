@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: fn run, fn fixed_cases, struct CaseResult, fn case_results.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   19, 33.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 119, 120.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 19, 33.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 7, 85, 106.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 100.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   7, 85, 100, 101, 102, 103, 106.
+
 use std::path::{Path, PathBuf};
 
 use nucleus::simulation::{ReplayStatus, Verdict};

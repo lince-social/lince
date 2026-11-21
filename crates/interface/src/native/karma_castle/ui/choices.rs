@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct Element, struct Catalog, struct Row, enum Key.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 53, 56, 69, 145,
+//   148, 233, 264, 269, 289, 293.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   142, 201, 206.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (46, 70, 71, 84, 140, 158, 173).
+
 use super::*;
 use std::sync::{OnceLock, Weak};
 

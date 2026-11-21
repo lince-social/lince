@@ -1,5 +1,22 @@
-use super::{Layout, Result, Tile};
+// non-lean-yet
+// Scope: struct Pdf.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 27, 50, 67.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 28, 34, 51, 55, 56, 62, 67.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   34, 55, 56.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 34.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   66.
+// - [Clippy: clippy::unnecessary_wraps] this function's return value is unnecessarily wrapped by
+//   `Result`. Sites 38.
+
 use hayro::{RenderCache, RenderSettings, hayro_syntax};
+
+use super::{Layout, Result, Tile};
 
 pub(super) struct Pdf {
     document: hayro_syntax::Pdf,

@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: struct Request, struct Selection, fn selection, struct Rule.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 28, 47, 48, 80,
+//   81, 193, 212, 236, 304, 331, 355, 426, 475, 477, 542, 570, 798, 810, 876, 890, 947, 948, 972,
+//   1008, 1075, 1080, 1089, 1094, 1104, 1105, 1121.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   mount_policy_draft:exclusions (185).
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 74, 91.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites edited_policy:
+//   String (211).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   709.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (1003, 1006, 1020, 1024, 1027, 1035, 1036, 1039, 1044, 1045, 1048, 1070, 1073,
+//   1100, 1108, 1112, 1116, 1123, 1152, 1158).
+
 use crate::{controls, theme::Typography};
 use bevy::prelude::*;
 use nucleus::visibility::{Bound, Command, Condition, Context, Data, Policy};

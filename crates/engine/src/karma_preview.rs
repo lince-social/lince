@@ -1,3 +1,25 @@
+// non-lean-yet
+// Scope: struct ProposedRule, enum Input, struct Limits, struct Request.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 24, 25, 27, 244,
+//   246.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 212, 243.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 183.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 35.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 212, 243.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 160, 170, 208.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 152.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   14, 15, 16, 17, 18, 22, 35, 36, 37, 38, 39, 40, 42, 43, 44, 45, 46, 48, 49, 50, 55, 66, 67, 68,
+//   69, 70, 71, 88, 89, 91, 93, 95, 97, 99, 101, 103, 105, 110, 111, 112, 114, 119, 122, 123, 124,
+//   125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 140, 142, 143, 152, 160, 170,
+//   208.
+
 use std::{future::Future, pin::Pin, sync::Arc};
 
 use chrono::{DateTime, Utc};

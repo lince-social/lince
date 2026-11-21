@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: fn with_surface_toplevel_role_data, fn make_toplevel_handle, fn get_parent, fn set_parent.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 267, 290.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 49, 172, 211,
+//   212, 217.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   send_toplevel_configure:send_bounds (254), send_toplevel_configure:send_capabilities (255).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (47, 163, 178, 180, 195, 200, 202, 209, 229, 257).
+
 use std::sync::atomic::Ordering;
 
 use crate::{

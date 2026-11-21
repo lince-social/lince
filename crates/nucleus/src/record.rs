@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: enum MessageState, enum MessageDraftTiming, enum RecordKind.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 6, 30, 50.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 7,
+//   9, 10, 14, 22, 30, 32, 33, 34, 38, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64,
+//   65, 66, 67, 68, 69, 73, 97.
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]

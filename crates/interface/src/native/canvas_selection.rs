@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct SandGroup, struct SandSelection, struct SelectionGesture, struct Rectangle.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 434, 1092.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (1256, 1312).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (337, 376, 656, 695, 808, 820, 913, 924, 942, 968, 997, 1017, 1034, 1079, 1086,
+//   1089, 1102, 1108, 1185, 1195, 1214, 1235, 1258, 1262, 1271, 1273, 1276, 1284, 1308, 1314, 1324,
+//   1325, 1354, 1358, 1363, 1368, 1370, 1373).
+
 use crate::native::{
     actions::Action,
     canvas::{CanvasItem, CanvasView},

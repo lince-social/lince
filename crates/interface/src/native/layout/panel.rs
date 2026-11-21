@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct LayoutPanel, enum LayoutAction, fn root, fn allowed.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 226.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 128.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   138, 139, 140, 148, 158, 159, 378, 396, 397, 398, 405.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (89, 90, 114, 218, 248, 287, 291, 294).
+
 use super::{Arrangement, LayoutBox, Overflow, Sizing, engine};
 use crate::native::{
     actions::{Action, ActionButton},

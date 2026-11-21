@@ -1,3 +1,38 @@
+// non-lean-yet
+// Scope: const NAMESPACE, enum EvidenceLevel, enum CounterpartyBasis, struct Weights.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 439, 457, 617, 626, 676, 691.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 387, 396, 420,
+//   425, 443, 500, 508, 510, 522, 572, 573, 574, 575, 579, 583, 586, 631, 632, 633, 634, 635, 647,
+//   676, 703, 711, 741, 742, 743.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 298.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   298.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 21, 29.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   44.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 125, 173, 328.
+// - [Clippy: clippy::struct_excessive_bools] more than 3 bools in a struct. Sites 189.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 179.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 15, 21,
+//   22, 23, 24, 29, 30, 31, 36, 37, 38, 39, 40, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96,
+//   97, 98, 99, 100, 104, 125, 173, 179, 180, 181, 182, 183, 184, 185, 189, 190, 191, 192, 193,
+//   194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212,
+//   216, 217, 218, 219, 220, 221, 222, 223, 224, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237,
+//   238, 242, 243, 244, 245, 246, 250, 251, 252, 253, 254, 255, 256, 257, 258, 328.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites analyze: String
+//   (328), id: String (173), validate: String (125).
+
+use std::collections::{BTreeMap, BTreeSet};
+
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+
 use super::{Filter, Identity, IdentityContext, MAX_BYTES, MAX_DISCLOSURES, paths};
 use crate::{
     DecimalValue,
@@ -8,9 +43,6 @@ use crate::{
         receipt_history::{self, Copy, Provenance},
     },
 };
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet};
 
 pub const NAMESPACE: &str = "lince.trust-query";
 
@@ -158,7 +190,7 @@ impl Query {
         if [self.issuer_cap, self.first_contact_cap]
             .into_iter()
             .flatten()
-            .any(|cap| cap.is_negative())
+            .any(super::super::karma::value::DecimalValue::is_negative)
         {
             return Err(
                 "Influence caps must be nonnegative indices in each measurement basis".into(),
@@ -393,7 +425,13 @@ pub fn analyze(
             continue;
         }
         analysis.partial |= source.partial;
-        let originals = source.copies.iter().map(|copy| copy.provenance.clone()).collect::<BTreeSet<_>>().into_iter().collect::<Vec<_>>();
+        let originals = source
+            .copies
+            .iter()
+            .map(|copy| copy.provenance.clone())
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect::<Vec<_>>();
         let records = source
             .copies
             .iter()
@@ -569,7 +607,13 @@ pub fn analyze(
                 path.as_ref().map(paths::Path::distance)
             };
             analysis.rows.push(EvidenceRow {
-                originals: outcome.copies.iter().map(|copy| copy.provenance.clone()).collect::<BTreeSet<_>>().into_iter().collect(),
+                originals: outcome
+                    .copies
+                    .iter()
+                    .map(|copy| copy.provenance.clone())
+                    .collect::<BTreeSet<_>>()
+                    .into_iter()
+                    .collect(),
                 source: key.clone(),
                 outcome: outcome.id.clone(),
                 need: copy.projection.need.clone(),
@@ -628,7 +672,13 @@ pub fn analyze(
                     continue;
                 }
                 analysis.protocol.push(ProtocolRow {
-                    originals: outcome.copies.iter().map(|copy| copy.provenance.clone()).collect::<BTreeSet<_>>().into_iter().collect(),
+                    originals: outcome
+                        .copies
+                        .iter()
+                        .map(|copy| copy.provenance.clone())
+                        .collect::<BTreeSet<_>>()
+                        .into_iter()
+                        .collect(),
                     source: key.clone(),
                     outcome: outcome.id.clone(),
                     issuer: Identity::Organ(copy.projection.issuer.clone()),

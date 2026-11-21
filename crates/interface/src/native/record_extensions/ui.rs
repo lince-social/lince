@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn label, fn input, fn controls, fn pages.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 93, 94, 98, 99,
+//   102, 103, 200, 310, 328, 336, 726, 746, 786, 790, 806, 839, 843, 844, 867.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (484).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   297, 509, 583, 598, 820.
+
 use super::*;
 use crate::native::sand_panel::{button, column, row};
 

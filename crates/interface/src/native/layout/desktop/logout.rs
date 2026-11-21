@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Confirmation, fn request, struct Decision, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (80, 141).
+
 use super::*;
 use crate::{
     i18n::Token,

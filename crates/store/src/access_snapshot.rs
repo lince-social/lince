@@ -1,3 +1,23 @@
+// non-lean-yet
+// Scope: struct AccessSnapshotLimits, struct RecordMetadata, struct ConceptMetadata, struct
+//   ConceptParentMetadata.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 601, 641, 746,
+//   853, 972, 1077, 1188, 1305, 1414.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 73, 91, 112, 121, 128.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   222, 226, 343.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 376, 1177.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 10, 11,
+//   12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 51, 52, 53, 54, 55, 56, 60, 61, 62, 63,
+//   67, 68, 69, 73, 74, 75, 79, 80, 81, 82, 83, 84, 85, 86, 87, 91, 92, 93, 94, 98, 99, 100, 101,
+//   102, 106, 107, 108, 112, 113, 114, 115, 116, 117, 121, 122, 123, 124, 128, 129, 130, 134, 135,
+//   136, 137, 138, 139, 143, 144, 145, 146, 147, 148, 152, 153, 154, 155, 156, 157, 158, 159, 160,
+//   161, 162, 163, 167, 168, 169, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185,
+//   376, 1177.
+
 use std::collections::{BTreeMap, BTreeSet};
 
 use nucleus::{DecimalValue, RecordKind};
@@ -853,7 +873,7 @@ pub async fn metadata_on(
         if !visibility_ids.insert(uid.clone()) {
             return Err(protocol("duplicate visibility rule identity in snapshot"));
         }
-        if field.as_ref().is_some_and(|value| value.is_empty()) {
+        if field.as_ref().is_some_and(std::string::String::is_empty) {
             return Err(protocol("visibility rule has an empty field"));
         }
         let subject = match subject_kind.as_str() {

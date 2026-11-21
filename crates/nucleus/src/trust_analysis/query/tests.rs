@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: fn hash, fn publication, fn push, fn source.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::get_unwrap] Check bounds and preserve the lookup failure contract. Sites 315.
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 66, 215, 216, 217, 289, 290, 299, 300, 333, 341, 342, 345, 347, 350, 355, 358, 359, 382,
+//   388, 479, 480, 492, 511, 512, 525, 534, 536, 585, 587, 605, 606, 607, 679, 685, 692, 703.
+// - [Clippy: clippy::redundant_clone] Move or borrow at the marked sites and check later uses.
+//   Sites 238, 343.
+
 use super::*;
 use crate::{transfer::receipt::*, vocabulary::reference::MeaningReference};
 
@@ -257,11 +267,21 @@ fn assembled_mixed_originals_keep_exact_amounts_and_both_provenance_types() {
     let original = hash("collected-original");
     for copy in &mut source.copies {
         copy.provenance = if matches!(copy.content, Content::Need { .. }) {
-            Provenance::Record { record: record.clone(), version: 1 }
+            Provenance::Record {
+                record: record.clone(),
+                version: 1,
+            }
         } else {
-            Provenance::Artifact { hash: original.clone() }
+            Provenance::Artifact {
+                hash: original.clone(),
+            }
         };
-        if let Content::Statement { role: Role::Receiver, quantity, .. } = &mut copy.content {
+        if let Content::Statement {
+            role: Role::Receiver,
+            quantity,
+            ..
+        } = &mut copy.content
+        {
             *quantity = decimal("12.000000000000000001");
         }
         if let Content::Settled { quantity } = &mut copy.content {
@@ -280,29 +300,69 @@ fn assembled_mixed_originals_keep_exact_amounts_and_both_provenance_types() {
         partial: false,
     };
     let query = query(&publication);
-    let analysis = analyze(vec![group.source_evidence()], &contexts(&publication), None, &query).unwrap();
+    let analysis = analyze(
+        vec![group.source_evidence()],
+        &contexts(&publication),
+        None,
+        &query,
+    )
+    .unwrap();
     assert!(analysis.protocol.iter().any(|row| matches!(&row.content, Content::Need { requested, .. } if requested.canonical() == "10")));
     assert!(analysis.protocol.iter().any(|row| matches!(&row.content, Content::Settled { quantity } if quantity.value().unwrap() == 10.0)));
-    let amounts = analysis.rows.iter().map(|row| (row.level, row.quantity.canonical())).collect::<Vec<_>>();
+    let amounts = analysis
+        .rows
+        .iter()
+        .map(|row| (row.level, row.quantity.canonical()))
+        .collect::<Vec<_>>();
     assert!(amounts.contains(&(EvidenceLevel::Giver, "100".into())));
-    assert!(amounts.contains(&(EvidenceLevel::NeedLinkedReceiver, "12.000000000000000001".into())));
-    assert_eq!(analysis.groups[0].raw_quantity.unwrap().canonical(), "12.000000000000000001");
+    assert!(amounts.contains(&(
+        EvidenceLevel::NeedLinkedReceiver,
+        "12.000000000000000001".into()
+    )));
+    assert_eq!(
+        analysis.groups[0].raw_quantity.unwrap().canonical(),
+        "12.000000000000000001"
+    );
     assert_eq!(analysis.groups[0].occurrences, 1);
     let row = analysis.rows.iter().find(|row| row.selected).unwrap();
-    assert_eq!(row.originals, vec![Provenance::Artifact { hash: original.clone() }]);
+    assert_eq!(
+        row.originals,
+        vec![Provenance::Artifact {
+            hash: original.clone()
+        }]
+    );
     assert!(row.records.is_empty());
-    assert!(analysis.protocol.iter().any(|row| row.originals.contains(&Provenance::Record { record: record.clone(), version: 1 })));
+    assert!(
+        analysis
+            .protocol
+            .iter()
+            .any(|row| row.originals.contains(&Provenance::Record {
+                record: record.clone(),
+                version: 1
+            }))
+    );
     let mut incomplete = group.source_evidence();
     incomplete.partial = true;
     let withheld = analyze(vec![incomplete], &contexts(&publication), None, &query).unwrap();
     assert!(withheld.groups.is_empty());
-    assert!(withheld.withheld[0].originals.contains(&Provenance::Artifact { hash: original }));
-    assert!(withheld.withheld[0].originals.contains(&Provenance::Record { record, version: 1 }));
+    assert!(
+        withheld.withheld[0]
+            .originals
+            .contains(&Provenance::Artifact { hash: original })
+    );
+    assert!(
+        withheld.withheld[0]
+            .originals
+            .contains(&Provenance::Record { record, version: 1 })
+    );
 }
 
 #[test]
 fn mixed_source_policy_keeps_endpoint_eligibility_raw_amounts_and_distance_indices_separate() {
-    use super::super::{Condition, contacts::{Edge, RelationKind}};
+    use super::super::{
+        Condition,
+        contacts::{Edge, RelationKind},
+    };
     let first = publication();
     let mut second = first.clone();
     second.scope.source.occurrence = hash("second-occurrence");
@@ -311,7 +371,10 @@ fn mixed_source_policy_keeps_endpoint_eligibility_raw_amounts_and_distance_indic
     let mut dependencies = BTreeMap::<CanonicalHash, CanonicalHash>::new();
     for (index, signed) in first.events.iter().enumerate() {
         let mut content = signed.event.content.clone();
-        if let Content::Statement { need: Some(need), .. } = &mut content {
+        if let Content::Statement {
+            need: Some(need), ..
+        } = &mut content
+        {
             *need = dependencies.get(need).unwrap().clone();
         }
         let next = push(&mut second, content, None, &format!("second-{index}"));
@@ -324,9 +387,24 @@ fn mixed_source_policy_keeps_endpoint_eligibility_raw_amounts_and_distance_indic
     let mut context = contexts(&first);
     context.extend(contexts(&second));
     for identity in [&anchor, &middle] {
-        context.insert(identity.clone(), IdentityContext { readable:true, ..Default::default() });
+        context.insert(
+            identity.clone(),
+            IdentityContext {
+                readable: true,
+                ..Default::default()
+            },
+        );
     }
-    let edges = [(&anchor, &direct), (&direct, &middle), (&middle, &distant)].into_iter().enumerate().map(|(index, (from,to))| Edge { from:from.clone(), to:to.clone(), kind:RelationKind::Mutual, proofs:vec![hash(&format!("edge-{index}"))] }).collect::<Vec<_>>();
+    let edges = [(&anchor, &direct), (&direct, &middle), (&middle, &distant)]
+        .into_iter()
+        .enumerate()
+        .map(|(index, (from, to))| Edge {
+            from: from.clone(),
+            to: to.clone(),
+            kind: RelationKind::Mutual,
+            proofs: vec![hash(&format!("edge-{index}"))],
+        })
+        .collect::<Vec<_>>();
     let policy = paths::Policy::for_anchor(anchor);
     let paths = paths::search(&edges, &context, &policy).unwrap();
     let mut query = query(&first);
@@ -334,32 +412,91 @@ fn mixed_source_policy_keeps_endpoint_eligibility_raw_amounts_and_distance_indic
     query.contacts = Some(policy.clone());
     let sources = || {
         let mut remote = source(&second);
-        for copy in &mut remote.copies { copy.provenance = Provenance::Artifact { hash:hash("remote-second-occurrence") }; }
+        for copy in &mut remote.copies {
+            copy.provenance = Provenance::Artifact {
+                hash: hash("remote-second-occurrence"),
+            };
+        }
         vec![source(&first), remote]
     };
     let initial = analyze(sources(), &context, Some(&paths), &query).unwrap();
     assert_eq!(initial.groups[0].raw_quantity.unwrap().canonical(), "8");
-    assert!(initial.groups[0].weighted_index.unwrap().exact_numeric_cmp(decimal("5")).is_eq());
-    let exclusion = Condition { identities:vec![distant.clone()], ..Default::default() };
+    assert!(
+        initial.groups[0]
+            .weighted_index
+            .unwrap()
+            .exact_numeric_cmp(decimal("5"))
+            .is_eq()
+    );
+    let exclusion = Condition {
+        identities: vec![distant.clone()],
+        ..Default::default()
+    };
     query.endpoints.exclude.push(exclusion.clone());
-    assert_eq!(analyze(sources(), &context, Some(&paths), &query).unwrap().groups[0].raw_quantity.unwrap().canonical(), "8");
+    assert_eq!(
+        analyze(sources(), &context, Some(&paths), &query)
+            .unwrap()
+            .groups[0]
+            .raw_quantity
+            .unwrap()
+            .canonical(),
+        "8"
+    );
     query.counterparties.exclude.push(exclusion.clone());
-    assert_eq!(analyze(sources(), &context, Some(&paths), &query).unwrap().groups[0].raw_quantity.unwrap().canonical(), "4");
+    assert_eq!(
+        analyze(sources(), &context, Some(&paths), &query)
+            .unwrap()
+            .groups[0]
+            .raw_quantity
+            .unwrap()
+            .canonical(),
+        "4"
+    );
     query.counterparties.exclude.clear();
     query.issuers.exclude.push(exclusion);
-    assert_eq!(analyze(sources(), &context, Some(&paths), &query).unwrap().groups[0].raw_quantity.unwrap().canonical(), "4");
+    assert_eq!(
+        analyze(sources(), &context, Some(&paths), &query)
+            .unwrap()
+            .groups[0]
+            .raw_quantity
+            .unwrap()
+            .canonical(),
+        "4"
+    );
     query.issuers.exclude.clear();
     let mut excluded_path = policy;
-    excluded_path.intermediaries.exclude.push(Condition { identities:vec![middle], ..Default::default() });
+    excluded_path.intermediaries.exclude.push(Condition {
+        identities: vec![middle],
+        ..Default::default()
+    });
     let filtered = paths::search(&edges, &context, &excluded_path).unwrap();
-    assert_eq!(analyze(sources(), &context, Some(&filtered), &query).unwrap().groups[0].raw_quantity.unwrap().canonical(), "4");
+    assert_eq!(
+        analyze(sources(), &context, Some(&filtered), &query)
+            .unwrap()
+            .groups[0]
+            .raw_quantity
+            .unwrap()
+            .canonical(),
+        "4"
+    );
     query.issuer_cap = Some(decimal("0.5"));
     let capped = analyze(sources(), &context, Some(&paths), &query).unwrap();
     assert_eq!(capped.groups[0].raw_quantity.unwrap().canonical(), "8");
-    assert!(capped.groups[0].weighted_index.unwrap().exact_numeric_cmp(decimal("5")).is_lt());
+    assert!(
+        capped.groups[0]
+            .weighted_index
+            .unwrap()
+            .exact_numeric_cmp(decimal("5"))
+            .is_lt()
+    );
     query.contacts = None;
     query.issuers.include.clear();
-    assert!(analyze(sources(), &context, None, &query).unwrap().groups.is_empty());
+    assert!(
+        analyze(sources(), &context, None, &query)
+            .unwrap()
+            .groups
+            .is_empty()
+    );
 }
 
 #[test]
@@ -501,8 +638,19 @@ fn corrections_conflicts_withdrawals_and_disputes_do_not_inflate_contributions()
     let input = |publication: &Publication| {
         let mut source = source(publication);
         for copy in &mut source.copies {
-            if !matches!(copy.content, Content::Need { .. }) && publication.events.iter().find(|signed| signed.event.id().unwrap() == copy.projection.event).unwrap().event.supersedes.is_none() {
-                copy.provenance = Provenance::Artifact {hash:hash("mixed-original-before-control")};
+            if !matches!(copy.content, Content::Need { .. })
+                && publication
+                    .events
+                    .iter()
+                    .find(|signed| signed.event.id().unwrap() == copy.projection.event)
+                    .unwrap()
+                    .event
+                    .supersedes
+                    .is_none()
+            {
+                copy.provenance = Provenance::Artifact {
+                    hash: hash("mixed-original-before-control"),
+                };
             }
         }
         source
@@ -523,7 +671,15 @@ fn corrections_conflicts_withdrawals_and_disputes_do_not_inflate_contributions()
     let query = query(&publication);
     let result = analyze(vec![input(&publication)], &context, None, &query).unwrap();
     assert_eq!(result.groups[0].raw_quantity.unwrap().canonical(), "3");
-    assert!(!result.rows.iter().find(|row| row.selected).unwrap().records.is_empty());
+    assert!(
+        !result
+            .rows
+            .iter()
+            .find(|row| row.selected)
+            .unwrap()
+            .records
+            .is_empty()
+    );
     let mut forked = publication.clone();
     if let Content::Statement { quantity, .. } = &mut corrected {
         *quantity = decimal("2");

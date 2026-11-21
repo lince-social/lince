@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: mod support, fn definition, fn rows, fn create.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 616, 618.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 745, 754.
+
 #![cfg(test)]
 
 mod support;

@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn amount, fn hash, fn statement, fn analysis.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 136, 198, 388, 450, 451, 452, 461, 462, 479, 481, 491.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 320, 335.
+// - [Clippy: clippy::redundant_clone] Move or borrow at the marked sites and check later uses.
+//   Sites 332, 348, 351.
+
 use super::*;
 use crate::{
     trust_analysis::query::{EvidenceRow, Group},

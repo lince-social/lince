@@ -1,3 +1,25 @@
+// non-lean-yet
+// Scope: enum RenderErrorPolicy, struct RenderErrorHandler, struct RenderError, enum RenderState.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 136, 140, 152, 159, 195, 213.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 214.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   129, 130.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 20.
+// - [Clippy: clippy::manual_string_new] empty String is being created manually. Sites 162.
+// - [Clippy: clippy::missing_assert_message] assert without any message. Sites 62, 136.
+// - [Clippy: clippy::unnecessary_semicolon] unnecessary semicolon. Sites 192.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 206.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 20, 47.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 95, 96,
+//   97.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (216).
+
 use alloc::sync::Arc;
 use bevy_app::AppExit;
 use bevy_ecs::{

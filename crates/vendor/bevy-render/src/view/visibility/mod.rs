@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: mod range, struct RenderVisibleEntities, struct RenderShadowMapVisibleEntities, struct
+//   RenderVisibleEntitiesClass.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 268.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   195.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 219.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 27.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 146, 303.
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 28.
+
 use core::{any::TypeId, mem};
 
 use bevy_ecs::{

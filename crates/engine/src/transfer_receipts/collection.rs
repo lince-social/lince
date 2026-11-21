@@ -1,3 +1,23 @@
+// non-lean-yet
+// Scope: mod artifact, struct Collection, fn visible.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 39, 82, 114, 115,
+//   120, 136, 172, 178, 188, 235, 246, 249, 250, 277, 303, 307, 321, 346.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   load:selected (185).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   167, 171, 279.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 111, 176, 188, 199.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 188, 199.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 51, 167, 171, 279.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+// - [rustc probe: unreachable_pub] unreachable `pub` item. Sites 56, 95, 127, 133, 153, 158, 162,
+//   166, 181, 269, 290.
+
 use super::*;
 use nucleus::transfer::{
     receipt::{Document, Event},

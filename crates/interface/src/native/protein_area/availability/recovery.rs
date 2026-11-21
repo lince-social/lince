@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn permission_refresh_keeps_identity_and_draft_and_ignores_the_old_subscription, fn
+//   a_canonical_inspector_rejects_another_record_in_the_matching_subscription, fn
+//   ordinary_multi_record_views_still_remove_results_that_stop_matching.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use bevy::text::EditableText;
 

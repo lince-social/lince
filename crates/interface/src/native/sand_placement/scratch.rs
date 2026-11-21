@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Home, type Homes, trait Saved, fn normalize.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   21.
+
 use super::Placement;
 use crate::layout::{Rules, desktop::Geometry};
 use std::collections::BTreeMap;

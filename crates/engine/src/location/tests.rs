@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod freshness, mod handover, mod invitations, mod stopping.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 71, 954, 961, 964, 965, 1501.
+
 use super::*;
 #[path = "tests/freshness.rs"]
 mod freshness;

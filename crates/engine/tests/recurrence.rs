@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod support, fn capture, fn engine, fn setup.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 428.
+
 #![cfg(test)]
 
 use chrono::{DateTime, Utc};

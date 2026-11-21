@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: impl AlphaModifierState, impl AlphaModifierState, impl AlphaModifierState.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (56, 128).
+
 use wayland_protocols::wp::alpha_modifier::v1::server::{
     wp_alpha_modifier_surface_v1::{self, WpAlphaModifierSurfaceV1},
     wp_alpha_modifier_v1::{self, WpAlphaModifierV1},

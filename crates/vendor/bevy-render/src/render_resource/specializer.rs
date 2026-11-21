@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: trait Specializable, trait Specializer, trait SpecializerKey, type Canonical.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 312, 314.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 295, 297, 300,
+//   325, 332, 345, 349, 352.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 178, 290.
+// - [Clippy: clippy::redundant_clone] Move or borrow at the marked sites and check later uses.
+//   Sites 318, 319.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 315.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 269.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 27, 28,
+//   29, 30, 177, 178, 223.
+
 use bevy_material::descriptor::{
     CachedComputePipelineId, CachedRenderPipelineId, ComputePipelineDescriptor,
     RenderPipelineDescriptor,

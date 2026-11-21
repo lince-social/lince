@@ -1,3 +1,24 @@
+// non-lean-yet
+// Scope: enum Worker, struct WorkerStatus.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   social_worker_completed:succeeded (74).
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 51, 98.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 5.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 140.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 51, 98.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 38, 93, 144.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 5, 28.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   5, 6, 7, 8, 9, 10, 11, 15, 28, 38, 56, 62, 74, 85, 93, 144.
+
 use super::*;
 use serde::Serialize;
 

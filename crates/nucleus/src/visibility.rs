@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: mod plan, const MAX_CONDITIONS, const MAX_ORGANS_PER_CONDITION, const MAX_POLICY_BYTES.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 214, 327.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 12, 253.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   170.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 143, 156.
+// - [Clippy: clippy::nonminimal_bool] this boolean expression can be simplified. Sites 120.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 6,
+//   7, 8, 12, 13, 14, 15, 19, 30, 31, 32, 37, 38, 39, 40, 41, 42, 46, 50, 129, 130, 131, 135, 136,
+//   137, 138, 139, 143, 156, 180, 184, 227, 228, 229, 230, 234, 235, 236, 237, 238, 242, 243, 244,
+//   245, 246, 247, 248, 253, 254, 255, 256, 258, 259, 260, 261, 262.
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 

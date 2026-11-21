@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct ExportReport, struct State, fn regular_or_missing, fn replace.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 103, 113.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 72, 76.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites write_graph:
+//   String (51).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   59.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (105, 116).
+
 use crate::graph::{Graph, digest};
 use serde::{Deserialize, Serialize};
 use std::{

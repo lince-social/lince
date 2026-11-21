@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn main.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::{ffi::OsStr, fs::OpenOptions, io::Error};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

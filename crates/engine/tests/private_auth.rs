@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: const PASSWORD, const ALPN, static FIXTURE_HASH, fn password.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 632.
+
 #![cfg(test)]
 
 use std::future::{Future, poll_fn};

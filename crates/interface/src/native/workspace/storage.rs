@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: type SaveResult, struct Request, struct QueueState, struct Queue.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 47, 115, 161,
+//   163, 165, 167, 203, 557, 578, 600, 631, 650, 688.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 131.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (195, 202,
+//   238, 251).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (550, 565, 569, 574, 575, 582, 583, 584, 585, 587, 588, 589, 591, 592, 597, 601,
+//   602, 607, 609, 616, 618, 620, 623, 629, 631, 632, 636, 637, 639, 646, 660, 663, 665, 667, 682,
+//   686, 687, 691, 692, 693, 694, 696, 701).
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 464.
+
 use super::{Document, write_atomic};
 use crate::native::wake::WakeSignal;
 use cell::InterfaceStorage;

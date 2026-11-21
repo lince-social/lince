@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: struct Preview, fn canonical_uid, fn failure, fn decimal.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 91, 99, 173, 191,
+//   259, 358, 402.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   24, 238, 340, 362, 371, 382, 393.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 24, 238, 239, 240, 241, 242, 243, 244, 245, 248, 340, 362, 371, 382, 393.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 286, 294.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   10, 11, 12, 13, 14, 15, 16, 17, 18, 286, 294.
+
 use crate::{Engine, EngineError, actions::ActionOutcome, instinct::BundledRecord};
 use nucleus::{Cause, DecimalValue, NewFact, RecordKind};
 use serde::Serialize;

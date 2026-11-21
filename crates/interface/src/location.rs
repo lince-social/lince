@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: mod clock, mod invitation_tests, struct Request, struct SavePlaceRequest.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 127, 128, 129,
+//   130, 131, 132, 134, 135, 136, 137, 327, 367, 381, 408, 469, 561, 599, 713, 773, 831, 1126,
+//   1155, 1156, 1160, 1161, 1162, 1170, 1171, 1191, 1347, 1348, 1367, 1388, 1391, 1399, 1407, 1420,
+//   1421, 1435, 1436, 1470, 1471, 1478, 1479, 1513, 1514, 1521, 1522, 1588, 1589, 1591, 1602, 1628,
+//   1631, 1632, 1669, 1670, 1674, 1685, 1689, 1690, 1722, 1747, 1748, 1789, 1794, 1799, 1801, 1802,
+//   1804, 1896, 1955, 1957, 1958, 1959, 1960, 1965, 1971, 1976, 2045, 2087, 2088, 2092, 2093, 2104.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 1134, 1322,
+//   1339, 1454, 1459, 1735, 1740.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites load_reference:
+//   String (333).
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (982, 1073,
+//   1219, 1221, 1864, 2030, 2131).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (632).
+
 use crate::{controls, theme::Typography};
 use bevy::prelude::*;
 use nucleus::location::{

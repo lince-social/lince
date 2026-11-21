@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: fn optional, fn required, fn key, fn text.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 79, 82, 87, 117,
+//   146, 191, 202, 226, 259, 288, 311, 377, 378, 408, 427, 431, 478, 480, 489, 534, 535, 552.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 56, 157,
+//   176, 285, 296.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   226, 250, 259, 289.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (97, 123, 148, 171, 298, 311, 314, 377).
+
 use super::*;
 use engine::demeter::OfferDraft;
 use nucleus::{

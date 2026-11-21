@@ -1,8 +1,20 @@
-use super::*;
+// non-lean-yet
+// Scope: fn pdf, fn pdf_fixture, fn epub, fn epub_fixture.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 137, 146, 147, 165, 173, 183, 372, 432.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 144.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   402, 403.
+// - [Clippy: clippy::manual_let_else] this could be rewritten as `let...else`. Sites 406.
+
 use std::{
     io::{Cursor, Write},
     time::Instant,
 };
+
+use super::*;
 
 fn pdf() -> Vec<u8> {
     pdf_fixture(0)

@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn hosted, fn
+//   owner_authority_advance_recovers_a_host_that_missed_more_than_64_profile_ancestors.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 async fn hosted(host: &Engine, node: &str, document: &Profile) -> Value {

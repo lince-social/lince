@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn command, fn copy, fn device, fn
+//   anonymous_post_editing_is_leased_across_devices_and_owner_rotates_after_removal.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use engine::{

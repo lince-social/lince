@@ -3,6 +3,17 @@
 
 //! Greedy line breaking.
 
+// non-lean-yet
+// Scope: struct LineLayout, struct LineState, struct PrevBoundaryState, enum YieldData.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 217, 228, 462,
+//   917, 950, 976, 982, 984, 996, 1166, 1204.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   483, 492, 545, 565, 728, 732, 771, 898, 900, 917, 923, 950, 962, 976, 982, 984, 996, 1008,
+//   1010, 1166, 1182, 1200, 1257, 1326, 1328.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (365, 555, 777, 1227, 1230).
+
 use alloc::vec::Vec;
 
 #[cfg(feature = "libm")]

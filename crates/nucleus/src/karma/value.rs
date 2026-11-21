@@ -1,3 +1,27 @@
+// non-lean-yet
+// Scope: const MAX_VALUE_TYPE_DEPTH, enum CandidateRoute, enum Rounding, struct RoundedDecimal.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 597, 611, 626,
+//   637, 641.
+// - [Clippy: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably fires.
+//   Sites 333.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 334.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   334.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 16, 27, 383, 531, 683.
+// - [Clippy: clippy::match_same_arms] these match arms have identical bodies. Sites 653, 669.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 116, 126, 246, 326, 425, 577, 701.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 11, 16,
+//   17, 18, 19, 20, 21, 27, 28, 29, 30, 31, 35, 36, 37, 103, 109, 116, 126, 131, 135, 139, 151,
+//   163, 174, 178, 182, 186, 190, 208, 232, 237, 242, 246, 261, 282, 314, 326, 383, 384, 385, 386,
+//   387, 389, 390, 391, 392, 393, 394, 395, 396, 398, 399, 401, 402, 404, 405, 407, 408, 409, 411,
+//   412, 414, 415, 417, 418, 419, 420, 425, 491, 506, 513, 531, 532, 533, 535, 536, 538, 539, 541,
+//   542, 544, 545, 547, 548, 550, 551, 553, 554, 556, 557, 558, 560, 561, 563, 564, 565, 567, 569,
+//   570, 571, 572, 577, 683, 684, 685, 686, 687, 693, 694, 695, 697, 701.
+
 use std::fmt;
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
@@ -330,7 +354,10 @@ impl DecimalValue {
                 "decimal scale {fraction_digits} exceeds maximum {MAX_DECIMAL_SCALE}"
             )));
         }
-        #[allow(clippy::cast_possible_truncation, reason = "MAX_DECIMAL_SCALE bounds fraction_digits before this cast")]
+        #[allow(
+            clippy::cast_possible_truncation,
+            reason = "MAX_DECIMAL_SCALE bounds fraction_digits before this cast"
+        )]
         let scale = fraction_digits as u8;
         let value = if value.bytes().all(|b| matches!(b, b'-' | b'0' | b'.')) {
             value.trim_start_matches('-')

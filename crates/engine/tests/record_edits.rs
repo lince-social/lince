@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn engine, fn plain, fn
+//   message_attachments_preserve_order_use_bounded_chunks_and_detect_missing_data, fn
+//   human_steps_can_change_without_replacing_attachments_or_impersonating_the_author.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::implicit_clone] Make an intentional owned clone explicit. Sites 936,
+//   938, 1292, 1330, 1340, 1350, 1374, 1383.
+
 #![cfg(test)]
 
 use engine::Engine;

@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod css, mod document, mod file, enum ColorScheme.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (41).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   158, 166, 192, 194.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (166, 352).
+
 #[cfg(feature = "ui")]
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};

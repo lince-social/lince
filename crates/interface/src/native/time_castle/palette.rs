@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Palette, fn css, fn rgba, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   event:selected (53).
+
 use super::*;
 use crate::native::tokens::{SandStyleKind, ThemeSettings, Token, TokenOverrides};
 

@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn matches_cross_chunks_and_wrap_in_both_directions, fn
+//   unicode_case_and_word_boundaries_keep_context_at_chunk_edges, fn
+//   long_matches_are_not_repeated_at_chunk_boundaries.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[test]

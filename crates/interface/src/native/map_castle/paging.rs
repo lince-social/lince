@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod identity, struct Pages, fn key, fn records.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 27, 48, 84, 126,
+//   144, 145, 146, 155, 507, 545.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   251.
+
 use super::*;
 mod identity;
 pub(super) use identity::Key;

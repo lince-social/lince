@@ -1,7 +1,15 @@
+// non-lean-yet
+// Scope: fn compose, fn relative, fn pose, fn resolve.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 48, 63.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 18.
+
+use std::collections::{BTreeMap, BTreeSet};
+
+use glam::{DQuat, DVec3};
+
 use super::{MAX_DEPTH, valid_pose};
 use crate::canvas::{Placement, Pose};
-use glam::{DQuat, DVec3};
-use std::collections::{BTreeMap, BTreeSet};
 
 pub fn compose(parent: &Pose, local: &Pose) -> Pose {
     let rotation = DQuat::from_array(parent.rotation);

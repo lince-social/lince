@@ -1,10 +1,15 @@
-use super::*;
+// non-lean-yet
+// Scope: enum Event, struct Capture, fn bind, fn objects.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use wayland_protocols::wp::pointer_gestures::zv1::client::{
     zwp_pointer_gesture_hold_v1::{self as hold, ZwpPointerGestureHoldV1 as Hold},
     zwp_pointer_gesture_pinch_v1::{self as pinch, ZwpPointerGesturePinchV1 as Pinch},
     zwp_pointer_gesture_swipe_v1::{self as swipe, ZwpPointerGestureSwipeV1 as Swipe},
     zwp_pointer_gestures_v1::ZwpPointerGesturesV1 as Manager,
 };
+
+use super::*;
 
 #[derive(Debug, PartialEq)]
 enum Event {

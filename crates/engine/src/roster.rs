@@ -1,3 +1,30 @@
+// non-lean-yet
+// Scope: const ROOT_KEY_ID, fn cell_key_id, fn is_root_key_id, const ROSTER_VALIDITY_DAYS.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 162, 226, 231,
+//   234, 263, 269, 292, 293, 295, 298, 312, 357, 370, 371, 513, 551, 558, 618, 637, 640, 726.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 302.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 95.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 501, 505, 512, 558.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on a `Result` value.
+//   Sites 418, 426.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value.
+//   Sites 236, 642.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or(false)` on a `Result` value.
+//   Sites 109, 387.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 114, 202, 212, 221, 252, 323, 335, 378, 414, 423, 433, 452, 508, 520, 529,
+//   557, 573, 580, 592, 606, 627, 657, 668, 685, 699, 721, 746, 773, 786, 813, 845.
+// - [Clippy probe: clippy::missing_panics_doc] State the panic conditions for exported functions.
+//   Sites 500, 504, 508, 557.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   13, 15, 19, 23, 32, 35, 36, 37, 38, 39, 41, 43, 45, 48, 49, 50, 52, 60, 65, 71, 72, 73, 74, 78,
+//   79, 80, 81, 82, 83, 85, 89, 90, 91, 95, 96, 97, 98, 99, 102, 114, 155, 169, 178, 202, 212, 221,
+//   252, 323, 335, 378, 414, 423, 433, 452, 500, 504, 508, 520, 529, 557, 573, 580, 592, 606, 627,
+//   657, 668, 685, 699, 721, 746, 773, 780, 786, 802, 809, 813, 845.
+
 use std::collections::{HashMap, HashSet};
 
 use base64::Engine as _;

@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct InternalDrmDeviceFd, struct DrmDeviceFd, struct WeakDrmDeviceFd.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 92.
+
 use drm::{control::Device as ControlDevice, Device as BasicDevice};
 use std::{
     os::unix::io::{AsFd, AsRawFd, BorrowedFd, RawFd},

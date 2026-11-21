@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: mod discovery, mod filters, mod tests, struct State.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 76, 136, 166,
+//   197, 281, 283, 306, 331, 410, 421, 526, 556, 565, 632, 661, 677, 688, 703, 730, 746, 782, 784,
+//   787, 790, 795, 801, 828, 851, 854, 860, 870, 901, 921, 940, 945, 949, 1058, 1059, 1066, 1070,
+//   1074, 1081, 1084, 1151, 1162, 1194, 1201, 1250, 1317, 1356, 1408, 1422, 1449, 1500.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 302, 330.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites apply: String
+//   (376).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   1054, 1089, 1142.
+
 use crate::{
     app::{self, Mobile},
     navigation::Page,

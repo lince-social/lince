@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn connection, fn area, fn authenticated, fn subscription.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use serde_json::json;
 

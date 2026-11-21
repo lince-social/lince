@@ -1,12 +1,23 @@
+//! Composes the policies contributed by a Person's Roles for each operation.
+
+use super::READ_PERMISSION;
 use crate::{
     Predicate, ProteinError,
     authority::{MutationGrant, Operation, RolePolicy},
 };
+use nucleus::performance::{Span, add};
+use serde_json::from_value;
 use std::borrow::Cow;
+use store::{
+    auth::role_permission_keys_by_id_on,
+    person_roles::ids_on,
+    role_policies::get_on,
+    sqlx::{Error::Protocol, SqliteConnection},
+};
 
 fn permission(operation: Option<Operation>) -> &'static str {
     match operation {
-        None => "record:read",
+        None => READ_PERMISSION,
         Some(Operation::Create) => "record:create",
         Some(Operation::Update | Operation::Restore) => "record:update",
         Some(Operation::Delete) => "record:delete",
@@ -38,7 +49,7 @@ impl Composition {
 
     fn include(&mut self, permissions: &[String], policy: Option<Cow<'_, RolePolicy>>) {
         let allows = |key: &str| permissions.iter().any(|permission| permission == key);
-        let read_allowed = allows("record:read");
+        let read_allowed = allows(READ_PERMISSION);
         let write_allowed = allows(permission(self.operation))
             || self.operation == Some(Operation::Delete) && allows("record:delete_own");
         let Some(policy) = policy else {
@@ -55,33 +66,28 @@ impl Composition {
         if self.unrestricted() {
             return;
         }
-        let operation = self.operation;
+        let read = read_allowed && !self.unrestricted_read;
+        let selects = |grant: &MutationGrant| {
+            self.operation
+                .is_none_or(|operation| grant.operation == operation)
+        };
         match policy {
             Cow::Borrowed(policy) => {
-                if read_allowed && !self.unrestricted_read {
+                if read {
                     self.read.push(policy.read.clone());
                 }
                 if write_allowed {
-                    self.grants.extend(
-                        policy
-                            .grants
-                            .iter()
-                            .filter(|grant| {
-                                operation.is_none_or(|operation| grant.operation == operation)
-                            })
-                            .cloned(),
-                    );
+                    self.grants
+                        .extend(policy.grants.iter().filter(|grant| selects(grant)).cloned());
                 }
             }
             Cow::Owned(policy) => {
-                if read_allowed && !self.unrestricted_read {
+                if read {
                     self.read.push(policy.read);
                 }
                 if write_allowed {
                     self.grants
-                        .extend(policy.grants.into_iter().filter(|grant| {
-                            operation.is_none_or(|operation| grant.operation == operation)
-                        }));
+                        .extend(policy.grants.into_iter().filter(selects));
                 }
             }
         }
@@ -102,41 +108,41 @@ impl Composition {
     }
 }
 
+/// Reads a Person's Roles once and composes the policy for each requested operation.
+///
+/// A missing policy in the result means that operation is unrestricted by Role policy.
+///
+/// # Errors
+/// Returns an error if membership, permissions, or a saved policy cannot be read.
 pub async fn policies_for_on<const N: usize>(
-    connection: &mut store::sqlx::SqliteConnection,
+    connection: &mut SqliteConnection,
     person: &str,
     operations: [Option<Operation>; N],
 ) -> Result<[Option<RolePolicy>; N], ProteinError> {
-    let _read = nucleus::performance::Span::new("role-authority-policy-read-await");
-    nucleus::performance::add("role-authority-policies-requested", N as u64);
-    if N == 0 {
-        return Ok(operations.map(|_| None));
-    }
-    let roles = store::person_roles::ids_on(connection, person).await?;
+    let _read = Span::new("role-authority-policy-read-await");
+    add("role-authority-policies-requested", N as u64);
     let mut compositions = operations.map(Composition::new);
+    let Some((last, first)) = compositions.split_last_mut() else {
+        return Ok(operations.map(|_| None));
+    };
+    let roles = ids_on(connection, person).await?;
     let mut decoded = 0;
     for &role in &roles {
-        let permissions = store::auth::role_permission_keys_by_id_on(connection, role).await?;
-        let raw = store::role_policies::get_on(connection, role)
+        let permissions = role_permission_keys_by_id_on(connection, role).await?;
+        let policy: Option<RolePolicy> = get_on(connection, role)
             .await?
-            .and_then(|row| row.policy);
-        let mut policy: Option<RolePolicy> = raw
+            .and_then(|row| row.policy)
             .map(|raw| {
                 decoded += 1;
-                serde_json::from_value(raw)
-                    .map_err(|error| store::StoreError::Protocol(error.to_string()))
+                from_value(raw).map_err(|error| Protocol(error.to_string()))
             })
             .transpose()?;
-        for (index, composition) in compositions.iter_mut().enumerate() {
-            let contribution = if index + 1 == N {
-                policy.take().map(Cow::Owned)
-            } else {
-                policy.as_ref().map(Cow::Borrowed)
-            };
-            composition.include(&permissions, contribution);
+        for composition in &mut *first {
+            composition.include(&permissions, policy.as_ref().map(Cow::Borrowed));
         }
+        last.include(&permissions, policy.map(Cow::Owned));
     }
-    nucleus::performance::add("role-authority-roles-read", roles.len() as u64);
-    nucleus::performance::add("role-authority-policy-decodes", decoded);
+    add("role-authority-roles-read", roles.len() as u64);
+    add("role-authority-policy-decodes", decoded);
     Ok(compositions.map(Composition::finish))
 }

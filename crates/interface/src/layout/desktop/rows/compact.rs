@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: const COMPACT_HEADER_HEIGHT, struct CompactGroup, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 28, 110, 132,
+//   170, 179.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   15, 18, 19, 26, 28, 29, 37, 38, 40, 41, 44, 46, 47, 58, 88, 93, 140.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (37, 41, 139, 163).
+
 use super::*;
 
 pub const COMPACT_HEADER_HEIGHT: f64 = 36.0;

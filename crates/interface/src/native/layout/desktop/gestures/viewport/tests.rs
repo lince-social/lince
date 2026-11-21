@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn fixture, fn begin, fn progress, fn finish.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::host::{
     OutputId, OutputViewport,

@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn geometry, fn fixture, fn tick, fn request.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use std::sync::mpsc::{Receiver, sync_channel};
 

@@ -1,3 +1,28 @@
+// non-lean-yet
+// Scope: mod import, const IMPORT_NAMESPACE, const BINDING_NAMESPACE, enum Command.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 270, 318, 345,
+//   366, 372, 377, 431, 658, 661, 662.
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites source_publication:selected → &[T] (160).
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 618.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   377.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 14.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 134, 173, 176, 247, 377, 383, 734, 736, 741, 742.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 618.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 92.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 88.
+// - [Clippy probe: clippy::redundant_closure] redundant closure. Sites 429.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   9, 10, 14, 15, 16, 18, 20, 21, 23, 25, 27, 29, 30, 31, 32, 33, 35, 37, 38, 40, 41, 43, 45, 46,
+//   47, 48, 50, 52, 53, 54, 56, 57, 59, 60, 62, 64, 65, 67, 69, 70, 71, 73, 74, 79, 92.
+
 mod import;
 
 use crate::{Engine, EngineError, actions::ActionOutcome};

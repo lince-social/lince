@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn fixture, fn sand, fn
+//   instinct_retained_libraries_stay_scoped_and_missing_sources_never_use_personal_files, fn
+//   mixed_castle_files_restore_independent_layouts_and_live_area_connections.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::{
     actions::Action,

@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn memory_snapshots_preserve_data_and_isolate_later_changes.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use store::{Store, sqlx};
 
 #[tokio::test]

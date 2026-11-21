@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod pointer, mod presentation, struct KeyboardModalTrigger, struct CaptureTrigger.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 157, 330, 400,
+//   556, 770, 774, 780, 827, 888, 889, 910.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (351, 353, 398, 465, 685, 687, 690, 708, 856, 866, 931).
+
 use super::{
     Settings, Shortcut, configuration,
     model::{Chord, ModKey, Trigger},

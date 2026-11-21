@@ -1,3 +1,42 @@
+// non-lean-yet
+// Scope: struct MaterialBindGroupPlugin, struct RenderMaterialBindings, struct
+//   MaterialBindGroupAllocators, enum MaterialBindGroupAllocator.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 808, 1333, 1558, 1588, 2129, 2143, 2144, 2158, 2401, 2446, 2447, 2454, 2486, 2500, 2535,
+//   2664, 2681.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   629, 2762, 2856.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 522, 636, 984,
+//   1325, 2488.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 2288, 2302, 2789, 2832, 2864.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 1283.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 616, 795, 1302,
+//   1315, 1347, 1361, 2819, 2835, 2840.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 806, 807, 821, 841, 842, 850, 929, 967, 973, 1001, 1012, 1022, 1334, 1386, 1589, 1860,
+//   1933, 1986, 2036, 2114, 2129, 2140, 2141, 2143, 2144, 2158, 2222, 2275, 2388, 2389, 2391, 2401,
+//   2446, 2447, 2454, 2486, 2501, 2535, 2600, 2646, 2652, 2653, 2675, 2678, 2679.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   850, 967, 973, 1386, 2222, 2275, 2388, 2600.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 85.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   867, 946, 981, 1013, 1235, 1256, 1301, 1314, 1331, 1346, 1360, 1403, 1408, 1413, 1422, 1432,
+//   1585, 1708, 1866, 1910, 1961, 2006, 2131, 2161, 2232, 2249, 2267, 2277, 2517.
+// - [Clippy: clippy::missing_assert_message] assert without any message. Sites 1305, 1318, 1350,
+//   1364, 2143, 2445, 2446, 2646, 2675.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 2762.
+// - [Clippy: clippy::unnecessary_semicolon] unnecessary semicolon. Sites 2046.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 54, 62, 82, 85, 94, 121, 224, 273,
+//   285, 403.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   1334, 1589, 1689, 1692, 1695, 2501.
+
 //! Material bind group management for bindless resources.
 //!
 //! In bindless mode, Bevy's renderer groups materials into bind groups. This

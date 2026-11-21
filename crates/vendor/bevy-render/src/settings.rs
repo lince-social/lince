@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: enum WgpuSettingsPriority, struct WgpuSettings, struct RenderResources, enum
+//   RenderCreation.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 267, 285.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 195, 196, 197,
+//   198, 210, 267, 273.
+// - [Clippy: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably fires.
+//   Sites 100.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 20, 222.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 20, 39, 167, 222.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 40, 41,
+//   42, 43, 167.
+
 use crate::{
     error_handler::DeviceErrorHandler,
     render_resource::PipelineCache,

@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod support, fn role_specific_claims_gate_an_idempotent_settlement, fn
+//   legacy_confirmation_flag_cannot_bypass_occurrence_evidence, fn
+//   partial_settlement_rejects_stale_review_and_compensates_only_private_application.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 pub mod support;

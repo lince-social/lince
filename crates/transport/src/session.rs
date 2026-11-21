@@ -1,3 +1,33 @@
+// non-lean-yet
+// Scope: struct Subscription, struct QueryResult, enum SubscriptionChange, struct Session.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 43, 139, 140,
+//   142, 144, 145, 151, 233, 234, 246, 247, 366, 497, 499, 527, 532, 594, 596, 640, 641, 687, 688,
+//   746, 793, 806, 824, 827, 828, 838, 922, 945, 956, 957, 1004, 1019, 1029, 1072, 1091, 1093,
+//   1165, 1199, 1216, 1246, 1328.
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites subscribe_saved:name → &str (1114).
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 704, 799, 905.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 43, 139, 140, 151, 233, 246, 687, 746, 793, 806, 824, 828, 945, 957.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 1293.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 531, 571, 816, 1316, 1327.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 921, 1416, 1419, 1420.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option`
+//   value. Sites 203, 208, 941.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 1374.
+// - [Clippy probe: clippy::rc_buffer] Check whether a shared slice or str suffices. Sites 15, 19,
+//   24, 731.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 59.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   59, 88, 116, 122, 133, 137, 150, 154, 156, 165, 169, 182, 222, 680, 981, 986, 990, 1101, 1267,
+//   1336.
+
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
 

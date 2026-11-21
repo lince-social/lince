@@ -1,3 +1,26 @@
+// non-lean-yet
+// Scope: const FREQUENCY_REVISION_HASH_DOMAIN, const FREQUENCY_PARAMETER_HASH_DOMAIN, enum
+//   FrequencySchema, enum FrequencyParameterDefinition.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 339, 340, 484,
+//   556.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 28, 36, 116, 124, 132, 195, 229, 244.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   266, 278.
+// - [Clippy: clippy::large_enum_variant] large size difference between variants. Sites 195.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   301, 506.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 290.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 12, 13,
+//   28, 30, 36, 37, 38, 39, 40, 42, 43, 44, 45, 116, 117, 118, 124, 125, 126, 132, 133, 134, 138,
+//   139, 140, 141, 147, 149, 151, 153, 155, 157, 159, 161, 163, 182, 183, 185, 187, 189, 195, 196,
+//   197, 198, 200, 201, 202, 203, 204, 205, 206, 211, 212, 213, 214, 216, 218, 219, 220, 221, 222,
+//   223, 224, 229, 230, 231, 235, 236, 237, 238, 239, 244, 245, 246, 247, 248, 249, 250, 251, 252,
+//   256, 257, 258, 259, 290.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (280).
+
 use std::{collections::BTreeMap, fmt, num::NonZeroU32};
 
 use serde::{Deserialize, Serialize};

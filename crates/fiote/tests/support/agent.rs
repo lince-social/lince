@@ -1,5 +1,17 @@
-use serde_json::{Value, json};
+// non-lean-yet
+// Scope: fn send, fn update, fn main.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 43, 44, 51, 53, 56, 61, 82, 83, 90, 91, 120, 121, 147, 168, 169, 182, 190, 194, 202, 223,
+//   227.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 4.
+// - [Clippy: clippy::missing_assert_message] assert without any message. Sites 17, 55, 82, 90, 94,
+//   116, 120, 127, 128, 131, 132, 134, 142, 144, 165, 194.
+
 use std::io::{BufRead, Write};
+
+use serde_json::{Value, json};
 
 fn send(value: Value) {
     println!("{value}");

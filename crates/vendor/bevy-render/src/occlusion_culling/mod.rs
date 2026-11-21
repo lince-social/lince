@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct OcclusionCullingPlugin, struct OcclusionCulling, struct OcclusionCullingSubview,
+//   struct OcclusionCullingSubviewEntities.
+// BeautifulRust (baseline lines):
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 17, 73, 81, 99.
+
 //! GPU occlusion culling.
 //!
 //! See [`OcclusionCulling`] for a detailed description of occlusion culling in

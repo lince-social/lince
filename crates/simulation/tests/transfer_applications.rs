@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn partial_receipts_require_order_and_replays_preserve_the_original_change.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use engine::actions::Action;
 use simulation::scenario::{Event, Input};
 

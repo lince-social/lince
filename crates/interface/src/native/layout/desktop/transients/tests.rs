@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Fixture, fn rectangle, fn
+//   free_dialogs_stay_centered_in_canvas_coordinates_when_output_bounds_change, fn
+//   free_dialog_signed_offsets_and_nested_preview_do_not_accumulate_viewport_coordinates.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::layout::{
     Rules,

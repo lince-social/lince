@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn update_clipping_system, fn reference_clipping_system, fn update_clipping.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 18, 44, 98, 108.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 165, 173, 201.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 18, 19, 44, 47, 48, 49, 50, 51, 52, 53, 54, 57, 98, 108, 117.
+
 use crate::{
     CalculatedClip, ComputedNode, Display, FixedNode, Node, OverrideClip, UiClippingBoundary,
     experimental::{UiChildren, UiRootNodes},

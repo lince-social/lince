@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn cell, fn know, fn an_invite_is_local_and_is_never_pushed_to_anyone, fn
+//   one_organ_gets_one_pending_invite.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 256, 259.
+
 use std::sync::Arc;
 
 use engine::Engine;

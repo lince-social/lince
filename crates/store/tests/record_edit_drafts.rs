@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: fn initial, fn file_backed_append_acknowledgement_and_reopen_keep_payloads_and_history, fn
+//   a_long_offline_backlog_survives_reopen_and_acknowledgements_make_progress, fn
+//   stale_writes_payload_reuse_and_cleanup_cannot_destroy_newer_intent.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 78, 136, 150, 152, 169, 464.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 408.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 408.
+
 use store::record_edit_drafts::{self as drafts, PendingRequest, Write};
 
 fn initial(uid: &str) -> Write {

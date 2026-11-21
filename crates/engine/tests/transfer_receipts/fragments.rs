@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn import_fragment, fn history, fn
+//   missing_fragment_reference_cache_is_rejected_and_only_explicit_import_repairs_it, fn
+//   child_first_fragments_stay_incomplete_until_the_need_is_permitted_and_verified.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::history::reader;
 use super::*;
 use serde_json::Value;

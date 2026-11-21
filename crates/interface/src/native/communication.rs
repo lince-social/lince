@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod calls, const CREDITS, struct MediaPreviewSand, struct MediaPreviewPlugin.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 222, 266, 275,
+//   284, 351.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites populate:
+//   String (124).
+
 use bevy::prelude::*;
 use lince_media::{
     native::{

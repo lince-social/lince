@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Context, struct Pan, struct Session, struct State.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (159, 164, 175, 185, 198, 202).
+
 use super::super::{
     CanvasView, DesktopAction, Entity, HostViewport, Rectangle, WorkspaceLayout, Workspaces, focus,
 };

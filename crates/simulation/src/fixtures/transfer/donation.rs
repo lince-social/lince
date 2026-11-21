@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: fn donation_without_private_source, fn donation_with_lost_acknowledgements, fn
+//   independent_donation, fn partial_cancellation.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   donation_with_lost_acknowledgements:replicated (48), donation_without_private_source:replicated
+//   (7), independent_donation:replicated (115), partial_cancellation:replicated (277).
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 22, 53, 284, 364.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 15.
+// - [Clippy probe: clippy::missing_panics_doc] State the panic conditions for exported functions.
+//   Sites 7, 48, 277.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   7, 48, 115, 277.
+
 use nucleus::simulation::{Comparison, Evaluation, Predicate, Quantity};
 use serde_json::json;
 

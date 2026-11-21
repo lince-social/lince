@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn app, fn
+//   castle_visibility_tracks_workspace_viewport_and_window_without_focus_requirement, fn
+//   restored_settings_populate_source_and_seek_controls, fn
+//   video_reuses_texture_and_configuration_serializes_without_frames.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::actions::Action;
 

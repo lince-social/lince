@@ -1,3 +1,32 @@
+// non-lean-yet
+// Scope: const MAX_TIMESTAMP_QUERIES, const MAX_PIPELINE_STATISTICS, const TIMESTAMP_SIZE, const
+//   PIPELINE_STATISTICS_SIZE.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 93, 518, 587, 596, 616, 617, 626, 649, 655, 661, 667, 675.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   117.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 158, 176, 398, 408, 412, 540, 548, 550, 585, 628, 682, 689, 691,
+//   747.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 69, 123, 292,
+//   379, 518, 626, 742.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 548, 550, 587, 594, 595, 616, 617, 618, 630, 631, 643, 649, 655, 661, 667, 675, 689, 691.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   594, 630, 631.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   561.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   80, 84, 129, 144.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 152, 170, 418.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 45.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 719,
+//   720, 721.
+// - [rustc: unreachable_pub] unreachable `pub` item. Sites 730, 733.
+
 use alloc::{borrow::Cow, sync::Arc};
 use core::{
     ops::{DerefMut, Range},

@@ -1,10 +1,18 @@
-use super::*;
-use crate::server::ClientBuffer;
+// non-lean-yet
+// Scope: struct Content, struct RetainedCapture, struct CaptureBudget, fn retained_capture.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 211.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 35, 54, 62, 68,
+//   82, 101, 138, 148, 151, 152, 233, 234, 267, 268.
+
 use smithay::{
     backend::allocator::{Buffer, Fourcc, Modifier},
     reexports::wayland_server::protocol::wl_shm::Format,
     wayland::{dmabuf::get_dmabuf, shm::with_buffer_contents},
 };
+
+use super::*;
+use crate::server::ClientBuffer;
 
 struct Content {
     device: wgpu::Device,
@@ -25,20 +33,33 @@ struct CaptureBudget {
 
 impl Drop for CaptureBudget {
     fn drop(&mut self) {
-        self.used.fetch_sub(self.bytes, std::sync::atomic::Ordering::AcqRel);
+        self.used
+            .fetch_sub(self.bytes, std::sync::atomic::Ordering::AcqRel);
     }
 }
 
 #[cfg(feature = "nested")]
-pub(crate) fn retained_capture(buffer: &ClientBuffer) -> std::result::Result<Option<Arc<RetainedCapture>>, String> {
-    let Some(content) = buffer.cached::<Content>() else { return Ok(None); };
-    let result = content.capture.lock().unwrap_or_else(|error| error.into_inner()).clone();
+pub(crate) fn retained_capture(
+    buffer: &ClientBuffer,
+) -> std::result::Result<Option<Arc<RetainedCapture>>, String> {
+    let Some(content) = buffer.cached::<Content>() else {
+        return Ok(None);
+    };
+    let result = content
+        .capture
+        .lock()
+        .unwrap_or_else(|error| error.into_inner())
+        .clone();
     result.transpose()
 }
 
 pub(crate) fn retire_capture(buffer: &ClientBuffer) {
     if let Some(content) = buffer.cached::<Content>() {
-        let capture = content.capture.lock().unwrap_or_else(|error| error.into_inner()).take();
+        let capture = content
+            .capture
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .take();
         drop(capture);
     }
 }
@@ -46,47 +67,92 @@ pub(crate) fn retire_capture(buffer: &ClientBuffer) {
 impl VulkanRenderer {
     #[cfg(all(test, feature = "nested", feature = "server-tests"))]
     pub(crate) fn capture_test_bytes(&self) -> u64 {
-        self.capture_bytes.load(std::sync::atomic::Ordering::Acquire)
+        self.capture_bytes
+            .load(std::sync::atomic::Ordering::Acquire)
     }
 
     pub(crate) fn retain_capture(&self, buffer: &ClientBuffer) -> bool {
-        let Some(content) = buffer.cached::<Content>() else { return false; };
-        let captured = content.capture.lock().unwrap_or_else(|error| error.into_inner()).clone();
+        let Some(content) = buffer.cached::<Content>() else {
+            return false;
+        };
+        let captured = content
+            .capture
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .clone();
         if let Some(captured) = captured {
             return captured.map_or(true, |capture| capture.image.ready().unwrap_or(true));
         }
-        let bytes_per_pixel = if content.texture.format() == wgpu::TextureFormat::Rgba16Float { 8 } else { 4 };
-        let bytes = u64::from(content.texture.width()) * u64::from(content.texture.height()) * bytes_per_pixel;
-        if self.capture_bytes.try_update(std::sync::atomic::Ordering::AcqRel, std::sync::atomic::Ordering::Acquire,
-            |used| used.checked_add(bytes).filter(|total| *total <= 256 * 1024 * 1024)).is_err() { return false; }
-        let budget = CaptureBudget { used: self.capture_bytes.clone(), bytes };
+        let bytes_per_pixel = if content.texture.format() == wgpu::TextureFormat::Rgba16Float {
+            8
+        } else {
+            4
+        };
+        let bytes = u64::from(content.texture.width())
+            * u64::from(content.texture.height())
+            * bytes_per_pixel;
+        if self
+            .capture_bytes
+            .try_update(
+                std::sync::atomic::Ordering::AcqRel,
+                std::sync::atomic::Ordering::Acquire,
+                |used| {
+                    used.checked_add(bytes)
+                        .filter(|total| *total <= 256 * 1024 * 1024)
+                },
+            )
+            .is_err()
+        {
+            return false;
+        }
+        let budget = CaptureBudget {
+            used: self.capture_bytes.clone(),
+            bytes,
+        };
         let image = if content.device != self.device {
             Err("The retained capture belongs to another render device".to_owned())
         } else {
-            self.export_copy(&content.texture).map(|image| {
-                let capture = Arc::new(RetainedCapture { image, _budget: budget });
-                self.retain(capture.clone());
-                capture
-            }).map_err(|error| error.to_string())
+            self.export_copy(&content.texture)
+                .map(|image| {
+                    let capture = Arc::new(RetainedCapture {
+                        image,
+                        _budget: budget,
+                    });
+                    self.retain(capture.clone());
+                    capture
+                })
+                .map_err(|error| error.to_string())
         };
-        *content.capture.lock().unwrap_or_else(|error| error.into_inner()) = Some(image);
+        *content
+            .capture
+            .lock()
+            .unwrap_or_else(|error| error.into_inner()) = Some(image);
         false
     }
 
     pub(crate) fn imports_ready(&self) -> bool {
-        self.waits.borrow().values().any(crate::graphics::wait::Watch::ready)
+        self.waits
+            .borrow()
+            .values()
+            .any(crate::graphics::wait::Watch::ready)
     }
 
     pub(crate) fn retain_imports(&self, windows: &[crate::server::WindowSnapshot]) {
-        let live: std::collections::HashSet<_> = windows.iter().flat_map(|window| &window.nodes)
-            .map(|node| (node.content.buffer().clone(), node.content.version)).collect();
+        let live: std::collections::HashSet<_> = windows
+            .iter()
+            .flat_map(|window| &window.nodes)
+            .map(|node| (node.content.buffer().clone(), node.content.version))
+            .collect();
         self.waits.borrow_mut().retain(|key, _| live.contains(key));
     }
 
     pub(crate) fn import_surface(
         &self,
         node: &crate::server::SurfaceNode,
-        previous: Option<(&wgpu::Texture, smithay::backend::renderer::utils::CommitCounter)>,
+        previous: Option<(
+            &wgpu::Texture,
+            smithay::backend::renderer::utils::CommitCounter,
+        )>,
     ) -> Result<Option<(wgpu::Texture, bool)>> {
         let buffer: &ClientBuffer = &node.content;
         let damage = node.buffer_damage_since(previous.map(|(_, commit)| commit));
@@ -107,12 +173,21 @@ impl VulkanRenderer {
             ));
         }
         if let Ok(dmabuf) = get_dmabuf(buffer.buffer()) {
-            let bytes_per_pixel = if dmabuf.format().code == Fourcc::Abgr16161616f { 8_u64 } else { 4 };
+            let bytes_per_pixel = if dmabuf.format().code == Fourcc::Abgr16161616f {
+                8_u64
+            } else {
+                4
+            };
             let size = dmabuf.size();
-            let bytes = u64::try_from(size.w).ok().zip(u64::try_from(size.h).ok())
-                .and_then(|(width, height)| width.checked_mul(height)).and_then(|pixels| pixels.checked_mul(bytes_per_pixel));
-            if !matches!(dmabuf.format().code, Fourcc::Argb8888 | Fourcc::Abgr8888 | Fourcc::Abgr2101010 | Fourcc::Abgr16161616f)
-                || dmabuf.format().modifier != Modifier::Linear
+            let bytes = u64::try_from(size.w)
+                .ok()
+                .zip(u64::try_from(size.h).ok())
+                .and_then(|(width, height)| width.checked_mul(height))
+                .and_then(|pixels| pixels.checked_mul(bytes_per_pixel));
+            if !matches!(
+                dmabuf.format().code,
+                Fourcc::Argb8888 | Fourcc::Abgr8888 | Fourcc::Abgr2101010 | Fourcc::Abgr16161616f
+            ) || dmabuf.format().modifier != Modifier::Linear
                 || dmabuf.num_planes() != 1
                 || bytes.is_none_or(|bytes| bytes > 256 * 1024 * 1024)
             {
@@ -138,14 +213,20 @@ impl VulkanRenderer {
                     let key = (buffer.buffer().clone(), buffer.version);
                     let mut waits = self.waits.borrow_mut();
                     if !waits.contains_key(&key) {
-                        let watch = self.reactor.descriptor(fd.try_clone_to_owned().map_err(|error| ProbeFailure::at("client_acquire_events", error))?)
+                        let watch = self
+                            .reactor
+                            .descriptor(fd.try_clone_to_owned().map_err(|error| {
+                                ProbeFailure::at("client_acquire_events", error)
+                            })?)
                             .map_err(|error| ProbeFailure::at("client_acquire_events", error))?;
                         waits.insert(key, watch);
                     }
                     return Ok(None);
                 }
             }
-            self.waits.borrow_mut().remove(&(buffer.buffer().clone(), buffer.version));
+            self.waits
+                .borrow_mut()
+                .remove(&(buffer.buffer().clone(), buffer.version));
             let texture = self.import_dmabuf_regions(dmabuf, target, Some(&damage))?;
             buffer.cache(Content {
                 device: self.device.clone(),
@@ -190,16 +271,26 @@ impl VulkanRenderer {
                     ));
                 }
                 let bounds = smithay::utils::Rectangle::from_size((data.width, data.height).into());
-                let previous = target.filter(|texture| texture.width() == data.width as u32
-                    && texture.height() == data.height as u32 && texture.format() == wgpu::TextureFormat::Bgra8Unorm
-                    && texture.usage().contains(wgpu::TextureUsages::COPY_SRC));
+                let previous = target.filter(|texture| {
+                    texture.width() == data.width as u32
+                        && texture.height() == data.height as u32
+                        && texture.format() == wgpu::TextureFormat::Bgra8Unorm
+                        && texture.usage().contains(wgpu::TextureUsages::COPY_SRC)
+                });
                 let mut regions = if previous.is_some() {
-                    damage.iter().filter_map(|damage| damage.intersection(bounds)).collect::<Vec<_>>()
-                } else { vec![bounds] };
+                    damage
+                        .iter()
+                        .filter_map(|damage| damage.intersection(bounds))
+                        .collect::<Vec<_>>()
+                } else {
+                    vec![bounds]
+                };
                 let total = regions.iter().try_fold(0_usize, |total, region| {
                     total.checked_add(region.size.w as usize * region.size.h as usize * 4)
                 });
-                if total.is_none_or(|total| total > bytes) || regions.contains(&bounds) { regions = vec![bounds]; }
+                if total.is_none_or(|total| total > bytes) || regions.contains(&bounds) {
+                    regions = vec![bounds];
+                }
                 let preserve = previous.is_some() && regions != [bounds];
                 let mut uploads = Vec::with_capacity(regions.len());
                 for region in regions {
@@ -210,7 +301,11 @@ impl VulkanRenderer {
                         // cover this clipped row, and the destination is a separate Vec.
                         unsafe {
                             std::ptr::copy_nonoverlapping(
-                                pointer.add(data.offset as usize + (region.loc.y as usize + y) * data.stride as usize + region.loc.x as usize * 4),
+                                pointer.add(
+                                    data.offset as usize
+                                        + (region.loc.y as usize + y) * data.stride as usize
+                                        + region.loc.x as usize * 4,
+                                ),
                                 pixels.as_mut_ptr().add(y * row),
                                 row,
                             )
@@ -229,38 +324,64 @@ impl VulkanRenderer {
         crate::runtime::trace_frame("shm-read", started);
         let started = std::time::Instant::now();
         let previous = target.filter(|_| preserve);
-        if uploads.is_empty() && let Some(previous) = previous {
-            buffer.cache(Content { device: self.device.clone(), texture: previous.clone(), opaque, capture: Default::default() });
+        if uploads.is_empty()
+            && let Some(previous) = previous
+        {
+            buffer.cache(Content {
+                device: self.device.clone(),
+                texture: previous.clone(),
+                opaque,
+                capture: Default::default(),
+            });
             return Ok(Some((previous.clone(), opaque)));
         }
         let texture = self.device.create_texture(&wgpu::TextureDescriptor {
-                    label: Some("park_client_upload"),
-                    size: wgpu::Extent3d {
-                        width: size[0],
-                        height: size[1],
-                        depth_or_array_layers: 1,
-                    },
-                    mip_level_count: 1,
-                    sample_count: 1,
-                    dimension: wgpu::TextureDimension::D2,
-                    format: wgpu::TextureFormat::Bgra8Unorm,
-                    usage: wgpu::TextureUsages::COPY_DST
-                        | wgpu::TextureUsages::COPY_SRC
-                        | wgpu::TextureUsages::TEXTURE_BINDING
-                        | wgpu::TextureUsages::RENDER_ATTACHMENT,
-                    view_formats: &[],
-                });
+            label: Some("park_client_upload"),
+            size: wgpu::Extent3d {
+                width: size[0],
+                height: size[1],
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Bgra8Unorm,
+            usage: wgpu::TextureUsages::COPY_DST
+                | wgpu::TextureUsages::COPY_SRC
+                | wgpu::TextureUsages::TEXTURE_BINDING
+                | wgpu::TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &[],
+        });
         if let Some(previous) = previous {
             let mut encoder = self.device.create_command_encoder(&Default::default());
-            encoder.copy_texture_to_texture(previous.as_image_copy(), texture.as_image_copy(), texture.size());
+            encoder.copy_texture_to_texture(
+                previous.as_image_copy(),
+                texture.as_image_copy(),
+                texture.size(),
+            );
             self.queue.submit([encoder.finish()]);
         }
         for (region, pixels) in uploads {
             self.queue.write_texture(
-                wgpu::TexelCopyTextureInfo { origin: wgpu::Origin3d { x: region.loc.x as u32, y: region.loc.y as u32, z: 0 }, ..texture.as_image_copy() },
+                wgpu::TexelCopyTextureInfo {
+                    origin: wgpu::Origin3d {
+                        x: region.loc.x as u32,
+                        y: region.loc.y as u32,
+                        z: 0,
+                    },
+                    ..texture.as_image_copy()
+                },
                 &pixels,
-                wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(region.size.w as u32 * 4), rows_per_image: Some(region.size.h as u32) },
-                wgpu::Extent3d { width: region.size.w as u32, height: region.size.h as u32, depth_or_array_layers: 1 },
+                wgpu::TexelCopyBufferLayout {
+                    offset: 0,
+                    bytes_per_row: Some(region.size.w as u32 * 4),
+                    rows_per_image: Some(region.size.h as u32),
+                },
+                wgpu::Extent3d {
+                    width: region.size.w as u32,
+                    height: region.size.h as u32,
+                    depth_or_array_layers: 1,
+                },
             );
         }
         buffer.cache(Content {

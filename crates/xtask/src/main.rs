@@ -1,8 +1,17 @@
-use std::env;
-use std::fs;
-use std::io::{self, Write};
-use std::path::PathBuf;
-use std::process::{Command, Stdio};
+// non-lean-yet
+// Scope: mod ailuros, mod android, mod android_clean, mod android_smoke.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check whether the borrowed container can expose a narrower view. Sites
+//   version:root → &Path (621).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   58, 728, 732, 734.
+
+use std::{
+    env, fs,
+    io::{self, Write},
+    path::PathBuf,
+    process::{Command, Stdio},
+};
 
 use lince_interface::testing::InterfaceSelection;
 
@@ -27,17 +36,33 @@ type Result<T> = std::result::Result<T, String>;
 
 #[cfg(target_os = "linux")]
 fn file_sha256(path: &std::path::Path) -> Result<String> {
-    use sha2::{Digest, Sha256};
     use std::io::Read;
+
+    use sha2::{Digest, Sha256};
     if fs::metadata(path).map_err(|error| error.to_string())?.len() >= 8 * 1024 * 1024 {
-        match Command::new(env::var_os("LINCE_SHA256SUM").unwrap_or_else(|| "sha256sum".into())).arg("--").arg(path).output() {
+        match Command::new(env::var_os("LINCE_SHA256SUM").unwrap_or_else(|| "sha256sum".into()))
+            .arg("--")
+            .arg(path)
+            .output()
+        {
             Ok(output) => {
                 let hash = String::from_utf8(output.stdout).map_err(|error| error.to_string())?;
-                let hash = hash.split_whitespace().next().unwrap_or("").trim_start_matches('\\');
-                if output.status.success() && hash.len() == 64 && hash.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+                let hash = hash
+                    .split_whitespace()
+                    .next()
+                    .unwrap_or("")
+                    .trim_start_matches('\\');
+                if output.status.success()
+                    && hash.len() == 64
+                    && hash.bytes().all(|byte| byte.is_ascii_hexdigit())
+                {
                     return Ok(hash.to_ascii_lowercase());
                 }
-                return Err(format!("Cannot hash {}: {}", path.display(), String::from_utf8_lossy(&output.stderr)));
+                return Err(format!(
+                    "Cannot hash {}: {}",
+                    path.display(),
+                    String::from_utf8_lossy(&output.stderr)
+                ));
             }
             Err(failure) if failure.kind() == std::io::ErrorKind::NotFound => {}
             Err(failure) => return Err(failure.to_string()),
@@ -78,13 +103,17 @@ fn dispatch() -> Result<()> {
         (caller_directory, task)
     };
     let extra: Vec<_> = args.collect();
-    let root = caller_directory.ancestors()
+    let root = caller_directory
+        .ancestors()
         .find(|directory| directory.join("crates/xtask/Cargo.toml").is_file())
         .map(std::path::Path::to_path_buf)
-        .or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .parent().and_then(|parent| parent.parent())
-            .filter(|directory| directory.join("crates/xtask/Cargo.toml").is_file())
-            .map(std::path::Path::to_path_buf))
+        .or_else(|| {
+            PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .parent()
+                .and_then(|parent| parent.parent())
+                .filter(|directory| directory.join("crates/xtask/Cargo.toml").is_file())
+                .map(std::path::Path::to_path_buf)
+        })
         .ok_or("cannot find workspace root")?;
     env::set_current_dir(&root).map_err(|error| error.to_string())?;
 
@@ -94,7 +123,16 @@ fn dispatch() -> Result<()> {
     {
         return checked(
             cargo_command()
-                .args(["run", "--locked", "-p", "xtask", "--features", "authoring", "--", "--xtask-caller-directory"])
+                .args([
+                    "run",
+                    "--locked",
+                    "-p",
+                    "xtask",
+                    "--features",
+                    "authoring",
+                    "--",
+                    "--xtask-caller-directory",
+                ])
                 .arg(&caller_directory)
                 .arg(&task)
                 .args(&extra),
@@ -385,10 +423,18 @@ fn dispatch() -> Result<()> {
                 "check runs the default compile and Interface checks. check with Cargo arguments and test forward those arguments to Cargo."
             );
             println!("One test: cargo xtask test -p <package> <test-name> -- --exact");
-            println!("test-interface [all|protein|edit|input] runs the selected fast Laboratory rules with Protein Add filter first.");
-            println!("ship tests a snapshot, commits and pushes it, waits for its Linux workflow, and installs its verified Nix release; ship --help lists options.");
-            println!("prune-target [--dry-run] enforces the 300 GB compiled-artifact budget without building the application.");
-            println!("test-store-transactions runs the four Store transaction targets with the validated SQLite profile.");
+            println!(
+                "test-interface [all|protein|edit|input] runs the selected fast Laboratory rules with Protein Add filter first."
+            );
+            println!(
+                "ship tests a snapshot, commits and pushes it, waits for its Linux workflow, and installs its verified Nix release; ship --help lists options."
+            );
+            println!(
+                "prune-target [--dry-run] enforces the 300 GB compiled-artifact budget without building the application."
+            );
+            println!(
+                "test-store-transactions runs the four Store transaction targets with the validated SQLite profile."
+            );
             println!(
                 "dev, check, check-instinct, test and test-all prune superseded incremental snapshots and enforce the 300 GB target-cache budget before and after running."
             );

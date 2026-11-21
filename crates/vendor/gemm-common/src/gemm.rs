@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: type c32, type c64, const CACHELINE_ALIGN, trait Conj.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   gemm_basic_generic:_requires_row_major_rhs (216), gemm_basic_generic:conj_dst (210),
+//   gemm_basic_generic:conj_lhs (211), gemm_basic_generic:conj_rhs (212),
+//   gemm_basic_generic:read_dst (201).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   282, 726, 728, 742.
+
 use crate::{
     cache::{kernel_params, DivCeil, KernelParams, CACHE_INFO},
     gemv, gevv,

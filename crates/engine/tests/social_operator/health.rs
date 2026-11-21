@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn record, fn
+//   mixed_delivery_health_distinguishes_messages_copies_attempts_and_unknown_metadata_after_reopen.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 async fn record(engine: &Engine, kind: nucleus::RecordKind) -> String {

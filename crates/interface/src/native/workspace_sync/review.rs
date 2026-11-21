@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn display, fn change, fn difference, fn preview.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 132, 133.
+
 use super::*;
 
 fn display(value: &Value) -> String {

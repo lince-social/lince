@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn authority, fn profile, fn revoked_editor_and_root_pin_are_retained_after_cache_pruning,
+//   fn accepted_identity_succession_advances_the_pin_and_cannot_be_reversed.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use nucleus::social::{Delegation, PostState, Profile, ProfileFields, RootSuccession};
 use store::{Store, social};
 

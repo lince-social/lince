@@ -1,8 +1,24 @@
-use crate::{Layout, Result, Tile};
+// non-lean-yet
+// Scope: static PDFIUM, fn pdfium, struct Source, struct Pdf.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 94, 112, 133.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 63, 118, 125, 142, 143, 149, 151.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   125.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 125.
+// - [rustc: unreachable_pub] unreachable `pub` item. Sites 86, 104, 108, 129.
+
+use std::{
+    io::{self, Read, Seek, SeekFrom},
+    sync::{Arc, Mutex, OnceLock},
+};
+
 use lince_resources::RangeReader;
 use pdfium_render::prelude::*;
-use std::io::{self, Read, Seek, SeekFrom};
-use std::sync::{Arc, Mutex, OnceLock};
+
+use crate::{Layout, Result, Tile};
 
 static PDFIUM: OnceLock<std::result::Result<Mutex<Pdfium>, String>> = OnceLock::new();
 

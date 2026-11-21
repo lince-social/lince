@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Target, fn control, fn exercise, fn main.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (23, 25, 26, 42).
+
 use bevy::{
     diagnostic::FrameCount,
     input_focus::{FocusCause, InputFocus},

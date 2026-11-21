@@ -1,3 +1,25 @@
+// non-lean-yet
+// Scope: mod text_protection, mod authoring, mod catalog, mod cleaning_tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 578, 583, 612,
+//   685, 697, 706, 723, 724, 733, 819, 823, 828, 829, 834, 835, 855, 858, 860, 925, 926, 927, 1037,
+//   1134, 1150, 1267, 1269, 1467, 1469, 1518, 1540, 1543, 1545, 1552, 1587, 1606, 1619, 1625, 1635,
+//   1672, 1674, 1677, 1679, 1774, 1781, 1782, 1783, 1790, 1791, 1817, 1822, 1832, 1838, 1851, 1886,
+//   1980, 1981, 1985, 1986, 2075, 2186, 2204, 2301, 2518, 2563, 2565, 2566, 2567, 2568, 2570, 2686,
+//   2688, 2689, 2690, 2691, 2693.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   set_compositor_presentation_active:active (513).
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (1235, 1242,
+//   1400).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   1587, 1871.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (704, 733, 734, 737, 752, 845, 853, 896, 922, 1035, 1091, 1229, 1262, 1263, 1269,
+//   1273, 1281, 1308, 1316, 1325, 1329, 1332, 1333, 1381, 1421, 1465, 1474, 1487, 1492, 1523, 1538,
+//   1547, 1551, 1553, 1558, 1586, 1588, 1597, 1607, 1609, 1629, 1631, 1635, 1636, 1638, 1670, 1715,
+//   1811, 1832, 1935, 1936, 1939, 1942, 2059, 2063, 2064, 2145, 2146, 2184, 2190, 2515, 2517, 2518,
+//   2521, 2523, 2524, 2652).
+
 use crate::native::{
     actions::Action,
     description::shader,

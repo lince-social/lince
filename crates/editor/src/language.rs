@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: fn detect, struct Tools, enum Style, fn highlight.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 93, 99, 100, 103, 105, 116, 119, 124, 127, 217.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   74.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 67.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   199.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 3, 20,
+//   21, 22, 23, 27, 38, 67, 68, 69, 70, 71, 74.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   81, 90, 132.
+
 use std::{ops::Range, path::Path};
 
 pub fn detect(path: &Path) -> Option<&'static str> {

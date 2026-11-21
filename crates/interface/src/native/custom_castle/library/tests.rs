@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn fixture, fn note, fn saved, fn
+//   remote_library_routes_changes_to_organ_and_adds_only_local_canvas_objects.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::{
     canvas_selection::SandSelection,

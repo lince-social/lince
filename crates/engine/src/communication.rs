@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: struct ParticipantRef, fn serde_err.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 77, 86, 88, 98,
+//   151, 162, 206, 210, 242.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 169.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 241, 317.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value.
+//   Sites 211, 243.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 381.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   11, 12, 14.
+
 use chrono::{DateTime, Utc};
 use nucleus::{Cause, NewFact, RecordKind};
 use serde_json::json;

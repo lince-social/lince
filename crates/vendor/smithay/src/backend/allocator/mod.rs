@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod dmabuf, mod dumb, mod format, mod gbm.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (88).
+
 //! Buffer allocation and management.
 //!
 //! Collection of common traits and implementations around

@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: mod persistence, mod tests, mod ui, struct FrequencyCastle.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 40, 158, 240,
+//   256, 270, 293, 300, 327, 336, 410, 464.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   60, 276.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (149, 152, 158, 162, 172, 205, 210, 245, 322, 414, 455, 458, 459, 475, 483).
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 3.
+
 use lince_interface::frequency::{interval, model};
 mod persistence;
 #[allow(

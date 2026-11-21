@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn render, fn rule_controls.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 9, 10, 11, 15,
+//   16, 17, 20, 21, 23, 25, 26, 27, 28, 29, 464, 485, 492.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (536).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   601.
+
 use super::*;
 
 pub(super) fn render(world: &mut World, owner: Entity) {

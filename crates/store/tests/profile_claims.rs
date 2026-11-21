@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn fixture, fn input, fn save, fn counts.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 170.
+
 #![cfg(test)]
 
 use nucleus::trust_analysis::{

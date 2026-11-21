@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Fixture, fn output, fn
+//   login_shell_loads_user_profile_and_finds_tools_outside_service_path, fn
+//   detached_runs_keep_script_directory_and_full_output_in_one_file.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 32, 54,
+//   63, 391.
+
 use super::*;
 use std::time::Duration;
 

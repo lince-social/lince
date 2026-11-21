@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct LayerMap, fn layer_map_for_output, enum LayerError, struct LayerState.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 91.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 453.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (68, 85, 103, 105, 405, 468).
+
 use crate::{
     desktop::{utils::*, PopupManager},
     output::{Output, WeakOutput},

@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Preparation, fn update.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 71, 90.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   70, 75.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (70, 93, 94, 98, 100, 107, 113, 120).
+
 use super::*;
 
 #[derive(Default)]

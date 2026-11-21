@@ -1,3 +1,22 @@
+// non-lean-yet
+// Scope: const MAX_TARGETS, struct Target, struct Selection, struct Capture.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 121, 122, 124,
+//   173, 174, 193, 248, 263, 265, 271.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   validate_bundle:budget_exhausted (84).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   360.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 293.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 309.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 58, 360.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 56, 78, 204, 287.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   8, 12, 13, 14, 19, 20, 21, 22, 27, 28, 29, 33, 56, 78, 169, 204, 287.
+
 use std::collections::{BTreeMap, BTreeSet};
 
 use nucleus::simulation::{Cause, Event, Observation, RecordedSchedule};

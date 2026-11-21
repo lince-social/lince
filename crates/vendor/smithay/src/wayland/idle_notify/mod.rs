@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: trait IdleNotifierHandler, struct IdleNotificationUserData, struct IdleNotifierState,
+//   macro delegate_idle_notify.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 185, 206, 284,
+//   309.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   set_is_inhibited:is_inhibited (129).
+// - [review: §5 Panics] Check unimplemented! reachability and caller contract. Sites 327, 348.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (84, 88, 137, 172, 193, 208, 230).
+
 //! This interface allows clients to monitor user idle status.
 //!
 //! ```

@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: macro extensions.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use tracing::{error, info};
 
 use super::{MissingExtensionError, X11Error};

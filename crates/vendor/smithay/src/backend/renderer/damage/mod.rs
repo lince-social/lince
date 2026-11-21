@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: mod shaper, const MAX_AGE, struct ElementInstanceState, struct ElementState.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 273, 472, 557,
+//   598, 689, 758.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 501.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   394, 413.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (391).
+
 //! Helper for effective output damage tracking
 //!
 //! # Why use this implementation

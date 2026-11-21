@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: fn digest, fn valid_id.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 170, 210, 213,
+//   214, 236, 251, 261, 286.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 210.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 144.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use fiote::assistant::{Conversation, EntryReceipt, EntryRequest};
 use sha2::{Digest, Sha256};

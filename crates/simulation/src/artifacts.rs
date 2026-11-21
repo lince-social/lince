@@ -1,3 +1,36 @@
+// non-lean-yet
+// Scope: struct Manifest, struct SourceVersion, enum SourceStatus, fn source_status.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 283, 285, 412,
+//   443, 502, 546, 547, 642, 650, 651, 671, 675, 681, 682, 688, 718, 727, 734, 935, 940, 944, 949,
+//   953, 967, 980, 999, 1004, 1091, 1098, 1101, 1230, 1241, 1444, 1453, 1559, 1577, 1587, 1594,
+//   1606, 1610, 1618, 1619, 1648, 1685, 1708.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 841, 887,
+//   999, 1098.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   136, 483, 799, 1167.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 695, 745, 795, 858, 859, 861, 1030, 1128, 1151, 1163, 1367, 1486, 1491.
+// - [Clippy probe: clippy::collapsible_match] this `if` can be collapsed into the outer `match`.
+//   Sites 1320.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 36, 74.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 483, 799, 1167, 1204, 1674, 1675.
+// - [Clippy probe: clippy::manual_let_else] this could be rewritten as `let...else`. Sites 62.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 841, 887, 999, 1098.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 43, 98, 165, 169, 188, 192, 364, 374, 403, 408, 776, 1045, 1534, 1926.
+// - [Clippy probe: clippy::useless_conversion] useless conversion to the same type:
+//   `std::path::PathBuf`. Sites 765.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 88, 179, 897.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   16, 17, 18, 19, 21, 22, 23, 28, 29, 30, 31, 36, 37, 38, 39, 40, 43, 74, 76, 81, 82, 83, 84, 85,
+//   88, 89, 90, 91, 92, 93, 94, 95, 98, 165, 169, 179, 180, 181, 188, 192, 364, 374, 399, 403, 408,
+//   776, 897, 898, 899, 900, 901, 902, 903, 904, 905, 906, 1045, 1534, 1926.
+
 use std::collections::BTreeMap;
 use std::io::{BufRead, Read, Write};
 use std::path::{Path, PathBuf};

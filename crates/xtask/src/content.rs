@@ -1,5 +1,11 @@
-use crate::Result;
+// non-lean-yet
+// Scope: fn package.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 16.
+
 use std::{ffi::OsString, fs, io, path::Path};
+
+use crate::Result;
 
 pub fn package(repository: &Path, caller: &Path, arguments: &[OsString]) -> Result<()> {
     if !(1..=2).contains(&arguments.len()) {
@@ -21,7 +27,7 @@ pub fn package(repository: &Path, caller: &Path, arguments: &[OsString]) -> Resu
             .map_err(|error| error.to_string())?
             .collect::<std::result::Result<Vec<_>, _>>()
             .map_err(|error| error.to_string())?;
-        entries.sort_by_key(|entry| entry.path());
+        entries.sort_by_key(std::fs::DirEntry::path);
         for entry in entries {
             let kind = entry.file_type().map_err(|error| error.to_string())?;
             if kind.is_dir() {

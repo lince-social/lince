@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct RenderedClips, fn capture_clips, struct Fixture, fn fit.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 26, 235.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (17, 73, 83, 86, 88, 89, 92, 93, 94, 110, 115, 116, 121, 129, 132, 134, 136, 137,
+//   143, 146, 147, 155, 179, 195, 201, 204, 209, 210, 213, 218, 219).
+
 use bevy::{
     diagnostic::FrameCount,
     math::DVec2,

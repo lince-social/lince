@@ -1,6 +1,15 @@
 // Copyright 2025 the Parley Authors
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+// non-lean-yet
+// Scope: mod cluster, struct AnalysisDataSources, fn line_segmenter_impl, fn line_segmenter_impl.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (337).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   260, 301, 310, 321.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (259, 297, 363, 378, 382).
+
 pub(crate) mod cluster;
 
 use alloc::vec::Vec;

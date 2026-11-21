@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct Form, fn dimension, fn parse_dimension, fn workspace_name.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 130, 141, 166.
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites selector:selected → &str (54).
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 27.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   162, 198, 203.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (57, 62, 67, 72, 74, 80, 86, 136, 140).
+
 use super::*;
 use crate::native::{actions::ActionSequence, dropdown::{self, Dropdown}};
 

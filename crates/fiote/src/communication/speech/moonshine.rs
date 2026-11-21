@@ -1,7 +1,33 @@
+// non-lean-yet
+// Scope: const CODE_LICENSE, const MODEL_LICENSE, const NOTICE, struct AttentionConfig.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 350, 588, 592.
+// - [Clippy: clippy::panic_in_result_fn] Return the existing error type for recoverable failure.
+//   Sites 583, 605.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 116, 138, 158, 210, 278.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 67, 68, 93, 180, 504, 513, 518, 523, 524, 525, 554.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   93, 504, 513, 524, 525, 554.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 93, 513, 554.
+// - [Clippy: clippy::manual_is_multiple_of] manual implementation of `.is_multiple_of()`. Sites 95.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 392, 533.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 373.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 9,
+//   10, 373, 392, 533.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites load: String
+//   (392), transcribe: String (533).
+
+use std::{path::Path, sync::atomic::AtomicBool};
+
 use candle_core::{D, DType, Device, IndexOp, Result, Tensor};
 use candle_nn::{Conv1d, Conv1dConfig, Embedding, LayerNorm, Linear, Module, VarBuilder};
 use serde::Deserialize;
-use std::{path::Path, sync::atomic::AtomicBool};
 use tokenizers::Tokenizer;
 
 pub const CODE_LICENSE: &str =

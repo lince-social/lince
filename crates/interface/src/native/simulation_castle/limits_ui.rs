@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Input, struct Apply, fn render, fn apply.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (21, 23, 29, 38, 77, 108, 126, 131, 134).
+
 use bevy::prelude::*;
 use bevy::text::EditableText;
 

@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: impl PhysicalDevice, impl PhdInfo, impl DriverInfo.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 20, 25, 30, 65, 77,
+//   123, 145, 151.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 18.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (79, 147, 153).
+
 //! Functions to get physical device information
 
 use std::ffi::{CStr, CString};

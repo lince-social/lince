@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct VisibilityCastlePlugin, fn populate, struct Open, fn record_controls.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 101.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (18).
+
 use bevy::{math::DVec2, prelude::*};
 use lince_interface::visibility as ui;
 use nucleus::visibility::Data;

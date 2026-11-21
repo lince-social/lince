@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn knowledge_sources_search_read_and_show_source_revision_through_native_controls, fn
+//   native_knowledge_save_export_and_offline_inspection_preserve_record_selection, fn
+//   knowledge_controls_keep_keyboard_access_multilingual_text_and_bounded_content, fn
+//   terminology_context_and_private_wording_use_native_controls.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::sand_panel::tests::{app, connect, settle};
 use bevy::text::EditableText;

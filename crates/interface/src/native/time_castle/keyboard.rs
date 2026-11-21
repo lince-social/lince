@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct Marker, fn attach, fn available, struct Activate.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 58, 89, 124, 125,
+//   129, 156, 199, 203.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   89.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (193, 224, 230, 237).
+
 use super::*;
 use crate::native::actions::{Action, KeyBinding, KeyBindings, Modifiers};
 use bevy::input_focus::{FocusCause, InputFocus, tab_navigation::TabIndex};

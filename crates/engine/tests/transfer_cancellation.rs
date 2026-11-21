@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod support, mod location, type Setup, fn setup.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 mod support;

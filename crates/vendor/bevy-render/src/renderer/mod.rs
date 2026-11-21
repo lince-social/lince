@@ -1,3 +1,23 @@
+// non-lean-yet
+// Scope: mod raw_vulkan_init, mod render_context, mod render_device, mod wgpu_wrapper.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   199.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 364, 374.
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 250, 357.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 218, 268, 321,
+//   358.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 68.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   173, 247, 254, 308.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 89.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 2, 51.
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 10.
+
 #[cfg(feature = "raw_vulkan_init")]
 pub mod raw_vulkan_init;
 mod render_context;

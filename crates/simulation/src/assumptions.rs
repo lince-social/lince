@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: enum Direction, struct TransferAssumption, struct Progress, struct Quote.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 107, 315, 377,
+//   382.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   136, 204, 296, 381, 410.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 10.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 194, 296, 381, 410.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option`
+//   value. Sites 371.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   10, 11, 12, 17, 18, 19, 20, 21, 22, 23, 24, 26.
+
 use std::collections::BTreeMap;
 
 use nucleus::DecimalValue;

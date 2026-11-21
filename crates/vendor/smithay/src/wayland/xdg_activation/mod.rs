@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod dispatch, struct XdgActivationToken, struct XdgActivationTokenData, struct
+//   XdgActivationState.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 205, 239.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (206).
+
 //! Utilities for handling activation requests with the `xdg_activation` protocol
 //!
 //! ### Example

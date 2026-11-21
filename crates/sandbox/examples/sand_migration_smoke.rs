@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Capture, fn exercise, fn main.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 63, 71, 84, 116.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (127).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (32, 40, 57, 81, 100, 113).
+
 use bevy::{
     app::AppExit,
     diagnostic::FrameCount,

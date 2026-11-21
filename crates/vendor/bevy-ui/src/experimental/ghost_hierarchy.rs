@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct GhostNode, struct UiRootNodes, type UiRootNodes, struct UiChildren.
+// BeautifulRust (baseline lines):
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 32, 58, 190.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 44,
+//   190.
+
 //! This module contains [`GhostNode`] and utilities to flatten the UI hierarchy, traversing past ghost nodes.
 
 use crate::Node;

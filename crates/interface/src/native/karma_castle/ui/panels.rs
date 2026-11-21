@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Controls, fn controls, enum Confirmation, struct Form.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (16, 19, 144, 165).
+
 use super::*;
 use crate::native::retained::Presentation;
 use std::borrow::Cow;

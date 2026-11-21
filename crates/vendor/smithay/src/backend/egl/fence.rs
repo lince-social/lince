@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct InnerEGLFence, struct EGLFence.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check SAFETY proof and trait invariants. Sites 17, 18.
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 22, 58, 69, 106, 131,
+//   137, 150, 174.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   client_wait:flush (160).
+
 //! EGL fence related structs
 
 use std::os::unix::io::{FromRawFd, IntoRawFd, OwnedFd};

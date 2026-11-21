@@ -1,8 +1,27 @@
-use crate::{Edit, Result};
+// non-lean-yet
+// Scope: fn read, fn write, fn uri, fn position.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 144, 162.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 101.
+// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 28.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   27, 37, 62, 69.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 66, 83, 113, 122.
+// - [Clippy: clippy::redundant_clone] Move or borrow at the marked sites and check later uses.
+//   Sites 162.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 66, 72,
+//   83, 113, 122.
+
+use std::{ops::Range, path::Path};
+
 use ropey::Rope;
 use serde_json::{Value, json};
-use std::{ops::Range, path::Path};
 use tokio::io::{AsyncBufRead, AsyncBufReadExt, AsyncReadExt, AsyncWrite, AsyncWriteExt};
+
+use crate::{Edit, Result};
 
 pub(super) async fn read(input: &mut (impl AsyncBufRead + Unpin)) -> Result<Value> {
     let mut length = None;
@@ -25,18 +44,18 @@ pub(super) async fn read(input: &mut (impl AsyncBufRead + Unpin)) -> Result<Valu
             break;
         }
         let header = std::str::from_utf8(&header).map_err(|_| "Invalid language server header")?;
-        if let Some((name, value)) = header.split_once(':') {
-            if name.eq_ignore_ascii_case("Content-Length") {
-                if length.is_some() {
-                    return Err("Duplicate Content-Length".into());
-                }
-                length = Some(
-                    value
-                        .trim()
-                        .parse::<usize>()
-                        .map_err(|_| "Invalid Content-Length")?,
-                );
+        if let Some((name, value)) = header.split_once(':')
+            && name.eq_ignore_ascii_case("Content-Length")
+        {
+            if length.is_some() {
+                return Err("Duplicate Content-Length".into());
             }
+            length = Some(
+                value
+                    .trim()
+                    .parse::<usize>()
+                    .map_err(|_| "Invalid Content-Length")?,
+            );
         }
     }
     let length = length

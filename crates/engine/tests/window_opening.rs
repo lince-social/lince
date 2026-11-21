@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn opening_extension_content_comparison_allows_only_one_concurrent_revision.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use engine::{Engine, actions::Action};
 use nucleus::window_opening::{Properties, Rule, RULE_NAMESPACE};
 use serde_json::json;

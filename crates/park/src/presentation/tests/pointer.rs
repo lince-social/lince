@@ -1,8 +1,14 @@
-use super::*;
+// non-lean-yet
+// Scope: fn ordinary_click_opens_edit_mode_from_the_workspace_controls, fn
+//   host_pointer_targets_follow_outputs_without_retargeting_content_surfaces.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy::{
     ecs::message::MessageUpdateSystems,
     picking::pointer::{PointerId, PointerInput},
 };
+
+use super::*;
 
 #[test]
 #[ignore = "requires hardware Vulkan and EGL"]
@@ -11,15 +17,25 @@ fn ordinary_click_opens_edit_mode_from_the_workspace_controls() {
     let _entered = runtime.enter();
     let directory = tempfile::tempdir().unwrap();
     let size = [1000, 720];
-    let mut canvas = Presentation::new(size, directory.path().into(), WakeSignal::new(|| {}))
-        .unwrap();
+    let mut canvas =
+        Presentation::new(size, directory.path().into(), WakeSignal::new(|| {})).unwrap();
     super::shortcuts::settle(&mut canvas);
     let root = canvas.canvas_root().unwrap();
-    let toggle = canvas.world_mut().get::<native::edit_mode::EditMode>(root).unwrap().toggle;
+    let toggle = canvas
+        .world_mut()
+        .get::<native::edit_mode::EditMode>(root)
+        .unwrap()
+        .toggle;
     super::shortcuts::pixel_pointer(&mut canvas, [8.0, 712.0]);
     super::shortcuts::settle(&mut canvas);
     super::shortcuts::click(&mut canvas, toggle, size);
-    assert!(canvas.world_mut().get::<native::edit_mode::EditMode>(root).unwrap().enabled);
+    assert!(
+        canvas
+            .world_mut()
+            .get::<native::edit_mode::EditMode>(root)
+            .unwrap()
+            .enabled
+    );
 }
 
 #[test]

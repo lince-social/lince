@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: mod error, const SUPPORTED_FORMATS, struct PixmanTarget, enum PixmanTargetInternal.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 202, 213, 766, 908,
+//   947, 1081, 1143.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 134, 826, 1159,
+//   1179, 1194, 1221, 1242, 1278.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 225, 298,
+//   606, 648, 706, 750, 776, 879, 898, 900, 959, 1014, 1017, 1054, 1057, 1133, 1155, 1254, 1256.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (753).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (194, 250, 254, 258, 263, 292, 403, 936, 1023).
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 42.
+
 //! Implementation of the rendering traits using pixman
 
 use std::sync::{

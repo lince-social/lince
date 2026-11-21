@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn execute, fn complete, fn clean_notice, fn native_complete.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 40, 160, 230,
+//   231, 253, 284, 291, 345, 346, 394.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (7, 35, 53, 60, 85, 160, 228, 246, 278, 338, 374, 382, 410, 419).
+
 use super::*;
 use serde_json::json;
 

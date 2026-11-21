@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: fn invalid, fn fingerprint, fn request, fn sqlx_update_group.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 63, 64, 285, 287,
+//   316, 336, 347, 426, 427, 429, 432, 497.
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites cancel_karma_schedule:request_id → &str (511), cancel_karma_schedule:uid →
+//   &str (509), retry_karma_schedule:request_id → &str (562), retry_karma_schedule:uid → &str
+//   (559), save_karma_schedule_with_stage:inputs → &[T] (201),
+//   save_karma_schedule_with_stage:request_id → &str (202).
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 233, 342.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 15.
+
 use chrono::{DateTime, Utc};
 use nucleus::karma::rule_field::{RuleConsequence, RuleFieldKind, RuleIdentity};
 use nucleus::karma::scheduled_change::{BoundaryInput, DateInput, Purpose};

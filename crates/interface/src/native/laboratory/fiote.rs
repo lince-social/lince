@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct Launch, struct PreparedConnection, fn connection_ready, struct Live.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 70, 250, 308,
+//   315, 338, 343, 354, 365, 387, 388, 418, 422, 428, 434, 435, 457, 463, 471, 512, 513, 628, 641.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   249.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (122, 127, 251, 256, 366, 399, 404, 443, 457, 463, 489, 510, 518, 537, 543, 557,
+//   582, 591).
+
 use crate::native::{
     actions::Action,
     protein_area::{RecordBinding, Source},

@@ -1,6 +1,10 @@
-use super::*;
-use lince_interface::{host::SurfaceId, layout::desktop::PlacementId};
-use serde::{Deserialize, Serialize};
+// non-lean-yet
+// Scope: mod inspection, mod storage, mod performance, mod persistence.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 153, 213, 221.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (107, 115, 217, 239, 262, 279).
+
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
     io::{self, Read},
@@ -11,6 +15,11 @@ use std::{
     },
     time::{Duration, Instant},
 };
+
+use lince_interface::{host::SurfaceId, layout::desktop::PlacementId};
+use serde::{Deserialize, Serialize};
+
+use super::*;
 
 mod inspection;
 mod storage;

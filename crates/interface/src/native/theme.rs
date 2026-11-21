@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct ThemePlugin, fn idle_settings.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy::{
     prelude::*,
     winit::{UpdateMode, WinitSettings},

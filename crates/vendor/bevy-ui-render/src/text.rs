@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: fn calculate_text_scroll_clip, fn text_viewport_offset, fn extract_text_cursor, fn
+//   extract_preedit_underlines.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 140.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 66, 275.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 192, 233, 327.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 191, 232, 326.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 50, 66, 258, 275.
+// - [rustc: unreachable_pub] unreachable `pub` item. Sites 47, 255.
+
 use bevy_asset::AssetId;
 use bevy_camera::visibility::InheritedVisibility;
 use bevy_color::Alpha;

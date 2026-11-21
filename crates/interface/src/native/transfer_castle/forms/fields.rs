@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: type Choices, struct Field, enum Control, struct Catalogue.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 108, 121, 123,
+//   135, 176, 186.
+
 use super::*;
 
 type Choices = Vec<(String, Command)>;

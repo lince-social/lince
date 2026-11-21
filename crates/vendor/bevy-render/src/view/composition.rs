@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct ResolvedCompositingSpace, struct ResolveCompositingSpaces, fn
+//   composites_fullscreen, fn stores_signed_values.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 204, 212, 229, 230, 299, 333.
+
 //! Resolution of per-camera [`CompositingSpace`] requests.
 //!
 //! Cameras that render to the same target share main textures when their

@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: fn entries, fn visible, fn
+//   sorted_need_ranges_enter_the_aperture_after_completion_and_estimate_changes.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 20, 60, 71, 72,
+//   114, 124, 133, 148.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   20, 99, 105, 122, 125, 126, 148, 166.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (9, 12, 26, 37, 39, 54, 56, 67, 80, 120, 143, 162).
+
 use super::{Entry, Settings, model};
 use engine::{Engine, actions::Action};
 use nucleus::projection::Window;

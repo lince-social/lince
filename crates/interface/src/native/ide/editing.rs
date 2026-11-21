@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: fn keyboard, fn prepare, fn flush, fn shortcuts.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 411, 472.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   434, 492.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (68, 76, 79, 84, 85, 102, 126, 149, 189, 200, 284, 289, 300, 304, 312, 315, 323,
+//   330, 362, 410, 429, 507, 511, 520, 531, 538, 545, 562, 570, 578, 597, 603).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 196, 197, 318, 319, 320, 610, 611.
+
 use super::*;
 use bevy::{
     input_focus::{FocusCause, InputFocus},

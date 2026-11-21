@@ -1,3 +1,30 @@
+// non-lean-yet
+// Scope: mod check, mod live, mod login, mod options.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 61, 62, 74, 75,
+//   76, 120, 218, 226, 229, 231, 232, 350, 377, 388, 392, 487, 503, 505, 521, 526, 527, 533, 573,
+//   574, 604, 612, 613, 614, 615, 616, 621, 622, 624, 625, 626, 628, 636, 637, 638, 639, 641, 677,
+//   683, 754.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 401.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites answer: String
+//   (82).
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 377, 392, 521, 612, 613, 614, 615, 616, 622, 638, 639.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 318, 713,
+//   738.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 209, 212, 213.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 401.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value.
+//   Sites 717.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option`
+//   value. Sites 481.
+// - [Clippy probe: clippy::needless_collect] avoid using `collect()` when not needed. Sites 121.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+// - [rustc probe: unreachable_pub] unreachable `pub` item. Sites 42, 49, 53, 82, 110, 140.
+
 use super::*;
 use fiote::{acp, config::AgentActivity, provider::TextOutput};
 use serde_json::{Value, json};

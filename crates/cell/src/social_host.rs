@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: const MAX_CONFIG_BYTES, fn load, fn configure, struct Child.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 20, 101.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 101.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 117, 118, 119, 122.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 143.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 9, 28.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 125.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   9, 28, 45.
+
 use std::{io, path::Path, sync::Arc};
 
 use engine::{Engine, social::Worker};

@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn fixture, fn
+//   opening_and_cancelling_preserve_layout_dimensions_draft_and_current_frame_follow, fn
+//   overview_owns_input_but_only_its_registered_toggle_remains_a_desktop_shortcut, fn
+//   cancelling_restores_a_live_edit_panel_field_without_losing_the_window_focus_mode.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use bevy::math::DVec2;
 

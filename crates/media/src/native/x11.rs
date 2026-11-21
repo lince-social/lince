@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: struct Monitor, fn available, fn monitors, fn screens.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 166.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 57, 69, 138, 142, 143, 144, 146, 149, 150, 152, 153, 154, 155, 156, 157, 158, 166, 171.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   152, 153, 171.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 152, 153.
+// - [rustc: unreachable_pub] unreachable `pub` item. Sites 27, 83, 91, 97, 116.
+
 use x11rb::{
     connection::Connection,
     protocol::{

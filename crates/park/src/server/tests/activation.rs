@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn activate, fn input_token, fn input, fn
+//   paired_pointer_and_keyboard_release_serials_activate_without_revoking_press_time_launches.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn activate(harness: &mut Harness, token: &str, target: &Window) {

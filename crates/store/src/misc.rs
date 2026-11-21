@@ -1,9 +1,40 @@
-use nucleus::transfer::{OpenPromiseReusePolicy, TransferLocationSnapshot};
-use nucleus::{PromiseState, RecordKind};
+// non-lean-yet
+// Scope: struct PromiseRow, struct NewPromise, fn insert_promise, fn expired_promises.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 153.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 147.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   finish_effect:ok (405).
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 179, 228, 380, 666.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 179.
+// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 46.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 326.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 42, 86, 104, 117, 130, 190, 198, 220, 247, 264, 281, 292, 321, 332, 343, 396, 402, 433,
+//   468, 490, 520, 537, 554, 569, 583, 608, 644, 670.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 207, 326, 425, 636.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 9, 10,
+//   11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 29, 30, 31, 32, 33, 34, 35, 36, 37,
+//   38, 39, 42, 86, 104, 117, 130, 190, 198, 207, 208, 209, 210, 211, 220, 247, 264, 281, 292, 314,
+//   315, 316, 317, 318, 321, 326, 327, 328, 329, 332, 343, 396, 402, 425, 426, 427, 428, 429, 430,
+//   433, 458, 459, 460, 461, 462, 463, 464, 465, 468, 490, 520, 537, 554, 569, 583, 598, 599, 600,
+//   601, 602, 603, 604, 605, 608, 636, 637, 638, 639, 640, 641, 644, 670.
+
+use nucleus::{
+    PromiseState, RecordKind,
+    transfer::{OpenPromiseReusePolicy, TransferLocationSnapshot},
+};
 use sqlx::{Row, SqlitePool};
 
-use crate::StoreError;
-use crate::records::{self, NewRecord};
+use crate::{
+    StoreError,
+    records::{self, NewRecord},
+};
 
 #[derive(Debug, Clone)]
 pub struct PromiseRow {
@@ -43,14 +74,14 @@ pub async fn insert_promise(pool: &SqlitePool, p: NewPromise) -> Result<String, 
     let uid = nucleus::new_uid("p");
     let now = nucleus::execution::now().to_rfc3339();
     let mut reserve_from = p.reserve_from;
-    if reserve_from.is_none() {
-        if let Some(transfer_uid) = &p.transfer_uid {
-            reserve_from = sqlx::query("SELECT reserve_default FROM transfer WHERE record_uid = ?")
-                .bind(transfer_uid)
-                .fetch_optional(pool)
-                .await?
-                .and_then(|r| r.get::<Option<String>, _>("reserve_default"));
-        }
+    if reserve_from.is_none()
+        && let Some(transfer_uid) = &p.transfer_uid
+    {
+        reserve_from = sqlx::query("SELECT reserve_default FROM transfer WHERE record_uid = ?")
+            .bind(transfer_uid)
+            .fetch_optional(pool)
+            .await?
+            .and_then(|r| r.get::<Option<String>, _>("reserve_default"));
     }
     let reserve_from = match reserve_from {
         Some(value) => value,

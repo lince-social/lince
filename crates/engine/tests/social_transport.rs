@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: mod sharing, mod churn, fn fetch, fn
+//   private_own_history_is_refused_on_existing_and_new_connections_after_device_downgrade.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 111, 116, 121.
+
 #![cfg(test)]
 
 use engine::{

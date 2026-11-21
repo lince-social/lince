@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Attachment, struct Subscriptions, enum Preview, struct Decoding.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 96, 134, 147,
+//   155, 180, 294, 303, 304, 362, 369, 382, 484, 490.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (156, 168, 200, 385, 446, 476).
+
 use super::*;
 use cell::{ClientMessage, ServerMessage};
 use serde_json::json;

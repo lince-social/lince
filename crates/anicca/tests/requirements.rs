@@ -1,5 +1,13 @@
-use anicca::{format, instinct, parse, project, requirements::discover, set_record_runtime};
+// non-lean-yet
+// Scope: const UID, const PATH, const SOURCE, fn
+//   discovery_uses_record_locations_and_ignores_non_requirement_markdown.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 58, 78.
+
 use std::path::Path;
+
+use anicca::{format, instinct, parse, project, requirements::discover, set_record_runtime};
 
 const UID: &str = "r_04PESBG43ASBNW30QDN8KQPARV";
 const PATH: &str = "requirements.lingua";

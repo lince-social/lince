@@ -1,3 +1,25 @@
+// non-lean-yet
+// Scope: fn scoped_uid, fn validate_content, fn message_metadata, fn load_content_on.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 100, 311, 315,
+//   327, 370, 488, 508, 510, 511, 512, 513, 556, 610, 727, 728, 729, 730, 733.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 392, 395,
+//   412, 427, 430.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   9, 11, 315, 469.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 243, 394, 504.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 9, 11, 311, 315, 320, 469, 488.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 392, 395, 412, 427, 430.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 6, 18, 288.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 2.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   6, 18, 288.
+
 use super::*;
 use nucleus::social::requests::*;
 use sha2::{Digest, Sha256};

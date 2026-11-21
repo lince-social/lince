@@ -1,5 +1,13 @@
-use std::collections::BTreeMap;
-use std::fmt::Write;
+// non-lean-yet
+// Scope: enum BorrowedValue, fn encode.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   90.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 26.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 26.
+
+use std::{collections::BTreeMap, fmt::Write};
 
 use nucleus::karma::CanonicalHash;
 use serde::Serialize;

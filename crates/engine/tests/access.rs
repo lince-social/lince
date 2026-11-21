@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct Fixture, fn all, fn policy, fn record.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use std::collections::BTreeSet;

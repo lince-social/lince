@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct BlitPlugin, struct BlitPipeline, fn init_blit_pipeline, struct BlitPipelineKey.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 65, 108, 111.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 9.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 18, 36, 86.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 36, 37,
+//   38, 39, 40, 43, 71, 86, 87, 88, 89.
+
 use crate::FullscreenShader;
 use bevy_app::{App, Plugin};
 use bevy_asset::{embedded_asset, load_embedded_asset, AssetServer, Handle};

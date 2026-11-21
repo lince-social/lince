@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: fn prepare, fn command, fn rule, fn habit.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 10, 33, 36, 207,
+//   241, 318, 320.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   36.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (4, 52, 75, 95, 116, 125, 135, 170, 187, 241, 264, 277, 283, 291, 301, 311, 318,
+//   320, 341).
+
 use super::*;
 
 pub(super) fn prepare(world: &mut World, root: Entity) {

@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct TabletToolDescriptor, enum TabletToolType, trait TabletToolEvent, trait
+//   TabletToolAxisEvent.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::{AbsolutePositionEvent, ButtonState, Event, InputBackend, UnusedEvent};
 use crate::utils::{Logical, Point};
 use bitflags::bitflags;

@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn options, fn headless, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 52, 58, 59.
+
 use cell::fiote::laboratory::{Options, Report};
 use std::io::{self, Write};
 

@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: fn updating, fn selection_rows, fn target, fn normalized.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 12, 87, 181, 188,
+//   217, 235.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 332, 356, 360.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 13, 14, 204, 207, 208, 211, 217, 221, 290, 291.
+// - [Clippy probe: clippy::redundant_clone] Move or borrow at the marked sites and check later
+//   uses. Sites 87.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use nucleus::plugins::{DocumentFormat, ExportDocument, ExportSnapshot, SnapshotSource};
 use std::path::{Component, Path, PathBuf};

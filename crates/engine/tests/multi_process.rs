@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn worker, fn temp_db, struct TempDb, fn a_worker_process_writes_and_the_next_one_sees_it.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 152, 155.
+
 use std::path::PathBuf;
 use std::process::Command;
 

@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn oit_resolve.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::if_not_else] unnecessary boolean `not` operation. Sites 55.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 16, 28.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 15.
+
 use bevy_camera::{MainPassResolutionOverride, Viewport};
 use bevy_ecs::prelude::*;
 use bevy_render::{

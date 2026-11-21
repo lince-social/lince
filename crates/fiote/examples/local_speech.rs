@@ -1,4 +1,10 @@
-use fiote::{communication::models, speech::local};
+// non-lean-yet
+// Scope: fn memory, fn main.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::panic_in_result_fn] Return the existing error type for recoverable failure.
+//   Sites 23.
+// - [Clippy: clippy::missing_assert_message] assert without any message. Sites 113.
+
 use std::{
     path::PathBuf,
     sync::{
@@ -6,6 +12,8 @@ use std::{
         atomic::{AtomicBool, AtomicU64},
     },
 };
+
+use fiote::{communication::models, speech::local};
 
 fn memory() -> Option<Vec<String>> {
     std::fs::read_to_string("/proc/self/status")

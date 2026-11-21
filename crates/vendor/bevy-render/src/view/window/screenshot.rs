@@ -1,3 +1,29 @@
+// non-lean-yet
+// Scope: struct ScreenshotCaptured, struct Screenshot, struct Capturing, struct Captured.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   259.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 720.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 263, 287, 289, 569, 722, 724, 725.
+// - [Clippy: clippy::trivially_copy_pass_by_ref] Consider a value parameter for small Copy inputs.
+//   Sites 651.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 150, 297, 314,
+//   362, 363, 382, 383, 406, 407, 531, 533, 542, 700, 705, 712.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 440, 730, 733, 735, 744.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   440, 735.
+// - [Clippy: clippy::unnecessary_semicolon] unnecessary semicolon. Sites 643.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 145, 560.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 88, 93, 126, 463, 503.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 53, 54,
+//   56, 126, 259, 463, 503, 504, 505, 508.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (226, 227).
+
 use crate::{
     gpu_readback,
     render_asset::RenderAssets,

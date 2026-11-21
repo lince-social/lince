@@ -1,3 +1,22 @@
+// non-lean-yet
+// Scope: mod projection, fn invalid, struct Accepted, fn accepted.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 13.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 74, 168, 224.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 44, 79, 85, 119, 145.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 44.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   183.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 28, 33, 108.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 103.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 19, 20,
+//   21, 22, 23, 24, 25, 28, 33, 92, 93, 94, 95, 96, 97, 98, 100, 103, 104, 105, 108.
+
 use chrono::{DateTime, Utc};
 use nucleus::{Fact, transfer::disclosure::TransferItem};
 use serde::{Deserialize, Serialize};

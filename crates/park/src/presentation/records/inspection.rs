@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: impl Presentation.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 impl Presentation {

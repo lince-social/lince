@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: mod formula, enum Anchor, struct SpatialBinding, enum Preset.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 62.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 9, 95.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 143, 170.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 9, 11,
+//   12, 13, 14, 19, 20, 21, 22, 23, 24, 25, 42, 70, 79, 95, 97, 98, 99, 100, 101, 106, 107, 108,
+//   109, 110, 111, 112, 113, 114, 133, 143, 170.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites compile: String
+//   (143), height: String (170).
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 

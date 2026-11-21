@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: trait PixmapWrapperExt.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (103, 104, 132).
+
 //! Utilities for importing buffers into X11.
 //!
 //! Buffers imported into X11 are represented as X pixmaps which are then presented to the window.

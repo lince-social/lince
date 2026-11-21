@@ -1,4 +1,9 @@
-use super::*;
+// non-lean-yet
+// Scope: struct State, fn run.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (168, 195, 197, 198, 211).
+
 use smithay::backend::allocator::Buffer;
 use wayland_client::{
     Connection, Dispatch, Proxy, QueueHandle, delegate_noop,
@@ -10,6 +15,8 @@ use wayland_protocols::{
     wp::linux_dmabuf::zv1::client::{zwp_linux_buffer_params_v1, zwp_linux_dmabuf_v1},
     xdg::shell::client::{xdg_surface, xdg_toplevel, xdg_wm_base},
 };
+
+use super::*;
 
 struct State {
     renderer: VulkanRenderer,

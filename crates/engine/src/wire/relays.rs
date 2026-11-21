@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: fn endpoint_builder, fn configured_relays, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 52.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 153.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 89, 90, 129, 161, 163, 170.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 52.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 24.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   24.
+
 use crate::EngineError;
 use iroh::RelayUrl;
 use serde_json::Value;

@@ -1,6 +1,14 @@
 // Copyright 2025 the Parley Authors
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+// non-lean-yet
+// Scope: fn link_spans, fn finish_span, fn add_span, struct LayoutAccessibility.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 225, 226, 227,
+//   228, 229.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   263.
+
 use alloc::{
     string::{String, ToString},
     vec::Vec,

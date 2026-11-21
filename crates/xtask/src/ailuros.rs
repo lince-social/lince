@@ -1,8 +1,17 @@
+// non-lean-yet
+// Scope: fn text, fn configuration, fn input, fn dispatch.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 130.
+// - [review: §3 Ownership] Check whether the borrowed container can expose a narrower view. Sites
+//   text:value → &OsStr (7).
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 24, 28.
+
+use std::{ffi::OsString, io::Read};
+
 use lince_ailuros::{
     configuration::Configuration,
     serial::{Cancellation, Session},
 };
-use std::{ffi::OsString, io::Read};
 
 fn text(value: &OsString) -> Result<&str, String> {
     value

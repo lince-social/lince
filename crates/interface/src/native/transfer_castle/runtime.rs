@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn send, fn subscribe, fn cancel, fn refresh.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 24, 33, 37, 47,
+//   51, 71, 75, 124, 148, 159, 177, 188, 208, 236, 281, 369, 385, 393, 397, 428, 429, 430, 431,
+//   462, 497.
+
 use super::*;
 use cell::{ClientMessage, ServerMessage};
 

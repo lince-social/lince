@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: mod admission, mod cycles, mod snapshot, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 182, 186, 239,
+//   285, 291, 337, 427, 461, 486, 510, 555, 557, 558, 703, 714, 739, 742, 746, 762, 790, 841, 843,
+//   873.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (325, 400,
+//   963).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (211, 252, 285, 286, 655).
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 24.
+
 use crate::native::{
     area::{InfluenceArea, RecordProperties},
     canvas::CanvasItem,

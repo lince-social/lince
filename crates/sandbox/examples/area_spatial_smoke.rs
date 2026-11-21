@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct Target, fn cursor, fn exercise, fn main.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 35.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (24, 27, 45, 54, 82, 87, 89, 92, 99, 114, 139, 147).
+
 use bevy::{
     diagnostic::FrameCount,
     math::{DQuat, DVec2, DVec3},

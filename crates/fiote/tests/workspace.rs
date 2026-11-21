@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn tools, fn workspace_tools_read_write_edit_list_and_refuse_ambiguous_edits, fn
+//   workspace_file_tools_refuse_escape_and_limit_content_before_writing, struct CodingProvider.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 27, 33, 51, 53, 57, 66, 70, 85, 89, 99, 105, 114, 123, 134, 145, 149, 180, 184, 238, 242,
+//   258, 259, 260, 265, 266, 278, 357, 364, 365.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 190.
+
 #![cfg(test)]
 
 #[cfg(unix)]

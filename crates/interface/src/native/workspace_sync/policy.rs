@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: enum Edit, struct Modify, fn mount, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 65.
+
 use super::*;
 use protein::authority::{
     AssertionGrant, AssertionProperty, AssertionRole, AssertionTarget, ExtensionProperty, Property,

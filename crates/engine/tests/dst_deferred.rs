@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: fn a_designated_rule_acts_exactly_once_across_three_cells, fn
+//   an_unreachable_holder_does_not_hand_the_lease_to_whoever_cannot_see_it, fn
+//   two_cells_do_not_each_retry_the_same_transfer_delivery, fn
+//   concurrent_cells_under_clock_skew_lose_no_write.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Check unimplemented! reachability and caller contract. Sites 4, 10, 16, 22,
+//   28, 34, 40, 46, 52.
+// - [Clippy probe: clippy::unimplemented] `unimplemented` should not be present in production code.
+//   Sites 4, 10, 16, 22, 28, 34, 40, 46, 52.
+
 #[test]
 #[ignore = "Resenha DST: needs three Cells with separate stores"]
 fn a_designated_rule_acts_exactly_once_across_three_cells() {

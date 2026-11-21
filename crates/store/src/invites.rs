@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: const EXTENSION, struct Invite, fn put, fn map.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 84.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 16, 94, 106, 119.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 8,
+//   9, 10, 11, 12, 13, 16, 94, 106, 119.
+
 use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;

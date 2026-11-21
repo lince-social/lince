@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn unicode_and_quoted_concept_terms_round_trip_without_expanding_record_slugs.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 7, 9, 13, 15.
+
 #[test]
 fn unicode_and_quoted_concept_terms_round_trip_without_expanding_record_slugs() {
     let source = "Party (@party: 0, #tópos @street4, #\"saved geographic place\" @street4) { r_01JA0000000000000000000010\nParty details\n} r_01JA0000000000000000000010\n";

@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn fourcc_to_gl_formats, fn gl_internal_format_to_fourcc, fn gl_read_format_to_fourcc, fn
+//   gl_read_for_internal.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 //! GL color format conversion helpers
 
 use super::ffi::{self, types::GLenum};

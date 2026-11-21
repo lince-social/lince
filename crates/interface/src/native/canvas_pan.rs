@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct CanvasPan, fn dragged, struct Gesture, struct CanvasPanPlugin.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 115, 204, 296,
+//   304.
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 62.
+
 use crate::native::canvas::{CanvasItem, CanvasView};
 use crate::native::canvas_resize::{Edges, Resize, ResizeCursor};
 use bevy::{

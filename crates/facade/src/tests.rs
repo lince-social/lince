@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn fixture, fn allowed, fn record, fn user.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::{sync::Arc, time::Duration};
 
 use base64::{Engine as _, engine::general_purpose::STANDARD};

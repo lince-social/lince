@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn values, struct Presets, struct AssertionOwnership.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 26, 31, 75.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 75.
+
 use super::{EngineError, Preset, Schema, StoredValues, invalid};
 use serde::Deserialize;
 use serde_json::{Map, Value};

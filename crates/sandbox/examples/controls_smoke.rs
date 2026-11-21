@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct Probe, fn rect, fn pointer, fn info.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (23, 26, 35, 38, 52, 61, 68, 72, 99, 104, 106, 111, 115, 121, 134, 141, 150, 156,
+//   169, 171, 177, 179, 185, 189, 192, 195, 197, 203, 205, 211, 213, 239).
+
 use bevy::{
     a11y::AccessibilityNode,
     diagnostic::FrameCount,

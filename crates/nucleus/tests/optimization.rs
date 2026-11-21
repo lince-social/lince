@@ -1,7 +1,14 @@
+// non-lean-yet
+// Scope: fn variable, fn constraint, fn solve, fn minimizes_cost_and_rechecks_the_known_optimum.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 52, 53, 121, 130.
+
 #![cfg(test)]
 
-use nucleus::optimization::{self, Constraint, Model, Options, Status, Term, Variable, decimal};
 use std::sync::atomic::AtomicBool;
+
+use nucleus::optimization::{self, Constraint, Model, Options, Status, Term, Variable, decimal};
 
 fn variable(name: &str, cost: f64, upper: Option<f64>) -> Variable {
     Variable {

@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod api, struct Cell, struct Frame, struct Ghostty.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 77.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   114, 233, 257.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (172, 340, 379, 398).
+
 mod api;
 
 use api::{Api, Function};

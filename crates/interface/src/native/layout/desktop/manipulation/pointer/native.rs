@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod batch, struct Native, fn button, fn root.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (91).
+
 use super::*;
 use crate::native::actions::Modifiers;
 use bevy::{

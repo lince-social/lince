@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn modal, fn clipped, mod tests.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy::prelude::*;
 
 pub(super) fn modal(world: &mut World) -> Option<Entity> {

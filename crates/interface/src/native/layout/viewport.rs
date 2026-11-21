@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn visual_offset, fn clip, mod tests.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::LayoutRuntime;
 use bevy::prelude::*;
 

@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod support, fn actor, fn policy, fn update.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::manual_string_new] empty String is being created manually. Sites 821.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 51, 55.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 68.
+
 #![cfg(test)]
 
 use engine::{Engine, actions::Action};

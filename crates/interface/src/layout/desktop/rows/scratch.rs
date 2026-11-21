@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct ScratchHome.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 38, 78.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   47, 51.
+
 use super::*;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

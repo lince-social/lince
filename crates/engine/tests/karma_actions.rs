@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: const PERSON_UID, fn engine_with_person, fn
+//   typed_program_actions_preserve_replay_actor_and_stale_cas, fn
+//   typed_frequency_action_requires_runtime_and_never_uses_legacy_frequency_rows.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 205.
+
 #![cfg(test)]
 
 use std::{

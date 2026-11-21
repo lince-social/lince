@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct SolidColorBuffer, struct SolidColorRenderElement.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 152.
+
 //! Element to render a solid color
 //!
 //! # How to use it

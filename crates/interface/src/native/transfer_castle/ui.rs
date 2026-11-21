@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Input, enum Command, fn open, fn row.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 94, 126, 187,
+//   200, 220, 225, 247, 269, 271, 313, 329, 359, 390, 396, 455, 482.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   404, 429.
+
 use super::*;
 use bevy::text::EditableText;
 

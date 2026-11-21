@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: enum Key, enum Part, struct Panel, fn render.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 26, 39, 82, 189,
+//   201, 207, 209, 317, 324, 331, 338, 346, 354.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   187, 237, 243, 256.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (24, 78, 100, 162, 183, 187, 188, 192, 199, 200, 202, 257, 311).
+
 use super::*;
 use crate::native::retained::{Children as RetainedChildren, Presentation};
 

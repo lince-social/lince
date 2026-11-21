@@ -1,12 +1,18 @@
-use super::{Clock, Reading};
-use bevy::log::{
-    tracing::{self, Subscriber, field::Visit, span::Attributes},
-    tracing_subscriber::{self, layer::Context, registry::LookupSpan},
-};
+// non-lean-yet
+// Scope: const SELECTED, struct Probe, struct Body, struct Name.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::sync::{
     Arc, Mutex,
     atomic::{AtomicBool, Ordering},
 };
+
+use bevy::log::{
+    tracing::{self, Subscriber, field::Visit, span::Attributes},
+    tracing_subscriber::{self, layer::Context, registry::LookupSpan},
+};
+
+use super::{Clock, Reading};
 
 const SELECTED: &[&str] = &[
     "bevy_ui::layout::ui_layout_system",

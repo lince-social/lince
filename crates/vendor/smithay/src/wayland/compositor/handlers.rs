@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct SurfaceUserData, struct RegionUserData, struct SubsurfaceUserData, struct
+//   SubsurfaceCachedState.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 87, 119, 120,
+//   238, 244, 257, 473.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (243, 244, 256, 257, 367, 396, 613, 621, 643).
+
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Mutex,

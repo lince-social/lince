@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: mod format, enum Error, struct VulkanAllocator, struct VulkanImage.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 214, 241, 288, 344,
+//   370, 449, 451, 472, 584, 623, 718, 721, 728, 750, 758, 796.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 266, 779, 780.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 675.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (546, 804).
+// - [review: §5 Panics] Check intentional unfinished branches before replacing todo!. Sites 677.
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites
+//   199, 205.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   344.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (486, 542, 745).
+
 //! Module for Buffers created using Vulkan.
 //!
 //! The [`VulkanAllocator`] type implements the [`Allocator`] trait and [`VulkanImage`] implements [`Buffer`].

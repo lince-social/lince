@@ -1,3 +1,26 @@
+// non-lean-yet
+// Scope: const REQUEST_VERSION, const DIGEST_DOMAIN, struct RequestLimits, enum RequestError.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 143, 144, 444,
+//   456, 571, 600, 610, 641, 654, 669, 670.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 342, 346,
+//   723, 732.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 44, 78, 85, 103, 151.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 342, 346, 723, 732.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 318, 332.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 224, 253, 277.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   13, 14, 17, 18, 19, 20, 21, 22, 23, 24, 25, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 78,
+//   79, 80, 85, 86, 88, 90, 95, 96, 97, 98, 103, 104, 105, 107, 108, 110, 111, 113, 115, 117, 118,
+//   120, 121, 123, 127, 141, 151, 152, 153, 154, 155, 156, 158, 160, 162, 164, 166, 168, 169, 170,
+//   172, 173, 175, 176, 178, 179, 180, 181, 183, 184, 186, 188, 190, 191, 192, 194, 195, 196, 197,
+//   198, 200, 201, 202, 208, 209, 210, 224, 232, 235, 238, 241, 244, 247, 253, 260, 263, 266, 272,
+//   273, 274, 277, 287, 290, 293, 296, 299, 302, 305, 308, 311, 314, 318, 328, 332.
+
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 

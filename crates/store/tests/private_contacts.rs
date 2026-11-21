@@ -1,11 +1,18 @@
+// non-lean-yet
+// Scope: struct Fixture, fn create_record, fn fixture_from, fn fixture.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use std::time::Duration;
 
 use nucleus::RecordKind;
-use store::private_contacts::{self, ContactBinding};
-use store::session_access::{self, AuthenticationState, ContactTrust};
-use store::{Store, sqlx};
+use store::{
+    Store,
+    private_contacts::{self, ContactBinding},
+    session_access::{self, AuthenticationState, ContactTrust},
+    sqlx,
+};
 
 struct Fixture {
     store: Store,

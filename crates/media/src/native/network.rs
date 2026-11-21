@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: mod tests.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 7.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7.
+
 use std::time::{Duration, UNIX_EPOCH};
 
 use super::peer::{Network, TurnServer};

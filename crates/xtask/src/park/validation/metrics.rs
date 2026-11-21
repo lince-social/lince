@@ -1,11 +1,18 @@
-use super::{Result, error};
-use serde_json::{Value, json};
+// non-lean-yet
+// Scope: struct Samples, fn parse, fn percentile, fn summarize.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 172.
+
 use std::{
     collections::{BTreeMap, BTreeSet},
     ffi::OsString,
     fs,
     path::Path,
 };
+
+use serde_json::{Value, json};
+
+use super::{Result, error};
 
 #[derive(Default)]
 struct Samples {
@@ -141,11 +148,16 @@ fn summarize(
     let selected_window = windows
         .get(&selected)
         .ok_or("Requested application surface was not present")?;
-    let fps = selected_window["fresh_fps"].as_f64().ok_or("Selected window is missing its frame rate")?;
+    let fps = selected_window["fresh_fps"]
+        .as_f64()
+        .ok_or("Selected window is missing its frame rate")?;
     let p95 = selected_window["interval_p95_ms"].as_f64();
     let passed = fps >= minimum_fps
         && p95.is_some_and(|p95| p95 <= 25.0)
-        && selected_window["stalls_over_100_ms"].as_u64().ok_or("Selected window is missing its stall count")? <= 1;
+        && selected_window["stalls_over_100_ms"]
+            .as_u64()
+            .ok_or("Selected window is missing its stall count")?
+            <= 1;
     let stages: BTreeMap<_, _> = samples.stages.into_iter().map(|(stage, samples)| {
         let values: Vec<_> = samples.into_iter().filter(|(time, _)| *time >= start && *time < end).map(|(_, elapsed)| elapsed).collect();
         (stage, json!({"samples": values.len(), "median_ms": percentile(&values, 0.5), "p95_ms": percentile(&values, 0.95)}))
@@ -185,22 +197,36 @@ fn summarize(
 
 pub(super) fn evaluate(log: &str, warmup: f64, seconds: f64, minimum_fps: f64) -> Result<Value> {
     let samples = parse(log);
-    let frames = samples.stages.get("nested-submit").or_else(|| samples.stages.get("composition"))
+    let frames = samples
+        .stages
+        .get("nested-submit")
+        .or_else(|| samples.stages.get("composition"))
         .ok_or("No compositor frame submission trace")?;
     let start = frames.first().ok_or("Empty compositor trace")?.0 + warmup;
     let end = start + seconds;
-    if frames.last().is_none_or(|frame| frame.0 + 0.001 < end) { return Err("Incomplete compositor measurement window".into()); }
-    let mut times: Vec<f64> = frames.iter().filter(|frame| frame.0 >= start && frame.0 < end).map(|frame| frame.0).collect();
+    if frames.last().is_none_or(|frame| frame.0 + 0.001 < end) {
+        return Err("Incomplete compositor measurement window".into());
+    }
+    let mut times: Vec<f64> = frames
+        .iter()
+        .filter(|frame| frame.0 >= start && frame.0 < end)
+        .map(|frame| frame.0)
+        .collect();
     times.sort_by(f64::total_cmp);
     times.dedup_by(|left, right| (*left - *right).abs() < 0.000001);
-    let intervals: Vec<_> = times.windows(2).map(|pair| (pair[1] - pair[0]) * 1000.0).collect();
+    let intervals: Vec<_> = times
+        .windows(2)
+        .map(|pair| (pair[1] - pair[0]) * 1000.0)
+        .collect();
     let fps = times.len() as f64 / seconds;
     let p95 = percentile(&intervals, 0.95);
     let stalls = intervals.iter().filter(|value| **value > 100.0).count();
     let content = summarize(samples, warmup, seconds, 1.0, None)?;
-    Ok(json!({"compositor_fps":fps,"compositor_interval_p95_ms":p95,"stalls_over_100_ms":stalls,
+    Ok(
+        json!({"compositor_fps":fps,"compositor_interval_p95_ms":p95,"stalls_over_100_ms":stalls,
         "content":content,"physical_scanout":"unproven by nested timing",
-        "passed":fps >= minimum_fps && p95.is_some_and(|value| value <= 25.0) && stalls <= 1}))
+        "passed":fps >= minimum_fps && p95.is_some_and(|value| value <= 25.0) && stalls <= 1}),
+    )
 }
 
 pub(super) fn analyze(arguments: &[OsString]) -> Result<()> {

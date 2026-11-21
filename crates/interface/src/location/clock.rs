@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct ElapsedClock, fn standard, struct Stamp.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy::prelude::*;
 use std::time::Duration;
 

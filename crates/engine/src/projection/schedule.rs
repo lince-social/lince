@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: fn entry, fn manual, fn manual_entries, fn occurrences.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 42, 43, 68, 91,
+//   127.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 151.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 107.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 151.
+
 use crate::EngineError;
 use nucleus::{
     karma::{ReferenceKind, TypedUid},

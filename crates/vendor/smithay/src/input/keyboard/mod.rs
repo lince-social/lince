@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: mod keymap_file, mod modifiers_state, mod xkb_config, trait KeyboardTarget.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check SAFETY proof and trait invariants. Sites 204, 238.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 574, 654, 783,
+//   919, 994, 1064, 1190, 1241, 1328.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   input_forward:mods_changed (1020), unset_grab:restore_focus (1235).
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 599.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 673, 831.
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites
+//   305.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (289, 410, 415, 420, 434, 496, 517, 525, 678, 714, 738, 741, 745, 771, 782, 814,
+//   830, 848, 884, 893, 902, 911, 917, 926, 990, 1022, 1053, 1063, 1073, 1089, 1094, 1097, 1134,
+//   1139, 1145, 1149, 1164, 1174, 1188, 1282).
+
 //! Keyboard-related types for smithay's input abstraction
 
 use crate::backend::input::KeyState;

@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn modifier_release_keeps_before_and_after_masks_separate_for_the_matching_event, fn key,
+//   fn converted_host_events_retain_masks_from_their_position_in_the_batch, fn
+//   synthetic_events_do_not_consume_another_window_or_keys_host_context.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use bevy::input::{ButtonState, keyboard::Key};
 

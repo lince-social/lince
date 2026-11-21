@@ -1,10 +1,25 @@
-use crate::{
-    launch::Application,
-    runtime::{CanvasWorker, Completed, Configuration, Input, Scene},
-    server::{LayerSnapshot, Server},
+// non-lean-yet
+// Scope: mod compose, mod input, mod renderer, mod smoke.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 181, 194, 207,
+//   281, 453, 540, 557, 575, 581, 585, 590, 607, 617, 635, 650, 663, 730, 734, 748, 751, 762, 772,
+//   774, 875, 904, 934, 964, 965, 1086, 1089, 1098, 1106, 1107, 1135, 1138, 1141, 1197, 1205, 1359,
+//   1420.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 1259.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (276).
+
+use std::{
+    collections::{HashMap, HashSet},
+    io,
+    process::Child,
+    sync::Arc,
+    time::{Duration, Instant},
 };
+
 use lince_interface::host::{
-    DesktopAction, FileDragContext, HostRequest, ItemId, OutputId, OutputViewport, OverviewHoverRequest, Rectangle,
+    DesktopAction, FileDragContext, HostRequest, ItemId, OutputId, OutputViewport,
+    OverviewHoverRequest, Rectangle,
 };
 use smithay::{
     backend::{
@@ -18,35 +33,34 @@ use smithay::{
     utils::SERIAL_COUNTER,
     wayland::shell::wlr_layer::{KeyboardInteractivity, Layer},
 };
-use std::{
-    collections::{HashMap, HashSet},
-    io,
-    process::Child,
-    sync::Arc,
-    time::{Duration, Instant},
+
+use crate::{
+    launch::Application,
+    runtime::{CanvasWorker, Completed, Configuration, Input, Scene},
+    server::{LayerSnapshot, Server},
 };
 
+#[cfg(feature = "session")]
+mod absolute;
 #[path = "nested/compose.rs"]
 mod compose;
+mod control;
+mod file_drag;
+mod focus_policy;
+#[cfg(feature = "session")]
+mod gestures;
 #[path = "nested/input.rs"]
 pub(crate) mod input;
+mod magnification;
+mod manipulation;
+mod mapping;
+mod outputs;
 #[path = "nested/renderer.rs"]
 pub(crate) mod renderer;
 #[path = "nested/smoke.rs"]
 mod smoke;
-mod manipulation;
-mod file_drag;
-mod focus_policy;
-mod control;
-mod magnification;
-mod mapping;
-#[cfg(feature = "session")]
-mod absolute;
 #[cfg(feature = "session")]
 mod tablet;
-mod outputs;
-#[cfg(feature = "session")]
-mod gestures;
 
 #[derive(Default)]
 pub struct Options {
@@ -126,9 +140,11 @@ pub(crate) struct Desktop {
     magnification_sent: Option<lince_interface::host::magnification::Snapshot>,
     magnification_caret: Option<lince_interface::host::magnification::Caret>,
     #[cfg(feature = "session")]
-    pub(crate) pointer_requests: Option<std::collections::VecDeque<lince_interface::host::input::PointerRequest>>,
+    pub(crate) pointer_requests:
+        Option<std::collections::VecDeque<lince_interface::host::input::PointerRequest>>,
     #[cfg(feature = "session")]
-    pub(crate) absolute_requests: Option<std::collections::VecDeque<lince_interface::host::input::AbsoluteCommand>>,
+    pub(crate) absolute_requests:
+        Option<std::collections::VecDeque<lince_interface::host::input::AbsoluteCommand>>,
     pub(crate) redraw: bool,
     pub(crate) running: bool,
     command_file: Option<std::path::PathBuf>,
@@ -170,10 +186,14 @@ pub fn run(
         ));
     let (mut backend, events) =
         winit::init_from_attributes::<GlesRenderer>(attributes).map_err(error)?;
-    use smithay::reexports::calloop::{EventLoop, Interest, Mode, PostAction, generic::Generic, ping::make_ping};
+    use smithay::reexports::calloop::{
+        EventLoop, Interest, Mode, PostAction, generic::Generic, ping::make_ping,
+    };
     let mut event_loop = EventLoop::<Vec<WinitEvent>>::try_new().map_err(error)?;
     let handle = event_loop.handle();
-    handle.insert_source(events, |event, _, pending| pending.push(event)).map_err(error)?;
+    handle
+        .insert_source(events, |event, _, pending| pending.push(event))
+        .map_err(error)?;
     let (ping, source) = make_ping().map_err(error)?;
     handle.insert_source(source, |_, _, _| {}).map_err(error)?;
     let wake = lince_interface::host::WakeSignal::new(move || ping.ping());
@@ -187,16 +207,24 @@ pub fn run(
     configure_outputs(&mut server, size, output_count)?;
     let socket = server.listen()?;
     for fd in server.event_fds()? {
-        handle.insert_source(Generic::new(fd, Interest::READ, Mode::Level), |_, _, _| Ok(PostAction::Continue)).map_err(error)?;
+        handle
+            .insert_source(Generic::new(fd, Interest::READ, Mode::Level), |_, _, _| {
+                Ok(PostAction::Continue)
+            })
+            .map_err(error)?;
     }
     eprintln!("Park Wayland display: {}", socket.display());
     let command_file = configuration.directory.join("park.json");
     let mut composition = renderer::Composition::new(wake.clone())?;
     composition.prepare_color(backend.renderer())?;
-    let worker = CanvasWorker::spawn_for_compositor(Configuration {
-        size,
-        ..configuration
-    }, wake, composition.linear_color_available())?;
+    let worker = CanvasWorker::spawn_for_compositor(
+        Configuration {
+            size,
+            ..configuration
+        },
+        wake,
+        composition.linear_color_available(),
+    )?;
     let mut desktop = Desktop::new(
         server,
         worker,
@@ -229,21 +257,46 @@ pub fn run(
                 }
                 desktop.event(event)?;
             }
-            if options.activation.as_ref().is_some_and(|events| events.take_show()) {
-                desktop.send(Input::Action(lince_interface::host::DesktopAction::OpenOperation))?;
+            if options
+                .activation
+                .as_ref()
+                .is_some_and(|events| events.take_show())
+            {
+                desktop.send(Input::Action(
+                    lince_interface::host::DesktopAction::OpenOperation,
+                ))?;
             }
             desktop.dispatch()?;
             for request in desktop.server.output_requests() {
-                let accepted = desktop.server.apply_virtual_output_configuration(&request, desktop.size)?;
-                desktop.server.output_configuration_finished(request.token, accepted);
-                if accepted && !request.test { desktop.invalidate_outputs()?; }
+                let accepted = desktop
+                    .server
+                    .apply_virtual_output_configuration(&request, desktop.size)?;
+                desktop
+                    .server
+                    .output_configuration_finished(request.token, accepted);
+                if accepted && !request.test {
+                    desktop.invalidate_outputs()?;
+                }
             }
             desktop.redraw |= composition.imports_changed();
-            if awaiting_presented.is_none() && desktop.accept(&mut composition, backend.renderer())? {
-                if let Some(completed) = desktop.pending.as_ref().or(desktop.current.as_ref()).cloned() {
-                    composition.enable_client_formats(backend.renderer(), &mut desktop.server, &completed.frame)?;
+            if awaiting_presented.is_none()
+                && desktop.accept(&mut composition, backend.renderer())?
+            {
+                if let Some(completed) = desktop
+                    .pending
+                    .as_ref()
+                    .or(desktop.current.as_ref())
+                    .cloned()
+                {
+                    composition.enable_client_formats(
+                        backend.renderer(),
+                        &mut desktop.server,
+                        &completed.frame,
+                    )?;
                 }
-                if desktop.opening_ready() && let Some(applications) = applications.take() {
+                if desktop.opening_ready()
+                    && let Some(applications) = applications.take()
+                {
                     for application in applications {
                         match desktop.server.spawn_foreground(application, &socket) {
                             Ok(child) => children.push(child),
@@ -261,7 +314,12 @@ pub fn run(
                 backend.window().request_redraw();
                 redraw_requested = true;
             }
-            if awaiting_presented.is_none() && desktop.redraw && draw_allowed && backend.window_size().w > 0 && backend.window_size().h > 0 {
+            if awaiting_presented.is_none()
+                && desktop.redraw
+                && draw_allowed
+                && backend.window_size().w > 0
+                && backend.window_size().h > 0
+            {
                 let presented = composition.present(
                     &mut backend,
                     &mut desktop.server,
@@ -272,11 +330,18 @@ pub fn run(
                 draw_allowed = false;
                 awaiting_presented = Some(presented);
             }
-            if awaiting_presented.as_ref().is_some_and(|presented| presented.sync.is_reached()) {
+            if awaiting_presented
+                .as_ref()
+                .is_some_and(|presented| presented.sync.is_reached())
+            {
                 let presented = awaiting_presented.take().unwrap();
-                if presented.locked { desktop.server.lock_presented(); }
+                if presented.locked {
+                    desktop.server.lock_presented();
+                }
                 desktop.presented(presented, started.elapsed().as_millis() as u32)?;
-                if options.ready_hook { desktop.ready(); }
+                if options.ready_hook {
+                    desktop.ready();
+                }
                 frames += 1;
                 seen_layers.extend(desktop.layers.iter().map(|layer| layer.surface.clone()));
                 if let Some(geometry) = desktop
@@ -318,15 +383,29 @@ pub fn run(
             });
             desktop.server.dispatch()?;
             composition.capture(backend.renderer(), &mut desktop, true)?;
-            let timeout = options.duration.map(|duration| duration.saturating_sub(started.elapsed()));
+            let timeout = options
+                .duration
+                .map(|duration| duration.saturating_sub(started.elapsed()));
             let timeout = if !children.is_empty() || !desktop.children.is_empty() || options.smoke {
-                Some(timeout.unwrap_or(Duration::from_secs(1)).min(Duration::from_secs(1)))
+                Some(
+                    timeout
+                        .unwrap_or(Duration::from_secs(1))
+                        .min(Duration::from_secs(1)),
+                )
             } else {
                 timeout
             };
             if desktop.running {
-                let timeout = timeout.into_iter().chain(desktop.server.idle_timeout()).chain(desktop.server.native_timeout())
-                    .chain(desktop.server.capture_timeout()).chain(desktop.server.display_timeout()).chain(desktop.server.control_timeout()).chain(desktop.scene_timeout()).chain(composition.capture_timeout()).min();
+                let timeout = timeout
+                    .into_iter()
+                    .chain(desktop.server.idle_timeout())
+                    .chain(desktop.server.native_timeout())
+                    .chain(desktop.server.capture_timeout())
+                    .chain(desktop.server.display_timeout())
+                    .chain(desktop.server.control_timeout())
+                    .chain(desktop.scene_timeout())
+                    .chain(composition.capture_timeout())
+                    .min();
                 event_loop.dispatch(timeout, &mut input).map_err(error)?;
             }
         }
@@ -447,10 +526,18 @@ impl Desktop {
     }
 
     pub(crate) fn dispatch(&mut self) -> io::Result<()> {
-        let _timing = lince_interface::host::performance::Span::new(lince_interface::host::performance::Stage::DesktopDispatch);
+        let _timing = lince_interface::host::performance::Span::new(
+            lince_interface::host::performance::Stage::DesktopDispatch,
+        );
         #[cfg(feature = "session")]
-        { self.reconcile_touch(); self.reconcile_tablet(); self.flush_touch()?; }
-        if let Some(snapshot) = self.absolute_snapshot.clone() { self.absolute_settings(snapshot)?; }
+        {
+            self.reconcile_touch();
+            self.reconcile_tablet();
+            self.flush_touch()?;
+        }
+        if let Some(snapshot) = self.absolute_snapshot.clone() {
+            self.absolute_settings(snapshot)?;
+        }
         #[cfg(feature = "session")]
         self.flush_gesture()?;
         self.flush_magnification()?;
@@ -473,13 +560,16 @@ impl Desktop {
             self.send(Input::Feedback(failure))?;
         }
         self.server.dispatch()?;
-        self.worker.host_active(self.focused && !self.server.locked());
+        self.worker
+            .host_active(self.focused && !self.server.locked());
         let caret = self.server.magnification_caret();
         if self.magnification_caret != caret {
             match self.worker.input(Input::MagnificationCaret(caret)) {
                 Ok(_) => self.magnification_caret = caret,
                 Err(std::sync::mpsc::TrySendError::Full(_)) => {}
-                Err(std::sync::mpsc::TrySendError::Disconnected(_)) => return Err(io::Error::other("The Park canvas is unavailable.")),
+                Err(std::sync::mpsc::TrySendError::Disconnected(_)) => {
+                    return Err(io::Error::other("The Park canvas is unavailable."));
+                }
             }
         }
         self.reconcile_file_drag()?;
@@ -491,21 +581,40 @@ impl Desktop {
             match event {
                 crate::native_input::client::Event::Drop(request) => {
                     let token = request.token;
-                    let output = self.current.as_ref().and_then(|current| current.frame.output);
-                    if !self.focused || self.server.locked() || self.input_pending()
+                    let output = self
+                        .current
+                        .as_ref()
+                        .and_then(|current| current.frame.output);
+                    if !self.focused
+                        || self.server.locked()
+                        || self.input_pending()
                         || output.is_some_and(|output| output != request.target.output)
-                        || self.send(Input::NativeDrop(request)).is_err() {
+                        || self.send(Input::NativeDrop(request)).is_err()
+                    {
                         self.server.finish_native_drop(token, false);
                     }
                 }
                 crate::native_input::client::Event::DropError(message) => {
-                    if self.focused && !self.server.locked() { self.send(Input::Feedback(message))?; }
+                    if self.focused && !self.server.locked() {
+                        self.send(Input::Feedback(message))?;
+                    }
                 }
-                crate::native_input::client::Event::Edit(edit) if self.native_keyboard && self.focused && !self.server.locked()
-                    && !self.current.as_ref().is_some_and(|current| current.frame.input.keyboard_capture) => {
+                crate::native_input::client::Event::Edit(edit)
+                    if self.native_keyboard
+                        && self.focused
+                        && !self.server.locked()
+                        && !self
+                            .current
+                            .as_ref()
+                            .is_some_and(|current| current.frame.input.keyboard_capture) =>
+                {
                     self.send(Input::NativeEdit(edit))?;
                 }
-                crate::native_input::client::Event::Key { code, pressed, event } => {
+                crate::native_input::client::Event::Key {
+                    code,
+                    pressed,
+                    event,
+                } => {
                     self.native_key(code, pressed, false, &event)?;
                 }
                 _ => {}
@@ -540,10 +649,16 @@ impl Desktop {
                 .map(|output| output.viewport.clone())
                 .collect();
             let display = self.server.display_snapshot();
-            if self.magnification.reconcile(&display, self.command_file.is_some()) {
+            if self
+                .magnification
+                .reconcile(&display, self.command_file.is_some())
+            {
                 self.flush_magnification()?;
             }
-            if self.scene_revision != self.server.window_revision() || self.viewports != viewports || self.display.as_ref() != Some(&display) {
+            if self.scene_revision != self.server.window_revision()
+                || self.viewports != viewports
+                || self.display.as_ref() != Some(&display)
+            {
                 if self.viewports != viewports || self.scene_serial == 0 {
                     self.scene_serial = self
                         .scene_serial
@@ -566,33 +681,61 @@ impl Desktop {
         while let Some(request) = self.worker.request() {
             match request {
                 HostRequest::ControlRevoke => self.server.revoke_control(),
-                HostRequest::StopCapture(id) => { if self.focused && !self.server.locked() { self.server.stop_capture_session(id); } }
-                HostRequest::OverviewHover(request) => self.hover_reply = Some((request, self.file_drag_context() == Some(request.drag))),
-                HostRequest::DropFinished { token, accepted } => self.server.finish_native_drop(token, accepted),
-                HostRequest::Close(surface) => { self.server.close(surface); }
+                HostRequest::StopCapture(id) => {
+                    if self.focused && !self.server.locked() {
+                        self.server.stop_capture_session(id);
+                    }
+                }
+                HostRequest::OverviewHover(request) => {
+                    self.hover_reply =
+                        Some((request, self.file_drag_context() == Some(request.drag)))
+                }
+                HostRequest::DropFinished { token, accepted } => {
+                    self.server.finish_native_drop(token, accepted)
+                }
+                HostRequest::Close(surface) => {
+                    self.server.close(surface);
+                }
                 HostRequest::Keyboard(request) => self.server.keyboard_request(request),
                 HostRequest::External(request) => {
                     let path = self.command_file.clone();
-                    let changed = self.external.request(request, self.server.locked(), |settings, expected| {
-                        let path = path.as_deref().ok_or_else(|| io::Error::other("The local Park configuration is unavailable"))?;
-                        crate::commands::Commands::save_external(path, settings, expected)
-                    });
-                    if changed { self.stop_external_repeats(); }
+                    let changed = self.external.request(
+                        request,
+                        self.server.locked(),
+                        |settings, expected| {
+                            let path = path.as_deref().ok_or_else(|| {
+                                io::Error::other("The local Park configuration is unavailable")
+                            })?;
+                            crate::commands::Commands::save_external(path, settings, expected)
+                        },
+                    );
+                    if changed {
+                        self.stop_external_repeats();
+                    }
                     self.send(Input::ExternalSettings(self.external.snapshot.clone()))?;
                 }
                 HostRequest::ExternalReload => self.reload_external()?,
                 HostRequest::Programs(request) => {
                     let path = self.command_file.clone();
-                    self.programs.request(request, self.server.locked(), |settings, expected| {
-                        let path = path.as_deref().ok_or_else(|| io::Error::other("The local Park configuration is unavailable"))?;
-                        crate::commands::Commands::save_programs(path, settings, expected)
-                    });
+                    self.programs
+                        .request(request, self.server.locked(), |settings, expected| {
+                            let path = path.as_deref().ok_or_else(|| {
+                                io::Error::other("The local Park configuration is unavailable")
+                            })?;
+                            crate::commands::Commands::save_programs(path, settings, expected)
+                        });
                     self.send(Input::Programs(self.programs.snapshot.clone()))?;
                 }
                 HostRequest::ProgramsReload(request) => {
                     let result = (|| {
-                        if self.server.locked() { return Err(io::Error::other("Unlock Park before reloading session programs.")); }
-                        let path = self.command_file.as_deref().ok_or_else(|| io::Error::other("The local Park configuration is unavailable"))?;
+                        if self.server.locked() {
+                            return Err(io::Error::other(
+                                "Unlock Park before reloading session programs.",
+                            ));
+                        }
+                        let path = self.command_file.as_deref().ok_or_else(|| {
+                            io::Error::other("The local Park configuration is unavailable")
+                        })?;
                         crate::commands::Commands::load(path)
                     })();
                     let outcome = match result {
@@ -600,36 +743,50 @@ impl Desktop {
                             self.programs.configure(commands.programs());
                             lince_interface::host::input::InputOutcome::Saved { warning: None }
                         }
-                        Err(error) => lince_interface::host::input::InputOutcome::Failed(error.to_string()),
+                        Err(error) => {
+                            lince_interface::host::input::InputOutcome::Failed(error.to_string())
+                        }
                     };
-                    self.programs.snapshot.last_request = self.programs.snapshot.last_request.max(request);
-                    self.programs.snapshot.response = Some(lince_interface::host::input::InputResponse { request, outcome });
+                    self.programs.snapshot.last_request =
+                        self.programs.snapshot.last_request.max(request);
+                    self.programs.snapshot.response =
+                        Some(lince_interface::host::input::InputResponse { request, outcome });
                     self.send(Input::Programs(self.programs.snapshot.clone()))?;
                 }
                 HostRequest::Magnification(request) => self.magnification_request(request)?,
                 HostRequest::MagnificationReload(request) => self.magnification_reload(request)?,
                 HostRequest::Absolute(request) => {
                     #[cfg(feature = "session")]
-                    if let Some(pending) = &mut self.absolute_requests && pending.len() < 8 {
-                        pending.push_back(lince_interface::host::input::AbsoluteCommand::Save(request));
+                    if let Some(pending) = &mut self.absolute_requests
+                        && pending.len() < 8
+                    {
+                        pending.push_back(lince_interface::host::input::AbsoluteCommand::Save(
+                            request,
+                        ));
                         continue;
                     }
                     let mut snapshot = self.absolute_snapshot.clone().unwrap_or_default();
                     snapshot.last_request = snapshot.last_request.max(request.id);
                     snapshot.response = Some(lince_interface::host::input::InputResponse {
                         request: request.id,
-                        outcome: lince_interface::host::input::InputOutcome::Failed(if snapshot.available {
-                            "Park is busy; retry the preserved device draft.".into()
-                        } else {
-                            "Physical touch/tablet settings belong to the host compositor in Sandbox or nested Park.".into()
-                        }),
+                        outcome: lince_interface::host::input::InputOutcome::Failed(
+                            if snapshot.available {
+                                "Park is busy; retry the preserved device draft.".into()
+                            } else {
+                                "Physical touch/tablet settings belong to the host compositor in Sandbox or nested Park.".into()
+                            },
+                        ),
                     });
                     self.absolute_settings(snapshot)?;
                 }
                 HostRequest::AbsoluteReload(request) => {
                     #[cfg(feature = "session")]
-                    if let Some(pending) = &mut self.absolute_requests && pending.len() < 8 {
-                        pending.push_back(lince_interface::host::input::AbsoluteCommand::Reload(request));
+                    if let Some(pending) = &mut self.absolute_requests
+                        && pending.len() < 8
+                    {
+                        pending.push_back(lince_interface::host::input::AbsoluteCommand::Reload(
+                            request,
+                        ));
                         continue;
                     }
                     let mut snapshot = self.absolute_snapshot.clone().unwrap_or_default();
@@ -643,7 +800,8 @@ impl Desktop {
                 HostRequest::Pointer(request) => {
                     #[cfg(feature = "session")]
                     if let Some(pending) = &mut self.pointer_requests
-                        && pending.len() < 8 {
+                        && pending.len() < 8
+                    {
                         pending.push_back(request);
                         continue;
                     }
@@ -651,11 +809,13 @@ impl Desktop {
                     snapshot.last_request = snapshot.last_request.max(request.id);
                     snapshot.response = Some(lince_interface::host::input::InputResponse {
                         request: request.id,
-                        outcome: lince_interface::host::input::InputOutcome::Failed(if snapshot.available {
-                            "Park is busy; retry the preserved pointer draft.".into()
-                        } else {
-                            "Physical pointer settings require a standalone Park seat; nested Park uses its parent compositor's devices.".into()
-                        }),
+                        outcome: lince_interface::host::input::InputOutcome::Failed(
+                            if snapshot.available {
+                                "Park is busy; retry the preserved pointer draft.".into()
+                            } else {
+                                "Physical pointer settings require a standalone Park seat; nested Park uses its parent compositor's devices.".into()
+                            },
+                        ),
                     });
                     self.pointer_settings(snapshot)?;
                 }
@@ -663,11 +823,15 @@ impl Desktop {
                     let path = self.command_file.clone();
                     let mut warning = None;
                     self.server.display_request(request, |heads| {
-                        let path = path.as_deref().ok_or_else(|| io::Error::other("The local Park configuration is unavailable"))?;
+                        let path = path.as_deref().ok_or_else(|| {
+                            io::Error::other("The local Park configuration is unavailable")
+                        })?;
                         warning = crate::commands::Commands::save_outputs(path, heads)?;
                         Ok(())
                     });
-                    if let Some(warning) = warning { self.send(Input::Feedback(warning))?; }
+                    if let Some(warning) = warning {
+                        self.send(Input::Feedback(warning))?;
+                    }
                 }
                 HostRequest::Action(DesktopAction::Logout) => self.logout()?,
                 HostRequest::Workspace { owner, id } => {
@@ -723,24 +887,44 @@ impl Desktop {
         self.flush_logout()?;
         self.control()?;
         if self.capture_gate_pending
-            && self.worker.input(Input::CapturePolicy(self.server.capture_policy_gate())).is_ok()
-        { self.capture_gate_pending = false; }
+            && self
+                .worker
+                .input(Input::CapturePolicy(self.server.capture_policy_gate()))
+                .is_ok()
+        {
+            self.capture_gate_pending = false;
+        }
         let status = self.server.capture_status();
         if self.capture_status.as_ref() != Some(&status)
-            && self.worker.input(Input::CaptureStatus(status.clone())).is_ok()
-        { self.capture_status = Some(status); }
+            && self
+                .worker
+                .input(Input::CaptureStatus(status.clone()))
+                .is_ok()
+        {
+            self.capture_status = Some(status);
+        }
         let demand = self.server.capture_demand();
         if self.capture_demand.as_ref() != Some(&demand)
-            && self.worker.input(Input::CaptureDemand(demand.clone())).is_ok()
-        { self.capture_demand = Some(demand); }
+            && self
+                .worker
+                .input(Input::CaptureDemand(demand.clone()))
+                .is_ok()
+        {
+            self.capture_demand = Some(demand);
+        }
         let path = self.command_file.as_deref();
         let _ = self.server.advance_keyboard(|settings, expected| {
-            let path = path.ok_or_else(|| io::Error::other("The local Park configuration is unavailable"))?;
+            let path = path
+                .ok_or_else(|| io::Error::other("The local Park configuration is unavailable"))?;
             crate::commands::Commands::save_keyboard(path, settings, expected)
         });
         let keyboard = self.server.keyboard_snapshot();
         if self.keyboard_snapshot.as_ref() != Some(&keyboard) {
-            if self.keyboard_snapshot.as_ref().is_none_or(|previous| previous.revision != keyboard.revision) {
+            if self
+                .keyboard_snapshot
+                .as_ref()
+                .is_none_or(|previous| previous.revision != keyboard.revision)
+            {
                 self.compose.reset();
                 #[cfg(feature = "session")]
                 {
@@ -751,50 +935,87 @@ impl Desktop {
             self.send(Input::Keyboard(keyboard.clone()))?;
             self.keyboard_snapshot = Some(keyboard);
         }
-        if self.pointer_snapshot.is_none() { self.pointer_settings(Default::default())?; }
-        if self.absolute_snapshot.is_none() { self.absolute_settings(Default::default())?; }
+        if self.pointer_snapshot.is_none() {
+            self.pointer_settings(Default::default())?;
+        }
+        if self.absolute_snapshot.is_none() {
+            self.absolute_settings(Default::default())?;
+        }
         self.reconcile_file_drag()?;
         Ok(())
     }
 
-    pub(crate) fn pointer_settings(&mut self, snapshot: lince_interface::host::input::PointerSnapshot) -> io::Result<()> {
+    pub(crate) fn pointer_settings(
+        &mut self,
+        snapshot: lince_interface::host::input::PointerSnapshot,
+    ) -> io::Result<()> {
         if self.pointer_snapshot.as_ref() != Some(&snapshot) {
             match self.worker.input(Input::PointerSettings(snapshot.clone())) {
                 Ok(_) => self.pointer_snapshot = Some(snapshot),
                 Err(std::sync::mpsc::TrySendError::Full(_)) => {}
-                Err(std::sync::mpsc::TrySendError::Disconnected(_)) => return Err(io::Error::other("The Park canvas is unavailable for pointer settings.")),
+                Err(std::sync::mpsc::TrySendError::Disconnected(_)) => {
+                    return Err(io::Error::other(
+                        "The Park canvas is unavailable for pointer settings.",
+                    ));
+                }
             }
         }
         Ok(())
     }
 
-    pub(crate) fn absolute_settings(&mut self, snapshot: lince_interface::host::input::AbsoluteSnapshot) -> io::Result<()> {
+    pub(crate) fn absolute_settings(
+        &mut self,
+        snapshot: lince_interface::host::input::AbsoluteSnapshot,
+    ) -> io::Result<()> {
         self.absolute_snapshot = Some(snapshot.clone());
         if self.absolute_sent.as_ref() != Some(&snapshot) {
             match self.worker.input(Input::AbsoluteSettings(snapshot.clone())) {
                 Ok(_) => self.absolute_sent = Some(snapshot),
                 Err(std::sync::mpsc::TrySendError::Full(_)) => {}
-                Err(std::sync::mpsc::TrySendError::Disconnected(_)) => return Err(io::Error::other("The Park canvas is unavailable for device settings.")),
+                Err(std::sync::mpsc::TrySendError::Disconnected(_)) => {
+                    return Err(io::Error::other(
+                        "The Park canvas is unavailable for device settings.",
+                    ));
+                }
             }
         }
         Ok(())
     }
 
     #[cfg(feature = "session")]
-    pub(crate) fn save_devices(&self, settings: &lince_interface::host::input::AbsolutePreferences, expected: &lince_interface::host::input::AbsolutePreferences) -> io::Result<Option<String>> {
-        let path = self.command_file.as_deref().ok_or_else(|| io::Error::other("The local Park configuration is unavailable"))?;
+    pub(crate) fn save_devices(
+        &self,
+        settings: &lince_interface::host::input::AbsolutePreferences,
+        expected: &lince_interface::host::input::AbsolutePreferences,
+    ) -> io::Result<Option<String>> {
+        let path = self
+            .command_file
+            .as_deref()
+            .ok_or_else(|| io::Error::other("The local Park configuration is unavailable"))?;
         crate::commands::Commands::save_devices(path, settings, expected)
     }
 
     #[cfg(feature = "session")]
-    pub(crate) fn load_devices(&self) -> io::Result<lince_interface::host::input::AbsolutePreferences> {
-        let path = self.command_file.as_deref().ok_or_else(|| io::Error::other("The local Park configuration is unavailable"))?;
+    pub(crate) fn load_devices(
+        &self,
+    ) -> io::Result<lince_interface::host::input::AbsolutePreferences> {
+        let path = self
+            .command_file
+            .as_deref()
+            .ok_or_else(|| io::Error::other("The local Park configuration is unavailable"))?;
         Ok(crate::commands::Commands::load(path)?.devices)
     }
 
     #[cfg(feature = "session")]
-    pub(crate) fn save_pointer(&self, settings: &lince_interface::host::input::PointerSettings, expected: &lince_interface::host::input::PointerSettings) -> io::Result<Option<String>> {
-        let path = self.command_file.as_deref().ok_or_else(|| io::Error::other("The local Park configuration is unavailable"))?;
+    pub(crate) fn save_pointer(
+        &self,
+        settings: &lince_interface::host::input::PointerSettings,
+        expected: &lince_interface::host::input::PointerSettings,
+    ) -> io::Result<Option<String>> {
+        let path = self
+            .command_file
+            .as_deref()
+            .ok_or_else(|| io::Error::other("The local Park configuration is unavailable"))?;
         crate::commands::Commands::save_pointer(path, settings, expected)
     }
 
@@ -806,7 +1027,9 @@ impl Desktop {
         if let Some(completed) = self.worker.frame() {
             self.scroll_saturated = false;
             if completed.scene_revision != self.scene_serial {
-                lince_interface::host::performance::count(lince_interface::host::performance::Count::SupersededFrame);
+                lince_interface::host::performance::count(
+                    lince_interface::host::performance::Count::SupersededFrame,
+                );
                 return Ok(false);
             }
             for id in &completed.rejected {
@@ -820,7 +1043,10 @@ impl Desktop {
                         [window.size[0] as i32, window.size[1] as i32],
                         window.state,
                         completed.frame.geometry.as_ref().is_some_and(|geometry| {
-                            geometry.items.iter().any(|item| item.id == ItemId::Application(window.surface))
+                            geometry
+                                .items
+                                .iter()
+                                .any(|item| item.id == ItemId::Application(window.surface))
                         }),
                     )
                     .is_err()
@@ -829,7 +1055,9 @@ impl Desktop {
                 }
             }
             composition.canvas(renderer, &completed.frame)?;
-            lince_interface::host::performance::count(lince_interface::host::performance::Count::FrameAccepted);
+            lince_interface::host::performance::count(
+                lince_interface::host::performance::Count::FrameAccepted,
+            );
             if completed.frame.dmabuf().is_none() {
                 self.pending = None;
                 self.output_frames.clear();
@@ -875,8 +1103,20 @@ impl Desktop {
         let Some(frame) = self.pending.take().or_else(|| self.current.clone()) else {
             return Ok(());
         };
-        if frame.sequence <= self.retired_sequence || self.current.as_ref().is_some_and(|current| current.sequence > frame.sequence) { return Ok(()); }
-        self.server.presented_groups(presented.callbacks.iter().map(|(_, nodes)| nodes.as_slice()));
+        if frame.sequence <= self.retired_sequence
+            || self
+                .current
+                .as_ref()
+                .is_some_and(|current| current.sequence > frame.sequence)
+        {
+            return Ok(());
+        }
+        self.server.presented_groups(
+            presented
+                .callbacks
+                .iter()
+                .map(|(_, nodes)| nodes.as_slice()),
+        );
         let presented = Arc::new(presented);
         let ids: Vec<_> = frame
             .frame
@@ -889,17 +1129,33 @@ impl Desktop {
         self.output_frames.retain(|id, _| ids.contains(id));
         self.capture_times.retain(|id, _| ids.contains(id));
         for id in ids {
-            self.observe_input_latency(id, &frame, &presented, renderer::capture::monotonic(), false);
+            self.observe_input_latency(
+                id,
+                &frame,
+                &presented,
+                renderer::capture::monotonic(),
+                false,
+            );
             if !presented.locked && frame.frame.has_output_image(id) {
-                self.server.presented_output_mapping(id, frame.frame.input.mappings.get(id));
+                self.server
+                    .presented_output_mapping(id, frame.frame.input.mappings.get(id));
             }
-            if !presented.locked && frame.frame.has_output_image(id) && self.magnification.presented(id, &frame.frame.input.mappings) {
+            if !presented.locked
+                && frame.frame.has_output_image(id)
+                && self
+                    .magnification
+                    .presented(id, &frame.frame.input.mappings)
+            {
                 self.flush_magnification()?;
             }
-            if !presented.locked && frame.frame.has_output_image(id)
+            if !presented.locked
+                && frame.frame.has_output_image(id)
                 && let Some(receipt) = &frame.frame.input.accessibility
-            { receipt.presented(id); }
-            self.capture_times.insert(id, renderer::capture::monotonic());
+            {
+                receipt.presented(id);
+            }
+            self.capture_times
+                .insert(id, renderer::capture::monotonic());
             self.output_frames
                 .insert(id, (frame.clone(), presented.clone()));
         }
@@ -916,21 +1172,45 @@ impl Desktop {
         time: u32,
         hardware_clock: bool,
     ) -> io::Result<()> {
-        if !self.server.has_output(id) || frame.sequence <= self.retired_sequence
-            || self.output_frames.get(&id).is_some_and(|(latest, _)| latest.sequence > frame.sequence)
-            || self.capture_times.get(&id).is_some_and(|latest| presentation_time < *latest)
-        { return Ok(()); }
+        if !self.server.has_output(id)
+            || frame.sequence <= self.retired_sequence
+            || self
+                .output_frames
+                .get(&id)
+                .is_some_and(|(latest, _)| latest.sequence > frame.sequence)
+            || self
+                .capture_times
+                .get(&id)
+                .is_some_and(|latest| presentation_time < *latest)
+        {
+            return Ok(());
+        }
         self.observe_input_latency(id, &frame, &presented, presentation_time, hardware_clock);
-        self.server.presented_groups(presented.callbacks.iter()
-            .filter(|(output, _)| output.is_none_or(|output| output == id))
-            .map(|(_, nodes)| nodes.as_slice()));
-        if !presented.locked && frame.frame.has_output_image(id) { self.server.presented_output_mapping(id, frame.frame.input.mappings.get(id)); }
-        if !presented.locked && frame.frame.has_output_image(id) && self.magnification.presented(id, &frame.frame.input.mappings) {
+        self.server.presented_groups(
+            presented
+                .callbacks
+                .iter()
+                .filter(|(output, _)| output.is_none_or(|output| output == id))
+                .map(|(_, nodes)| nodes.as_slice()),
+        );
+        if !presented.locked && frame.frame.has_output_image(id) {
+            self.server
+                .presented_output_mapping(id, frame.frame.input.mappings.get(id));
+        }
+        if !presented.locked
+            && frame.frame.has_output_image(id)
+            && self
+                .magnification
+                .presented(id, &frame.frame.input.mappings)
+        {
             self.flush_magnification()?;
         }
-        if !presented.locked && frame.frame.has_output_image(id)
+        if !presented.locked
+            && frame.frame.has_output_image(id)
             && let Some(receipt) = &frame.frame.input.accessibility
-        { receipt.presented(id); }
+        {
+            receipt.presented(id);
+        }
         self.output_frames.insert(id, (frame.clone(), presented));
         self.capture_times.insert(id, presentation_time);
         if frame.frame.output == Some(id) || self.current.is_none() {
@@ -939,30 +1219,60 @@ impl Desktop {
         self.refresh_presented(time)
     }
 
-    fn observe_input_latency(&mut self, id: OutputId, frame: &Completed, presented: &renderer::Presented, time: Duration, hardware: bool) {
-        if !lince_interface::host::performance::enabled() || presented.locked || self.server.locked() { return; }
-        if frame.frame.has_output_image(id) && let Some(timing) = frame.latency {
-            let previous = self.output_frames.get(&id).and_then(|(previous, _)| previous.latency);
+    fn observe_input_latency(
+        &mut self,
+        id: OutputId,
+        frame: &Completed,
+        presented: &renderer::Presented,
+        time: Duration,
+        hardware: bool,
+    ) {
+        if !lince_interface::host::performance::enabled()
+            || presented.locked
+            || self.server.locked()
+        {
+            return;
+        }
+        if frame.frame.has_output_image(id)
+            && let Some(timing) = frame.latency
+        {
+            let previous = self
+                .output_frames
+                .get(&id)
+                .and_then(|(previous, _)| previous.latency);
             timing.presented(id, previous, time, hardware);
         }
         for (output, nodes) in &presented.callbacks {
-            if output.is_none_or(|output| output == id) { self.server.observe_input_presentation(id, nodes, time, hardware); }
+            if output.is_none_or(|output| output == id) {
+                self.server
+                    .observe_input_presentation(id, nodes, time, hardware);
+            }
         }
     }
 
     pub(crate) fn adopt(&mut self, frame: Arc<Completed>) {
-        if frame.sequence <= self.retired_sequence || self.current.as_ref().is_some_and(|current| current.sequence > frame.sequence) { return; }
+        if frame.sequence <= self.retired_sequence
+            || self
+                .current
+                .as_ref()
+                .is_some_and(|current| current.sequence > frame.sequence)
+        {
+            return;
+        }
         #[cfg(feature = "session")]
         self.observe_gesture(&frame);
         self.manipulation.observe(&frame);
-        if self.current.as_ref().is_some_and(|current| current.frame.input.keyboard_capture != frame.frame.input.keyboard_capture) {
+        if self.current.as_ref().is_some_and(|current| {
+            current.frame.input.keyboard_capture != frame.frame.input.keyboard_capture
+        }) {
             self.compose.reset();
         }
         if frame.frame.input.keyboard_modal {
             self.modal_keys.extend(self.keys.keys().copied());
         }
         self.server.workspaces(frame.frame.input.workspaces.clone());
-        self.server.control_catalog(frame.frame.input.control.clone());
+        self.server
+            .control_catalog(frame.frame.input.control.clone());
         if self
             .current
             .as_ref()
@@ -1048,15 +1358,23 @@ impl Desktop {
         self.warp_pointer(time)?;
         self.motion(time)?;
         #[cfg(feature = "session")]
-        { self.refresh_touch_projection(time); self.refresh_tablet_projection(time); }
+        {
+            self.refresh_touch_projection(time);
+            self.refresh_tablet_projection(time);
+        }
         self.reconcile_file_drag()
     }
 
     pub(crate) fn invalidate_outputs(&mut self) -> io::Result<()> {
         #[cfg(feature = "session")]
         self.cancel_absolute();
-        self.retired_sequence = self.current.iter().chain(self.pending.iter())
-            .chain(self.output_frames.values().map(|(frame, _)| frame)).map(|frame| frame.sequence).fold(self.retired_sequence, u64::max);
+        self.retired_sequence = self
+            .current
+            .iter()
+            .chain(self.pending.iter())
+            .chain(self.output_frames.values().map(|(frame, _)| frame))
+            .map(|frame| frame.sequence)
+            .fold(self.retired_sequence, u64::max);
         self.output_frames.clear();
         self.capture_times.clear();
         self.current = None;
@@ -1095,13 +1413,16 @@ impl Desktop {
         });
         if let Err(error) = result {
             let message = format!("Could not load Park settings: {error}");
-            if !self.external.snapshot.available { self.external.snapshot.message = Some(message.clone()); }
+            if !self.external.snapshot.available {
+                self.external.snapshot.message = Some(message.clone());
+            }
             eprintln!("{message}");
             let _ = self.send(Input::Feedback(message));
         }
         self.command_file = Some(path);
         self.socket = Some(socket);
-        self.magnification.reconcile(&self.server.display_snapshot(), self.command_file.is_some());
+        self.magnification
+            .reconcile(&self.server.display_snapshot(), self.command_file.is_some());
         let _ = self.flush_magnification();
         let _ = self.send(Input::ExternalSettings(self.external.snapshot.clone()));
         let _ = self.send(Input::Programs(self.programs.snapshot.clone()));
@@ -1122,9 +1443,18 @@ impl Desktop {
         }
     }
 
-    fn launch_command(&mut self, action: DesktopAction, repeating: bool, grants: Option<&[crate::launch::Capability]>) -> io::Result<()> {
+    fn launch_command(
+        &mut self,
+        action: DesktopAction,
+        repeating: bool,
+        grants: Option<&[crate::launch::Capability]>,
+    ) -> io::Result<()> {
         let child = (|| {
-            if self.children.len() >= 128 { return Err(io::Error::other("Too many command helpers are still running; close or stop one before retrying.")); }
+            if self.children.len() >= 128 {
+                return Err(io::Error::other(
+                    "Too many command helpers are still running; close or stop one before retrying.",
+                ));
+            }
             let path = self
                 .command_file
                 .as_ref()
@@ -1132,7 +1462,8 @@ impl Desktop {
             let socket = self
                 .socket
                 .as_ref()
-                .ok_or_else(|| io::Error::other("Park display is unavailable"))?.clone();
+                .ok_or_else(|| io::Error::other("Park display is unavailable"))?
+                .clone();
             let commands = crate::commands::Commands::load(path)?;
             let mut description = if let DesktopAction::External(external) = action {
                 let changed = self.external.configure(commands.external.clone());
@@ -1141,35 +1472,92 @@ impl Desktop {
                     let _ = self.send(Input::ExternalSettings(self.external.snapshot.clone()));
                 }
                 if changed && repeating {
-                    return Err(io::Error::other("Release the key before using the changed command."));
+                    return Err(io::Error::other(
+                        "Release the key before using the changed command.",
+                    ));
                 }
-                commands.external.command(external, self.server.locked()).map_err(io::Error::other)?.into_owned()
+                commands
+                    .external
+                    .command(external, self.server.locked())
+                    .map_err(io::Error::other)?
+                    .into_owned()
             } else {
-                if self.server.locked() { return Err(io::Error::other("This command is unavailable while locked")); }
+                if self.server.locked() {
+                    return Err(io::Error::other("This command is unavailable while locked"));
+                }
                 commands.command(action)?
             };
-            if let DesktopAction::External(external @ lince_interface::host::external::Action::ScreenshotScreen) = action {
-                let output = self.pending_output.and_then(|(_, output)| output)
-                    .or_else(|| self.current.as_ref().and_then(|current| current.frame.output));
-                if let Some((name, _)) = self.server.output_viewports().into_iter()
+            if let DesktopAction::External(
+                external @ lince_interface::host::external::Action::ScreenshotScreen,
+            ) = action
+            {
+                let output = self
+                    .pending_output
+                    .and_then(|(_, output)| output)
+                    .or_else(|| {
+                        self.current
+                            .as_ref()
+                            .and_then(|current| current.frame.output)
+                    });
+                if let Some((name, _)) = self
+                    .server
+                    .output_viewports()
+                    .into_iter()
                     .find(|(_, viewport)| output.is_none_or(|output| viewport.id == output))
                 {
-                    lince_interface::host::external::screenshot::Options::target_output(external, &mut description, &name);
+                    lince_interface::host::external::screenshot::Options::target_output(
+                        external,
+                        &mut description,
+                        &name,
+                    );
                 }
             }
             if let Some(grants) = grants {
-                if !grants.contains(&crate::launch::Capability::DesktopControl) || !grants.contains(&crate::launch::Capability::Launch)
-                    || description.capabilities.iter().any(|capability| !grants.contains(capability))
-                { return Err(io::Error::new(io::ErrorKind::PermissionDenied, "The management connection cannot grant this configured helper's privileges")); }
-                if matches!(action, DesktopAction::External(lince_interface::host::external::Action::DisplayOff | lince_interface::host::external::Action::DisplayOn))
-                    && !grants.contains(&crate::launch::Capability::OutputControl)
-                { return Err(io::Error::new(io::ErrorKind::PermissionDenied, "The management connection lacks output-control permission")); }
-                if matches!(action, DesktopAction::External(lince_interface::host::external::Action::ScreenshotScreen | lince_interface::host::external::Action::ScreenshotRegion))
-                    && !grants.contains(&crate::launch::Capability::Capture)
-                { return Err(io::Error::new(io::ErrorKind::PermissionDenied, "The management connection lacks capture permission")); }
+                if !grants.contains(&crate::launch::Capability::DesktopControl)
+                    || !grants.contains(&crate::launch::Capability::Launch)
+                    || description
+                        .capabilities
+                        .iter()
+                        .any(|capability| !grants.contains(capability))
+                {
+                    return Err(io::Error::new(
+                        io::ErrorKind::PermissionDenied,
+                        "The management connection cannot grant this configured helper's privileges",
+                    ));
+                }
+                if matches!(
+                    action,
+                    DesktopAction::External(
+                        lince_interface::host::external::Action::DisplayOff
+                            | lince_interface::host::external::Action::DisplayOn
+                    )
+                ) && !grants.contains(&crate::launch::Capability::OutputControl)
+                {
+                    return Err(io::Error::new(
+                        io::ErrorKind::PermissionDenied,
+                        "The management connection lacks output-control permission",
+                    ));
+                }
+                if matches!(
+                    action,
+                    DesktopAction::External(
+                        lince_interface::host::external::Action::ScreenshotScreen
+                            | lince_interface::host::external::Action::ScreenshotRegion
+                    )
+                ) && !grants.contains(&crate::launch::Capability::Capture)
+                {
+                    return Err(io::Error::new(
+                        io::ErrorKind::PermissionDenied,
+                        "The management connection lacks capture permission",
+                    ));
+                }
             }
-            if matches!(action, DesktopAction::OpenTerminal | DesktopAction::OpenLauncher
-                | DesktopAction::External(lince_interface::host::external::Action::Editor)) {
+            if matches!(
+                action,
+                DesktopAction::OpenTerminal
+                    | DesktopAction::OpenLauncher
+                    | DesktopAction::External(lince_interface::host::external::Action::Editor)
+            ) {
                 self.server.spawn_foreground_helper(&description, &socket)
             } else {
                 self.server.spawn_helper(&description, &socket)
@@ -1181,22 +1569,40 @@ impl Desktop {
 
     fn stop_external_repeats(&mut self) {
         #[cfg(feature = "session")]
-        if self.repeat.is_some_and(|(code, _)| matches!(self.consumed_actions.get(&code), Some(DesktopAction::External(_)))) {
+        if self.repeat.is_some_and(|(code, _)| {
+            matches!(
+                self.consumed_actions.get(&code),
+                Some(DesktopAction::External(_))
+            )
+        }) {
             self.repeat = None;
         }
-        self.consumed_actions.retain(|_, action| !matches!(action, DesktopAction::External(_)));
+        self.consumed_actions
+            .retain(|_, action| !matches!(action, DesktopAction::External(_)));
     }
 
     fn reload_external(&mut self) -> io::Result<()> {
-        if self.server.locked() { return Ok(()); }
-        let result = self.command_file.as_deref()
+        if self.server.locked() {
+            return Ok(());
+        }
+        let result = self
+            .command_file
+            .as_deref()
             .ok_or_else(|| io::Error::other("The local Park configuration is unavailable"))
             .and_then(crate::commands::Commands::load);
         match result {
             Ok(commands) => {
-                self.magnification.configure(commands.outputs.iter().map(|(name, output)| (name.clone(), output.magnification)).collect());
+                self.magnification.configure(
+                    commands
+                        .outputs
+                        .iter()
+                        .map(|(name, output)| (name.clone(), output.magnification))
+                        .collect(),
+                );
                 self.flush_magnification()?;
-                if self.external.configure(commands.external) { self.stop_external_repeats(); }
+                if self.external.configure(commands.external) {
+                    self.stop_external_repeats();
+                }
             }
             Err(error) => {
                 self.external.snapshot.message = Some(error.to_string());
@@ -1206,14 +1612,26 @@ impl Desktop {
     }
 
     pub(crate) fn opening_ready(&self) -> bool {
-        self.pending.as_ref().or(self.current.as_ref()).is_some_and(|frame| frame.frame.input.opening_ready)
+        self.pending
+            .as_ref()
+            .or(self.current.as_ref())
+            .is_some_and(|frame| frame.frame.input.opening_ready)
     }
 
     pub(crate) fn ready(&mut self) -> Ready {
-        if self.ready_state != Ready::Waiting { return self.ready_state; }
-        if self.server.locked() || self.viewports.is_empty()
-            || self.viewports.iter().any(|viewport| self.output_frames.get(&viewport.id).is_none_or(|(frame, _)| !frame.frame.input.opening_ready))
-        { return Ready::Waiting; }
+        if self.ready_state != Ready::Waiting {
+            return self.ready_state;
+        }
+        if self.server.locked()
+            || self.viewports.is_empty()
+            || self.viewports.iter().any(|viewport| {
+                self.output_frames
+                    .get(&viewport.id)
+                    .is_none_or(|(frame, _)| !frame.frame.input.opening_ready)
+            })
+        {
+            return Ready::Waiting;
+        }
         let result = (|| {
             let path = self
                 .command_file
@@ -1229,8 +1647,13 @@ impl Desktop {
                 .transpose()
         })();
         match result {
-            Ok(Some(child)) => { self.children.push(child); self.ready_state = Ready::Dispatched; }
-            Ok(None) => { self.ready_state = Ready::Dispatched; }
+            Ok(Some(child)) => {
+                self.children.push(child);
+                self.ready_state = Ready::Dispatched;
+            }
+            Ok(None) => {
+                self.ready_state = Ready::Dispatched;
+            }
             Err(error) => {
                 self.ready_state = Ready::Failed;
                 let message = format!("Could not publish Park session readiness: {error}");
@@ -1245,9 +1668,19 @@ impl Desktop {
         self.send_tracked(input).map(|_| ())
     }
 
-    pub(crate) fn activate(&mut self, surface: lince_interface::host::SurfaceId, initial: bool) -> io::Result<()> {
-        let serial = self.send_tracked(if initial { Input::InitialActivate(surface) } else { Input::Activate(surface) })?;
-        if !initial { self.layer_focus = None; }
+    pub(crate) fn activate(
+        &mut self,
+        surface: lince_interface::host::SurfaceId,
+        initial: bool,
+    ) -> io::Result<()> {
+        let serial = self.send_tracked(if initial {
+            Input::InitialActivate(surface)
+        } else {
+            Input::Activate(surface)
+        })?;
+        if !initial {
+            self.layer_focus = None;
+        }
         self.pending_output = Some((serial, None));
         self.pending_focus = (!initial).then_some((serial, Some(surface)));
         Ok(())
@@ -1260,7 +1693,11 @@ impl Desktop {
     }
 
     pub(crate) fn blur_native(&mut self) -> io::Result<()> {
-        if !self.worker.is_running() { return Err(io::Error::other("The Park canvas disconnected during input suspension.")); }
+        if !self.worker.is_running() {
+            return Err(io::Error::other(
+                "The Park canvas disconnected during input suspension.",
+            ));
+        }
         self.worker.focus_native(false);
         Ok(())
     }
@@ -1274,11 +1711,18 @@ impl Desktop {
     }
 
     fn flush_logout(&mut self) -> io::Result<()> {
-        if !self.logout_pending { return Ok(()); }
+        if !self.logout_pending {
+            return Ok(());
+        }
         match self.worker.input(Input::Logout) {
-            Ok(_) => { self.logout_pending = false; Ok(()) }
+            Ok(_) => {
+                self.logout_pending = false;
+                Ok(())
+            }
             Err(std::sync::mpsc::TrySendError::Full(_)) => Ok(()),
-            Err(std::sync::mpsc::TrySendError::Disconnected(_)) => Err(io::Error::other("The Park canvas disconnected before logout could save its state.")),
+            Err(std::sync::mpsc::TrySendError::Disconnected(_)) => Err(io::Error::other(
+                "The Park canvas disconnected before logout could save its state.",
+            )),
         }
     }
 
@@ -1293,7 +1737,9 @@ impl Desktop {
         self.keys.clear();
         self.compose.reset();
         #[cfg(feature = "session")]
-        { self.repeat = None; }
+        {
+            self.repeat = None;
+        }
         self.buttons.clear();
         self.consumed.clear();
         self.consumed_actions.clear();
@@ -1326,7 +1772,12 @@ impl Desktop {
             );
             return Ok(());
         }
-        if !self.focused || self.current.as_ref().is_some_and(|current| current.frame.dmabuf().is_none()) {
+        if !self.focused
+            || self
+                .current
+                .as_ref()
+                .is_some_and(|current| current.frame.dmabuf().is_none())
+        {
             #[cfg(feature = "session")]
             self.cancel_client_gestures(0);
             self.cancel_manipulation()?;
@@ -1340,7 +1791,9 @@ impl Desktop {
             return Ok(());
         }
         #[cfg(feature = "session")]
-        if self.absolute_waiting() { return Ok(()); }
+        if self.absolute_waiting() {
+            return Ok(());
+        }
         let visible =
             |layer: &LayerSnapshot| layer.layer == Layer::Overlay || !self.fullscreen(layer.output);
         let exclusive = self
@@ -1357,41 +1810,58 @@ impl Desktop {
                     && matches!(layer.layer, Layer::Top | Layer::Overlay)
             })
             .map(|layer| layer.surface.clone());
-        let layer = exclusive.or_else(|| {
-            self.layer_focus
-                .as_ref()
-                .filter(|surface| {
-                    self.layers
-                        .iter()
-                        .any(|layer| visible(layer) && &layer.surface == *surface)
+        let layer = exclusive
+            .or_else(|| {
+                self.layer_focus
+                    .as_ref()
+                    .filter(|surface| {
+                        self.layers
+                            .iter()
+                            .any(|layer| visible(layer) && &layer.surface == *surface)
+                    })
+                    .cloned()
+            })
+            .filter(|_| {
+                !self.current.as_ref().is_some_and(|current| {
+                    current.frame.input.modal || current.frame.input.keyboard_modal
                 })
-                .cloned()
-        }).filter(|_| !self.current.as_ref().is_some_and(|current| current.frame.input.modal || current.frame.input.keyboard_modal));
-        if layer.is_some() || self.current.as_ref().is_some_and(|frame| {
-            frame.frame.input.modal || frame.frame.input.keyboard_modal
-        }) {
+            });
+        if layer.is_some()
+            || self
+                .current
+                .as_ref()
+                .is_some_and(|frame| frame.frame.input.modal || frame.frame.input.keyboard_modal)
+        {
             self.cancel_manipulation()?;
         }
-        let native = self.manipulation.active() || layer.is_none()
-            && self.pending_focus.map_or_else(
-                || {
-                    self.current.as_ref().is_none_or(|current| {
-                        current.frame.input.keyboard
-                            || current.frame.geometry.as_ref().is_none_or(|geometry| {
-                                !matches!(geometry.focused, Some(ItemId::Application(_)))
-                            })
-                    })
-                },
-                |(_, application)| application.is_none(),
-            );
+        let native = self.manipulation.active()
+            || layer.is_none()
+                && self.pending_focus.map_or_else(
+                    || {
+                        self.current.as_ref().is_none_or(|current| {
+                            current.frame.input.keyboard
+                                || current.frame.geometry.as_ref().is_none_or(|geometry| {
+                                    !matches!(geometry.focused, Some(ItemId::Application(_)))
+                                })
+                        })
+                    },
+                    |(_, application)| application.is_none(),
+                );
         if native != self.native_keyboard {
             if native && !self.worker.can_input(1) {
-                let serial = self.current.as_ref().map_or(0, |current| current.input_serial);
+                let serial = self
+                    .current
+                    .as_ref()
+                    .map_or(0, |current| current.input_serial);
                 self.pending_output.get_or_insert((serial, None));
                 return Ok(());
             }
             self.compose.reset();
-            if native { self.worker.focus_native(true); } else { self.blur_native()?; }
+            if native {
+                self.worker.focus_native(true);
+            } else {
+                self.blur_native()?;
+            }
             self.native_keyboard = native;
             if native {
                 self.restore_modifiers()?;
@@ -1417,7 +1887,10 @@ impl Desktop {
                         })
                 });
             if native {
-                let editor = self.current.as_ref().and_then(|current| current.frame.input.editor.clone());
+                let editor = self
+                    .current
+                    .as_ref()
+                    .and_then(|current| current.frame.input.editor.clone());
                 self.server.native_editor(editor);
                 self.server.native_focus();
             } else {

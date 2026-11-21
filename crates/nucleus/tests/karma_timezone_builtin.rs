@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn at, fn resolve, fn bundled_timezones_resolve_brazil_and_both_sides_of_a_repeated_hour,
+//   fn missing_hours_and_skipped_days_have_exact_neighboring_instants.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 28, 34, 59.
+
 #![cfg(test)]
 
 use nucleus::karma::{

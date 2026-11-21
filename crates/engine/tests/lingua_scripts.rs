@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn importing_a_script_rejects_the_file_before_importing_its_records.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #[tokio::test]
 async fn importing_a_script_rejects_the_file_before_importing_its_records() {
     let engine = engine::Engine::open_memory().await.unwrap();

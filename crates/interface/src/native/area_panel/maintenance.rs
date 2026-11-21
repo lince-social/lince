@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: type Pending, struct Preparation, fn candidate, fn refresh.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   40, 45, 56, 166, 167, 170.
+
 use super::*;
 use crate::native::area::editing::Edit;
 use bevy::ecs::query::QueryState;

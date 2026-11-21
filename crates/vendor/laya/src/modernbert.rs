@@ -1,3 +1,31 @@
+// non-lean-yet
+// Scope: struct Config, enum ClassifierPooling, struct ClassifierConfig, struct RotaryEmbedding.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 164, 384.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 88, 149, 180, 236, 256, 329, 407, 434, 464.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 105, 210, 211,
+//   408, 409, 465, 466.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 56, 61, 124, 294, 308.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   56, 61, 308.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   360, 362.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 32.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 329, 383, 407, 418, 464, 480.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 88, 149, 180, 236, 256, 329, 407, 434, 464.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 143, 170, 230, 251, 320, 400, 429,
+//   456.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 12, 13,
+//   14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 27, 32, 34, 35, 39, 40, 41, 42, 143, 170, 230, 251,
+//   320, 329, 383, 400, 407, 418, 429, 456, 464, 480.
+
 use candle_core::{D, DType, Device, IndexOp, Result, Tensor};
 use candle_nn::{
     Embedding, LayerNorm, Linear, Module, VarBuilder, embedding, layer_norm_no_bias, linear,

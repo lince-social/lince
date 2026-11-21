@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod support, fn run, fn fixture, fn assign.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 47.
+
 #![cfg(test)]
 
 mod support;

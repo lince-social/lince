@@ -1,11 +1,18 @@
-use super::*;
+// non-lean-yet
+// Scope: struct InputEpoch.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 44, 96.
+
+use std::time::Duration;
+
 use smithay::{
     delegate_xdg_activation,
     wayland::xdg_activation::{
         XdgActivationHandler, XdgActivationState, XdgActivationToken, XdgActivationTokenData,
     },
 };
-use std::time::Duration;
+
+use super::*;
 
 struct InputEpoch(u64);
 
@@ -70,7 +77,10 @@ impl XdgActivationHandler for State {
             return;
         };
         if self.activations.len() < 64 {
-            let initial = self.windows.get(&id).is_some_and(|window| !window.mapped || data.timestamp <= window.created);
+            let initial = self
+                .windows
+                .get(&id)
+                .is_some_and(|window| !window.mapped || data.timestamp <= window.created);
             self.activations.retain(|(pending, _, _, _)| *pending != id);
             self.activations
                 .push_back((id, data.timestamp, self.input_epoch, initial));
@@ -97,7 +107,10 @@ impl Server {
     }
 
     pub fn activations(&mut self) -> Vec<SurfaceId> {
-        self.activation_requests().into_iter().map(|(surface, _)| surface).collect()
+        self.activation_requests()
+            .into_iter()
+            .map(|(surface, _)| surface)
+            .collect()
     }
 
     pub fn activation_requests(&mut self) -> Vec<(SurfaceId, bool)> {
@@ -106,20 +119,22 @@ impl Server {
             return Vec::new();
         }
         let mut ready = Vec::new();
-        self.state.activations.retain(|(id, created, epoch, initial)| {
-            if created.elapsed() >= Duration::from_secs(5) || *epoch != self.state.input_epoch {
-                return false;
-            }
-            let Some(window) = self.state.windows.get(id) else {
-                return false;
-            };
-            if window.mapped {
-                ready.push((*id, *initial));
-                false
-            } else {
-                true
-            }
-        });
+        self.state
+            .activations
+            .retain(|(id, created, epoch, initial)| {
+                if created.elapsed() >= Duration::from_secs(5) || *epoch != self.state.input_epoch {
+                    return false;
+                }
+                let Some(window) = self.state.windows.get(id) else {
+                    return false;
+                };
+                if window.mapped {
+                    ready.push((*id, *initial));
+                    false
+                } else {
+                    true
+                }
+            });
         ready
     }
 

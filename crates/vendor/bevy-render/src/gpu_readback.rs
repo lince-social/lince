@@ -1,3 +1,28 @@
+// non-lean-yet
+// Scope: struct GpuReadbackPlugin, enum Readback, struct ReadbackOnce, fn cleanup_readback_once.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value. Sites
+//   337.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   165.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 341.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 411.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 200, 210, 321,
+//   355, 406, 407.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 314, 427, 447.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   314, 427, 447.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 83, 85.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   167, 223, 409.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 38.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 83, 87,
+//   88, 89, 90, 158, 160.
+
 use crate::{
     extract_component::ExtractComponentPlugin,
     render_asset::RenderAssets,

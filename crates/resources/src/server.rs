@@ -1,4 +1,25 @@
-use crate::{Library, RangeReader, Resource, Result, fingerprint};
+// non-lean-yet
+// Scope: struct SourceServer, fn serve.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 167, 169.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 25, 91.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 29, 55, 74, 75.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 162, 170.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   162.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites 47,
+//   73, 76, 77.
+// - [Clippy: clippy::manual_let_else] this could be rewritten as `let...else`. Sites 62.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 25.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 12.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 12, 13,
+//   14, 25.
+
 use std::{
     io::{Read, Seek, SeekFrom, Write},
     net::{TcpListener, TcpStream},
@@ -8,6 +29,8 @@ use std::{
     },
     time::Duration,
 };
+
+use crate::{Library, RangeReader, Resource, Result, fingerprint};
 
 pub struct SourceServer {
     pub uri: String,

@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: enum Error.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 //! Implementation for ExportFramebuffer and related utilizies for dumb buffers
 
 use thiserror::Error;

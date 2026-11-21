@@ -1,5 +1,10 @@
-use super::*;
+// non-lean-yet
+// Scope: fn update, fn propose, fn propose_at, fn exercise.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use lince_interface::host::Direction;
+
+use super::*;
 
 fn update(fixture: &mut Fixture, limits: &[(usize, [u32; 2], [u32; 2])]) {
     for (index, minimum, maximum) in limits {

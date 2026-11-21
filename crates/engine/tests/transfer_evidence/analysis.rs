@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod claims, mod recipes, fn inspect_original_outcomes.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use nucleus::DecimalValue;
 use nucleus::trust_analysis::{Identity, commands::Command, query::Query};

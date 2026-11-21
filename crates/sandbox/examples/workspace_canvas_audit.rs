@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: fn pick, fn menu_delete, fn output, fn activate.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 43, 76, 129, 155,
+//   164, 178, 212, 218, 317, 320, 321.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (188).
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites 40.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (16, 21, 29, 38, 50, 53, 196, 208, 215, 234, 335, 418, 420).
+
 use bevy::{input_focus::InputFocus, prelude::*};
 use lince_sandbox::{
     actions::{Action, ActionButton},

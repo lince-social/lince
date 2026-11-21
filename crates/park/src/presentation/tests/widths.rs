@@ -1,6 +1,14 @@
-use super::shortcuts::{capture, click, key, named_button, settle};
-use super::*;
+// non-lean-yet
+// Scope: fn labelled, fn write, fn
+//   width_presets_use_native_fields_validation_reordering_and_narrow_modal_controls.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use lince_interface::native::actions::Action;
+
+use super::{
+    shortcuts::{capture, click, key, named_button, settle},
+    *,
+};
 
 fn labelled(canvas: &mut Presentation, label: &str) -> Entity {
     canvas
@@ -15,7 +23,15 @@ fn labelled(canvas: &mut Presentation, label: &str) -> Entity {
 fn write(canvas: &mut Presentation, entity: Entity, size: [u32; 2], text: &str) {
     super::displays::reveal(canvas, entity);
     click(canvas, entity, size);
-    assert_eq!(canvas.app.world().resource::<bevy::input_focus::InputFocus>().get(), Some(entity), "Clicking the width field must focus that editor");
+    assert_eq!(
+        canvas
+            .app
+            .world()
+            .resource::<bevy::input_focus::InputFocus>()
+            .get(),
+        Some(entity),
+        "Clicking the width field must focus that editor"
+    );
     for (physical, logical, pressed) in [
         (KeyCode::ControlLeft, Key::Control, true),
         (KeyCode::KeyA, Key::Character("a".into()), true),

@@ -1,6 +1,7 @@
-use super::layers::capture;
-use super::shortcuts::settle;
-use super::*;
+// non-lean-yet
+// Scope: fn check, fn overlapping_items_share_visual_native_pointer_and_published_input_order.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use lince_interface::{
     host::{DesktopAction, ItemId, OutputId, OutputViewport, Rectangle},
     native::{
@@ -11,6 +12,8 @@ use lince_interface::{
         workspace::{WorkspaceMember, Workspaces},
     },
 };
+
+use super::{layers::capture, shortcuts::settle, *};
 
 fn check(canvas: &mut Presentation, owner: Entity, color: [u8; 3], label: &str, passive: bool) {
     if !passive {
@@ -96,7 +99,11 @@ fn overlapping_items_share_visual_native_pointer_and_published_input_order() {
         .into_iter()
         .enumerate()
         .map(|(index, color)| {
-            let dimensions = if index == 0 { Vec2::new(1000.0, 700.0) } else { Vec2::new(520.0, 1000.0) };
+            let dimensions = if index == 0 {
+                Vec2::new(1000.0, 700.0)
+            } else {
+                Vec2::new(520.0, 1000.0)
+            };
             canvas
                 .world_mut()
                 .spawn((
@@ -151,7 +158,8 @@ fn overlapping_items_share_visual_native_pointer_and_published_input_order() {
             let bounds = Rectangle::new([800.0 * (id - 1) as f64, 0.0], [800.0, 600.0]).unwrap();
             Output {
                 name: format!("Stacking output {id}"),
-                viewport: OutputViewport { rotation: Default::default(),
+                viewport: OutputViewport {
+                    rotation: Default::default(),
                     id: OutputId(id),
                     bounds,
                     usable: Some(bounds),

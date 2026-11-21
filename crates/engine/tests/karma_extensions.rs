@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod support, fn text, fn save, fn set.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use engine::{Engine, actions::Action};

@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn source_race.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 pub(super) async fn source_race(

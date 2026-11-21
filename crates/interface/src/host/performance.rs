@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: mod accounting, const LIMITS_US, macro stages, macro counts.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 2606, 2881, 3107,
+//   3137, 3206, 3207, 3229, 3230, 3256.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   presented:hardware_clock (2819).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   2195, 2405, 2468, 2481, 2522, 2554, 2583, 2610, 2631, 2809, 2925, 3260.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (3080, 3116, 3124, 3127, 3164, 3245, 3247, 3267, 3311, 3312, 3314, 3331, 3334).
+
 use crossbeam_queue::ArrayQueue;
 use serde::Serialize;
 

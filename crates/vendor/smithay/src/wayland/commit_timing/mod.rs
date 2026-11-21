@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct CommitTimingManagerState, struct CommitTimerMarker, struct Timestamp, type
+//   CommitTimerStateUserData.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 148, 409.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (226, 316).
+
 //! Utilities for handling the `wp-commit-timing` protocol
 //!
 //! ## How to use it

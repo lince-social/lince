@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn world, fn controls_open_only_on_explicit_input_and_hiding_restores_focus, fn
+//   keyboard_controls_bubble_from_media_and_escape_returns_focus, fn
+//   books_and_video_embed_actual_viewers_with_hidden_controls.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use bevy::picking::{
     backend::HitData,

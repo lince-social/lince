@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn count, fn preview_cancel_repeat_and_conflicts_preserve_the_database, fn
+//   slug_races_and_permission_denial_leave_no_partial_import, fn
+//   failures_during_records_and_assertions_roll_back_every_write.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 #![cfg(feature = "instinct")]

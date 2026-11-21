@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: type Documents, struct Borrowed, fn key_ref, fn key_parts.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 27.
+
 use super::{Count, Key, RecordBinding, Source, performance};
 use bevy::platform::collections::Equivalent;
 use std::hash::{Hash, Hasher};

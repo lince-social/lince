@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn setup, fn physical_configuration_restore_never_resumes_capture_or_projection, fn
+//   physical_controls_reject_foreign_workspace_non_editing_and_invalid_configuration, fn
+//   physical_workspace_switch_revokes_input_and_cancels_queued_work.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn setup() -> (App, Entity) {

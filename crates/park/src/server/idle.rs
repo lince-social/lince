@@ -1,4 +1,9 @@
-use super::*;
+// non-lean-yet
+// Scope: struct Deadline, struct Idle, mod tests.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
+use std::time::Duration;
+
 use smithay::{
     reexports::{
         wayland_protocols::ext::idle_notify::v1::server::{
@@ -9,7 +14,8 @@ use smithay::{
     },
     wayland::idle_inhibit::{IdleInhibitHandler, IdleInhibitManagerState},
 };
-use std::time::Duration;
+
+use super::*;
 
 #[derive(Clone, Copy)]
 struct Deadline {
@@ -21,7 +27,12 @@ struct Deadline {
 
 impl Deadline {
     fn new(timeout: Duration, ignores_inhibitors: bool, now: Instant, inhibited: bool) -> Self {
-        let mut value = Self { timeout, next: None, ignores_inhibitors, inhibited: false };
+        let mut value = Self {
+            timeout,
+            next: None,
+            ignores_inhibitors,
+            inhibited: false,
+        };
         value.activity(now);
         value.inhibit(inhibited, now);
         value
@@ -29,16 +40,24 @@ impl Deadline {
 
     fn activity(&mut self, now: Instant) -> bool {
         let resumed = self.next.is_none() && !self.inhibited;
-        if !self.inhibited { self.next = now.checked_add(self.timeout); }
+        if !self.inhibited {
+            self.next = now.checked_add(self.timeout);
+        }
         resumed
     }
 
     fn inhibit(&mut self, inhibited: bool, now: Instant) -> bool {
         let inhibited = inhibited && !self.ignores_inhibitors;
-        if self.inhibited == inhibited { return false; }
+        if self.inhibited == inhibited {
+            return false;
+        }
         let resumed = inhibited && self.next.is_none();
         self.inhibited = inhibited;
-        self.next = if inhibited { None } else { now.checked_add(self.timeout) };
+        self.next = if inhibited {
+            None
+        } else {
+            now.checked_add(self.timeout)
+        };
         resumed
     }
 
@@ -46,7 +65,9 @@ impl Deadline {
         if self.next.is_some_and(|deadline| deadline <= now) {
             self.next = None;
             true
-        } else { false }
+        } else {
+            false
+        }
     }
 }
 
@@ -69,14 +90,17 @@ impl Idle {
     }
 
     fn prune(&mut self) {
-        self.notifications.retain(|(notification, seat, _)| notification.is_alive() && seat.is_alive());
+        self.notifications
+            .retain(|(notification, seat, _)| notification.is_alive() && seat.is_alive());
         self.inhibitors.retain(|surface, _| surface.is_alive());
     }
 
     fn set_inhibited(&mut self, inhibited: bool, now: Instant) {
         self.inhibited = inhibited;
         for (notification, _, deadline) in &mut self.notifications {
-            if deadline.inhibit(inhibited, now) { notification.resumed(); }
+            if deadline.inhibit(inhibited, now) {
+                notification.resumed();
+            }
         }
     }
 
@@ -84,40 +108,54 @@ impl Idle {
     fn activity(&mut self, now: Instant) {
         self.prune();
         for (notification, _, deadline) in &mut self.notifications {
-            if deadline.activity(now) { notification.resumed(); }
+            if deadline.activity(now) {
+                notification.resumed();
+            }
         }
     }
 
     fn tick(&mut self, now: Instant) {
         self.prune();
         for (notification, _, deadline) in &mut self.notifications {
-            if deadline.expire(now) { notification.idled(); }
+            if deadline.expire(now) {
+                notification.idled();
+            }
         }
     }
 
     #[cfg(any(feature = "nested", all(test, feature = "server-tests")))]
     fn timeout(&self, now: Instant) -> Option<Duration> {
-        self.notifications.iter().filter_map(|(_, _, deadline)| deadline.next)
-            .min().map(|deadline| deadline.saturating_duration_since(now))
+        self.notifications
+            .iter()
+            .filter_map(|(_, _, deadline)| deadline.next)
+            .min()
+            .map(|deadline| deadline.saturating_duration_since(now))
     }
 }
 
 impl State {
     pub(super) fn refresh_idle(&mut self) {
-        let inhibited = self.lock.owner.is_none() && self.idle.inhibitors.keys().any(|surface| {
-            let Some(root) = self.input_root(surface) else { return false };
-            if let Some(id) = self.id(&root) {
-                return self.windows.get(&id).is_some_and(|window| window.mapped)
-                    && self.presented_geometry.as_ref().is_some_and(|geometry| geometry.items.iter()
-                        .any(|item| item.id == lince_interface::host::ItemId::Application(id)
-                            && self.outputs.contains_key(&item.output)
-                            && item.clip.as_ref().is_none_or(|clip| !clip.is_empty())));
-            }
-            self.layers.surfaces.get(&root).is_some_and(|layer| {
-                smithay::desktop::layer_map_for_output(self.layer_output(&root))
-                    .layer_geometry(layer).is_some()
-            })
-        });
+        let inhibited = self.lock.owner.is_none()
+            && self.idle.inhibitors.keys().any(|surface| {
+                let Some(root) = self.input_root(surface) else {
+                    return false;
+                };
+                if let Some(id) = self.id(&root) {
+                    return self.windows.get(&id).is_some_and(|window| window.mapped)
+                        && self.presented_geometry.as_ref().is_some_and(|geometry| {
+                            geometry.items.iter().any(|item| {
+                                item.id == lince_interface::host::ItemId::Application(id)
+                                    && self.outputs.contains_key(&item.output)
+                                    && item.clip.as_ref().is_none_or(|clip| !clip.is_empty())
+                            })
+                        });
+                }
+                self.layers.surfaces.get(&root).is_some_and(|layer| {
+                    smithay::desktop::layer_map_for_output(self.layer_output(&root))
+                        .layer_geometry(layer)
+                        .is_some()
+                })
+            });
         let now = Instant::now();
         self.idle.set_inhibited(inhibited, now);
         self.idle.tick(now);
@@ -126,15 +164,21 @@ impl State {
 
 impl Server {
     #[cfg(any(feature = "nested", all(test, feature = "server-tests")))]
-    pub(crate) fn activity(&mut self) { self.state.idle.activity(Instant::now()); }
+    pub(crate) fn activity(&mut self) {
+        self.state.idle.activity(Instant::now());
+    }
 
     #[cfg(any(feature = "nested", all(test, feature = "server-tests")))]
-    pub(crate) fn idle_timeout(&self) -> Option<Duration> { self.state.idle.timeout(Instant::now()) }
+    pub(crate) fn idle_timeout(&self) -> Option<Duration> {
+        self.state.idle.timeout(Instant::now())
+    }
 }
 
 impl IdleInhibitHandler for State {
     fn inhibit(&mut self, surface: WlSurface) {
-        if self.idle.inhibitors.len() >= MAX_SURFACES && !self.idle.inhibitors.contains_key(&surface) {
+        if self.idle.inhibitors.len() >= MAX_SURFACES
+            && !self.idle.inhibitors.contains_key(&surface)
+        {
             self.reject(&surface, "Park idle inhibitor limit reached");
             return;
         }
@@ -146,23 +190,44 @@ impl IdleInhibitHandler for State {
     fn uninhibit(&mut self, surface: WlSurface) {
         if let Some(count) = self.idle.inhibitors.get_mut(&surface) {
             *count = count.saturating_sub(1);
-            if *count == 0 { self.idle.inhibitors.remove(&surface); }
+            if *count == 0 {
+                self.idle.inhibitors.remove(&surface);
+            }
         }
         self.refresh_idle();
     }
 }
 
 impl GlobalDispatch<ExtIdleNotifierV1, ()> for State {
-    fn bind(_: &mut Self, _: &DisplayHandle, _: &Client, resource: New<ExtIdleNotifierV1>, _: &(), data: &mut DataInit<'_, Self>) {
+    fn bind(
+        _: &mut Self,
+        _: &DisplayHandle,
+        _: &Client,
+        resource: New<ExtIdleNotifierV1>,
+        _: &(),
+        data: &mut DataInit<'_, Self>,
+    ) {
         data.init(resource, ());
     }
 }
 
 impl Dispatch<ExtIdleNotifierV1, ()> for State {
-    fn request(state: &mut Self, _: &Client, resource: &ExtIdleNotifierV1, request: ext_idle_notifier_v1::Request, _: &(), _: &DisplayHandle, data: &mut DataInit<'_, Self>) {
+    fn request(
+        state: &mut Self,
+        _: &Client,
+        resource: &ExtIdleNotifierV1,
+        request: ext_idle_notifier_v1::Request,
+        _: &(),
+        _: &DisplayHandle,
+        data: &mut DataInit<'_, Self>,
+    ) {
         let (id, timeout, seat, ignores) = match request {
-            ext_idle_notifier_v1::Request::GetIdleNotification { id, timeout, seat } => (id, timeout, seat, false),
-            ext_idle_notifier_v1::Request::GetInputIdleNotification { id, timeout, seat } => (id, timeout, seat, true),
+            ext_idle_notifier_v1::Request::GetIdleNotification { id, timeout, seat } => {
+                (id, timeout, seat, false)
+            }
+            ext_idle_notifier_v1::Request::GetInputIdleNotification { id, timeout, seat } => {
+                (id, timeout, seat, true)
+            }
             _ => return,
         };
         let notification = data.init(id, ());
@@ -173,16 +238,36 @@ impl Dispatch<ExtIdleNotifierV1, ()> for State {
             resource.post_error(0u32, "Park idle notification seat or capacity is invalid");
             return;
         }
-        let deadline = Deadline::new(Duration::from_millis(u64::from(timeout)), ignores, Instant::now(), state.idle.inhibited);
-        state.idle.notifications.push((notification, seat, deadline));
+        let deadline = Deadline::new(
+            Duration::from_millis(u64::from(timeout)),
+            ignores,
+            Instant::now(),
+            state.idle.inhibited,
+        );
+        state
+            .idle
+            .notifications
+            .push((notification, seat, deadline));
     }
 }
 
 impl Dispatch<ExtIdleNotificationV1, ()> for State {
-    fn request(_: &mut Self, _: &Client, _: &ExtIdleNotificationV1, _: <ExtIdleNotificationV1 as Resource>::Request, _: &(), _: &DisplayHandle, _: &mut DataInit<'_, Self>) {}
+    fn request(
+        _: &mut Self,
+        _: &Client,
+        _: &ExtIdleNotificationV1,
+        _: <ExtIdleNotificationV1 as Resource>::Request,
+        _: &(),
+        _: &DisplayHandle,
+        _: &mut DataInit<'_, Self>,
+    ) {
+    }
 
     fn destroyed(state: &mut Self, _: ClientId, resource: &ExtIdleNotificationV1, _: &()) {
-        state.idle.notifications.retain(|(notification, _, _)| notification != resource);
+        state
+            .idle
+            .notifications
+            .retain(|(notification, _, _)| notification != resource);
     }
 }
 

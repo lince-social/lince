@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn actions, fn edit, fn signed, fn
+//   repeated_reply_ids_get_distinct_signed_identities_and_restore_errors_and_successes.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 72, 88.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 21.
+
 use super::*;
 
 fn actions() -> Actions {

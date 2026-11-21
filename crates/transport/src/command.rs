@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: enum Request, struct Run, enum Event, enum Response.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 5, 63, 83.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   5, 6, 7, 8, 9, 11, 12, 14, 15, 16, 17, 19, 20, 21, 22, 24, 25, 26, 27, 28, 30, 31, 32, 37, 50,
+//   51, 52, 53, 54, 55, 56, 57, 58, 63, 64, 65, 67, 68, 70, 71, 72, 74, 75, 76, 77, 83, 84, 85, 87,
+//   88, 90, 91, 92, 93, 95.
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

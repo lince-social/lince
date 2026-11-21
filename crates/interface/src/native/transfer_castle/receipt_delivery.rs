@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn inbox_form, fn inspect_form, fn preview_form, fn send_form.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 46.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (227).
+
 use super::*;
 use model::FieldKind;
 use receipts::action_form;

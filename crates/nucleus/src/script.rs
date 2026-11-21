@@ -1,10 +1,39 @@
-use std::collections::{BTreeMap, BTreeSet};
-use std::fmt;
+// non-lean-yet
+// Scope: const MAX_STEPS, const MAX_BYTES, const MAX_DEPTH, enum Value.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 508, 795, 810, 818, 824, 854.
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value. Sites
+//   866, 872, 881.
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on a `Result` value.
+//   Sites 78.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 32, 84, 94, 208,
+//   411, 420, 431, 436, 437, 440, 490, 508, 581, 582, 583, 584, 614, 752, 753, 795, 810, 818, 863,
+//   887.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 771, 775.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 14.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   130, 207, 478, 489.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 75, 103, 134, 135, 155, 392, 568.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 371.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 9, 10,
+//   11, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 28, 75, 103, 133, 134, 135, 136, 142, 143, 144,
+//   155, 371, 381, 392, 568.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites from_json:
+//   String (103), to_json: String (75).
+
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    fmt,
+};
 
 use anicca::grammar::grammar as ast;
 
-use crate::DecimalValue;
-use crate::expr::BinOp;
+use crate::{DecimalValue, expr::BinOp};
 
 pub const MAX_STEPS: usize = 100_000;
 pub const MAX_BYTES: usize = 4 * 1024 * 1024;

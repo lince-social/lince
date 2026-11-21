@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct Transport, fn draft, fn width, fn proposed.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use cell::{ClientMessage, ServerMessage};
 

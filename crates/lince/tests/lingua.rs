@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn command, fn lince_runs_pure_lingua_without_initializing_an_instance, fn
+//   default_missing_database_is_a_clear_error_without_creating_files, fn
+//   passing_a_file_runs_it_and_checking_it_does_not_execute_it.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::process::Command;
 
 fn command(config: &std::path::Path) -> Command {

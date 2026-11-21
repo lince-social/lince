@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct Timing.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   45.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 45.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 15.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   6, 7, 8, 9, 10, 11, 15.
+
 use nucleus::{DecimalValue, transfer::loans::Reference};
 use serde::{Deserialize, Serialize};
 

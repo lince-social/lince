@@ -1,9 +1,33 @@
+// non-lean-yet
+// Scope: struct Policy, struct PolicyInput, fn map, fn policy.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 172, 173, 295.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 33.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 81, 172, 173,
+//   254, 501, 502.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   allocated:include_pending (424).
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 51, 94, 159, 180, 256.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 51, 159, 256.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 56, 66, 190, 224, 336, 349, 376, 407, 417, 421, 444, 518.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 200.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 10, 11,
+//   12, 13, 14, 15, 16, 17, 18, 19, 24, 25, 26, 27, 28, 29, 30, 56, 66, 190, 200, 201, 202, 203,
+//   204, 205, 206, 207, 211, 212, 213, 214, 215, 216, 217, 224, 336, 349, 371, 372, 373, 376, 407,
+//   417, 421, 444, 518.
+
 use chrono::{DateTime, Utc};
+use nucleus::transfer::application::{EffectMode, PrivateEffect};
 use serde::{Deserialize, Serialize};
 use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;
-use nucleus::transfer::application::{EffectMode, PrivateEffect};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]

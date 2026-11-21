@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: struct Frequency, enum Unit, struct Draft, fn default_date.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 104, 106, 109,
+//   110, 146, 147, 172, 193, 200, 201, 236, 246, 280.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 232.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites definition:
+//   String (158).
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (387, 388).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   169.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (275).
+
 use nucleus::karma::{
     Cadence, CanonicalHash, DurationBinding, FrequencyAst, FrequencyCadenceAst, Slug, TimestampMs,
 };

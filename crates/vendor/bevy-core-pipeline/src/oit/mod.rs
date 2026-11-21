@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: mod resolve, struct OrderIndependentTransparencySettings, struct
+//   OrderIndependentTransparencyPlugin, fn configure_camera_depth_usages.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 139.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 269, 276, 281, 288, 292.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   281, 292.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 281.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 5.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 44, 86, 145, 155, 218.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 145,
+//   146, 147, 148, 156, 157, 163, 185, 218, 219.
+
 //! Order Independent Transparency (OIT) for 3d rendering. See [`OrderIndependentTransparencyPlugin`] for more details.
 
 use bevy_app::prelude::*;

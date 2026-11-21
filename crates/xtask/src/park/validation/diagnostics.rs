@@ -1,5 +1,10 @@
-use serde_json::{Value, json};
+// non-lean-yet
+// Scope: fn read, fn hardware.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::{fs, io::Read, path::Path};
+
+use serde_json::{Value, json};
 
 fn read(path: impl AsRef<Path>) -> Option<String> {
     let file = fs::File::open(path).ok()?;

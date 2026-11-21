@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod habit_ui, mod import_ui, mod persistence, mod practice.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 182, 184, 185,
+//   186, 187, 192, 194, 201, 217, 218, 220, 221, 223, 224, 225, 226, 230, 231, 233, 362.
+
 mod habit_ui;
 pub(crate) mod import_ui;
 mod persistence;

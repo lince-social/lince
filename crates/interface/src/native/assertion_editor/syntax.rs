@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: fn reference, fn words, fn parse, fn from_value.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 8, 97, 109.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (42, 155, 179,
+//   187).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   66, 124.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (89, 96, 103, 112).
+
 use engine::record_creation::Assertion;
 use serde_json::Value;
 

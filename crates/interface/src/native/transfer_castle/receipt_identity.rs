@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn keys_form, fn preview_form, fn accept_form, fn controls.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (10, 25, 54).
+
 use super::*;
 use model::FieldKind;
 use ui::{Command, button};

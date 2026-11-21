@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct Held.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 26, 31, 60, 65.
+
 use bevy::input::keyboard::{Key, KeyCode};
 use std::{
     collections::{BTreeMap, btree_map::Entry},

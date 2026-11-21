@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: static KEEPER_READY, fn ensure, fn start_keeper, fn initialize_enumerator.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 16.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 43.
+// - [review: §5 Panics] Verify panic isolation boundary and preserve the failure contract. Sites
+//   25.
+
 use std::any::Any;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::mpsc;

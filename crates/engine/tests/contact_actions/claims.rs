@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn descriptor, fn draft, fn command, fn reviewed.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::string_add] you added something to a string. Consider using
+//   `String::push_str()` instead. Sites 199.
+
 use super::*;
 use nucleus::trust_analysis::{
     claims::{

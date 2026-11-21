@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: const MAX_CAPACITY, enum Activity, enum Direction, struct Terms.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 51.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 147.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 8, 15, 92.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 41, 57, 129.
+// - [Clippy: clippy::struct_excessive_bools] more than 3 bools in a struct. Sites 162.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 8,
+//   9, 10, 15, 16, 17, 22, 23, 24, 25, 26, 28, 29, 30, 34, 41, 57, 85, 86, 92, 93, 94, 95, 96, 97,
+//   98, 102, 105, 119, 120, 121, 122, 123, 124, 125, 129, 142, 154, 155, 156, 157, 158, 162, 163,
+//   164, 165, 166, 167, 168, 169, 170, 171, 175, 176, 177, 178, 179, 183, 184, 185, 186, 187, 188.
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 

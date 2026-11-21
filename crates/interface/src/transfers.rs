@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: mod actions, mod fields, mod list, mod matching.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 314, 402, 477,
+//   495, 600, 632, 724, 727, 731, 805, 812, 816, 823, 888, 903, 924, 926, 939, 988, 1038.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   disclosure_preview:draft (599), edit:counteroffer (706), loan_proposal:future (1022),
+//   validate_draft:counteroffer (946).
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 256, 370,
+//   419, 424, 443, 463, 1001.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites commit_fields:
+//   String (242), payload: String (400), validate_draft: String (946).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   42, 58, 62, 83, 99, 105, 189, 494, 554, 635, 636, 637, 638, 639, 640, 642, 723, 724, 805, 812,
+//   815, 816.
+
 pub mod actions;
 pub mod fields;
 mod list;

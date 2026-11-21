@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: struct Probe, fn cpu_ticks, fn rss_kib, fn clock_ticks.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 81, 84, 85, 126,
+//   164, 255.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (44, 293,
+//   297).
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites 74.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   228, 276, 284.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (47, 51, 56, 59, 62, 64, 86, 95, 104, 131, 152, 200, 207, 236, 238, 244, 252, 300,
+//   302, 305, 311, 313, 338).
+
 use bevy::{
     input_focus::{FocusCause, InputFocus},
     math::DVec2,

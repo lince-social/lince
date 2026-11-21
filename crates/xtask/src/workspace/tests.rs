@@ -1,11 +1,17 @@
-use super::{character, fixtures, validate};
-use serde_json::{Value, json};
+// non-lean-yet
+// Scope: struct Directory, fn project, fn manifest, fn save.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::{
     borrow::Cow,
     fs,
     path::{Path, PathBuf},
     time::{SystemTime, UNIX_EPOCH},
 };
+
+use serde_json::{Value, json};
+
+use super::{character, fixtures, validate};
 
 struct Directory(PathBuf);
 

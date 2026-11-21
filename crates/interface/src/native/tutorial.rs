@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod highlight, enum TutorialField, struct TutorialPlugin, struct Start.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 pub(crate) mod highlight;
 
 use bevy::prelude::*;

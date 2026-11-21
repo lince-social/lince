@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn delivered, fn
+//   live_primary_window_selection_keeps_input_and_transfer_targets_current_through_replacement.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn delivered(canvas: &mut Presentation, window: Entity, position: [f32; 2]) {

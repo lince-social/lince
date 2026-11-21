@@ -1,8 +1,16 @@
-use super::*;
+// non-lean-yet
+// Scope: struct ExportTimestamps, fn elapsed_ticks, fn cpu, fn
+//   hardware_timestamp_deltas_mask_unused_bits_and_wrap_at_queue_precision.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 20, 26, 42, 71, 86,
+//   100, 135.
+
 use std::{
     sync::atomic::{AtomicU32, Ordering},
     time::{Duration, Instant},
 };
+
+use super::*;
 
 pub(in crate::graphics) struct ExportTimestamps {
     pool: vk::QueryPool,

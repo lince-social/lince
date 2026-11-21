@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: type OldState, struct PropMapping, struct AtomicDrmDevice, fn add_props.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 121.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   new:disable_connectors (93).
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (197, 204,
+//   209, 217, 220).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (122, 186).
+
 use std::collections::HashMap;
 use std::sync::{
     atomic::{AtomicBool, Ordering},

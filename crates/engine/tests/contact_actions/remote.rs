@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct ReaderNetwork, struct Active, struct Fixture, fn run.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 67, 70.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 67, 70.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 75, 197, 206.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 72, 327.
+
 use super::serving::{all, approve, peer, review};
 use super::*;
 use base64::{Engine as _, engine::general_purpose::STANDARD};

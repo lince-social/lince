@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: mod actions, mod text, fn laboratory_cases, struct LiveText.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 74, 91.
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 97, 98.
+
 use bevy::{a11y::AccessibilityNode, prelude::*};
 
 mod actions;

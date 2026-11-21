@@ -1,10 +1,16 @@
-use super::Presentation;
-use bevy::render::{RenderApp, diagnostic::RenderDiagnosticsObserver};
-use serde_json::{Value, json};
+// non-lean-yet
+// Scope: static NEXT_RENDER, fn timestamp, fn owner_cpu_timestamp, fn micros.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::sync::{
     Arc,
     atomic::{AtomicU64, Ordering},
 };
+
+use bevy::render::{RenderApp, diagnostic::RenderDiagnosticsObserver};
+use serde_json::{Value, json};
+
+use super::Presentation;
 
 static NEXT_RENDER: AtomicU64 = AtomicU64::new(1);
 

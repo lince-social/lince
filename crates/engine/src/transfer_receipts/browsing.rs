@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: fn principal.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   126, 127.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 31, 32, 33, 145.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use crate::actions::ActionOutcome;
 use nucleus::transfer::receipt::Document;

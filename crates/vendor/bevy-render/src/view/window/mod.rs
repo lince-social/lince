@@ -1,3 +1,26 @@
+// non-lean-yet
+// Scope: mod screenshot, struct WindowRenderPlugin, struct ExtractedWindow, fn extract_windows.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 298.
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value. Sites
+//   425.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   368.
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 390.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 154.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   395, 403.
+// - [Clippy: clippy::if_not_else] unnecessary boolean `not` operation. Sites 414.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 124, 125.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 26, 67, 231.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 22, 26,
+//   67, 68, 69, 70, 71, 76, 77, 81, 82, 83, 108, 231, 352.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   483, 489, 494, 496.
+
 use crate::renderer::wgpu_wrapper;
 use crate::sync_world::{MainEntity, RenderEntity, SyncToRenderWorld};
 use crate::{camera::extract_cameras, renderer::RenderQueue};

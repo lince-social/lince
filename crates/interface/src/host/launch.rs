@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod programs, enum Capability, struct Description, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   42.
+
 mod programs;
 pub use programs::{Program, Programs, ProgramsSnapshot, Request as ProgramsRequest};
 

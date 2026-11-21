@@ -1,9 +1,33 @@
-use super::{Identity, IdentityContext, MAX_BYTES, MAX_DISCLOSURES};
-use crate::karma::{CanonicalHash, canonical_hash, canonical_json_bytes};
+// non-lean-yet
+// Scope: const NAMESPACE, const MAX_DOCUMENT_BYTES, const MAX_TERM_SECONDS, enum Audience.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 37.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 220, 261, 272,
+//   276, 277, 279.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 72.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 14, 177.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   125, 145.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 28, 66, 84, 90, 112, 118, 132, 158, 190.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 8, 9,
+//   10, 14, 15, 16, 28, 44, 55, 56, 57, 58, 59, 60, 61, 62, 66, 84, 90, 104, 105, 106, 107, 108,
+//   112, 118, 132, 158, 169, 170, 171, 172, 177, 178, 179, 183, 184, 185, 186, 187, 190.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites id: String (84,
+//   112), parse: String (158), permitted_edges: String (190), relation: String (90), signing_bytes:
+//   String (132), validate: String (28, 66, 118).
+
+use std::collections::{BTreeMap, BTreeSet};
+
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet};
+
+use super::{Identity, IdentityContext, MAX_BYTES, MAX_DISCLOSURES};
+use crate::karma::{CanonicalHash, canonical_hash, canonical_json_bytes};
 
 pub const NAMESPACE: &str = "lince.contact-disclosure";
 pub const MAX_DOCUMENT_BYTES: usize = 32768;

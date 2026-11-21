@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: const MAX_WIDTH, const MAX_HEIGHT, struct VideoFrame, struct LatestVideo.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 37.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 32.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 9, 50.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 6,
+//   9, 16, 20, 24, 28, 32, 50, 53, 57, 64.
+
 use std::sync::{Arc, Mutex};
 
 use crate::{MediaError, Result};
@@ -51,13 +63,16 @@ pub struct LatestVideo(Arc<Mutex<Option<VideoFrame>>>);
 
 impl LatestVideo {
     pub fn publish(&self, frame: VideoFrame) {
-        *self.0.lock().unwrap_or_else(|error| error.into_inner()) = Some(frame);
+        *self
+            .0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(frame);
     }
 
     pub fn take(&self) -> Option<VideoFrame> {
         self.0
             .lock()
-            .unwrap_or_else(|error| error.into_inner())
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .take()
     }
 

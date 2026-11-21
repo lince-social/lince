@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: mod corner, mod ordering, struct ControlsSettings, enum CanvasAction.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (595, 614, 623, 629, 631, 654, 659, 663, 667, 676, 716, 721, 727, 741, 743, 749,
+//   771, 779, 781, 786, 787, 789, 794, 797, 802, 806, 809, 815).
+
 use crate::i18n::Token as Tr;
 use crate::native::{
     actions::{Action, ActionButton, ActionsPlugin},

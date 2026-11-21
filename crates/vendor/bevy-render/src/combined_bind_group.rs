@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: fn bindless_slot_count, fn combine_bindless_slot_count, fn bind_group_data, fn
+//   build_bind_group.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 136, 137.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   bind_group_layout_entries:force_no_bindless (94), build_bind_group:force_no_bindless (66).
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 60.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 179.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 180,
+//   181.
+
 //! Utilities for combining [`AsBindGroup`] implementations
 
 use alloc::borrow::Cow;

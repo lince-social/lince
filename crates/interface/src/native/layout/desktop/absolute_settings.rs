@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: mod presentation, struct Page, enum Change, fn install.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 87, 119, 129,
+//   131, 159, 163, 194, 199, 206, 207, 209, 219.
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites set_value:value → &str (72).
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 102, 103,
+//   116, 117, 157, 219.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   184, 209.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (80, 85, 141, 142, 145, 158, 159, 162, 171, 172, 176, 189, 194, 198, 199, 204,
+//   209, 211, 216, 220, 221).
+
 use super::{HostRequests, input_settings::{button, disable, feedback, field, next_request, text}};
 use crate::{host::{HostRequest, display::DisplaySnapshot, input::{AbsoluteDevice, AbsolutePreference, AbsolutePreferences, AbsoluteRequest, AbsoluteReload, AbsoluteSnapshot, InputOutcome}}, native::{actions::Action, edit_mode::label}};
 use bevy::{input_focus::{FocusCause, InputFocus}, prelude::*, text::{EditableText, TextEdit}};

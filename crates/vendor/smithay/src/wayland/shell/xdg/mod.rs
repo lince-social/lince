@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: mod decoration, mod dialog, mod handlers, const XDG_TOPLEVEL_ROLE.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 890, 891, 895,
+//   1299, 1334, 1431, 1452, 1506, 1530, 1637, 1710, 1745, 1806, 1817, 1981.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 1090, 2159.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (1357, 1358, 1391, 1392, 1430, 1494, 1500, 1502, 1576, 1578, 1596, 1598, 1621,
+//   1623, 1657, 1659, 1666, 1706, 1708, 1713, 1727, 1729, 1741, 1743, 1802, 1804, 1816, 1835, 1837,
+//   1895, 1897, 1929, 1931, 1949, 1951, 1977, 1979, 1987, 2012, 2014, 2050, 2052, 2059, 2102, 2104,
+//   2109, 2123, 2125).
+
 //! Utilities for handling shell surfaces with the `xdg_shell` protocol
 //!
 //! This module provides automatic handling of shell surfaces objects, by being registered

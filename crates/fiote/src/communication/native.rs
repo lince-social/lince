@@ -1,11 +1,27 @@
+// non-lean-yet
+// Scope: fn provider, fn http_error, fn has_native_login, fn login.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 32.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 19, 22.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 10, 72, 88, 96, 117.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 10, 31,
+//   68, 72, 88, 96, 117, 125.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites account_ready:
+//   String (88), login: String (72), logout: String (96), provider: String (10), session: String
+//   (117).
+
+use std::sync::Arc;
+
+use tokio::sync::Mutex;
+
 use super::{
     auth::{CredentialStore, MemoryCredential, Session},
     chatgpt::ChatGpt,
     provider::{GenaiProvider, Provider},
 };
 use crate::config::{Secret, Settings};
-use std::sync::Arc;
-use tokio::sync::Mutex;
 
 pub fn provider(
     settings: &Settings,

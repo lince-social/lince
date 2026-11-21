@@ -1,13 +1,20 @@
-use super::*;
-use bevy::prelude::{
-    ChildOf, ComputedNode, ComputedUiTargetCamera, Entity, Name, Rect, Text, UiGlobalTransform,
-    Vec2,
+// non-lean-yet
+// Scope: const BODY, const OTHER, const TAG, mod unavailable.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
+use bevy::{
+    prelude::{
+        ChildOf, ComputedNode, ComputedUiTargetCamera, Entity, Name, Rect, Text, UiGlobalTransform,
+        Vec2,
+    },
+    text::EditableText,
 };
-use bevy::text::EditableText;
 use lince_interface::native::{
     self,
     protein_area::{RecordBinding, Source},
 };
+
+use super::*;
 
 const BODY: &str = "Original owner description";
 const OTHER: &str = "Other owner description";
@@ -288,18 +295,45 @@ impl Toolkit {
         let expected = field.entity;
         let (owner, hit, surfaces) = self.inspect(move |canvas| {
             let world = canvas.world_mut();
-            let entity = world.query_filtered::<Entity, bevy::prelude::With<EditableText>>()
-                .iter(world).find(|entity| entity.to_bits() == expected).unwrap();
-            let camera = world.get::<ComputedUiTargetCamera>(entity).unwrap().get().unwrap();
-            let owner = world.get::<native::topology::presentation::VisualOwner>(camera).unwrap().0;
-            let hit = world.resource::<native::topology::input::PointerState>().hit.map(|(entity, _)| entity);
-            let surfaces = [Some(owner), hit].into_iter().flatten().map(|entity| {
-                let surface = world.get::<native::topology::presentation::Surface>(entity).unwrap();
-                format!("{entity:?}: face={:?}, transform={:?}", surface.face, world.get::<bevy::prelude::GlobalTransform>(surface.face))
-            }).collect::<Vec<_>>();
+            let entity = world
+                .query_filtered::<Entity, bevy::prelude::With<EditableText>>()
+                .iter(world)
+                .find(|entity| entity.to_bits() == expected)
+                .unwrap();
+            let camera = world
+                .get::<ComputedUiTargetCamera>(entity)
+                .unwrap()
+                .get()
+                .unwrap();
+            let owner = world
+                .get::<native::topology::presentation::VisualOwner>(camera)
+                .unwrap()
+                .0;
+            let hit = world
+                .resource::<native::topology::input::PointerState>()
+                .hit
+                .map(|(entity, _)| entity);
+            let surfaces = [Some(owner), hit]
+                .into_iter()
+                .flatten()
+                .map(|entity| {
+                    let surface = world
+                        .get::<native::topology::presentation::Surface>(entity)
+                        .unwrap();
+                    format!(
+                        "{entity:?}: face={:?}, transform={:?}",
+                        surface.face,
+                        world.get::<bevy::prelude::GlobalTransform>(surface.face)
+                    )
+                })
+                .collect::<Vec<_>>();
             (owner, hit, surfaces)
         });
-        assert_eq!(hit, Some(owner), "The visible Properties field must receive the native content pointer before clicking at {point:?}: {surfaces:?}");
+        assert_eq!(
+            hit,
+            Some(owner),
+            "The visible Properties field must receive the native content pointer before clicking at {point:?}: {surfaces:?}"
+        );
         self.button(272, true);
         self.button(272, false);
         let deadline = Instant::now() + Duration::from_secs(40);
@@ -365,8 +399,7 @@ impl Toolkit {
             let observed = activated.clone();
             if let Some(target) = self.inspect(move |canvas| {
                 let geometry = canvas.published_geometry()?.clone();
-                let (entity, point) =
-                    button(canvas, &expected_uid, &expected_caption, &geometry)?;
+                let (entity, point) = button(canvas, &expected_uid, &expected_caption, &geometry)?;
                 canvas.world_mut().entity_mut(entity).observe(
                     move |_: bevy::prelude::On<bevy::ui_widgets::Activate>| {
                         observed.fetch_add(1, Ordering::SeqCst);
@@ -431,20 +464,45 @@ impl Toolkit {
         });
         let deadline = Instant::now() + Duration::from_secs(15);
         loop {
-            let geometry = self.fixture.desktop.current.as_ref().unwrap().frame.geometry.as_ref().unwrap();
-            let item = geometry.items.iter().find(|item| item.id == ItemId::Native(id));
+            let geometry = self
+                .fixture
+                .desktop
+                .current
+                .as_ref()
+                .unwrap()
+                .frame
+                .geometry
+                .as_ref()
+                .unwrap();
+            let item = geometry
+                .items
+                .iter()
+                .find(|item| item.id == ItemId::Native(id));
             if let Some(item) = item {
-                let usable = geometry.outputs.iter().find(|output| output.id == item.output).unwrap().usable.unwrap();
+                let usable = geometry
+                    .outputs
+                    .iter()
+                    .find(|output| output.id == item.output)
+                    .unwrap()
+                    .usable
+                    .unwrap();
                 let rectangle = item.mapping.canvas;
-                assert!((0..2).all(|axis| rectangle.size()[axis] <= usable.size()[axis] + 1.0),
-                    "The reveal fixture must fit in its usable output: {rectangle:?}; {usable:?}");
-                if (0..2).all(|axis| rectangle.origin()[axis] >= usable.origin()[axis] - 1.0
-                    && rectangle.origin()[axis] + rectangle.size()[axis] <= usable.origin()[axis] + usable.size()[axis] + 1.0)
-                {
+                assert!(
+                    (0..2).all(|axis| rectangle.size()[axis] <= usable.size()[axis] + 1.0),
+                    "The reveal fixture must fit in its usable output: {rectangle:?}; {usable:?}"
+                );
+                if (0..2).all(|axis| {
+                    rectangle.origin()[axis] >= usable.origin()[axis] - 1.0
+                        && rectangle.origin()[axis] + rectangle.size()[axis]
+                            <= usable.origin()[axis] + usable.size()[axis] + 1.0
+                }) {
                     return;
                 }
             }
-            assert!(Instant::now() < deadline, "The focused Properties card was not revealed: {item:?}");
+            assert!(
+                Instant::now() < deadline,
+                "The focused Properties card was not revealed: {item:?}"
+            );
             self.tick("properties-selected-reveal");
         }
     }
@@ -482,7 +540,9 @@ impl Toolkit {
                     }
                     format!("geometry={geometry:?}; ancestors={}", ancestors.join("\n"))
                 });
-                panic!("The normal Raw description editor did not become visible: {state:?}; {details}");
+                panic!(
+                    "The normal Raw description editor did not become visible: {state:?}; {details}"
+                );
             }
             self.tick("properties-editor-ready");
         }

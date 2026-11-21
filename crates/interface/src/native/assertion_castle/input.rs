@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct ListRow, struct ReorderInput, struct DragState, struct Drag.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 101, 161, 176,
+//   216, 225.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (132, 161, 172, 182, 204, 212, 242).
+
 use super::*;
 use bevy::{
     ecs::message::MessageCursor,

@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod edits, const LOCAL_AUTOMATION_RECORD_QUERY, struct Checkpoint, enum ScalarChange.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 35, 71, 72, 132,
+//   134, 160, 170, 226, 311, 474, 511, 512, 546, 548, 610, 648, 843, 856, 859, 878, 899, 906, 907,
+//   909, 910.
+// - [Clippy probe: clippy::match_same_arms] these match arms have identical bodies. Sites 795, 796.
+
 use crate::{Engine, EngineError, actions::Action};
 use protein::authority::{
     self, GraphSnapshot, MutationTarget, Operation, Property, RolePolicy, VisibilityCeiling,

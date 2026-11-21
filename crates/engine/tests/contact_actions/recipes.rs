@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn publishing, fn request, fn act, fn draft.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use nucleus::trust_analysis::claims::{
     self as model,

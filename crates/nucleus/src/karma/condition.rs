@@ -1,8 +1,35 @@
-use serde::{Deserialize, Serialize};
+// non-lean-yet
+// Scope: const MIN_DIVISION_SCALE, enum ConditionError, trait ExactResolver, fn zero.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 396, 407, 776, 778, 788, 789.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 371, 426, 537.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 59, 67, 98, 99, 100, 103, 111, 348, 429, 450.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   100.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   431.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 10, 159, 227.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   44, 48.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   101, 151, 195, 448, 450, 488.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 35, 170, 199, 234, 290, 378, 437, 559.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 10, 11,
+//   12, 13, 14, 15, 16, 34, 35, 159, 160, 161, 162, 163, 164, 165, 166, 170, 199, 212, 227, 228,
+//   229, 230, 234, 247, 255, 265, 290, 366, 370, 374, 378, 437, 559.
+
 use std::{fmt, sync::Arc};
 
-use crate::expr::{BinOp, Expr, UnOp};
-use crate::karma::{DecimalValue, MAX_DECIMAL_SCALE};
+use serde::{Deserialize, Serialize};
+
+use crate::{
+    expr::{BinOp, Expr, UnOp},
+    karma::{DecimalValue, MAX_DECIMAL_SCALE},
+};
 
 const MIN_DIVISION_SCALE: u8 = 6;
 
@@ -571,8 +598,9 @@ pub fn decide(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::collections::HashMap;
+
+    use super::*;
 
     #[derive(Default)]
     struct Map(HashMap<String, DecimalValue>);

@@ -1,10 +1,17 @@
-use lince_map::{
-    Camera, Settings, TileStore,
-    scene::{Palette, Scene},
-};
+// non-lean-yet
+// Scope: fn one_and_four_scenes_release_their_own_workers_across_twenty_close_cycles.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites 22,
+//   29.
+
 use std::{
     sync::Arc,
     time::{Duration, Instant},
+};
+
+use lince_map::{
+    Camera, Settings, TileStore,
+    scene::{Palette, Scene},
 };
 
 #[tokio::test]

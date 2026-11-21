@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct ChoicePanel, enum Control, struct Choice, fn panel.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 111, 297, 398,
+//   525.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   466.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (140, 215, 259, 297, 347, 384, 409, 495, 546).
+
 use super::*;
 use crate::native::actions::Action;
 use bevy::{

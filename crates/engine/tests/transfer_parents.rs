@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod support, fn create, fn view, fn reparent.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 mod support;

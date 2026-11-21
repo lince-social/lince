@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Watching, fn focus, fn update, fn request.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 37, 81, 86, 87,
+//   89, 90, 126, 135, 161, 220, 223.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (214, 228).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (35, 36, 37, 48, 66, 70, 116, 160).
+
 use super::*;
 use crate::host::performance::{self, Count};
 

@@ -1,12 +1,35 @@
-use std::collections::{BTreeSet, VecDeque};
-use std::io::ErrorKind;
-use std::net::{IpAddr, SocketAddr, ToSocketAddrs, UdpSocket};
-use std::sync::{
-    Arc,
-    atomic::{AtomicBool, Ordering},
-    mpsc,
+// non-lean-yet
+// Scope: type StunTransmit, struct Datagram, struct Socket, struct Relay.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 250, 272, 304.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 411.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 195.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 474, 476.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   474.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   196.
+// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 205, 250, 251,
+//   309, 311, 332.
+// - [Clippy: clippy::large_enum_variant] large size difference between variants. Sites 55.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   108, 118.
+// - [rustc: unreachable_pub] unreachable `pub` item. Sites 34, 60, 159, 235, 411.
+
+use std::{
+    collections::{BTreeSet, VecDeque},
+    io::ErrorKind,
+    net::{IpAddr, SocketAddr, ToSocketAddrs, UdpSocket},
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+        mpsc,
+    },
+    time::{Instant, SystemTime},
 };
-use std::time::{Instant, SystemTime};
 
 use str0m::{
     Candidate,

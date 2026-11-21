@@ -1,3 +1,38 @@
+// non-lean-yet
+// Scope: struct BufferConstraints, struct DmabufConstraints, fn validate_buffer, fn
+//   validate_shm_buffer.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or(false)` on a `Result` value. Sites
+//   775.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   144, 175, 179, 183, 292, 322, 326, 330, 334, 359, 493, 502, 506, 529, 562.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 145, 176, 180, 184, 210, 220, 293, 323, 327, 331, 339, 365, 400,
+//   415, 496, 503, 507, 536, 557, 563, 572, 812, 824, 827, 848, 858, 882, 886, 887, 891, 894, 909,
+//   934, 936, 939, 940, 944, 947, 972, 1023, 1048, 1056, 1085, 1118, 1138, 1139.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 176, 180, 236,
+//   323, 327, 429, 498, 503, 691, 779, 808, 832, 855, 882, 911, 934, 1025, 1080, 1133.
+// - [Clippy: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably fires.
+//   Sites 623.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 152, 167, 300, 313, 552, 553, 991, 1004.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 152, 300, 991.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   765, 766, 787, 788, 826, 838, 839, 884, 885, 912, 913, 937, 938, 975, 983, 984, 1026, 1027,
+//   1081, 1134, 1226, 1227, 1236.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   499.
+// - [Clippy: clippy::manual_let_else] this could be rewritten as `let...else`. Sites 1093.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   71, 76.
+// - [Clippy: clippy::redundant_clone] Move or borrow at the marked sites and check later uses.
+//   Sites 765, 766.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 35, 36,
+//   37, 39, 44, 45, 46, 123, 142, 144, 175, 179, 183, 187, 193, 231, 235, 271, 290, 292, 322, 326,
+//   330, 334, 359, 377, 383, 424, 428, 468, 491, 493, 502, 506, 513, 529, 562, 578, 587, 589, 591,
+//   596, 598, 602, 604, 609, 613, 617, 624, 636, 642, 648, 657, 664, 671, 690, 694, 698, 702, 1149.
+
 use std::{
     ops,
     sync::{Arc, Mutex},

@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct ReviewSnapshot, struct Draft, enum UiCommand, struct Ticket.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 116, 117, 118,
+//   127, 128, 138, 149, 158, 168, 189, 193, 230, 245, 248, 285, 463, 508, 535.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (566, 647,
+//   792).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (315, 330, 357, 372, 388, 396, 431, 447, 461, 500, 505, 516, 518, 520).
+
 use super::*;
 use nucleus::trust_analysis::{
     remote::{self as model, Command as Request, Review},

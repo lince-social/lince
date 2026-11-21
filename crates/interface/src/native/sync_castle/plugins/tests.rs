@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn catalog, fn generic_forms_keep_edits_when_status_refreshes_and_validate_field_types, fn
+//   snapshot_binding, fn document_forms_have_independent_paths_and_no_receive_filter.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use nucleus::plugins::{Manifest, Package};
 

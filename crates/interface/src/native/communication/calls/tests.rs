@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn world, fn opening_a_thread_or_group_never_starts_capture, fn
+//   closed_controls_discard_old_admission_responses, fn
+//   video_uploads_reuse_the_image_asset_and_keep_the_latest_pixels.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn world() -> World {

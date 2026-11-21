@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct Rows, struct Key, struct Button, struct CaptionInputs.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 81, 89, 93, 159,
+//   171, 193, 299, 301, 385, 386.
+// - [review: §3 Ownership] Check whether the borrowed container can expose a narrower view. Sites
+//   flatten:path → &Path (375), flatten:root → &Path (375).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (43, 44, 47, 57, 59, 60, 103, 116, 117, 183, 184, 197, 306, 309, 325, 333, 347,
+//   355, 363, 367).
+
 use super::*;
 use crate::host::performance::{self, Count, Stage};
 

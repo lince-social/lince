@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: struct ColorAttachment, enum DepthStencilData, enum DepthStencilViews, struct
+//   DepthStencilAttachment.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   286.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 188.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 306, 315, 337, 361.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 113.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 13, 113, 198, 250, 405.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 14, 15,
+//   16, 22, 115, 117, 199, 200, 202, 206, 210, 251, 256, 406, 407, 412.
+
 use super::CachedTexture;
 use crate::render_resource::{TextureFormat, TextureView};
 use alloc::sync::Arc;

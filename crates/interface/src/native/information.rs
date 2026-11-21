@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod sync, struct InformationState, struct Connection, struct InformationPanel.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 107, 117, 130,
+//   149, 253, 275, 281, 288, 297, 304, 458.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (235, 256, 536, 543, 550, 567, 586, 592, 609).
+
 use crate::i18n::Token as Tr;
 use bevy::{a11y::AccessibilityNode, prelude::*};
 pub(crate) mod sync;

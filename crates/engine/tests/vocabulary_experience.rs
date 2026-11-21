@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn command, fn meaning, fn record, fn
+//   measurement_selection_pins_definition_versions_without_transfer_history_or_writes.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use engine::{Engine, actions::Action};

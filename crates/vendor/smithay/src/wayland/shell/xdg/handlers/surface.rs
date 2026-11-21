@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod toplevel, mod popup, struct XdgSurfaceUserData, struct XdgShellSurfaceUserData.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 133, 134, 135,
+//   165, 215, 216, 217, 328.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (69, 113, 115, 158, 161, 164, 195, 197, 293, 295, 301, 303, 350, 358).
+
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::sync::Mutex;

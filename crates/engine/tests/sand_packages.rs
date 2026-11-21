@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: fn owner, fn licenses, fn command, fn save.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 522.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 303.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 65, 107,
+//   140, 206, 248, 255, 261, 264, 267, 270, 273, 276, 366, 520, 533.
+
 #![cfg(test)]
 
 use engine::{Engine, EngineError, actions::Action, enrolment::CellTransport, trust::Signer};

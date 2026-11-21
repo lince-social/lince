@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: const MAX_FILE, mod tests, struct Pending, struct Import.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 132, 133, 135,
+//   293, 297, 309, 319, 323, 333, 375.
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites import:source → &Path (121).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (212, 214, 243, 252).
+
 use super::*;
 use bevy::{
     asset::RenderAssetUsages,

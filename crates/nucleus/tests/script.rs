@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct MemoryHost, fn run, fn pure_calculation_conditions_and_text_need_no_database, fn
+//   boolean_short_circuit_never_requests_data.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use nucleus::script::{Evaluator, Host, Value};

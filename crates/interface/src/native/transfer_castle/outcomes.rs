@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn action_form, fn statement_form, fn previous_versions, fn render.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 130, 147, 153,
+//   167, 237.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (239).
+
 use super::*;
 use model::FieldKind;
 use nucleus::transfer::outcome::{Measure, Request, Role};

@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct HoverEvents, struct SandHoveredOn, struct SandHoveredOff, struct SendBoxEvent.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 279, 281, 408,
+//   409, 415, 416.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (171, 207, 208, 209, 216, 222, 232, 235, 245, 250, 272, 296, 299, 332, 335, 353,
+//   372, 377, 401).
+// - [Clippy probe: clippy::redundant_field_names] redundant field names in struct initialization.
+//   Sites 407, 414.
+
 use crate::native::{
     container::BoxRoot,
     sand::{InBox, Square},

@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Page, enum Change, struct ObservedResponse, fn install.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 138, 197, 231.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 89, 130.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (53, 54, 55, 69, 159, 162, 186, 187, 230).
+
 use super::{HostRequests, HostViewport, Workspaces, control, input_settings::{button, disable, feedback, field, next_request, text}};
 use crate::{
     host::{HostRequest, OutputId, control::Context, magnification::{Adjustment, Outcome, Reload, Request, Snapshot, valid}},

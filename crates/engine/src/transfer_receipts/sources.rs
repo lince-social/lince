@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: fn role, fn source_result.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 26, 102, 109,
+//   296, 346, 365, 369, 377, 380, 444, 448.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   181.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 176, 181, 197, 203, 217.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use crate::actions::{ActionOutcome, VerifiedActionAuthorship};
 use nucleus::transfer::{

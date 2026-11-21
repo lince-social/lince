@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: const HEAD, const BODY, struct ScopedTool, fn verify.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 31, 71, 96, 106,
+//   111, 127, 128, 165, 184, 185, 188, 204, 218.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 106, 127, 128, 185.
+
 use async_trait::async_trait;
 use engine::{Engine, actions::Action};
 use fiote::{

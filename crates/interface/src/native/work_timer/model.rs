@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct Entry, struct Logs, struct Timing, fn duration_caption.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 100, 178, 193,
+//   198, 204.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   105, 106, 120, 129, 132, 133, 144.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (63, 195).
+
 use bevy::prelude::*;
 use chrono::{DateTime, FixedOffset, Utc};
 use serde::{Deserialize, Serialize};

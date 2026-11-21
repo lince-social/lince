@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: type Key, type Phase, struct Group, struct Preparation.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   53, 70, 82, 88, 141.
+
 use super::*;
 use bevy::render::render_phase::SortedRenderPhase;
 

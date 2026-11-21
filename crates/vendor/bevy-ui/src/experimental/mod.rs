@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod ghost_hierarchy.
+// BeautifulRust (baseline lines):
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 17.
+
 //! Experimental features are not yet stable and may change or be removed in the future.
 //!
 //! These features are not recommended for production use, but are available to ease experimentation

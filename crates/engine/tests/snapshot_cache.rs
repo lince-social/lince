@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn evidence_cache_tracks_every_committed_connection_and_schema_change, fn
+//   memory_evidence_uses_the_same_hash_without_holding_its_only_connection, fn
+//   streamed_state_hash_matches_canonical_snapshots_for_all_sqlite_values.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #[tokio::test]
 async fn evidence_cache_tracks_every_committed_connection_and_schema_change() {
     let directory = tempfile::tempdir().unwrap();

@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn choice, fn reference, fn audience_fields, fn history_fields.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   133, 134, 160, 162, 163, 173, 202, 205, 206, 207, 228, 229, 232, 233, 240, 241, 242, 256, 372,
+//   373, 375.
+
 use super::*;
 use super::{self as model, FieldKind};
 use serde_json::{Value, json};

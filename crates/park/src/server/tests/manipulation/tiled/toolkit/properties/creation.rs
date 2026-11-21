@@ -1,5 +1,8 @@
-use super::*;
-use bevy::prelude::{IntoScheduleConfigs, PostUpdate, Query};
+// non-lean-yet
+// Scope: fn block_profile, fn record_uids, fn record, fn
+//   flat_free_qt_creation_retry_keeps_its_pending_inspector_after_workspace_change_and_close.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::{
     collections::BTreeSet,
     sync::{
@@ -7,6 +10,10 @@ use std::{
         atomic::{AtomicUsize, Ordering},
     },
 };
+
+use bevy::prelude::{IntoScheduleConfigs, PostUpdate, Query};
+
+use super::*;
 
 fn block_profile(directory: &Path) {
     let path = directory.join("park-windows.json");

@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct ViewRangefinder3d, mod tests.
+// BeautifulRust (baseline lines):
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 4.
+
 use bevy_math::{Affine3A, Mat4, Vec3, Vec4};
 
 /// A distance calculator for the draw order of [`PhaseItem`](crate::render_phase::PhaseItem)s.

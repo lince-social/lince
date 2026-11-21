@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod audio, mod video, mod native, struct MediaError.
+// BeautifulRust (baseline lines):
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 1, 2,
+//   5, 8, 18.
+
 pub mod audio;
 pub mod video;
 

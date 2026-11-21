@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct Choices, fn choices, fn configured, fn runtime.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 64, 74, 85, 86,
+//   117, 123, 140, 146, 147, 161, 217, 226, 227, 284, 352, 360.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 64, 123.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value.
+//   Sites 264.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use std::collections::BTreeMap;
 

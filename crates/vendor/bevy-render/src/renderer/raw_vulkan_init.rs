@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: struct RawVulkanInitSettings, fn create_raw_vulkan_instance, fn create_raw_device, enum
+//   CreateRawVulkanDeviceError.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on a `Result` value.
+//   Sites 79.
+// - [Clippy: clippy::multiple_unsafe_ops_per_block] Separate independent safety obligations where
+//   clearer. Sites 78, 108.
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 78, 108.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 84.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 17, 27, 44, 60.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 12, 138.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 141,
+//   145, 149.
+
 use alloc::sync::Arc;
 use bevy_ecs::resource::Resource;
 use bevy_platform::collections::HashSet;

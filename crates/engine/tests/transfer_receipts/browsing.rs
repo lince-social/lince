@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn read, fn history_request, fn set_audience, fn
+//   source_continuation_crosses_hidden_records_without_exposing_them_or_carrying_access.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::history::{import, reader, republish};
 use super::*;
 use serde_json::Value;

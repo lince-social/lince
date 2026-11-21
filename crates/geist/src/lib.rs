@@ -1,3 +1,22 @@
+// non-lean-yet
+// Scope: struct Config, enum Error, struct Transition, struct Metrics.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 123, 124, 197, 198, 203, 247, 251, 265, 268, 270, 271, 273, 274, 277, 281, 282, 283, 285,
+//   286, 288.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 321.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 159, 160, 235, 236, 261, 293, 301.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   293.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 25.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 135, 180, 187, 194, 213, 313, 317.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 1, 4,
+//   5, 6, 7, 8, 9, 25, 26, 27, 28, 29, 46, 47, 48, 49, 53, 54, 55, 56, 57, 102, 135, 180, 187, 194,
+//   213, 313, 317.
+
 use std::fmt;
 
 #[derive(Clone, Copy, Debug, PartialEq)]

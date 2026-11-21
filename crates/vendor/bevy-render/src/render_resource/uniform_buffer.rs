@@ -1,3 +1,24 @@
+// non-lean-yet
+// Scope: struct UniformBuffer, struct DynamicUniformBuffer, struct DynamicUniformBufferWriter,
+//   struct QueueWriteBufferViewWrapper.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value. Sites
+//   285, 328.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   129, 269, 353, 367.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 130, 289, 354, 368, 405.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 282, 288, 309, 329, 354, 368.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   309, 354, 368.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   149.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 39, 176, 361.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 76, 81,
+//   92, 96, 100, 110, 199, 211, 216, 225, 229, 239, 344, 367.
+
 use core::{marker::PhantomData, num::NonZero};
 
 use crate::{

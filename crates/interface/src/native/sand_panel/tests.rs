@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn app, fn connect, fn settle, fn
+//   migrated_sand_previews_render_without_live_sands_or_input_controls.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy::prelude::*;
 
 pub(crate) fn app() -> App {

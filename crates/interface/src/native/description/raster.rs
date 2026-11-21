@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: type Pixels, trait Request, struct Job, struct Workers.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 117, 145, 151.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   61.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (114).
+// - [review: §5 Panics] Verify panic isolation boundary and preserve the failure contract. Sites
+//   156.
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 47.
+
 use bevy::prelude::*;
 use std::sync::Arc;
 use tokio::sync::oneshot;

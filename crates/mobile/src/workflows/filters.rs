@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn value, fn count, fn read, fn choices.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 139.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 53.
+
 use super::*;
 use nucleus::{
     trust_analysis::{Condition, Filter, Identity},

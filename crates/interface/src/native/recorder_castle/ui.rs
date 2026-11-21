@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod choices, mod maintenance, mod presentation, struct Name.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 126, 131, 149,
+//   296, 369.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (398, 412,
+//   418).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (138, 148, 235, 288, 293, 347, 370).
+
 use super::*;
 use crate::native::{
     actions::Action, castle_feed::button, edit_mode::label, sound::dsp::Distortion,

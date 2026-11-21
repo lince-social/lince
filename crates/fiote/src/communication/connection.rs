@@ -1,9 +1,27 @@
+// non-lean-yet
+// Scope: enum Support, struct Capabilities, enum Connection, struct Profile.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 217.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 10, 84, 166.
+// - [Clippy: clippy::large_enum_variant] large size difference between variants. Sites 166.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 99, 124, 143.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 10, 11,
+//   12, 14, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 42, 62, 73, 84, 85, 86, 87, 92, 93, 94, 95,
+//   99, 124, 137, 138, 139, 143, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 179, 180, 181,
+//   183, 187, 188, 189, 190, 191, 192, 194.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites validate:
+//   String (124, 143), validate_metadata: String (99).
+
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+
 use crate::{
     acp,
     config::{Secret, Settings},
 };
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]

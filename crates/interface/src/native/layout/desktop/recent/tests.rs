@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn fixture, fn event, fn gesture, fn focused.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use bevy::input::{
     ButtonState, InputPlugin,

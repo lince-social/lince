@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: const MAX_SECONDS, const MAX_SAMPLES, struct Clip, fn valid_path.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 55.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   read:original (87).
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites apply: String
+//   (174), list: String (71), open: String (31), read: String (87), save_recording: String (154).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (134).
+
 use super::dsp::Effects;
 use std::path::{Path, PathBuf};
 

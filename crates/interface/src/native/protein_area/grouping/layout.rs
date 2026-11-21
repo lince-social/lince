@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Line, struct Band, struct Layout.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   132, 142, 203, 233.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (78, 132, 205).
+
 use super::*;
 use crate::host::performance::{self, Count, Stage};
 

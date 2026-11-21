@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct DelayedLookup, fn
+//   in_flight_route_lookup_cannot_commit_after_local_write_authority_changes, fn
+//   in_flight_deposit_preserves_evidence_but_holds_work_after_write_permission_is_removed.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 85, 91, 185, 186.
+
 use super::*;
 use engine::{roster::ROOT_KEY_ID, trust::Signer};
 use nucleus::social::requests::PARTICIPANTS_NAMESPACE;

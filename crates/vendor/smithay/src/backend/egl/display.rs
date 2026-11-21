@@ -1,3 +1,28 @@
+// non-lean-yet
+// Scope: static BUFFER_READER, static DISPLAYS, struct EGLDisplayHandle, struct
+//   WeakEGLDisplayHandle.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check SAFETY proof and trait invariants. Sites 56, 57, 65, 66, 1030.
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 107, 220, 242, 273,
+//   386, 456, 471, 481, 495, 534, 655, 671, 704, 817, 852, 890, 897, 905, 930, 957, 968, 1056,
+//   1086, 1097, 1119, 1141, 1179, 1191, 1222.
+// - [review: §8 Unsafe] Prove unchecked operations and prefer a checked API when equivalent. Sites
+//   assume_init (251, 252, 361).
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 229, 233, 579,
+//   856, 1155.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   create_dmabuf_from_image:y_inverted (636).
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 629, 1035.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 313, 359.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (692).
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites
+//   1082.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   589, 704, 706, 707, 798, 800, 802, 807, 809.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (231, 236, 237, 857).
+
 //! Type safe native types for safe egl initialisation
 
 use std::{

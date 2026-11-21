@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn bounded_file, fn exchange, fn run, fn main.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 63, 92, 93, 94,
+//   128, 135.
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites run:arguments → &[T] (44).
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 51, 156.
+
 use base64::{Engine, prelude::BASE64_STANDARD};
 use lince_sandbox::physical_workspace::adapter::{
     Command, Descriptor, PROTOCOL_VERSION, Packet, Reply,

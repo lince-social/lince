@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct Ingress, fn admit, fn reading, fn ailuros_reading.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 46.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 46.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 46.
+// - [Clippy probe: clippy::manual_let_else] this could be rewritten as `let...else`. Sites 92, 114.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 46.
+
 use std::{
     sync::Arc,
     time::{Duration, Instant},

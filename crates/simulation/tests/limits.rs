@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn oversized_cli_case_is_rejected_before_creating_a_run, fn
+//   oversized_record_and_many_assertions_are_refused_before_capture, fn
+//   unrelated_manifest_entry_is_rejected_before_opening_it.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use simulation::{artifacts, fixtures, limits, proposal::Record};
 
 #[tokio::test]

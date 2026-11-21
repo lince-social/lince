@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn command, fn publish, fn save, fn filter.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 284, 290, 404, 512.
+
 #![cfg(test)]
 
 use chrono::Timelike;

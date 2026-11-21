@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn fixture_status, fn panel_fixture, fn panel_fixture_in, fn
+//   saved_node_connection_opens_native_setup_instead_of_sending.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 pub(super) fn fixture_status(record: &str) -> FioteStatus {

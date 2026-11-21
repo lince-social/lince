@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod support, fn number, fn now, fn level.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 248, 278.
+
 #![cfg(test)]
 
 use std::sync::Arc;

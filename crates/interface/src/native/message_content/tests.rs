@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn composer, fn
+//   all_conversation_composers_keep_files_and_dictation_without_private_record_controls, fn
+//   six_file_formats_keep_bytes_remove_selection_and_survive_failed_sends, fn
+//   box_drops_do_not_attach_to_a_focused_composer_and_stale_hover_does_not_block_them.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn composer(private: bool) -> (World, Entity) {

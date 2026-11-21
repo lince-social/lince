@@ -1,6 +1,16 @@
-use super::*;
-use smithay::backend::allocator::{Buffer, Fourcc, Modifier};
+// non-lean-yet
+// Scope: mod direct, struct PreparedExport, fn render_target_source, fn validate_plane.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 150, 154, 163, 189,
+//   199, 213, 259, 262, 318, 527, 530, 534.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 124, 206, 207,
+//   347, 379, 384, 401, 428, 459, 466, 624.
+
 use std::os::fd::{AsRawFd, IntoRawFd};
+
+use smithay::backend::allocator::{Buffer, Fourcc, Modifier};
+
+use super::*;
 
 #[cfg(all(test, feature = "nested"))]
 pub(crate) mod direct;
@@ -61,11 +71,32 @@ impl VulkanRenderer {
         }
         let size = buffer.size();
         let (vk_format, texture_format, bytes_per_pixel) = match buffer.format().code {
-            Fourcc::Argb8888 => (vk::Format::B8G8R8A8_UNORM, wgpu::TextureFormat::Bgra8Unorm, 4),
-            Fourcc::Abgr8888 => (vk::Format::R8G8B8A8_UNORM, wgpu::TextureFormat::Rgba8Unorm, 4),
-            Fourcc::Abgr16161616f => (vk::Format::R16G16B16A16_SFLOAT, wgpu::TextureFormat::Rgba16Float, 8),
-            Fourcc::Abgr2101010 => (vk::Format::A2B10G10R10_UNORM_PACK32, wgpu::TextureFormat::Rgb10a2Unorm, 4),
-            _ => return Err(ProbeFailure::at("vulkan_import", "This DMA-BUF color format is not implemented")),
+            Fourcc::Argb8888 => (
+                vk::Format::B8G8R8A8_UNORM,
+                wgpu::TextureFormat::Bgra8Unorm,
+                4,
+            ),
+            Fourcc::Abgr8888 => (
+                vk::Format::R8G8B8A8_UNORM,
+                wgpu::TextureFormat::Rgba8Unorm,
+                4,
+            ),
+            Fourcc::Abgr16161616f => (
+                vk::Format::R16G16B16A16_SFLOAT,
+                wgpu::TextureFormat::Rgba16Float,
+                8,
+            ),
+            Fourcc::Abgr2101010 => (
+                vk::Format::A2B10G10R10_UNORM_PACK32,
+                wgpu::TextureFormat::Rgb10a2Unorm,
+                4,
+            ),
+            _ => {
+                return Err(ProbeFailure::at(
+                    "vulkan_import",
+                    "This DMA-BUF color format is not implemented",
+                ));
+            }
         };
         if buffer.num_planes() != 1
             || buffer.format().modifier != Modifier::Linear
@@ -82,12 +113,18 @@ impl VulkanRenderer {
         let fd = buffer
             .handles()
             .next()
-            .ok_or_else(|| ProbeFailure::at("vulkan_import_fd", "missing DMA-BUF plane descriptor"))?
+            .ok_or_else(|| {
+                ProbeFailure::at("vulkan_import_fd", "missing DMA-BUF plane descriptor")
+            })?
             .try_clone_to_owned()
             .map_err(|error| ProbeFailure::at("vulkan_import_fd", error))?;
-        let offset = buffer.offsets().next()
+        let offset = buffer
+            .offsets()
+            .next()
             .ok_or_else(|| ProbeFailure::at("vulkan_import", "missing DMA-BUF plane offset"))?;
-        let stride = buffer.strides().next()
+        let stride = buffer
+            .strides()
+            .next()
             .ok_or_else(|| ProbeFailure::at("vulkan_import", "missing DMA-BUF plane stride"))?;
         let layout = vk::SubresourceLayout::default()
             .offset(u64::from(offset))
@@ -108,16 +145,23 @@ impl VulkanRenderer {
             | wgpu::TextureUsages::COPY_DST
             | wgpu::TextureUsages::COPY_SRC
             | wgpu::TextureUsages::TEXTURE_BINDING;
-        let previous = target.filter(|_| damage.is_some())
-            .filter(|texture| {
-                texture.width() == size.w as u32
-                    && texture.height() == size.h as u32
-                    && texture.format() == texture_format
-                    && texture.usage().contains(usage)
-            });
+        let previous = target.filter(|_| damage.is_some()).filter(|texture| {
+            texture.width() == size.w as u32
+                && texture.height() == size.h as u32
+                && texture.format() == texture_format
+                && texture.usage().contains(usage)
+        });
         let bounds = smithay::utils::Rectangle::from_size((size.w, size.h).into());
-        let regions = previous.map_or_else(|| vec![bounds], |_| damage.unwrap_or(&[]).iter()
-            .filter_map(|region| region.intersection(bounds)).collect::<Vec<_>>());
+        let regions = previous.map_or_else(
+            || vec![bounds],
+            |_| {
+                damage
+                    .unwrap_or(&[])
+                    .iter()
+                    .filter_map(|region| region.intersection(bounds))
+                    .collect::<Vec<_>>()
+            },
+        );
         if let Some(previous) = previous.filter(|_| regions.is_empty()) {
             #[cfg(feature = "native-presentation")]
             crate::runtime::trace_frame("dmabuf-import-retained", started);
@@ -217,23 +261,27 @@ impl VulkanRenderer {
         #[cfg(feature = "native-presentation")]
         let started = std::time::Instant::now();
         let texture = self.device.create_texture(&wgpu::TextureDescriptor {
-                    label: Some("park_client_content"),
-                    size: wgpu::Extent3d {
-                        width: size.w as u32,
-                        height: size.h as u32,
-                        depth_or_array_layers: 1,
-                    },
-                    mip_level_count: 1,
-                    sample_count: 1,
-                    dimension: wgpu::TextureDimension::D2,
-                    format: texture_format,
-                    usage,
-                    view_formats: &[],
-                });
+            label: Some("park_client_content"),
+            size: wgpu::Extent3d {
+                width: size.w as u32,
+                height: size.h as u32,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: texture_format,
+            usage,
+            view_formats: &[],
+        });
         let view = texture.create_view(&Default::default());
         let mut encoder = self.device.create_command_encoder(&Default::default());
         if let Some(previous) = previous {
-            encoder.copy_texture_to_texture(previous.as_image_copy(), texture.as_image_copy(), texture.size());
+            encoder.copy_texture_to_texture(
+                previous.as_image_copy(),
+                texture.as_image_copy(),
+                texture.size(),
+            );
         }
         {
             let _pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -242,7 +290,11 @@ impl VulkanRenderer {
                     depth_slice: None,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: if previous.is_some() { wgpu::LoadOp::Load } else { wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT) },
+                        load: if previous.is_some() {
+                            wgpu::LoadOp::Load
+                        } else {
+                            wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT)
+                        },
                         store: wgpu::StoreOp::Store,
                     },
                 })],
@@ -286,16 +338,29 @@ impl VulkanRenderer {
             let layers = vk::ImageSubresourceLayers::default()
                 .aspect_mask(vk::ImageAspectFlags::COLOR)
                 .layer_count(1);
-            let regions: Vec<_> = regions.iter().map(|region| vk::ImageCopy::default()
-                .src_subresource(layers)
-                .dst_subresource(layers)
-                .src_offset(vk::Offset3D { x: region.loc.x, y: region.loc.y, z: 0 })
-                .dst_offset(vk::Offset3D { x: region.loc.x, y: region.loc.y, z: 0 })
-                .extent(vk::Extent3D {
-                    width: region.size.w as u32,
-                    height: region.size.h as u32,
-                    depth: 1,
-                })).collect();
+            let regions: Vec<_> = regions
+                .iter()
+                .map(|region| {
+                    vk::ImageCopy::default()
+                        .src_subresource(layers)
+                        .dst_subresource(layers)
+                        .src_offset(vk::Offset3D {
+                            x: region.loc.x,
+                            y: region.loc.y,
+                            z: 0,
+                        })
+                        .dst_offset(vk::Offset3D {
+                            x: region.loc.x,
+                            y: region.loc.y,
+                            z: 0,
+                        })
+                        .extent(vk::Extent3D {
+                            width: region.size.w as u32,
+                            height: region.size.h as u32,
+                            depth: 1,
+                        })
+                })
+                .collect();
             let release = vk::ImageMemoryBarrier::default()
                 .image(image)
                 .subresource_range(range)
@@ -325,14 +390,16 @@ impl VulkanRenderer {
                     &[],
                     &[acquire, destination_barrier],
                 );
-                if !regions.is_empty() { self.raw_device.cmd_copy_image(
-                    command,
-                    image,
-                    vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
-                    destination,
-                    vk::ImageLayout::TRANSFER_DST_OPTIMAL,
-                    &regions,
-                ); }
+                if !regions.is_empty() {
+                    self.raw_device.cmd_copy_image(
+                        command,
+                        image,
+                        vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
+                        destination,
+                        vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+                        &regions,
+                    );
+                }
                 self.raw_device.cmd_pipeline_barrier(
                     command,
                     vk::PipelineStageFlags::TRANSFER,
@@ -349,7 +416,6 @@ impl VulkanRenderer {
         crate::runtime::trace_frame("dmabuf-import-copy", started);
         Ok(texture)
     }
-
 }
 
 impl GpuContext {
@@ -359,7 +425,8 @@ impl GpuContext {
         }
         #[cfg(feature = "native-presentation")]
         let started = std::time::Instant::now();
-        let target = self.create_shared_image_format(source.width(), source.height(), source.format())?;
+        let target =
+            self.create_shared_image_format(source.width(), source.height(), source.format())?;
         #[cfg(feature = "native-presentation")]
         crate::runtime::trace_frame("dmabuf-export-allocation", started);
         #[cfg(feature = "native-presentation")]
@@ -418,7 +485,8 @@ impl GpuContext {
         let started = std::time::Instant::now();
         let submitted = self.checked_submission(|| {
             #[cfg(feature = "native-presentation")]
-            let _observation = crate::presentation::observe_work("lince_park::graphics::queue_submit");
+            let _observation =
+                crate::presentation::observe_work("lince_park::graphics::queue_submit");
             self.queue.submit(commands);
             Ok(())
         });
@@ -437,7 +505,8 @@ impl GpuContext {
         sources: &[wgpu::Texture],
     ) -> Result<Vec<ExportedImage>> {
         #[cfg(feature = "native-presentation")]
-        let _observation = crate::presentation::observe_work("lince_park::graphics::export_render_targets");
+        let _observation =
+            crate::presentation::observe_work("lince_park::graphics::export_render_targets");
         if sources.is_empty() {
             return Ok(Vec::new());
         }
@@ -481,7 +550,8 @@ impl GpuContext {
         }
         #[cfg(feature = "native-presentation")]
         let started = std::time::Instant::now();
-        let target = self.allocate_shared_image(source.width(), source.height(), source.format())?;
+        let target =
+            self.allocate_shared_image(source.width(), source.height(), source.format())?;
         #[cfg(feature = "native-presentation")]
         crate::runtime::trace_frame("dmabuf-export-allocation", started);
         Ok(target)
@@ -533,11 +603,14 @@ impl GpuContext {
         // source preparation before the copy and retains both images until completion.
         unsafe {
             encoder.as_hal_mut::<Vulkan, _, _>(|encoder| {
-                let encoder = encoder
-                    .ok_or_else(|| ProbeFailure::at("vulkan_export_copy", "Vulkan HAL unavailable"))?;
+                let encoder = encoder.ok_or_else(|| {
+                    ProbeFailure::at("vulkan_export_copy", "Vulkan HAL unavailable")
+                })?;
                 let command = encoder.raw_handle();
                 #[cfg(all(test, feature = "native-presentation"))]
-                let timestamp = self.export_timestamps.as_ref()
+                let timestamp = self
+                    .export_timestamps
+                    .as_ref()
                     .map(|timestamps| timestamps.begin(command))
                     .transpose()?;
                 let range = vk::ImageSubresourceRange::default()
@@ -626,8 +699,20 @@ impl GpuContext {
     }
 }
 
-fn validate_plane(width: u64, height: u64, stride: u64, offset: u64, length: u64, bytes_per_pixel: u64) -> Result<()> {
-    if !matches!(bytes_per_pixel, 4 | 8) { return Err(ProbeFailure::at("vulkan_import_size", "Unsupported pixel size")); }
+fn validate_plane(
+    width: u64,
+    height: u64,
+    stride: u64,
+    offset: u64,
+    length: u64,
+    bytes_per_pixel: u64,
+) -> Result<()> {
+    if !matches!(bytes_per_pixel, 4 | 8) {
+        return Err(ProbeFailure::at(
+            "vulkan_import_size",
+            "Unsupported pixel size",
+        ));
+    }
     let row = width
         .checked_mul(bytes_per_pixel)
         .ok_or_else(|| ProbeFailure::at("vulkan_import_size", "row size overflow"))?;
@@ -660,12 +745,33 @@ pub(super) mod tests {
     pub(in crate::graphics) mod timestamps;
 
     #[test]
-    fn exporting_color_buffers_preserves_precision_and_channel_order_without_reinterpreting_unsupported_formats() {
+    fn exporting_color_buffers_preserves_precision_and_channel_order_without_reinterpreting_unsupported_formats()
+     {
         for (source, texture, vk_format, code) in [
-            (wgpu::TextureFormat::Bgra8UnormSrgb, wgpu::TextureFormat::Bgra8Unorm, vk::Format::B8G8R8A8_UNORM, Fourcc::Argb8888),
-            (wgpu::TextureFormat::Rgba8UnormSrgb, wgpu::TextureFormat::Rgba8Unorm, vk::Format::R8G8B8A8_UNORM, Fourcc::Abgr8888),
-            (wgpu::TextureFormat::Rgba16Float, wgpu::TextureFormat::Rgba16Float, vk::Format::R16G16B16A16_SFLOAT, Fourcc::Abgr16161616f),
-            (wgpu::TextureFormat::Rgb10a2Unorm, wgpu::TextureFormat::Rgb10a2Unorm, vk::Format::A2B10G10R10_UNORM_PACK32, Fourcc::Abgr2101010),
+            (
+                wgpu::TextureFormat::Bgra8UnormSrgb,
+                wgpu::TextureFormat::Bgra8Unorm,
+                vk::Format::B8G8R8A8_UNORM,
+                Fourcc::Argb8888,
+            ),
+            (
+                wgpu::TextureFormat::Rgba8UnormSrgb,
+                wgpu::TextureFormat::Rgba8Unorm,
+                vk::Format::R8G8B8A8_UNORM,
+                Fourcc::Abgr8888,
+            ),
+            (
+                wgpu::TextureFormat::Rgba16Float,
+                wgpu::TextureFormat::Rgba16Float,
+                vk::Format::R16G16B16A16_SFLOAT,
+                Fourcc::Abgr16161616f,
+            ),
+            (
+                wgpu::TextureFormat::Rgb10a2Unorm,
+                wgpu::TextureFormat::Rgb10a2Unorm,
+                vk::Format::A2B10G10R10_UNORM_PACK32,
+                Fourcc::Abgr2101010,
+            ),
         ] {
             assert_eq!(shared_format(source).unwrap(), (texture, vk_format, code));
         }
@@ -690,10 +796,16 @@ pub(super) mod tests {
     }
 
     #[test]
-    fn high_precision_planes_require_eight_byte_pixels_and_reject_truncation_or_misaligned_offsets() {
+    fn high_precision_planes_require_eight_byte_pixels_and_reject_truncation_or_misaligned_offsets()
+    {
         assert!(validate_plane(64, 32, 512, 0, 16384, 8).is_ok());
         assert!(validate_plane(63, 32, 512, 8, 16384, 8).is_ok());
-        for (stride, offset, length) in [(256, 0, 16384), (512, 0, 16383), (512, 4, 32768), (516, 0, 32768)] {
+        for (stride, offset, length) in [
+            (256, 0, 16384),
+            (512, 0, 16383),
+            (512, 4, 32768),
+            (516, 0, 32768),
+        ] {
             assert!(validate_plane(64, 32, stride, offset, length, 8).is_err());
         }
         assert!(validate_plane(1, 1, 8, 0, 8, 3).is_err());
@@ -704,7 +816,11 @@ pub(super) mod tests {
     #[ignore = "requires hardware Vulkan and EGL"]
     fn exported_frames_preserve_pixels_after_source_reuse() {
         let renderer = VulkanRenderer::new().unwrap();
-        let size = wgpu::Extent3d { width: 1920, height: 1080, depth_or_array_layers: 1 };
+        let size = wgpu::Extent3d {
+            width: 1920,
+            height: 1080,
+            depth_or_array_layers: 1,
+        };
         let source = renderer.device.create_texture(&wgpu::TextureDescriptor {
             label: Some("park_export_retention"),
             size,
@@ -712,7 +828,9 @@ pub(super) mod tests {
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format: wgpu::TextureFormat::Bgra8Unorm,
-            usage: wgpu::TextureUsages::COPY_SRC | wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::RENDER_ATTACHMENT,
+            usage: wgpu::TextureUsages::COPY_SRC
+                | wgpu::TextureUsages::COPY_DST
+                | wgpu::TextureUsages::RENDER_ATTACHMENT,
             view_formats: &[],
         });
         let mut frames = Vec::new();
@@ -720,7 +838,11 @@ pub(super) mod tests {
             renderer.queue.write_texture(
                 source.as_image_copy(),
                 &[value, value, value, 255].repeat((size.width * size.height) as usize),
-                wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(size.width * 4), rows_per_image: Some(size.height) },
+                wgpu::TexelCopyBufferLayout {
+                    offset: 0,
+                    bytes_per_row: Some(size.width * 4),
+                    rows_per_image: Some(size.height),
+                },
                 size,
             );
             frames.push((value, renderer.export_copy(&source).unwrap()));
@@ -730,7 +852,11 @@ pub(super) mod tests {
             frame.wait_for_probe().unwrap();
             let pixels = crate::presentation::probe_pixels(&frame.dmabuf).unwrap();
             assert_eq!(pixels.len(), (size.width * size.height * 4) as usize);
-            assert!(pixels.chunks_exact(4).all(|pixel| pixel == [value, value, value, 255]));
+            assert!(
+                pixels
+                    .chunks_exact(4)
+                    .all(|pixel| pixel == [value, value, value, 255])
+            );
         }
     }
 
@@ -741,7 +867,11 @@ pub(super) mod tests {
         let renderer = VulkanRenderer::new().unwrap();
         let source = renderer.device.create_texture(&wgpu::TextureDescriptor {
             label: Some("park_export_uninitialized"),
-            size: wgpu::Extent3d { width: 33, height: 17, depth_or_array_layers: 1 },
+            size: wgpu::Extent3d {
+                width: 33,
+                height: 17,
+                depth_or_array_layers: 1,
+            },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -751,7 +881,10 @@ pub(super) mod tests {
         });
         let frame = renderer.export_copy(&source).unwrap();
         frame.wait_for_probe().unwrap();
-        assert_eq!(crate::presentation::probe_pixels(&frame.dmabuf).unwrap(), vec![0; 33 * 17 * 4]);
+        assert_eq!(
+            crate::presentation::probe_pixels(&frame.dmabuf).unwrap(),
+            vec![0; 33 * 17 * 4]
+        );
     }
 
     #[cfg(feature = "native-presentation")]
@@ -760,9 +893,21 @@ pub(super) mod tests {
     fn dmabuf_damage_retains_empty_frames_and_preserves_partial_full_and_resized_pixels() {
         let renderer = VulkanRenderer::new().unwrap();
         let source = |size: [u32; 2], value: u8| {
-            let image = renderer.create_shared_image_format(size[0], size[1], wgpu::TextureFormat::Bgra8Unorm).unwrap();
+            let image = renderer
+                .create_shared_image_format(size[0], size[1], wgpu::TextureFormat::Bgra8Unorm)
+                .unwrap();
             let channel = f64::from(value) / 255.0;
-            let image = renderer.clear(image, wgpu::Color { r: channel, g: channel, b: channel, a: 1.0 }).unwrap();
+            let image = renderer
+                .clear(
+                    image,
+                    wgpu::Color {
+                        r: channel,
+                        g: channel,
+                        b: channel,
+                        a: 1.0,
+                    },
+                )
+                .unwrap();
             image.wait_for_probe().unwrap();
             image
         };
@@ -775,24 +920,47 @@ pub(super) mod tests {
         let before = renderer.import_dmabuf(&original.dmabuf).unwrap();
         let incoming = source([32, 16], 119);
         let damage = [smithay::utils::Rectangle::new((4, 2).into(), (8, 3).into())];
-        let after = renderer.import_dmabuf_regions(&incoming.dmabuf, Some(&before), Some(&damage)).unwrap();
+        let after = renderer
+            .import_dmabuf_regions(&incoming.dmabuf, Some(&before), Some(&damage))
+            .unwrap();
         let pixels = read(&after);
         for y in 0..16 {
             for x in 0..32 {
-                let value = if (4..12).contains(&x) && (2..5).contains(&y) { 119 } else { 17 };
-                assert_eq!(&pixels[(y * 32 + x) * 4..(y * 32 + x + 1) * 4], &[value, value, value, 255]);
+                let value = if (4..12).contains(&x) && (2..5).contains(&y) {
+                    119
+                } else {
+                    17
+                };
+                assert_eq!(
+                    &pixels[(y * 32 + x) * 4..(y * 32 + x + 1) * 4],
+                    &[value, value, value, 255]
+                );
             }
         }
-        let retained = renderer.import_dmabuf_regions(&incoming.dmabuf, Some(&after), Some(&[])).unwrap();
+        let retained = renderer
+            .import_dmabuf_regions(&incoming.dmabuf, Some(&after), Some(&[]))
+            .unwrap();
         assert_eq!(retained, after);
-        let outside = [smithay::utils::Rectangle::new((100, 100).into(), (8, 3).into())];
-        assert_eq!(renderer.import_dmabuf_regions(&incoming.dmabuf, Some(&after), Some(&outside)).unwrap(), after);
+        let outside = [smithay::utils::Rectangle::new(
+            (100, 100).into(),
+            (8, 3).into(),
+        )];
+        assert_eq!(
+            renderer
+                .import_dmabuf_regions(&incoming.dmabuf, Some(&after), Some(&outside))
+                .unwrap(),
+            after
+        );
         let full = [smithay::utils::Rectangle::from_size((32, 16).into())];
-        let replaced = renderer.import_dmabuf_regions(&incoming.dmabuf, Some(&after), Some(&full)).unwrap();
+        let replaced = renderer
+            .import_dmabuf_regions(&incoming.dmabuf, Some(&after), Some(&full))
+            .unwrap();
         assert_eq!(read(&replaced), [119, 119, 119, 255].repeat(32 * 16));
         let smaller = source([16, 8], 231);
         let partial = [smithay::utils::Rectangle::from_size((1, 1).into())];
-        let resized = renderer.import_dmabuf_regions(&smaller.dmabuf, Some(&after), Some(&partial)).unwrap();
+        let resized = renderer
+            .import_dmabuf_regions(&smaller.dmabuf, Some(&after), Some(&partial))
+            .unwrap();
         assert_eq!(read(&resized), [231, 231, 231, 255].repeat(16 * 8));
         assert_eq!(read(&after), pixels);
         assert_eq!(read(&before), [17, 17, 17, 255].repeat(32 * 16));
@@ -802,24 +970,60 @@ pub(super) mod tests {
     #[ignore = "requires hardware Vulkan and linear RGBA16F DMA-BUF support"]
     fn half_float_export_and_reimport_preserve_values_above_sdr_white() {
         let renderer = VulkanRenderer::new().unwrap();
-        let image = renderer.create_shared_image_format(4, 4, wgpu::TextureFormat::Rgba16Float).unwrap();
-        let exported = renderer.clear(image, wgpu::Color { r: 2.0, g: 0.5, b: 0.25, a: 1.0 }).unwrap();
+        let image = renderer
+            .create_shared_image_format(4, 4, wgpu::TextureFormat::Rgba16Float)
+            .unwrap();
+        let exported = renderer
+            .clear(
+                image,
+                wgpu::Color {
+                    r: 2.0,
+                    g: 0.5,
+                    b: 0.25,
+                    a: 1.0,
+                },
+            )
+            .unwrap();
         exported.wait_for_probe().unwrap();
         assert_eq!(exported.dmabuf.format().code, Fourcc::Abgr16161616f);
         let imported = renderer.import_dmabuf(&exported.dmabuf).unwrap();
         assert_eq!(imported.format(), wgpu::TextureFormat::Rgba16Float);
-        let buffer = renderer.device.create_buffer(&wgpu::BufferDescriptor { label: Some("park-hdr-precision-readback"),
-            size: 1024, usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ, mapped_at_creation: false });
+        let buffer = renderer.device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("park-hdr-precision-readback"),
+            size: 1024,
+            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+            mapped_at_creation: false,
+        });
         let mut encoder = renderer.device.create_command_encoder(&Default::default());
-        encoder.copy_texture_to_buffer(imported.as_image_copy(), wgpu::TexelCopyBufferInfo {
-            buffer: &buffer, layout: wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(256), rows_per_image: Some(4) },
-        }, imported.size());
+        encoder.copy_texture_to_buffer(
+            imported.as_image_copy(),
+            wgpu::TexelCopyBufferInfo {
+                buffer: &buffer,
+                layout: wgpu::TexelCopyBufferLayout {
+                    offset: 0,
+                    bytes_per_row: Some(256),
+                    rows_per_image: Some(4),
+                },
+            },
+            imported.size(),
+        );
         renderer.queue.submit([encoder.finish()]);
         let slice = buffer.slice(..);
         let (sender, receiver) = std::sync::mpsc::sync_channel(1);
-        slice.map_async(wgpu::MapMode::Read, move |result| { let _ = sender.send(result); });
-        renderer.device.poll(wgpu::PollType::Wait { submission_index: None, timeout: Some(std::time::Duration::from_secs(5)) }).unwrap();
-        receiver.recv_timeout(std::time::Duration::from_secs(1)).unwrap().unwrap();
+        slice.map_async(wgpu::MapMode::Read, move |result| {
+            let _ = sender.send(result);
+        });
+        renderer
+            .device
+            .poll(wgpu::PollType::Wait {
+                submission_index: None,
+                timeout: Some(std::time::Duration::from_secs(5)),
+            })
+            .unwrap();
+        receiver
+            .recv_timeout(std::time::Duration::from_secs(1))
+            .unwrap()
+            .unwrap();
         let pixels = slice.get_mapped_range().unwrap();
         for y in 0..4 {
             for x in 0..4 {
@@ -831,39 +1035,85 @@ pub(super) mod tests {
                 assert_eq!(values, [0x4000, 0x3800, 0x3400, 0x3c00]);
             }
         }
-        drop(pixels); buffer.unmap();
+        drop(pixels);
+        buffer.unmap();
     }
 
     #[test]
     #[ignore = "requires hardware Vulkan and linear RGB10A2 DMA-BUF support"]
     fn packed_ten_bit_export_and_reimport_preserve_channel_positions_and_all_precision() {
         let renderer = VulkanRenderer::new().unwrap();
-        let image = renderer.create_shared_image_format(4, 4, wgpu::TextureFormat::Rgb10a2Unorm).unwrap();
-        let exported = renderer.clear(image, wgpu::Color { r: 256.0 / 1023.0, g: 513.0 / 1023.0, b: 767.0 / 1023.0, a: 1.0 }).unwrap();
+        let image = renderer
+            .create_shared_image_format(4, 4, wgpu::TextureFormat::Rgb10a2Unorm)
+            .unwrap();
+        let exported = renderer
+            .clear(
+                image,
+                wgpu::Color {
+                    r: 256.0 / 1023.0,
+                    g: 513.0 / 1023.0,
+                    b: 767.0 / 1023.0,
+                    a: 1.0,
+                },
+            )
+            .unwrap();
         exported.wait_for_probe().unwrap();
         assert_eq!(exported.dmabuf.format().code, Fourcc::Abgr2101010);
         let imported = renderer.import_dmabuf(&exported.dmabuf).unwrap();
         assert_eq!(imported.format(), wgpu::TextureFormat::Rgb10a2Unorm);
-        let buffer = renderer.device.create_buffer(&wgpu::BufferDescriptor { label: Some("park-ten-bit-precision-readback"),
-            size: 1024, usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ, mapped_at_creation: false });
+        let buffer = renderer.device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("park-ten-bit-precision-readback"),
+            size: 1024,
+            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+            mapped_at_creation: false,
+        });
         let mut encoder = renderer.device.create_command_encoder(&Default::default());
-        encoder.copy_texture_to_buffer(imported.as_image_copy(), wgpu::TexelCopyBufferInfo {
-            buffer: &buffer, layout: wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(256), rows_per_image: Some(4) },
-        }, imported.size());
+        encoder.copy_texture_to_buffer(
+            imported.as_image_copy(),
+            wgpu::TexelCopyBufferInfo {
+                buffer: &buffer,
+                layout: wgpu::TexelCopyBufferLayout {
+                    offset: 0,
+                    bytes_per_row: Some(256),
+                    rows_per_image: Some(4),
+                },
+            },
+            imported.size(),
+        );
         renderer.queue.submit([encoder.finish()]);
         let slice = buffer.slice(..);
         let (sender, receiver) = std::sync::mpsc::sync_channel(1);
-        slice.map_async(wgpu::MapMode::Read, move |result| { let _ = sender.send(result); });
-        renderer.device.poll(wgpu::PollType::Wait { submission_index: None, timeout: Some(std::time::Duration::from_secs(5)) }).unwrap();
-        receiver.recv_timeout(std::time::Duration::from_secs(1)).unwrap().unwrap();
+        slice.map_async(wgpu::MapMode::Read, move |result| {
+            let _ = sender.send(result);
+        });
+        renderer
+            .device
+            .poll(wgpu::PollType::Wait {
+                submission_index: None,
+                timeout: Some(std::time::Duration::from_secs(5)),
+            })
+            .unwrap();
+        receiver
+            .recv_timeout(std::time::Duration::from_secs(1))
+            .unwrap()
+            .unwrap();
         let pixels = slice.get_mapped_range().unwrap();
         for y in 0..4 {
             for x in 0..4 {
                 let offset = y * 256 + x * 4;
                 let pixel = u32::from_le_bytes(pixels[offset..offset + 4].try_into().unwrap());
-                assert_eq!([pixel & 1023, (pixel >> 10) & 1023, (pixel >> 20) & 1023, pixel >> 30], [256, 513, 767, 3]);
+                assert_eq!(
+                    [
+                        pixel & 1023,
+                        (pixel >> 10) & 1023,
+                        (pixel >> 20) & 1023,
+                        pixel >> 30
+                    ],
+                    [256, 513, 767, 3]
+                );
             }
         }
-        drop(pixels); buffer.unmap();
+        drop(pixels);
+        buffer.unmap();
     }
 }

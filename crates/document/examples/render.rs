@@ -1,10 +1,17 @@
+// non-lean-yet
+// Scope: fn main.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   5, 6, 9, 11, 13, 15, 24, 38.
+
+use std::{env::args, path::Path, time::Instant};
+
 use lince_document::Reader;
-use std::{path::Path, time::Instant};
 
 fn main() {
-    let path = std::env::args().nth(1).expect("provide a PDF or EPUB path");
-    let output = std::env::args().nth(2).expect("provide an output PNG path");
-    let section = std::env::args()
+    let path = args().nth(1).expect("provide a PDF or EPUB path");
+    let output = args().nth(2).expect("provide an output PNG path");
+    let section = args()
         .nth(3)
         .map_or(0, |value| value.parse().expect("section index"));
     let start = Instant::now();

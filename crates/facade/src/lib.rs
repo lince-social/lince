@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: mod auth, mod live, mod signal_endpoints, mod signal_streams.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 88, 103, 106,
+//   110, 113.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 46, 50.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 29.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   1, 29, 30, 46, 50.
+
 #![forbid(unsafe_code)]
 #![recursion_limit = "256"]
 

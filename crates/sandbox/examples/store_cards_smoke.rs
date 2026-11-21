@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct Fixture, fn rect, fn capture, fn exercise.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (160).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (25, 27, 45, 49, 62, 73, 75, 79, 85, 87, 96, 100, 103, 110, 115, 126, 167).
+
 use bevy::{
     diagnostic::FrameCount,
     input::{ButtonState, mouse::MouseButtonInput},

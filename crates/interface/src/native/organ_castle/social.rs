@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: mod ask, mod discovery_sources, mod moderation, mod operator.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 205, 214, 220,
+//   226, 232, 238, 244, 250, 256, 262, 268, 274, 280, 286, 296, 325, 331, 337, 363, 369, 375, 381,
+//   387, 393, 548, 554, 560, 566, 572, 578, 740, 1121, 1122, 1142, 1143, 1172, 1173, 1570, 1755,
+//   1979, 1985, 1991, 1997, 2003, 2009, 2015, 2021, 2027, 2036, 2051, 2057, 2063, 2069, 2075, 2081,
+//   2087, 2111, 2183, 2189.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 1688, 1695,
+//   1698, 1765, 1771, 1779.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   205, 344, 680, 787, 1382, 1633, 1641.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (198, 443, 2210, 2222).
+
 use super::*;
 use forms::{boolean, choices};
 mod ask;

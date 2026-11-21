@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: const RECORD_NAME, const RECORD_TTL_SECS, const RECORD_VERSION, const MAX_PUBLIC_CELLS.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 28, 35.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 128, 132.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 86, 228,
+//   231.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 128, 132.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 41, 70, 113, 125, 137, 152, 166, 221, 246, 255.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 147.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   17, 20, 21, 22, 23, 26, 41, 70, 113, 121, 125, 137, 147, 152, 166, 174, 221, 246, 255.
+
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD as B64;
 use pkarr::dns::Name;

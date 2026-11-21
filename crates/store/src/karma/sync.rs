@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: const NAMESPACE, const KEY_PROGRAM, const KEY_FREQUENCY, fn is_definition_field.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 388.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 103.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   373.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 19, 34, 57.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 11, 12,
+//   13, 15, 19, 34, 57.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   328.
+
 use nucleus::karma::{
     CanonicalHash, DefinitionStatus, FrequencyActivationEpoch, FrequencyAst, ProgramAst,
     format_frequency, format_program, prove_program,

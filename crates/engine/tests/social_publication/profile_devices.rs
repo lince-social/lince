@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod authority, mod cleanup, mod media_denials, mod missed_history.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 115, 118.
+
 use super::*;
 use base64::{Engine as _, engine::general_purpose::STANDARD as B64};
 use engine::{

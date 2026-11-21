@@ -1,7 +1,16 @@
+// non-lean-yet
+// Scope: struct PointerControl, struct ApplyFailure, fn restore, fn apply.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 126.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   available:available (31), new:available (12), ready:idle (67), ready:protected (67),
+//   request:protected (41).
+
+use std::io;
+
 use lince_interface::host::input::{
     InputOutcome, InputResponse, PointerDevice, PointerRequest, PointerSettings, PointerSnapshot,
 };
-use std::io;
 
 pub(crate) struct PointerControl {
     pub snapshot: PointerSnapshot,
@@ -163,9 +172,11 @@ pub(crate) fn apply(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use lince_interface::host::input::PointerCapabilities;
     use std::{cell::RefCell, collections::BTreeMap};
+
+    use lince_interface::host::input::PointerCapabilities;
+
+    use super::*;
 
     fn devices() -> Vec<PointerDevice> {
         ["touchpad", "mouse"]

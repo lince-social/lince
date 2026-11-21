@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct Output, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 54, 64, 70.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites finish: String
+//   (31).
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 21, 24, 177.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+// - [rustc probe: unreachable_pub] unreachable `pub` item. Sites 31.
+
 use super::*;
 use fiote::provider::TextOutput;
 

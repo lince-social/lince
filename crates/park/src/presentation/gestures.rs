@@ -1,5 +1,10 @@
-use super::*;
+// non-lean-yet
+// Scope: impl Presentation.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use lince_interface::host::input::GestureDelivery;
+
+use super::*;
 
 impl Presentation {
     pub(crate) fn cancel_gesture(&mut self) {

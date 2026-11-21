@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: const MAX_BYTES, const CREDITS, enum MediaSand, fn web_url.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 180, 301, 313,
+//   370, 382, 553.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 76.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (279, 316, 329, 332, 333, 525).
+
 use bevy::{
     asset::RenderAssetUsages,
     math::DVec2,

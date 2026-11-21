@@ -1,3 +1,22 @@
+// non-lean-yet
+// Scope: mod maintenance, mod presentation, struct AreaEditor, enum AreaAction.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 648, 756, 791,
+//   857, 876, 1610, 1615, 1675.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (200, 211,
+//   224, 233, 241, 246, 253, 497, 508, 586).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   298, 876, 957, 992.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (1231, 1233, 1236, 1239, 1244, 1254, 1256, 1262, 1266, 1273, 1278, 1282, 1293,
+//   1295, 1301, 1317, 1322, 1333, 1364, 1390, 1392, 1411, 1421, 1423, 1424, 1425, 1428, 1435, 1440,
+//   1445, 1455, 1457, 1463, 1468, 1473, 1479, 1496, 1499, 1503, 1518, 1520, 1526, 1531, 1543, 1551,
+//   1562, 1565, 1574, 1578, 1583, 1585, 1593, 1607, 1609, 1610, 1612, 1615, 1621, 1626, 1630, 1632,
+//   1633, 1634, 1667, 1669, 1670, 1674, 1680, 1682, 1688, 1693, 1695, 1703, 1707, 1714, 1717, 1720,
+//   1733, 1735, 1757, 1767, 1771, 1795, 1797, 1798, 1802).
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 1044.
+
 use crate::native::{
     actions::Action,
     area::{

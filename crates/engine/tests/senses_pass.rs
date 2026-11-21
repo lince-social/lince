@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod support, fn engine, fn plain, fn at.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use chrono::{DateTime, Utc};

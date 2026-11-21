@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn confirmation_waits_for_status_reply_and_runs_once, fn
+//   cancel_stops_deferred_confirmation_and_failed_submission_keeps_review, fn
+//   saved_address_replies_reach_the_record_panel_without_starting_live_location, fn
+//   mobile_schedule_initializes_with_bevy_ui_and_text_plugins.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[test]

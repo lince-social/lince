@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct AutoDirectionalNavigation, struct AutoDirectionalNavigator, fn get_rotated_bounds.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 161.
+
 //! An automatic directional navigation system, powered by the [`AutoDirectionalNavigation`]
 //! component.
 //!

@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct SliderSand, struct SliderChanged, struct SliderParts, fn spawn.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 234.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (113, 212, 337, 338, 339, 340, 347).
+
 use crate::native::{sand::Square, theme::Typography, token_style, tokens::Token};
 use bevy::{
     a11y::AccessibilityNode,

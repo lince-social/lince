@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct BodyMention, fn mentions, fn link_first_mentions, fn first_free_whole_word.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   14, 19, 23, 94, 112, 119.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 14, 139, 146, 152, 164, 172, 173, 179.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   2, 3, 4, 5, 6, 9, 43.
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BodyMention {
     pub title: String,

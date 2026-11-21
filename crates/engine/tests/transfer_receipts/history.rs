@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn republish, fn history, fn reader, fn import.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use serde_json::Value;
 

@@ -1,4 +1,15 @@
-use crate::{StoreError, receipt_events::Candidate, transfer_receipts::Saved};
+// non-lean-yet
+// Scope: fn invalid, fn index_on, fn checked, fn lookup.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 11.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 23, 34.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 15, 28, 66, 103.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 15, 28,
+//   66, 103.
+
 use nucleus::{
     karma::CanonicalHash,
     transfer::{
@@ -7,6 +18,8 @@ use nucleus::{
     },
 };
 use sqlx::{QueryBuilder, Sqlite, SqliteConnection, SqlitePool};
+
+use crate::{StoreError, receipt_events::Candidate, transfer_receipts::Saved};
 
 fn invalid(error: impl ToString) -> StoreError {
     StoreError::Protocol(error.to_string())
@@ -20,7 +33,7 @@ pub async fn index_on(
 ) -> Result<(), StoreError> {
     for row in receipt_fragment::references(publication).map_err(invalid)? {
         sqlx::query("INSERT INTO transfer_receipt_event_reference(record_uid,version,event_id,scope_id,source_key,source_commitment,slot_id,parent_event,need_event,issuer_organ) VALUES(?,?,?,?,?,?,?,?,?,?) ON CONFLICT(record_uid,version,event_id) DO NOTHING")
-            .bind(record).bind(version as i64).bind(row.event.as_str()).bind(row.scope.as_str()).bind(row.source.as_str()).bind(row.commitment.as_str()).bind(row.slot.as_str()).bind(row.parent.as_ref().map(|id|id.as_str())).bind(row.need.as_ref().map(|id|id.as_str())).bind(row.issuer).execute(&mut *connection).await?;
+            .bind(record).bind(version as i64).bind(row.event.as_str()).bind(row.scope.as_str()).bind(row.source.as_str()).bind(row.commitment.as_str()).bind(row.slot.as_str()).bind(row.parent.as_ref().map(nucleus::karma::CanonicalHash::as_str)).bind(row.need.as_ref().map(nucleus::karma::CanonicalHash::as_str)).bind(row.issuer).execute(&mut *connection).await?;
     }
     Ok(())
 }

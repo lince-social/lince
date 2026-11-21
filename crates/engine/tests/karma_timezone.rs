@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn engine_loads_only_the_exact_content_addressed_timezone_artifact.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::manual_let_else] this could be rewritten as `let...else`. Sites 45.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 46.
+
 use std::collections::BTreeMap;
 
 use engine::karma_timezone::load_time_zone_artifact;

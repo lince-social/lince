@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: struct Core3d, enum Core3dSystems, struct Core2d, enum Core2dSystems.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 274.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 159, 171, 201,
+//   301.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 50, 89.
+// - [Clippy: clippy::uninlined_format_args] variables can be used directly in the `format!` string.
+//   Sites 264, 265.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 51, 52,
+//   53, 54, 58, 90, 91, 92, 93, 97.
+
 //! The core rendering pipelines schedules. These schedules define the "default" render graph
 //! for 2D and 3D rendering in Bevy.
 //!

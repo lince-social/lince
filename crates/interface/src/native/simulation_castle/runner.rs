@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: enum Control, enum Job, struct Progress, struct Outcome.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 90, 111, 112,
+//   134, 143, 153, 158, 181, 188, 255, 256, 385, 392, 588.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   607.
+
 use std::path::{Path, PathBuf};
 
 use simulation::{

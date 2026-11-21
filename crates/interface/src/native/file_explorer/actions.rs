@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: enum Control, fn add, fn reset, fn search_paths.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 51, 52, 53, 88,
+//   161, 172, 184, 189, 235, 278, 281, 282, 323, 334, 392, 395, 419, 511.
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites add:path → &Path (248).
+// - [review: §3 Ownership] Check whether the borrowed container can expose a narrower view. Sites
+//   select:path → &Path (377).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (124, 130, 137, 145, 146, 164, 183, 186, 213, 216, 235, 256, 273, 280, 303, 318,
+//   319, 362, 395).
+
 use super::*;
 use crate::native::actions::Action;
 use bevy::text::EditableText;

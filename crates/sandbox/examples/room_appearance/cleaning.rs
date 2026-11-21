@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: struct Replay, enum Edit, fn settled, fn install.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 61, 62, 89, 117,
+//   158, 159, 192, 259, 263, 295, 535.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (150).
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites
+//   141, 460.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   236, 314, 318, 499, 551, 605.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (35, 38, 43, 56, 58, 144, 151, 152, 153, 167, 177, 185, 191, 205, 217, 218, 219,
+//   244, 254, 260, 264, 267, 268, 273, 285, 294, 385, 400, 405, 417, 423, 439, 452, 456, 470, 472,
+//   524, 527, 551).
+
 use super::*;
 use lince_sandbox::{actions::ActionButton, shader_effects::Surface};
 use std::sync::{Arc, Mutex, mpsc};

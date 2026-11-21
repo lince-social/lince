@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn press, fn editor_draft, fn until, fn
+//   typed_extension_creation_preserves_description_and_restores_the_castle.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use std::{sync::Arc, time::Duration};
 

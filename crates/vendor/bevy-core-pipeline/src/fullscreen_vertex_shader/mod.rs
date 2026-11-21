@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct FullscreenShader.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 23, 39.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 8.
+
 use bevy_asset::{AssetServer, Handle};
 use bevy_ecs::{resource::Resource, world::FromWorld};
 use bevy_render::render_resource::VertexState;

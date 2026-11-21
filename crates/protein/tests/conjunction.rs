@@ -1,51 +1,64 @@
 use engine::{Engine, actions::Action};
-use serde_json::json;
+use nucleus::RecordKind;
+use protein::{Predicate, Protein, execute, execute_for, execute_saved};
+use serde_json::{from_value, json};
+
+async fn record(engine: &Engine, head: &str, kind: RecordKind) -> String {
+    engine
+        .act(
+            Action::CreateRecord {
+                slug: None,
+                kind,
+                head: head.into(),
+                body: String::new(),
+                quantity: 1.0,
+            },
+            None,
+        )
+        .await
+        .expect("create fixture Record")
+        .created
+        .expect("Record UID")
+}
 
 #[tokio::test]
 async fn saved_all_groups_filter_flat_sources_and_preserve_visibility() {
-    let engine = Engine::open_memory().await.unwrap();
-    let mut records = Vec::new();
+    let engine = Engine::open_memory()
+        .await
+        .expect("conjunction fixture Engine");
+    let mut records = Vec::with_capacity(2);
     for title in ["Apple", "Pear"] {
-        records.push(
-            engine
-                .act(
-                    Action::CreateRecord {
-                        slug: None,
-                        kind: nucleus::RecordKind::Plain,
-                        head: title.into(),
-                        body: String::new(),
-                        quantity: 1.0,
-                    },
-                    None,
-                )
-                .await
-                .unwrap()
-                .created
-                .unwrap(),
-        );
+        records.push(record(&engine, title, RecordKind::Plain).await);
     }
-    for (index, record) in records.iter().enumerate() {
+    for (uid, amount) in records.iter().zip(["3", "4"]) {
         engine
             .act(
                 Action::SetQuantityExact {
-                    target: record.clone(),
-                    amount: (index + 3).to_string(),
+                    target: uid.clone(),
+                    amount: amount.into(),
                 },
                 None,
             )
             .await
             .unwrap();
     }
-    let ast = json!({"source":"fact", "where":[{"all":[{"all":[{"record_eq":records[0]}]}]}], "aggregate":{"op":"sum", "by":"total"}});
-    let query: protein::Protein = serde_json::from_value(ast.clone()).unwrap();
-    let rows = protein::execute(&engine.store, &query).await.unwrap();
-    let mut direct = query.clone();
-    direct.filter = vec![protein::Predicate::RecordEq(records[0].clone())];
-    assert_eq!(
-        rows,
-        protein::execute(&engine.store, &direct).await.unwrap()
-    );
+    let [apple, _] = records.as_slice() else {
+        panic!("expected two fixture Records")
+    };
+    let ast = json!({
+        "source": "fact",
+        "where": [{"all": [{"all": [{"record_eq": apple}]}]}],
+        "aggregate": {"op": "sum", "by": "total"}
+    });
+    let query: Protein = from_value(ast.clone()).unwrap();
+    let rows = execute(&engine.store, &query).await.unwrap();
+    let direct = Protein {
+        filter: vec![Predicate::RecordEq(apple.clone())],
+        ..query.clone()
+    };
+    assert_eq!(rows, execute(&engine.store, &direct).await.unwrap());
     assert!(!rows.is_empty());
+
     engine
         .act(
             Action::SaveProtein {
@@ -59,32 +72,22 @@ async fn saved_all_groups_filter_flat_sources_and_preserve_visibility() {
         .unwrap();
     assert_eq!(
         rows,
-        protein::execute_saved(&engine.store, "fruit-facts", None)
+        execute_saved(&engine.store, "fruit-facts", None)
             .await
             .unwrap()
     );
-    let person = engine
-        .act(
-            Action::CreateRecord {
-                slug: None,
-                kind: nucleus::RecordKind::Person,
-                head: "Reader".into(),
-                body: String::new(),
-                quantity: 1.0,
-            },
-            None,
-        )
-        .await
-        .unwrap()
-        .created
-        .unwrap();
-    let hidden = protein::execute_for(&engine.store, &query, Some(&person))
-        .await
-        .unwrap();
-    assert!(hidden.is_empty());
-    let mut invalid = query;
-    invalid.filter = vec![protein::Predicate::Any(vec![protein::Predicate::RecordEq(
-        records[0].clone(),
-    )])];
-    assert!(protein::execute(&engine.store, &invalid).await.is_err());
+
+    let person = record(&engine, "Reader", RecordKind::Person).await;
+    assert!(
+        execute_for(&engine.store, &query, Some(&person))
+            .await
+            .unwrap()
+            .is_empty()
+    );
+
+    let invalid = Protein {
+        filter: vec![Predicate::Any(direct.filter)],
+        ..query
+    };
+    assert!(execute(&engine.store, &invalid).await.is_err());
 }

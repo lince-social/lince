@@ -1,3 +1,28 @@
+// non-lean-yet
+// Scope: mod scope, const MAX_BUNDLE_BYTES, const DEFAULT_QUOTA_BYTES, enum Refusal.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 72, 73, 74, 75,
+//   169, 170, 171, 172, 173, 174, 231, 258, 279, 477, 544.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 52, 58, 59,
+//   64, 85.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 77.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 11.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 65, 339.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 52, 58, 59, 64, 85.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or(false)` on a `Result` value.
+//   Sites 260.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 41, 47, 95, 149, 157, 186, 198, 202, 213, 221, 237, 285, 392, 439, 473, 507,
+//   534.
+// - [Clippy probe: clippy::nonminimal_bool] this boolean expression can be simplified. Sites 396.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   6, 8, 11, 12, 13, 14, 15, 30, 41, 47, 95, 149, 157, 186, 198, 202, 213, 221, 237, 285, 392,
+//   439, 470, 473, 507, 534.
+
 use crate::error::EngineError;
 use crate::roster::SignedRoster;
 

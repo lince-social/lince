@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn environment_ready, fn reexec_environment.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::io;
 
 pub fn environment_ready() -> bool {

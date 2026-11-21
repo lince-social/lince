@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn query, fn hierarchy_widens_unary_and_binary_assertions, fn
+//   identity_is_a_constrained_unary_assertion, fn
+//   lingua_membership_is_shared_while_hierarchy_stays_a_dag.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use engine::Engine;
 use engine::actions::Action;
 use nucleus::RecordKind;

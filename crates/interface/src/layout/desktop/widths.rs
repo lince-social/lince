@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct FreeWidth, fn equivalent, fn valid_presets, fn next_preset.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   154, 164.
+
 use super::*;
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]

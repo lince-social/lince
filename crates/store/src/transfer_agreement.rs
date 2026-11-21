@@ -1,13 +1,35 @@
-use crate::StoreError;
-use chrono::{DateTime, Utc};
-use serde_json::{Value, json};
-use sqlx::{SqliteConnection, SqlitePool};
+// non-lean-yet
+// Scope: mod preparation, struct ChildReadiness, struct AgreementReadinessProjection, struct
+//   PromiseAgreementReadiness.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 116, 121, 122, 150, 151, 156, 163, 164.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 46, 138, 218,
+//   228, 368, 456, 624.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 548, 583, 587.
+// - [Clippy: clippy::if_not_else] unnecessary `!=` operation. Sites 129.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   638.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 417, 421, 432.
+// - [Clippy: clippy::unnecessary_wraps] this function's return value is unnecessarily wrapped by
+//   `Result`. Sites 170.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 17, 18,
+//   19, 20, 21, 22, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 39, 40, 41, 42, 45, 57, 417, 421, 432.
+
 use std::{
     collections::{HashMap, HashSet},
     future::Future,
     pin::Pin,
     sync::Arc,
 };
+
+use chrono::{DateTime, Utc};
+use serde_json::{Value, json};
+use sqlx::{SqliteConnection, SqlitePool};
+
+use crate::StoreError;
 
 mod preparation;
 use preparation::Dependencies;

@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn opening_overview_retires_a_hover_preview_but_preserves_a_normal_pending_file_choice, fn
+//   native_uri_handoff_uses_the_existing_choice_without_implicit_downloads, fn
+//   native_plain_text_creates_only_a_local_editable_sand_at_the_recorded_target, fn
+//   native_drop_rejects_temporary_workspaces_and_keeps_ordinary_choices_on_other_outputs.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::actions::Action;
 use std::{

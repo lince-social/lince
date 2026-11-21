@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: trait NonNegativeClockSource, struct Monotonic, struct Realtime, trait ClockSource.
+// BeautifulRust (baseline lines):
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 39.
+
 use rustix::time::{ClockId, Timespec};
 use std::{cmp::Ordering, marker::PhantomData, ops::Add, time::Duration};
 

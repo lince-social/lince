@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn action, fn
+//   large_receipt_serving_chunks_preserve_originals_recheck_stop_and_revocation_without_accounting.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 260, 275, 317.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 275, 317.
+
 use super::*;
 use nucleus::{
     social::{Command as Social, PublicRequest, ask::ContactConsent},

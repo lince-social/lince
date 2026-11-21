@@ -1,3 +1,23 @@
+// non-lean-yet
+// Scope: struct RenderExtractApp, struct RenderAppChannels, struct PipelinedRenderingPlugin, fn
+//   renderer_extract.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   53.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 308, 342.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 54, 173, 229, 261, 267, 282, 286, 288, 292, 300.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 170, 171, 273.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   167, 213, 266.
+// - [Clippy: clippy::missing_assert_message] assert without any message. Sites 284.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 220, 221.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 26, 140.
+// - [review: §5 Panics] Verify panic isolation boundary and preserve the failure contract. Sites
+//   75, 340, 360.
+
 use core::panic::AssertUnwindSafe;
 use std::panic::{catch_unwind, resume_unwind};
 

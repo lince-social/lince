@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: type Socket, fn next_json, fn closed, fn fixture.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 83, 102, 110,
+//   136, 138.
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites 24.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (21, 22, 23, 29, 47, 57, 79, 81, 83, 98, 100, 102, 108, 112, 118, 121, 124, 125,
+//   134, 135, 141, 156, 159, 178, 181, 185).
+
 use super::*;
 use engine::{
     actions::Action,

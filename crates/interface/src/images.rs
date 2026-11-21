@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: const MAX_BYTES, const MAX_DIMENSION, struct Pixels, fn url.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 13, 65, 83,
+//   85, 96.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites decode: String
+//   (25), load: String (55).
+
 use base64::Engine;
 
 pub const MAX_BYTES: usize = 4 * 1024 * 1024;

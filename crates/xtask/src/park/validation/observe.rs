@@ -1,5 +1,15 @@
-use super::*;
+// non-lean-yet
+// Scope: struct Identity, fn start_time, fn payload_digest, fn identity.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 194.
+// - [review: §3 Ownership] Check whether the borrowed container can expose a narrower view. Sites
+//   observed_pid:value → &OsStr (162).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   93, 94, 180.
+
 use std::os::unix::{ffi::OsStringExt, fs::DirBuilderExt};
+
+use super::*;
 
 #[derive(Debug, PartialEq)]
 struct Identity {
@@ -160,7 +170,9 @@ struct Configuration {
 }
 
 fn observed_pid(value: &OsString) -> Result<rustix::process::Pid> {
-    value.to_str().and_then(|value| value.parse().ok())
+    value
+        .to_str()
+        .and_then(|value| value.parse().ok())
         .filter(|value| *value > 0)
         .and_then(rustix::process::Pid::from_raw)
         .ok_or_else(|| "Invalid observed PID".into())
@@ -205,7 +217,13 @@ fn configuration(arguments: &[OsString]) -> Result<Configuration> {
     if !executable.is_absolute() || !(5..=21600).contains(&seconds) {
         return Err("Use an absolute executable and 5–21600 observation seconds".into());
     }
-    Ok(Configuration { executable, pid, seconds, unit, peers })
+    Ok(Configuration {
+        executable,
+        pid,
+        seconds,
+        unit,
+        peers,
+    })
 }
 
 pub(super) fn run(arguments: &[OsString]) -> Result<()> {
@@ -222,14 +240,23 @@ pub(super) fn run(arguments: &[OsString]) -> Result<()> {
 }
 
 pub(super) fn run_into(arguments: &[OsString], destination: Option<&Path>) -> Result<PathBuf> {
-    let Configuration { executable, pid, seconds, unit, peers } = configuration(arguments)?;
+    let Configuration {
+        executable,
+        pid,
+        seconds,
+        unit,
+        peers,
+    } = configuration(arguments)?;
     let process = PathBuf::from(format!("/proc/{}", pid.as_raw_nonzero()));
     let expected = identity(&process)?;
-    let mut peers = peers.into_iter().map(|pid| {
-        let path = PathBuf::from(format!("/proc/{}", pid.as_raw_nonzero()));
-        let expected = identity(&path)?;
-        Ok((pid, path, expected, None::<ResourceSample>))
-    }).collect::<Result<Vec<_>>>()?;
+    let mut peers = peers
+        .into_iter()
+        .map(|pid| {
+            let path = PathBuf::from(format!("/proc/{}", pid.as_raw_nonzero()));
+            let expected = identity(&path)?;
+            Ok((pid, path, expected, None::<ResourceSample>))
+        })
+        .collect::<Result<Vec<_>>>()?;
     let payload = process_executable(&executable)?;
     let metadata = fs::metadata(&payload).map_err(error)?;
     if (metadata.dev(), metadata.ino()) != (expected.device, expected.inode) {
@@ -241,7 +268,11 @@ pub(super) fn run_into(arguments: &[OsString], destination: Option<&Path>) -> Re
     if identity(&process)? != expected {
         return Err("The observed process changed during identity inspection".into());
     }
-    let base = destination.map(Path::to_path_buf).unwrap_or(env::current_dir().map_err(error)?.join("target/park-validation"));
+    let base = destination.map(Path::to_path_buf).unwrap_or(
+        env::current_dir()
+            .map_err(error)?
+            .join("target/park-validation"),
+    );
     fs::create_dir_all(&base).map_err(error)?;
     let metadata = fs::symlink_metadata(&base).map_err(error)?;
     if !metadata.is_dir() || metadata.uid() != rustix::process::geteuid().as_raw() {
@@ -310,17 +341,22 @@ pub(super) fn run_into(arguments: &[OsString], destination: Option<&Path>) -> Re
             break;
         }
         let mut row = serde_json::to_value(&sample).map_err(error)?;
-        row["engine_window"] = samples.last().map(|previous| drm_engine_window(previous, &sample))
+        row["engine_window"] = samples
+            .last()
+            .map(|previous| drm_engine_window(previous, &sample))
             .unwrap_or(serde_json::Value::Null);
         if !peers.is_empty() {
             let mut observed = Vec::with_capacity(peers.len());
             for (pid, path, expected, previous) in &mut peers {
-                let same_process = |path: &Path, expected: &Identity|
-                    identity(path).ok().as_ref() == Some(expected);
+                let same_process = |path: &Path, expected: &Identity| {
+                    identity(path).ok().as_ref() == Some(expected)
+                };
                 let resource = same_process(path, expected)
                     .then(|| resource_sample(*pid, started.elapsed().as_millis()))
                     .filter(|_| same_process(path, expected));
-                let engine_window = previous.as_ref().zip(resource.as_ref())
+                let engine_window = previous
+                    .as_ref()
+                    .zip(resource.as_ref())
                     .map(|(previous, current)| drm_engine_window(previous, current));
                 observed.push(serde_json::json!({"pid":pid.as_raw_nonzero().get(),
                     "process_start":expected.start, "resource":resource, "engine_window":engine_window,

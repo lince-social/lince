@@ -1,3 +1,30 @@
+// non-lean-yet
+// Scope: mod ingress, mod source, const MAX_PAYLOAD, const MAX_SIGNALS.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 159, 194, 196,
+//   211, 264, 358, 373, 375.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 254, 259,
+//   267, 314, 333, 335, 421, 439, 500, 540, 545, 547, 549.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 285.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 285.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 194, 196, 211, 358, 375.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 71, 136, 324, 341, 355.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 254, 259, 267, 314, 333, 335, 421, 439, 500, 540, 545, 547, 549.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 177, 201, 223, 301, 320, 381, 429, 456, 476, 536.
+// - [Clippy probe: clippy::missing_panics_doc] State the panic conditions for exported functions.
+//   Sites 320, 337.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 55, 62, 79, 84.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   1, 13, 14, 15, 17, 26, 27, 28, 29, 30, 34, 35, 36, 37, 41, 42, 43, 44, 45, 55, 56, 62, 79, 81,
+//   84, 87, 158, 162, 177, 201, 219, 223, 301, 320, 337, 381, 429, 456, 476, 536.
+
 pub mod ingress;
 mod source;
 

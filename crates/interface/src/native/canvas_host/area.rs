@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: const OWNED, fn fields, fn configuration, fn encode_settings.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 80, 161.
+
 use super::*;
 use crate::native::area::InfluenceArea;
 

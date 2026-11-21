@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn main.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   8.
+
 fn main() {
     if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("linux")
         && std::env::var_os("CARGO_FEATURE_SESSION").is_some()

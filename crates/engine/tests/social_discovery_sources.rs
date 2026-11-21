@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod boundaries, struct Sources, fn command, fn publish.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 160, 299, 397.
+// - [Clippy probe: clippy::get_unwrap] Check bounds and preserve the lookup failure contract. Sites
+//   336.
+
 #![cfg(test)]
 
 use base64::{Engine as _, engine::general_purpose::STANDARD as B64};

@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: fn description_is_locked, fn validate.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 54, 75.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 67, 130.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 80.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 67, 130.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 11.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   6, 11.
+
 use crate::{Engine, error::EngineError};
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use nucleus::description_asset::{Kind, MAX_BYTES, Request, Response};

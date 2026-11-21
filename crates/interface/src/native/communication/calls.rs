@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: mod tests, struct Bar, struct Runtime, enum Pending.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 126, 131, 182,
+//   246, 247, 248, 285, 286, 287, 309, 321, 322, 488, 528, 556, 562, 565, 568, 575, 644, 650, 652,
+//   665, 666, 679, 680, 701, 737, 762, 780, 796, 854, 902, 914, 916, 939, 951, 965, 974, 976, 993,
+//   1026, 1043, 1057, 1072, 1084, 1121, 1188, 1214, 1222, 1245, 1246, 1382, 1383, 1384.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 290, 324,
+//   704, 1387.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (109, 130, 636, 1008, 1076, 1301).
+
 use std::collections::{BTreeMap, HashMap};
 use std::time::{Duration, Instant};
 

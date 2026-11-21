@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod catalog, mod ui, struct Catalog, struct ScopedCatalog.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 140, 174, 285,
+//   298, 301, 305, 352, 370, 375, 440, 445, 453.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (145, 198, 202, 206, 219, 269, 280, 284, 300, 304, 313, 316, 328, 394, 402, 404,
+//   407, 412, 436, 454, 460, 462, 465, 470, 485, 504).
+
 mod catalog;
 mod ui;
 

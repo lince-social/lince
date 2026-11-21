@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct Key, struct Request, enum Job, struct Rendered.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 66, 95, 130.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (156).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (87).
+// - [review: §5 Panics] Verify panic isolation boundary and preserve the failure contract. Sites
+//   80.
+
 use super::*;
 use std::{
     collections::VecDeque,

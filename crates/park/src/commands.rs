@@ -1,8 +1,16 @@
-use crate::launch::Description;
+// non-lean-yet
+// Scope: struct Commands, struct OutputPreference, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 217, 369, 396,
+//   404, 405.
+
+use std::{io, path::Path};
+
 use lince_interface::host::DesktopAction;
 pub(crate) use lince_interface::host::input::KeyboardSettings as Keyboard;
 use serde::Deserialize;
-use std::{io, path::Path};
+
+use crate::launch::Description;
 
 #[derive(Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -54,26 +62,38 @@ impl Commands {
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)?;
         }
-        match std::fs::OpenOptions::new().write(true).create_new(true).mode(0o600).open(path) {
+        match std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .mode(0o600)
+            .open(path)
+        {
             Ok(mut file) => file.write_all(b"{}\n"),
             Err(error) if error.kind() == io::ErrorKind::AlreadyExists => Ok(()),
             Err(error) => Err(error),
         }
     }
 
-    fn terminal_program(term: Option<std::ffi::OsString>, path: Option<std::ffi::OsString>) -> String {
+    fn terminal_program(
+        term: Option<std::ffi::OsString>,
+        path: Option<std::ffi::OsString>,
+    ) -> String {
         use std::os::unix::fs::PermissionsExt;
-        let executable = |path: &Path| path.metadata().is_ok_and(|metadata| {
-            metadata.is_file() && metadata.permissions().mode() & 0o111 != 0
-        });
+        let executable = |path: &Path| {
+            path.metadata().is_ok_and(|metadata| {
+                metadata.is_file() && metadata.permissions().mode() & 0o111 != 0
+            })
+        };
         term.and_then(|term| term.into_string().ok())
             .filter(|term| !term.is_empty())
             .filter(|term| {
                 if term.contains('/') {
                     executable(Path::new(term))
                 } else {
-                    path.as_ref().is_some_and(|path| std::env::split_paths(path)
-                        .any(|directory| executable(&directory.join(term))))
+                    path.as_ref().is_some_and(|path| {
+                        std::env::split_paths(path)
+                            .any(|directory| executable(&directory.join(term)))
+                    })
                 }
             })
             .unwrap_or_else(|| "ghostty".into())
@@ -126,7 +146,8 @@ impl Commands {
         }
         commands.keyboard.validate().map_err(io::Error::other)?;
         commands.pointer.validate().map_err(io::Error::other)?;
-        lince_interface::host::input::validate_absolute(&commands.devices).map_err(io::Error::other)?;
+        lince_interface::host::input::validate_absolute(&commands.devices)
+            .map_err(io::Error::other)?;
         commands.external.validate().map_err(io::Error::other)?;
         for command in [
             &commands.terminal,
@@ -164,23 +185,51 @@ impl Commands {
         })
     }
 
-    pub fn save_magnification(path: &Path, name: &str, factor: f64, expected: f64) -> io::Result<Option<String>> {
-        if name.is_empty() || name.len() > 512 || !lince_interface::host::magnification::valid(factor)
+    pub fn save_magnification(
+        path: &Path,
+        name: &str,
+        factor: f64,
+        expected: f64,
+    ) -> io::Result<Option<String>> {
+        if name.is_empty()
+            || name.len() > 512
+            || !lince_interface::host::magnification::valid(factor)
             || !lince_interface::host::magnification::valid(expected)
-        { return Err(io::Error::other("Invalid output magnification settings.")); }
-        Self::update(path, "Display magnification", |parent| std::fs::File::open(parent)?.sync_all(), |document| {
-            let current = Self::parse(&serde_json::to_vec(document).map_err(io::Error::other)?)?;
-            if current.outputs.get(name).map_or(1.0, |output| output.magnification) != expected {
-                return Err(io::Error::other("Output magnification changed outside Park; reload before saving."));
-            }
-            let output = document.as_object_mut().ok_or_else(|| io::Error::other("Park settings must be an object."))?
-                .entry("outputs").or_insert_with(|| serde_json::json!({})).as_object_mut()
-                .ok_or_else(|| io::Error::other("Park output settings must be an object."))?
-                .entry(name.to_owned()).or_insert_with(|| serde_json::json!({})).as_object_mut()
-                .ok_or_else(|| io::Error::other("Invalid saved output settings."))?;
-            output.insert("magnification".into(), serde_json::json!(factor));
-            Ok(())
-        })
+        {
+            return Err(io::Error::other("Invalid output magnification settings."));
+        }
+        Self::update(
+            path,
+            "Display magnification",
+            |parent| std::fs::File::open(parent)?.sync_all(),
+            |document| {
+                let current =
+                    Self::parse(&serde_json::to_vec(document).map_err(io::Error::other)?)?;
+                if current
+                    .outputs
+                    .get(name)
+                    .map_or(1.0, |output| output.magnification)
+                    != expected
+                {
+                    return Err(io::Error::other(
+                        "Output magnification changed outside Park; reload before saving.",
+                    ));
+                }
+                let output = document
+                    .as_object_mut()
+                    .ok_or_else(|| io::Error::other("Park settings must be an object."))?
+                    .entry("outputs")
+                    .or_insert_with(|| serde_json::json!({}))
+                    .as_object_mut()
+                    .ok_or_else(|| io::Error::other("Park output settings must be an object."))?
+                    .entry(name.to_owned())
+                    .or_insert_with(|| serde_json::json!({}))
+                    .as_object_mut()
+                    .ok_or_else(|| io::Error::other("Invalid saved output settings."))?;
+                output.insert("magnification".into(), serde_json::json!(factor));
+                Ok(())
+            },
+        )
     }
 
     pub fn save_keyboard(
@@ -214,22 +263,48 @@ impl Commands {
     }
 
     pub fn programs(&self) -> lince_interface::host::launch::Programs {
-        lince_interface::host::launch::Programs { terminal: self.terminal.clone(), launcher: self.launcher.clone(), lock: self.lock.clone(), ready: self.ready.clone() }
+        lince_interface::host::launch::Programs {
+            terminal: self.terminal.clone(),
+            launcher: self.launcher.clone(),
+            lock: self.lock.clone(),
+            ready: self.ready.clone(),
+        }
     }
 
-    pub fn save_programs(path: &Path, settings: &lince_interface::host::launch::Programs, expected: &lince_interface::host::launch::Programs) -> io::Result<Option<String>> {
+    pub fn save_programs(
+        path: &Path,
+        settings: &lince_interface::host::launch::Programs,
+        expected: &lince_interface::host::launch::Programs,
+    ) -> io::Result<Option<String>> {
         settings.validate().map_err(io::Error::other)?;
-        Self::update(path, "Session programs", |parent| std::fs::File::open(parent)?.sync_all(), |document| {
-            let current = Self::parse(&serde_json::to_vec(document).map_err(io::Error::other)?)?;
-            if &current.programs() != expected { return Err(io::Error::other("Session programs changed outside Park; reload before saving.")); }
-            let document = document.as_object_mut().ok_or_else(|| io::Error::other("Park settings must be an object"))?;
-            for program in lince_interface::host::launch::Program::ALL {
-                if let Some(description) = settings.get(program) {
-                    document.insert(program.key().into(), serde_json::to_value(description).map_err(io::Error::other)?);
-                } else { document.remove(program.key()); }
-            }
-            Ok(())
-        })
+        Self::update(
+            path,
+            "Session programs",
+            |parent| std::fs::File::open(parent)?.sync_all(),
+            |document| {
+                let current =
+                    Self::parse(&serde_json::to_vec(document).map_err(io::Error::other)?)?;
+                if &current.programs() != expected {
+                    return Err(io::Error::other(
+                        "Session programs changed outside Park; reload before saving.",
+                    ));
+                }
+                let document = document
+                    .as_object_mut()
+                    .ok_or_else(|| io::Error::other("Park settings must be an object"))?;
+                for program in lince_interface::host::launch::Program::ALL {
+                    if let Some(description) = settings.get(program) {
+                        document.insert(
+                            program.key().into(),
+                            serde_json::to_value(description).map_err(io::Error::other)?,
+                        );
+                    } else {
+                        document.remove(program.key());
+                    }
+                }
+                Ok(())
+            },
+        )
     }
 
     pub fn save_external(
@@ -300,15 +375,28 @@ impl Commands {
         expected: &lince_interface::host::input::AbsolutePreferences,
     ) -> io::Result<Option<String>> {
         lince_interface::host::input::validate_absolute(settings).map_err(io::Error::other)?;
-        Self::update(path, "Touch and tablet settings", |parent| std::fs::File::open(parent)?.sync_all(), |document| {
-            let current = Self::parse(&serde_json::to_vec(document).map_err(io::Error::other)?)?;
-            if &current.devices != expected {
-                return Err(io::Error::other("Device settings changed outside Park; reload before saving."));
-            }
-            document.as_object_mut().ok_or_else(|| io::Error::other("Park settings must be an object"))?
-                .insert("devices".into(), serde_json::to_value(settings).map_err(io::Error::other)?);
-            Ok(())
-        })
+        Self::update(
+            path,
+            "Touch and tablet settings",
+            |parent| std::fs::File::open(parent)?.sync_all(),
+            |document| {
+                let current =
+                    Self::parse(&serde_json::to_vec(document).map_err(io::Error::other)?)?;
+                if &current.devices != expected {
+                    return Err(io::Error::other(
+                        "Device settings changed outside Park; reload before saving.",
+                    ));
+                }
+                document
+                    .as_object_mut()
+                    .ok_or_else(|| io::Error::other("Park settings must be an object"))?
+                    .insert(
+                        "devices".into(),
+                        serde_json::to_value(settings).map_err(io::Error::other)?,
+                    );
+                Ok(())
+            },
+        )
     }
 
     fn update(
@@ -371,9 +459,15 @@ impl Commands {
                 .as_object_mut()
                 .ok_or_else(|| io::Error::other("Invalid saved output settings"))?;
             entry.insert("enabled".into(), head.current.is_some().into());
-            entry.insert("rotation".into(), serde_json::to_value(head.rotation).map_err(io::Error::other)?);
+            entry.insert(
+                "rotation".into(),
+                serde_json::to_value(head.rotation).map_err(io::Error::other)?,
+            );
             entry.insert("adaptive_sync".into(), head.adaptive_sync.into());
-            entry.insert("color".into(), serde_json::to_value(head.color).map_err(io::Error::other)?);
+            entry.insert(
+                "color".into(),
+                serde_json::to_value(head.color).map_err(io::Error::other)?,
+            );
             if let Some(settings) = head.settings() {
                 entry.insert("scale".into(), settings.scale.into());
                 entry.insert("position".into(), serde_json::json!(settings.position));
@@ -395,7 +489,10 @@ impl Commands {
         let command = match action {
             DesktopAction::OpenTerminal => self.terminal.clone().or_else(|| {
                 Some(Description {
-                    program: Self::terminal_program(std::env::var_os("TERM"), std::env::var_os("PATH")),
+                    program: Self::terminal_program(
+                        std::env::var_os("TERM"),
+                        std::env::var_os("PATH"),
+                    ),
                     arguments: Vec::new(),
                     directory: None,
                     capabilities: Vec::new(),
@@ -429,7 +526,15 @@ mod tests {
         std::fs::write(&path, br#"{"keyboard":{"layout":"us"},"terminal":{"program":"old-terminal"},"ready":{"program":"startup","arguments":["literal\nscript"]}}"#).unwrap();
         let original = Commands::load(&path).unwrap();
         let expected = original.programs();
-        let settings = Programs { terminal: Some(Description { program: "new-terminal".into(), arguments: vec!["$(literal)".into()], directory: None, capabilities: vec![] }), ..expected.clone() };
+        let settings = Programs {
+            terminal: Some(Description {
+                program: "new-terminal".into(),
+                arguments: vec!["$(literal)".into()],
+                directory: None,
+                capabilities: vec![],
+            }),
+            ..expected.clone()
+        };
         Commands::save_programs(&path, &settings, &expected).unwrap();
         let saved = Commands::load(&path).unwrap();
         assert_eq!(saved.programs(), settings);
@@ -444,13 +549,23 @@ mod tests {
         let directory = tempfile::tempdir().unwrap();
         let path = directory.path().join("config/park.json");
         Commands::initialize(&path).unwrap();
-        assert_eq!(std::fs::metadata(&path).unwrap().permissions().mode() & 0o777, 0o600);
+        assert_eq!(
+            std::fs::metadata(&path).unwrap().permissions().mode() & 0o777,
+            0o600
+        );
         assert!(Commands::load(&path).unwrap().terminal.is_none());
         let saved = br#"{"terminal":{"program":"chosen-terminal"}}"#;
         std::fs::write(&path, saved).unwrap();
         Commands::initialize(&path).unwrap();
         assert_eq!(std::fs::read(&path).unwrap(), saved);
-        assert_eq!(Commands::load(&path).unwrap().command(DesktopAction::OpenTerminal).unwrap().program, "chosen-terminal");
+        assert_eq!(
+            Commands::load(&path)
+                .unwrap()
+                .command(DesktopAction::OpenTerminal)
+                .unwrap()
+                .program,
+            "chosen-terminal"
+        );
     }
 
     #[test]
@@ -461,14 +576,31 @@ mod tests {
         std::fs::write(&terminal, b"terminal").unwrap();
         std::fs::set_permissions(&terminal, std::fs::Permissions::from_mode(0o700)).unwrap();
         let path = Some(directory.path().as_os_str().to_owned());
-        assert_eq!(Commands::terminal_program(Some("my-terminal".into()), path.clone()), "my-terminal");
-        assert_eq!(Commands::terminal_program(Some(terminal.clone().into_os_string()), None), terminal.to_str().unwrap());
-        for term in [None, Some("".into()), Some("xterm-256color".into()), Some("missing".into())] {
+        assert_eq!(
+            Commands::terminal_program(Some("my-terminal".into()), path.clone()),
+            "my-terminal"
+        );
+        assert_eq!(
+            Commands::terminal_program(Some(terminal.clone().into_os_string()), None),
+            terminal.to_str().unwrap()
+        );
+        for term in [
+            None,
+            Some("".into()),
+            Some("xterm-256color".into()),
+            Some("missing".into()),
+        ] {
             assert_eq!(Commands::terminal_program(term, path.clone()), "ghostty");
         }
         std::fs::set_permissions(&terminal, std::fs::Permissions::from_mode(0o600)).unwrap();
-        assert_eq!(Commands::terminal_program(Some("my-terminal".into()), path), "ghostty");
-        assert_eq!(Commands::terminal_program(Some(directory.path().as_os_str().to_owned()), None), "ghostty");
+        assert_eq!(
+            Commands::terminal_program(Some("my-terminal".into()), path),
+            "ghostty"
+        );
+        assert_eq!(
+            Commands::terminal_program(Some(directory.path().as_os_str().to_owned()), None),
+            "ghostty"
+        );
     }
 
     #[test]
@@ -485,15 +617,28 @@ mod tests {
         std::fs::write(&path, serde_json::to_vec(&original).unwrap()).unwrap();
         let before = Commands::load(&path).unwrap().devices;
         let mut settings = before.clone();
-        settings.insert("stable-touch".into(), AbsolutePreference { output: Some("DP-1".into()), calibration: Some([1.0, 0.0, 0.0, 0.0, 1.0, 0.0]), ..Default::default() });
+        settings.insert(
+            "stable-touch".into(),
+            AbsolutePreference {
+                output: Some("DP-1".into()),
+                calibration: Some([1.0, 0.0, 0.0, 0.0, 1.0, 0.0]),
+                ..Default::default()
+            },
+        );
         Commands::save_devices(&path, &settings, &before).unwrap();
         assert_eq!(Commands::load(&path).unwrap().devices, settings);
-        let saved: serde_json::Value = serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
-        for key in ["keyboard", "pointer", "outputs", "terminal"] { assert_eq!(saved[key], original[key]); }
+        let saved: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+        for key in ["keyboard", "pointer", "outputs", "terminal"] {
+            assert_eq!(saved[key], original[key]);
+        }
         let bytes = std::fs::read(&path).unwrap();
         assert!(Commands::save_devices(&path, &before, &before).is_err());
         settings.get_mut("stable-touch").unwrap().calibration = Some([0.0; 6]);
-        assert!(Commands::save_devices(&path, &settings, &Commands::load(&path).unwrap().devices).is_err());
+        assert!(
+            Commands::save_devices(&path, &settings, &Commands::load(&path).unwrap().devices)
+                .is_err()
+        );
         assert_eq!(std::fs::read(&path).unwrap(), bytes);
     }
 
@@ -602,7 +747,10 @@ mod tests {
             "outputs": { "DP-9": { "enabled": false, "mode": [1920, 1080], "scale": 1.25, "adaptive_sync": true, "magnification": 3.0 } }
         });
         std::fs::write(&path, serde_json::to_vec(&initial).unwrap()).unwrap();
-        let head = crate::server::OutputHead { color: lince_interface::host::color::ColorMode::Hdr10, adaptive_sync: true, rotation: lince_interface::host::mapping::QuarterTurn::Clockwise90,
+        let head = crate::server::OutputHead {
+            color: lince_interface::host::color::ColorMode::Hdr10,
+            adaptive_sync: true,
+            rotation: lince_interface::host::mapping::QuarterTurn::Clockwise90,
             id: lince_interface::host::OutputId(1),
             name: "DP-1".into(),
             modes: vec![crate::server::OutputMode {
@@ -625,9 +773,15 @@ mod tests {
         assert_eq!(saved["keyboard"], initial["keyboard"]);
         assert_eq!(saved["outputs"]["DP-9"], initial["outputs"]["DP-9"]);
         assert!(Commands::load(&path).unwrap().outputs["DP-1"].adaptive_sync);
-        assert_eq!(Commands::load(&path).unwrap().outputs["DP-1"].rotation, head.rotation);
+        assert_eq!(
+            Commands::load(&path).unwrap().outputs["DP-1"].rotation,
+            head.rotation
+        );
         assert_eq!(saved["outputs"]["DP-1"]["color"], "hdr10");
-        assert_eq!(Commands::load(&path).unwrap().outputs["DP-1"].color, head.color);
+        assert_eq!(
+            Commands::load(&path).unwrap().outputs["DP-1"].color,
+            head.color
+        );
         assert!(saved["outputs"]["DP-1"].get("hdr10").is_none());
         assert!(saved["outputs"]["DP-1"].get("revision").is_none());
         assert!(saved["outputs"]["DP-1"].get("effective").is_none());

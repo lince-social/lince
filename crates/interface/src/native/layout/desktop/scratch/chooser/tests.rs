@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn fixture, fn owner, fn visible, fn
+//   chooser_cancel_keeps_membership_focus_and_content_and_confirm_moves_only_the_captured_item.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn fixture() -> (World, Entity, Entity, Entity) {

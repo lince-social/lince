@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: const MAX_POINTS, const MAX_STROKES, struct Stroke, struct Drawing.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 65, 90, 92, 94, 95.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 56, 57, 67.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 33.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 3, 4,
+//   8, 9, 10, 11, 16, 17, 18, 19, 33.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites validate:
+//   String (33).
+
 use serde::{Deserialize, Serialize};
 
 pub const MAX_POINTS: usize = 16_384;

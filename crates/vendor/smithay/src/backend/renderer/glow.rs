@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct GlowRenderer, struct GlowFrame.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 132, 162.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 242.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (163, 191, 198, 266, 271, 281, 296, 308, 323, 337, 528, 538).
+
 //! Integration for using [`glow`] on top of smithays OpenGL ES 2 renderer
 use tracing::warn;
 

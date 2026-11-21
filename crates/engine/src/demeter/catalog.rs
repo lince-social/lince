@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: impl Engine.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 78, 154, 237,
+//   240, 245, 251, 256, 267, 308, 315, 319, 327, 334, 390, 397, 398, 411.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 142, 143,
+//   342.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 302.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use nucleus::demeter::{Acquisition, Food, Reference};
 

@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: const PROGRAM_REVISION_HASH_DOMAIN, const EVALUATION_RESULT_HASH_DOMAIN, const
+//   EVALUATION_REPLAY_CAPSULE_HASH_DOMAIN, enum EvaluationReplayCapsuleSchema.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 103, 105, 211.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 15, 21, 46.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   202, 220.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 76, 114, 128.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 10, 11,
+//   12, 15, 17, 21, 23, 27, 28, 29, 30, 31, 32, 33, 34, 35, 39, 40, 41, 46, 47, 48, 49, 50, 51, 52,
+//   56, 57, 58, 59, 61, 76, 114, 128.
+
 use std::fmt;
 
 use serde::{Deserialize, Serialize};

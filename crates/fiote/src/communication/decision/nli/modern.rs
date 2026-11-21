@@ -1,5 +1,15 @@
-use super::*;
+// non-lean-yet
+// Scope: const CHECKPOINT, fn load.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 35, 36, 37, 38, 39, 40, 44.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 66.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 1.
+
 use std::path::Path;
+
+use super::*;
 
 pub(super) const CHECKPOINT: Checkpoint = Checkpoint {
     id: "english-modern-nli",

@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: const TUTORIAL, const GUIDE, struct Input, enum Kind.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 29.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 20.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   4, 5, 9, 10, 11, 12, 13, 29, 30, 31, 32, 36, 47, 48, 49, 50, 51, 52, 57, 58, 59, 60, 61, 62,
+//   63, 64, 65, 66, 82, 83, 84, 85.
+
 use nucleus::karma::{CivilDateTime, FoldPolicy, FrequencyAst, GapPolicy, TimeZoneId};
 use serde::{Deserialize, Serialize};
 

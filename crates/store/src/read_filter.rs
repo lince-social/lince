@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn get, fn get_on, fn set, fn compare_and_set.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 5, 11, 20, 34, 43, 58.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 11,
+//   20, 34, 43, 58.
+
 use sqlx::{SqliteConnection, SqlitePool};
 
 use crate::StoreError;

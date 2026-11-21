@@ -1,3 +1,32 @@
+// non-lean-yet
+// Scope: mod clock, mod sessions, mod invitations, mod stopping.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 86, 89, 191, 265,
+//   266, 324, 325, 346, 367, 499, 520, 521, 526, 554, 572, 588, 602, 625, 691, 770, 816, 823, 1037,
+//   1144, 1146, 1148, 1219, 1239, 1240, 1277, 1292, 1320, 1321, 1322, 1360.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 82, 96, 802, 825, 874, 881, 882, 1200, 1278, 1361.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 96, 825, 874, 881, 1278, 1361.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 112, 119, 135, 148, 264, 266, 325, 366, 1362.
+// - [Clippy probe: clippy::if_not_else] unnecessary `!=` operation. Sites 382.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 395, 396, 397, 1359.
+// - [Clippy probe: clippy::match_same_arms] these match arms have identical bodies. Sites 299, 303.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 125, 129, 219, 251, 893, 1209, 1339.
+// - [Clippy probe: clippy::missing_panics_doc] State the panic conditions for exported functions.
+//   Sites 111, 129, 251.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 111.
+// - [Clippy probe: clippy::nonminimal_bool] this boolean expression can be simplified. Sites 936,
+//   958, 990, 1054.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 2.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   10, 18, 19, 20, 111, 125, 129, 219, 251, 893, 1209, 1265, 1284, 1339, 1352.
+
 use crate::{Engine, EngineError, actions::ActionOutcome};
 use nucleus::location::*;
 use serde_json::{Value, json};

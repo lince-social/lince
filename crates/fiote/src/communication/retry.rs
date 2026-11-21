@@ -1,5 +1,12 @@
-use reqwest::header::{HeaderMap, RETRY_AFTER};
+// non-lean-yet
+// Scope: const MAX_RETRY_AFTER, fn delay_at, fn deadline, mod tests.
+// BeautifulRust (baseline lines):
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 6,
+//   29.
+
 use std::time::{Duration, Instant, SystemTime};
+
+use reqwest::header::{HeaderMap, RETRY_AFTER};
 
 pub const MAX_RETRY_AFTER: Duration = Duration::from_secs(60);
 

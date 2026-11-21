@@ -1,3 +1,24 @@
+// non-lean-yet
+// Scope: struct OwnerWallet, mod tests, fn extension_on.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 255, 276, 411,
+//   441, 443, 452, 492, 518, 522, 691, 715, 756, 803, 843, 852, 854, 863, 873, 874, 875, 876, 877,
+//   945, 946, 951, 958, 965, 1007, 1011, 1063.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   452, 567, 858, 860, 884, 979.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 892, 965.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 80, 102, 103, 122, 173, 276, 452, 468, 522, 530, 548, 549, 550, 567, 716, 788,
+//   855, 856, 858, 860, 884, 951, 979, 1013, 1063, 1069, 1104, 1108.
+// - [Clippy probe: clippy::manual_is_variant_and] called `.ok().is_some_and(..)` on a `Result`
+//   value. Sites 863.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 227, 1035.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 2.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   227, 1035.
+
 use super::*;
 use nucleus::social::requests::*;
 use serde::{Deserialize, Serialize};

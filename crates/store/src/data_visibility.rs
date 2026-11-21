@@ -1,6 +1,23 @@
-use crate::StoreError;
+// non-lean-yet
+// Scope: fn invalid, fn denied_for_person_on, fn decisions_for_person, fn decisions_for_person_on.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 5.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 23, 33, 72, 129, 147, 156, 166, 167, 296, 300.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   33.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 33, 129, 156.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 9, 49, 57, 97, 117, 136, 175, 199, 215, 253, 263, 289.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 9, 49,
+//   57, 97, 117, 136, 175, 199, 215, 253, 263, 289.
+
 use nucleus::visibility::{Data, Organ, Policy, SavedPolicy};
 use sqlx::{SqliteConnection, SqlitePool};
+
+use crate::StoreError;
 
 fn invalid(error: impl ToString) -> StoreError {
     StoreError::Protocol(error.to_string())

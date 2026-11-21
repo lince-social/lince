@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: mod drawing, mod overview, mod preview, mod editor.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 139, 214, 429,
+//   455, 508, 675, 692, 739, 753, 1067, 1101.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites component:
+//   String (155), definition: String (172), parse: String (181), snapshot: String (127), spawn:
+//   String (195).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   277, 278, 279, 280, 508, 813.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (626, 629, 641, 669, 957).
+
 use avian3d::prelude::*;
 use bevy::{
     math::{DQuat, DVec2, DVec3},

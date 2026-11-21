@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn nested_parent_result_reaches_other_organs_without_disclosing_the_required_branch.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use nucleus::simulation::{ReplayStatus, Verdict};
 
 #[test]

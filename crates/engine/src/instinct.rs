@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: const VOCABULARY, struct Projection, struct Line, struct Link.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 61, 103, 196,
+//   211, 228, 233, 253, 282, 285.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   329.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 329, 404, 405, 406, 456, 457, 463.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value.
+//   Sites 49.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 166.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 490.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   3, 18, 19, 20, 21, 25, 26, 27, 28, 29, 30, 34, 35, 36, 40, 41, 42, 43, 44, 48, 57, 71, 75, 116,
+//   123, 142, 146, 166.
+
 use std::collections::{BTreeMap, HashMap};
 
 pub const VOCABULARY: [&str; 11] = [

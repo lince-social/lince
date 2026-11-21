@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct LostResponse, fn wire, fn address, fn assert_once.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 91, 92, 97, 100, 104, 105, 114, 115, 116, 132, 135, 140, 225, 226, 228, 233, 253, 254.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 185, 208.
+
 use super::*;
 use engine::wire::{ALPN_SOCIAL, Reach, Wire};
 use serde_json::json;

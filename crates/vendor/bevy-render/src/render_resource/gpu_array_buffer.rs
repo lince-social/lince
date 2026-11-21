@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: trait GpuArrayBufferable, enum GpuArrayBuffer, struct GpuArrayBufferIndex.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 63, 102.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   63, 102.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 38.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 38, 111.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 39, 40,
+//   44, 52, 59, 73, 80, 93, 100, 117.
+
 use bevy_material::bind_group_layout_entries::{
     binding_types::{storage_buffer_read_only, uniform_buffer_sized},
     BindGroupLayoutEntryBuilder,

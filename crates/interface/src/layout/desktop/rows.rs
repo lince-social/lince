@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod sizing, mod solve, mod validation, mod transfers.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   138, 159, 161, 163, 168, 191, 192, 276, 323, 324, 329, 373, 374, 375, 394, 399, 408, 416, 431,
+//   436, 442, 447, 493, 496, 497, 503, 517, 524, 531, 533, 537, 561, 582.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (559, 581, 591).
+
 use super::*;
 
 mod sizing;

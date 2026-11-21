@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: const MAX_DOOR_REQUESTS, struct DoorRequest, fn map, fn hold.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 16.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 26, 59, 71, 81.
+// - [Clippy: clippy::needless_question_mark] enclosing `Ok` and `?` operator are unneeded. Sites
+//   82.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 8,
+//   9, 10, 11, 12, 13, 26, 59, 71, 81.
+
 use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;

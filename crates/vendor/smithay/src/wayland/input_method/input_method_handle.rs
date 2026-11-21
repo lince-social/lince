@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct InputMethod, struct Instance, struct InputMethodHandle, struct InputMethodUserData.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 64, 110, 132,
+//   136, 140, 157, 215, 224, 257, 277, 286, 292, 293, 297, 298.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (59, 72, 80, 91, 97, 98, 107, 118, 129, 155, 207, 240, 267, 283, 296, 299, 301,
+//   335, 338).
+
 use std::{
     fmt,
     sync::{Arc, Mutex},

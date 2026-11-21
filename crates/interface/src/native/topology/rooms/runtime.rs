@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: type Scope, type Key, struct Runtime, struct Producer.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 30, 103, 109,
+//   111, 118, 126, 135, 150, 155, 169, 188, 226, 279, 286, 287, 288, 323, 351.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   261.
+
 use super::{Member, Room, WorldPlacement};
 use crate::native::{
     canvas::CanvasItem, canvas_host::Identity, topology, workspace::WorkspaceMember,

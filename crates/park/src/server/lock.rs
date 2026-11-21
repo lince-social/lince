@@ -1,4 +1,11 @@
-use super::*;
+// non-lean-yet
+// Scope: struct Lock.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 77, 100, 136.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (135, 173).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   115.
+
 use smithay::{
     reexports::{
         wayland_protocols::ext::session_lock::v1::server::{
@@ -13,6 +20,8 @@ use smithay::{
         SessionLockManagerState, SessionLockState, SessionLocker,
     },
 };
+
+use super::*;
 
 pub(super) struct Lock {
     revision: u64,
@@ -132,7 +141,11 @@ impl SessionLockHandler for State {
         if self.lock.owner.is_some() {
             return;
         }
-        self.lock.revision = self.lock.revision.checked_add(1).expect("session lock generation exhausted");
+        self.lock.revision = self
+            .lock
+            .revision
+            .checked_add(1)
+            .expect("session lock generation exhausted");
         self.lock.owner = Some(confirmation.ext_session_lock().clone());
         #[cfg(feature = "nested")]
         self.latency.clear();
@@ -170,7 +183,11 @@ impl SessionLockHandler for State {
     }
 
     fn unlock(&mut self) {
-        self.lock.revision = self.lock.revision.checked_add(1).expect("session lock generation exhausted");
+        self.lock.revision = self
+            .lock
+            .revision
+            .checked_add(1)
+            .expect("session lock generation exhausted");
         self.control.locked(false);
         self.lock.owner = None;
         self.lock.confirmation = None;

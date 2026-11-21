@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn fixture, fn focused, fn application, fn
+//   background_mapping_preserves_focus_editor_camera_and_explicit_unfocus.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use bevy::input_focus::InputFocus;
 

@@ -1,4 +1,7 @@
-use super::*;
+// non-lean-yet
+// Scope: enum Widget, struct Position, fn locate.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy::prelude::{
     ChildOf, Children, ComputedNode, Display, Entity, InheritedVisibility, Name, Node, Text,
     UiGlobalTransform, Vec2,
@@ -8,6 +11,8 @@ use smithay::{
     backend::input::{Axis, AxisSource},
     input::pointer::AxisFrame,
 };
+
+use super::*;
 
 #[derive(Clone, Copy, Debug)]
 enum Widget {
@@ -63,8 +68,7 @@ fn locate(
                 Widget::Named(expected) => name.is_some_and(|name| name.as_str() == expected),
                 Widget::Toast(prefix) => {
                     accessibility.is_some_and(|node| {
-                        node.label()
-                            == Some(lince_interface::i18n::Token::CloseToast.text())
+                        node.label() == Some(lince_interface::i18n::Token::CloseToast.text())
                     }) && world
                         .get::<ChildOf>(*entity)
                         .and_then(|parent| {
@@ -205,11 +209,21 @@ impl Toolkit {
         }
         let state = self.inspect(|canvas| {
             let world = canvas.world_mut();
-            let modes = world.query::<&native::edit_mode::EditMode>().iter(world).map(|mode| mode.enabled).collect::<Vec<_>>();
-            let summaries = world.query::<&Name>().iter(world).filter(|name| name.as_str().starts_with("shortcut.summary.")).count();
+            let modes = world
+                .query::<&native::edit_mode::EditMode>()
+                .iter(world)
+                .map(|mode| mode.enabled)
+                .collect::<Vec<_>>();
+            let summaries = world
+                .query::<&Name>()
+                .iter(world)
+                .filter(|name| name.as_str().starts_with("shortcut.summary."))
+                .count();
             (modes, summaries)
         });
-        panic!("The native toolkit control is unavailable or unreachable: {widget:?}, state={state:?}, scroll={trace:?}");
+        panic!(
+            "The native toolkit control is unavailable or unreachable: {widget:?}, state={state:?}, scroll={trace:?}"
+        );
     }
 
     fn native_click(&mut self, widget: Widget) {
@@ -430,10 +444,15 @@ impl Toolkit {
             app.events("dialog-close-armed") == armed + 1
         });
         self.chord(&[(125, true), (18, true), (18, false), (125, false)]);
-        self.wait("dialog-edit-open", |app| app.inspect(|canvas| {
-            let world = canvas.world_mut();
-            world.query::<&native::edit_mode::EditMode>().iter(world).any(|mode| mode.enabled)
-        }));
+        self.wait("dialog-edit-open", |app| {
+            app.inspect(|canvas| {
+                let world = canvas.world_mut();
+                world
+                    .query::<&native::edit_mode::EditMode>()
+                    .iter(world)
+                    .any(|mode| mode.enabled)
+            })
+        });
         self.native_click(target);
         self.wait("dialog-capture-owner", |app| {
             app.fixture

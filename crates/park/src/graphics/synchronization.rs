@@ -1,5 +1,16 @@
+// non-lean-yet
+// Scope: struct Event, struct Retained, fn probe, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 13, 30, 40, 46.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 32, 33, 35, 52.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 58.
+
+use std::{
+    sync::atomic::{AtomicBool, Ordering},
+    time::{Duration, Instant},
+};
+
 use super::*;
-use std::{sync::atomic::{AtomicBool, Ordering}, time::{Duration, Instant}};
 
 pub(super) struct Event {
     pub(super) event: vk::Event,
@@ -10,14 +21,18 @@ pub(super) struct Event {
 impl Drop for Event {
     fn drop(&mut self) {
         // SAFETY: The last Arc goes away after the signal thread and any queued wait finish.
-        unsafe { self.device.destroy_event(self.event, None); }
+        unsafe {
+            self.device.destroy_event(self.event, None);
+        }
     }
 }
 
 struct Retained(Arc<AtomicBool>);
 
 impl Drop for Retained {
-    fn drop(&mut self) { self.0.store(true, Ordering::Release); }
+    fn drop(&mut self) {
+        self.0.store(true, Ordering::Release);
+    }
 }
 
 pub fn probe() -> Result<()> {
@@ -27,8 +42,12 @@ pub fn probe() -> Result<()> {
     let image = renderer.create_shared_image(64, 32)?;
     let event = Arc::new(Event {
         // SAFETY: The renderer owns the live device and the event keeps it alive.
-        event: unsafe { renderer.raw_device.create_event(&vk::EventCreateInfo::default(), None) }
-            .map_err(|error| ProbeFailure::at("synchronization_event", error))?,
+        event: unsafe {
+            renderer
+                .raw_device
+                .create_event(&vk::EventCreateInfo::default(), None)
+        }
+        .map_err(|error| ProbeFailure::at("synchronization_event", error))?,
         device: renderer.raw_device.clone(),
         _owner: renderer.device.clone(),
     });
@@ -44,7 +63,15 @@ pub fn probe() -> Result<()> {
         // SAFETY: The recording command buffer and host-signaled event share a device.
         // The queue retains the event until the submission completes.
         unsafe {
-            renderer.raw_device.cmd_wait_events(command, &[event.event], vk::PipelineStageFlags::HOST, vk::PipelineStageFlags::ALL_COMMANDS, &[], &[], &[]);
+            renderer.raw_device.cmd_wait_events(
+                command,
+                &[event.event],
+                vk::PipelineStageFlags::HOST,
+                vk::PipelineStageFlags::ALL_COMMANDS,
+                &[],
+                &[],
+                &[],
+            );
         }
     })?;
     renderer.retain(event);
@@ -55,17 +82,28 @@ pub fn probe() -> Result<()> {
     let elapsed = started.elapsed();
     let premature = released.load(Ordering::Acquire) || output.ready()? || exported.ready()?;
     let _ = release.send(());
-    signal.join().map_err(|_| ProbeFailure::at("synchronization_signal", "Signal thread panicked"))?
+    signal
+        .join()
+        .map_err(|_| ProbeFailure::at("synchronization_signal", "Signal thread panicked"))?
         .map_err(|error| ProbeFailure::at("synchronization_signal", error))?;
     output.wait_for_probe()?;
     exported.wait_for_probe()?;
     if elapsed >= Duration::from_secs(1) {
-        return Err(ProbeFailure::at("synchronization_nonblocking", "Rendering waited for the deliberately stalled GPU"));
+        return Err(ProbeFailure::at(
+            "synchronization_nonblocking",
+            "Rendering waited for the deliberately stalled GPU",
+        ));
     }
     if premature || !released.load(Ordering::Acquire) {
-        return Err(ProbeFailure::at("synchronization_lifetime", "GPU-owned resources did not follow completion"));
+        return Err(ProbeFailure::at(
+            "synchronization_lifetime",
+            "GPU-owned resources did not follow completion",
+        ));
     }
-    println!("Delayed GPU submission returned in {} ms; completion and retained-resource release occurred after the gate opened.", elapsed.as_millis());
+    println!(
+        "Delayed GPU submission returned in {} ms; completion and retained-resource release occurred after the gate opened.",
+        elapsed.as_millis()
+    );
     Ok(())
 }
 
@@ -92,10 +130,12 @@ mod tests {
         let commands = encoder.finish();
         buffer.destroy();
 
-        let error = renderer.checked_submission(|| {
-            renderer.queue.submit([commands]);
-            Ok(())
-        }).unwrap_err();
+        let error = renderer
+            .checked_submission(|| {
+                renderer.queue.submit([commands]);
+                Ok(())
+            })
+            .unwrap_err();
         assert_eq!(error.stage, "gpu_submission");
     }
 }

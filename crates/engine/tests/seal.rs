@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn batch, fn sender, fn two_cells, fn a_sealed_batch_opens_on_every_cell_of_the_recipient.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 60.
+// - [Clippy probe: clippy::redundant_clone] Move or borrow at the marked sites and check later
+//   uses. Sites 289.
+
 use ed25519_dalek::SigningKey;
 use engine::seal::{self, SealError, SealedBundle};
 use engine::sync::{OpBatch, WireOp};

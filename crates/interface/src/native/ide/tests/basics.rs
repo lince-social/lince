@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn japanese_word_navigation_and_deletion_follow_pending_typing, fn drain, fn input, fn
+//   keyboard_tab_indents_and_control_f_focuses_find.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use std::time::{Duration, Instant};
 

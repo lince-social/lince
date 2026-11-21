@@ -1,3 +1,28 @@
+// non-lean-yet
+// Scope: mod clipping, mod convert, mod diagnostics, mod debug.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 818, 845, 875, 906, 907, 925, 1354, 1394, 2809, 2813, 2826, 2828, 2868, 3003.
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value. Sites
+//   459, 473.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 1134, 1246.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 115, 117, 1539.
+// - [Clippy: clippy::trivially_copy_pass_by_ref] Consider a value parameter for small Copy inputs.
+//   Sites 1154.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 207, 771, 772, 1113, 1114, 1115, 1456, 2356, 2379, 2396.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   1113, 1114, 1115.
+// - [Clippy: clippy::if_not_else] unnecessary `!=` operation. Sites 550.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 91, 115, 117, 120, 121, 123, 127, 129, 147, 148, 152, 178, 179, 180,
+//   181, 182, 183, 428.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 40.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 33, 38,
+//   40, 41, 42, 43, 44, 48, 73.
+
 #[cfg(feature = "ghost_nodes")]
 use crate::experimental::GhostNode;
 use crate::{

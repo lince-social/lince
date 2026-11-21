@@ -1,5 +1,21 @@
-use super::ComponentState;
+// non-lean-yet
+// Scope: const FORMAT, const MAX_BYTES, enum Immunity, struct Part.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 110.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 11.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 59, 147, 159.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 5,
+//   11, 13, 14, 15, 16, 17, 18, 23, 25, 26, 28, 29, 30, 32, 37, 38, 39, 44, 45, 46, 48, 53, 54, 55,
+//   59, 141, 142, 143, 147, 159.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites decode: String
+//   (147), encode: String (159), validate: String (59).
+
 use serde::{Deserialize, Serialize};
+
+use super::ComponentState;
 
 pub const FORMAT: &str = "lince.custom_component";
 pub const MAX_BYTES: usize = 256 * 1024;

@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: fn ui_layout_system.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value. Sites
+//   204, 218.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 6, 7.
+// - [Clippy: clippy::if_not_else] unnecessary `!=` operation. Sites 279.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 6, 7, 10, 11, 13, 30, 31, 32, 114, 186.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (61, 66, 144).
+
 use super::*;
 
 /// Updates the UI's layout tree, computes the new layout geometry and then updates the sizes and transforms of all the UI nodes.

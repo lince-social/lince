@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod controls, struct TilingControl, struct FocusControl, struct OverviewControl.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::i18n::Token;
 

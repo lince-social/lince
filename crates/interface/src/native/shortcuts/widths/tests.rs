@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn layout_rebase_keeps_the_local_preset_and_independent_external_focus_preferences, fn
+//   fixture, fn activate, fn named.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use bevy::input::InputPlugin;
 

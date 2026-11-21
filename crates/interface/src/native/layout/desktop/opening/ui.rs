@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod editor, mod fields, mod presentation, mod references.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 176, 203, 237,
+//   245, 256, 280, 375, 382, 387, 394, 408, 409.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (134, 199, 201, 207, 212, 226, 232, 240, 244, 248, 251, 262, 264).
+
 use super::*;
 use crate::native::{
     actions::{Action, ActionButton, KeyBinding, KeyBindings, Modifiers},

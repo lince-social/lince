@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn main_transparent_pass_2d.
+// BeautifulRust (baseline lines):
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 17, 24.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 15.
+
 use crate::core_2d::Transparent2d;
 use bevy_ecs::prelude::*;
 use bevy_log::error;

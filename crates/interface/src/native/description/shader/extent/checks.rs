@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn setup, fn empty_sources_preserve_consumer_expiry_and_first_material_activation.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 28.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (24, 93).
+
 use super::*;
 
 pub(super) fn setup() -> (World, Entity) {

@@ -1,14 +1,24 @@
+// non-lean-yet
+// Scope: mod packs, fn fixture, fn coordinates_and_pointer_anchor_agree_at_street_detail, fn
+//   world_and_dateline_selections_are_bounded_before_allocating.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 168, 375.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   186, 197, 246, 421, 433, 435, 473, 497, 512.
+
 #![cfg(test)]
 
 #[path = "offline_map/packs.rs"]
 mod packs;
 
-use geozero::mvt::{Message, Tile as VectorTile, tile::Layer};
-use lince_map::{Bounds, Camera, Coordinate, Settings, Tile, TileStore};
 use std::sync::{
     Arc,
     atomic::{AtomicBool, AtomicUsize, Ordering},
 };
+
+use geozero::mvt::{Message, Tile as VectorTile, tile::Layer};
+use lince_map::{Bounds, Camera, Coordinate, Settings, Tile, TileStore};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpListener,

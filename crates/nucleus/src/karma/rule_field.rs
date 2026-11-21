@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: struct RuleIdentity, fn check_condition_source, enum RuleFieldKind, enum RuleFieldInput.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   170.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 166.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 50, 70.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   184, 196, 198.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 14, 82.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 9,
+//   11, 14, 50, 51, 52, 53, 57, 59, 70, 71, 72, 76, 77, 78, 82, 170.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites
+//   check_condition_source: String (14), parse: String (82).
+
 use serde::{Deserialize, Serialize};
 
 use super::{Consequence, Consequences};
@@ -195,7 +212,9 @@ impl RuleConsequence {
                 self.target,
                 serde_json::to_string(command).expect("the command text is a string")
             ),
-            _ => serde_json::to_string(self).expect("rule fields contain serializable tagged values"),
+            _ => {
+                serde_json::to_string(self).expect("rule fields contain serializable tagged values")
+            }
         }
     }
 }

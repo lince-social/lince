@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Form, fn input, fn entry, fn reconcile.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 85, 99, 113, 132,
+//   271, 276, 279.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (65, 97, 106, 107, 127, 137, 142, 176, 186, 209, 215, 220, 276, 302, 303).
+
 use super::*;
 use crate::native::icons::{Icon, IconButton, Tooltip};
 use bevy::input_focus::InputFocus;

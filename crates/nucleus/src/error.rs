@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: enum NucleusError.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 4.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 5,
+//   6, 7, 8, 9, 10, 11.
+
 use std::fmt;
 
 #[derive(Debug, Clone, PartialEq)]

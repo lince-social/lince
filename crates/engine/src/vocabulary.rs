@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod inspector.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 203, 249, 318,
+//   337, 411.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 221, 249.
+// - [Clippy probe: clippy::match_same_arms] these match arms have identical bodies. Sites 263, 287,
+//   288, 289, 290, 340.
+
 use crate::{Engine, EngineError, actions::ActionOutcome};
 use nucleus::vocabulary::{Command, SAVED_LOCATION_ROLE_UID};
 use serde_json::json;

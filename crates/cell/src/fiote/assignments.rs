@@ -1,3 +1,24 @@
+// non-lean-yet
+// Scope: struct Queue, struct Entry.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 143, 205, 217,
+//   219, 227, 228, 268, 270, 300, 337, 345.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites load: String
+//   (22).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   143, 168, 174, 193, 194, 228, 280, 281, 287, 288, 299, 300.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 92, 105,
+//   106, 107, 112, 117, 120, 151.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 105, 106, 143, 168, 174, 193, 194, 228, 280, 281, 287, 288, 299, 300.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on a `Result`
+//   value. Sites 341.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   51.
+// - [rustc probe: unreachable_pub] unreachable `pub` item. Sites 22.
+
 use super::*;
 use fiote::config::TaskSession;
 use serde_json::json;

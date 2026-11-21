@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: const MAX_PENDING, struct Actions, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 33, 54, 80, 84,
+//   85.
+// - [rustc probe: unreachable_pub] unreachable `pub` item. Sites 17, 27, 92.
+
 use crate::{ClientMessage, ServerMessage};
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use engine::{actions::Action, trust::Signer};

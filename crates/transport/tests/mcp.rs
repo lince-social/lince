@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Client, fn fixture, fn
+//   mcp_reads_writes_assertions_and_crdt_use_live_native_operations, fn
+//   mcp_streamed_messages_preserve_human_edits_and_close_interrupts_writing.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 101.
+
 #![cfg(test)]
 
 #![cfg(feature = "mcp")]

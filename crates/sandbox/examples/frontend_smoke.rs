@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct AsyncRuntime, struct Exercise, fn main, fn exercise.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 56, 69, 137, 138,
+//   173.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (30).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (35, 37, 50, 52, 130, 152).
+
 use bevy::{
     prelude::*,
     render::view::screenshot::{Screenshot, ScreenshotCaptured, save_to_disk},

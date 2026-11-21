@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Take, fn read, fn play, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 47.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 13, 20, 25.
+
 use super::*;
 use image::{AnimationDecoder, ImageDecoder};
 use std::io::BufReader;

@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn renderer_function, const NAMES.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 pub(super) fn renderer_function(name: &str) -> bool {
     name.starts_with("lince_")
         || name.contains("_naga_oil_")

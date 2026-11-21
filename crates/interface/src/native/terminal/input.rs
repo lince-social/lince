@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn focus, fn keyboard, fn key.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 pub(super) fn focus(

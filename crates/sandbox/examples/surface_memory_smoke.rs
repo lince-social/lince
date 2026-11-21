@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn memory, struct Trial, struct ReleasedCaptures, fn verify_targets.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 211, 219, 245.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   148, 309, 426, 427.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (169, 226, 227, 245, 274, 289, 291, 295, 305, 320, 321, 324, 336, 440).
+
 use bevy::{
     math::DVec2,
     prelude::*,

@@ -77,6 +77,12 @@
 // LINEBENDER LINT SET - lib.rs - v4
 // See https://linebender.org/wiki/canonical-lints/
 // These lints shouldn't apply to examples or tests.
+// non-lean-yet
+// Scope: mod analysis, mod bidi, mod break_overrides, mod builder.
+// BeautifulRust (baseline lines):
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 146, 147, 148.
+
 #![cfg_attr(not(test), warn(unused_crate_dependencies))]
 // These lints shouldn't apply to examples.
 #![warn(clippy::print_stdout, clippy::print_stderr)]

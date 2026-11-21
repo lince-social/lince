@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn fixture, fn tool_edits_are_one_undo_and_stale_results_cannot_replace_typing, fn
+//   formatter_command_updates_only_the_buffer_and_preserves_disk_until_save, fn
+//   absent_language_server_reports_a_useful_error_without_retrying.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn fixture() -> (World, Entity, tempfile::TempDir, PathBuf) {

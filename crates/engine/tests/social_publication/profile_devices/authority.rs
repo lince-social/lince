@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn publisher, fn base, fn removed_enrolled_device_draft_stays_visible_but_cannot_publish,
+//   fn offline_device_draft_preserves_concurrent_owner_edit_until_explicit_resolution.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 8.
+
 use super::*;
 
 async fn publisher(owner: &Engine) -> Arc<LocalSocialHost> {

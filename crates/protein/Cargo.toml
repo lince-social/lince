@@ -11,6 +11,7 @@ description = "Lince expression layer: the declarative read contract every inter
 schemars = { workspace = true }
 chrono = { workspace = true }
 nucleus = { workspace = true }
+protein-authority = { workspace = true }
 store = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

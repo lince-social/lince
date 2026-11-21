@@ -1,12 +1,22 @@
-use crate::input_settings::{self, PointerControl};
-use lince_interface::host::input::{
-    PointerCapabilities, PointerDevice, PointerRequest, PointerSettings, PointerSnapshot,
-};
-use smithay::reexports::input::{Device, DeviceCapability};
+// non-lean-yet
+// Scope: struct Entry, mod absolute, mod tablet, struct Devices.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 71, 211, 229.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   active:active (178), advance:pointer_idle (222), advance:protected (221), gesture:active (198),
+//   request:protected (206), scroll:active (190).
+
 use std::{
     collections::{BTreeMap, BTreeSet},
     io,
 };
+
+use lince_interface::host::input::{
+    PointerCapabilities, PointerDevice, PointerRequest, PointerSettings, PointerSnapshot,
+};
+use smithay::reexports::input::{Device, DeviceCapability};
+
+use crate::input_settings::{self, PointerControl};
 
 struct Entry {
     device: Device,
@@ -138,10 +148,19 @@ impl Devices {
     }
 
     pub fn added(&mut self, device: Device) {
-        if ![DeviceCapability::Pointer, DeviceCapability::Touch, DeviceCapability::TabletTool].into_iter().any(|capability| device.has_capability(capability)) {
+        if ![
+            DeviceCapability::Pointer,
+            DeviceCapability::Touch,
+            DeviceCapability::TabletTool,
+        ]
+        .into_iter()
+        .any(|capability| device.has_capability(capability))
+        {
             return;
         }
-        let Some(generation) = self.absolute.next_generation() else { return; };
+        let Some(generation) = self.absolute.next_generation() else {
+            return;
+        };
         let id = device.sysname().to_owned();
         let mut entry = Entry {
             key: absolute::identity(&device),
@@ -151,7 +170,9 @@ impl Devices {
             absolute_error: None,
             tools: Vec::new(),
         };
-        if entry.device.has_capability(DeviceCapability::Pointer) && let Err(error) = entry.apply(&self.control.snapshot.settings) {
+        if entry.device.has_capability(DeviceCapability::Pointer)
+            && let Err(error) = entry.apply(&self.control.snapshot.settings)
+        {
             entry.error = Some(format!(
                 "Saved pointer preferences could not be fully applied: {error}"
             ));
@@ -170,10 +191,14 @@ impl Devices {
     }
 
     pub fn registered(&self, device: &Device) -> bool {
-        self.entries.get(device.sysname()).is_some_and(|entry| &entry.device == device)
+        self.entries
+            .get(device.sysname())
+            .is_some_and(|entry| &entry.device == device)
     }
 
-    pub fn generation(&self, id: &str) -> Option<u64> { self.entries.get(id).map(|entry| entry.generation) }
+    pub fn generation(&self, id: &str) -> Option<u64> {
+        self.entries.get(id).map(|entry| entry.generation)
+    }
 
     pub fn active(&mut self, active: bool) {
         self.control.available(active);
@@ -213,7 +238,10 @@ impl Devices {
 
     pub fn gestures_available(&self) -> bool {
         self.control.snapshot.available
-            && self.entries.values().any(|entry| entry.device.has_capability(DeviceCapability::Gesture))
+            && self
+                .entries
+                .values()
+                .any(|entry| entry.device.has_capability(DeviceCapability::Gesture))
     }
 
     pub fn advance(
@@ -264,8 +292,9 @@ impl Devices {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use lince_interface::host::input::InputOutcome;
+
+    use super::*;
 
     #[test]
     fn preferences_wait_for_every_scroll_axis_and_gesture_and_cancel_on_seat_departure() {

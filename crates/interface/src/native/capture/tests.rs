@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn exclusion_follows_layout_ecs_and_visual_ownership_without_changing_public_siblings, fn
+//   unresolved_or_cyclic_ownership_is_private, fn
+//   saved_native_placement_retains_identity_and_exclusion_without_a_second_store, fn
+//   derived_window_labels_follow_the_specific_source_and_fail_closed_after_its_lifetime.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[test]

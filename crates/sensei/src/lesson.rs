@@ -1,5 +1,18 @@
-use crate::rules::{Rule, enforced};
+// non-lean-yet
+// Scope: Discover build sources, report bounded findings, and run rule fixes.
+// BeautifulRust (baseline lines):
+// - [manual: §3 Ownership, §12 Performance] Sites 24–39, 79–105. The empty registry can
+//   return before inventory scanning in these operations. Build the per-rule counters with
+//   an iterator and hold the original source borrowed until a rule proposes an edit.
+// - [manual: §4 Types] Sites 26–28, 38–69. Give the rule/count/examples tuple named fields
+//   if the reporting path grows. Keep the per-rule limit and deterministic ordering.
+// - [manual: §5 Errors, §10 Documentation] Sites 6–21, 35–37, 83–85, 97–105. Cargo needs
+//   the explicit failure diagnostic. Document the ignored read errors and partial progress
+//   if a write fails. Preserve PATH handling and the check/fix CLI exit behavior.
+
 use std::path::{Path, PathBuf};
+
+use crate::rules::{Rule, enforced};
 
 const SHOWN_PER_RULE: usize = 40;
 

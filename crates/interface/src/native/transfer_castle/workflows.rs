@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod tests.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 6.
+
 use super::model::{self, Form};
 pub(super) use crate::transfers::workflows::{ACTIVITIES, alternative, smaller_need};
 use serde_json::{Value, json};

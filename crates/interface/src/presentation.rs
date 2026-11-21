@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: enum Layout, struct Presentation, fn settings, struct Comparison.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use crate::settings::{Control, Definition, Value, Values};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};

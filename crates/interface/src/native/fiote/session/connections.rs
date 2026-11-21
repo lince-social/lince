@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: enum Route, struct Form, fn editing, struct Open.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 27, 151, 153,
+//   199, 208, 214, 221, 234, 244, 253, 273, 349, 355, 369, 394, 402, 482, 489, 496, 503, 551, 565,
+//   567, 593, 621, 711, 1265, 1276, 1277, 1279, 1280, 1320, 1327, 1335, 1345, 1350, 1383, 1400,
+//   1414.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 609, 612.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   585, 714, 1284.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (27, 292, 349, 367, 384, 431, 450, 462, 542, 545, 652, 683, 690, 715, 1268, 1277,
+//   1285).
+
 use super::*;
 use cell::fiote_connection::{Connection, Profile, Request};
 

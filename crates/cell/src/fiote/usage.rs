@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: static WRITING, fn path, fn read, fn record.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 33.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 76, 77.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 33.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use nucleus::operation::Usage;
 static WRITING: std::sync::Mutex<()> = std::sync::Mutex::new(());

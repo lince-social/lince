@@ -1,6 +1,14 @@
-use super::{Search, Snippet};
+// non-lean-yet
+// Scope: const NAMESPACE, const MAX_PEERS, const MAX_WORK, const MAX_BYTES.
+// BeautifulRust (baseline lines):
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 6,
+//   7, 8, 9, 10, 14, 15, 16, 21, 22, 23, 24, 25, 30, 31, 32, 33, 34, 35, 36, 37, 38, 43, 44, 45,
+//   46.
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
+use super::{Search, Snippet};
 
 pub const NAMESPACE: &str = "lince.social.ask";
 pub const MAX_PEERS: usize = 32;

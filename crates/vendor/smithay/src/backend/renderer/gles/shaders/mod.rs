@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod implicit, const NO_ALPHA, const EXTERNAL, const DEBUG_FLAGS.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 142, 143.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 171, 199.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (167, 195).
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 5.
+
 mod implicit;
 
 use std::fmt::Write;

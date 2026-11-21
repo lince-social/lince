@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Logical, struct Client, struct Physical, struct Buffer.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 662, 663, 1039,
+//   1040, 1584, 1585.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   1363.
+
 use std::fmt;
 use std::ops::{Add, AddAssign, Div, Mul, Sub, SubAssign};
 

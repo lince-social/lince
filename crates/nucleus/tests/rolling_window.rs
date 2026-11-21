@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn at, fn rolling_windows_follow_local_dates_and_daylight_saving, fn
+//   rolling_windows_bound_history_future_and_timezones.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use nucleus::projection::RollingWindow;

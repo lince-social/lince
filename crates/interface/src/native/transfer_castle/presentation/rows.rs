@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Card, enum Row, enum Key, struct Rows.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 50, 76, 104, 154,
+//   155.
+
 use super::*;
 use crate::native::retained::Children as RetainedChildren;
 

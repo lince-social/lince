@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn timestamp, mod tests, fn number, fn view.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn timestamp(value: &Value) -> String {

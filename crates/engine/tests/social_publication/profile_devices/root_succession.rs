@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod races, struct Hosts, fn hosts, fn successor.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 68.
+
 use super::*;
 use std::sync::{
     Mutex,

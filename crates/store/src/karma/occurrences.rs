@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: struct KarmaOccurrenceRow, enum KarmaOccurrenceCommit, fn ingest, fn ingest_tx.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 176, 237, 241.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 21.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   90.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   203, 230.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 26, 109, 120, 131.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 9, 10,
+//   11, 12, 13, 14, 15, 16, 17, 21, 22, 23, 26, 109, 120, 131.
+
 use chrono::{DateTime, TimeZone, Utc};
 use nucleus::karma::{CanonicalHash, KarmaOccurrenceEnvelope, TimestampMs, canonical_json_bytes};
 use serde::Serialize;

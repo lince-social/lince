@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: mod atomic, mod gbm, mod legacy, struct DrmSurface.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 104.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 115, 125.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   commit:event (442), page_flip:event (464), test_state:allow_modeset (409), use_vrr:vrr (334).
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 28, 172.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (61).
+
 use std::io;
 use std::os::unix::io::{AsFd, BorrowedFd};
 use std::sync::atomic::Ordering;

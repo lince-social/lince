@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn fixture, fn prospective_moves_preserve_live_state_and_other_window_sizes_until_commit,
+//   fn tiled_insertion_preserves_width_intent_and_creates_only_the_previewed_row, fn
+//   resize_clamps_clients_and_preserves_the_opposite_edge_and_other_items.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::super::tests::{id, item, viewport};
 use super::*;
 

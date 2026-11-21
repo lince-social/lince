@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: const MAX_REASONABLE_UNIFORM_BUFFER_BINDING_SIZE, const
+//   MAX_REASONABLE_UNIFORM_BUFFER_BINDING_SIZE, struct BatchedUniformBuffer, fn align_to_next.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 53, 64, 84, 99, 145.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   84, 99.
+// - [Clippy: clippy::missing_assert_message] assert without any message. Sites 124, 154.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 39.
+
 use super::{GpuArrayBufferIndex, GpuArrayBufferable};
 use crate::{
     render_resource::DynamicUniformBuffer,

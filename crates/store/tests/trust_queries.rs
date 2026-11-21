@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn fixture, fn input, fn save, fn counts.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use nucleus::trust_analysis::{Identity, query::Query};

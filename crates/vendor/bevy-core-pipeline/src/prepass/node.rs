@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: type PrepassViewQueryData, fn early_prepass, fn late_prepass, fn run_prepass_system.
+// BeautifulRust (baseline lines):
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 46, 50, 88, 92, 153.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 44, 86.
+
 use bevy_camera::{MainPassResolutionOverride, Viewport};
 use bevy_ecs::prelude::*;
 use bevy_log::error;

@@ -1,7 +1,13 @@
+// non-lean-yet
+// Scope: fn configure, fn board_switches_and_custom_defaults_cannot_reuse_stale_sdk_configuration,
+//   fn invalid_board_clock_is_rejected_before_generating_firmware.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
-use lince_ailuros::{profile, project};
 use std::{fs, path::Path, process::Command};
+
+use lince_ailuros::{profile, project};
 
 fn configure(project: &Path) -> (String, String) {
     let build = project.join("build/check-build");

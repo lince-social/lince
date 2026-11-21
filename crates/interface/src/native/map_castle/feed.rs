@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: struct Marker, enum Kind, struct Feed, fn reset.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 58, 67, 74, 75,
+//   99, 118, 119, 121, 154, 155, 172, 173, 177, 178, 179, 193, 194, 214, 319, 331, 412, 435, 456,
+//   460, 462, 467, 531, 537, 542, 543, 569, 571, 634, 667, 690, 696, 697, 700, 745, 769, 837, 842,
+//   853.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (620).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   590.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (430, 433, 441, 475, 480, 500, 536, 552, 553, 577, 590, 601, 616, 623, 630, 646,
+//   649, 651, 711, 724, 728, 734, 741, 759, 764, 768, 770, 773, 781).
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 395.
+
 use super::*;
 use engine::location::clock::Instant;
 use serde::Deserialize;

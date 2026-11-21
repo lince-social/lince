@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: fn propagate_ui_target_cameras, mod tests.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value. Sites
+//   57.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 21, 25, 26.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 21, 25, 26.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 19.
+
 //! This module contains systems that update the UI when something changes
 
 use crate::{

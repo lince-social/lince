@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn run, fn limit, fn case, fn
+//   check_schedules_leave_domain_events_and_final_state_unchanged.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use engine::actions::Action;

@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct VisibilityPlugin, struct Overlay, fn close, fn open.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 59.
+
 use bevy::prelude::*;
 use lince_interface::visibility as ui;
 use nucleus::visibility::Data;

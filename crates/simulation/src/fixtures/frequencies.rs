@@ -1,3 +1,26 @@
+// non-lean-yet
+// Scope: const DAY, fn invocation, fn complete, fn shared.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 29, 163, 165,
+//   167, 187, 195, 231, 260, 278.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (123, 217).
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 116, 138, 139, 149, 158, 203, 206, 208, 238, 250.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 138, 139.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 138, 139.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 60, 70, 118, 121, 196, 210, 212, 215, 262, 279.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 63, 124, 162, 172.
+// - [Clippy probe: clippy::manual_is_multiple_of] manual implementation of `.is_multiple_of()`.
+//   Sites 55.
+// - [Clippy probe: clippy::missing_panics_doc] State the panic conditions for exported functions.
+//   Sites 44.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   9, 44.
+
 use std::collections::BTreeMap;
 
 use crate::scenario::{Check, Event, Input, Invocation, Scenario};

@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: const SUBJECTS, fn prefix, struct Subjects, struct SummaryView.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 53.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   14.
+
 use nucleus::sync::{Outcome, Summary};
 use serde::{Serialize, Serializer, ser::SerializeSeq};
 

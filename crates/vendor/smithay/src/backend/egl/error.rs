@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: enum Error, enum EGLError, fn wrap_egl_call, fn wrap_egl_call_ptr.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 153.
+
 use super::ffi;
 
 #[derive(thiserror::Error, Debug)]

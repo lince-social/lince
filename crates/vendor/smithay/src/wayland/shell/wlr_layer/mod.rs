@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod handlers, mod types, const LAYER_SURFACE_ROLE, type LayerSurfaceData.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 142, 257, 262,
+//   330, 380, 387, 457, 495.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 220, 267.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (262, 374, 376, 411, 413, 453, 455, 460, 474, 476, 491, 493).
+
 //! Utilities for handling shell surfaces with the `wlr_layer_shell` protocol
 //!
 //! This interface should be suitable for the implementation of many desktop shell components,

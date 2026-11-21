@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn access_catalog_authenticates_hosts_and_retains_revocation_floor, fn
+//   access_status_is_private_to_the_requesting_peer_and_tracks_revocation.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use store::{
     Store,
     organ_access::{self, Status},

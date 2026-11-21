@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn seed_units, fn conversion_direct_inverse_and_identity, fn
+//   conversion_upsert_replaces_and_reverse_row_is_removed, fn
+//   conversion_requires_a_shared_dimension.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use store::Store;

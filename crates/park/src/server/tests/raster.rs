@@ -1,4 +1,10 @@
-use super::*;
+// non-lean-yet
+// Scope: fn buffer, fn pixel_buffer, fn settle, fn publish.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 254, 257.
+
+use std::io::Write;
+
 #[cfg(feature = "nested")]
 use bevy::prelude::*;
 #[cfg(feature = "nested")]
@@ -16,7 +22,8 @@ use smithay::backend::{
         gles::{GlesRenderer, GlesTexture},
     },
 };
-use std::io::Write;
+
+use super::*;
 
 #[cfg(feature = "nested")]
 fn buffer(harness: &Harness, size: [i32; 2], pattern: bool) -> wl_buffer::WlBuffer {
@@ -124,7 +131,10 @@ fn shared_memory_damage_preserves_untouched_and_retained_frames_then_replaces_re
     window.surface.commit();
     harness.sync();
     let second = harness.server.windows()[0].nodes[0].clone();
-    let (after, _) = renderer.import_surface(&second, Some((&before, first.damage.current_commit()))).unwrap().unwrap();
+    let (after, _) = renderer
+        .import_surface(&second, Some((&before, first.damage.current_commit())))
+        .unwrap()
+        .unwrap();
     let read = |texture: &wgpu::Texture| {
         let exported = renderer.export_copy(texture).unwrap();
         exported.wait_for_probe().unwrap();
@@ -134,8 +144,15 @@ fn shared_memory_damage_preserves_untouched_and_retained_frames_then_replaces_re
     let pixels = read(&after);
     for y in 0..16 {
         for x in 0..32 {
-            let value = if (4..12).contains(&x) && (2..5).contains(&y) { 119 } else { 17 };
-            assert_eq!(&pixels[(y * 32 + x) * 4..(y * 32 + x + 1) * 4], &[value, value, value, 255]);
+            let value = if (4..12).contains(&x) && (2..5).contains(&y) {
+                119
+            } else {
+                17
+            };
+            assert_eq!(
+                &pixels[(y * 32 + x) * 4..(y * 32 + x + 1) * 4],
+                &[value, value, value, 255]
+            );
         }
     }
     let resized_buffer = pixel_buffer(&harness, [16, 8], &[231, 231, 231, 255].repeat(16 * 8));
@@ -144,7 +161,10 @@ fn shared_memory_damage_preserves_untouched_and_retained_frames_then_replaces_re
     window.surface.commit();
     harness.sync();
     let resized = harness.server.windows()[0].nodes[0].clone();
-    let (texture, _) = renderer.import_surface(&resized, Some((&after, second.damage.current_commit()))).unwrap().unwrap();
+    let (texture, _) = renderer
+        .import_surface(&resized, Some((&after, second.damage.current_commit())))
+        .unwrap()
+        .unwrap();
     assert_eq!(read(&texture), [231, 231, 231, 255].repeat(16 * 8));
     assert_eq!(read(&after), pixels);
 }

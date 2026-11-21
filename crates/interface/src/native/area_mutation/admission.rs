@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn candidates, fn same_configuration.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use crate::native::area::InfluenceArea;
 use crate::native::workspace::WorkspaceMember;
 use bevy::prelude::*;

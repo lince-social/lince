@@ -1,9 +1,17 @@
+// non-lean-yet
+// Scope: mod budget, struct Report, fn target_directory, fn with_cleanup.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   103.
+
 pub(crate) mod budget;
 
-use std::env;
-use std::fs::{self, File, TryLockError};
-use std::io;
-use std::path::{Path, PathBuf};
+use std::{
+    env,
+    fs::{self, File, TryLockError},
+    io,
+    path::{Path, PathBuf},
+};
 
 #[derive(Default)]
 struct Report {
@@ -149,8 +157,9 @@ fn prune_variant(path: &Path, dry_run: bool, report: &mut Report) -> io::Result<
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::sync::atomic::{AtomicU64, Ordering};
+
+    use super::*;
 
     struct Fixture(PathBuf);
 

@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn only_a_real_uri_offer_exposes_hover_authority_without_an_accepted_payload_target, fn
+//   an_invalid_drag_start_serial_cannot_arm_overview_hover.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[test]

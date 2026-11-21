@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: fn unexpected.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 130.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 130.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 7.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   7.
+
 use super::{
     ALPN_SYNC, Connection, DIAL_TIMEOUT, EndpointAddr, EndpointId, Wire, WireRequest, WireResponse,
 };

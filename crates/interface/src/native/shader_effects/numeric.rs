@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: mod preparation, struct Context, struct Batch, struct NumericFeeds.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 40, 187, 200,
+//   206, 212, 226, 230, 262.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (142).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   107, 293, 389.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (48, 152, 175, 193, 294, 312, 342, 558).
+
 use super::*;
 use nucleus::shader_effect::bindings::{NumericBinding, NumericSource, NumericValues};
 use std::collections::{BTreeMap, BTreeSet};

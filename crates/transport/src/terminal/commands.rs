@@ -1,3 +1,33 @@
+// non-lean-yet
+// Scope: mod journal, mod changes, mod tests, struct CommandHost.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 455.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 92, 210, 239,
+//   247, 257, 280, 282, 283, 284, 291, 292, 293, 310.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 162.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites observe: String
+//   (63), request: String (74).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   432.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 424, 456, 495.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 495.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 210, 257, 283, 284, 293.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 432.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 162.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 63, 74.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &str). Sites 213.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 16.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   16, 40, 55, 63, 70, 74.
+
 mod journal;
 mod changes;
 pub use changes::{Changes, Source};

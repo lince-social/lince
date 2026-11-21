@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn fixture, fn gregorian_months_and_navigation_respect_leap_years_and_bounds, fn
+//   periods_validate_endpoints_and_records_cover_inclusive_days, fn
+//   named_events_stay_in_their_group_and_other_events_pass.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use serde_json::json;
 

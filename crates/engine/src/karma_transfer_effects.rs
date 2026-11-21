@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct EvaluatedTransfer, fn invalid, fn target, fn occurrence_fulfillment.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 57, 77, 110, 236,
+//   239, 241, 244, 247, 276, 331, 334, 338, 343, 344, 345, 349, 351, 360.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 239.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 23.
+
 use std::{collections::BTreeMap, sync::Arc};
 
 use chrono::{DateTime, Utc};

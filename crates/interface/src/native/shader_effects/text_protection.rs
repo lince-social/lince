@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct ProtectedText, struct Scratch, fn refresh, fn refresh_current.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (24, 92).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 97, 98.
+
 use super::{Background, Surface, disabled, shader};
 use crate::native::{token_style::Tokens, tokens::Token, topology::appearance::Material};
 use bevy::{

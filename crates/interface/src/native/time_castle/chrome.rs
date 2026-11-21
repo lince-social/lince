@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct Chrome, fn surfaces, fn controls_open, fn close_controls.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 596, 599.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   449.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (67, 115, 330, 350, 361, 364, 379, 409, 421, 423, 425, 428, 433, 444, 449, 466,
+//   477, 515, 556, 635).
+
 use super::*;
 use crate::native::actions::{Action, ActionButton};
 use crate::native::icons::{Icon, IconButton, IconStyle};

@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod lane, mod fiote, mod native, mod mcp.
+// BeautifulRust (baseline lines):
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   1, 3, 4, 5, 7, 8, 9, 10, 11, 12, 14, 15, 24.
+
 #![recursion_limit = "256"]
 
 pub mod lane;

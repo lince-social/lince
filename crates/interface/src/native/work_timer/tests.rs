@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn standalone_log_crud_validates_and_roundtrips_a_running_stopwatch, fn settle, fn
+//   record_log_crud_uses_shared_mutations_and_reference_changes_preserve_local_time, fn
+//   standalone_rejects_multiple_running_entries_and_clamps_clock_reversal.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[test]

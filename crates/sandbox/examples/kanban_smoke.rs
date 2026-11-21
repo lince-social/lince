@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Trial, fn exercise, fn click_label, fn main.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 61, 93, 217, 294,
+//   295.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (31, 33, 34, 60, 66, 68, 72, 109, 158, 166, 171, 180, 222, 228, 249, 264, 286,
+//   306).
+
 use bevy::{
     diagnostic::FrameCount,
     math::DVec2,

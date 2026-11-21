@@ -1,9 +1,25 @@
+// non-lean-yet
+// Scope: struct PermissionIdentity, struct RolePermissionSet, fn refusal, fn validate_set.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 122, 123, 127, 129, 131, 153, 154, 156, 159, 228.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   159.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 159.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 180, 275.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 9, 10,
+//   11, 12, 16, 17, 18, 19, 180, 275.
+
 use std::collections::BTreeSet;
 
 use sqlx::{Acquire, Sqlite, SqliteConnection, Transaction};
 
-use crate::StoreError;
-use crate::auth::{MAX_PERMISSION_KEY_BYTES, MAX_ROLE_PERMISSION_BYTES, MAX_ROLE_PERMISSIONS};
+use crate::{
+    StoreError,
+    auth::{MAX_PERMISSION_KEY_BYTES, MAX_ROLE_PERMISSION_BYTES, MAX_ROLE_PERMISSIONS},
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct PermissionIdentity {

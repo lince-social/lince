@@ -1,3 +1,25 @@
+// non-lean-yet
+// Scope: enum OpKind, struct OpRow, fn map, const INSERT.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 1187, 1188.
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value. Sites
+//   608.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 51.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   prune:dry_run (901).
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 6.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 88, 275, 343, 419, 446, 502, 563, 664, 689, 712, 737, 757, 783, 804, 823, 840, 860, 867,
+//   883, 901, 955, 964, 981, 989, 1015, 1034, 1051, 1062, 1073, 1128.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 7,
+//   8, 9, 10, 11, 15, 25, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 88, 275, 343, 419, 441, 442,
+//   443, 446, 502, 528, 529, 532, 533, 534, 538, 550, 559, 563, 585, 607, 620, 664, 689, 712, 737,
+//   757, 783, 804, 823, 840, 860, 867, 877, 878, 879, 880, 883, 901, 955, 964, 981, 989, 1005,
+//   1006, 1007, 1008, 1009, 1010, 1011, 1012, 1015, 1034, 1051, 1062, 1073, 1128.
+
 use sqlx::{Row, Sqlite, SqliteConnection, SqlitePool, Transaction};
 
 use crate::StoreError;
@@ -764,7 +786,8 @@ pub async fn seq_covered_by_vector(
           WHERE organ_uid = ? AND replica_root IS NULL{}",
         uncovered_clause(theirs)
     );
-    let mut query = sqlx::query_scalar::<_, Option<i64>>(sqlx::AssertSqlSafe(sql.as_str())).bind(organ_uid);
+    let mut query =
+        sqlx::query_scalar::<_, Option<i64>>(sqlx::AssertSqlSafe(sql.as_str())).bind(organ_uid);
     for entry in theirs {
         query = query.bind(&entry.actor_cell).bind(entry.max_hlc);
     }
@@ -940,10 +963,12 @@ pub async fn prune(pool: &SqlitePool, dry_run: bool) -> Result<PruneReport, Stor
         .get("n");
 
     if !dry_run && removable > 0 {
-        sqlx::query(sqlx::AssertSqlSafe(format!("DELETE FROM sync_op WHERE {PRUNABLE}")))
-            .bind(floor)
-            .execute(pool)
-            .await?;
+        sqlx::query(sqlx::AssertSqlSafe(format!(
+            "DELETE FROM sync_op WHERE {PRUNABLE}"
+        )))
+        .bind(floor)
+        .execute(pool)
+        .await?;
     }
     Ok(PruneReport {
         floor,

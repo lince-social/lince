@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: struct Cli, enum Subcommands, struct TestArgs, enum AllocatorType.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 130, 142, 221, 224,
+//   242, 256, 259.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 131, 143.
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites format_test:render → &[T] (118), format_test:sample → &[T] (118).
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (124, 129,
+//   130, 136, 141, 142, 164, 172, 182, 187, 189, 191, 196, 199, 207, 215, 220, 221, 223, 224, 236,
+//   241, 242, 246, 250, 255, 256, 258, 259, 277, 281, 287, 293, 299, 305, 308, 310, 319, 321, 324,
+//   327, 339, 342, 344, 353, 354, 356).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (194, 198).
+
 use std::{fmt, fs::File, os::unix::io::OwnedFd, path::PathBuf};
 
 use clap::{Args, Parser, Subcommand, ValueEnum};

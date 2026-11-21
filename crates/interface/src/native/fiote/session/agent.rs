@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: mod options, struct Draft, struct Directories, struct Activity.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 37, 52, 66, 79,
+//   82, 273, 277, 319, 350, 351, 364, 373, 397, 417, 430, 431, 441, 463, 464, 465, 466.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 60, 63.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   248.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (110, 118, 133, 288, 342, 380, 384, 469).
+
 use super::*;
 
 pub(super) mod options;

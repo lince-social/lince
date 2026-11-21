@@ -1,24 +1,29 @@
-use super::Window as ClientWindow;
-use super::*;
+// non-lean-yet
+// Scope: mod overview, mod hover, mod dispatch, mod windowed_fullscreen.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
+use std::io::Write;
+
 use bevy::prelude::*;
-#[cfg(feature = "nested")]
-use smithay::reexports::wayland_server::Resource;
 use lince_interface::{
     host::{DesktopAction, Direction, ItemId, WorkspaceLayout},
     layout::desktop::{PlacementId, Width},
     native,
 };
-use std::io::Write;
+#[cfg(feature = "nested")]
+use smithay::reexports::wayland_server::Resource;
+
+use super::{Window as ClientWindow, *};
 
 #[cfg(feature = "nested")]
-#[path = "transfers/overview.rs"]
-mod overview;
+#[path = "transfers/dispatch/mod.rs"]
+mod dispatch;
 #[cfg(feature = "nested")]
 #[path = "transfers/hover.rs"]
 mod hover;
 #[cfg(feature = "nested")]
-#[path = "transfers/dispatch/mod.rs"]
-mod dispatch;
+#[path = "transfers/overview.rs"]
+mod overview;
 #[path = "transfers/windowed_fullscreen.rs"]
 mod windowed_fullscreen;
 

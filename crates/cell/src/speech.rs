@@ -1,3 +1,28 @@
+// non-lean-yet
+// Scope: mod listening, mod local_tests, mod wake_tests, struct Host.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 149, 160, 163,
+//   185, 195, 233, 259, 264, 265, 267, 268, 299, 312, 388, 402, 404, 405, 440, 489, 491, 492, 535,
+//   615, 647, 752, 757, 774, 777.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 249, 375,
+//   379, 803.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites open: String
+//   (75).
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 185, 267, 268, 402, 404, 405, 440, 489, 491, 492, 535, 895, 896, 924, 925, 1000, 1003,
+//   1079, 1082, 1101, 1466.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 1183, 1475, 1477.
+// - [Clippy probe: clippy::large_enum_variant] large size difference between variants. Sites 60.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 249, 375, 379, 803.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 75.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 27.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   27, 75, 175, 180.
+
 use ::fiote::communication::decision;
 use ::fiote::speech;
 pub use ::fiote::speech::endpoint;

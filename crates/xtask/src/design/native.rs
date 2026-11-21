@@ -1,8 +1,13 @@
-use super::*;
+// non-lean-yet
+// Scope: const COMPONENTS, struct Preview, fn command, fn source_revision.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::{
     process::{Child, Command},
     time::{Duration, Instant},
 };
+
+use super::*;
 
 pub(super) const COMPONENTS: &[&str] = &[
     "square",

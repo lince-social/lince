@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: fn id, fn publication, fn copies, fn republish.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 53, 121, 127, 138, 156, 159, 161, 162, 163, 164, 188, 189, 190, 198, 221, 222, 253, 263,
+//   274, 276, 284, 285, 299, 300, 309, 314, 317, 318, 319, 321, 325, 334, 343, 344, 356, 370, 371,
+//   379, 396, 403, 412, 419, 423, 427, 433, 436, 440, 451, 454, 455, 457, 464, 465, 469, 497, 498,
+//   499, 501, 511, 525, 538, 554, 567.
+// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 308.
+
 use super::*;
 use crate::{
     DecimalValue,
@@ -305,10 +315,10 @@ fn altered_amount_time_or_measurement_under_one_source_commitment_conflicts() {
     let first = publication();
     for change in 0..3 {
         let mut next = republish(&first);
-        if change == 0 {
-            if let Content::Statement { quantity, .. } = &mut next.events[0].event.content {
-                *quantity = DecimalValue::parse_inferred("1000").unwrap();
-            }
+        if change == 0
+            && let Content::Statement { quantity, .. } = &mut next.events[0].event.content
+        {
+            *quantity = DecimalValue::parse_inferred("1000").unwrap();
         }
         if change == 1 {
             next.events[0].event.recorded_at += 1;

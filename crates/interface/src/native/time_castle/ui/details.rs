@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn update.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 90, 102, 103,
+//   107, 110.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (5, 14, 38, 39, 146).
+
 use super::*;
 use rows::{Command, Key, Row};
 

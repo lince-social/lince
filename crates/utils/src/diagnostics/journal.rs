@@ -1,4 +1,19 @@
-use super::{CAPACITY, Diagnostics, Notice, Subscription};
+// non-lean-yet
+// Scope: enum Request, struct Journal, fn read, fn write.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 204, 205.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 46.
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites open:path → &Path (23).
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 23.
+// - [Clippy: clippy::print_stderr] Check CLI, Cargo, fixture, or library output contract before
+//   changing output. Sites 73, 98, 103, 182.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 16.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 16, 23.
+
 use std::{
     fs::{self, OpenOptions},
     io::{self, Read, Write},
@@ -7,6 +22,8 @@ use std::{
     thread::JoinHandle,
     time::{Duration, Instant},
 };
+
+use super::{CAPACITY, Diagnostics, Notice, Subscription};
 
 enum Request {
     Changed,

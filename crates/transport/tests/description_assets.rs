@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn
+//   transclusion_subscription_follows_edits_and_revocation_and_assets_follow_the_same_access.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 66.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 63.
+
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use engine::{Engine, actions::Action};
 use nucleus::{

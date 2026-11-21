@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: enum TrayMessage, struct TraySender, struct TrayState, struct InterfaceWindowSettings.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 75, 77, 85, 106,
+//   194, 257, 293, 294, 295, 304, 319, 322.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (383, 385, 402).
+
 use crate::native::{instance::InstanceEvents, wake::WakeSignal};
 use bevy::{
     prelude::*,

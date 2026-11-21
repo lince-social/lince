@@ -4,6 +4,16 @@
 //! Text shaping implementation using `harfrust`for shaping
 //! and `icu` for text analysis.
 
+// non-lean-yet
+// Scope: mod cache, struct ShapeContext, struct Item, fn shape_text.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 306, 427, 439,
+//   499, 665, 672, 680.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   96, 131, 306, 307, 328, 348, 370, 491, 495, 576, 612.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (376, 450).
+
 use alloc::vec::Vec;
 use core::mem;
 use core::ops::RangeInclusive;

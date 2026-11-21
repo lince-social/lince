@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: mod behavior, mod palette, mod residency, const SVG.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 265, 341, 369,
+//   544, 549, 587, 687, 714, 768, 871, 888, 896, 903, 1085.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (350, 870).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   314, 606, 857, 968, 994.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (589, 598, 686, 995, 1004).
+
 use crate::native::actions::Action;
 use bevy::{
     asset::{LoadState, RenderAssetUsages, io::embedded::EmbeddedAssetRegistry},

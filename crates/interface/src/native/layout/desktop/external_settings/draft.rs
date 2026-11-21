@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Source, enum Mode, struct Capture, struct Draft.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 59, 70, 87, 127,
+//   133, 147.
+
 use super::*;
 use crate::{
     host::{external::screenshot::Options, launch::Capability},

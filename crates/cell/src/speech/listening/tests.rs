@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct RecognitionFixture, struct DecisionFixture, struct DeliveryFixture, fn audio.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::await_holding_lock] Release the guard before awaiting if the transaction
+//   permits it. Sites 398.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 246, 247, 248, 303, 342, 343, 344, 425, 495, 527, 529, 602, 657, 714, 765, 813, 814, 815,
+//   847, 908, 909, 952, 962, 1025, 1027, 1053, 1097, 1127, 1155, 1163, 1165, 1219, 1239, 1247,
+//   1249, 1270, 1290, 1292, 1299, 1347, 1368, 1428, 1480, 1490, 1574, 1577, 1617, 1642, 1698, 1699,
+//   1741, 1742.
+
 use super::*;
 use ::fiote::communication::decision::{Choice, Model, Output};
 use ::fiote::provider::{Message, Provider, Reply, ToolDefinition};

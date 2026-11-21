@@ -1,12 +1,27 @@
-use super::*;
+// non-lean-yet
+// Scope: struct Controls, fn bind, fn shortcuts_inhibitor, fn
+//   pointer_lock_and_shortcut_escape_release_until_focus_changes.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use wayland_protocols::wp::{
-    pointer_constraints::zv1::client::{zwp_pointer_constraints_v1::{self as constraints, ZwpPointerConstraintsV1 as Constraints},
-        zwp_locked_pointer_v1::{self as locked, ZwpLockedPointerV1 as Locked}, zwp_confined_pointer_v1::ZwpConfinedPointerV1 as Confined},
-    relative_pointer::zv1::client::{zwp_relative_pointer_manager_v1::ZwpRelativePointerManagerV1 as RelativeManager,
-        zwp_relative_pointer_v1::{self as relative, ZwpRelativePointerV1 as Relative}},
-    keyboard_shortcuts_inhibit::zv1::client::{zwp_keyboard_shortcuts_inhibit_manager_v1::ZwpKeyboardShortcutsInhibitManagerV1 as InhibitManager,
-        zwp_keyboard_shortcuts_inhibitor_v1::{self as inhibitor, ZwpKeyboardShortcutsInhibitorV1 as Inhibitor}},
+    keyboard_shortcuts_inhibit::zv1::client::{
+        zwp_keyboard_shortcuts_inhibit_manager_v1::ZwpKeyboardShortcutsInhibitManagerV1 as InhibitManager,
+        zwp_keyboard_shortcuts_inhibitor_v1::{
+            self as inhibitor, ZwpKeyboardShortcutsInhibitorV1 as Inhibitor,
+        },
+    },
+    pointer_constraints::zv1::client::{
+        zwp_confined_pointer_v1::ZwpConfinedPointerV1 as Confined,
+        zwp_locked_pointer_v1::{self as locked, ZwpLockedPointerV1 as Locked},
+        zwp_pointer_constraints_v1::{self as constraints, ZwpPointerConstraintsV1 as Constraints},
+    },
+    relative_pointer::zv1::client::{
+        zwp_relative_pointer_manager_v1::ZwpRelativePointerManagerV1 as RelativeManager,
+        zwp_relative_pointer_v1::{self as relative, ZwpRelativePointerV1 as Relative},
+    },
 };
+
+use super::*;
 
 #[derive(Default)]
 pub(super) struct Controls {
@@ -20,29 +35,74 @@ pub(super) struct Controls {
 
 #[cfg(feature = "nested")]
 impl Controls {
-    pub(super) fn pointer_lock(&self, surface: &wl_surface::WlSurface, seat: &wl_seat::WlSeat, qh: &QueueHandle<Client>) -> (wl_pointer::WlPointer, Locked, Relative) {
+    pub(super) fn pointer_lock(
+        &self,
+        surface: &wl_surface::WlSurface,
+        seat: &wl_seat::WlSeat,
+        qh: &QueueHandle<Client>,
+    ) -> (wl_pointer::WlPointer, Locked, Relative) {
         let pointer = seat.get_pointer(qh, ());
-        let locked = self.constraints.as_ref().unwrap().lock_pointer(surface, &pointer, None, constraints::Lifetime::Persistent, qh, ());
-        let relative = self.relative.as_ref().unwrap().get_relative_pointer(&pointer, qh, ());
+        let locked = self.constraints.as_ref().unwrap().lock_pointer(
+            surface,
+            &pointer,
+            None,
+            constraints::Lifetime::Persistent,
+            qh,
+            (),
+        );
+        let relative = self
+            .relative
+            .as_ref()
+            .unwrap()
+            .get_relative_pointer(&pointer, qh, ());
         (pointer, locked, relative)
     }
 
-    pub(super) fn pointer_confinement(&self, surface: &wl_surface::WlSurface, seat: &wl_seat::WlSeat, region: &wl_region::WlRegion, qh: &QueueHandle<Client>) -> (wl_pointer::WlPointer, Confined) {
+    pub(super) fn pointer_confinement(
+        &self,
+        surface: &wl_surface::WlSurface,
+        seat: &wl_seat::WlSeat,
+        region: &wl_region::WlRegion,
+        qh: &QueueHandle<Client>,
+    ) -> (wl_pointer::WlPointer, Confined) {
         let pointer = seat.get_pointer(qh, ());
-        let confined = self.constraints.as_ref().unwrap().confine_pointer(surface, &pointer, Some(region), constraints::Lifetime::Persistent, qh, ());
+        let confined = self.constraints.as_ref().unwrap().confine_pointer(
+            surface,
+            &pointer,
+            Some(region),
+            constraints::Lifetime::Persistent,
+            qh,
+            (),
+        );
         (pointer, confined)
     }
 
-    pub(super) fn lock_events(&self) -> &[bool] { &self.locked }
+    pub(super) fn lock_events(&self) -> &[bool] {
+        &self.locked
+    }
 
-    pub(super) fn relative_deltas(&self) -> &[[f64; 4]] { &self.deltas }
+    pub(super) fn relative_deltas(&self) -> &[[f64; 4]] {
+        &self.deltas
+    }
 }
 
-pub(super) fn bind(state: &mut Client, registry: &wl_registry::WlRegistry, name: u32, interface: &str, qh: &QueueHandle<Client>) {
+pub(super) fn bind(
+    state: &mut Client,
+    registry: &wl_registry::WlRegistry,
+    name: u32,
+    interface: &str,
+    qh: &QueueHandle<Client>,
+) {
     match interface {
-        "zwp_pointer_constraints_v1" => state.controls.constraints = Some(registry.bind(name, 1, qh, ())),
-        "zwp_relative_pointer_manager_v1" => state.controls.relative = Some(registry.bind(name, 1, qh, ())),
-        "zwp_keyboard_shortcuts_inhibit_manager_v1" => state.controls.inhibit = Some(registry.bind(name, 1, qh, ())),
+        "zwp_pointer_constraints_v1" => {
+            state.controls.constraints = Some(registry.bind(name, 1, qh, ()))
+        }
+        "zwp_relative_pointer_manager_v1" => {
+            state.controls.relative = Some(registry.bind(name, 1, qh, ()))
+        }
+        "zwp_keyboard_shortcuts_inhibit_manager_v1" => {
+            state.controls.inhibit = Some(registry.bind(name, 1, qh, ()))
+        }
         _ => {}
     }
 }
@@ -54,13 +114,29 @@ delegate_noop!(Client: ignore InhibitManager);
 
 #[cfg(feature = "nested")]
 pub(super) fn shortcuts_inhibitor(harness: &Harness, window: &Window) -> Inhibitor {
-    harness.client.controls.inhibit.as_ref().unwrap().inhibit_shortcuts(
-        &window.surface, harness.client.seat.as_ref().unwrap(), &harness.queue.handle(), (),
-    )
+    harness
+        .client
+        .controls
+        .inhibit
+        .as_ref()
+        .unwrap()
+        .inhibit_shortcuts(
+            &window.surface,
+            harness.client.seat.as_ref().unwrap(),
+            &harness.queue.handle(),
+            (),
+        )
 }
 
 impl Dispatch<Locked, ()> for Client {
-    fn event(state: &mut Self, _: &Locked, event: locked::Event, _: &(), _: &Connection, _: &QueueHandle<Self>) {
+    fn event(
+        state: &mut Self,
+        _: &Locked,
+        event: locked::Event,
+        _: &(),
+        _: &Connection,
+        _: &QueueHandle<Self>,
+    ) {
         match event {
             locked::Event::Locked => state.controls.locked.push(true),
             locked::Event::Unlocked => state.controls.locked.push(false),
@@ -70,7 +146,14 @@ impl Dispatch<Locked, ()> for Client {
 }
 
 impl Dispatch<Inhibitor, ()> for Client {
-    fn event(state: &mut Self, _: &Inhibitor, event: inhibitor::Event, _: &(), _: &Connection, _: &QueueHandle<Self>) {
+    fn event(
+        state: &mut Self,
+        _: &Inhibitor,
+        event: inhibitor::Event,
+        _: &(),
+        _: &Connection,
+        _: &QueueHandle<Self>,
+    ) {
         match event {
             inhibitor::Event::Active => state.controls.inhibited.push(true),
             inhibitor::Event::Inactive => state.controls.inhibited.push(false),
@@ -80,8 +163,22 @@ impl Dispatch<Inhibitor, ()> for Client {
 }
 
 impl Dispatch<Relative, ()> for Client {
-    fn event(state: &mut Self, _: &Relative, event: relative::Event, _: &(), _: &Connection, _: &QueueHandle<Self>) {
-        if let relative::Event::RelativeMotion { dx, dy, dx_unaccel, dy_unaccel, .. } = event {
+    fn event(
+        state: &mut Self,
+        _: &Relative,
+        event: relative::Event,
+        _: &(),
+        _: &Connection,
+        _: &QueueHandle<Self>,
+    ) {
+        if let relative::Event::RelativeMotion {
+            dx,
+            dy,
+            dx_unaccel,
+            dy_unaccel,
+            ..
+        } = event
+        {
             state.controls.deltas.push([dx, dy, dx_unaccel, dy_unaccel]);
         }
     }
@@ -93,12 +190,42 @@ fn pointer_lock_and_shortcut_escape_release_until_focus_changes() {
     let window = harness.window();
     let _buffer = harness.attach(&window, [320, 240]);
     let surface = harness.server.windows()[0].surface.clone();
-    harness.server.focus_surface(Some(surface.clone()), smithay::utils::SERIAL_COUNTER.next_serial());
-    harness.server.pointer_motion(Some((surface.clone(), [20.0, 20.0])), 1).unwrap();
+    harness.server.focus_surface(
+        Some(surface.clone()),
+        smithay::utils::SERIAL_COUNTER.next_serial(),
+    );
+    harness
+        .server
+        .pointer_motion(Some((surface.clone(), [20.0, 20.0])), 1)
+        .unwrap();
     let qh = harness.queue.handle();
     let pointer = harness.client.seat.as_ref().unwrap().get_pointer(&qh, ());
-    let locked = harness.client.controls.constraints.as_ref().unwrap().lock_pointer(&window.surface, &pointer, None, constraints::Lifetime::Persistent, &qh, ());
-    let inhibitor = harness.client.controls.inhibit.as_ref().unwrap().inhibit_shortcuts(&window.surface, harness.client.seat.as_ref().unwrap(), &qh, ());
+    let locked = harness
+        .client
+        .controls
+        .constraints
+        .as_ref()
+        .unwrap()
+        .lock_pointer(
+            &window.surface,
+            &pointer,
+            None,
+            constraints::Lifetime::Persistent,
+            &qh,
+            (),
+        );
+    let inhibitor = harness
+        .client
+        .controls
+        .inhibit
+        .as_ref()
+        .unwrap()
+        .inhibit_shortcuts(
+            &window.surface,
+            harness.client.seat.as_ref().unwrap(),
+            &qh,
+            (),
+        );
     harness.sync();
     assert!(harness.server.pointer_locked());
     assert!(harness.server.shortcuts_inhibited());
@@ -108,12 +235,18 @@ fn pointer_lock_and_shortcut_escape_release_until_focus_changes() {
     harness.sync();
     assert!(!harness.server.pointer_locked());
     assert!(!harness.server.shortcuts_inhibited());
-    for _ in 0..3 { harness.sync(); }
+    for _ in 0..3 {
+        harness.sync();
+    }
     assert_eq!(harness.client.controls.locked, [true, false]);
     assert_eq!(harness.client.controls.inhibited, [true, false]);
-    harness.server.focus_surface(None, smithay::utils::SERIAL_COUNTER.next_serial());
+    harness
+        .server
+        .focus_surface(None, smithay::utils::SERIAL_COUNTER.next_serial());
     harness.sync();
-    harness.server.focus_surface(Some(surface), smithay::utils::SERIAL_COUNTER.next_serial());
+    harness
+        .server
+        .focus_surface(Some(surface), smithay::utils::SERIAL_COUNTER.next_serial());
     harness.sync();
     assert!(harness.server.pointer_locked());
     assert!(harness.server.shortcuts_inhibited());
@@ -132,18 +265,37 @@ fn relative_events_require_matching_keyboard_focus_and_stop_during_lock() {
     let surface = harness.server.windows()[0].surface.clone();
     let qh = harness.queue.handle();
     let pointer = harness.client.seat.as_ref().unwrap().get_pointer(&qh, ());
-    let relative = harness.client.controls.relative.as_ref().unwrap().get_relative_pointer(&pointer, &qh, ());
-    harness.server.pointer_motion(Some((surface.clone(), [20.0, 20.0])), 1).unwrap();
+    let relative = harness
+        .client
+        .controls
+        .relative
+        .as_ref()
+        .unwrap()
+        .get_relative_pointer(&pointer, &qh, ());
+    harness
+        .server
+        .pointer_motion(Some((surface.clone(), [20.0, 20.0])), 1)
+        .unwrap();
     harness.sync();
-    harness.server.focus_surface(None, smithay::utils::SERIAL_COUNTER.next_serial());
-    harness.server.relative_motion([2.0, -3.0], [1.0, -2.0], 1000);
+    harness
+        .server
+        .focus_surface(None, smithay::utils::SERIAL_COUNTER.next_serial());
+    harness
+        .server
+        .relative_motion([2.0, -3.0], [1.0, -2.0], 1000);
     harness.sync();
     assert!(harness.client.controls.deltas.is_empty());
-    harness.server.focus_surface(Some(surface), smithay::utils::SERIAL_COUNTER.next_serial());
-    harness.server.relative_motion([2.0, -3.0], [1.0, -2.0], 2000);
+    harness
+        .server
+        .focus_surface(Some(surface), smithay::utils::SERIAL_COUNTER.next_serial());
+    harness
+        .server
+        .relative_motion([2.0, -3.0], [1.0, -2.0], 2000);
     harness.sync();
     assert_eq!(harness.client.controls.deltas, [[2.0, -3.0, 1.0, -2.0]]);
-    harness.server.relative_motion([f64::NAN, 0.0], [0.0; 2], 3000);
+    harness
+        .server
+        .relative_motion([f64::NAN, 0.0], [0.0; 2], 3000);
     let _lock = harness.client.lock_manager.as_ref().unwrap().lock(&qh, ());
     harness.sync();
     harness.server.relative_motion([1.0; 2], [1.0; 2], 4000);

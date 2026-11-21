@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct Observed, struct Revision, fn revision, fn unchanged.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use bevy::ecs::change_detection::Tick;
 

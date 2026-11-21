@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn command, fn preview, fn enable, fn
+//   report_queue_is_bounded_and_expiry_is_visible_without_renewal_or_network_work.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 204, 207, 210, 247.
+
 #![cfg(test)]
 
 use engine::{Engine, EngineError, social::Network};

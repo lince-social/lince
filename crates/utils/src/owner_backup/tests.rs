@@ -1,5 +1,19 @@
-use super::*;
+// non-lean-yet
+// Scope: const PASSWORD, type Files, fn fixture, struct BoundedRead.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 9, 95, 114, 115, 127, 129, 133, 155, 156, 158, 159, 161, 165, 167, 174, 175, 186, 189,
+//   192, 195, 229, 235, 246.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 250.
+// - [Clippy: clippy::panic_in_result_fn] Return the existing error type for recoverable failure.
+//   Sites 38, 50, 74.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 27, 95, 109.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites 82.
+
 use std::{cell::RefCell, collections::BTreeMap, io::Cursor, rc::Rc};
+
+use super::*;
 
 const PASSWORD: &str = "a private owner backup test passphrase";
 type Files = BTreeMap<FileKind, Vec<u8>>;

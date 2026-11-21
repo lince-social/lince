@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: mod context, mod device, mod error, mod ffi.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 273.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 42, 202.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   258.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (85).
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 37.
+
 //! Common traits and types for egl rendering
 //!
 //! This module has multiple responsibilities related to functionality provided by libEGL:

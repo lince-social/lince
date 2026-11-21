@@ -1,3 +1,27 @@
+// non-lean-yet
+// Scope: const MAX_INPUT_BYTES, mod commands, struct TerminalHost, struct TerminalHandle.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 67, 74, 76, 277,
+//   287, 317.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 72, 103,
+//   119, 334.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites close: String
+//   (127), input: String (86), open: String (45), resize: String (113).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   278.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 278.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 72, 103, 119, 334.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 45, 86, 113, 127.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 371, 393,
+//   396.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 19.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   17, 19, 39, 45, 86, 113, 127, 135, 142, 170.
+
 use {
     crate::ServerMessage,
     base64::{Engine as _, engine::general_purpose::STANDARD as BASE64},

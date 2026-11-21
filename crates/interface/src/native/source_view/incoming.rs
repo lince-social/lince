@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn disconnected, fn target, struct Maintenance.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 60, 81.
+
 use super::*;
 use bevy::ecs::query::QueryState;
 

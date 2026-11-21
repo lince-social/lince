@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct CompactionReport.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 20, 115, 120,
+//   122.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 120.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 19, 63.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   12, 13, 14, 15, 19, 63.
+
 use std::io::Write;
 use std::path::{Path, PathBuf};
 

@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn invocation, fn rule, fn feedback, fn
+//   available_restrictions_use_the_actual_loan_adjustment_inside_feedback.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use engine::actions::Action;

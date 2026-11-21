@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn record, fn put, fn assets_are_separate_deduplicated_and_scoped_to_the_record, fn
+//   reads_use_current_permissions_and_locked_descriptions_block_assets.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::field_reassign_with_default] field assignment outside of initializer for
+//   an instance created with Default::default(). Sites 229.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 46, 53,
+//   80, 120.
+
 #![cfg(test)]
 
 use base64::{Engine as _, engine::general_purpose::STANDARD};

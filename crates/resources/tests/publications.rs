@@ -1,7 +1,17 @@
+// non-lean-yet
+// Scope: fn philosophy, fn
+//   philosophy_books_offer_downloadable_public_editions_without_relabeling_local_hashes, fn
+//   philosophy_is_a_navigable_graph_of_separate_ordinary_documents, fn
+//   several_definitions_can_reference_the_same_nearby_image.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 59, 60, 124, 125, 222, 230, 231, 233, 356, 357.
+
 #![cfg(feature = "publication")]
 
-use lince_resources::{Library, Resource, publication::Publication};
 use std::{fs, path::PathBuf};
+
+use lince_resources::{Library, Resource, publication::Publication};
 
 fn philosophy() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))

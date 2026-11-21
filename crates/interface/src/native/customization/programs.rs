@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Requests, struct Page, enum Change, fn field.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 50, 75, 79, 114,
+//   141, 151.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 124.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (24, 25, 35, 99, 103, 125, 149).
+
 use super::*;
 use crate::{host::{HostRequest, input::InputOutcome, launch::{Description, Program, Programs, ProgramsRequest, ProgramsSnapshot}},
     native::{layout::desktop::HostRequests, sand_panel}};

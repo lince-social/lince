@@ -1,4 +1,13 @@
-use super::*;
+// non-lean-yet
+// Scope: struct KeyEvent, enum Trigger, struct Authority.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 149, 212.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 73, 284.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   keyboard:pressed (227), pointer_button:pressed (345).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (169).
+
 use smithay::{
     backend::input::KeyState,
     input::{
@@ -7,6 +16,8 @@ use smithay::{
     },
     utils::SERIAL_COUNTER,
 };
+
+use super::*;
 
 #[derive(Clone, Debug)]
 pub struct KeyEvent {
@@ -65,16 +76,39 @@ impl State {
         });
     }
 
-    pub(super) fn remember_release(&mut self, serial: Serial, surface: WlSurface, trigger: Trigger) {
-        let Some(root) = self.input_root(&surface) else { return; };
-        let Some((surface, time, epoch)) = self.authority.iter().rev().find(|entry| {
-            entry.trigger == Some(trigger) && entry.surface == root
-                && entry.time.elapsed() < std::time::Duration::from_secs(5)
-        }).map(|entry| (entry.surface.clone(), entry.time, entry.epoch)) else { return; };
+    pub(super) fn remember_release(
+        &mut self,
+        serial: Serial,
+        surface: WlSurface,
+        trigger: Trigger,
+    ) {
+        let Some(root) = self.input_root(&surface) else {
+            return;
+        };
+        let Some((surface, time, epoch)) = self
+            .authority
+            .iter()
+            .rev()
+            .find(|entry| {
+                entry.trigger == Some(trigger)
+                    && entry.surface == root
+                    && entry.time.elapsed() < std::time::Duration::from_secs(5)
+            })
+            .map(|entry| (entry.surface.clone(), entry.time, entry.epoch))
+        else {
+            return;
+        };
         while self.authority.len() >= 64 {
             self.authority.pop_front();
         }
-        self.authority.push_back(Authority { serial, surface, time, trigger: None, origin: trigger, epoch });
+        self.authority.push_back(Authority {
+            serial,
+            surface,
+            time,
+            trigger: None,
+            origin: trigger,
+            epoch,
+        });
     }
 
     pub(super) fn authorized_client_input(
@@ -115,11 +149,21 @@ impl State {
                     .as_ref()
                     .and_then(|surface| self.input_root(surface))
                     == root
-                || self.touches.values().any(|surface| self.input_root(surface) == root)
-                || self.tablets.active_surfaces().any(|surface| self.input_root(surface) == root)
-                || self.lock.owner.is_none() && self.authority.iter().any(|entry| entry.serial == serial
-                    && entry.epoch == self.input_epoch && matches!(entry.origin, Trigger::Touch(_) | Trigger::Tablet(..))
-                    && self.input_root(&entry.surface) == root))
+                || self
+                    .touches
+                    .values()
+                    .any(|surface| self.input_root(surface) == root)
+                || self
+                    .tablets
+                    .active_surfaces()
+                    .any(|surface| self.input_root(surface) == root)
+                || self.lock.owner.is_none()
+                    && self.authority.iter().any(|entry| {
+                        entry.serial == serial
+                            && entry.epoch == self.input_epoch
+                            && matches!(entry.origin, Trigger::Touch(_) | Trigger::Tablet(..))
+                            && self.input_root(&entry.surface) == root
+                    }))
             && self.authority.iter().any(|entry| {
                 entry.serial == serial
                     && entry.time.elapsed() < std::time::Duration::from_secs(5)
@@ -158,28 +202,52 @@ impl Server {
 
     #[cfg(feature = "nested")]
     pub(crate) fn pointer_dragging(&self) -> bool {
-        self.dragging() && self.state.seat.get_pointer().and_then(|pointer|
-            pointer.with_grab(|_, grab| grab.is::<smithay::wayland::selection::data_device::DnDGrab<State>>())).unwrap_or(false)
+        self.dragging()
+            && self
+                .state
+                .seat
+                .get_pointer()
+                .and_then(|pointer| {
+                    pointer.with_grab(|_, grab| {
+                        grab.is::<smithay::wayland::selection::data_device::DnDGrab<State>>()
+                    })
+                })
+                .unwrap_or(false)
     }
 
     #[cfg(feature = "nested")]
     pub(crate) fn cancel_pointer_drag(&mut self, time: u32) -> Vec<u32> {
-        if !self.pointer_dragging() { return Vec::new(); }
+        if !self.pointer_dragging() {
+            return Vec::new();
+        }
         self.suspend_native_drop();
         let pointer = self.state.seat.get_pointer().unwrap();
         let buttons = self.state.buttons.iter().copied().collect::<Vec<_>>();
-        pointer.motion(&mut self.state, None, &MotionEvent {
-            location: pointer.current_location(), serial: SERIAL_COUNTER.next_serial(), time,
-        });
-        for &button in &buttons { self.pointer_button(button, false, time); }
-        if self.pointer_dragging() { pointer.unset_grab(&mut self.state, SERIAL_COUNTER.next_serial(), time); }
+        pointer.motion(
+            &mut self.state,
+            None,
+            &MotionEvent {
+                location: pointer.current_location(),
+                serial: SERIAL_COUNTER.next_serial(),
+                time,
+            },
+        );
+        for &button in &buttons {
+            self.pointer_button(button, false, time);
+        }
+        if self.pointer_dragging() {
+            pointer.unset_grab(&mut self.state, SERIAL_COUNTER.next_serial(), time);
+        }
         pointer.frame(&mut self.state);
         buttons
     }
 
     #[cfg(feature = "session")]
     pub(crate) fn pointer_grabbed(&self) -> bool {
-        self.state.seat.get_pointer().is_some_and(|pointer| pointer.is_grabbed())
+        self.state
+            .seat
+            .get_pointer()
+            .is_some_and(|pointer| pointer.is_grabbed())
     }
 
     pub fn drag_nodes(&self) -> Vec<SurfaceNode> {
@@ -273,14 +341,20 @@ impl Server {
             keyboard.input_forward(
                 &mut self.state,
                 (keycode + 8).into(),
-                if pressed { KeyState::Pressed } else { KeyState::Released },
+                if pressed {
+                    KeyState::Pressed
+                } else {
+                    KeyState::Released
+                },
                 serial,
                 time,
                 modifiers_changed || pending,
             );
         } else if modifiers_changed || self.state.modifiers_pending {
             self.state.modifiers_pending = keyboard.is_grabbed();
-            if !self.state.modifiers_pending && let Some(surface) = keyboard.current_focus() {
+            if !self.state.modifiers_pending
+                && let Some(surface) = keyboard.current_focus()
+            {
                 let seat = self.state.seat.clone();
                 surface.modifiers(&seat, &mut self.state, keyboard.modifier_state(), serial);
             }
@@ -317,12 +391,18 @@ impl Server {
             .seat
             .get_pointer()
             .ok_or_else(|| io::Error::other("the Park pointer is unavailable"))?;
-        if self.state.popups.grab.as_ref().is_some_and(|grab| {
-            grab.has_ended() && pointer.has_grab(grab.serial())
-        }) {
+        if self
+            .state
+            .popups
+            .grab
+            .as_ref()
+            .is_some_and(|grab| grab.has_ended() && pointer.has_grab(grab.serial()))
+        {
             pointer.unset_grab(&mut self.state, SERIAL_COUNTER.next_serial(), time);
         }
-        if self.pointer_locked() && target.as_ref().map(|(surface, _)| surface) == pointer.current_focus().as_ref() {
+        if self.pointer_locked()
+            && target.as_ref().map(|(surface, _)| surface) == pointer.current_focus().as_ref()
+        {
             return Ok(());
         }
         let position = target
@@ -346,7 +426,12 @@ impl Server {
         let _ = self.pointer_button_serial(button, pressed, time);
     }
 
-    pub(crate) fn pointer_button_serial(&mut self, button: u32, pressed: bool, time: u32) -> Option<Serial> {
+    pub(crate) fn pointer_button_serial(
+        &mut self,
+        button: u32,
+        pressed: bool,
+        time: u32,
+    ) -> Option<Serial> {
         let trigger = Trigger::Button(button);
         let paired = if pressed {
             self.state.forget_trigger(trigger);
@@ -358,7 +443,9 @@ impl Server {
         if let Some(pointer) = self.state.seat.get_pointer() {
             let serial = SERIAL_COUNTER.next_serial();
             #[cfg(feature = "nested")]
-            let delivered = lince_interface::host::performance::enabled().then(|| pointer.current_focus()).flatten();
+            let delivered = lince_interface::host::performance::enabled()
+                .then(|| pointer.current_focus())
+                .flatten();
             if let Some(surface) = pointer.current_focus() {
                 if pressed {
                     self.state.remember_input(serial, surface, trigger);
@@ -384,7 +471,9 @@ impl Server {
             );
             pointer.frame(&mut self.state);
             #[cfg(feature = "nested")]
-            if let Some(surface) = delivered { self.state.input_forwarded(&surface); }
+            if let Some(surface) = delivered {
+                self.state.input_forwarded(&surface);
+            }
             return Some(serial);
         }
         if !pressed {
@@ -398,7 +487,9 @@ impl Server {
             pointer.axis(&mut self.state, frame);
             pointer.frame(&mut self.state);
             #[cfg(feature = "nested")]
-            if let Some(surface) = pointer.current_focus() { self.state.input_forwarded(&surface); }
+            if let Some(surface) = pointer.current_focus() {
+                self.state.input_forwarded(&surface);
+            }
         }
     }
 

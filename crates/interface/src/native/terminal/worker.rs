@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: enum Command, struct Output, struct Worker, fn run.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 53, 55, 120.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 80.
+
 use super::{
     pending_input::Input,
     vt::{Frame, Ghostty},

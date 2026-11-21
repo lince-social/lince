@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: const NAMESPACE, struct Settings, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 27.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 27.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 25, 36.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   4, 8, 9, 10, 11, 25, 36.
+
 use crate::{Engine, EngineError, signal_streams::invalid};
 use serde::{Deserialize, Serialize};
 

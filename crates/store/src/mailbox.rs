@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: mod delivery, mod outbox, struct Registration, struct HeldBundle.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 37, 47.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 61, 87, 95, 108, 119, 131, 151, 169, 186, 203, 226, 235, 248, 265, 277, 294, 306, 329,
+//   345, 355, 373, 395, 422.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 6,
+//   9, 10, 11, 12, 13, 14, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 31, 32, 33, 34, 61, 87, 95, 108,
+//   119, 131, 151, 169, 186, 203, 226, 235, 248, 265, 277, 294, 299, 300, 301, 302, 303, 306, 329,
+//   345, 355, 364, 365, 366, 367, 368, 369, 370, 373, 395, 422.
+
 use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;

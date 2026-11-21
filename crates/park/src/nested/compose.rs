@@ -1,5 +1,11 @@
-use crate::server::KeyEvent;
+// non-lean-yet
+// Scope: struct Compose, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 32, 36, 39, 43.
+
 use smithay::input::keyboard::xkb::{self, compose};
+
+use crate::server::KeyEvent;
 
 pub(crate) struct Compose(Option<compose::State>);
 
@@ -57,8 +63,9 @@ impl Compose {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use smithay::input::keyboard::{ModifiersState, keysyms};
+
+    use super::*;
 
     #[test]
     fn native_dead_keys_compose_and_focus_reset_discards_pending_accents() {

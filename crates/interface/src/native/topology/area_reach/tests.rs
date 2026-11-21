@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn positions, fn finite_preview_matches_force_reach_for_regular_and_concave_shapes, fn
+//   fixture, fn selection_shows_cached_nonblocking_veil_and_tracks_world_placement.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::{
     actions::Action, area::AreaShape, canvas::CanvasView, workspace::WorkspaceMember,

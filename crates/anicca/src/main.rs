@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn main, fn run, fn no_more, fn format_target.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option` value.
+//   Sites 18.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 100.
+
 use std::path::{Path, PathBuf};
 
 fn main() {

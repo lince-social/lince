@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: const MAX_FILE, const MAX_LIBRARY, fn error, fn directory.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (56).
+
 use super::CustomCastle;
 use std::{
     fs::{self, File},

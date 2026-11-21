@@ -1,3 +1,30 @@
+// non-lean-yet
+// Scope: struct GradientPlugin, struct GradientBatch, struct GradientMeta, struct GradientPipeline.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 264, 265, 274, 278, 281, 282, 286, 864, 892, 929, 930.
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value. Sites
+//   314, 321.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 267, 268, 334, 637.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 406.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 205, 206, 211,
+//   220, 1059.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 284, 286, 759, 870, 892, 923, 975, 980.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   870, 892, 923, 975, 980.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 892.
+// - [Clippy: clippy::if_not_else] unnecessary `!=` operation. Sites 903.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 9, 10, 16, 26, 27, 29.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 346, 372, 396, 397, 398, 399, 400, 401, 402, 403, 404, 406.
+// - [rustc: unreachable_pub] unreachable `pub` item. Sites 44, 75, 80, 97, 102, 117, 138, 227, 233,
+//   252, 343, 706, 835, 1006, 1008, 1029.
+
 use core::{
     f32::consts::{FRAC_PI_2, TAU},
     hash::Hash,

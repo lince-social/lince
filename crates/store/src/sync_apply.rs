@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: struct Stamp, const NOT_SUPERSEDED, type SqliteQuery, fn bind_stamp.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   311.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 416.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   set_record_field:undelete (82).
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   328.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 43, 77, 216, 235, 245, 261, 311, 335, 355, 371, 488, 542, 574.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 6.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 7,
+//   8, 9, 10, 43, 77, 216, 235, 245, 261, 311, 335, 355, 371, 488, 542, 574.
+
 use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;
@@ -130,10 +147,16 @@ pub async fn set_record_field(
             let sql = format!(
                 "UPDATE record SET {field} = ?, updated_at = ? WHERE uid = ?{NOT_SUPERSEDED}"
             );
-            bind_stamp(sqlx::query(sqlx::AssertSqlSafe(sql.as_str())).bind(text).bind(&now).bind(uid), &stamp)
-                .execute(pool)
-                .await?
-                .rows_affected()
+            bind_stamp(
+                sqlx::query(sqlx::AssertSqlSafe(sql.as_str()))
+                    .bind(text)
+                    .bind(&now)
+                    .bind(uid),
+                &stamp,
+            )
+            .execute(pool)
+            .await?
+            .rows_affected()
                 > 0
         }
         "quantity" => {
@@ -143,7 +166,7 @@ pub async fn set_record_field(
                 .unwrap_or("0");
             let scale = value
                 .get("scale")
-                .and_then(|item| item.as_i64())
+                .and_then(serde_json::Value::as_i64)
                 .unwrap_or(0);
             let opening = crate::exact::parse_decimal(mantissa, scale)?;
             if opening.is_zero() {
@@ -206,9 +229,12 @@ pub async fn set_record_field(
     };
     if applied && undelete {
         let sql = format!("UPDATE record SET deleted_at = NULL WHERE uid = ?{NOT_SUPERSEDED}");
-        bind_stamp(sqlx::query(sqlx::AssertSqlSafe(sql.as_str())).bind(uid), &stamp)
-            .execute(pool)
-            .await?;
+        bind_stamp(
+            sqlx::query(sqlx::AssertSqlSafe(sql.as_str())).bind(uid),
+            &stamp,
+        )
+        .execute(pool)
+        .await?;
     }
     Ok(applied)
 }
@@ -267,9 +293,15 @@ pub async fn tombstone_record(
     let sql = format!(
         "UPDATE record SET deleted_at = ?, slug = NULL, updated_at = ? WHERE uid = ?{NOT_SUPERSEDED}"
     );
-    bind_stamp(sqlx::query(sqlx::AssertSqlSafe(sql.as_str())).bind(&now).bind(&now).bind(uid), &stamp)
-        .execute(pool)
-        .await?;
+    bind_stamp(
+        sqlx::query(sqlx::AssertSqlSafe(sql.as_str()))
+            .bind(&now)
+            .bind(&now)
+            .bind(uid),
+        &stamp,
+    )
+    .execute(pool)
+    .await?;
     Ok(())
 }
 
@@ -465,7 +497,7 @@ pub async fn upsert_assertion(
     .bind(s("object_uid"))
     .bind(s("role").unwrap_or_else(|| "ordinary".into()))
     .bind(s("quantity_mantissa"))
-    .bind(value.get("quantity_scale").and_then(|v| v.as_i64()))
+    .bind(value.get("quantity_scale").and_then(serde_json::Value::as_i64))
     .bind(s("unit_uid"))
     .bind(s("asserted_by"))
     .bind(s("created_at").unwrap_or_else(|| nucleus::execution::now().to_rfc3339()))

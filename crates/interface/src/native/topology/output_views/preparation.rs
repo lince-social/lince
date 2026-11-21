@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct Queries, fn query, struct Preparation.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use bevy::{
     asset::AssetId,

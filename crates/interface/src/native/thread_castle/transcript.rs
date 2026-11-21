@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: struct Transcript, struct Subscriptions, fn populate, fn refresh.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 48, 87, 89, 96,
+//   107, 111, 136, 249, 251, 286.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (151).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   164.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (49, 86, 93, 108, 118, 121, 254, 261).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 155.
+
 use super::*;
 use cell::{ClientMessage, ServerMessage};
 use serde_json::json;

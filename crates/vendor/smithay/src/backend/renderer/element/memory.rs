@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct MemoryBuffer, struct MemoryRenderBufferInner, struct MemoryRenderBuffer, struct
+//   RenderContext.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 321, 328, 333,
+//   504, 505.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (151, 164,
+//   193).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (323, 407, 494).
+
 //! Element to render from RGBA memory
 //!
 //! # Why use this implementation

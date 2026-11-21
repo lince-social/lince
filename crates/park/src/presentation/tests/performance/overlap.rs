@@ -1,18 +1,23 @@
+// non-lean-yet
+// Scope: mod consumer, mod offered, struct RenderWorker, type Publication.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 mod consumer;
 mod offered;
+use std::{
+    sync::mpsc::{Receiver, SyncSender, sync_channel},
+    thread::JoinHandle,
+    time::Duration,
+};
+
 use bevy::{
     app::SubApp,
     input::keyboard::Key,
     input_focus::{FocusCause, InputFocus},
 };
 use lince_interface::host::{ItemId, OutputId};
-use std::{
-    sync::mpsc::{Receiver, SyncSender, sync_channel},
-    thread::JoinHandle,
-    time::Duration,
-};
 
 struct RenderWorker {
     sender: Option<SyncSender<(SubApp, usize, Option<Epoch>)>>,

@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn fixture, fn resolve, fn
+//   application_opening_waits_for_first_content_before_consuming_placement, fn
+//   gaps_apply_to_live_and_restored_models_without_resetting_width_intent_or_identity.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::{layout::desktop::Width, native::actions::Action};
 

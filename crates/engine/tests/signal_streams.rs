@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn fixture, fn metadata, fn
+//   demand_shares_latest_value_and_final_drop_clears_payload_and_epoch, fn
+//   values_never_become_facts_or_configuration_and_old_handles_are_closed.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 246, 247, 251, 252.
+
 #![cfg(test)]
 
 use engine::{

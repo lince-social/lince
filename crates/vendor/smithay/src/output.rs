@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Mode, enum Subpixel, struct PhysicalProperties, enum Scale.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 263, 334, 339,
+//   344, 349, 513.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (292, 301, 309, 314, 319, 324, 329, 334, 339, 344, 349, 357, 385, 524).
+
 //! Output
 //!
 //! This module provides a type helping you to abstract over various

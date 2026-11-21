@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: mod support, const START, const DAY, fn run.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 216.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 211.
+
 #![cfg(test)]
 
 mod support;

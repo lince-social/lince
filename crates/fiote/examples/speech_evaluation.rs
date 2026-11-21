@@ -1,5 +1,12 @@
-use fiote::speech::evaluation::{self, Suite};
+// non-lean-yet
+// Scope: const USAGE, fn main.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   61.
+
 use std::path::PathBuf;
+
+use fiote::speech::evaluation::{self, Suite};
 
 const USAGE: &str = "Speech model evaluation (local Rust CPU inference)
   fetch <suite.json>                     Download and verify pinned model artifacts.

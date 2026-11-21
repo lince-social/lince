@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct Replay, fn input, fn exercise, fn main.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 118, 194.
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites
+//   148.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   37, 153, 159, 168, 213.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (37, 106, 107, 108, 109, 110, 111, 116, 121, 123, 132, 180, 194, 222, 227, 233,
+//   236, 237, 239, 241, 244, 249, 253, 255, 258, 260, 262, 264, 287, 292).
+
 use bevy::{
     diagnostic::FrameCount,
     prelude::*,

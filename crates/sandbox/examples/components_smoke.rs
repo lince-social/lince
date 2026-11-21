@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: struct ResultRow, struct Trial, fn items, fn finish_case.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 110, 147, 300,
+//   508, 593, 599.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (421, 505,
+//   508).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   139, 168, 190, 276, 277.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (58, 79, 119, 121, 143, 162, 173, 176, 214, 230, 232, 238, 294, 298, 301, 311,
+//   337, 342, 347, 358, 378, 384, 391, 404, 437, 448, 453, 461, 481, 506, 517, 524, 526, 530, 532,
+//   550, 553, 555, 575, 577, 590, 591, 595).
+
 use bevy::{
     a11y::AccessibilityNode,
     input_focus::{FocusCause, InputFocus},

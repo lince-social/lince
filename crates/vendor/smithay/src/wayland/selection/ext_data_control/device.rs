@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct ExtDataControlDeviceUserData.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 54, 55, 77, 78.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (60, 83, 90).
+
 use std::cell::RefCell;
 
 use wayland_protocols::ext::data_control::v1::server::ext_data_control_device_v1::{

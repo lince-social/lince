@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: const LOCAL_CELL_SLUG, struct CellRecord, fn map, fn ensure_local.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 15.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 23, 50, 61, 72, 89.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 9,
+//   10, 11, 12, 23, 50, 61, 72, 89.
+
 use nucleus::RecordKind;
 use sqlx::{Row, SqlitePool};
 

@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: fn a_dictionary_completes_a_placeholder_and_keeps_its_source_owner, fn
+//   dictionary_snapshots_retire_omitted_shared_terms_and_preserve_personal_terms, fn
+//   seeded_source_and_every_translation_share_one_identity, fn
+//   translations_change_presentation_and_retirement_preserves_source_and_history.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 47, 48, 58, 83, 143, 160, 179, 222, 239, 255, 264, 275, 311, 317, 384, 390, 455, 459,
+//   469, 480.
+
 use nucleus::vocabulary::{DEFAULT_VOCABULARY_UID, TOPOS_UID};
 use store::Store;
 

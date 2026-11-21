@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: mod draw, mod tests, const SHADER, const MAX_ITEMS.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 156, 192, 333,
+//   338, 346, 353, 365, 462.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (182).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   479.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (125, 154, 192, 253, 289, 294, 321, 338, 340, 346, 422, 423, 428, 438, 475).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 211.
+
 use super::{Limitation, Surface, SurfaceFace, VisualOwner};
 use bevy::{
     camera::{NormalizedRenderTarget, RenderTarget, visibility::RenderLayers},

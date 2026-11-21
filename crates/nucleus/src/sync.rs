@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: struct WorkspaceSync, enum Content, enum Destination, struct Capabilities.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 220.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 146.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 10, 18, 102, 110, 125.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 5,
+//   10, 11, 12, 13, 18, 19, 20, 21, 22, 26, 27, 28, 29, 33, 34, 35, 36, 40, 54, 68, 83, 102, 103,
+//   104, 105, 110, 111, 112, 113, 117, 118, 119, 120, 125, 126, 127, 128, 129, 130, 131, 135, 136,
+//   137, 138, 139, 143, 154, 155, 156, 157, 158, 162, 163, 164, 165, 179, 185, 186, 187, 188, 189,
+//   190, 191, 192, 193, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 210, 211, 212, 213, 215,
+//   217.
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

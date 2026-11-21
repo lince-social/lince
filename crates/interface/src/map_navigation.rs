@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod tests, struct Panel, struct Job, enum Response.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 117, 284, 356,
+//   357, 358, 359, 368, 432, 440, 441, 442, 443, 444, 451, 456, 461, 488, 494, 577, 686.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 362, 365,
+//   446, 447.
+
 use crate::{controls, theme::Typography};
 use bevy::prelude::*;
 use lince_map::{

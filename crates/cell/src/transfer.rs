@@ -1,3 +1,35 @@
+// non-lean-yet
+// Scope: const ENVELOPE_PATH, const PULL_PATH, const PULL_RESULT_PATH, const RECEIPT_PATH.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 123, 124, 125,
+//   126, 127, 130, 407, 694, 897, 898, 899, 900, 901, 904, 1120, 1289.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites
+//   acknowledge_envelope: String (584), prepare_application_attestation: String (680),
+//   prepare_command: String (927), prepare_envelope: String (525), prepare_pull: String (775),
+//   receive_pull_result: String (822).
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 197, 217, 339, 1006, 1240.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 1006.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 843.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 27.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 1166.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 95, 146, 239, 260, 300, 371, 525, 584, 680, 712, 775, 822, 927, 957.
+// - [Clippy probe: clippy::needless_borrow] this expression creates a reference which is
+//   immediately dereferenced by the compiler. Sites 137, 227, 284, 411.
+// - [Clippy probe: clippy::needless_borrows_for_generic_args] the borrowed expression implements
+//   the required traits. Sites 977.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 1348, 1352.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 1362.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   27, 28, 29, 30, 31, 32, 33, 37, 38, 39, 43, 50, 51, 52, 53, 58, 59, 60, 70, 76, 77, 78, 82, 89,
+//   95, 146, 239, 260, 300, 371, 420, 525, 584, 680, 712, 775, 822, 927, 957, 1362, 1367.
+
 use std::time::Duration;
 
 use chrono::{DateTime, Utc};

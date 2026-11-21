@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn activity, fn cell, fn record, fn pair.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 476.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 399.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 77, 354.
+
 #![cfg(test)]
 
 use engine::{

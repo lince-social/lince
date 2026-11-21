@@ -1,33 +1,56 @@
-use crate::{Camera, source::TileStore};
-use galileo::galileo_types::{
-    cartesian::Size,
-    geo::{Crs, NewGeoPoint, impls::GeoPoint2d},
+// non-lean-yet
+// Scope: struct Palette, fn color, struct Loader, struct Redraw.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 66, 202, 206.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 61, 74.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   61.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   203, 208, 214, 221.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   62, 63, 70, 75.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 157.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 90.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 33, 34,
+//   35, 36, 37, 38, 90, 91, 92, 93, 94, 157, 232, 236, 240.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites new: String
+//   (157).
+
+use std::sync::{
+    Arc,
+    atomic::{AtomicU64, Ordering},
 };
-use galileo::layer::{
-    FeatureLayer,
-    vector_tile_layer::{
-        VectorTileLayerBuilder,
-        style::{
-            StyleRule, VectorTileLabelSymbol, VectorTileLineSymbol, VectorTilePolygonSymbol,
-            VectorTileStyle, VectorTileSymbol, VtTextStyle,
-        },
-        tile_provider::{
-            VectorTileProvider,
-            loader::{TileLoadError, VectorTileLoader},
+
+use galileo::{
+    Color, Map, MapView, Messenger,
+    galileo_types::{
+        cartesian::Size,
+        geo::{Crs, NewGeoPoint, impls::GeoPoint2d},
+    },
+    layer::{
+        FeatureLayer,
+        vector_tile_layer::{
+            VectorTileLayerBuilder,
+            style::{
+                StyleRule, VectorTileLabelSymbol, VectorTileLineSymbol, VectorTilePolygonSymbol,
+                VectorTileStyle, VectorTileSymbol, VtTextStyle,
+            },
+            tile_provider::{
+                VectorTileProvider,
+                loader::{TileLoadError, VectorTileLoader},
+            },
         },
     },
-};
-use galileo::{Color, Map, MapView, Messenger};
-use galileo::{
     platform::native::vt_processor::ThreadVtProcessor,
     symbol::SimplePolygonSymbol,
     tile_schema::{TileIndex, TileSchemaBuilder},
 };
 use galileo_mvt::MvtTile;
-use std::sync::{
-    Arc,
-    atomic::{AtomicU64, Ordering},
-};
+
+use crate::{Camera, source::TileStore};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Palette {

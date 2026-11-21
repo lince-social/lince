@@ -3,6 +3,13 @@
 
 //! Context for layout.
 
+// non-lean-yet
+// Scope: struct RangedBuilder, struct StyleRunBuilder, struct TreeBuilder, fn build_into_layout.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 147, 315.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   315, 316.
+
 use super::FontContext;
 use super::context::LayoutContext;
 use super::style::{Brush, StyleProperty, TextStyle, WhiteSpaceCollapse};

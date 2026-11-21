@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct WlrLayerSurfaceUserData, fn with_surface_pending_state, fn make_surface_handle.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 94, 103, 112,
+//   163, 180, 368, 408.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (109, 111, 130, 132, 159, 161, 179, 210, 300, 306, 308, 314, 329, 331, 361, 374,
+//   376, 394, 404).
+
 use std::sync::Mutex;
 
 use wayland_protocols_wlr::layer_shell::v1::server::zwlr_layer_shell_v1::{self, ZwlrLayerShellV1};

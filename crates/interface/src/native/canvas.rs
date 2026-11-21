@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct CanvasView, struct ItemPreview, struct SpatialPreview, fn presented_spatial.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (232, 333, 334, 336, 345, 352, 356, 408, 412, 416, 421, 424, 429, 433, 441, 478,
+//   481, 485, 488, 503, 506, 510, 513, 517, 520, 522, 537, 626, 632, 635, 636, 642, 646, 649).
+
 use bevy::{input_focus::InputFocus, math::DVec2, prelude::*, ui::UiSystems};
 
 #[derive(Component, Clone, Copy, PartialEq, Reflect)]

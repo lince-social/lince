@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: struct Topics, struct Registry, struct Source, struct Changes.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 38.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 44.
+// - [Clippy probe: clippy::missing_panics_doc] State the panic conditions for exported functions.
+//   Sites 41.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 17, 29.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   17, 20, 24, 29, 37, 41.
+
 use super::*;
 use std::sync::Weak;
 use tokio::sync::watch;

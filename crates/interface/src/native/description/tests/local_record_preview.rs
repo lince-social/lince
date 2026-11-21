@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct QueryBodies, fn read_queries, fn wait_for, fn view.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::{
     app::CellHandle,

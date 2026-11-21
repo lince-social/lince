@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Credential.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 23.
+// - [rustc probe: unreachable_pub] unreachable `pub` item. Sites 2.
+
 use super::Secret;
 pub use fiote::credentials::{Store, slot};
 use std::sync::Arc;

@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct CachedTextureMeta, struct CachedTexture, struct TextureCache, fn
+//   update_texture_cache_system.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 50, 51, 56, 59,
+//   60, 73, 74.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 23, 31.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 24, 25.
+
 use crate::{
     render_resource::{Texture, TextureView},
     renderer::RenderDevice,

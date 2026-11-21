@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn bbox_from_surface_tree, fn under_from_surface_tree, type SurfacePrimaryScanoutOutput,
+//   fn with_surfaces_surface_tree.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 138.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (49, 70, 111, 127, 133, 176, 177, 201, 204, 238, 489).
+
 //! Helper functions to ease dealing with surface trees
 
 use crate::{

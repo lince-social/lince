@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn role, fn reading_policies_preserves_the_source_state, fn
+//   the_real_migration_has_a_strict_role_policy_home, fn
+//   absent_and_cleared_policies_grant_no_stored_policy.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use serde_json::json;
@@ -12,11 +18,24 @@ async fn reading_policies_preserves_the_source_state() {
     let store = Store::open_memory().await.unwrap();
     let configured = role(&store, "configured").await;
     let empty = role(&store, "empty").await;
-    let policy = store::role_policies::set(&store.pool, configured, &json!({}), 0).await.unwrap();
+    let policy = store::role_policies::set(&store.pool, configured, &json!({}), 0)
+        .await
+        .unwrap();
     let before = store.state_hash().await.unwrap();
-    assert_eq!(store::role_policies::get(&store.pool, configured).await.unwrap(), Some(policy.clone()));
-    assert_eq!(store::role_policies::get(&store.pool, empty).await.unwrap(), None);
-    assert_eq!(store::role_policies::all(&store.pool).await.unwrap(), vec![policy]);
+    assert_eq!(
+        store::role_policies::get(&store.pool, configured)
+            .await
+            .unwrap(),
+        Some(policy.clone())
+    );
+    assert_eq!(
+        store::role_policies::get(&store.pool, empty).await.unwrap(),
+        None
+    );
+    assert_eq!(
+        store::role_policies::all(&store.pool).await.unwrap(),
+        vec![policy]
+    );
     assert_eq!(store.state_hash().await.unwrap(), before);
 }
 

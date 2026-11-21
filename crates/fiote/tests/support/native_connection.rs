@@ -1,5 +1,13 @@
-use fiote::config::{Secret, Settings};
+// non-lean-yet
+// Scope: fn existing_connection.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 10, 16, 24.
+// - [rustc probe: unreachable_pub] unreachable `pub` item. Sites 4.
+
 use std::{io, path::PathBuf};
+
+use fiote::config::{Secret, Settings};
 
 pub async fn existing_connection() -> io::Result<(Settings, Secret)> {
     let directory = PathBuf::from(

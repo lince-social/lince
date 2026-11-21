@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct PopupHandle, struct PopupSurface, struct PopupParent, struct
+//   InputMethodPopupSurfaceUserData.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (43, 57, 79, 89, 95, 104, 105).
+
 use std::sync::{Arc, Mutex};
 
 use wayland_protocols_misc::zwp_input_method_v2::server::zwp_input_popup_surface_v2::{

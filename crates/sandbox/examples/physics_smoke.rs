@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct Exercise, fn activate, fn exercise, fn main.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (161).
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites
+//   155.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (33, 46, 60, 69, 79, 82, 89, 90, 91, 94, 101, 103, 110, 111, 119, 126, 140, 141,
+//   149, 162, 178).
+
 use bevy::{
     diagnostic::FrameCount,
     math::DVec2,

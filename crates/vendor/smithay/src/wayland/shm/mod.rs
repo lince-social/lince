@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod handlers, mod pool, struct ShmState, trait ShmHandler.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 164, 489.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 502.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (308, 490, 495).
+
 //! SHM handling helpers
 //!
 //! This module provides helpers to handle SHM-based buffers from wayland clients.

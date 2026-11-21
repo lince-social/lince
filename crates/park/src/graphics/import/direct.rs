@@ -1,5 +1,17 @@
-use super::*;
+// non-lean-yet
+// Scope: mod pool_tests, struct Retirement, struct Prepared, struct Entry.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 110, 306.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 48, 130, 135,
+//   144, 147, 176, 177, 178, 237, 249, 265, 339, 345, 347, 384, 387.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   71, 75, 79, 277.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (134, 237, 249, 255, 265, 269, 270, 280, 356).
+
 use std::sync::{Mutex, Weak};
+
+use super::*;
 
 mod pool_tests;
 

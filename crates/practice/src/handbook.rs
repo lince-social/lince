@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Page, fn foundations, fn pages, fn reading.
+// BeautifulRust (baseline lines):
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 2, 3,
+//   4, 5, 8, 16, 19.
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
 pub struct Page {
     pub slug: &'static str,

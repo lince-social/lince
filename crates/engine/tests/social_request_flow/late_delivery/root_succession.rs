@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn signed_root_succession_keeps_pending_private_ciphertext_history_and_deadline, fn
+//   trusted_successor_rebinds_private_authority_after_old_root_revocation, fn
+//   root_rebinding_keeps_a_forged_historical_binding_in_review, fn successor.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use engine::{
     roster::{CellEntry, ROOT_KEY_ID, full_capabilities},

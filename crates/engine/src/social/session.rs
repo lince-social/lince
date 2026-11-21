@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: struct AccountState, fn secret_signer, fn new_account, fn open_session.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 24, 40, 42,
+//   82, 95, 105, 121, 136, 146, 163, 166, 167, 180, 182, 194, 197, 230, 239.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 225, 234.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 24, 40, 42, 82, 95, 105, 121, 136, 146, 163, 166, 167, 180, 182, 194, 197, 230, 239.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 22, 28, 32, 37, 46, 80, 85, 111, 206, 224, 233.
+// - [Clippy probe: clippy::missing_panics_doc] State the panic conditions for exported functions.
+//   Sites 224, 233.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 12.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   12, 13, 14, 15, 16, 17, 18, 22, 28, 32, 37, 46, 80, 85, 111, 206, 224, 233.
+
 use super::*;
 use chacha20poly1305::{
     ChaCha20Poly1305,

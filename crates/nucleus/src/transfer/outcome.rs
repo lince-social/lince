@@ -1,6 +1,23 @@
-use crate::{DecimalValue, vocabulary::reference::MeaningReference};
+// non-lean-yet
+// Scope: const NAMESPACE, const MAX_BYTES, const MAX_HISTORY, enum Role.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   amount:withdrawn (151).
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 11, 79, 133.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 34, 49, 151.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 6,
+//   7, 11, 12, 13, 17, 27, 28, 29, 30, 34, 49, 59, 60, 61, 62, 63, 64, 69, 70, 71, 72, 73, 74, 79,
+//   80, 81, 82, 84, 85, 86, 87, 88, 89, 90, 95, 102, 110, 120, 121, 122, 123, 124, 125, 126, 127,
+//   128, 133, 134, 135, 136, 137, 139, 140, 141, 142, 144, 145, 146, 151.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites amount: String
+//   (151), key: String (49).
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
+use crate::{DecimalValue, vocabulary::reference::MeaningReference};
 
 pub const NAMESPACE: &str = "lince.transfer-outcome";
 pub const MAX_BYTES: usize = 32768;

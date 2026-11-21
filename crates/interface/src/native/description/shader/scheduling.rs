@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: const SLOTS, const FAIR_WAIT, fn key, fn order.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (29).
+
 use super::*;
 use std::cmp::Reverse;
 

@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: const MAX_DEPTH, const MAX_VIEWS, const MAX_BODY, struct Transclusion.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 46, 78, 94, 122,
+//   133, 200, 211, 227, 367, 368.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (135, 157, 224).
+
 use super::*;
 
 pub const MAX_DEPTH: usize = 6;

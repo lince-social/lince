@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod data_device, mod ext_data_control, mod primary_selection, mod wlr_data_control.
+// BeautifulRust (baseline lines):
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 36, 43.
+
 //! Handler utilities for the various selection protocols.
 //!
 //! Wayland originally only had a singe way to deal with the user clipboard with the help of

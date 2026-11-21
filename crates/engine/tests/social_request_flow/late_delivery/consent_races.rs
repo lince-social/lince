@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct DelayedCollection, fn
+//   block_or_close_during_collection_rolls_back_ratchets_history_events_and_receipts.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 76, 82.
+
 use super::*;
 use std::{
     sync::atomic::{AtomicBool, Ordering},

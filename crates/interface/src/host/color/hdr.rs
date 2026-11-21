@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Mastering, fn contains, fn pq_to_nits, fn nits_to_pq.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   42.
+
 use super::*;
 
 #[derive(Clone, Copy, Debug, Default, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]

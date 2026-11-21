@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Saved, struct Persistent, struct Writer, fn attach.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 75, 92, 163, 180,
+//   211, 215.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (67, 79, 83, 104, 179, 186, 192, 204, 220).
+
 use super::*;
 use serde::{Deserialize, Serialize};
 use std::{

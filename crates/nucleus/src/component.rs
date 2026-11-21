@@ -1,5 +1,19 @@
-use serde::{Deserialize, Serialize};
+// non-lean-yet
+// Scope: mod composition, enum RecordMode, enum CallMedia, struct CallStart.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 11, 22, 39.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 108, 164.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 11,
+//   13, 14, 15, 22, 24, 25, 30, 31, 32, 34, 39, 40, 42, 44, 46, 48, 49, 51, 53, 55, 57, 59, 61, 63,
+//   64, 66, 68, 70, 71, 72, 74, 75, 80, 94, 101, 108, 164, 177, 202, 211, 237, 238, 239.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites validate:
+//   String (108), visit: String (164).
+
 use std::ops::ControlFlow;
+
+use serde::{Deserialize, Serialize};
 
 pub mod composition;
 pub use composition::{Composition, Document, EventBinding, Immunity, Part};

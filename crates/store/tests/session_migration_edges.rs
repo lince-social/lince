@@ -1,7 +1,11 @@
+// non-lean-yet
+// Scope: fn record, fn device_revision, fn malformed_contact_roundtrip, fn
+//   uppercase_contact_roundtrip_never_revives_an_unknown_admission.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
-use store::Store;
-use store::session_access;
+use store::{Store, session_access};
 
 async fn record(store: &Store, kind: nucleus::RecordKind, head: &str) -> String {
     store::records::create(

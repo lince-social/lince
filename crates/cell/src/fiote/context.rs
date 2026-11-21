@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn messages, fn supplied, mod tests.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 22, 25, 26, 27, 92, 93, 94, 97, 98, 101, 102, 106, 125, 126, 127.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 
 fn messages(messages: &[Message]) -> Vec<serde_json::Value> {

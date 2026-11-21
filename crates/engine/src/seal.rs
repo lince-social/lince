@@ -1,3 +1,27 @@
+// non-lean-yet
+// Scope: const SEAL_VERSION, const WRAP_INFO, const CONTENT_AAD, const TRANSCRIPT_TAG.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 212, 227, 410,
+//   411, 507, 508, 509, 519.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 100, 102,
+//   181, 210, 290, 291, 293, 362, 365, 371, 377, 379, 383, 386, 393, 399, 463, 480, 481, 484, 486.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 108, 311.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 533.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 21.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 93, 149.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 100, 102, 181, 210, 290, 291, 293, 362, 365, 371, 377, 379, 383, 386, 393, 399, 463, 480,
+//   481, 484, 486.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 153, 244, 296, 326, 452, 568.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   10, 21, 22, 23, 24, 25, 26, 27, 46, 47, 48, 49, 53, 54, 55, 56, 60, 61, 62, 63, 64, 65, 66, 67,
+//   68, 69, 70, 71, 72, 73, 77, 79, 80, 84, 85, 86, 87, 88, 105, 153, 239, 244, 296, 303, 322, 326,
+//   417, 430, 432, 434, 437, 438, 439, 440, 441, 442, 446, 447, 449, 452, 500, 513, 524, 531, 568.
+
 use base64::Engine as _;
 use chacha20poly1305::aead::{Aead, KeyInit, Payload};
 use chacha20poly1305::{ChaCha20Poly1305, Key};

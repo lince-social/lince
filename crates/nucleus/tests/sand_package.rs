@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: fn package, fn
+//   envelope_keeps_unknown_execution_metadata_and_checks_its_full_content_digest, fn
+//   package_validation_bounds_metadata_and_payload_and_requires_stable_identity, fn
+//   enabling_requires_declarations_for_the_actual_component_capabilities.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 50, 88, 105.
+// - [Clippy: clippy::redundant_clone] Move or borrow at the marked sites and check later uses.
+//   Sites 59.
+
 #![cfg(test)]
 
 use nucleus::sand_package::{self as model, Identity, Kind, License, Manifest, Package};

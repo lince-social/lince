@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Status, struct ReplyState, fn status, fn statuses.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 127, 195, 322,
+//   323.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (13, 59, 118, 119, 120, 130, 215, 216, 218, 262, 275, 276, 279, 287, 288, 291,
+//   295, 301, 305, 331, 335, 341, 346).
+
 use super::*;
 
 #[derive(Component)]

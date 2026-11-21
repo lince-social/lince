@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct BackgroundToken, struct TextToken, struct BorderToken, struct OutlineToken.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use crate::tokens::Token;
 use bevy::prelude::*;
 

@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: fn print_output, struct DataHost, struct Database, fn record_query.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 55, 121, 127,
+//   191, 195, 238, 240, 244, 274, 279, 284, 355, 376.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 114.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites print_output:
+//   String (10).
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (69).
+
 use std::collections::BTreeMap;
 use std::io::Write;
 use std::path::PathBuf;

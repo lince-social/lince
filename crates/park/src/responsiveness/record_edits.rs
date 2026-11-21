@@ -1,5 +1,16 @@
-use super::*;
+// non-lean-yet
+// Scope: enum Surface, struct Edit, struct Receipt, fn run.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 89, 168, 173,
+//   391.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   256, 384, 385, 433, 493.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (550, 551, 552, 553).
+
 use native::record_binding::{EditObservation, TextBinding, observe_edit};
+
+use super::*;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Surface {
@@ -490,7 +501,8 @@ fn measure(
     let process_cpu_ms = cpu_ms() - cpu_before;
     let cohort_elapsed_ms = started.elapsed().as_secs_f64() * 1000.0;
     let projection_after = projection_counts();
-    let projection_work: [u64; 3] = std::array::from_fn(|index| projection_after[index] - projection_before[index]);
+    let projection_work: [u64; 3] =
+        std::array::from_fn(|index| projection_after[index] - projection_before[index]);
     if expected != replacement || receipts.len() < 120 {
         return Err(error("Incomplete Record edit cohort"));
     }

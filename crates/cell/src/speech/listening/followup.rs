@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: fn end, fn admit.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 44, 56.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 56.
+// - [Clippy probe: clippy::match_same_arms] these match arms have identical bodies. Sites 72, 76.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 
 pub(super) fn end(state: &mut State, detail: &str) {

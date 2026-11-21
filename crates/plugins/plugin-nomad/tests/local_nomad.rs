@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn fixture, struct Reply, struct Mock, fn respond.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use axum::{
     Router,
     body::Body,

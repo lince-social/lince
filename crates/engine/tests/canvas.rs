@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn initial, fn canvas_actions_require_a_host_and_exact_acknowledgements, fn
+//   canvas_crud_runs_through_actions_and_deduplicates_without_deleting_records, fn
+//   fiote_scope_can_be_revoked_before_canvas_application.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 68, 119, 204, 244.
+
 #![cfg(test)]
 
 use engine::{Engine, actions::Action};

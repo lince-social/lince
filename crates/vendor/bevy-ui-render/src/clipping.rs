@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: const INLINE_CAPACITY, fn clip_polygon, fn edge_clip, mod tests.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy_math::{Affine2, Vec2};
 use bevy_ui::CalculatedClip;
 use smallvec::SmallVec;

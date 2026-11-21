@@ -1,5 +1,32 @@
-use serde::{Deserialize, Serialize};
+// non-lean-yet
+// Scope: struct Secret, struct ProviderKind, struct Settings, enum Request.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 99.
+// - [Clippy: clippy::manual_range_contains] manual `!RangeInclusive::contains` implementation.
+//   Sites 48.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   69.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 45.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 23,
+//   26, 27, 28, 30, 31, 32, 33, 35, 37, 39, 41, 45, 99, 100, 101, 102, 104, 105, 106, 107, 109,
+//   110, 112, 113, 115, 116, 118, 119, 120, 121, 122, 124, 125, 127, 128, 129, 131, 132, 134, 135,
+//   137, 138, 140, 141, 143, 144, 145, 146, 148, 149, 150, 152, 153, 154, 156, 157, 158, 160, 161,
+//   162, 164, 165, 166, 168, 169, 170, 171, 173, 174, 176, 177, 178, 180, 181, 182, 183, 185, 186,
+//   187, 189, 190, 191, 193, 194, 196, 197, 198, 200, 201, 202, 203, 205, 206, 207, 208, 209, 211,
+//   212, 213, 215, 216, 217, 219, 220, 222, 223, 224, 226, 227, 229, 230, 232, 233, 235, 236, 237,
+//   238, 240, 241, 243, 244, 245, 250, 252, 253, 254, 256, 258, 260, 262, 264, 266, 268, 269, 270,
+//   271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 281, 282, 283, 284, 285, 286, 288, 289, 293,
+//   294, 295, 296, 297, 301, 303, 304, 305, 306, 307, 308, 309, 313, 314, 315, 316, 320, 321, 322,
+//   323, 327, 328, 329, 333, 334, 335, 336, 337, 341, 342, 343, 347, 348, 349, 350, 351, 352, 356,
+//   357, 358, 359, 360, 361, 365, 366, 367, 368, 370, 374, 375, 376.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites validate:
+//   String (45).
+
 use std::path::PathBuf;
+
+use serde::{Deserialize, Serialize};
 use zeroize::Zeroize;
 
 #[derive(Clone, Default, Serialize, Deserialize)]

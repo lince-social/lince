@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: fn validate_url, fn start.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 93.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 15.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 15.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use futures::{SinkExt, StreamExt};
 use std::time::Duration;

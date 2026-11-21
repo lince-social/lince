@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn before_unmap, mod tests.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 pub fn before_unmap(world: &mut World, entity: Entity) -> bool {

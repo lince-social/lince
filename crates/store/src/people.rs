@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: const NAMESPACE, const STANDING_KEY, const MAX_PERSON_EXTENSION_BYTES, const
+//   MAX_STANDING_NOTE_BYTES.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 242, 304.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 202.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 34.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   84, 118.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 62, 125, 143, 167, 172, 250, 255, 292.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 34.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 11, 13,
+//   15, 16, 18, 26, 27, 29, 31, 34, 35, 36, 37, 39, 62, 125, 143, 167, 172, 250, 255, 292.
+
 use std::io::{self, Write};
 
 use chrono::{DateTime, SecondsFormat, Utc};

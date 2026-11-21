@@ -1,9 +1,15 @@
-use super::*;
-use bevy::prelude::{IntoScheduleConfigs, MessageReader, Update};
+// non-lean-yet
+// Scope: const DRAFT, type Replies, fn observe, fn query.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::{
     collections::BTreeMap,
     sync::{Arc, Mutex},
 };
+
+use bevy::prelude::{IntoScheduleConfigs, MessageReader, Update};
+
+use super::*;
 
 const DRAFT: &str = "unsaved-local-assertion";
 

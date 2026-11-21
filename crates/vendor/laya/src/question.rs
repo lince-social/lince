@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: const MAX_OPTION_TOKENS, enum QType, struct Question, fn serialize_state.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 94, 104, 119,
+//   126, 127, 140, 156, 176, 187.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 243, 253, 255.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 255.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 10.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 113.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 10,
+//   11, 12, 13, 17, 25, 33, 43, 45, 46, 48, 52, 68, 84, 113, 185.
+
 use anyhow::{Result, bail};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};

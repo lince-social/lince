@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Message, struct Prepared, fn prepare, enum VisibilityChange.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (54, 146, 149, 226, 236).
+
 use super::*;
 use crate::host::performance::{self, Count, Stage};
 

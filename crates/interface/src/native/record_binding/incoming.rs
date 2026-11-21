@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: enum Message, enum Route, fn route, fn relevant.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 60, 61, 63, 64,
+//   65, 68, 88.
+
 use super::*;
 
 pub(super) enum Message {

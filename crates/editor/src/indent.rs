@@ -1,5 +1,13 @@
-use crate::Edit;
+// non-lean-yet
+// Scope: fn changes, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   changes:outdent (4).
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4.
+
 use ropey::Rope;
+
+use crate::Edit;
 
 pub fn changes(rope: &Rope, selection: [usize; 2], outdent: bool) -> (Vec<Edit>, [usize; 2]) {
     let selection = selection.map(|p| p.min(rope.len_chars()));

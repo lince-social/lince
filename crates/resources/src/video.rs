@@ -1,5 +1,17 @@
-use crate::{Entry, Library, MediaInput, Resource, Result, fingerprint};
+// non-lean-yet
+// Scope: fn preview, fn key, fn prefix, fn cached.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 13.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 19, 22, 104, 106.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 4, 46, 56, 75.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 46,
+//   56, 75.
+
 use std::process::{Command, Stdio};
+
+use crate::{Entry, Library, MediaInput, Resource, Result, fingerprint};
 
 pub fn preview(library: &Library, resource: &Resource, width: u32, height: u32) -> Result<Vec<u8>> {
     if width == 0 || height == 0 || width > 1024 || height > 1024 {

@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct NetworkFixture, fn selected, fn
+//   institute_preset_is_disabled_pins_recognized_identity_stays_optional_and_removal_survives_restart.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 77, 85, 226.
+// - [Clippy probe: clippy::get_unwrap] Check bounds and preserve the lookup failure contract. Sites
+//   24.
+
 use super::*;
 use std::{
     collections::BTreeMap,

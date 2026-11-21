@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: mod cursor_image, mod grab, struct PointerHandle, trait PointerTarget.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 69, 71, 73, 75,
+//   76, 205, 494, 549, 771, 799.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   unset_grab:restore_focus (540).
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites
+//   886.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (172, 182, 188, 197, 203, 212, 238, 258, 272, 295, 309, 325, 341, 357, 373, 389,
+//   405, 421, 437, 445, 465, 473, 483, 494).
+
 //! Pointer-related types for smithay's input abstraction
 
 use std::{

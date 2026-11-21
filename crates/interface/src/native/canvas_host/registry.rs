@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct CachedRegistry, fn kind_id, fn registry, fn shared_registry.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 23, 37, 43.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (16, 18, 76, 93, 105, 118, 210, 238).
+
 use super::*;
 use std::{cell::RefCell, sync::Arc};
 

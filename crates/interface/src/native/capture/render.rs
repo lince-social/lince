@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct Cache, struct ExternalPass, struct TargetSource, mod targets.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 72, 78, 84, 90.
+
 use bevy::{
     camera::{RenderTarget, visibility::{CascadesVisibleEntities, CubemapVisibleEntities, VisibleEntities, VisibleMeshEntities}},
     ecs::{entity_disabling::Disabled, query::Allow},

@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: mod client, mod projection, mod pointer, mod absolute.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   157, 162, 314, 317.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (399).
+
+use std::{
+    collections::{HashSet, VecDeque},
+    hash::Hasher,
+    num::NonZeroUsize,
+};
+
 use bevy::{
     a11y::AccessibilityNode,
     ecs::entity_disabling::Disabled,
@@ -5,21 +19,15 @@ use bevy::{
     text::{EditableText, FontCx, LayoutCx, PreeditCursor, TextEdit},
 };
 use lince_interface::native;
-use std::{
-    collections::{HashSet, VecDeque},
-    hash::Hasher,
-    num::NonZeroUsize,
-};
 
+pub(crate) mod absolute;
 #[cfg(feature = "nested")]
 pub(crate) mod client;
-pub(crate) mod projection;
 pub(crate) mod pointer;
-pub(crate) mod absolute;
-pub use absolute::Touch as TouchEvent;
-pub use absolute::Tablet as TabletEvent;
+pub(crate) mod projection;
 #[cfg(feature = "session")]
 pub use absolute::Focus as AbsoluteFocus;
+pub use absolute::{Tablet as TabletEvent, Touch as TouchEvent};
 pub use pointer::Target as PointerTarget;
 pub mod transfer;
 
@@ -43,7 +51,9 @@ pub struct Editor {
 
 impl Editor {
     pub(crate) fn same_owner(&self, other: &Self) -> bool {
-        self.owner == other.owner && self.projection == other.projection && self.sensitive == other.sensitive
+        self.owner == other.owner
+            && self.projection == other.projection
+            && self.sensitive == other.sensitive
     }
 
     pub(crate) fn same_text(&self, other: &Self) -> bool {
@@ -115,7 +125,9 @@ fn allowed(world: &World, entity: Entity) -> bool {
     world.get::<EditableText>(entity).is_some()
         && world.get::<Disabled>(entity).is_none()
         && world.get::<bevy::ui::InteractionDisabled>(entity).is_none()
-        && world.get::<AccessibilityNode>(entity).is_none_or(|node| !node.is_read_only())
+        && world
+            .get::<AccessibilityNode>(entity)
+            .is_none_or(|node| !node.is_read_only())
         && world
             .get::<InheritedVisibility>(entity)
             .is_none_or(|visibility| visibility.get())
@@ -386,7 +398,8 @@ fn apply(world: &mut World) {
         if entity.to_bits() != edit.context.owner
             || !valid_edit(&edit)
             || world.resource::<Pending>().applied.contains(&entity)
-            || projection::current(world, &edit.context).is_none_or(|current| !current.same_text(&edit.context))
+            || projection::current(world, &edit.context)
+                .is_none_or(|current| !current.same_text(&edit.context))
             || world.get::<EditableText>(entity).is_none_or(|input| {
                 !input.pending_edits.is_empty() || input.pending_paste.is_some()
             })
@@ -449,8 +462,9 @@ fn finish(world: &mut World) {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use bevy::ecs::system::RunSystemOnce;
+
+    use super::*;
 
     pub(super) fn process(world: &mut World) {
         apply(world);
@@ -535,16 +549,41 @@ mod tests {
         assert_ne!(original, relocated);
         assert!(original.same_text(&relocated));
         for changed in [
-            Editor { projection: 1, ..original.clone() },
-            Editor { owner: owner.to_bits().wrapping_add(1), ..original.clone() },
-            Editor { selection: [0, 1], ..original.clone() },
-            Editor { sensitive: true, ..original.clone() },
-            Editor { from_ime: true, ..original.clone() },
-        ] { assert!(!original.same_text(&changed)); }
+            Editor {
+                projection: 1,
+                ..original.clone()
+            },
+            Editor {
+                owner: owner.to_bits().wrapping_add(1),
+                ..original.clone()
+            },
+            Editor {
+                selection: [0, 1],
+                ..original.clone()
+            },
+            Editor {
+                sensitive: true,
+                ..original.clone()
+            },
+            Editor {
+                from_ime: true,
+                ..original.clone()
+            },
+        ] {
+            assert!(!original.same_text(&changed));
+        }
         world.get_mut::<EditableText>(owner).unwrap().max_characters = Some(8);
         let limited = text_state(&world, owner, original.caret).unwrap();
         assert!(!original.same_text(&limited));
-        enqueue(&mut world, Edit { context: original, commit: Some("stale".into()), preedit: None, delete: None });
+        enqueue(
+            &mut world,
+            Edit {
+                context: original,
+                commit: Some("stale".into()),
+                preedit: None,
+                delete: None,
+            },
+        );
         process(&mut world);
         assert_eq!(world.get::<EditableText>(owner).unwrap().value(), "aé界");
         let mut label = accesskit::Node::new(accesskit::Role::TextInput);

@@ -1,9 +1,19 @@
-use super::Result;
+// non-lean-yet
+// Scope: const CLIPS, const PAWS, fn err, fn require.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 411, 415.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   176, 182, 190, 198, 203, 215, 226, 227, 232, 233, 269, 417, 426, 440, 452, 490, 527, 528, 529,
+//   549, 563, 587, 590, 592, 593, 594, 608.
+
+use std::{ffi::OsString, fs, path::Path};
+
 use glam::{Mat4, Quat, Vec2, Vec3, Vec4};
 use gltf::animation::util::ReadOutputs;
 use image::{Rgba, RgbaImage};
 use serde_json::{Value, json};
-use std::{ffi::OsString, fs, path::Path};
+
+use super::Result;
 
 const CLIPS: &[(&str, f32)] = &[
     ("idle", 4.0),

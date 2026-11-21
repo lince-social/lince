@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct ContentScroll, fn scroll.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (61).
+
 use bevy::{prelude::*, ui::Val2};
 
 #[derive(Component, Clone, Copy)]

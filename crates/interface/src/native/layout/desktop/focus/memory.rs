@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct Saved, struct Owner, fn native_target, fn native_targets.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use serde::{Deserialize, Serialize};
 

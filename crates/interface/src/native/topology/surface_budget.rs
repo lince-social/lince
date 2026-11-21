@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod allocation, mod residency, mod ui, const PIXEL_BUDGET.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy::{math::DVec3, prelude::*};
 
 mod allocation;

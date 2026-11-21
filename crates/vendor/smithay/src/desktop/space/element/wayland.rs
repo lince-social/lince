@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct SurfaceTree.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 20.
+
 use crate::{
     backend::renderer::{
         element::{surface::WaylandSurfaceRenderElement, AsRenderElements, Kind},

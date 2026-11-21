@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: struct PhysicsSettings, struct WorkspaceConfig, struct RuleSettings, fn rules.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 411.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   set_physics:enabled (221).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   442, 546.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (118, 167, 194, 216, 264, 359, 373, 382, 425, 442, 477, 480, 481, 489, 490, 491,
+//   493, 500, 504, 505, 516, 518, 524, 526, 532, 538, 539, 542, 546, 550, 558, 559, 561, 565, 566,
+//   568, 569, 570, 573, 574, 575, 577).
+
 use crate::native::workspace::{WorkspaceFile, Workspaces};
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};

@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: const LINGUA_EXTENSION, const FENCE, struct Projection, struct Line.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   51, 52, 146, 157, 165.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 29.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 260, 261.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 106, 131.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   3, 7, 8, 9, 10, 14, 15, 16, 17, 18, 19, 23, 24, 25, 29, 30, 31, 43, 60, 106, 131, 189.
+
 use nucleus::DecimalValue;
 
 pub const LINGUA_EXTENSION: &str = "lingua";

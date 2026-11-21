@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct BindGroupLayout.
+// BeautifulRust (baseline lines):
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 48.
+
 use crate::renderer::wgpu_wrapper;
 use bevy_utils::define_atomic_id;
 use core::ops::Deref;

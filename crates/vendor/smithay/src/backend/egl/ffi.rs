@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: type khronos_utime_nanoseconds_t, type khronos_uint64_t, type khronos_ssize_t, type
+//   EGLint.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 50, 86, 88, 104, 119,
+//   148, 265, 273, 287, 295, 309, 317, 331, 339.
+// - [review: §8 Unsafe] Prove unchecked operations and prefer a checked API when equivalent. Sites
+//   transmute (183, 199, 211, 225).
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 1, 141, 168, 170, 172, 174, 177, 193, 205, 217, 256, 263, 268, 280, 285, 290,
+//   302, 307, 312, 324, 329, 334.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (148).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (90).
+// - [review: §5 Panics] Verify panic isolation boundary and preserve the failure contract. Sites
+//   50.
+
 #![allow(missing_docs)]
 
 use tracing::{error, info, warn};

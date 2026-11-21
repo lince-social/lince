@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: const NAMESPACE, fn designate, fn designated, fn runs_here.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 7, 21, 30.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 7,
+//   21, 30.
+
 use sqlx::SqlitePool;
 
 use crate::StoreError;

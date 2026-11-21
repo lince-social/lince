@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn main.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use lince_sandbox::topology::splats::codec::convert_ply;
 use std::{io, path::PathBuf};
 

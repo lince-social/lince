@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: fn manifest, struct Settings, fn imported, fn relay_pull.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 211, 214, 233, 234, 236, 247, 255, 256, 330, 331, 334, 360, 365, 369, 374, 384, 401.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 193, 236, 244,
+//   360, 375, 384, 401.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   131, 171, 268, 306, 372, 412.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 341, 425.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 1, 14,
+//   341, 425.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites handle: String
+//   (341), install: String (425).
+
 use futures::{SinkExt, StreamExt};
 use nostr::prelude::{Event, EventBuilder, FinalizeEvent, Keys, Kind, PublicKey, Timestamp};
 use nucleus::plugins::{Contribution, Field, FieldType, ImportedRecord, Manifest, PublishRecord};

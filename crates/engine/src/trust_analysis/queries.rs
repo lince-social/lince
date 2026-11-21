@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct QueryEvaluation.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 55, 58, 74, 77,
+//   78, 79, 85, 229, 277, 291, 297, 310, 311, 312, 328.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 105.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option`
+//   value. Sites 101, 289.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use crate::actions::{ActionOutcome, VerifiedActionAuthorship};
 use chrono::{DateTime, Utc};

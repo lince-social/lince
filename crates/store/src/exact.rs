@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: fn exact_error, fn zero, fn one, fn integer.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   10, 14, 18.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   11, 15, 19.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   46, 48.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 30, 43, 52, 58, 64.
+// - [Clippy: clippy::useless_conversion] useless conversion to the same type: `sqlx::Error`. Sites
+//   35, 38.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 10, 14,
+//   18, 22, 26, 30, 43, 52, 58, 64.
+
 use nucleus::DecimalValue;
 use sqlx::Row;
 
@@ -31,12 +47,8 @@ pub fn read_decimal(
     row: &sqlx::sqlite::SqliteRow,
     prefix: &str,
 ) -> Result<DecimalValue, StoreError> {
-    let mantissa: &str = row
-        .try_get(format!("{prefix}_mantissa").as_str())
-        .map_err(StoreError::from)?;
-    let scale: i64 = row
-        .try_get(format!("{prefix}_scale").as_str())
-        .map_err(StoreError::from)?;
+    let mantissa: &str = row.try_get(format!("{prefix}_mantissa").as_str())?;
+    let scale: i64 = row.try_get(format!("{prefix}_scale").as_str())?;
     parse_decimal(mantissa, scale)
 }
 

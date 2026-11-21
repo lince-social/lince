@@ -1,11 +1,35 @@
-use crate::Coordinate;
-use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
+// non-lean-yet
+// Scope: struct Settings, struct Place, enum Mode, struct Route.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 356, 359, 360.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 261, 393.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 106.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   63, 201, 203, 208, 215, 220, 226, 231, 242, 250.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 35, 50, 54, 92, 132, 169.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 163, 399.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 12, 13,
+//   14, 15, 16, 17, 18, 35, 50, 54, 86, 87, 88, 89, 92, 106, 107, 108, 109, 122, 123, 124, 125,
+//   126, 127, 128, 132, 149, 150, 151, 154, 155, 163, 169, 399, 401, 402, 403, 406, 413, 420, 424.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites load: String
+//   (35), new: String (169), save_atomic: String (50), validate: String (54, 92, 132).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   246.
+
 use std::{
     path::PathBuf,
     time::{Duration, Instant},
 };
+
+use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+
+use crate::Coordinate;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]

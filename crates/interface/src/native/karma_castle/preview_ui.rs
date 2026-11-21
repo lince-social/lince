@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: struct Form, fn run_action, fn confirmed, fn needs_refresh.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 136, 306, 307,
+//   309, 343, 347, 386, 402, 404, 408, 409, 410, 442, 581, 700.
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites with_inputs:inputs → &[T] (46).
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 318.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (226, 463,
+//   479).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   423.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (51, 129, 136, 158, 177, 183, 215, 235, 361, 371, 372, 378, 394, 421, 425, 426,
+//   432, 446, 449, 492, 493, 508, 564, 565, 585).
+
 use bevy::{
     ecs::{entity_disabling::Disabled, query::Allow},
     prelude::*,

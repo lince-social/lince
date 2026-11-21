@@ -1,3 +1,24 @@
+// non-lean-yet
+// Scope: struct Wikimedia, fn catalog, fn entity_id, fn wiki_license.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 279, 314, 459,
+//   477, 494, 549.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   46, 305, 377, 379, 381, 471.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 131, 249, 288.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 249, 288.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 46, 47, 229, 247, 271, 286, 305, 312, 339, 343, 358, 365, 369, 377, 379, 520,
+//   535, 665, 667, 671, 672, 682.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 64.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 13.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   13, 19, 42, 64.
+
 use super::{
     EngineError, invalid,
     provider::{Control, Provider},

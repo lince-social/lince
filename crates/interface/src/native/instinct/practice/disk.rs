@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: const BODY, const EDITED, struct View, struct EditFile.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 27, 98, 102, 109,
+//   114, 203, 225, 228, 258.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 122.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   101.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (61, 62, 97, 112, 113, 115, 116, 192, 200, 204, 209, 210, 213, 219, 227, 230, 249,
+//   250, 258, 263).
+
 use super::*;
 use serde_json::{Value, json};
 use std::path::{Path, PathBuf};

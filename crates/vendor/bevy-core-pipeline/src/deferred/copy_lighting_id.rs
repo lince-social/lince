@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: struct CopyDeferredLightingIdPlugin, fn copy_deferred_lighting_id, struct
+//   CopyDeferredLightingIdPipeline, fn init_copy_deferred_lighting_id_pipeline.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 119.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 12.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 41, 48.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 23, 95, 142.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 23, 40,
+//   95, 100, 142, 143.
+
 use crate::{
     prepass::{DeferredPrepass, ViewPrepassTextures},
     FullscreenShader,

@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: struct RetainedHeader, struct RetainedPage.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 83, 92, 93.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 41, 47.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 41, 47.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 41, 47.
+// - [Clippy probe: clippy::manual_let_else] this could be rewritten as `let...else`. Sites 53.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 2.
+
 use super::super::serving::AuthorityStamp;
 use super::*;
 use nucleus::trust_analysis::discovery::{Header, Question};

@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod cursor, const CONTENT_POINTER, fn keep_forwarded_focus, struct PointerState.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 382, 408, 430,
+//   452, 670.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (689, 752, 1311, 1344, 1387, 1416).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 145.
+
 use super::presentation::{SceneCamera, SpatialRoot, Surface, VisualOwner};
 use bevy::{
     asset::uuid::Uuid,

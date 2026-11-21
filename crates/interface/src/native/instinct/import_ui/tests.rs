@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn fixture, fn timeout_releases_import_controls_and_ignores_a_late_result, fn
+//   cancelling_a_preview_is_local_and_submitted_import_is_disclosed.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn fixture() -> (App, Entity) {

@@ -1,7 +1,40 @@
+// non-lean-yet
+// Scope: mod matching, mod agreement, mod application, mod disclosure.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   211, 419.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 218, 219, 221,
+//   223, 225, 231, 240.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 594.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 139, 163, 200, 275, 376, 454, 559.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   237, 430.
+// - [Clippy: clippy::match_same_arms] these match arms have identical bodies. Sites 591, 597.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 211.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 1, 6,
+//   7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 23, 24, 25, 26, 27, 28, 30, 32, 34, 38, 49,
+//   50, 51, 55, 56, 57, 58, 59, 60, 64, 65, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 81,
+//   83, 87, 88, 89, 91, 92, 96, 97, 99, 100, 101, 102, 103, 111, 112, 114, 116, 117, 118, 119, 121,
+//   122, 123, 125, 126, 128, 129, 130, 132, 134, 139, 140, 141, 145, 152, 163, 164, 165, 169, 176,
+//   186, 187, 188, 189, 190, 191, 193, 195, 200, 201, 202, 206, 207, 208, 211, 266, 267, 268, 269,
+//   275, 277, 278, 282, 290, 299, 300, 301, 302, 303, 307, 308, 309, 310, 311, 312, 313, 314, 315,
+//   316, 320, 321, 322, 323, 324, 325, 326, 328, 330, 331, 332, 336, 337, 338, 339, 341, 342, 343,
+//   344, 345, 346, 347, 348, 350, 352, 353, 354, 355, 359, 360, 361, 362, 363, 364, 366, 368, 370,
+//   371, 376, 377, 378, 382, 389, 399, 400, 401, 402, 403, 404, 405, 406, 410, 411, 412, 413, 414,
+//   415, 416, 419, 436, 437, 438, 439, 440, 441, 442, 443, 446, 454, 456, 457, 461, 468, 478, 479,
+//   480, 481, 482, 483, 484, 485, 486, 487, 488, 489, 490, 491, 492, 493, 497, 498, 499, 500, 501,
+//   502, 503, 504, 508, 509, 510, 511, 512, 513, 514, 515, 516, 520, 521, 522, 523, 524, 525, 526,
+//   527, 528, 529, 530, 531, 535, 536, 537, 538, 539, 540, 541, 542, 543, 547, 548, 549, 550, 551,
+//   552, 553, 559, 560, 561, 562, 563, 567, 577, 587.
+
 pub mod matching;
+use std::collections::{BTreeMap, BTreeSet};
+
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::collections::{BTreeMap, BTreeSet};
 
 pub mod agreement;
 pub mod application;

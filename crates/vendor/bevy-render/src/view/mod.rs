@@ -1,3 +1,41 @@
+// non-lean-yet
+// Scope: mod composition, mod visibility, mod window, static RGB_TO_LMS.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value. Sites
+//   1238.
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option` value.
+//   Sites 1290.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   262, 1394.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 268.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 1131.
+// - [Clippy: clippy::trivially_copy_pass_by_ref] Consider a value parameter for small Copy inputs.
+//   Sites 1383.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 1297, 1333, 1387,
+//   1451, 1515, 1516.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 259, 1214, 1215.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   1517, 1521.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 248, 283, 351.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   1504.
+// - [Clippy: clippy::redundant_clone] Move or borrow at the marked sites and check later uses.
+//   Sites 1340.
+// - [Clippy: clippy::unnecessary_semicolon] unnecessary semicolon. Sites 1346.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 170, 416, 700, 761, 780, 785, 800,
+//   802, 903, 1065, 1091, 1151.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 2, 3,
+//   170, 249, 250, 252, 253, 258, 262, 339, 353, 354, 451, 455, 462, 463, 569, 570, 571, 572, 573,
+//   574, 575, 576, 577, 578, 700, 701, 702, 703, 704, 705, 738, 739, 740, 742, 743, 755, 756, 757,
+//   761, 762, 780, 781, 785, 802, 803, 804, 805, 806, 1057, 1151, 1152, 1156, 1166, 1170, 1175,
+//   1355, 1394.
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 10, 11, 12.
+
 pub mod composition;
 pub mod visibility;
 pub mod window;

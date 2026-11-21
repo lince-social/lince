@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct View, struct Form, type Snapshot, struct Watch.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 82, 84, 132, 139,
+//   147, 156, 171, 184, 216, 233, 286, 310, 332, 337, 341, 357, 362, 370, 376, 435.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (244, 250,
+//   266, 312, 340, 345, 446, 465).
+
 use crate::native::{actions::Action, sand_panel as panel};
 use bevy::prelude::*;
 use engine::file_sync::{DirectorySync, FileFormat, Request, Status};

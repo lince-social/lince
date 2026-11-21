@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct Samples, struct Trial, fn descendant, fn record_input.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 136, 223, 227,
+//   235, 337, 338.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (75).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (92, 93, 105, 130, 134, 137, 159, 171, 180, 181, 190, 197, 205, 211, 224, 229,
+//   233, 236, 240, 241, 242, 250, 258, 269, 273, 289, 296, 305, 317, 330, 350).
+
 use bevy::{
     diagnostic::FrameCount,
     input_focus::{FocusCause, InputFocus},

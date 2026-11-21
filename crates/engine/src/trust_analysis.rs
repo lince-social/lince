@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: mod matching, mod claim_snapshots, mod claims, mod commands.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 44, 99, 149, 150,
+//   153, 156.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 74.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 19, 87, 168.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   19, 74, 75, 76, 87, 168.
+
 mod matching;
 use crate::{Engine, EngineError, trust::Signer};
 use nucleus::trust_analysis::{Identity, contacts::Document};

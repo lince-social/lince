@@ -1,4 +1,19 @@
+// non-lean-yet
+// Scope: fn account, fn read, fn event, fn completed.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 40, 42, 54, 125, 126, 127, 128, 129, 130, 157, 164, 173, 201, 275, 295, 296, 358, 359,
+//   377, 378, 379, 380, 545, 546, 553, 554.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 62.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   114, 500.
+// - [Clippy: clippy::string_add] you added something to a string. Consider using
+//   `String::push_str()` instead. Sites 142.
+
 #![cfg(test)]
+
+use std::sync::Arc;
 
 use fiote::{
     communication::{
@@ -9,7 +24,6 @@ use fiote::{
     provider::{Message, Provider, TextOutput, ToolDefinition},
 };
 use serde_json::{Value, json};
-use std::sync::Arc;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpListener,

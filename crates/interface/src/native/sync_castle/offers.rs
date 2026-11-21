@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod presentation, struct View, struct Job, struct Watch.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 102, 119, 120,
+//   121, 144, 172, 296, 326.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   318.
+
 use crate::native::{actions::Action, sand_panel as panel};
 use bevy::prelude::*;
 use engine::actions::Action as Backend;

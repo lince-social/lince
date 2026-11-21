@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod copy_lighting_id, mod node, const DEFERRED_PREPASS_FORMAT, const
+//   DEFERRED_LIGHTING_PASS_ID_FORMAT.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 67, 151.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 27, 110.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 1, 2,
+//   17, 18, 19, 35, 36, 37, 118, 119, 120.
+
 pub mod copy_lighting_id;
 pub mod node;
 

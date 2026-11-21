@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct PendingImport, fn hold_import, fn
+//   texture_damage_uses_destination_coordinates_after_output_and_control_clipping, fn
+//   actual_linear_alpha_and_final_hdr_encoding_preserve_precision_and_use_the_declared_transfer_once.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 73, 76, 158, 161.
+
 use super::*;
 
 #[cfg(feature = "server-tests")]
@@ -11,23 +18,42 @@ impl Drop for PendingImport {
 }
 
 #[cfg(feature = "server-tests")]
-pub(crate) fn hold_import(composition: &mut Composition, renderer: &mut GlesRenderer, node: &SurfaceNode) -> PendingImport {
-    use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
+pub(crate) fn hold_import(
+    composition: &mut Composition,
+    renderer: &mut GlesRenderer,
+    node: &SurfaceNode,
+) -> PendingImport {
+    use std::sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    };
+
     use smithay::backend::renderer::sync::{Fence, Interrupted, SyncPoint};
     #[derive(Debug)]
     struct PendingFence(Arc<AtomicBool>);
     impl Fence for PendingFence {
-        fn is_signaled(&self) -> bool { self.0.load(Ordering::Acquire) }
+        fn is_signaled(&self) -> bool {
+            self.0.load(Ordering::Acquire)
+        }
         fn wait(&self) -> Result<(), Interrupted> {
-            while !self.is_signaled() { std::thread::sleep(Duration::from_millis(1)); }
+            while !self.is_signaled() {
+                std::thread::sleep(Duration::from_millis(1));
+            }
             Ok(())
         }
-        fn is_exportable(&self) -> bool { false }
-        fn export(&self) -> Option<std::os::fd::OwnedFd> { None }
+        fn is_exportable(&self) -> bool {
+            false
+        }
+        fn export(&self) -> Option<std::os::fd::OwnedFd> {
+            None
+        }
     }
     let deadline = Instant::now() + Duration::from_secs(2);
     while !composition.import(renderer, node).unwrap() {
-        assert!(Instant::now() < deadline, "The replacement lock image did not import");
+        assert!(
+            Instant::now() < deadline,
+            "The replacement lock image did not import"
+        );
         std::thread::sleep(Duration::from_millis(1));
     }
     let key = (node.surface.clone(), node.content.version);
@@ -35,10 +61,17 @@ pub(crate) fn hold_import(composition: &mut Composition, renderer: &mut GlesRend
     let pending = PendingImport(Arc::new(AtomicBool::new(false)));
     let fence = SyncPoint::from(PendingFence(pending.0.clone()));
     let watch = composition.watch(fence.clone()).unwrap();
-    composition.copies.insert(key, Copy {
-        _source: view.texture.clone(), view, _retained: None,
-        buffer: node.content.clone(), fence, _watch: watch,
-    });
+    composition.copies.insert(
+        key,
+        Copy {
+            _source: view.texture.clone(),
+            view,
+            _retained: None,
+            buffer: node.content.clone(),
+            fence,
+            _watch: watch,
+        },
+    );
     pending
 }
 
@@ -65,10 +98,17 @@ fn texture_damage_uses_destination_coordinates_after_output_and_control_clipping
 
 #[test]
 #[ignore = "requires hardware EGL with RGBA16F and RGB10A2 rendering/readback"]
-fn actual_linear_alpha_and_final_hdr_encoding_preserve_precision_and_use_the_declared_transfer_once() {
+fn actual_linear_alpha_and_final_hdr_encoding_preserve_precision_and_use_the_declared_transfer_once()
+ {
     use lince_interface::host::color::{ColorMode, Description, OutputColor};
-    use smithay::backend::{egl::{EGLContext, EGLDevice, EGLDisplay}, renderer::ExportMem};
-    let device = EGLDevice::enumerate().unwrap().find(|device| !device.is_software()).expect("A hardware EGL device is required");
+    use smithay::backend::{
+        egl::{EGLContext, EGLDevice, EGLDisplay},
+        renderer::ExportMem,
+    };
+    let device = EGLDevice::enumerate()
+        .unwrap()
+        .find(|device| !device.is_software())
+        .expect("A hardware EGL device is required");
     // SAFETY: Smithay owns this display lifetime and no raw caller terminates it.
     let display = unsafe { EGLDisplay::new(device) }.unwrap();
     let context = EGLContext::new(&display).unwrap();
@@ -76,58 +116,143 @@ fn actual_linear_alpha_and_final_hdr_encoding_preserve_precision_and_use_the_dec
     let mut renderer = unsafe { GlesRenderer::new(context) }.unwrap();
     let mut composition = Composition::new(lince_interface::host::WakeSignal::new(|| {})).unwrap();
     composition.prepare_color(&mut renderer).unwrap();
-    assert!(composition.linear_color_available(), "{:?}", composition.color_failure);
+    assert!(
+        composition.linear_color_available(),
+        "{:?}",
+        composition.color_failure
+    );
     let size: Size<i32, Physical> = (4, 4).into();
     let damage = Rect::from_size(size);
-    let mut source: GlesTexture = renderer.create_buffer(Fourcc::Argb8888, (4, 4).into()).unwrap();
+    let mut source: GlesTexture = renderer
+        .create_buffer(Fourcc::Argb8888, (4, 4).into())
+        .unwrap();
     {
         let mut target = renderer.bind(&mut source).unwrap();
-        let mut frame = renderer.render(&mut target, size, Transform::Normal).unwrap();
-        frame.clear(smithay::backend::renderer::Color32F::new(0.5, 0.5, 0.5, 0.5), &[damage]).unwrap();
+        let mut frame = renderer
+            .render(&mut target, size, Transform::Normal)
+            .unwrap();
+        frame
+            .clear(
+                smithay::backend::renderer::Color32F::new(0.5, 0.5, 0.5, 0.5),
+                &[damage],
+            )
+            .unwrap();
         frame.finish().unwrap().wait().unwrap();
     }
-    let mut working: GlesTexture = renderer.create_buffer(Fourcc::Abgr16161616f, (4, 4).into()).unwrap();
+    let mut working: GlesTexture = renderer
+        .create_buffer(Fourcc::Abgr16161616f, (4, 4).into())
+        .unwrap();
     composition.linear_composition = true;
     {
         let mut target = renderer.bind(&mut working).unwrap();
-        let mut frame = renderer.render(&mut target, size, Transform::Normal).unwrap();
-        frame.clear(smithay::backend::renderer::Color32F::BLACK, &[damage]).unwrap();
-        composition.color_texture(&mut frame, Description::default(), false, false).unwrap();
-        frame.render_texture_from_to(&source, Rect::from_size(source.size().to_f64()), damage, &[damage], &[], Transform::Normal, 1.0, None, &[]).unwrap();
+        let mut frame = renderer
+            .render(&mut target, size, Transform::Normal)
+            .unwrap();
+        frame
+            .clear(smithay::backend::renderer::Color32F::BLACK, &[damage])
+            .unwrap();
+        composition
+            .color_texture(&mut frame, Description::default(), false, false)
+            .unwrap();
+        frame
+            .render_texture_from_to(
+                &source,
+                Rect::from_size(source.size().to_f64()),
+                damage,
+                &[damage],
+                &[],
+                Transform::Normal,
+                1.0,
+                None,
+                &[],
+            )
+            .unwrap();
         frame.clear_tex_program_override();
         frame.finish().unwrap().wait().unwrap();
     }
     composition.linear_composition = false;
-    let mut sdr: GlesTexture = renderer.create_buffer(Fourcc::Argb8888, (4, 4).into()).unwrap();
+    let mut sdr: GlesTexture = renderer
+        .create_buffer(Fourcc::Argb8888, (4, 4).into())
+        .unwrap();
     {
         let mut target = renderer.bind(&mut sdr).unwrap();
-        composition.encode_output(&mut renderer, &mut target, &working, size, Transform::Normal, OutputColor::default()).unwrap().wait().unwrap();
-        let mapping = renderer.copy_framebuffer(&target, Rect::from_size((4, 4).into()), Fourcc::Argb8888).unwrap();
+        composition
+            .encode_output(
+                &mut renderer,
+                &mut target,
+                &working,
+                size,
+                Transform::Normal,
+                OutputColor::default(),
+            )
+            .unwrap()
+            .wait()
+            .unwrap();
+        let mapping = renderer
+            .copy_framebuffer(&target, Rect::from_size((4, 4).into()), Fourcc::Argb8888)
+            .unwrap();
         let bytes = renderer.map_texture(&mapping).unwrap();
         for pixel in bytes.chunks_exact(4) {
-            assert!(pixel[..3].iter().all(|channel| (i32::from(*channel) - 188).abs() <= 1), "{pixel:?}");
+            assert!(
+                pixel[..3]
+                    .iter()
+                    .all(|channel| (i32::from(*channel) - 188).abs() <= 1),
+                "{pixel:?}"
+            );
             assert_eq!(pixel[3], 255);
         }
     }
     {
         let mut target = renderer.bind(&mut working).unwrap();
-        let mut frame = renderer.render(&mut target, size, Transform::Normal).unwrap();
-        frame.clear(smithay::backend::renderer::Color32F::new(12.5, 12.5, 12.5, 1.0), &[damage]).unwrap();
+        let mut frame = renderer
+            .render(&mut target, size, Transform::Normal)
+            .unwrap();
+        frame
+            .clear(
+                smithay::backend::renderer::Color32F::new(12.5, 12.5, 12.5, 1.0),
+                &[damage],
+            )
+            .unwrap();
         frame.finish().unwrap().wait().unwrap();
-        let mapping = renderer.copy_framebuffer(&target, Rect::from_size((4, 4).into()), Fourcc::Abgr16161616f).unwrap();
+        let mapping = renderer
+            .copy_framebuffer(
+                &target,
+                Rect::from_size((4, 4).into()),
+                Fourcc::Abgr16161616f,
+            )
+            .unwrap();
         let bytes = renderer.map_texture(&mapping).unwrap();
         assert_eq!(bytes.len(), 4 * 4 * 8);
         for pixel in bytes.chunks_exact(8) {
-            let channels = std::array::from_fn::<_, 4, _>(|channel| u16::from_ne_bytes([pixel[channel * 2], pixel[channel * 2 + 1]]));
+            let channels = std::array::from_fn::<_, 4, _>(|channel| {
+                u16::from_ne_bytes([pixel[channel * 2], pixel[channel * 2 + 1]])
+            });
             assert_eq!(channels, [0x4a40, 0x4a40, 0x4a40, 0x3c00]);
         }
     }
-    let mut hdr: GlesTexture = renderer.create_buffer(Fourcc::Abgr2101010, (4, 4).into()).unwrap();
+    let mut hdr: GlesTexture = renderer
+        .create_buffer(Fourcc::Abgr2101010, (4, 4).into())
+        .unwrap();
     {
         let mut target = renderer.bind(&mut hdr).unwrap();
-        composition.encode_output(&mut renderer, &mut target, &working, size, Transform::Normal,
-            OutputColor { mode: ColorMode::Hdr10, peak_nits: 1000 }).unwrap().wait().unwrap();
-        let mapping = renderer.copy_framebuffer(&target, Rect::from_size((4, 4).into()), Fourcc::Abgr2101010).unwrap();
+        composition
+            .encode_output(
+                &mut renderer,
+                &mut target,
+                &working,
+                size,
+                Transform::Normal,
+                OutputColor {
+                    mode: ColorMode::Hdr10,
+                    peak_nits: 1000,
+                },
+            )
+            .unwrap()
+            .wait()
+            .unwrap();
+        let mapping = renderer
+            .copy_framebuffer(&target, Rect::from_size((4, 4).into()), Fourcc::Abgr2101010)
+            .unwrap();
         let bytes = renderer.map_texture(&mapping).unwrap();
         for pixel in bytes.chunks_exact(4) {
             let packed = u32::from_ne_bytes(pixel.try_into().unwrap());
@@ -202,7 +327,12 @@ pub(crate) fn popup_pixels(
             )
             .map_err(error)?;
         for scene in &scenes {
-            composition.capture_popup_draw(&mut frame, scene, RasterMapping::default(), Rect::from_size((size[0], size[1]).into()))?;
+            composition.capture_popup_draw(
+                &mut frame,
+                scene,
+                RasterMapping::default(),
+                Rect::from_size((size[0], size[1]).into()),
+            )?;
         }
         frame.finish().map_err(error)?.wait().map_err(error)?;
         renderer

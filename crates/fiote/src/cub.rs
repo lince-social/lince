@@ -1,21 +1,46 @@
-use {
-    crate::credential::{CredentialSource, ProviderCredential},
-    serde::{Deserialize, Serialize},
-    std::{
-        collections::VecDeque,
-        path::PathBuf,
-        process::Stdio,
-        sync::{
-            Arc, Mutex,
-            atomic::{AtomicU64, Ordering},
-        },
-    },
-    tokio::{
-        io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
-        process::{Child, ChildStdin, Command},
-        sync::{Mutex as AsyncMutex, broadcast, oneshot, watch},
+// non-lean-yet
+// Scope: const BACKLOG_LINES, const BROADCAST_CAPACITY, struct CubSpec, enum Channel.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   168, 197.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 100.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 183, 184, 185,
+//   204, 218.
+// - [review: §3 Ownership] Check whether the borrowed container can expose a narrower view. Sites
+//   spawn:program → &Path (98).
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 58.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   173, 198, 224.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 150.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 83.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 20, 24,
+//   25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 39, 58, 59, 60, 61, 65, 66, 67, 68, 69, 73, 74, 75,
+//   76, 77, 78, 79, 80, 83, 84, 85, 150, 168, 180, 193, 197, 203.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites send: String
+//   (150).
+
+use std::{
+    collections::VecDeque,
+    path::PathBuf,
+    process::Stdio,
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicU64, Ordering},
     },
 };
+
+use serde::{Deserialize, Serialize};
+use tokio::{
+    io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
+    process::{Child, ChildStdin, Command},
+    sync::{Mutex as AsyncMutex, broadcast, oneshot, watch},
+};
+
+use crate::credential::{CredentialSource, ProviderCredential};
 
 pub const BACKLOG_LINES: usize = 2000;
 const BROADCAST_CAPACITY: usize = 512;

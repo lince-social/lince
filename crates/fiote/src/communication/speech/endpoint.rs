@@ -1,6 +1,23 @@
-use crate::config::Secret;
+// non-lean-yet
+// Scope: struct Settings, fn transcribe, fn transcript, mod tests.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 140, 142.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 20, 21.
+// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 74.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   29, 58, 62, 72, 82, 93, 101.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 15, 46, 105.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 8,
+//   9, 10, 11, 15, 41, 46, 105.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites transcribe:
+//   String (46), transcript: String (105), validate: String (15).
+
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 use serde::{Deserialize, Serialize};
+
+use crate::config::Secret;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -71,10 +88,10 @@ pub async fn transcribe(
         .build()
         .map_err(|_| "Cannot create the transcription connection.")?;
     let mut request = client.post(&settings.url).multipart(form);
-    if let Some(key) = credential {
-        if !key.0.is_empty() {
-            request = request.bearer_auth(&key.0);
-        }
+    if let Some(key) = credential
+        && !key.0.is_empty()
+    {
+        request = request.bearer_auth(&key.0);
     }
     let mut response = request
         .send()

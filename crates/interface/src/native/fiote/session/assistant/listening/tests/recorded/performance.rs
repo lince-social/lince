@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: const TEXT, struct Fixture, fn poll, fn fixture.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use cell::fiote_communication::speech::voice;
 use std::{collections::VecDeque, path::PathBuf, sync::atomic::AtomicU64};

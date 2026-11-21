@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: mod settings, mod surface, const INCR_CHUNK_SIZE, mod atoms.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 631, 746, 910,
+//   1248, 1288, 1308, 1400, 1466, 1582, 1715, 2107, 2301, 2308, 2316.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 150, 306, 652.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (1338, 1371).
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites
+//   377.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   984, 985, 986, 1745, 1753, 2041, 2361, 2491.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (871, 1477, 1520, 1527, 1546, 1663, 1702, 1717, 1763, 2141, 2202, 2282, 2302,
+//   2448).
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 144.
+
 //!
 //! Xwayland Window Manager module
 //!

@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: enum FailureCode, enum RetryDisposition, struct FailurePath, fn valid_json_pointer.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 74, 76.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 7, 30.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 44.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 8,
+//   9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 30, 31, 32, 33, 34, 35, 36,
+//   37, 41, 44, 55, 59, 111, 112, 113, 115, 116, 120, 121, 122, 126, 133.
+
 use std::fmt;
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de};

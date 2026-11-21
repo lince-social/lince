@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct StressConfig, struct Measurement, struct StressReport, struct StressSand.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   new:rendered (103).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   63, 68, 142.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (232, 241).
+
 use crate::native::{
     area::{AreaShape, InfluenceArea, Property, PropertyRule, RecordProperties},
     canvas::CanvasItem,

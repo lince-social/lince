@@ -1,8 +1,20 @@
+// non-lean-yet
+// Scope: const MAX_LOGIN_TIMESTAMP_BYTES, struct ContactBinding, fn refusal, fn record_uid.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 73.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 144, 247, 388, 403, 418.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 10,
+//   11, 12, 144, 247, 388, 403, 418.
+
 use chrono::DateTime;
 use sqlx::{Acquire, Sqlite, SqliteConnection, Transaction};
 
-use crate::StoreError;
-use crate::session_access::{self, ContactTrust, PeerContact};
+use crate::{
+    StoreError,
+    session_access::{self, ContactTrust, PeerContact},
+};
 
 pub const MAX_LOGIN_TIMESTAMP_BYTES: usize = 64;
 
@@ -350,7 +362,7 @@ async fn change_inner(
         session_access::granted_login_on(connection, organ_uid, &result.peer.node_id).await?;
     if authentication
         .as_ref()
-        .map(|authentication| authentication.person_uid())
+        .map(super::session_access::AuthenticationState::person_uid)
         != proposed
     {
         return Err(refusal(

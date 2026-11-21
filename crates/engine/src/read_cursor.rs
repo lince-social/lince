@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: const MAX_BYTES, const MAX_AGE, fn invalid, fn cipher.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 31, 34, 44,
+//   48, 57, 58.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   31, 48, 53.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 48, 53, 130.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 31, 34, 44, 48, 57, 58.
+
 use crate::{Engine, EngineError};
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use chacha20poly1305::{

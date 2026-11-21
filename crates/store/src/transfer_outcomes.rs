@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: const MAX_REMOTE_AGE_SECONDS, fn fresh, fn invalid, struct Outcome.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 108.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 16.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 46, 47.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 79, 126.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 20.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 8, 10,
+//   20, 21, 22, 23, 24, 28, 79, 126.
+
 use chrono::{DateTime, Utc};
 use nucleus::transfer_delivery::TransferEnvelopeV1;
 use serde_json::{Value, json};

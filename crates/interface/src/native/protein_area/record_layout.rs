@@ -1,3 +1,22 @@
+// non-lean-yet
+// Scope: struct RecordActions, struct Sections, struct Contents, fn section.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 249, 341, 358,
+//   444, 446, 588, 623, 634, 641, 903, 973, 981, 1096, 1104, 1109, 1164, 1172, 1237, 1302, 1353,
+//   1395.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (366).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   273, 980, 1103, 1171, 1284, 1352, 1489.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (110, 118, 125, 163, 172, 178, 184, 185, 186, 190, 192, 453, 560, 573, 581, 598,
+//   607, 629, 712, 847, 981, 987, 991, 995, 1003, 1011, 1021, 1026, 1031, 1034, 1036, 1046, 1058,
+//   1065, 1076, 1078, 1081, 1095, 1104, 1112, 1117, 1135, 1137, 1143, 1151, 1163, 1172, 1174, 1188,
+//   1194, 1197, 1205, 1218, 1226, 1230, 1247, 1254, 1258, 1264, 1270, 1271, 1281, 1285, 1288, 1301,
+//   1353, 1377, 1381, 1387, 1405, 1416, 1431, 1450, 1460, 1466, 1470, 1480, 1485, 1491, 1494, 1500,
+//   1513, 1520, 1527, 1534).
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 907.
+
 use super::*;
 use crate::host::performance::{self, Count, Stage};
 use crate::native::actions::{Action, ActionButton};

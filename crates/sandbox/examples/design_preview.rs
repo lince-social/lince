@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Preview, struct Subject, fn setup, fn update.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (108, 119).
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites
+//   100, 112.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (33, 70, 125).
+
 use bevy::{math::DVec2, prelude::*, winit::WinitSettings};
 use lince_sandbox::{
     app::interface_app,

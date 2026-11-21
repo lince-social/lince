@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: impl Engine.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 136, 159, 252,
+//   258, 274, 282, 374, 477, 635, 672, 688, 718, 766, 792, 824, 848, 892, 936, 943, 951, 954, 957,
+//   964, 968, 971, 979, 1027, 1042, 1045, 1054, 1057, 1060, 1068, 1123, 1133, 1153.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 323, 332,
+//   906, 914, 920.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 169, 174.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 323, 332, 906, 914, 920.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 
 impl Engine {

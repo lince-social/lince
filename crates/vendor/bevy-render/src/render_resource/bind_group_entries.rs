@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: struct BindGroupEntries, trait IntoBinding, trait IntoBindingArray, macro
+//   impl_to_binding_slice.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   268.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 272.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 261, 279.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   261, 279.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 95, 243.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 101,
+//   113, 123, 139, 140, 199, 200, 225, 226, 243, 244, 254, 268, 286, 296, 302.
+
 use variadics_please::all_tuples_with_size;
 use wgpu::{BindGroupEntry, BindingResource};
 

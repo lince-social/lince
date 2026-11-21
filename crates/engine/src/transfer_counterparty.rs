@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: fn inactive_application, fn application_error.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 67, 73.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 73.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 67.
+
 use chrono::{DateTime, Utc};
 use store::sqlx::Row;
 

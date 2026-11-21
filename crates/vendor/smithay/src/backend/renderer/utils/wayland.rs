@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: type RendererSurfaceStateUserData, struct RendererSurfaceState, struct InnerBuffer, struct
+//   Buffer.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check SAFETY proof and trait invariants. Sites 56, 57.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 381, 505.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 114.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   340.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (386, 388, 403, 480, 500, 564, 569).
+
 #[cfg(feature = "backend_drm")]
 use crate::wayland::drm_syncobj::{DrmSyncPoint, DrmSyncobjCachedState};
 use crate::{

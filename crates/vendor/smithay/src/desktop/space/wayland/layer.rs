@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: impl LayerSurface.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use crate::{
     backend::renderer::{
         element::{

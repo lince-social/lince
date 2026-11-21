@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: type InteractionTemp, struct DeprecatedButton, type Button.
+// BeautifulRust (baseline lines):
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 30.
+
 #[expect(
     deprecated,
     reason = "Should be removed after 0.20 is released when Interaction is removed."

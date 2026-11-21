@@ -1,3 +1,23 @@
+// non-lean-yet
+// Scope: struct Timeline, struct State, struct Call.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 36, 72, 100, 116,
+//   134, 135, 178, 215, 217, 219, 232, 275, 298, 300, 309, 327, 332.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   finish:interrupted (160).
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites activity:
+//   String (175), finish: String (160), open_content: String (111), progress: String (54), update:
+//   String (144).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   47, 167, 289.
+// - [Clippy probe: clippy::format_push_string] `format!(..)` appended to existing `String`. Sites
+//   314.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 35, 36, 38, 64, 76, 78, 79, 82, 86, 87, 89, 90, 127, 260, 327, 329.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+// - [rustc probe: unreachable_pub] unreachable `pub` item. Sites 54, 111, 144, 160, 175.
+
 use super::*;
 use serde_json::{Value, json};
 

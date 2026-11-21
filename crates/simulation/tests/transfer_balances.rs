@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn assumed_delivery_releases_copied_reservations_without_public_settlement.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use engine::actions::{Action, TransferReservePoint};
 use nucleus::simulation::{Predicate, ReplayStatus, Verdict};
 use simulation::assumptions::{Direction, TransferAssumption, TransferSource};

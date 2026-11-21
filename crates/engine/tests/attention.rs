@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod support, fn engine, fn plain, fn at.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::redundant_clone] Move or borrow at the marked sites and check later
+//   uses. Sites 254.
+
 #![cfg(test)]
 
 use chrono::{DateTime, Utc};

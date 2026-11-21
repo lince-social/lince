@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: impl Engine.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 23, 45, 130, 135,
+//   172, 177, 195, 200, 217, 222, 246, 249, 257, 258.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 100.
+// - [Clippy probe: clippy::match_same_arms] these match arms have identical bodies. Sites 16, 18.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use chrono::{DateTime, Utc};
 use protein::authority::{MutationTarget, Operation, Property};

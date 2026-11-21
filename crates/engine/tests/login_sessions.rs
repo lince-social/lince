@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn setup, fn password, fn login_rejects_wrong_password_and_revokes_all_clones, fn
+//   credential_replacement_and_restoration_never_restore_an_old_session.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 242, 268, 269.
+// - [Clippy probe: clippy::implicit_clone] Make an intentional owned clone explicit. Sites 302.
+
 #![cfg(test)]
 
 use engine::{Engine, actions::Action, private_password::PasswordInput};

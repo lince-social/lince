@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: mod resource_tiers, fn publication, fn host, fn
+//   sqlite_full_refuses_publication_without_partial_authority_and_retries_after_space_returns.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   11, 13.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (25, 39, 67, 68, 73, 88).
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 302.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 263.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 331, 332, 333, 344.
+// - [Clippy probe: clippy::print_stdout] Check CLI, Cargo, fixture, or library output contract
+//   before changing output. Sites 355.
+
 use super::*;
 use std::{sync::Arc, time::Duration};
 use store::sqlx::Connection;

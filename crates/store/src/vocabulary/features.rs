@@ -1,7 +1,23 @@
-use super::{StoreError, invalid};
+// non-lean-yet
+// Scope: const FEATURES, fn feature_binding_on, fn feature_binding, fn feature_bindings.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 239.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 185.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   feature_preview_on:enabled (168), feature_preview_on:write (169).
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 30, 50, 58, 67, 71, 78, 83, 92, 101, 137, 164, 213.
+// - [Clippy: clippy::needless_question_mark] enclosing `Ok` and `?` operator are unneeded. Sites
+//   97.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 30,
+//   50, 58, 67, 71, 78, 83, 92, 101, 137, 164, 213.
+
 use nucleus::vocabulary::FeatureBinding;
 use serde_json::{Value, json};
 use sqlx::{SqliteConnection, SqlitePool};
+
+use super::{StoreError, invalid};
 
 pub const FEATURES: [&str; 21] = [
     "assignment",

@@ -1,10 +1,25 @@
+// non-lean-yet
+// Scope: struct Authored, struct AuthoredPage, struct AuthoredLesson, struct AuthoredStep.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 176.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 176.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 103.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 57,
+//   103, 240.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites publication:
+//   String (103).
+
+use std::{collections::BTreeMap, env::var_os, path::PathBuf, sync::OnceLock};
+
+use lince_resources::{Library, publication::Publication};
+use serde::Deserialize;
+
 use crate::{
     handbook::Page,
     practice::{Lesson, Operation, Step},
 };
-use lince_resources::{Library, publication::Publication};
-use serde::Deserialize;
-use std::{collections::BTreeMap, path::PathBuf, sync::OnceLock};
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -87,9 +102,9 @@ pub fn location() -> Option<String> {
                 .map(|reference| reference.target);
         }
     }
-    let config = std::env::var_os("XDG_CONFIG_HOME")
+    let config = var_os("XDG_CONFIG_HOME")
         .map(PathBuf::from)
-        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".config")))?;
+        .or_else(|| var_os("HOME").map(|home| PathBuf::from(home).join(".config")))?;
     let path = config.join("lince/content/instinct/Instinct.lingua");
     path.is_file()
         .then(|| {
@@ -107,11 +122,9 @@ pub fn publication() -> Result<Option<&'static Publication>, String> {
             let Some(location) = location() else {
                 return Ok(None);
             };
-            let config = std::env::var_os("XDG_CONFIG_HOME")
+            let config = var_os("XDG_CONFIG_HOME")
                 .map(PathBuf::from)
-                .or_else(|| {
-                    std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".config"))
-                })
+                .or_else(|| var_os("HOME").map(|home| PathBuf::from(home).join(".config")))
                 .unwrap_or_else(std::env::temp_dir);
             let library = Library::new(config.join("lince"));
             Publication::load(&library, &location, &[], false).map(Some)

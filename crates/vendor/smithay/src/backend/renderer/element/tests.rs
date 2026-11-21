@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct ImportMemRenderElement, struct Empty, struct TestRenderElement2, struct
+//   TestRenderElement.
+// BeautifulRust (baseline lines):
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 125, 144, 161, 184, 207, 233, 255, 281.
+// - [review: §5 Panics] Check intentional unfinished branches before replacing todo!. Sites 128,
+//   132, 136, 140, 157, 164, 168, 172, 176, 180, 197, 213, 217, 221, 225, 229, 246, 261, 265, 269,
+//   273, 277, 294.
+
 use std::marker::PhantomData;
 
 use crate::{

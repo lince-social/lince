@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct EventBoundary, struct EventListener, struct IsolatedEvents, struct SandEvent.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 116.
+
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;

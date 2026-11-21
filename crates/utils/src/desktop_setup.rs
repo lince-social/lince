@@ -1,10 +1,23 @@
-use crate::config::lince_data_dir;
-use serde::{Deserialize, Serialize};
+// non-lean-yet
+// Scope: const SETUP_FILE_NAME, struct DesktopInstallSetup, fn setup_file_path, fn
+//   read_staged_setup.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 82.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 25, 31, 43, 53.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 12, 14,
+//   16, 18, 20, 22, 25, 31, 43, 53, 62, 66.
+
 use std::{
     env, fs,
     io::{Error, ErrorKind},
     path::PathBuf,
 };
+
+use serde::{Deserialize, Serialize};
+
+use crate::config::lince_data_dir;
 
 const SETUP_FILE_NAME: &str = "desktop-install-setup.toml";
 

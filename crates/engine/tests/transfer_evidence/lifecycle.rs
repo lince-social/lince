@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn setup, fn giver_record, fn claimed, fn settle.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 216, 484.
+
 use super::*;
 
 async fn setup() -> PublicationFixture {

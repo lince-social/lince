@@ -1,6 +1,21 @@
-use super::*;
+// non-lean-yet
+// Scope: fn definitions_on, fn definition_versions, fn revise_definition_on, fn
+//   validate_definitions.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 35.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 89.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 5, 25, 47, 132.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 1.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 25,
+//   47, 132.
+
 use nucleus::vocabulary::{DefinitionVersion, Dictionary};
 use serde_json::{Value, json};
+
+use super::*;
 
 pub async fn definitions_on(
     connection: &mut SqliteConnection,

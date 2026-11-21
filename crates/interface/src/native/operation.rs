@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: mod incoming, const SIZE, const HELP, const COMMANDS.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 215, 434, 784,
+//   789, 839, 841, 867, 869.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   867.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (127, 198, 218, 255, 260, 267, 335, 389, 392, 393, 394, 402, 407, 408, 533, 552,
+//   556, 564, 591, 594, 597, 605, 612, 631, 676, 683, 690, 694, 733, 741, 748, 752, 756, 798, 831,
+//   842, 848, 882).
+
 use crate::native::{
     actions::{Action, ActionButton, KeyBinding, KeyBindings, Modifiers},
     cell_bridge::{CellMessage, RECORDS, ReceiveCell},

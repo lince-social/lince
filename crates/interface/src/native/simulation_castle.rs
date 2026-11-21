@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: mod checks_ui, mod cycles_ui, mod limits_ui, mod records_ui.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 134, 547, 574,
+//   588, 596, 597, 601, 603, 607, 756, 795, 839, 854, 856, 946, 1067.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 942.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   661, 668, 672.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (40, 275, 315, 389, 433, 439, 456, 529, 541, 571, 572, 574, 578, 582, 585, 595,
+//   601, 606, 609, 612, 620, 623, 626, 627, 633, 659, 676, 678, 750, 756, 765, 774, 781, 848, 851,
+//   868, 888, 891, 894, 913, 916, 965, 971, 1044).
+
 mod checks_ui;
 mod cycles_ui;
 mod limits_ui;

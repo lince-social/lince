@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn workspace, fn sizes, fn rejection, fn
+//   individual_transfer_preserves_width_intent_geometry_constraints_and_neighbor_sizes.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::layout::desktop::tests::{id, item, viewport};
 

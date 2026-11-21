@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: const EVT_PRESENTED_VARIABLE_SINCE, struct PresentationState, struct
+//   PresentationFeedbackState, struct PresentationFeedbackCallback.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 111.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 349.
+
 //! Utilities for handling the `wp_presentation` protocol
 //!
 //! ## How to use it

@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: mod node, const OIT_REQUIRED_STORAGE_BUFFERS, struct OitResolvePlugin, fn
+//   is_oit_supported.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 214, 222.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   is_oit_supported:warn (69).
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 123.
+// - [Clippy: clippy::needless_collect] avoid using `collect()` when not needed. Sites 201.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 38, 99, 103, 140.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 69,
+//   140, 150, 246.
+
 use core::num::NonZero;
 
 use super::OitBuffers;

@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: impl Engine.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 37.
+
 use crate::{Engine, EngineError};
 use serde_json::{Value, json};
 use store::sqlx::{Row, Sqlite, Transaction};

@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct Scratch, mod entries, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 95, 104, 140,
+//   141.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   normalize_scratch:original_slot (135), unmark_scratch:original_slot (131).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   144, 145.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (110).
+
 use super::*;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

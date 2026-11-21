@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: const WALK_SPEED, enum Activity, struct Behavior, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   97, 98, 110.
+
 use bevy::prelude::*;
 
 pub(super) const WALK_SPEED: f32 = 0.18 / (1.5 * 0.65);

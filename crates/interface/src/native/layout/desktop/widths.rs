@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn apply, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 51.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   78.
+
 use super::*;
 
 pub(super) fn apply(

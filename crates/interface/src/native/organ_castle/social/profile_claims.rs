@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Editor, fn at, fn caption, fn editor.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 73, 82, 129, 142,
+//   163, 192, 220, 265, 292, 316, 323, 337, 347, 358, 470, 493.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (139, 146, 284, 296, 314, 317, 326, 331, 341, 343, 355, 366, 374, 378, 384, 426,
+//   428, 442, 452, 486, 488, 492).
+
 use super::*;
 use nucleus::trust_analysis::{claims::Document, contacts::Audience};
 

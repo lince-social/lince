@@ -1,4 +1,7 @@
-use super::*;
+// non-lean-yet
+// Scope: fn edit_panel_typing_paints_content_without_invalidating_text_geometry.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy::{
     input::keyboard::Key,
     input_focus::{FocusCause, InputFocus},
@@ -10,6 +13,8 @@ use native::{
     sand_store::{SandKind, StoredSand},
     sand_text::{self, SandText},
 };
+
+use super::*;
 
 #[test]
 #[ignore = "private hardware text autosave regression with real input and rendered glyph pixels"]
@@ -257,5 +262,8 @@ fn edit_panel_typing_paints_content_without_invalidating_text_geometry() {
         assert_eq!(contents, ["iiiiWWWW"]);
         restored.finish().unwrap();
     }
-    assert!(performance::finish(std::time::Duration::from_secs(2)), "Final typing diagnostic report was not delivered");
+    assert!(
+        performance::finish(std::time::Duration::from_secs(2)),
+        "Final typing diagnostic report was not delivered"
+    );
 }

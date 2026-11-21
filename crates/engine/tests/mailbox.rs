@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: fn cell, fn scratch, fn secret, fn loopback.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 452.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 94, 100, 104, 207, 213, 244, 250, 254, 319, 325, 346, 372, 378, 730, 742, 750, 863, 870,
+//   879, 943, 1011, 1019, 1091, 1100, 1211, 1220, 1404, 1413, 1419, 1524, 1556, 1560.
+// - [Clippy probe: clippy::missing_assert_message] assert without any message. Sites 716.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 928,
+//   1588, 1612.
+// - [Clippy probe: clippy::redundant_clone] Move or borrow at the marked sites and check later
+//   uses. Sites 848.
+
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 

@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: enum Mark, struct Drawing, struct AreaDrawingPlugin, struct Redraw.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 156, 204, 271,
+//   432.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   299, 303, 304, 452.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (419, 430, 432, 435, 437, 445, 449, 452, 458, 462).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 66, 67, 68, 69.
+
 use crate::native::{
     area::{AreaForces, InfluenceArea, ShapeKind},
     area_panel::AreaEditor,

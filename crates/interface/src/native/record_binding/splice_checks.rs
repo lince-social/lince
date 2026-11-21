@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn reference, fn compare, fn splice_preserves_unicode_mutations_and_cursors.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   12, 15, 23.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (21, 25, 32, 35, 36, 45, 49, 50, 53, 62, 64, 66, 68, 72, 73, 78, 79, 122, 125,
+//   127).
+
 use super::*;
 use loro::ExportMode;
 

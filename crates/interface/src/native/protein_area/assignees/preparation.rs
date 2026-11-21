@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct Preparation, fn set_message.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 53, 70, 98.
+
 use super::*;
 use crate::host::performance::{self, Count, Stage};
 

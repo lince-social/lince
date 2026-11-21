@@ -1,5 +1,10 @@
-use super::*;
+// non-lean-yet
+// Scope: fn process_cpu, fn interface_checks, fn target, fn write.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::time::{Duration, Instant};
+
+use super::*;
 
 fn process_cpu() -> Duration {
     let value = rustix::time::clock_gettime(rustix::time::ClockId::ProcessCPUTime);
@@ -19,7 +24,11 @@ fn interface_checks() {
     );
 }
 
-pub(in crate::graphics) fn target(renderer: &VulkanRenderer, size: [u32; 2], format: wgpu::TextureFormat) -> wgpu::Texture {
+pub(in crate::graphics) fn target(
+    renderer: &VulkanRenderer,
+    size: [u32; 2],
+    format: wgpu::TextureFormat,
+) -> wgpu::Texture {
     renderer.device.create_texture(&wgpu::TextureDescriptor {
         label: Some("park_export_batch_test"),
         size: wgpu::Extent3d {
@@ -38,7 +47,11 @@ pub(in crate::graphics) fn target(renderer: &VulkanRenderer, size: [u32; 2], for
     })
 }
 
-pub(in crate::graphics) fn write(renderer: &VulkanRenderer, source: &wgpu::Texture, pixel: &[u8]) -> Vec<u8> {
+pub(in crate::graphics) fn write(
+    renderer: &VulkanRenderer,
+    source: &wgpu::Texture,
+    pixel: &[u8],
+) -> Vec<u8> {
     let bytes = pixel.repeat((source.width() * source.height()) as usize);
     renderer.queue.write_texture(
         source.as_image_copy(),
@@ -314,7 +327,10 @@ fn worker_exports_survive_native_owner_and_gpu_context_shutdown() {
     let images = worker.join().unwrap();
     let reader = VulkanRenderer::new().unwrap();
     for (image, expected) in images.iter().zip(expected) {
-        assert_eq!(read(&reader, image, wgpu::TextureFormat::Bgra8Unorm), expected);
+        assert_eq!(
+            read(&reader, image, wgpu::TextureFormat::Bgra8Unorm),
+            expected
+        );
     }
 }
 
@@ -324,24 +340,42 @@ fn worker_exports_survive_native_owner_and_gpu_context_shutdown() {
 fn direct_targets_preserve_zero_initialization_float_and_packed_precision() {
     interface_checks();
     let renderer = VulkanRenderer::new().unwrap();
-    let formats = [wgpu::TextureFormat::Bgra8Unorm, wgpu::TextureFormat::Rgba8Unorm,
-        wgpu::TextureFormat::Rgba16Float, wgpu::TextureFormat::Rgb10a2Unorm];
-    let sources = formats.into_iter().enumerate().map(|(index, format)|
-        target(&renderer, [33+index as u32*4, 19+index as u32*2], format)).collect::<Vec<_>>();
+    let formats = [
+        wgpu::TextureFormat::Bgra8Unorm,
+        wgpu::TextureFormat::Rgba8Unorm,
+        wgpu::TextureFormat::Rgba16Float,
+        wgpu::TextureFormat::Rgb10a2Unorm,
+    ];
+    let sources = formats
+        .into_iter()
+        .enumerate()
+        .map(|(index, format)| {
+            target(
+                &renderer,
+                [33 + index as u32 * 4, 19 + index as u32 * 2],
+                format,
+            )
+        })
+        .collect::<Vec<_>>();
     let mut retained = Vec::new();
     for round in 0..3 {
         let prepared = crate::graphics::direct::Prepared::new(&renderer.gpu, &sources).unwrap();
-        let textures = (0..sources.len()).map(|index| prepared.texture(index).clone()).collect::<Vec<_>>();
+        let textures = (0..sources.len())
+            .map(|index| prepared.texture(index).clone())
+            .collect::<Vec<_>>();
         let mut expected = Vec::new();
         for (index, texture) in textures.iter().enumerate() {
             let pixel: &[u8] = match index {
-                0 => &[17,54,201,255],
-                1 => &[201,54,17,255],
-                2 => &[0,0x40,0,0x38,0,0x34,0,0x3c],
-                _ => &[0x01,0x08,0x30,0xc0],
+                0 => &[17, 54, 201, 255],
+                1 => &[201, 54, 17, 255],
+                2 => &[0, 0x40, 0, 0x38, 0, 0x34, 0, 0x3c],
+                _ => &[0x01, 0x08, 0x30, 0xc0],
             };
-            expected.push(if round==0 {vec![0; texture.width() as usize*texture.height() as usize*pixel.len()]}
-                else {write(&renderer, texture, pixel)});
+            expected.push(if round == 0 {
+                vec![0; texture.width() as usize * texture.height() as usize * pixel.len()]
+            } else {
+                write(&renderer, texture, pixel)
+            });
         }
         let images = prepared.export(&renderer.gpu, &textures).unwrap();
         drop(textures);
@@ -354,8 +388,8 @@ fn direct_targets_preserve_zero_initialization_float_and_packed_precision() {
     for (image, expected, format) in retained {
         assert_eq!(read(&renderer, &image, format), expected);
     }
-    let srgb=target(&renderer,[8,8],wgpu::TextureFormat::Bgra8UnormSrgb);
-    assert!(crate::graphics::direct::Prepared::new(&renderer.gpu,&[srgb]).is_err());
+    let srgb = target(&renderer, [8, 8], wgpu::TextureFormat::Bgra8UnormSrgb);
+    assert!(crate::graphics::direct::Prepared::new(&renderer.gpu, &[srgb]).is_err());
 }
 
 #[test]

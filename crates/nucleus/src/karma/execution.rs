@@ -1,3 +1,24 @@
+// non-lean-yet
+// Scope: const OCCURRENCE_PROGRAM_EPOCH_HASH_DOMAIN, const KARMA_RUN_HASH_DOMAIN, const
+//   PROGRAM_STATE_EVENT_HASH_DOMAIN, const KARMA_CANDIDATE_PROPOSAL_HASH_DOMAIN.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 36, 87, 214, 335,
+//   436, 438.
+// - [Clippy: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably fires.
+//   Sites 180, 300, 399.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 17, 110, 117, 123, 134, 142, 157, 234, 242, 267, 349.
+// - [Clippy: clippy::large_enum_variant] large size difference between variants. Sites 349.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 30, 59, 74, 79, 181, 208, 213, 301, 329, 334, 400, 425, 430.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 11, 12,
+//   13, 14, 17, 19, 23, 24, 25, 26, 30, 51, 52, 53, 54, 55, 59, 74, 79, 110, 112, 117, 118, 123,
+//   124, 125, 126, 127, 128, 129, 134, 135, 136, 137, 142, 143, 144, 148, 157, 159, 163, 164, 165,
+//   166, 167, 169, 170, 171, 172, 174, 176, 181, 208, 213, 234, 236, 242, 243, 244, 245, 249, 257,
+//   267, 269, 273, 274, 275, 276, 277, 278, 279, 280, 281, 285, 286, 287, 288, 289, 290, 291, 292,
+//   293, 294, 295, 296, 301, 329, 334, 349, 350, 351, 353, 354, 356, 357, 359, 360, 361, 362, 367,
+//   376, 386, 387, 388, 389, 390, 391, 392, 393, 394, 395, 400, 425, 430.
+
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
@@ -177,7 +198,10 @@ pub struct ProgramStateEvent {
 }
 
 impl ProgramStateEvent {
-    #[allow(clippy::too_many_arguments, reason = "Execution construction keeps caller inputs and context explicit")]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "Execution construction keeps caller inputs and context explicit"
+    )]
     pub fn new(
         program_uid: impl Into<String>,
         node_id: LocalId,
@@ -297,7 +321,10 @@ pub struct KarmaCandidateProposal {
 }
 
 impl KarmaCandidateProposal {
-    #[allow(clippy::too_many_arguments, reason = "Execution construction keeps caller inputs and context explicit")]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "Execution construction keeps caller inputs and context explicit"
+    )]
     pub fn new(
         source_run_hash: CanonicalHash,
         occurrence_hash: CanonicalHash,
@@ -396,7 +423,10 @@ pub struct KarmaRun {
 }
 
 impl KarmaRun {
-    #[allow(clippy::too_many_arguments, reason = "Execution construction keeps caller inputs and context explicit")]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "Execution construction keeps caller inputs and context explicit"
+    )]
     pub fn new(
         occurrence_hash: CanonicalHash,
         cell_sequence: u64,

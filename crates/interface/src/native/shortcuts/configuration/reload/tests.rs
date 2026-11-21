@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn fixture, fn until, fn replace, fn
+//   debounce_does_not_allow_a_continuous_burst_to_postpone_reading_forever.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use std::io::Write;
 

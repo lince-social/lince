@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct SchedulePick, struct FaceCut, struct Scene, struct Connectors.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 123, 168, 176,
+//   195, 234, 314, 375, 489, 569, 691.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   314.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (167, 176, 204, 216, 227, 357, 401, 427, 458, 489, 506, 529, 568, 569, 691).
+
 use super::*;
 use crate::native::actions::Action;
 use bevy::{

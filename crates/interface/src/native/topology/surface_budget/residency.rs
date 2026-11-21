@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: const LIMIT, const CACHE_FRAMES, struct Snapshot, struct Allocation.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 103, 170.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (144, 314).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 231.
+
 use bevy::{
     asset::AssetId,
     core_pipeline::prepass::ViewPrepassTextures,

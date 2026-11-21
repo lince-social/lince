@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn caption, fn caption_entity, fn verify_paint, fn paint_target.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 44.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   219.
+
 use bevy::{
     a11y::AccessibilityNode,
     prelude::*,

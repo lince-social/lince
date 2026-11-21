@@ -1,7 +1,22 @@
-use crate::{
-    StoreError,
-    sqlx::{self, Sqlite, Transaction},
-};
+// non-lean-yet
+// Scope: fn invalid, struct Job, fn get_on, fn cleanup_on.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 14.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 47, 51, 52, 109, 119, 128, 130, 132, 137.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   51, 52.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 47, 51, 52.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 35, 61, 70, 87, 141, 148, 157, 166, 211, 220, 234.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 75.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 19, 20,
+//   21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 35, 61, 70, 75, 76, 77, 78, 79, 80, 81, 82, 83,
+//   84, 87, 141, 148, 157, 166, 211, 220, 234.
+
 use nucleus::{
     karma::CanonicalHash,
     trust_analysis::custody::{
@@ -10,6 +25,11 @@ use nucleus::{
     },
 };
 use serde_json::{Value, json};
+
+use crate::{
+    StoreError,
+    sqlx::{self, Sqlite, Transaction},
+};
 
 fn invalid(error: impl ToString) -> StoreError {
     StoreError::Protocol(error.to_string())

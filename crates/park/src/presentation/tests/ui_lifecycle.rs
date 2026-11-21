@@ -1,8 +1,14 @@
-use super::*;
+// non-lean-yet
+// Scope: fn card, fn label, fn ink, fn assert_content.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
+use std::time::{Duration, Instant};
+
 use bevy::ui::{ContentSize, FixedMeasure, NodeMeasure, experimental::GhostNode};
 use lince_interface::host::{DesktopAction, WorkspaceLayout};
 use native::{canvas::CanvasItem, layout::LayoutBox, workspace::WorkspaceMember};
-use std::time::{Duration, Instant};
+
+use super::*;
 
 fn card(canvas: &mut Presentation, root: Entity, x: f64) -> Entity {
     let size = Vec2::new(400.0, 260.0);

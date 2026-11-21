@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn existing_database_reads_are_consistent_and_cannot_write, fn
+//   absent_or_unrelated_database_is_not_created_or_initialized, fn
+//   incompatible_database_is_rejected_without_running_migrations, fn
+//   selected_extensions_exclude_unselected_deleted_and_other_namespaces.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 92, 98, 103.
+
 #[tokio::test]
 async fn existing_database_reads_are_consistent_and_cannot_write() {
     let directory = tempfile::tempdir().unwrap();

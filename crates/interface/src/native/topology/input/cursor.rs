@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn relative.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy::{
     camera::{NormalizedRenderTarget, RenderTarget},
     picking::pointer::{PointerId, PointerLocation},

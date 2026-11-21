@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn rows, fn login, fn render, fn profile_controls.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 36, 65, 393, 430.
+
 use crate::app::{Intent, Mobile, button, input, label};
 use crate::navigation::Page;
 use bevy::prelude::*;

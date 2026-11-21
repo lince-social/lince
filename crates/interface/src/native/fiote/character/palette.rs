@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct Palette, fn mix, enum Role, struct Binding.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (75).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   101.
+
 use super::*;
 use crate::native::tokens::{SandStyleKind, ThemeSettings, Token, TokenValue};
 

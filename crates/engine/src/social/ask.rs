@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: fn validate_request, fn validate_reply, fn clip, fn split.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 86, 391, 395.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 132, 149,
+//   180, 185, 381.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 32, 53, 70, 81, 83, 84.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 81, 83, 84.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 395.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 132, 149, 180, 185, 381.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use nucleus::social::ask::{self as contract, ContactConsent, Reply, Request, Settings};
 

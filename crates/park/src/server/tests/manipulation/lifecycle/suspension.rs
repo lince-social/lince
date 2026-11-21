@@ -1,5 +1,8 @@
-use super::*;
-use crate::desktop::renderer::{Composition, Presented};
+// non-lean-yet
+// Scope: fn renderer, fn present, fn accept_headless, fn wait_outputs.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 18, 21.
+
 use smithay::backend::{
     allocator::Fourcc,
     egl::{EGLContext, EGLDevice, EGLDisplay},
@@ -8,6 +11,9 @@ use smithay::backend::{
         gles::{GlesRenderer, GlesTexture},
     },
 };
+
+use super::*;
+use crate::desktop::renderer::{Composition, Presented};
 
 fn renderer() -> GlesRenderer {
     let device = EGLDevice::enumerate()

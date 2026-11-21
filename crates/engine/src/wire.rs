@@ -1,3 +1,68 @@
+// non-lean-yet
+// Scope: mod presence, mod location, mod groups, mod discovery.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 232, 699, 700,
+//   734, 747, 754, 848, 871, 877, 878, 880, 970, 976, 1045, 1085, 1156, 1160, 1194, 1283, 1287,
+//   1355, 1361, 1511, 1567, 1586, 1595, 1598, 1759, 1893, 1905, 1926, 2197, 2501, 2533, 2545, 2618,
+//   2691, 2709, 2712, 2713, 2720, 2721, 2724, 2758, 2761, 2897, 2898, 2899, 2910, 2931, 3068, 3080,
+//   3088, 3193, 3197, 3231, 3238, 3304, 3311, 3329, 3330, 3362, 3413, 3508, 3603, 3606.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   answer_conversation_invite:accept (1138), bind_on_port:local_discovery (562),
+//   bind_with_discovery:local_discovery (552), new:accept_credentials (125),
+//   set_local_discovery:enabled (1190).
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 793, 823,
+//   829, 840, 852, 861, 889, 961, 1061, 1116, 1153, 3436, 3469, 3588, 3602, 3603.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 2367, 2435, 2693, 2860, 2883, 2900, 3214.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 2367, 2435, 2693, 2860, 2883, 2900.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 3214.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 754, 1283, 1326, 1361, 2713, 4224, 4234.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 1706, 2534,
+//   2812.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 85, 93, 193, 249, 371, 407.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 168, 223, 230, 242, 734, 740, 746, 769, 1354, 1367, 1377, 1511, 1586, 1905, 2730, 2894,
+//   2909.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 3714, 3753, 3862, 4263, 4284, 4290.
+// - [Clippy probe: clippy::manual_let_else] this could be rewritten as `let...else`. Sites 1290,
+//   1627, 2507, 2797.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 793, 823, 829, 840, 852, 861, 889, 961, 1061, 1116, 1153, 3436, 3469, 3588, 3602, 3603.
+// - [Clippy probe: clippy::match_same_arms] these match arms have identical bodies. Sites 1545,
+//   1550, 1603, 1604, 1614, 3522, 3523.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 46, 186, 530, 538, 547, 557, 577, 586, 604, 772, 814, 833, 856, 924, 953,
+//   1054, 1102, 1135, 1190, 2454, 2497, 2574, 2706, 2913, 3159, 3183, 3247, 3263, 3285, 3341, 3433,
+//   3462, 3496, 3530.
+// - [Clippy probe: clippy::missing_panics_doc] State the panic conditions for exported functions.
+//   Sites 222, 229, 241, 739, 743, 768, 2706, 2905.
+// - [Clippy probe: clippy::single_match] you seem to be trying to use `match` for destructuring a
+//   single pattern. Consider using `if let`. Sites 3109.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 217, 508.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   30, 32, 34, 36, 38, 40, 41, 42, 44, 46, 66, 67, 68, 69, 70, 71, 72, 76, 77, 78, 79, 80, 81, 85,
+//   86, 87, 88, 89, 93, 94, 95, 96, 99, 101, 103, 105, 107, 109, 111, 114, 116, 117, 118, 119, 120,
+//   121, 125, 186, 193, 194, 195, 196, 199, 207, 208, 217, 222, 229, 241, 249, 250, 251, 252, 253,
+//   254, 256, 257, 258, 260, 261, 262, 264, 265, 267, 268, 269, 270, 272, 273, 275, 276, 278, 279,
+//   280, 282, 283, 284, 285, 287, 288, 289, 290, 292, 293, 295, 296, 297, 299, 300, 301, 303, 304,
+//   305, 307, 308, 309, 311, 312, 313, 315, 316, 317, 318, 320, 321, 323, 324, 326, 327, 328, 330,
+//   331, 333, 334, 335, 337, 338, 339, 340, 342, 343, 344, 345, 347, 348, 349, 350, 351, 352, 353,
+//   354, 356, 358, 359, 361, 362, 364, 365, 371, 372, 373, 374, 375, 376, 377, 381, 382, 390, 391,
+//   392, 393, 397, 398, 399, 400, 401, 402, 407, 408, 409, 410, 411, 412, 413, 414, 416, 417, 419,
+//   420, 422, 423, 425, 426, 427, 429, 430, 432, 433, 435, 436, 438, 439, 441, 442, 443, 444, 446,
+//   447, 449, 450, 452, 453, 454, 455, 457, 458, 459, 461, 462, 463, 465, 466, 468, 469, 470, 472,
+//   473, 475, 476, 478, 479, 484, 485, 486, 487, 491, 492, 493, 494, 495, 496, 500, 501, 502, 503,
+//   504, 508, 530, 538, 547, 557, 577, 586, 604, 739, 743, 750, 768, 772, 814, 833, 856, 920, 924,
+//   953, 1054, 1102, 1135, 1185, 1190, 1197, 1205, 1209, 1225, 1241, 1245, 1249, 1253, 1257, 1261,
+//   1273, 1277, 1398, 1413, 2454, 2497, 2574, 2602, 2706, 2782, 2784, 2842, 2905, 2913, 3159, 3183,
+//   3247, 3263, 3285, 3341, 3397, 3433, 3462, 3496, 3530.
+
 mod presence;
 mod location;
 mod groups;

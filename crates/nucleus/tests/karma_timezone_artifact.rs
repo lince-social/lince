@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn canonical_artifact_resolves_unique_gap_and_fold_without_host_timezone_state, fn
+//   artifact_revision_and_schedule_demand_attestation_fail_closed, fn
+//   artifact_rejects_noncontiguous_utc_and_triple_local_mappings, fn fixture_artifact.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use std::collections::BTreeMap;

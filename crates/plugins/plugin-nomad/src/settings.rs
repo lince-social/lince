@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Settings, fn endpoint.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 54.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 70, 80.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites archive_url:
+//   String (64), endpoint: String (79), scope: String (50), url: String (58), validate: String
+//   (33).
+
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 

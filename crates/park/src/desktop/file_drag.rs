@@ -1,14 +1,28 @@
-use super::*;
+// non-lean-yet
+// Scope: impl Desktop.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::sync::mpsc::TrySendError;
+
+use super::*;
 
 impl Desktop {
     #[cfg(all(test, feature = "server-tests", feature = "nested"))]
-    pub(crate) fn file_hover_observation(&self) -> (Option<FileDragContext>, Option<OverviewHoverRequest>) {
-        (self.file_drag_sent, self.hover_reply.map(|(request, _)| request))
+    pub(crate) fn file_hover_observation(
+        &self,
+    ) -> (Option<FileDragContext>, Option<OverviewHoverRequest>) {
+        (
+            self.file_drag_sent,
+            self.hover_reply.map(|(request, _)| request),
+        )
     }
 
     pub(super) fn file_drag_context(&self) -> Option<FileDragContext> {
-        if !self.focused || !self.server.dragging() || self.server.locked() || self.pending_output.is_some() {
+        if !self.focused
+            || !self.server.dragging()
+            || self.server.locked()
+            || self.pending_output.is_some()
+        {
             return None;
         }
         let token = self.server.native_file_drag()?;
@@ -36,7 +50,11 @@ impl Desktop {
             match self.worker.input(Input::DragActive(active)) {
                 Ok(_) => self.drag_active_sent = active,
                 Err(TrySendError::Full(_)) => {}
-                Err(TrySendError::Disconnected(_)) => return Err(io::Error::other("The Park canvas stopped while updating drag ownership")),
+                Err(TrySendError::Disconnected(_)) => {
+                    return Err(io::Error::other(
+                        "The Park canvas stopped while updating drag ownership",
+                    ));
+                }
             }
         }
         let context = self.file_drag_context();

@@ -1,4 +1,12 @@
-use super::*;
+// non-lean-yet
+// Scope: mod bodies, struct Reading, struct Clock, fn summary.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
+use std::{
+    hash::{Hash, Hasher},
+    sync::Mutex,
+};
+
 use bevy::{
     app::{Main, MainScheduleOrder},
     ecs::schedule::{
@@ -7,10 +15,8 @@ use bevy::{
     input::keyboard::Key,
     input_focus::{FocusCause, InputFocus},
 };
-use std::{
-    hash::{Hash, Hasher},
-    sync::Mutex,
-};
+
+use super::*;
 
 mod bodies;
 
@@ -331,27 +337,30 @@ fn native_main_phases_attribute_cpu_and_compare_the_largest_executor() {
         .resource::<MainScheduleOrder>()
         .labels
         .clone();
-    let inventory = labels.iter().map(|label| {
-        let schedules = canvas.app.world().resource::<Schedules>();
-        let systems = schedules
-            .get(*label)
-            .map(|schedule| {
-                schedule
-                    .systems_with_access()
-                    .unwrap()
-                    .map(|(_, entry)| {
-                        let system = entry.system();
-                        serde_json::json!({
-                            "name": system.name().to_string(),
-                            "exclusive": entry.access().is_exclusive(),
-                            "send": system.is_send(),
+    let inventory = labels
+        .iter()
+        .map(|label| {
+            let schedules = canvas.app.world().resource::<Schedules>();
+            let systems = schedules
+                .get(*label)
+                .map(|schedule| {
+                    schedule
+                        .systems_with_access()
+                        .unwrap()
+                        .map(|(_, entry)| {
+                            let system = entry.system();
+                            serde_json::json!({
+                                "name": system.name().to_string(),
+                                "exclusive": entry.access().is_exclusive(),
+                                "send": system.is_send(),
+                            })
                         })
-                    })
-                    .collect::<Vec<_>>()
-            })
-            .unwrap_or_default();
-        serde_json::json!({"schedule":format!("{label:?}"), "systems":systems})
-    }).collect::<Vec<_>>();
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default();
+            serde_json::json!({"schedule":format!("{label:?}"), "systems":systems})
+        })
+        .collect::<Vec<_>>();
     let main = canvas
         .world_mut()
         .resource_mut::<Schedules>()

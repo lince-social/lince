@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: mod compositor, mod device, mod dumb, mod error.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 349, 501.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 388.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 361, 363.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   333.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (337).
+
 //! This module represents abstraction on top the linux direct rendering manager api (drm).
 //!
 //! ## [`DrmDevice`]

@@ -1,6 +1,22 @@
-use std::env::consts::{ARCH, OS};
-use std::path::PathBuf;
-use std::sync::OnceLock;
+// non-lean-yet
+// Scope: const VERSION, static REVISION, fn set_revision, fn revision.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value. Sites
+//   97.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   self_apply_block_for:server (80).
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 44.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 9,
+//   16, 20, 24, 32, 44, 45, 46, 47, 48, 49, 50, 54, 76, 80, 120, 124, 135.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   27.
+
+use std::{
+    env::consts::{ARCH, OS},
+    path::PathBuf,
+    sync::OnceLock,
+};
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 

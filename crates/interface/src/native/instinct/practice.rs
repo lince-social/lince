@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: mod automation, mod cleanup, mod commitments, mod community.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 132, 253, 309,
+//   311, 313, 317, 488, 579, 608, 666, 679, 737, 743, 814, 866, 867, 882, 891, 1043, 1079, 1276,
+//   1365, 1517, 1536, 1645, 1700, 1746, 1813, 1837, 1850, 1876, 1890, 2083, 2088, 2091, 2156.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   891, 1020.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (68, 468, 473, 574, 579, 585, 587, 600, 667, 677, 698, 699, 723, 737, 743, 850,
+//   863, 887, 896, 919, 944, 945, 961, 990, 1008, 1020, 1030, 1038, 1041, 1061, 1079, 1085, 1104,
+//   1110, 1217, 1221, 1280, 1315, 1336, 1345, 1404, 1409, 1413, 1416, 1417, 1418, 1423, 1427, 1428,
+//   1431, 1445, 1454, 1463, 1469, 1492, 1500, 1696, 1743, 1784, 1813, 1837, 1841, 1850, 1866, 1876,
+//   1898, 1912, 1924, 1965, 2043, 2080, 2083, 2092, 2095, 2099, 2100, 2106, 2109, 2124, 2137, 2145,
+//   2154, 2156, 2171, 2180, 2185).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 300.
+
 use crate::native::{
     actions::Action,
     area::{AreaForces, AreaShape, Direction, InfluenceArea, RecordProperties},

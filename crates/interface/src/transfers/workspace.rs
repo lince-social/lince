@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: enum Workflow, enum Panel, struct Workspace, fn is_transport.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 63.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   106.
+
 use super::{array, display_ref, facet, status_ref, text};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;

@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: enum Value, enum Control, struct Definition, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 133.
+
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 

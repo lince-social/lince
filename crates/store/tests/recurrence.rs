@@ -1,12 +1,20 @@
+// non-lean-yet
+// Scope: fn store, fn record, fn amount, fn at.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use chrono::{DateTime, Utc};
-use nucleus::DecimalValue;
-use nucleus::karma::{Cadence, Consequences};
-use store::Store;
-use store::recurrence::{
-    NewRecurrence, Occurrence, ReviseRecurrence, create, occurrence_request_id, occurrences,
-    revise, set_state, skip, unskip,
+use nucleus::{
+    DecimalValue,
+    karma::{Cadence, Consequences},
+};
+use store::{
+    Store,
+    recurrence::{
+        NewRecurrence, Occurrence, ReviseRecurrence, create, occurrence_request_id, occurrences,
+        revise, set_state, skip, unskip,
+    },
 };
 
 async fn store() -> Store {

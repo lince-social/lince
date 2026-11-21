@@ -1,3 +1,30 @@
+// non-lean-yet
+// Scope: const DTYPE, enum HiddenAct, struct HiddenActLayer, enum PositionEmbeddingType.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 141, 202, 266, 298, 324, 352, 385, 415, 441, 510, 541, 560, 578.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 127, 425, 465,
+//   479.
+// - [Clippy: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably fires.
+//   Sites 115.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 179, 242.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   179.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 10, 40.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 415, 423, 441, 470, 541, 560, 578, 584.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 141, 202, 266, 298, 324, 352, 385, 415, 441, 510, 541, 560, 578.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 377, 409, 433, 535, 555, 572.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 10,
+//   11, 12, 13, 40, 42, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 60, 62, 63, 64, 377,
+//   409, 410, 415, 423, 433, 436, 441, 470, 535, 541, 555, 560, 572, 578, 584.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   180.
+
 use candle_core::{DType, Device, Result, Tensor};
 use candle_nn::{Embedding, Module, VarBuilder, embedding};
 use candle_nn::{LayerNorm, Linear, layer_norm, linear};

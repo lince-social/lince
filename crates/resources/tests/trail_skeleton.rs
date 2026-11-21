@@ -1,11 +1,20 @@
+// non-lean-yet
+// Scope: fn project, fn visit, fn
+//   curriculum_entrances_form_a_connected_skeleton_without_markdown_inventories, fn
+//   an_outline_keeps_its_identity_and_context_after_export_and_relocation.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 62, 68, 109, 111, 114, 115, 116, 118, 122, 124, 168, 178.
+
 #![cfg(feature = "publication")]
 
-use lince_resources::{Library, publication::Publication};
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs,
     path::{Path, PathBuf},
 };
+
+use lince_resources::{Library, publication::Publication};
 
 fn project(path: &Path) -> anicca::ProjectedDocument {
     let source = fs::read_to_string(path).expect("read the trail fixture");

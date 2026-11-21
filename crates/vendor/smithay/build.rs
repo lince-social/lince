@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn gl_generate, fn test_gbm_bo_fd_for_plane, fn test_gbm_bo_create_with_modifiers2, fn
+//   main.
+// BeautifulRust (baseline lines):
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 1.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (7, 10, 53, 57, 73).
+
 #![allow(clippy::disallowed_macros)]
 #[cfg(any(feature = "backend_egl", feature = "renderer_gl"))]
 fn gl_generate() {

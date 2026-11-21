@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn main, fn main.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #[cfg(target_os = "linux")]
 fn main() -> std::io::Result<()> {
     if std::env::args().any(|argument| argument == "--check-external") {

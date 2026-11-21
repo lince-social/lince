@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct Suspension, fn install, fn restore, fn suspend.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[derive(Resource, Default)]

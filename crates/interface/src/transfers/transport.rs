@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: fn fields, fn sharing_record, fn journey_forms, fn initialize.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 78, 96, 124, 136,
+//   182, 215, 236, 237, 242, 243.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 198, 200.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites normalize:
+//   String (154).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   109, 169, 180.
+
 use super::{FieldKind, Form, array};
 
 pub fn fields(form: &mut Form) {

@@ -1,12 +1,34 @@
+// non-lean-yet
+// Scope: mod polling, struct Changes, mod tests, struct Watch.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   118, 171.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 118.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 74, 146, 162,
+//   175, 176.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites 69,
+//   80, 155, 156.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   97, 161, 172.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 76, 118.
+// - [Clippy: clippy::needless_collect] avoid using `collect()` when not needed. Sites 123, 134.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 12, 56.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 12, 13,
+//   14, 15, 56, 66, 68, 72, 76, 118, 171.
+
 use crate::Result;
 mod polling;
 
-use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use std::{
     collections::BTreeSet,
     path::PathBuf,
     sync::{Arc, Mutex},
 };
+
+use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 
 #[derive(Default)]
 pub struct Changes {
@@ -17,8 +39,9 @@ pub struct Changes {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::time::Duration;
+
+    use super::*;
 
     #[test]
     fn polling_fallback_reports_changes_and_releases_unused_paths() {
@@ -63,7 +86,9 @@ pub struct Watch {
 }
 
 impl Watch {
-    pub fn event_driven(&self) -> bool { self.watcher.is_some() }
+    pub fn event_driven(&self) -> bool {
+        self.watcher.is_some()
+    }
 
     pub fn pending(&self) -> Arc<Mutex<Changes>> {
         self.changes.clone()

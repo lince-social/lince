@@ -1,3 +1,22 @@
+// non-lean-yet
+// Scope: const DEPTH_PYRAMID_MIP_COUNT, fn early_downsample_depth, fn late_downsample_depth, fn
+//   downsample_depth.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 352, 353, 357,
+//   360, 361, 365, 478, 480, 606.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 593, 600.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   593, 600.
+// - [Clippy: clippy::redundant_clone] Move or borrow at the marked sites and check later uses.
+//   Sites 356, 364, 611.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 65, 78, 148, 161, 215, 658.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 266, 295, 495, 543, 735.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 497,
+//   655.
+
 //! Generation of hierarchical Z buffers for occlusion culling.
 //!
 //! Currently, this module only supports generation of hierarchical Z buffers

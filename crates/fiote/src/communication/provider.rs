@@ -1,4 +1,24 @@
-use crate::config::{Secret, Settings};
+// non-lean-yet
+// Scope: struct Model, struct ToolCall, enum Message, struct ToolDefinition.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 155, 178, 180,
+//   206, 207, 208, 220, 222, 231, 249, 250, 251, 264, 276, 277, 278, 300, 356, 360, 423, 434, 479.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 30.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   183, 184, 199, 241, 319, 361, 436.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 132, 169, 191.
+// - [Clippy: clippy::needless_collect] avoid using `collect()` when not needed. Sites 357, 424.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 103, 162.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 12, 13,
+//   14, 15, 16, 18, 22, 23, 24, 25, 26, 30, 31, 32, 33, 35, 36, 37, 39, 40, 41, 42, 44, 45, 46, 48,
+//   49, 50, 52, 53, 54, 55, 60, 61, 62, 63, 67, 69, 71, 72, 73, 76, 77, 100, 103, 112, 113, 114,
+//   129, 132, 139, 162, 169, 191.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites check_models:
+//   String (169), new: String (191).
+
 use async_trait::async_trait;
 use futures::StreamExt;
 use genai::chat::{
@@ -7,6 +27,8 @@ use genai::chat::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+
+use crate::config::{Secret, Settings};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Model {
@@ -533,9 +555,10 @@ fn usage_report(
 
 #[cfg(test)]
 mod attachment_tests {
-    use super::*;
     use base64::{Engine as _, engine::general_purpose::STANDARD as B64};
     use nucleus::message::MessagePart;
+
+    use super::*;
 
     fn file(name: &str, mime: &str, bytes: &[u8]) -> MessagePart {
         MessagePart::Attachment {

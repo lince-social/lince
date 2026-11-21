@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: const DND_ICON_ROLE, struct DataDeviceUserData.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 83, 106, 136,
+//   137.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (84, 107, 123, 148).
+
 use std::cell::RefCell;
 
 use tracing::debug;

@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Status, fn list, fn note.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 43.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 16, 33.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 6,
+//   7, 8, 9, 10, 11, 12, 13, 16, 33.
+
 use serde::{Deserialize, Serialize};
 use sqlx::{Row, SqlitePool};
 

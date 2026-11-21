@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct Draft, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 28, 72.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 75.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites normalize:
+//   String (84), normalized: String (48).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   56, 74, 75, 115, 116, 117, 118, 121.
+
 use crate::host::{
     OutputId,
     display::{DisplayConfiguration, DisplaySnapshot, OutputSettings},

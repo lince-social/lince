@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn request, fn write, fn record, fn
+//   file_backed_unsent_text_recovers_and_canonical_replay_is_exactly_once.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 511.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 90, 276, 307, 347, 362, 417, 448, 540, 602.
+
 #![cfg(test)]
 
 use std::sync::Arc;

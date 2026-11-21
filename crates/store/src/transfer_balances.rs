@@ -1,5 +1,31 @@
-use std::collections::{BTreeMap, BTreeSet, HashMap};
-use std::sync::Arc;
+// non-lean-yet
+// Scope: struct Commitment, struct Balance, struct Promise, fn reserved_for.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 144, 154, 155, 186, 193, 194, 208, 217, 241, 323, 345, 468, 471, 479, 490, 509, 511, 529,
+//   670, 675.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 92, 94, 144, 176,
+//   178, 220, 222, 224, 230, 286, 288, 340, 573, 694, 726, 727, 729, 730, 735, 740, 742.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 143.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 143.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   246.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   210.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 83, 411, 418, 433.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 12, 13,
+//   14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 33, 34, 35, 36, 37, 38, 39, 40,
+//   83, 411, 418, 433.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   124, 315, 318, 488, 554.
+
+use std::{
+    collections::{BTreeMap, BTreeSet, HashMap},
+    sync::Arc,
+};
 
 use nucleus::DecimalValue;
 use serde::Serialize;

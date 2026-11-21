@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn command, fn contexts_preserve_wording_across_source_updates_and_restore_original, fn
+//   hiding_is_contextual_personal_and_keeps_explicit_identity_resolvable, fn
+//   personal_choice_cannot_reveal_another_persons_private_wording.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::manual_string_new] empty String is being created manually. Sites 274.
+
 #![cfg(test)]
 
 use engine::{Engine, actions::Action};

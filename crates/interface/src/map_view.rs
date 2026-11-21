@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn palette, struct Target, struct Scenes, struct Renderers.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 134, 135.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   20.
+
 use bevy::prelude::*;
 pub use lince_map as data;
 use lince_map::scene::Scene;

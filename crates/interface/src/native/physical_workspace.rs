@@ -1,3 +1,21 @@
+// non-lean-yet
+// Scope: mod adapter, mod inference, mod media, mod output.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 250, 251, 386,
+//   393, 435, 454, 465, 496, 525, 531, 548, 601, 602, 603, 604, 651, 658, 665, 678, 684, 695, 715,
+//   1195, 1273, 1416, 1428.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   capture:enabled (305).
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 985, 1313.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites bind_selection:
+//   String (414), capture: String (300), configure: String (224), connect: String (285),
+//   disconnect: String (317), interact: String (480), observe: String (335), undo: String (734).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   462, 463, 465, 560, 597, 1196, 1234, 1237.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (216, 229, 276, 295, 308, 324, 342, 442, 495, 534, 710, 711, 739, 757, 760, 789,
+//   860, 1148, 1154, 1168, 1176, 1196, 1216, 1266, 1286, 1293, 1310, 1330, 1374, 1461).
+
 use crate::native::{
     actions::Action,
     canvas_host, sand_panel,

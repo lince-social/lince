@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: enum Content, struct Branch, struct Tree.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 120, 132, 135,
+//   139, 149, 171.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (130, 146).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   50, 137.
+
 use super::*;
 
 pub(super) enum Content<'a> {

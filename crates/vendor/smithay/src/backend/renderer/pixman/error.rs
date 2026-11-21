@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: enum PixmanError.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use drm_fourcc::{DrmFourcc, DrmModifier};
 use thiserror::Error;
 

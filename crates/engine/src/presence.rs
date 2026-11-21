@@ -1,3 +1,25 @@
+// non-lean-yet
+// Scope: const TTL, const RECORD_LIMIT, const CURSOR_LIMIT, struct Cursor.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 68, 74, 195.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 45, 100, 110, 111, 132, 133, 259, 295.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 45, 100, 110, 111.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 159, 172, 179, 193, 210, 252, 264, 289, 309, 313.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 502.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 326, 381, 422, 464.
+// - [Clippy probe: clippy::missing_panics_doc] State the panic conditions for exported functions.
+//   Sites 155, 169, 178, 192, 209, 263, 284, 299.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 139.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   12, 13, 14, 15, 16, 17, 18, 23, 24, 25, 26, 27, 31, 139, 145, 155, 169, 178, 192, 209, 238,
+//   263, 284, 299, 326, 381, 422, 464.
+
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};

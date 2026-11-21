@@ -1,7 +1,17 @@
-use crate::StoreError;
+// non-lean-yet
+// Scope: fn saved_locations_for_person, fn saved_locations_for_person_among, fn project.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 42, 43.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 6, 14.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 14.
+
+use std::collections::{HashMap, HashSet};
+
 use nucleus::{visibility::Data, vocabulary::SavedLocation};
 use sqlx::SqlitePool;
-use std::collections::{HashMap, HashSet};
+
+use crate::StoreError;
 
 pub async fn saved_locations_for_person(
     pool: &SqlitePool,

@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: type Fingerprint, mod origins, mod order, struct CaptureCache.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 113, 197, 607,
+//   644.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   290, 294, 735, 743, 752.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (64, 257, 269, 295, 478, 574, 582, 631, 647, 649, 686, 689, 763, 771).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 158, 504.
+
 use bevy::{
     asset::AssetId,
     camera::{CameraMainTextureUsages, RenderTarget},

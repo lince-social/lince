@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn run_native_interface, fn connected_app, fn interface_app, fn offscreen_interface_app.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   run_native_interface:showoff (12), run_native_interface:tray_enabled (9).
+
 use bevy::{log::LogPlugin, prelude::*, render::RenderPlugin};
 pub use lince_interface::native::app::CellHandle;
 use lince_interface::native::app::canvas;

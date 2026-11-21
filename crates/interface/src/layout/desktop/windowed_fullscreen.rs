@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   set_windowed_fullscreen:enabled (12).
+
 use super::*;
 
 impl Workspace {

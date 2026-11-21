@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn install, fn focus, fn keyboard, struct LayerButton.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use bevy::input_focus::{FocusCause, FocusedInput, InputFocus, tab_navigation::TabIndex};
 

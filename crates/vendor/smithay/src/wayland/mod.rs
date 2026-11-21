@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod alpha_modifier, mod buffer, mod commit_timing, mod compositor.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 //! Protocol-related utilities
 //!
 //! This module contains several handlers to manage the Wayland protocol

@@ -1,7 +1,16 @@
+// non-lean-yet
+// Scope: fn record, fn append, fn float_drift_does_not_survive_the_ledger, fn
+//   a_thousand_cent_additions_reach_exactly_ten.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::redundant_clone] Move or borrow at the marked sites and check later uses.
+//   Sites 192.
+
 use chrono::{TimeDelta, Utc};
 use nucleus::{Cause, DecimalValue, NewFact};
-use store::Store;
-use store::exact::{from_f64, zero};
+use store::{
+    Store,
+    exact::{from_f64, zero},
+};
 
 async fn record(store: &Store, slug: &str) -> String {
     store::records::create(
@@ -147,10 +156,11 @@ async fn no_real_quantity_column_survives() {
         ("fact", vec!["delta_mantissa", "delta_scale"]),
         ("record", vec!["quantity_mantissa", "quantity_scale"]),
     ] {
-        let rows = sqlx::query("SELECT name, type FROM pragma_table_info(?)").bind(table)
-        .fetch_all(&store.pool)
-        .await
-        .expect("pragma");
+        let rows = sqlx::query("SELECT name, type FROM pragma_table_info(?)")
+            .bind(table)
+            .fetch_all(&store.pool)
+            .await
+            .expect("pragma");
         let found: Vec<(String, String)> = rows
             .iter()
             .map(|r| (r.get::<String, _>("name"), r.get::<String, _>("type")))

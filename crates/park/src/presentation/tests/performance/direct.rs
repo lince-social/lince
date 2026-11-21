@@ -1,8 +1,10 @@
-use super::*;
-use crate::graphics::{
-    GpuContext,
-    direct::{Pool, Prepared},
-};
+// non-lean-yet
+// Scope: struct Targets, fn prepare, fn fraction, fn stamps.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 223, 226.
+
+use std::collections::{BTreeMap, HashMap};
+
 use bevy::{
     asset::AssetId,
     render::{Render, RenderSystems},
@@ -16,7 +18,12 @@ use smithay::backend::{
         gles::{GlesRenderbuffer, GlesRenderer},
     },
 };
-use std::collections::{BTreeMap, HashMap};
+
+use super::*;
+use crate::graphics::{
+    GpuContext,
+    direct::{Pool, Prepared},
+};
 
 #[derive(Resource)]
 struct Targets {

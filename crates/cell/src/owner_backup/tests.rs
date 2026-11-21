@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct Fixture, fn
+//   stopped_capture_preserves_source_history_wallet_and_excludes_snapshot_ratchets, fn
+//   unsafe_or_existing_destinations_are_refused_without_replacing_data, fn
+//   missing_or_mismatched_owner_material_never_publishes_an_archive.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use nucleus::social::{Command, PostDraft};
 use utils::owner_backup::{Passphrase, open_archive_into_staging};

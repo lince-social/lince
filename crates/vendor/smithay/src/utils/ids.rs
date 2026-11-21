@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: macro id_gen.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 macro_rules! id_gen {
     ($mod_name:ident) => {
         mod $mod_name {

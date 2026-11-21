@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct Profiles, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 64.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites create: String
+//   (55), read: String (14), save: String (69).
+
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,

@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn versions_form, fn proof_form, fn controls, fn render.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 90, 138.
+
 use super::*;
 use ui::{Command, button};
 

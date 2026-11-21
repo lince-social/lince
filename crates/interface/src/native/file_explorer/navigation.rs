@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: fn enter, fn navigate, fn keyboard.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 15, 19, 25, 65,
+//   149, 177, 191.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   149, 191.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (15, 17, 36, 40, 43, 134, 143, 195).
+
 use super::*;
 use crate::native::actions::Action;
 use bevy::input_focus::InputFocus;

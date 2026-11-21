@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Inspector, struct Open, fn open, struct Tree.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 45, 52, 155, 203,
+//   213, 239, 255, 264, 381, 382, 400, 436, 485, 486, 491, 505.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 426.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (45, 51, 126, 170, 213, 264, 455, 547, 572).
+
 use super::*;
 use crate::native::actions::Action;
 

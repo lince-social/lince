@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn inactive_camera_keeps_its_identity_but_does_not_admit_ui_extraction.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use bevy_app::HierarchyPropagatePlugin;
 use bevy_ecs::system::SystemState;

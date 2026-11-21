@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn command, fn a_saturated_public_revision_cache_still_accepts_the_owners_withdrawal.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use engine::{Engine, actions::Action};

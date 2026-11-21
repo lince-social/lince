@@ -1,7 +1,15 @@
-use super::*;
+// non-lean-yet
+// Scope: fn mapped_popup, fn
+//   destroying_only_the_popup_role_invalidates_window_snapshots_and_preserves_parent_content, fn
+//   the_first_parent_motion_after_a_popup_grab_ends_reaches_the_client_at_its_new_position, fn
+//   a_replacement_management_grab_survives_pointer_motion_after_the_popup_grab_ended.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use lince_interface::host::{
     ContentMapping, GeometrySnapshot, ItemGeometry, ItemId, Rectangle as CanvasRectangle,
 };
+
+use super::*;
 
 fn mapped_popup(
     harness: &mut Harness,

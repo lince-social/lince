@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct Pending, fn execute, fn complete, fn begin_record.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 251, 252, 257,
+//   403, 409, 423, 538, 539, 540, 546, 549, 570, 597, 603.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 260, 271.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (12, 17, 22, 29, 39, 46, 48, 58, 75, 107, 111, 128, 129, 145, 228, 242, 258, 278,
+//   514, 521, 524, 527, 537, 547, 568, 570, 581, 583, 591, 597, 601, 618, 625, 629).
+
 use super::*;
 use engine::actions::Action as CellAction;
 use serde_json::{Value, json};

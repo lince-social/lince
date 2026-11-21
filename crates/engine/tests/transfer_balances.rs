@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod support, fn balance, fn
+//   remaining_private_obligations_follow_partial_delivery_and_corrections, fn
+//   competing_promises_keep_shortages_and_private_policy_targets_separate.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 mod support;

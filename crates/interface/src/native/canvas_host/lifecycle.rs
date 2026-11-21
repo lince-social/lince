@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn spawn, fn restore_content.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 13, 345, 350,
+//   362, 367.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 74, 150,
+//   162, 190, 196, 211, 220, 232.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (291).
+
 use super::*;
 
 pub(crate) fn spawn(

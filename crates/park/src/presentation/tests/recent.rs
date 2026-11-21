@@ -1,8 +1,16 @@
-use super::shortcuts::{capture, click, key, settle};
-use super::transfers::output;
-use super::*;
-use lince_interface::host::{DesktopAction, HostRequest, OutputId, SurfaceId};
+// non-lean-yet
+// Scope: fn gesture, fn map, fn receive, fn focused.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::sync::mpsc::Receiver;
+
+use lince_interface::host::{DesktopAction, HostRequest, OutputId, SurfaceId};
+
+use super::{
+    shortcuts::{capture, click, key, settle},
+    transfers::output,
+    *,
+};
 
 fn gesture(canvas: &mut Presentation) {
     for (physical, pressed) in [
@@ -426,9 +434,7 @@ fn recent_window_keys_pointer_and_queued_monitor_commits_keep_native_drafts_and_
             .get::<UiGlobalTransform>(selected)
             .unwrap()
             .translation;
-        let clip = world
-            .get::<bevy::ui::CalculatedClip>(selected)
-            .unwrap();
+        let clip = world.get::<bevy::ui::CalculatedClip>(selected).unwrap();
         let clip = lince_interface::native::clipped_rect(
             Rect::from_corners(Vec2::ZERO, Vec2::new(size[0] as f32, size[1] as f32)),
             clip,

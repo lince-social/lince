@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn parse, struct Calendar, fn default_timezone, fn span.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 43.
+
 use chrono::{Datelike, NaiveDate};
 use serde::{Deserialize, Serialize};
 

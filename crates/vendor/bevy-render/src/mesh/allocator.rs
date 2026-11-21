@@ -1,3 +1,25 @@
+// non-lean-yet
+// Scope: struct MeshAllocatorPlugin, struct MeshAllocator, struct MeshAllocatorSettings, const
+//   MORPH_ATTRIBUTE_ELEMENT_LAYOUT.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 671, 1041, 1056.
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value. Sites
+//   532.
+// - [Clippy: clippy::trivially_copy_pass_by_ref] Consider a value parameter for small Copy inputs.
+//   Sites 733.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 91, 432, 449, 479, 490, 502, 671, 685.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   671.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 156.
+// - [Clippy: clippy::missing_assert_message] assert without any message. Sites 663, 667.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 34, 47, 67, 105, 139, 156, 181.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 69,
+//   408.
+
 //! Manages mesh vertex and index buffers.
 
 use alloc::borrow::Cow;

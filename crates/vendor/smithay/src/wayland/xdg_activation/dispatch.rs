@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: impl XdgActivationState, impl XdgActivationState, impl XdgActivationState.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 156, 158, 163.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (107, 119, 131, 146, 158).
+
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Mutex,

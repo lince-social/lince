@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Frame, struct Viewport, struct HiddenCard, struct FeedPlugin.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 178, 316, 337,
+//   343, 345.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (197, 335, 337, 342).
+
 use crate::native::{
     area::InfluenceArea, canvas::CanvasItem, protein_area::Config, workspace::WorkspaceMember,
 };

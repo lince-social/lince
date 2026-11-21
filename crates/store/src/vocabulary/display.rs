@@ -1,7 +1,23 @@
+// non-lean-yet
+// Scope: struct DisplayTerm, struct SourceName, fn display_names, fn display_terms.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value. Sites
+//   65.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 63.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 59, 73, 89.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   98.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 19.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 19.
+
+use std::collections::{HashMap, HashSet};
+
+use sqlx::{Row, SqlitePool};
+
 use super::{language_tag, preferences};
 use crate::StoreError;
-use sqlx::{Row, SqlitePool};
-use std::collections::{HashMap, HashSet};
 
 struct DisplayTerm {
     uid: String,

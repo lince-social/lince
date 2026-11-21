@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Form, enum Command, fn button, fn render.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 43, 46, 135, 181,
+//   206, 211, 220, 259, 260.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (43, 44, 135, 151, 162).
+
 use super::*;
 use nucleus::simulation::sharing::{Assumption, Kind, SelectedResult, Shared};
 use simulation::scenario::Event;

@@ -1,8 +1,31 @@
-use nucleus::plugins::{
-    Contribution, MAX_BYTES, Manifest, PROTOCOL, Package, RpcRequest, RpcResponse,
-};
-use serde_json::{Value, json};
-use sha2::{Digest, Sha256};
+// non-lean-yet
+// Scope: mod packages, fn serve, struct Installed, struct Snapshot.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 125, 492, 603.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   330, 338, 348, 359, 366, 380, 398.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 227, 230, 249,
+//   251, 286, 304, 335, 339, 373, 374, 395, 437, 440, 444, 445.
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites discover:directory → &Path (151).
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   426, 438.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   312, 333, 341, 352, 360, 369, 384, 409, 429.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   38, 69, 73, 109, 139, 189, 211, 443, 487, 556, 560, 563, 594.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 24, 151, 338, 380, 398, 588.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 95.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 1, 24,
+//   95, 151, 330, 338, 348, 359, 366, 380, 398, 588.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites call: String
+//   (398), contribution: String (380), discover: String (151), read_frame: String (588), reload:
+//   String (338), serve: String (24).
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (344).
+
 use std::{
     collections::BTreeMap,
     io::Read,
@@ -11,6 +34,12 @@ use std::{
     sync::{Arc, RwLock},
     time::Duration,
 };
+
+use nucleus::plugins::{
+    Contribution, MAX_BYTES, Manifest, PROTOCOL, Package, RpcRequest, RpcResponse,
+};
+use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 use tokio::{
     io::{AsyncBufRead, AsyncBufReadExt, AsyncWriteExt, BufReader},
     process::{Child, ChildStdin, ChildStdout},
@@ -338,7 +367,10 @@ impl Host {
     pub async fn reload(&self) -> Result<(), String> {
         let fresh = Self::discover(self.directory.clone()).await?;
         self.stop_all();
-        *self.snapshot.write().expect("the plugin package snapshot must be intact") = fresh
+        *self
+            .snapshot
+            .write()
+            .expect("the plugin package snapshot must be intact") = fresh
             .snapshot
             .into_inner()
             .expect("the newly discovered package snapshot has no other writer");
@@ -357,7 +389,10 @@ impl Host {
     }
 
     pub fn stop_all(&self) {
-        let mut sessions = self.sessions.lock().expect("the plugin session registry must be intact");
+        let mut sessions = self
+            .sessions
+            .lock()
+            .expect("the plugin session registry must be intact");
         for (_, session) in std::mem::take(&mut *sessions) {
             session.cancelled.cancel();
         }
@@ -381,7 +416,10 @@ impl Host {
         let (id, name) = qualified
             .split_once('/')
             .ok_or("Choose a plugin contribution")?;
-        let snapshot = self.snapshot.read().expect("the plugin package snapshot must be intact");
+        let snapshot = self
+            .snapshot
+            .read()
+            .expect("the plugin package snapshot must be intact");
         let installed = snapshot
             .installed
             .get(id)

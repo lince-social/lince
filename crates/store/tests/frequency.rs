@@ -1,9 +1,15 @@
+// non-lean-yet
+// Scope: fn store, fn at, fn daily, fn new.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use chrono::{DateTime, Utc};
 use nucleus::karma::CadenceStep;
-use store::Store;
-use store::frequency::{NewFrequency, all, create, delete, resolve};
+use store::{
+    Store,
+    frequency::{NewFrequency, all, create, delete, resolve},
+};
 
 async fn store() -> Store {
     let path =

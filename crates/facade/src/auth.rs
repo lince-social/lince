@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: type Failure, struct Auth, struct BrowserSession, fn refused.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 143.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 71, 111.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 95.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 71, 111.
+
 use std::{collections::HashMap, sync::Arc};
 
 use axum::{

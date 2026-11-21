@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn relayed_facts_keep_original_signatures_and_correction_evidence.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use engine::{Engine, sync::OpBatch, trust::Signer};
 use nucleus::{Cause, CauseKind, NewFact, RecordKind};
 

@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: const CREDITS, struct ScanTarget, fn code, struct Copy.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 75.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 136, 183.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (238).
+
 use super::*;
 
 pub(super) const CREDITS: &[crate::native::credits::Attribution] = &[

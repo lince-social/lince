@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn pending, fn pending_creation_has_visible_status_and_metadata_but_no_query_or_editors,
+//   fn creation_retry_uses_the_normal_control_once_without_subscribing_or_retargeting, fn
+//   captured_pending_creation_survives_serialization_and_cannot_query_after_runtime_state_is_lost.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 11, 19.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (18).
+
 use super::*;
 use crate::native::full_record::window::{Creation, CreationState, WindowRecord};
 use bevy::text::EditableText;

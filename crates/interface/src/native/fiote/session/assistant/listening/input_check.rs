@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct Checking, struct Check, fn inspect, fn cancel.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 25, 49, 84.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (84).
+
 use super::*;
 
 #[derive(Component)]

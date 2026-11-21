@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn firmware_identity_preserves_keys_and_refuses_corrupt_or_interrupted_storage.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::{env, path::PathBuf, process::Command};
 
 #[test]

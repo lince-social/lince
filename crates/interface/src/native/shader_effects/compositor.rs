@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod tests, struct Settings, enum Kind, enum Edit.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 131, 208, 397.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (258, 410).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (272, 358, 400).
+
 use super::{Action, ShaderSettings};
 use bevy::{
     ecs::entity_disabling::Disabled,

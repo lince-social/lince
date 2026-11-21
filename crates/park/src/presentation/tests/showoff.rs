@@ -1,8 +1,14 @@
-use super::*;
+// non-lean-yet
+// Scope: fn showoff_exercises_rendering_assets_camera_editing_tiling_and_persistence, fn
+//   overview_case, fn capture, fn descendant.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use lince_interface::{
     host::{DesktopAction, WorkspaceLayout},
     native::actions::Action,
 };
+
+use super::*;
 
 #[test]
 #[ignore = "requires hardware Vulkan and EGL"]
@@ -44,27 +50,40 @@ fn showoff_exercises_rendering_assets_camera_editing_tiling_and_persistence() {
         .outputs(vec![
             Output {
                 name: "Showoff-1".into(),
-                viewport: lince_interface::host::OutputViewport { rotation: Default::default(),
+                viewport: lince_interface::host::OutputViewport {
+                    rotation: Default::default(),
                     id: lince_interface::host::OutputId(1),
                     bounds: lince_interface::host::Rectangle::new([0.0; 2], [1280.0, 720.0])
                         .unwrap(),
                     usable: lince_interface::host::Rectangle::new([0.0; 2], [1280.0, 720.0]),
                     physical_size: [1280, 720],
-                    raster: lince_interface::host::raster::RasterMapping { origin: (lince_interface::host::Rectangle::new([0.0; 2], [1280.0, 720.0])
-                        .unwrap()).origin(), scale: [1.0; 2] },
+                    raster: lince_interface::host::raster::RasterMapping {
+                        origin: (lince_interface::host::Rectangle::new([0.0; 2], [1280.0, 720.0])
+                            .unwrap())
+                        .origin(),
+                        scale: [1.0; 2],
+                    },
                     workspace: 1,
                 },
             },
             Output {
                 name: "Showoff-2".into(),
-                viewport: lince_interface::host::OutputViewport { rotation: Default::default(),
+                viewport: lince_interface::host::OutputViewport {
+                    rotation: Default::default(),
                     id: lince_interface::host::OutputId(2),
                     bounds: lince_interface::host::Rectangle::new([1280.0, 0.0], [800.0, 600.0])
                         .unwrap(),
                     usable: lince_interface::host::Rectangle::new([1280.0, 0.0], [800.0, 600.0]),
                     physical_size: [800, 600],
-                    raster: lince_interface::host::raster::RasterMapping { origin: (lince_interface::host::Rectangle::new([1280.0, 0.0], [800.0, 600.0])
-                        .unwrap()).origin(), scale: [1.0; 2] },
+                    raster: lince_interface::host::raster::RasterMapping {
+                        origin: (lince_interface::host::Rectangle::new(
+                            [1280.0, 0.0],
+                            [800.0, 600.0],
+                        )
+                        .unwrap())
+                        .origin(),
+                        scale: [1.0; 2],
+                    },
                     workspace: 2,
                 },
             },
@@ -492,7 +511,10 @@ fn showoff_exercises_rendering_assets_camera_editing_tiling_and_persistence() {
         .unwrap()
         .center = position;
     let frame = super::shortcuts::settle(&mut canvas);
-    capture("before-note-drag", &probe_pixels(frame.dmabuf().unwrap()).unwrap());
+    capture(
+        "before-note-drag",
+        &probe_pixels(frame.dmabuf().unwrap()).unwrap(),
+    );
     let corners =
         native::topology::presentation::projected_corners(canvas.app.world(), note).unwrap();
     let point = [0.5, 0.25, 0.75, 0.1, 0.9]
@@ -933,7 +955,11 @@ fn overview_case(canvas: &mut Presentation, root: Entity, workspace: u64, model:
         .size()
         .as_vec2();
     let point = origin + point / image_size * node.size();
-    assert!(origin.y >= 0.0 && origin.y + node.size().y <= 720.0, "The current workspace preview was not fully revealed: {origin:?}, {:?}", node.size());
+    assert!(
+        origin.y >= 0.0 && origin.y + node.size().y <= 720.0,
+        "The current workspace preview was not fully revealed: {origin:?}, {:?}",
+        node.size()
+    );
     let rectangle = Rect::from_center_size(point, Vec2::splat(24.0));
     let pixels = probe_pixels(frame.dmabuf().unwrap()).unwrap();
     let colored = pixels

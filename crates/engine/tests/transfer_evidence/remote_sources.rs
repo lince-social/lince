@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod workflow, struct Remote, fn
+//   three_organs_exchange_remote_need_reports_without_foreign_canonical_state_or_private_mappings,
+//   fn reviewed_remote_correction_becomes_a_fragment_after_the_complete_bundle_is_full.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 526, 686,
+//   772, 873, 881, 899, 1123, 1157.
+
 use super::published_events::{action, document, import, request, reviewed};
 use super::*;
 #[path = "workflow.rs"]

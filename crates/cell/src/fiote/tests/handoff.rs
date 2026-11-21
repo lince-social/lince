@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct RoutingProvider, fn child, fn
+//   handoff_actual_native_tools_launch_child_preserve_attribution_attachments_and_receipts, fn
+//   handoff_refuses_cycles_forged_sources_disabled_targets_and_remote_tools.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 209, 351, 361.
+
 use super::*;
 use base64::Engine as _;
 use fiote::assistant::{Delegate, Source};

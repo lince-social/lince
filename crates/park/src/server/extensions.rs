@@ -1,11 +1,16 @@
-use super::*;
+// non-lean-yet
+// Scope: impl State, impl State, impl State.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use smithay::{
     input::pointer::RelativeMotionEvent,
     wayland::keyboard_shortcuts_inhibit::{
-        KeyboardShortcutsInhibitHandler, KeyboardShortcutsInhibitState,
-        KeyboardShortcutsInhibitor, KeyboardShortcutsInhibitorSeat,
+        KeyboardShortcutsInhibitHandler, KeyboardShortcutsInhibitState, KeyboardShortcutsInhibitor,
+        KeyboardShortcutsInhibitorSeat,
     },
 };
+
+use super::*;
 
 impl KeyboardShortcutsInhibitHandler for State {
     fn keyboard_shortcuts_inhibit_state(&mut self) -> &mut KeyboardShortcutsInhibitState {
@@ -14,7 +19,10 @@ impl KeyboardShortcutsInhibitHandler for State {
 
     fn new_inhibitor(&mut self, inhibitor: KeyboardShortcutsInhibitor) {
         if self.shortcut_inhibitors.len() >= MAX_SURFACES {
-            self.reject(inhibitor.wl_surface(), "Park shortcut inhibitor limit reached");
+            self.reject(
+                inhibitor.wl_surface(),
+                "Park shortcut inhibitor limit reached",
+            );
             return;
         }
         self.shortcut_inhibitors.push(inhibitor);
@@ -22,22 +30,37 @@ impl KeyboardShortcutsInhibitHandler for State {
     }
 
     fn inhibitor_destroyed(&mut self, inhibitor: KeyboardShortcutsInhibitor) {
-        self.shortcut_inhibitors.retain(|existing| existing != &inhibitor);
+        self.shortcut_inhibitors
+            .retain(|existing| existing != &inhibitor);
     }
 }
 
 impl State {
     pub(super) fn update_surface_scale(&self, surface: &WlSurface) {
         let root = self.input_root(surface);
-        let output = root.as_ref().and_then(|root| {
-            self.layers.outputs.get(root).copied().or_else(|| {
-                let id = self.id(root)?;
-                self.presented_geometry.as_ref()?.items.iter()
-                    .find(|item| item.id == lince_interface::host::ItemId::Application(id))
-                    .map(|item| item.output)
+        let output = root
+            .as_ref()
+            .and_then(|root| {
+                self.layers.outputs.get(root).copied().or_else(|| {
+                    let id = self.id(root)?;
+                    self.presented_geometry
+                        .as_ref()?
+                        .items
+                        .iter()
+                        .find(|item| item.id == lince_interface::host::ItemId::Application(id))
+                        .map(|item| item.output)
+                })
             })
-        }).and_then(|id| self.outputs.get(&id)).map(|output| &output.output)
-            .or_else(|| self.lock.surfaces.iter().find(|(_, lock)| lock.wl_surface() == surface).and_then(|(id, _)| self.outputs.get(id)).map(|output| &output.output))
+            .and_then(|id| self.outputs.get(&id))
+            .map(|output| &output.output)
+            .or_else(|| {
+                self.lock
+                    .surfaces
+                    .iter()
+                    .find(|(_, lock)| lock.wl_surface() == surface)
+                    .and_then(|(id, _)| self.outputs.get(id))
+                    .map(|output| &output.output)
+            })
             .unwrap_or(&self.output);
         with_states(surface, |states| {
             smithay::wayland::fractional_scale::with_fractional_scale(states, |fractional| {
@@ -48,12 +71,17 @@ impl State {
 
     pub(super) fn update_surface_scales(&self) {
         for surface in &self.surfaces {
-            if surface.is_alive() { self.update_surface_scale(surface); }
+            if surface.is_alive() {
+                self.update_surface_scale(surface);
+            }
         }
     }
 
     pub(super) fn refresh_shortcut_inhibitors(&mut self) {
-        let focus = self.seat.get_keyboard().and_then(|keyboard| keyboard.current_focus());
+        let focus = self
+            .seat
+            .get_keyboard()
+            .and_then(|keyboard| keyboard.current_focus());
         self.update_shortcut_focus(focus.as_ref());
     }
 
@@ -61,7 +89,8 @@ impl State {
         if self.controls_suppressed.as_ref() != focus {
             self.controls_suppressed = None;
         }
-        self.shortcut_inhibitors.retain(|inhibitor| inhibitor.wl_surface().is_alive());
+        self.shortcut_inhibitors
+            .retain(|inhibitor| inhibitor.wl_surface().is_alive());
         for inhibitor in &self.shortcut_inhibitors {
             let active = self.lock.owner.is_none()
                 && focus == Some(inhibitor.wl_surface())
@@ -88,21 +117,43 @@ impl Server {
     }
 
     pub fn relative_motion(&mut self, delta: [f64; 2], unaccelerated: [f64; 2], time: u64) {
-        if self.locked() || !delta.iter().chain(&unaccelerated).all(|value| value.is_finite()) {
+        if self.locked()
+            || !delta
+                .iter()
+                .chain(&unaccelerated)
+                .all(|value| value.is_finite())
+        {
             return;
         }
-        let Some(pointer) = self.state.seat.get_pointer() else { return };
-        let Some(surface) = pointer.current_focus() else { return };
+        let Some(pointer) = self.state.seat.get_pointer() else {
+            return;
+        };
+        let Some(surface) = pointer.current_focus() else {
+            return;
+        };
         let root = self.state.input_root(&surface);
-        let keyboard = self.state.seat.get_keyboard().and_then(|keyboard| keyboard.current_focus());
-        if root.is_none() || root != keyboard.as_ref().and_then(|surface| self.state.input_root(surface)) {
+        let keyboard = self
+            .state
+            .seat
+            .get_keyboard()
+            .and_then(|keyboard| keyboard.current_focus());
+        if root.is_none()
+            || root
+                != keyboard
+                    .as_ref()
+                    .and_then(|surface| self.state.input_root(surface))
+        {
             return;
         }
-        pointer.relative_motion(&mut self.state, Some((surface, (0.0, 0.0).into())), &RelativeMotionEvent {
-            delta: (delta[0], delta[1]).into(),
-            delta_unaccel: (unaccelerated[0], unaccelerated[1]).into(),
-            utime: time,
-        });
+        pointer.relative_motion(
+            &mut self.state,
+            Some((surface, (0.0, 0.0).into())),
+            &RelativeMotionEvent {
+                delta: (delta[0], delta[1]).into(),
+                delta_unaccel: (unaccelerated[0], unaccelerated[1]).into(),
+                utime: time,
+            },
+        );
         pointer.frame(&mut self.state);
     }
 }

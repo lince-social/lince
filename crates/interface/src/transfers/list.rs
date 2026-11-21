@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn filtered, fn filtered_ref, struct Hierarchy, fn depth.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 76.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   filtered:mine (8), filtered_ref:mine (17).
+
 use super::{display_ref, facet, status_ref, title_ref};
 use serde_json::Value;
 use std::{

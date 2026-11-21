@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: struct Automation, fn quote, fn block, fn switch.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 138, 163, 179,
+//   202, 236, 304, 309, 319, 328, 335, 367, 378, 385, 396, 400, 425, 435, 446, 448, 512, 527, 540,
+//   544, 547, 582, 593, 595.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 107.
+// - [Clippy probe: clippy::format_push_string] `format!(..)` appended to existing `String`. Sites
+//   48, 55, 57, 65, 70, 75, 78, 85, 90, 93, 96, 98.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option`
+//   value. Sites 220.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+// - [rustc probe: unreachable_pub] unreachable `pub` item. Sites 14, 21, 45.
+
 use super::*;
 use anicca::{ProjectedFrequency, ProjectedRule};
 use chrono::{DateTime, Utc};

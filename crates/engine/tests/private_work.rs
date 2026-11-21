@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn parse, fn log, fn missing_and_null_optional_values_remain_unset, fn
+//   exact_calendar_dates_and_estimate_are_typed.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 8.
+
 use chrono::{DateTime, NaiveDate};
 use engine::private_work::{
     MAX_ESTIMATE_MINUTES, MAX_WORK_BYTES, MAX_WORK_LOGS, MAX_WORK_TIMESTAMP_BYTES, WorkError,

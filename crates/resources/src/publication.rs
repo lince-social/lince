@@ -1,16 +1,30 @@
+// non-lean-yet
+// Scope: mod audit, mod export, mod load, fn required.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 90, 92, 118, 128.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 81.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 22, 23,
+//   25, 27, 32, 33, 34, 35, 40, 41, 42, 43, 44, 49, 50, 51, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64,
+//   65, 66, 70, 71, 72, 73, 74, 75, 76, 77, 81.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   117, 127.
+
 mod audit;
 pub use audit::Audit;
 mod export;
 mod load;
 
-use crate::{
-    Library, RESOURCE_NAMESPACE, Resource, Result, SOURCE_NAMESPACE, address, fingerprint, resolve,
-};
-use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs,
     path::Path,
+};
+
+use serde::{Deserialize, Serialize};
+
+use crate::{
+    Library, RESOURCE_NAMESPACE, Resource, Result, SOURCE_NAMESPACE, address, fingerprint, resolve,
 };
 
 fn required() -> bool {

@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: static OBSERVER, static MEASUREMENT, static QUERIES, static REUSES.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 31, 297, 362.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 31, 297, 362.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 116, 180, 194, 224, 401, 402, 529.
+// - [Clippy probe: clippy::implicit_clone] Make an intentional owned clone explicit. Sites 176,
+//   393.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 91, 294,
+//   357, 680.
+
 #![cfg(test)]
 
 use engine::Engine;

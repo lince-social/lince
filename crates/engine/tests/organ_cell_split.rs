@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn cell, fn two_cells_of_one_organ_mint_distinct_op_identities, fn
+//   a_local_write_carries_both_identities, fn a_record_cannot_be_stored_without_an_origin.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 260.
+
 use engine::Engine;
 use engine::sync::{OpBatch, WireOp};
 use engine::trust::Signer;

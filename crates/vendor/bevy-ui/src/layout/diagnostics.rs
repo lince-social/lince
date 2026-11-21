@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct UiLayoutDiagnostics, struct UiLayoutReading.
+// BeautifulRust (baseline lines):
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 5, 8.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 8,
+//   9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26.
+
 use bevy_ecs::resource::Resource;
 use std::time::Duration;
 

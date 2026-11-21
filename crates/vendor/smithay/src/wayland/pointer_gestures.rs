@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: const MANAGER_VERSION, struct WpPointerGesturePointerHandle, struct
+//   PointerGestureUserData, struct PointerGesturesState.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 183, 240, 297,
+//   335, 348, 357, 397, 423, 425, 435, 437, 447, 449.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (138, 142, 146, 151, 152, 159, 160, 167, 168, 182, 183, 198, 199, 218, 219, 239,
+//   240, 255, 256, 275, 276, 296, 297, 312, 313, 332, 345, 354, 421, 433, 445, 510, 548, 586).
+
 //! Utilities for pointer gestures support
 //!
 //! This protocol allows clients to receive touchpad gestures. Use the following methods to send

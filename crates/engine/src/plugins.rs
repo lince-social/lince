@@ -1,3 +1,27 @@
+// non-lean-yet
+// Scope: mod document, mod sync, fn invalid, fn catalog_availability.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 136.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 120.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   43, 45, 55, 56.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 87, 88, 188, 229, 230, 359, 394, 472.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 87, 88, 229, 230.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 43, 45, 55, 56, 99, 340.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 120.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option`
+//   value. Sites 202.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 114, 180, 244.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 92.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   114, 180, 244.
+
 mod document;
 mod sync;
 

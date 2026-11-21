@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn fixture, fn
+//   request_requires_a_host_and_cancel_restores_the_same_draft_focus_camera_and_workspace, fn
+//   queue_failure_keeps_the_modal_and_retry_queues_one_confirmed_logout, fn
+//   stale_confirmation_cannot_redirect_to_a_new_dialog_or_restore_a_departed_workspace_field.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::actions::ActionButton;
 

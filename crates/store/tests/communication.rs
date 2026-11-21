@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: fn tag_record, fn conversation, fn post_message, fn
+//   tag_listing_orders_by_newest_activity_with_preview_and_participants.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 131, 132, 135, 139, 143, 144, 172, 278.
+// - [Clippy: clippy::field_reassign_with_default] field assignment outside of initializer for an
+//   instance created with Default::default(). Sites 223.
+// - [Clippy: clippy::needless_borrows_for_generic_args] the borrowed expression implements the
+//   required traits. Sites 190.
+
 #![cfg(test)]
 
 use nucleus::RecordKind;

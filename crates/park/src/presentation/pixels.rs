@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: enum Sync, struct Retained.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 56, 67.
+
 use super::*;
 
 #[derive(Debug, Eq, PartialEq)]

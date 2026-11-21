@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn mount, fn store_entry, fn command, fn download.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 71, 287, 343,
+//   344, 352, 481, 496, 497, 498, 535, 537, 549, 614, 639, 675, 718, 760, 804, 939, 987, 1058,
+//   1122.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 492.
+
 use super::*;
 use bevy::{
     picking::events::{PointerClick, PointerDrag, PointerDragEnd, PointerDragStart, PointerScroll},

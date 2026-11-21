@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: struct ProgramNodeStateRow, struct ProgramStateEventRow, fn get_node_state, fn
+//   list_node_states.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 173, 191, 276, 280.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 168.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   269, 273.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 28, 42, 54.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 10, 11,
+//   12, 13, 14, 15, 16, 17, 18, 22, 23, 24, 25, 28, 42, 54.
+
 use nucleus::karma::{
     CanonicalHash, LocalId, PersistedProgramNodeState, ProgramStateEvent, canonical_json_bytes,
 };

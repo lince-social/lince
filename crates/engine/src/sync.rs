@@ -1,3 +1,35 @@
+// non-lean-yet
+// Scope: struct WireOp, struct OpBatch, fn outgoing_pages, struct Introduction.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 43, 156, 191,
+//   471, 605, 606, 626, 733, 767, 847, 884, 910, 985, 986, 989, 994, 997, 1025, 1125, 1128, 1213,
+//   1237, 1252, 1297, 1305, 1316, 1401, 1404, 1405, 1408, 1490, 1504, 1511, 1521, 1544, 1549, 1596,
+//   1716.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   prune_op_log:dry_run (1379).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   1125, 1127, 1128.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 1321.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 67, 68, 72,
+//   184, 315, 327, 329, 375, 382, 571, 657.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 1104.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 79, 1125, 1127, 1128.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value.
+//   Sites 109.
+// - [Clippy probe: clippy::match_same_arms] these match arms have identical bodies. Sites 1480,
+//   1481.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 58, 100, 116, 154, 175, 266, 1057, 1071, 1111, 1379, 1383, 1415, 1465.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 1451, 1459.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   9, 10, 11, 12, 13, 14, 15, 16, 17, 19, 23, 24, 25, 58, 100, 116, 154, 175, 266, 1048, 1049,
+//   1050, 1051, 1052, 1053, 1057, 1071, 1093, 1094, 1095, 1096, 1097, 1098, 1099, 1100, 1104, 1105,
+//   1106, 1107, 1111, 1379, 1383, 1415, 1451, 1452, 1453, 1454, 1455, 1459, 1460, 1461, 1465.
+
 use nucleus::{Cause, CauseKind, Fact, NewFact};
 use serde::{Deserialize, Serialize};
 use store::sync_ops::{self, OpKind, OpRow};

@@ -1,3 +1,31 @@
+// non-lean-yet
+// Scope: struct SparseBufferPlugin, struct SparseBufferId, type SparseBufferHandle, static
+//   NEXT_SPARSE_BUFFER_ID.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 535, 550, 558, 695, 922, 924, 930, 932, 947, 949, 960, 1150, 1160, 1229, 1243.
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 660.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 305, 843.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 349, 391, 499, 513, 535, 550, 556, 558, 560, 561, 601, 606, 607, 692, 699, 707, 718, 883,
+//   904, 914, 915, 928, 947, 949, 959, 1064, 1078, 1110, 1111, 1146, 1149, 1157, 1192, 1194, 1200,
+//   1204, 1211, 1212, 1214, 1229, 1243, 1256, 1257, 1264.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   349, 499, 513, 556, 601, 707, 1078, 1111, 1204, 1214, 1264.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 1111.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   761, 1012.
+// - [Clippy: clippy::missing_assert_message] assert without any message. Sites 487, 716, 871, 1076.
+// - [Clippy: clippy::uninlined_format_args] variables can be used directly in the `format!` string.
+//   Sites 335, 338, 1019.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 198.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 45, 120, 133, 144, 152, 155, 425.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 254,
+//   835.
+
 //! GPU buffers that support sparse updates if only a small number of elements
 //! have changed.
 

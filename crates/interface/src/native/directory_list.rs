@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Picking, fn create, fn paths, struct Browse.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (38).
+
 use crate::native::actions::Action;
 use bevy::{prelude::*, text::EditableText};
 use std::{

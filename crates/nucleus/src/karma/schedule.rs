@@ -1,3 +1,28 @@
+// non-lean-yet
+// Scope: struct RationalRate, struct RationalRateWire, fn gcd, struct TimerPolicy.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   288, 325, 407.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 356, 371, 374,
+//   385, 417.
+// - [Clippy: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably fires.
+//   Sites 234.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 244, 671.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 188, 198, 206, 216, 757.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   289, 335, 344, 364, 377, 425, 506, 533, 808.
+// - [Clippy: clippy::manual_let_else] this could be rewritten as `let...else`. Sites 797.
+// - [Clippy: clippy::match_same_arms] these match arms have identical bodies. Sites 451, 462.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 14, 114, 235, 292, 300, 308, 325, 407, 442, 666, 697.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 8, 14,
+//   27, 31, 35, 47, 107, 114, 136, 140, 144, 188, 189, 190, 191, 192, 198, 199, 200, 206, 207, 208,
+//   209, 210, 216, 217, 218, 219, 223, 235, 260, 264, 268, 272, 276, 280, 284, 288, 292, 300, 308,
+//   325, 407, 442, 586, 606, 610, 659, 666, 685, 689, 693, 697, 757, 758, 759, 763, 764, 765, 767,
+//   769, 770, 771, 772, 773, 774, 778, 779, 781, 785, 786, 787, 791, 792, 793.
+
 use std::{cmp::Ordering, num::NonZeroU32};
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
@@ -231,7 +256,10 @@ pub struct ElapsedSchedule {
 }
 
 impl ElapsedSchedule {
-    #[allow(clippy::too_many_arguments, reason = "Schedule construction takes the explicit recurrence parameters")]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "Schedule construction takes the explicit recurrence parameters"
+    )]
     pub fn new(
         anchor: TimestampMs,
         interval_ms: u64,

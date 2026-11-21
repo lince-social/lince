@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct Declaration, struct Configuration, struct Changed, fn declare.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 90, 102, 120,
+//   128, 156, 189, 221, 255, 262.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   36.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (150, 220).
+
 use crate::native::actions::Action;
 use bevy::prelude::*;
 pub use lince_interface::settings::{Control, Definition, Value, Values};

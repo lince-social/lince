@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: impl Engine.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 126, 159, 162,
+//   346, 576, 662, 844, 846, 910, 976, 1036, 1077, 1084.
+
 use super::*;
 
 impl Engine {

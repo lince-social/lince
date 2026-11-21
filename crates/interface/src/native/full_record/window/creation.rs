@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct WindowRecord, enum CreationState, struct Creation, fn restore.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 47, 48, 49.
+
 use super::*;
 use serde::{Deserialize, Serialize};
 

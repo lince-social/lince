@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct Preparation.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 56, 87.
+
 use super::*;
 use crate::host::performance::{self, Count, Stage};
 use std::collections::HashSet;

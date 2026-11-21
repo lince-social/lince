@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: mod controls, mod description, mod maintenance, struct View.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (81).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (31).
+
 use super::*;
 use crate::native::edit_mode::label;
 

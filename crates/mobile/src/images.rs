@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: enum Status, struct Job, struct Images, fn synchronize.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 52, 57, 78, 83,
+//   95, 107, 149, 168.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites request: String
+//   (39).
+
 use bevy::prelude::*;
 use std::{
     collections::BTreeMap,

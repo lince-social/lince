@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn clock_task, fn clock_ready, fn
+//   estimate_edits_refresh_existing_and_future_occurrences_without_replaying_effects, fn
+//   clock_entries.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use std::sync::{Arc, atomic::Ordering};

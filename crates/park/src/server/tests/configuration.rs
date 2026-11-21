@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn hidden_preview_rectangles_do_not_resize_a_live_wayland_client.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[test]

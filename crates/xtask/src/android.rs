@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Options, fn value, fn identifier, fn dispatch.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 159.
+// - [review: §3 Ownership] Check whether the borrowed container can expose a narrower view. Sites
+//   identifier:value → &OsStr (87).
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 265.
+
 use std::{
     env,
     ffi::OsString,
@@ -363,7 +371,7 @@ fn manager(sdk: &Path, name: &str) -> Result<PathBuf> {
                 root.display()
             )
         })?
-        .filter_map(|e| e.ok())
+        .filter_map(std::result::Result::ok)
         .map(|e| e.path().join("bin").join(&filename))
         .filter(|p| p.is_file())
         .collect();
@@ -444,10 +452,10 @@ fn emulators(devices: &str) -> Vec<&str> {
 fn running_avd(adb: &Path, avd: &str) -> Result<Option<String>> {
     let devices = output(Command::new(adb).arg("devices"))?;
     for serial in emulators(&devices) {
-        if let Ok(name) = output(Command::new(adb).args(["-s", serial, "emu", "avd", "name"])) {
-            if name.lines().next().map(str::trim) == Some(avd) {
-                return Ok(Some(serial.into()));
-            }
+        if let Ok(name) = output(Command::new(adb).args(["-s", serial, "emu", "avd", "name"]))
+            && name.lines().next().map(str::trim) == Some(avd)
+        {
+            return Ok(Some(serial.into()));
         }
     }
     Ok(None)

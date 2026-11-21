@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: struct AdminBootstrap, fn ensure_admin, fn prompt_admin_credentials, fn prompt_username.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 17.
+// - [Clippy probe: clippy::print_stdout] Check CLI, Cargo, fixture, or library output contract
+//   before changing output. Sites 76, 86, 102, 107, 116, 126, 131, 136, 142.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 11.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   11, 12, 13, 14, 17.
+
 use std::io::{self, IsTerminal, Write};
 
 use crossterm::{

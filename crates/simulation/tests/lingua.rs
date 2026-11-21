@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn package, fn
+//   lingua_packages_ingest_real_rules_preserve_sources_and_replay_without_the_originals, fn
+//   invalid_or_unsupported_packages_never_record_a_passing_run, fn
+//   packages_reject_escaping_paths_duplicates_and_empty_directories.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use nucleus::simulation::{ArtifactError, Observation, ReplayStatus, Verdict};

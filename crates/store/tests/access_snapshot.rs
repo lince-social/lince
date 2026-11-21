@@ -1,14 +1,25 @@
+// non-lean-yet
+// Scope: fn record, fn metadata, fn local_organ, fn metadata_is_complete_without_record_bodies.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::get_unwrap] Check bounds and preserve the lookup failure contract. Sites 271.
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 281, 284, 286, 458, 459, 460.
+// - [Clippy: clippy::field_reassign_with_default] field assignment outside of initializer for an
+//   instance created with Default::default(). Sites 214, 696, 699, 702, 705, 708, 711, 714, 717,
+//   720, 723, 726, 729, 742, 751, 760, 769.
+
 #![cfg(test)]
 
-use std::collections::BTreeSet;
-use std::sync::Arc;
+use std::{collections::BTreeSet, sync::Arc};
 
 use nucleus::{DecimalValue, RecordKind};
 use serde_json::json;
-use store::Store;
-use store::access_snapshot::{
-    AccessSnapshotLimits, AssertionRole, LinguaVisibility, VisibilityGrant, VisibilitySubject,
-    VisibilityTarget,
+use store::{
+    Store,
+    access_snapshot::{
+        AccessSnapshotLimits, AssertionRole, LinguaVisibility, VisibilityGrant, VisibilitySubject,
+        VisibilityTarget,
+    },
 };
 
 async fn record(

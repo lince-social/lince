@@ -1,5 +1,11 @@
-use super::*;
+// non-lean-yet
+// Scope: struct Observed, fn watch, fn quiet, fn
+//   stationary_file_edge_scroll_reaches_its_real_limit_and_cancels_without_late_wakes.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::sync::Mutex;
+
+use super::*;
 
 #[derive(Clone, Copy, Debug)]
 struct Observed {
@@ -17,15 +23,26 @@ fn watch(world: &mut World, observed: Arc<Mutex<Option<Observed>>>) {
         .unwrap()
         .add_systems(
             (move |world: &mut World| {
-                let pointer = world.query_filtered::<&Window, With<bevy::window::PrimaryWindow>>().iter(world)
-                    .next().and_then(Window::cursor_position).map(|point| point.to_array());
+                let pointer = world
+                    .query_filtered::<&Window, With<bevy::window::PrimaryWindow>>()
+                    .iter(world)
+                    .next()
+                    .and_then(Window::cursor_position)
+                    .map(|point| point.to_array());
                 let value = world
-                    .query::<(&ScrollPosition, &ComputedNode, &UiGlobalTransform, &ChildOf, &Name)>()
+                    .query::<(
+                        &ScrollPosition,
+                        &ComputedNode,
+                        &UiGlobalTransform,
+                        &ChildOf,
+                        &Name,
+                    )>()
                     .iter(world)
                     .find_map(|(position, node, transform, parent, name)| {
-                        if name.as_str() != "desktop.overview.workspaces" || !world
-                            .get::<Name>(parent.parent())
-                            .is_some_and(|name| name.as_str() == "desktop.overview")
+                        if name.as_str() != "desktop.overview.workspaces"
+                            || !world
+                                .get::<Name>(parent.parent())
+                                .is_some_and(|name| name.as_str() == "desktop.overview")
                         {
                             return None;
                         }
@@ -187,7 +204,8 @@ fn stationary_file_edge_scroll_reaches_its_real_limit_and_cancels_without_late_w
         }
         assert!(
             Instant::now() < deadline,
-            "The replacement drag did not scroll in the opposite direction after {serial}: initial={initial:?}, clamped={clamped:?}, current={current:?}, pointer={:?}", current.pointer
+            "The replacement drag did not scroll in the opposite direction after {serial}: initial={initial:?}, clamped={clamped:?}, current={current:?}, pointer={:?}",
+            current.pointer
         );
         std::thread::sleep(Duration::from_millis(2));
     }

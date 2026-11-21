@@ -1,3 +1,40 @@
+// non-lean-yet
+// Scope: mod adapters, mod edit, mod effects, mod records.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 435, 930, 931,
+//   934, 940, 943, 978, 982, 998, 1001, 1006, 1107, 1167, 1199, 1259, 1361, 1559, 1594, 1595, 1597,
+//   1598, 1603, 1604, 1606, 1607, 1643, 1652, 1730, 1842, 1860, 1869, 1896.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   workspace_view:permitted_view (1190).
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 35.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   943, 950, 954, 2022.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 894.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 1658.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 132, 203, 264.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 943, 950, 954, 1329, 1345, 1350, 1351.
+// - [Clippy probe: clippy::manual_let_else] this could be rewritten as `let...else`. Sites 1800.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 35.
+// - [Clippy probe: clippy::match_same_arms] these match arms have identical bodies. Sites 790, 800.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 31, 101, 1185, 1244.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 28.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   1, 16, 17, 18, 28, 31, 45, 67, 82, 83, 84, 85, 86, 101, 125, 126, 127, 132, 133, 134, 135, 136,
+//   137, 138, 140, 141, 142, 143, 145, 146, 147, 148, 149, 150, 152, 153, 154, 156, 157, 158, 160,
+//   161, 162, 164, 165, 166, 168, 169, 170, 172, 173, 175, 177, 178, 180, 182, 183, 184, 185, 186,
+//   188, 189, 190, 191, 192, 193, 195, 196, 197, 203, 204, 205, 206, 207, 208, 210, 211, 212, 214,
+//   215, 216, 217, 218, 220, 221, 223, 224, 225, 227, 228, 229, 231, 232, 233, 235, 236, 238, 239,
+//   241, 242, 244, 245, 246, 248, 249, 250, 251, 253, 254, 255, 257, 258, 264, 265, 266, 267, 269,
+//   270, 272, 273, 275, 276, 277, 279, 280, 281, 282, 283, 285, 286, 288, 289, 290, 291, 293, 294,
+//   295, 297, 298, 312, 313, 314, 315, 320, 321, 322, 324, 326, 331, 332, 333, 335, 337, 339, 344,
+//   345, 346, 347, 1185, 1244.
+
 pub mod adapters;
 mod edit;
 mod effects;

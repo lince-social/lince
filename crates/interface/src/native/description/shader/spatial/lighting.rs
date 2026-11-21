@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Parameters, struct Styled, struct Styles, fn install.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 83, 125, 127,
+//   135, 138, 262, 291, 296, 325.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (177).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (124, 147, 227, 310, 320, 322, 356, 366).
+
 use super::*;
 use crate::native::topology::appearance;
 use bevy::light::{AmbientLight, NotShadowCaster, NotShadowReceiver};

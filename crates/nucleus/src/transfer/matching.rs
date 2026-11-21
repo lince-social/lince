@@ -1,6 +1,19 @@
-use crate::{DecimalValue, transfer::outcome::NeedSelection, trust_analysis::query::Query};
+// non-lean-yet
+// Scope: struct Request.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   44, 50.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 17.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 8,
+//   9, 10, 11, 12, 13, 14, 17.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites validate:
+//   String (17).
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
+use crate::{DecimalValue, transfer::outcome::NeedSelection, trust_analysis::query::Query};
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]

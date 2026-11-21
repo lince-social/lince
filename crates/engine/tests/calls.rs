@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn fixture, fn call, fn
+//   simultaneous_starts_share_one_call_and_enforce_device_and_screen_limits, fn
+//   signaling_is_bound_to_admission_and_never_enters_sync.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 20.
+
 #![cfg(test)]
 
 use std::sync::Arc;

@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn cell, fn plain, fn scribble, fn a_healthy_cell_audits_clean.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use engine::Engine;
 use engine::trust::Signer;
 use nucleus::RecordKind;

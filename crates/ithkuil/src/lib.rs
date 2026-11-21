@@ -1,6 +1,19 @@
+// non-lean-yet
+// Scope: static FONT_BYTES, const FONT_FAMILY, const FONT_LICENSE, const FONT_CREDITS.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 46.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   85.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 72.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 1, 10,
+//   11, 12, 13, 14, 19, 20, 21, 22, 25, 32, 36, 40, 46, 47, 48, 49, 50, 72.
+
 #![forbid(unsafe_code)]
 
 use std::{fmt, sync::Arc};
+
 use tnil::{
     prelude::{IntoScript, IntoScriptFlags, ScriptRepr, TryAsSpecific, Word},
     script::{buf::CharacterBuf, repr::IthkuilBasicEncoding},
@@ -111,8 +124,9 @@ pub fn render(romanization: &str) -> Result<Script, Error> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use sha2::{Digest, Sha256};
+
+    use super::*;
 
     #[test]
     fn grammar_drives_script_instead_of_substituting_latin_letters() {

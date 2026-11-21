@@ -1,3 +1,30 @@
+// non-lean-yet
+// Scope: const NAMESPACE, const HELLO, struct Options, struct Report.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 84, 91, 104, 111,
+//   144, 147, 168, 176, 185, 197, 314, 315, 321, 398.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites
+//   laboratory_authorize: String (222), laboratory_choices: String (78), laboratory_data: String
+//   (282), laboratory_prepare: String (82).
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 317.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 317.
+// - [Clippy probe: clippy::exhaustive_enums] Review whether public API evolution requires
+//   non_exhaustive. Sites 72.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 290, 346, 360, 362.
+// - [Clippy probe: clippy::large_enum_variant] large size difference between variants. Sites 72.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 78, 82, 222, 282, 403.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 67, 72.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   6, 7, 11, 12, 13, 14, 15, 16, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35,
+//   36, 37, 38, 67, 68, 69, 72, 73, 74, 78, 82, 222, 282, 301, 403.
+
 use super::*;
 pub use ::fiote::provider as inference;
 use serde_json::{Value, json};

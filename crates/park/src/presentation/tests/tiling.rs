@@ -1,9 +1,16 @@
-use super::shortcuts::{capture, click, key, named_button, settle};
-use super::*;
-use lince_interface::native::canvas::CanvasItem;
+// non-lean-yet
+// Scope: fn shortcut, fn
+//   real_tiling_controls_and_chords_restore_the_free_canvas_without_recreating_windows.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use lince_interface::{
     host::{DesktopAction, Direction, SurfaceId, WorkspaceLayout},
-    native::actions::Action,
+    native::{actions::Action, canvas::CanvasItem},
+};
+
+use super::{
+    shortcuts::{capture, click, key, named_button, settle},
+    *,
 };
 
 fn shortcut(canvas: &mut Presentation, key_code: KeyCode, shift: bool) {

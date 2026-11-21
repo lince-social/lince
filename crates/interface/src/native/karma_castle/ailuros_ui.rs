@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: mod presentation, mod setup, struct Devices, enum OwnedReply.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 175, 204, 220,
+//   272, 297, 301, 302, 303, 305, 306, 325, 327, 328, 329, 332, 333, 334.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (127).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   138, 139.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (92, 111, 112, 113, 147, 180, 181, 213, 235, 280, 290, 296, 313, 315, 357, 372).
+
 use bevy::{ecs::entity_disabling::Disabled, prelude::*, text::EditableText};
 use engine::signal_endpoints::Request;
 use store::signal_endpoints::Endpoint;

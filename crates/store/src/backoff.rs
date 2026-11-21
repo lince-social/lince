@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: const DEFAULT_BASE_SECONDS, const DEFAULT_MAX_SECONDS, fn delay_seconds, fn
+//   next_attempt_at.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on a `Result` value. Sites 27.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 3, 4,
+//   6, 13, 23.
+
 use chrono::{DateTime, Duration, Utc};
 
 pub const DEFAULT_BASE_SECONDS: u32 = 30;

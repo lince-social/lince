@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn transfer, fn unrelated, fn
+//   terminal_paths_invalidate_old_epochs_and_only_end_their_own_sharing_scope, fn
+//   delayed_source_loss_and_old_cleanup_cannot_stop_an_approved_successor.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 267.
+
 use super::*;
 
 async fn transfer(f: &Fixture) -> String {

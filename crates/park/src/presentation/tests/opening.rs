@@ -1,8 +1,16 @@
-use super::recent::map;
-use super::shortcuts::{capture, key, settle};
-use super::transfers::output;
-use super::*;
+// non-lean-yet
+// Scope: fn focused, fn
+//   background_mapping_dialog_closure_and_activation_preserve_the_workspace_and_output_assignments.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use lince_interface::host::{DesktopAction, OutputId, SurfaceId, WorkspaceLayout};
+
+use super::{
+    recent::map,
+    shortcuts::{capture, key, settle},
+    transfers::output,
+    *,
+};
 
 fn focused(canvas: &Presentation, root: Entity) -> Option<[u8; 16]> {
     let spaces = canvas

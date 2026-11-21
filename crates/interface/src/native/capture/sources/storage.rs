@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: enum Scope, struct Path.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   64, 67, 73, 78.
+
 use super::*;
 
 #[derive(Default)]

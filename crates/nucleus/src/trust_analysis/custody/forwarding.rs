@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: const MAX_JOBS, const MAX_ATTEMPTS, struct Policy, enum SourceMode.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 28.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 15, 42.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 1.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 5,
+//   9, 10, 11, 15, 28, 29, 30, 34, 42, 68.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites series: String
+//   (42), validate: String (15).
+
 use super::*;
 use crate::transfer::receipt::Content;
 

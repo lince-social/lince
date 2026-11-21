@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct DynamicUniformIndex, struct UniformComponentPlugin, struct ComponentUniforms, fn
+//   prepare_uniform_components.
+// BeautifulRust (baseline lines):
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 12, 33, 56.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 19, 71.
+
 use crate::{
     render_resource::{encase::internal::WriteInto, DynamicUniformBuffer, ShaderType},
     renderer::{RenderDevice, RenderQueue},

@@ -1,3 +1,27 @@
+// non-lean-yet
+// Scope: mod batching, mod camera, mod combined_bind_group, mod diagnostic.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   297, 307.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 302, 312, 527.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 459, 498, 499.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 297, 307.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 427, 557.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 186.
+// - [Clippy: clippy::unnecessary_semicolon] unnecessary semicolon. Sites 403.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 515.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 160.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 39, 40,
+//   43, 44, 45, 46, 53, 56, 57, 62, 64, 66, 69, 70, 72, 73, 74, 77, 78, 83, 84, 86, 88, 94, 95, 96,
+//   161, 610.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   599, 604.
+
 //! # Useful Environment Variables
 //!
 //! Both `bevy_render` and `wgpu` have a number of environment variable options for changing the runtime behavior

@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: struct Proxy, fn endpoint, fn bridge_stdio, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 37, 96, 108.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 51, 61, 80,
+//   84, 93, 101, 105, 114, 117, 121.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites bridge_stdio:
+//   String (78).
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 51, 61, 80, 84, 93, 101, 105, 114, 117, 121.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 78.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   78.
+
 use rmcp::{
     ErrorData, Peer, RoleClient, RoleServer, ServerHandler, ServiceExt,
     model::{

@@ -1,11 +1,16 @@
+// non-lean-yet
+// Scope: fn main, fn main.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #[cfg(target_os = "linux")]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    if std::env::args().any(|argument| argument == "--help") {
+    if args().any(|argument| argument == "--help") {
         println!("input_probe text|menu|escape: send native keys to the focused Wayland window");
         return Ok(());
     }
+    use std::{env::args, io::Write, os::fd::AsFd, time::Instant};
+
     use smithay::input::keyboard::xkb;
-    use std::{io::Write, os::fd::AsFd, time::Instant};
     use wayland_client::{
         Connection, Dispatch, QueueHandle, delegate_noop,
         protocol::{wl_registry, wl_seat},
@@ -89,7 +94,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             keyboard.key(started.elapsed().as_millis() as u32, 42, 0);
         }
     };
-    match std::env::args().nth(1).as_deref() {
+    match args().nth(1).as_deref() {
         Some("text") => {
             for (code, shift) in [
                 (25, true),

@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Presentation, struct Children, fn order, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 45, 78.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   152, 153, 167, 168, 189, 190.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (145, 157, 173, 177, 181, 195, 200).
+
 use bevy::prelude::*;
 use std::{
     collections::{HashMap, HashSet},

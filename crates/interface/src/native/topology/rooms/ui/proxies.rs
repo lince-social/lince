@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn create.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 12, 89.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (104, 116).
+
 use super::*;
 
 pub(super) fn create(world: &mut World, room: Entity, role: model::Role) -> Result<Entity, String> {

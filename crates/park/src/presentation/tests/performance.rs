@@ -1,17 +1,23 @@
-use super::*;
-use native::tokens::{ThemeSettings, Token, TokenOverrides, TokenValue};
+// non-lean-yet
+// Scope: mod offscreen, mod combined, mod overlap, mod schedules.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::time::Instant;
 
-mod offscreen;
+use native::tokens::{ThemeSettings, Token, TokenOverrides, TokenValue};
+
+use super::*;
+
 #[cfg(all(feature = "nested", feature = "server-tests"))]
 mod combined;
-mod overlap;
-mod schedules;
-mod gpu;
-mod typing;
-mod ui_layout;
 #[cfg(feature = "nested")]
 mod direct;
+mod gpu;
+mod offscreen;
+mod overlap;
+mod schedules;
+mod typing;
+mod ui_layout;
 
 #[test]
 fn bounded_performance_reports_keep_tails_outputs_and_backpressure_visible() {

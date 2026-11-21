@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: mod cleaning, mod connected, fn capture_pixels, struct Demo.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 26, 135, 136,
+//   181, 402.
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites 34.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   310, 312, 363.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (26, 53, 105, 107, 108, 113, 116, 120, 124, 127, 129, 136, 145, 151, 155, 159,
+//   165, 166, 167, 170, 185, 205, 222, 232, 244, 257, 277, 279, 299, 388, 393, 419).
+
 use bevy::{
     diagnostic::FrameCount,
     math::{DQuat, DVec2, DVec3},

@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: trait ForeignToplevelListHandler, struct ForeignToplevelHandleInner, struct
+//   ForeignToplevelWeakHandle, struct ForeignToplevelHandle.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 243, 248, 253,
+//   314, 320, 345, 430.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (168, 194, 212, 228, 238, 243, 248, 253, 258, 272, 276).
+
 //! Foreign toplevel list
 //!
 //! The purpose of this protocol is to provide protocol object handles for toplevels.

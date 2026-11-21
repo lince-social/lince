@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn fixture, fn column_labels_follow_late_creation_reparenting_and_removed_roles, fn
+//   columns_with_geometry_keep_their_headers_when_another_column_loses_its_geometry.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 34, 63.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (23, 34, 35, 37, 62, 63, 64, 69, 78, 79, 80, 81, 82, 87, 94, 101, 104, 105, 106,
+//   114, 115, 119).
+
 use super::*;
 
 pub(super) fn fixture() -> (App, Entity, Entity) {

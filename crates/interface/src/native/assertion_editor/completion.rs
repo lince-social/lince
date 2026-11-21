@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct Option, struct State, struct Input, fn token.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 202, 208, 213,
+//   283, 336, 349, 363, 441, 453.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   56, 66, 209, 294, 336, 367.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (113, 115, 153, 158, 217, 218, 219, 228, 235, 240, 246, 252, 265, 277, 283, 293,
+//   372, 390, 402, 415, 429, 431, 439).
+
 use super::*;
 use crate::host::performance::{self, Count, Stage};
 use std::ops::Range;

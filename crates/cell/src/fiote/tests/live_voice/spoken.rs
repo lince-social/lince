@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn speech_job, fn listening, fn
+//   actual_recorded_speech_uses_native_conversation_followups_closing_and_synthesis.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 76.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option`
+//   value. Sites 77.
+
 use super::*;
 use crate::speech::{Host as SpeechHost, Request as SpeechRequest, Service as _};
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};

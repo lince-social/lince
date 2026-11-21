@@ -1,8 +1,15 @@
+// non-lean-yet
+// Scope: static BATCHES, fn values, fn record, fn compare.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 111, 132, 135.
+
 #![cfg(test)]
+
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use nucleus::RecordKind;
 use serde_json::{Value, json};
-use std::sync::atomic::{AtomicU64, Ordering};
 use store::{Store, assertions, records, sqlx};
 
 static BATCHES: AtomicU64 = AtomicU64::new(0);

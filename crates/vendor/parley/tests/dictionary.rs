@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn japanese_dictionary_words_have_boundaries_when_character_line_breaks_are_disabled.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![doc = include_str!("../CREDITS.txt")]
 
 use parley::{FontContext, FontFamily, Layout, LayoutContext, StyleProperty, WordBreak};

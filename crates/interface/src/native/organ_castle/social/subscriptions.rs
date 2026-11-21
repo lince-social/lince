@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn editor, fn settings, fn view, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 15, 21, 31, 37,
+//   43, 49, 55, 61, 67, 73, 79, 85, 91.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (151).
+
 use super::*;
 
 fn editor(world: &mut World, owner: Entity, parent: Entity, filter: &Value, can_edit: bool) {

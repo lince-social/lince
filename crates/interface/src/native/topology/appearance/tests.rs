@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn mesh_textures_share_the_surface_quota_and_release_after_the_last_lease, fn scene, fn
+//   lighting_budgets_are_bounded_and_hidden_owners_release_resources, fn
+//   excess_material_surfaces_keep_the_default_capture_and_slots_are_reused.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::super::presentation::Surface;
 use super::*;
 

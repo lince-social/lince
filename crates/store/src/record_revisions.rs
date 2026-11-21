@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct RecordRevision, fn protocol, fn validate_record_uid, fn get_on.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 102.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 22, 57, 76.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 7,
+//   8, 22, 57, 76.
+
 use sqlx::{Row, Sqlite, SqliteConnection, SqlitePool};
 
 use crate::StoreError;

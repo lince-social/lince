@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: fn manifest, fn handle, fn text, fn line.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 77, 89, 228.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 70.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 89, 184.
+// - [Clippy: clippy::format_push_string] `format!(..)` appended to existing `String`. Sites 247.
+// - [Clippy: clippy::if_not_else] unnecessary boolean `not` operation. Sites 182.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 70, 138, 252.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 1, 9,
+//   70, 138, 252.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites calendar:
+//   String (138), handle: String (70), install: String (252).
+
 use nucleus::plugins::{
     Contribution, DocumentFormat, ExportDocument, ExportSnapshot, Field, FieldType, Manifest,
     SnapshotSource,

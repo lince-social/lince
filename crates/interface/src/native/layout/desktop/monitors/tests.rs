@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn snapshot, fn fixture, fn refresh, fn input.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::host::{
     HostRequest,

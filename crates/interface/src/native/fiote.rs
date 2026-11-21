@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod character, mod session, const CREDITS, struct Fiote.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy::prelude::*;
 pub mod character;
 pub mod session;

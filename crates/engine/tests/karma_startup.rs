@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: mod support, fn rule, fn startup_activates_fiote_once_per_boot_and_survives_engine_reopen,
+//   fn startup_preserves_pause_runtime_executor_and_reaction_guards.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use chrono::Utc;

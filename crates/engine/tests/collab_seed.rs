@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn restored, fn client, fn delta, fn history.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 384.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 41, 102.
+
 #![cfg(test)]
 
 use std::collections::BTreeSet;

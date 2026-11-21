@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct Pending, struct Autosave, fn update.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 25, 42, 60.
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 46.
+
 use super::*;
 use std::time::{Duration, Instant};
 

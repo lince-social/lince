@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: mod tests, struct DirectoryEditor, struct StopChild, fn directory_editing.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 25, 26, 79, 110,
+//   120, 142, 143, 152, 153, 199, 223, 322, 356, 373, 381, 391, 400, 417, 446, 447, 464, 465, 481,
+//   513, 514, 536, 540, 615, 619, 633, 639, 656, 657, 725, 747, 769, 792.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   348, 707.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (79, 199, 220, 247, 252, 356, 391, 400, 417, 443, 464, 465, 481, 486, 491, 510,
+//   582, 633, 662, 666, 678, 679, 725, 734, 769, 777, 791, 799).
+
 use super::*;
 
 #[cfg(test)]

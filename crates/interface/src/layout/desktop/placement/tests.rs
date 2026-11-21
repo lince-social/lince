@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn workspace, fn explicit_row_placement_preserves_sizes_focus_scroll_and_authored_homes,
+//   fn invalid_or_unavailable_placements_reject_atomically.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::layout::desktop::tests::{id, item, viewport};
 

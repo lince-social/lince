@@ -1,3 +1,23 @@
+// non-lean-yet
+// Scope: const ADMIN_ROLE, const LINCE_ROLE, const MAX_READ_FILTER_BYTES, const
+//   MAX_PERSON_ACCESS_ROWS.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 148, 150, 152, 191, 194, 223, 224, 225, 317, 683, 684, 921, 922, 923, 924, 933, 935, 937,
+//   947.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   194, 947.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 194, 947.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 15, 22, 39, 48, 65, 70, 83, 97, 121, 266, 274, 396, 408, 451, 464, 509, 523, 533, 545,
+//   566, 579, 583, 603, 724, 752, 784, 806, 827, 863, 880, 888, 990, 997, 1007, 1076, 1083.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 5, 6,
+//   8, 9, 10, 11, 12, 13, 15, 22, 39, 48, 65, 70, 83, 97, 105, 106, 107, 108, 109, 113, 114, 115,
+//   116, 117, 118, 121, 266, 274, 396, 408, 451, 464, 509, 523, 533, 545, 566, 579, 583, 603, 724,
+//   752, 784, 806, 827, 863, 880, 888, 960, 961, 962, 963, 964, 965, 966, 967, 971, 977, 978, 979,
+//   980, 981, 985, 990, 997, 1007, 1076, 1083.
+
 use sqlx::{Sqlite, SqliteConnection, SqlitePool, Transaction};
 
 use crate::StoreError;
@@ -1046,10 +1066,12 @@ async fn credential_row(
 ) -> Result<Option<AuthUser>, StoreError> {
     let sql = format!("{CREDENTIAL_SELECT} WHERE {column} = ?");
     let Some((uid, username, name, password_hash, role_id, role)) =
-        sqlx::query_as::<_, (String, String, String, String, Option<i64>, Option<String>)>(sqlx::AssertSqlSafe(sql.as_str()))
-            .bind(value)
-            .fetch_optional(pool)
-            .await?
+        sqlx::query_as::<_, (String, String, String, String, Option<i64>, Option<String>)>(
+            sqlx::AssertSqlSafe(sql.as_str()),
+        )
+        .bind(value)
+        .fetch_optional(pool)
+        .await?
     else {
         return Ok(None);
     };

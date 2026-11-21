@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn full_queue_preserves_one_loading_deadline_and_no_unbounded_pending_work, fn
+//   retirement_keeps_the_original_connection_and_blocks_new_subscriptions_until_sent, fn
+//   missing_window_extension_is_inheritance_but_an_invalid_rule_stays_unavailable.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 #[test]

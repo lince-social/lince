@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: macro wgpu_wrapper, macro wgpu_wrapper.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably fires.
+//   Sites 19.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 11.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 11.
+// - [rustc: unreachable_pub] unreachable `pub` item. Sites 15, 21.
+
 /// A macro producing wrappers to safely make `wgpu` types Send / Sync on web with atomics enabled.
 ///
 /// On web with `atomics` enabled the inner value can only be accessed

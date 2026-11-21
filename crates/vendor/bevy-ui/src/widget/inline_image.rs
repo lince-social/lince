@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct InlineImage, fn update_inline_image_boxes, mod tests.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use bevy_asset::asset_changed::AssetChanged;
 use bevy_asset::AsAssetId;
 use bevy_asset::Assets;

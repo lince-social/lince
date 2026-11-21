@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn fixture, fn visible, fn group, fn
+//   shared_commands_select_reorder_detach_and_ungroup_without_losing_native_or_application_identity.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 pub(super) fn fixture() -> (World, Entity, Entity, Entity, Entity) {

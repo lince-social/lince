@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn main, fn check.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (5, 7, 11).
+
 fn main() {
     std::thread::Builder::new()
         .stack_size(32 * 1024 * 1024)

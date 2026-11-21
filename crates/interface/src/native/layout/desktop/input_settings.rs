@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod prepared, mod presentation, struct Requests, struct Page.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 366, 398.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 268, 272,
+//   400.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (77, 80, 91, 104, 131, 200, 237, 260, 317, 337, 342, 351, 377, 401, 415).
+
 use super::HostRequests;
 use crate::{
     host::{

@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn action, fn wait_output, fn
+//   supervisor_publishes_without_a_person_private_key_coalesces_wakes_and_stops.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 187.
+
 use super::*;
 use base64::Engine as _;
 use engine::{actions::Action, trust::Signer};

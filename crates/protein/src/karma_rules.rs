@@ -1,98 +1,81 @@
+//! Karma rule listings and the visibility of their condition inputs.
+
+use crate::{Predicate, Protein, ProteinError, Source, execute_for_with_signer};
+use nucleus::{
+    expr::ASSERTION,
+    karma::Consequence,
+    transfer::karma::{Snapshot, is_agreement_reading, is_reading},
+};
+use serde_json::{Value, from_value, json};
 use std::collections::HashSet;
-
-use serde_json::{Value, json};
-use store::Store;
-
-use crate::{Predicate, Protein, ProteinError};
+use store::{
+    Store, concepts,
+    karma_fields::{for_rule, identity, invalid},
+    ledger::records_with_concept,
+    records, recurrence,
+    sqlx::{SqlitePool, query_scalar},
+};
 
 pub(crate) async fn execute(
     store: &Store,
     query: &Protein,
     visible: Option<&HashSet<String>>,
     actor: Option<&str>,
-    installed_signer_actor: Option<&str>,
+    signer: Option<&str>,
 ) -> Result<Vec<Value>, ProteinError> {
     if query.aggregate.is_some() || !query.order.is_empty() {
-        return Err(store::karma_fields::invalid(
+        return Err(invalid(
             "Karma rules are listed newest first; aggregation is not supported",
         ));
     }
+    let pool = &store.pool;
     let mut rows = Vec::new();
-    for rule in store::recurrence::all(&store.pool).await? {
+    for rule in recurrence::all(pool).await? {
         let Some(condition) = &rule.condition else {
             continue;
         };
-        let target = rule
+        let target = if let Some(transfer) = rule
             .consequences
             .iter()
-            .find_map(nucleus::karma::Consequence::transfer_target)
-            .unwrap_or(&rule.record_uid);
-        let transfer_state = if rule
-            .consequences
-            .iter()
-            .any(|effect| effect.transfer_target().is_some())
+            .find_map(Consequence::transfer_target)
         {
-            transfer_snapshot(store, target, actor, installed_signer_actor).await?
-        } else {
-            None
-        };
-        if rule
-            .consequences
-            .iter()
-            .any(|effect| effect.transfer_target().is_some())
-        {
-            if transfer_state.as_ref().is_none_or(|state| {
-                rule.consequences.iter().any(|effect| {
-                    effect
-                        .transfer_person()
-                        .is_none_or(|person| !state.participants.contains_key(person))
-                })
+            let Some(state) = transfer_snapshot(store, transfer, actor, signer).await? else {
+                continue;
+            };
+            if rule.consequences.iter().any(|effect| {
+                effect
+                    .transfer_person()
+                    .is_none_or(|person| !state.participants.contains_key(person))
             }) {
                 continue;
             }
-        } else if !readable(store, visible, &rule.record_uid).await? {
-            continue;
-        }
+            transfer
+        } else {
+            if let Some(visible) = visible
+                && !readable(pool, visible, &rule.record_uid).await?
+            {
+                continue;
+            }
+            &rule.record_uid
+        };
+
+        let mut allowed = true;
         let parsed = condition
             .parsed()
-            .map_err(|error| store::karma_fields::invalid(&error.to_string()))?;
-        let mut allowed = true;
+            .map_err(|error| invalid(&error.to_string()))?;
         for read in parsed.reads_ref() {
-            if nucleus::transfer::karma::is_reading(&read.func) {
-                let names: Vec<_> = read.slug.split('|').collect();
-                let state =
-                    transfer_snapshot(store, names[0], actor, installed_signer_actor).await?;
+            if is_reading(&read.func) {
+                let mut names = read.slug.split('|');
+                let transfer = names.next().unwrap_or_default();
+                let state = transfer_snapshot(store, transfer, actor, signer).await?;
                 allowed &= state.as_ref().is_some_and(|state| {
-                    !nucleus::transfer::karma::is_agreement_reading(&read.func)
+                    !is_agreement_reading(&read.func)
                         || names
-                            .get(1)
-                            .is_some_and(|person| state.participants.contains_key(*person))
+                            .next()
+                            .is_some_and(|person| state.participants.contains_key(person))
                 });
-                continue;
-            }
-            if visible.is_none() {
-                continue;
-            }
-            if read.func == nucleus::expr::ASSERTION || read.func == "demand" {
-                if let Some(concept) = store::concepts::resolve(&store.pool, &read.slug).await? {
-                    for uid in store::ledger::records_with_concept(&store.pool, &concept).await? {
-                        allowed &= readable(store, visible, &uid).await?;
-                    }
-                }
-            } else if read.func == "promise_state" || read.func == "confidence" {
-                let record: Option<String> =
-                    store::sqlx::query_scalar("SELECT record_uid FROM promise WHERE uid = ?")
-                        .bind(&read.slug)
-                        .fetch_optional(&store.pool)
-                        .await?;
-                allowed &= match record {
-                    Some(uid) => readable(store, visible, &uid).await?,
-                    None => false,
-                };
-            } else {
-                for slug in read.slug.split('|') {
-                    allowed &= readable(store, visible, slug).await?;
-                }
+            } else if let Some(visible) = visible {
+                allowed &= visible_input(pool, visible, &read.func, &read.slug).await?;
             }
         }
         if !allowed {
@@ -100,53 +83,78 @@ pub(crate) async fn execute(
         }
         for predicate in &query.filter {
             match predicate {
-                Predicate::UidEq(uid) if uid != &rule.uid => allowed = false,
-                Predicate::RecordEq(uid)
-                    if uid != target
-                        && store::records::resolve(&store.pool, uid)
+                Predicate::UidEq(uid) => allowed &= uid == &rule.uid,
+                Predicate::RecordEq(uid) => {
+                    allowed &= uid == target
+                        || records::resolve(pool, uid)
                             .await?
-                            .is_none_or(|record| record.uid != target) =>
-                {
-                    allowed = false
+                            .is_some_and(|record| record.uid == target);
                 }
-                Predicate::UidEq(_) | Predicate::RecordEq(_) => {}
-                _ => {
-                    return Err(store::karma_fields::invalid(
-                        "Karma rules support Record and UID filters",
-                    ));
-                }
+                _ => return Err(invalid("Karma rules support Record and UID filters")),
             }
         }
         if !allowed {
             continue;
         }
-        let fields = store::karma_fields::for_rule(&store.pool, &rule.uid).await?;
-        let identity = store::karma_fields::identity(&store.pool, &rule.uid).await?;
-        let name = identity
+        let fields = for_rule(pool, &rule.uid).await?;
+        let identity = identity(pool, &rule.uid).await?;
+        let (name, slug) = identity
             .as_ref()
-            .map_or("", |identity| identity.name.as_str());
-        let slug = identity
-            .as_ref()
-            .map_or("", |identity| identity.slug.as_str());
-        rows.push(json!({"name": name, "slug": slug, "uid": rule.uid, "record": target, "bindings": condition.bindings, "fields": fields, "revision": rule.revision, "state": rule.state}));
-        if query
-            .limit
-            .is_some_and(|limit| rows.len() >= limit as usize)
-        {
+            .map_or(("", ""), |id| (id.name.as_str(), id.slug.as_str()));
+        rows.push(json!({
+            "name": name, "slug": slug, "uid": rule.uid, "record": target,
+            "bindings": condition.bindings, "fields": fields, "revision": rule.revision, "state": rule.state,
+        }));
+        if query.limit.is_some_and(|limit| rows.len() >= limit) {
             break;
         }
     }
     Ok(rows)
 }
 
+async fn visible_input(
+    pool: &SqlitePool,
+    visible: &HashSet<String>,
+    function: &str,
+    token: &str,
+) -> Result<bool, ProteinError> {
+    let mut allowed = true;
+    match function {
+        ASSERTION | "demand" => {
+            if let Some(concept) = concepts::resolve(pool, token).await? {
+                for uid in records_with_concept(pool, &concept).await? {
+                    allowed &= readable(pool, visible, &uid).await?;
+                }
+            }
+        }
+        "promise_state" | "confidence" => {
+            let record: Option<String> =
+                query_scalar("SELECT record_uid FROM promise WHERE uid = ?")
+                    .bind(token)
+                    .fetch_optional(pool)
+                    .await?;
+            return match record {
+                Some(uid) => readable(pool, visible, &uid).await,
+                None => Ok(false),
+            };
+        }
+        _ => {
+            for slug in token.split('|') {
+                allowed &= readable(pool, visible, slug).await?;
+            }
+        }
+    }
+    Ok(allowed)
+}
+
 async fn transfer_snapshot(
     store: &Store,
     transfer: &str,
     actor: Option<&str>,
-    installed_signer_actor: Option<&str>,
-) -> Result<Option<nucleus::transfer::karma::Snapshot>, ProteinError> {
+    signer: Option<&str>,
+) -> Result<Option<Snapshot>, ProteinError> {
     let query = Protein {
-        source: crate::Source::Transfer,
+        source: Source::Transfer,
         filter: vec![Predicate::UidEq(transfer.into())],
         fields: Some(vec!["uid".into(), "karma_state".into()]),
         include: Default::default(),
@@ -154,28 +162,19 @@ async fn transfer_snapshot(
         order: Vec::new(),
         limit: Some(1),
     };
-    let rows = Box::pin(crate::execute_for_with_signer(
-        store,
-        &query,
-        actor,
-        installed_signer_actor,
-    ))
-    .await?;
+    let rows = Box::pin(execute_for_with_signer(store, &query, actor, signer)).await?;
     Ok(rows
         .into_iter()
-        .find(|row| row["uid"] == transfer)
-        .and_then(|row| serde_json::from_value(row["karma_state"].clone()).ok()))
+        .find(|row| row.get("uid").and_then(Value::as_str) == Some(transfer))
+        .and_then(|mut row| from_value(row.as_object_mut()?.remove("karma_state")?).ok()))
 }
 
 async fn readable(
-    store: &Store,
-    visible: Option<&HashSet<String>>,
+    pool: &SqlitePool,
+    visible: &HashSet<String>,
     token: &str,
 ) -> Result<bool, ProteinError> {
-    if visible.is_none() {
-        return Ok(true);
-    }
-    Ok(store::records::resolve(&store.pool, token)
+    Ok(records::resolve(pool, token)
         .await?
-        .is_some_and(|record| visible.is_none_or(|visible| visible.contains(&record.uid))))
+        .is_some_and(|record| visible.contains(&record.uid)))
 }

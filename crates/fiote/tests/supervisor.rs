@@ -1,9 +1,14 @@
-use {
-    fiote::{
-        CubSpec, Supervisor,
-        binary::{FioteBinary, Origin},
-    },
-    std::{path::PathBuf, time::Duration},
+// non-lean-yet
+// Scope: fn echo_binary, fn the_supervisor_spawns_pipes_a_line_in_and_out_then_stops_the_cub.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 41, 50.
+
+use std::{path::PathBuf, time::Duration};
+
+use fiote::{
+    CubSpec, Supervisor,
+    binary::{FioteBinary, Origin},
 };
 
 fn echo_binary() -> Option<FioteBinary> {

@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn capture, fn apply, fn decode_group, fn set.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 14, 17, 20, 23,
+//   26, 35, 60, 67, 74, 81, 88, 103.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 155.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   154.
+
 use super::*;
 use crate::native::{
     canvas_selection::SandGroup,

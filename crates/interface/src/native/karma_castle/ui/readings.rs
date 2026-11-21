@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Part, fn prepare, enum Base, struct Hint.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   79, 85.
+
 use super::*;
 use std::{borrow::Cow, fmt};
 

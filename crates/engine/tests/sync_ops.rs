@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn cell, fn plain, fn ops_for, fn record_create_and_edit_log_field_ops.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::needless_collect] avoid using `collect()` when not needed. Sites 86.
+
 use engine::Engine;
 use engine::actions::Action;
 use engine::sync::Delivery;

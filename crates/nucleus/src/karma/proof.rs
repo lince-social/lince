@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: enum ProofStatus, enum ProofSeverity, enum ProofIssueCode, struct ProofIssue.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 514, 593, 599,
+//   795, 810, 902, 942, 950, 954, 959, 1075, 1082, 1092, 1141, 1167.
+// - [Clippy: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably fires.
+//   Sites 408, 548.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 14, 21, 28.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   312, 313, 941, 944, 955, 956, 997.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 14, 15,
+//   16, 21, 22, 23, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 48, 49, 50,
+//   51, 52, 54, 58, 59, 61, 62, 63, 66.
+
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
@@ -405,7 +420,10 @@ impl Validator {
         }
     }
 
-    #[allow(clippy::too_many_arguments, reason = "Validate the threshold proof against independently supplied inputs")]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "Validate the threshold proof against independently supplied inputs"
+    )]
     fn validate_threshold(
         &mut self,
         id: &LocalId,
@@ -545,7 +563,10 @@ impl Validator {
         }
     }
 
-    #[allow(clippy::too_many_arguments, reason = "Validate the route proof against independently supplied inputs")]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "Validate the route proof against independently supplied inputs"
+    )]
     fn validate_candidate_route(
         &mut self,
         id: &LocalId,

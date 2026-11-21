@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn publication, fn adult_reference_cases_are_unambiguous_and_scoped, fn
+//   production_examples_link_real_species_and_require_confirmation.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 41, 43, 46, 48, 51, 53, 95.
+
 use std::collections::BTreeSet;
 
 fn publication(source: &str) -> anicca::ProjectedDocument {

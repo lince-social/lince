@@ -1,10 +1,18 @@
-use super::shortcuts::{capture, click, key, settle};
-use super::*;
+// non-lean-yet
+// Scope: fn named, fn type_command, fn row_fits, fn
+//   operation_shares_command_metadata_and_explains_unavailable_actions_at_narrow_widths.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use lince_interface::{
     host::{DesktopAction, HostRequest},
     native::operation::OpenOperation,
 };
 use native::actions::Action;
+
+use super::{
+    shortcuts::{capture, click, key, settle},
+    *,
+};
 
 pub(super) fn named(canvas: &mut Presentation, value: &str) -> Entity {
     canvas

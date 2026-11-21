@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   18.
+
 use super::*;
 
 impl Workspace {

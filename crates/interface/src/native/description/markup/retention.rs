@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Scope, struct View, fn same_style, struct Retained.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 18, 29, 34.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   154, 167, 177, 178, 180, 187, 243.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (97, 110, 115).
+
 use super::*;
 use lince_interface::markup::{Block, Run};
 

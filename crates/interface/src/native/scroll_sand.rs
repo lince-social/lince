@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct ScrollSand, const BAR_WIDTH, struct ScrollCredits, struct OverlayBar.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (62, 207).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (72, 79, 179, 180, 240, 252, 265).
+
 use bevy::prelude::*;
 
 #[derive(Component)]

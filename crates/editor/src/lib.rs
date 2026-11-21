@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod buffer, mod diff, mod explorer, mod files.
+// BeautifulRust (baseline lines):
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 1, 3,
+//   4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 22, 23, 24.
+
 mod buffer;
 mod diff;
 pub mod explorer;

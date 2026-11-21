@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Run, struct Block, fn parse, fn links.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 47, 134, 146,
+//   193, 199, 206, 239, 245, 252, 265, 281, 285.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   122, 129, 184, 187, 189, 192, 201, 220, 227, 238, 243, 244, 251, 275, 280, 287, 297.
+
 use pulldown_cmark::{CodeBlockKind, Event, Options, Parser, Tag, TagEnd};
 
 #[derive(Clone, Debug, Default, PartialEq)]

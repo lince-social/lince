@@ -1,4 +1,12 @@
-use super::*;
+// non-lean-yet
+// Scope: struct Server, struct ThemeQuery, fn serve, fn allowed.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
+use std::{
+    hash::{Hash, Hasher},
+    sync::Arc,
+};
+
 use axum::{
     Router,
     extract::{Query, State},
@@ -6,10 +14,8 @@ use axum::{
     response::{IntoResponse, Response},
     routing::get,
 };
-use std::{
-    hash::{Hash, Hasher},
-    sync::Arc,
-};
+
+use super::*;
 
 #[derive(Clone)]
 struct Server {
@@ -80,7 +86,10 @@ fn response(content_type: &'static str, result: Result<Vec<u8>>) -> Response {
     let headers = response.headers_mut();
     headers.insert(header::CONTENT_TYPE, HeaderValue::from_static(content_type));
     headers.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
-    headers.insert("x-content-type-options", HeaderValue::from_static("nosniff"));
+    headers.insert(
+        "x-content-type-options",
+        HeaderValue::from_static("nosniff"),
+    );
     headers.insert("content-security-policy", HeaderValue::from_static("default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'self'"));
     response
 }
@@ -190,7 +199,7 @@ pub(super) fn fingerprint(directory: &Path, sources_only: bool) -> Result<u64> {
             .map_err(|error| error.to_string())?
             .collect::<std::io::Result<Vec<_>>>()
             .map_err(|error| error.to_string())?;
-        entries.sort_by_key(|entry| entry.file_name());
+        entries.sort_by_key(std::fs::DirEntry::file_name);
         for entry in entries {
             let path = entry.path();
             let file_type = entry.file_type().map_err(|error| error.to_string())?;
@@ -235,8 +244,9 @@ pub(super) fn fingerprint(directory: &Path, sources_only: bool) -> Result<u64> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use axum::http::HeaderValue;
+
+    use super::*;
 
     #[test]
     fn preview_rejects_foreign_hosts_and_refresh_detects_content_changes() {

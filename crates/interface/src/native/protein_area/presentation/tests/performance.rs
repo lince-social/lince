@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn cpu, fn retained_record_projection_cost_with_unchanged_rows_and_single_row_updates.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use std::time::Instant;
 

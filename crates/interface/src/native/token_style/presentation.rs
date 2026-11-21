@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct StyleData, type Styled, fn background_token, fn text_token.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   272, 288, 289, 290.
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 41, 49, 58, 59, 250.
+
 use super::*;
 use crate::native::icons::{IconButton, IconStyle};
 use bevy::{

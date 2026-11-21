@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct Dropdown, struct DropdownMenu, fn caption, fn spawn.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (72, 76, 162).
+
 use crate::native::{
     actions::{ActionButton, ActionSequence},
     castle::Castle,

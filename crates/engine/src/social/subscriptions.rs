@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: const NAMESPACE, const DEVICE_NAMESPACE, const MAX_FILTERS, const MAX_ACTIVE.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 59.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   130.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 96, 130, 217.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or(<a>)` on an `Option` value.
+//   Sites 76.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use chrono::Timelike;
 use nucleus::social::subscriptions::Subscription;

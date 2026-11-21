@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn sound_membership_blocks_cross_boundary_interactions_in_both_directions, fn
+//   sound_area_crossings_are_silent_on_start_and_play_only_on_edges, fn
+//   sound_area_settings_round_trip_and_validate_paths, fn
+//   sound_area_membership_respects_workspace_and_shape.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::area::{AreaShape, InfluenceArea};
 use crate::native::workspace::Workspaces;

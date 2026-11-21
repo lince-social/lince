@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: enum Event, struct Copies, struct Batch, fn identity.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 42, 67, 85, 100,
+//   163.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   push:consumed (128).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   73, 78, 198.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (96).
+
 use super::*;
 use std::collections::HashMap;
 

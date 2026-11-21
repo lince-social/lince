@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: Exercise scanner positions, attribution exceptions, and stripping behavior.
+// BeautifulRust (baseline lines):
+// - [manual: §6 Idioms] Sites 1, 10, 20, 26, 53. Group the imports and use array
+//   expectations or is_empty for simple line comparisons.
+// - [manual: §11 Tests] Sites 24–43, 109–137. Add fixtures for token separation around
+//   removed block comments, raw-string trailing whitespace when another comment is removed,
+//   and line accounting across escaped newlines. Keep the exact byte assertions.
+
 use sensei::rules::no_comments::findings_in;
 
 fn lines(source: &str) -> Vec<usize> {
@@ -143,4 +152,15 @@ fn stripping_twice_changes_nothing_the_second_time() {
     let source = "//! head\n\nfn a() {} // tail\n\n/* block */\nfn b() {}\n";
     let once = strip(source);
     assert_eq!(strip(&once), once);
+}
+
+#[test]
+fn ordinary_comment_removal_preserves_literal_bytes_and_token_separation() {
+    use sensei::rules::no_comments::strip_ordinary;
+
+    let source = "//! API docs\n// non-lean-yet\nlet/* space */name = r#\"a  \nb\"#; // drop\n";
+    assert_eq!(
+        strip_ordinary(source),
+        "//! API docs\n// non-lean-yet\nlet name = r#\"a  \nb\"#; \n"
+    );
 }

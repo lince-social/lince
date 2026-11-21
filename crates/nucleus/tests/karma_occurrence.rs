@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn schedule_tick_identity_is_independent_from_batch_and_arrival_metadata, fn
+//   coalesced_source_cannot_disguise_an_individual_batch, fn schedule, fn timestamp.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 49.
+
 #![cfg(test)]
 
 use std::num::NonZeroU32;

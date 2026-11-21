@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Parcel, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 22, 27, 33, 37.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   20, 37, 83, 99, 104, 120.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (100).
+
 use super::*;
 
 pub(in crate::layout::desktop) struct Parcel {

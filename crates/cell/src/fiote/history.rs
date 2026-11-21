@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: struct Journal, fn path, fn load, fn archive_path.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 288, 298.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 25, 47, 52,
+//   334, 337, 341.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   69, 70, 76.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 69, 70, 76, 149, 167, 204.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 25, 47, 52, 334, 337, 341.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use fiote::{conversation::Summary, provider::ToolCall};
 

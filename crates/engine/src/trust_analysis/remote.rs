@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod commands, mod merge, mod worker, struct Runtime.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 78, 150, 151,
+//   154, 155, 163, 168, 209, 224, 274, 285.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option`
+//   value. Sites 279.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use crate::actions::ActionOutcome;
 use chrono::{DateTime, Utc};

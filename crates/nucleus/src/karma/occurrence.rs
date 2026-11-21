@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: const KARMA_OCCURRENCE_HASH_DOMAIN, const SEMANTIC_CALENDAR_TICK_HASH_DOMAIN, const
+//   CALENDAR_COALESCED_BATCH_HASH_DOMAIN, enum KarmaOccurrenceSchema.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 180.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 13, 20, 100, 127.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   66.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 49, 121, 149, 164, 226, 240, 254, 268, 296, 300.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 8, 9,
+//   10, 13, 15, 20, 21, 22, 23, 25, 26, 27, 29, 30, 31, 33, 34, 35, 40, 49, 100, 102, 106, 107,
+//   108, 109, 113, 121, 127, 129, 133, 134, 135, 136, 137, 149, 164, 208, 209, 210, 211, 213, 226,
+//   240, 254, 268, 296, 300.
+
 use serde::{Deserialize, Deserializer, Serialize, de};
 
 use super::{

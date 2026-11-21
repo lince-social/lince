@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn saved_snapshot, fn fixture, fn
+//   laboratory_suspends_all_roots_and_restores_drafts_cameras_focus_and_physics, fn
+//   laboratory_uses_a_temporary_output_workspace_without_suspending_other_views.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::{
     actions::Action,

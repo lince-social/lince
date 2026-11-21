@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod layout, const PROPERTIES, struct GroupAxis, struct Grouping.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 107, 142, 331,
+//   361, 408.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   91, 242, 247, 249, 320, 324, 435.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (106, 137, 337, 340, 352, 353, 410).
+
 mod layout;
 pub(super) use layout::Layout;
 

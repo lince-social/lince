@@ -1,0 +1,20 @@
+[package]
+name = "protein-authority"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Lince query wire types and Record authorization over in-memory snapshots"
+
+[dependencies]
+nucleus = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[build-dependencies]
+sensei = { workspace = true }
+
+[lints]
+workspace = true

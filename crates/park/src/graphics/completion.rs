@@ -1,4 +1,9 @@
-use super::{ProbeFailure, Result};
+// non-lean-yet
+// Scope: const LIMIT, const TIMEOUT, const TIMED_OUT, const STOPPED.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 137, 138, 159.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 134.
+
 use std::{
     sync::{
         Arc, OnceLock,
@@ -8,6 +13,8 @@ use std::{
     thread::{self, JoinHandle, Thread},
     time::{Duration, Instant},
 };
+
+use super::{ProbeFailure, Result};
 
 const LIMIT: usize = 32;
 const TIMEOUT: Duration = Duration::from_secs(5);
@@ -113,10 +120,12 @@ impl Driver {
                 let _observations = crate::presentation::observe_systems();
                 run(receiver, || {
                     #[cfg(feature = "native-presentation")]
-                    let _observation = crate::presentation::observe_work(
-                        "lince_park::graphics::completion::poll",
-                    );
-                    device.poll(wgpu::PollType::Poll).map(|_| ()).map_err(|error| error.to_string())
+                    let _observation =
+                        crate::presentation::observe_work("lince_park::graphics::completion::poll");
+                    device
+                        .poll(wgpu::PollType::Poll)
+                        .map(|_| ())
+                        .map_err(|error| error.to_string())
                 });
             })
             .map_err(|error| ProbeFailure::at("gpu_completion", error))?;
@@ -128,16 +137,23 @@ impl Driver {
     }
 
     pub(super) fn track(&self, queue: &wgpu::Queue) -> Result<Completion> {
-        let sender = self.sender.as_ref().ok_or_else(|| ProbeFailure::at("gpu_completion", STOPPED))?;
+        let sender = self
+            .sender
+            .as_ref()
+            .ok_or_else(|| ProbeFailure::at("gpu_completion", STOPPED))?;
         self.count
-            .try_update(Ordering::AcqRel, Ordering::Acquire, |count| (count < LIMIT).then_some(count + 1))
+            .try_update(Ordering::AcqRel, Ordering::Acquire, |count| {
+                (count < LIMIT).then_some(count + 1)
+            })
             .map_err(|_| ProbeFailure::at("gpu_completion", "GPU completion limit reached"))?;
         let completion = Completion::new(Instant::now());
-        sender.try_send(Job {
-            count: self.count.clone(),
-            completion: completion.clone(),
-            notify: thread::current(),
-        }).map_err(|error| ProbeFailure::at("gpu_completion", error))?;
+        sender
+            .try_send(Job {
+                count: self.count.clone(),
+                completion: completion.clone(),
+                notify: thread::current(),
+            })
+            .map_err(|error| ProbeFailure::at("gpu_completion", error))?;
         let state = Arc::downgrade(&completion.0);
         queue.on_submitted_work_done(move || {
             if let Some(state) = state.upgrade() {

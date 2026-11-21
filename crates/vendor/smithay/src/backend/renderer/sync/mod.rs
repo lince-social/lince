@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod egl, struct Interrupted, trait Fence, struct SyncPoint.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 //! Helper for synchronizing rendering operations
 use std::{error::Error, fmt, os::unix::io::OwnedFd, sync::Arc};
 

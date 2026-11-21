@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: const MAX_BYTES, enum Kind, enum Request, enum Response.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 7, 25, 39.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 3, 7,
+//   8, 9, 10, 14, 25, 26, 27, 28, 29, 31, 32, 33, 39, 40, 41, 44, 48.
+
 use serde::{Deserialize, Serialize};
 
 pub const MAX_BYTES: usize = 4 * 1024 * 1024;

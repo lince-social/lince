@@ -1,13 +1,33 @@
+// non-lean-yet
+// Scope: mod protocol, mod session, enum Command, struct Completion.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   112.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 12, 47.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   113.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 85, 106.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 12, 34, 40, 47, 78.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 1, 12,
+//   13, 14, 15, 16, 17, 18, 20, 21, 22, 23, 24, 25, 27, 28, 29, 34, 35, 36, 40, 41, 42, 43, 44, 47,
+//   48, 49, 51, 52, 53, 54, 55, 57, 58, 59, 60, 61, 62, 64, 65, 66, 67, 68, 69, 71, 72, 73, 75, 78,
+//   85, 106, 112.
+
 pub mod protocol;
 mod session;
 
-use crate::{Edit, Result};
-use ropey::Rope;
 use std::{
     path::PathBuf,
     sync::{Arc, Mutex},
 };
+
+use ropey::Rope;
 use tokio::sync::mpsc;
+
+use crate::{Edit, Result};
 
 pub enum Command {
     Sync {

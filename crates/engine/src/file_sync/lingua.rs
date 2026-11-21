@@ -1,3 +1,27 @@
+// non-lean-yet
+// Scope: mod automation, mod habits, struct State, struct Document.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 145, 148, 286,
+//   287, 337, 354, 360, 361, 362, 363, 364, 378, 379, 380, 389, 390, 405, 421, 422, 435, 447, 455,
+//   468, 469, 472, 473, 474, 487, 488, 633, 634, 637, 646, 649, 676, 678, 682, 685, 687, 690, 692,
+//   706, 753, 879, 907, 908, 909, 910, 918, 930, 931, 965, 989, 991, 992, 1006, 1009, 1023, 1028,
+//   1035, 1040, 1049, 1054, 1089, 1093, 1108, 1136, 1141, 1153, 1159, 1175, 1180, 1202, 1246, 1249,
+//   1261.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   125, 469, 488, 606, 1312, 1343, 1346, 1378.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 744, 757,
+//   774, 778, 824, 1065.
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 374, 1260.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 125, 469, 488, 606, 1312, 1343, 1346, 1364, 1371, 1378.
+// - [Clippy probe: clippy::map_unwrap_or] called `map(<f>).unwrap_or_else(<g>)` on an `Option`
+//   value. Sites 587.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 4.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   97.
+
 mod automation;
 mod habits;
 

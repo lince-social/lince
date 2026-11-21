@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn run, fn queued_entry_captures_project_privately_and_replay_exactly, fn
+//   shell_effects_remain_unexecuted_and_report_incomplete, fn
+//   a_rule_gate_that_does_not_pass_is_a_complete_projection.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use engine::actions::Action;

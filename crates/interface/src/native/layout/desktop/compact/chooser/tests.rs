@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn chooser, fn
+//   chooser_cancel_preserves_the_model_and_confirm_performs_one_membership_commit, fn
+//   a_changed_selected_surface_or_drag_keeps_the_draft_and_cannot_commit_to_a_replacement, fn
+//   a_replacement_modal_retains_keyboard_focus_when_the_old_chooser_receives_a_late_action.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use super::super::tests::{fixture, visible};
 

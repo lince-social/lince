@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 21.
+
 use super::*;
 
 impl Workspace {

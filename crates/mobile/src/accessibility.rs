@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: static ENABLED, struct Snapshot, fn modal, fn within_modal.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 93, 161.
+
 use crate::app::{ButtonIntent, Content, Input};
 use bevy::{prelude::*, text::EditableText};
 use std::sync::atomic::{AtomicBool, Ordering};

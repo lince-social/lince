@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: fn denied, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 333, 559.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   425.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 267.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 425.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 179, 400, 435, 445.
+// - [Clippy probe: clippy::unnecessary_literal_unwrap] used `unwrap_or_default()` on `None` value.
+//   Sites 270.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   179, 400, 435, 445.
+
 use crate::{Engine, EngineError, actions::ActionOutcome};
 use nucleus::visibility::{Command, Context, Data, Policy};
 use serde_json::{Value, json};

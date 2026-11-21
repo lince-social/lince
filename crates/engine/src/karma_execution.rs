@@ -1,3 +1,22 @@
+// non-lean-yet
+// Scope: struct DeviceExecution.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 28, 53, 74, 85.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   choose_karma_executor:additional (122), choose_karma_executor:enabled (121).
+// - [Clippy probe: clippy::expect_used] Check the stated invariant and handle reachable failures.
+//   Sites 27, 84.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 20.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 17, 117.
+// - [Clippy probe: clippy::missing_panics_doc] State the panic conditions for exported functions.
+//   Sites 17.
+// - [rustc probe: missing_debug_implementations] type does not implement `std::fmt::Debug`;
+//   consider adding `#[derive(Debug)]` or a manual implementation. Sites 6.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   6, 7, 8, 9, 10, 11, 12, 13, 17, 117.
+
 use serde::Serialize;
 
 use crate::{Engine, EngineError};

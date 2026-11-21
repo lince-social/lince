@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn engine, fn plain, fn add_link, fn closing_an_order_loop_warns_but_still_saves.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use engine::Engine;
 use engine::actions::Action;
 use nucleus::RecordKind;

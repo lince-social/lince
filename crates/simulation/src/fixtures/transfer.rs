@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: mod reservations, mod recovery, mod volume, mod trade.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 230.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 116.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 54, 66.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   31, 50.
+
 use engine::actions::{
     Action, TransferOccurrenceClaimRole, TransferPromiseInput, TransferReservePoint,
     TransferSatiation, TransferVisibility,

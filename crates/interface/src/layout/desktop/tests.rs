@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn id, fn item, fn viewport, fn
+//   inactive_insertion_preserves_focus_scroll_and_neighbor_size_intent.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 pub(super) fn id(value: u8) -> PlacementId {

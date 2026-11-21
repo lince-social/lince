@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: type Completion, type Job, struct Worker, fn stream.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 20, 21, 58, 67.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 101.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (26, 39, 109).
+
 use bevy::prelude::*;
 use std::sync::{Arc, Mutex, mpsc};
 

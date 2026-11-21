@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn print_ui_layout_tree, fn print_node.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 44, 45, 79, 81.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 88.
+// - [Clippy: clippy::string_add] you added something to a string. Consider using
+//   `String::push_str()` instead. Sites 76.
+
 use core::fmt::Write;
 
 use taffy::{NodeId, TraversePartialTree};

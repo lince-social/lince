@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: fn cell, fn secret, fn loopback, fn know.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 57, 60, 133, 136, 201, 204, 235, 238, 272, 275, 312, 315, 384, 387, 445, 448, 596, 599,
+//   694, 697, 774, 777, 837, 885, 933, 936, 990, 993, 1026, 1029, 1065, 1068, 1148, 1151, 1201,
+//   1202.
+// - [Clippy probe: clippy::match_same_arms] these match arms have identical bodies. Sites 183, 184.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 108, 122,
+//   185, 334, 366.
+
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 

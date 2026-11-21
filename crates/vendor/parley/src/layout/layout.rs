@@ -1,6 +1,10 @@
 // Copyright 2025 the Parley Authors
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+// non-lean-yet
+// Scope: struct Layout.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use crate::InlineBox;
 use crate::layout::alignment::align;
 use crate::layout::alignment::unjustify;

@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct Output, fn request, fn event, fn
+//   genai_emits_text_before_completion_and_collects_complete_tool_arguments.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 33, 35, 45, 67, 127, 129.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 51.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites 63.
+
 #![cfg(test)]
 
 use std::sync::{Arc, Mutex};

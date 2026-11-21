@@ -1,13 +1,33 @@
-use crate::{
-    Result,
-    files::Scope,
-    search::{Options, Pattern},
-};
+// non-lean-yet
+// Scope: struct Match, struct Matches, fn search, mod tests.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 140, 218, 241.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 52, 157.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   search:ignored (31).
+// - [Clippy: clippy::manual_let_else] this could be rewritten as `let...else`. Sites 84, 94, 119,
+//   147.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 27.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 14, 22.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 14, 15,
+//   16, 17, 18, 19, 22, 23, 24, 27.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   155.
+
 use std::{
     io::{BufRead, BufReader},
     path::PathBuf,
     sync::atomic::{AtomicBool, Ordering},
     time::{Duration, Instant},
+};
+
+use crate::{
+    Result,
+    files::Scope,
+    search::{Options, Pattern},
 };
 
 #[derive(Clone)]

@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn generalized_centres_cover_points_at_poles_dateline_and_all_supported_sizes, fn
+//   matching_location_permissions_choose_precision_and_exclusion_still_wins.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use nucleus::{
     place::{Place, approximate, distance},
     visibility::{Bound, Condition, Data, Policy},

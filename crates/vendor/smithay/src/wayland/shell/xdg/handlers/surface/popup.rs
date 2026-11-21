@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn send_popup_configure, fn make_popup_handle.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 42, 43, 52, 53,
+//   80, 120, 121.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (58, 61, 86, 88, 99, 118).
+
 use std::sync::atomic::Ordering;
 
 use crate::{

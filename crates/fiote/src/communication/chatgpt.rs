@@ -1,3 +1,34 @@
+// non-lean-yet
+// Scope: struct ChatGpt, fn content_part, fn usage.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 50, 136, 146, 149, 152, 330, 341, 358, 384, 471, 473, 480, 485, 490, 491, 492.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 112, 132, 229,
+//   252, 254, 269, 389, 474, 475, 485, 490.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 82, 84.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   82.
+// - [Clippy: clippy::format_push_string] `format!(..)` appended to existing `String`. Sites 135,
+//   136.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   48, 120, 141, 168, 226, 297, 331, 453, 465, 470.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 22, 25, 38.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 14.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 14, 22,
+//   25, 38.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites at: String
+//   (25), models: String (38), new: String (22).
+
+use std::sync::atomic::{AtomicBool, Ordering};
+
+use async_trait::async_trait;
+use eventsource_stream::Eventsource;
+use futures::StreamExt;
+use serde_json::{Value, json};
+
 use super::{
     auth::{self, Session},
     provider::{
@@ -5,11 +36,6 @@ use super::{
     },
 };
 use crate::config::Settings;
-use async_trait::async_trait;
-use eventsource_stream::Eventsource;
-use futures::StreamExt;
-use serde_json::{Value, json};
-use std::sync::atomic::{AtomicBool, Ordering};
 
 pub struct ChatGpt {
     settings: Settings,

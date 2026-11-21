@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct InputActivity, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   set_active:active (24).
+
 use std::sync::{Arc, atomic::{AtomicU64, Ordering}};
 
 #[cfg_attr(feature = "ui", derive(bevy::prelude::Resource))]

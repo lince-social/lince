@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: struct SessionState.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 17, 20, 22, 25,
+//   47, 81.
+// - [Clippy: clippy::collapsible_match] this `if` can be collapsed into the outer `match`. Sites
+//   24.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 51.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 1.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 5,
+//   6, 7, 8, 10, 35, 51, 66.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites change_option:
+//   String (51).
+
 use super::*;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

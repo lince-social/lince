@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct CacheInfo, struct KernelParams, trait DivCeil, fn has_amx_impl.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Check whether explicit panics can be reached by ordinary failure. Sites
+//   575.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   208, 210, 211, 213, 256, 257, 258, 327.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (250, 251, 253, 254).
+
 #[derive(Default, Debug, Copy, Clone)]
 pub struct CacheInfo {
     pub associativity: usize,

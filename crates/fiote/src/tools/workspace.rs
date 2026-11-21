@@ -1,13 +1,25 @@
-use super::{Registry, Tool};
-use crate::provider::ToolDefinition;
-use async_trait::async_trait;
-use serde::Deserialize;
-use serde_json::{Value, json};
+// non-lean-yet
+// Scope: const MAX_BYTES, enum Operation, struct FileTool, fn register.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 90.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites 39,
+//   144.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   97.
+
 use std::{
     io::Read,
     path::{Component, Path},
     sync::Arc,
 };
+
+use async_trait::async_trait;
+use serde::Deserialize;
+use serde_json::{Value, json};
+
+use super::{Registry, Tool};
+use crate::provider::ToolDefinition;
 
 const MAX_BYTES: usize = 1_048_576;
 

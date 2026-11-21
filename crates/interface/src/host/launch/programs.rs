@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: enum Program, struct Programs, type Request, struct ProgramsSnapshot.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites validate:
+//   String (43).
+
 use super::Description;
 use crate::host::input::{InputRequest, InputResponse};
 

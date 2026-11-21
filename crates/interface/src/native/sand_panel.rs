@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod tests, fn button, fn field, fn frame.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use crate::i18n::Token as Tr;
 use crate::native::actions::Action;
 use bevy::prelude::*;

@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn fixture, fn set, fn enroll, fn displayed.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn fixture() -> (App, Entity) {

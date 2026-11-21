@@ -1,4 +1,13 @@
-use super::*;
+// non-lean-yet
+// Scope: struct Popups, struct PopupSnapshot, fn valid_positioner, fn valid_mapping.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 94, 101, 118,
+//   131, 160, 171, 175, 200, 205, 218, 341, 346, 356, 383, 406.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   71, 98, 245, 248, 249, 252.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (279, 284).
+
 use smithay::{
     desktop::{
         PopupGrab, PopupKeyboardGrab, PopupKind, PopupManager, PopupPointerGrab,
@@ -7,6 +16,8 @@ use smithay::{
     input::pointer::Focus,
     wayland::shell::xdg::XdgPopupSurfaceData,
 };
+
+use super::*;
 
 #[derive(Default)]
 pub(super) struct Popups {
@@ -34,7 +45,8 @@ impl PopupSnapshot {
         };
         let first: Rectangle<f64, Logical> = rectangle(nodes.next()?);
         let bounds = nodes.fold(first, |bounds, node| bounds.merge(rectangle(node)));
-        Some(lince_interface::host::ContentMapping { corners: None,
+        Some(lince_interface::host::ContentMapping {
+            corners: None,
             canvas: lince_interface::host::Rectangle::new(
                 [
                     origin[0] + f64::from(self.origin[0]) + bounds.loc.x,
@@ -75,7 +87,8 @@ impl PopupSnapshot {
             f64::from(self.origin[1]) + bounds.loc.y + parent_origin.y - parent_bounds.loc.y,
         ];
         let anchor = item.mapping.canvas_point(popup_origin)?;
-        Some(lince_interface::host::ContentMapping { corners: None,
+        Some(lince_interface::host::ContentMapping {
+            corners: None,
             canvas: lince_interface::host::Rectangle::new(
                 anchor,
                 [bounds.size.w * scale[0], bounds.size.h * scale[1]],
@@ -167,12 +180,18 @@ impl State {
                 root = popup.get_parent_surface()?;
                 continue;
             }
-            if let Some(popup) = self.ime.popups.iter().find(|popup| popup.wl_surface() == &root) {
+            if let Some(popup) = self
+                .ime
+                .popups
+                .iter()
+                .find(|popup| popup.wl_surface() == &root)
+            {
                 root = popup.get_parent()?.surface.clone();
                 continue;
             }
             return (self.id(&root).is_some() || self.layers.surfaces.contains_key(&root))
-                .then_some(root.clone()).or_else(|| (self.native_surface.as_ref() == Some(&root)).then_some(root));
+                .then_some(root.clone())
+                .or_else(|| (self.native_surface.as_ref() == Some(&root)).then_some(root));
         }
         None
     }
@@ -237,7 +256,10 @@ impl State {
                             } else {
                                 output.usable.unwrap_or(output.bounds)
                             };
-                            let Some(area) = self.visible_output_rectangle(output.id).and_then(|visible| visible.intersection(area)) else {
+                            let Some(area) = self
+                                .visible_output_rectangle(output.id)
+                                .and_then(|visible| visible.intersection(area))
+                            else {
                                 self.reject_popup(popup);
                                 return false;
                             };
@@ -277,18 +299,37 @@ impl State {
                 .and_then(|id| self.outputs.get(id))
             {
                 let layer = self.layers.surfaces.get(&root).unwrap();
-                let geometry = smithay::desktop::layer_map_for_output(&output.output).layer_geometry(layer);
+                let geometry =
+                    smithay::desktop::layer_map_for_output(&output.output).layer_geometry(layer);
                 if let Some(geometry) = geometry {
                     bounds = Rectangle::new(
                         (-geometry.loc.x, -geometry.loc.y).into(),
                         super::outputs::logical_size(&output.output).unwrap(),
                     );
-                    if let Some(visible) = self.layers.outputs.get(&root).and_then(|id| self.visible_output_rectangle(*id)) {
+                    if let Some(visible) = self
+                        .layers
+                        .outputs
+                        .get(&root)
+                        .and_then(|id| self.visible_output_rectangle(*id))
+                    {
                         let origin = output.output.current_location();
                         bounds = Rectangle::new(
-                            ((visible.origin()[0] - f64::from(origin.x) - f64::from(geometry.loc.x)).floor() as i32,
-                                (visible.origin()[1] - f64::from(origin.y) - f64::from(geometry.loc.y)).floor() as i32).into(),
-                            (visible.size()[0].ceil().max(1.0) as i32, visible.size()[1].ceil().max(1.0) as i32).into(),
+                            (
+                                (visible.origin()[0]
+                                    - f64::from(origin.x)
+                                    - f64::from(geometry.loc.x))
+                                .floor() as i32,
+                                (visible.origin()[1]
+                                    - f64::from(origin.y)
+                                    - f64::from(geometry.loc.y))
+                                .floor() as i32,
+                            )
+                                .into(),
+                            (
+                                visible.size()[0].ceil().max(1.0) as i32,
+                                visible.size()[1].ceil().max(1.0) as i32,
+                            )
+                                .into(),
                         );
                     }
                 }

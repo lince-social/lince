@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Selection, struct EditorSource, struct References.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 119, 184.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (30).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (40).
+
 use super::*;
 use bevy::ecs::query::QueryState;
 

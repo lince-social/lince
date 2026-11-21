@@ -1,3 +1,23 @@
+// non-lean-yet
+// Scope: struct Original.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 148, 164, 191,
+//   207, 279, 280, 288, 334, 386, 411, 441.
+// - [review: §3 Ownership] Check that these inputs can be borrowed without changing ownership
+//   semantics. Sites forward_one_evidence:record → &str (355).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   413.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 218, 225, 232, 246, 251, 283, 303, 311, 398, 400, 412, 417, 427.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 218, 225, 246, 251, 283, 398, 412, 427.
+// - [Clippy probe: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 218, 225, 232, 246, 251, 303, 311.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 393, 398, 413, 417, 441.
+// - [Clippy probe: clippy::manual_let_else] this could be rewritten as `let...else`. Sites 182,
+//   231, 263.
+
 use super::*;
 use futures::{StreamExt, stream};
 use nucleus::{

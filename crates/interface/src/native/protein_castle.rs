@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: mod tests, mod ui, struct ProteinCastle, fn refresh_editor.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 89, 124, 307,
+//   309, 310, 330, 485, 516, 593, 622, 628, 647, 672.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (58, 376, 428, 429, 430, 459, 460, 469, 470, 506, 509, 547, 551, 565, 588, 593,
+//   604, 608, 620, 628, 632, 640, 645, 663, 667, 670).
+
 use lince_interface::queries as model;
 pub(crate) mod tests;
 mod ui;

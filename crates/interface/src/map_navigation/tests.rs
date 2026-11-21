@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn fixture, fn settle, fn
+//   choosing_a_search_result_is_unsaved_and_scope_change_clears_private_query, fn
+//   routing_sends_only_reviewed_visible_points_and_cancelled_replies_stay_cleared.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn fixture(path: PathBuf) -> (World, Entity, Entity) {

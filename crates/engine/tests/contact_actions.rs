@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod claims, mod privacy, mod recipes, mod snapshots.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 #[path = "contact_actions/claims.rs"]

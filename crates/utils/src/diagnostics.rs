@@ -1,8 +1,24 @@
+// non-lean-yet
+// Scope: mod journal, const CAPACITY, struct Notice, struct State.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 227, 228.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 38, 43, 97.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   112, 219.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 33, 121.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 15, 16,
+//   17, 18, 19, 20, 33, 36, 41, 46, 53, 83, 91, 121.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   142.
+
 mod journal;
+
+use std::sync::{Arc, Mutex, OnceLock};
 
 pub use journal::Journal;
 use serde::{Deserialize, Serialize};
-use std::sync::{Arc, Mutex, OnceLock};
 use tracing::{
     Event, Subscriber,
     field::{Field, Visit},
@@ -39,14 +55,17 @@ impl Diagnostics {
     }
 
     pub fn snapshot(&self) -> (u64, Vec<Notice>) {
-        let state = self.0.lock().unwrap_or_else(|error| error.into_inner());
+        let state = self
+            .0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         (state.revision, state.notices.clone())
     }
 
     pub fn revision(&self) -> u64 {
         self.0
             .lock()
-            .unwrap_or_else(|error| error.into_inner())
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .revision
     }
 
@@ -89,7 +108,10 @@ impl Diagnostics {
     }
 
     pub fn subscribe(&self, listener: impl Fn() + Send + Sync + 'static) -> Subscription {
-        let mut state = self.0.lock().unwrap_or_else(|error| error.into_inner());
+        let mut state = self
+            .0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         state.next_listener += 1;
         let id = state.next_listener;
         state.listeners.push((id, Arc::new(listener)));
@@ -101,7 +123,10 @@ impl Diagnostics {
 
     fn change(&self, change: impl FnOnce(&mut State) -> bool) {
         let listeners = {
-            let mut state = self.0.lock().unwrap_or_else(|error| error.into_inner());
+            let mut state = self
+                .0
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             if !change(&mut state) {
                 return;
             }
@@ -128,7 +153,7 @@ impl Drop for Subscription {
         self.log
             .0
             .lock()
-            .unwrap_or_else(|error| error.into_inner())
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .listeners
             .retain(|(id, _)| *id != self.id);
     }
@@ -209,8 +234,9 @@ impl Visit for Fields {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::sync::atomic::{AtomicUsize, Ordering};
+
+    use super::*;
 
     #[test]
     fn bounded_deduplicated_notices_wake_listeners_and_dismiss() {

@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: mod linux, fn private_files_unsupported_platform_has_no_path_fallback.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 386, 387.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 399, 468.
+
 #![cfg(test)]
 
 #[cfg(target_os = "linux")]

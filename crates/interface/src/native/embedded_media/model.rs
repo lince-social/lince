@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: const MAX_FILE, struct Model, struct Job, struct Worker.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 317, 324, 583,
+//   617, 714, 734.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 100.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (74).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   191.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (304, 334, 668, 670, 678, 699, 714, 767, 770, 791, 797, 799, 804, 808, 810, 815).
+
 use super::*;
 use crate::native::topology::assets::{AssetDirectory, ImportedAsset};
 use bevy::{

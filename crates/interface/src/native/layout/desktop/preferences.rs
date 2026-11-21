@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: static DEFAULTS, struct OpeningSettings, struct Synchronization, fn synchronize.
+// BeautifulRust (baseline lines):
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 42.
+
 use super::*;
 use crate::{
     layout::desktop::Workspace,

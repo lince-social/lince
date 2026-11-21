@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: mod sealed, trait Source, struct Snapshot, struct Values.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 64, 69, 110.
+
 use super::*;
 use std::{any::Any, sync::Arc};
 

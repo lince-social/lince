@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Snapshot, struct Source, struct ContentRef, struct Rows.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 43, 53, 61, 108,
+//   110, 112, 177, 209, 220, 224.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   55, 173, 174, 183.
+
 use super::{RecordBinding, StoredPart, attachments};
 use bevy::prelude::*;
 use serde::Deserialize;

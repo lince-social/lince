@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: mod profile_devices, mod ending_recovery, fn command, fn plain_source.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 790, 1024, 1027, 1117, 1120, 1121, 1195, 1198, 1199, 1380, 1383, 1665, 1668, 1684, 1941,
+//   1950, 1957, 1978.
+
 #![cfg(test)]
 
 use engine::{

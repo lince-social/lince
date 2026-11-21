@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn pointer_defaults_are_typed_and_share_alias_validation_conflicts_and_configuration, fn
+//   mouse_bindings_cannot_remove_ordinary_clicks_or_become_keyboard_commands.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::shortcuts::model::{Chord, ModKey, Settings, Trigger};
 

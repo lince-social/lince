@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: const PAGE, fn description, fn history_form, fn continuation_form.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 78.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (158, 215).
+
 use super::*;
 use ui::{Command, button, row};
 

@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: mod prepared, type SummaryView, type RowView, struct State.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (106, 128, 166, 291).
+
 use super::*;
 use crate::native::layout::desktop::CommandContext;
 use bevy::ecs::query::QueryState;

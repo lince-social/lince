@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: fn refused, fn hash, fn uid, fn objects.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 161, 175, 196,
+//   251, 376, 378, 384, 435, 465, 466, 467, 468, 469, 479, 489, 513, 520, 521.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   31.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 31, 67, 68, 74, 75, 174, 175, 208, 209, 210, 429, 430, 431, 435, 456, 457, 478,
+//   481, 485, 488, 491, 494, 501, 520, 521, 526, 533.
+// - [Clippy probe: clippy::needless_pass_by_value] Borrow the input after checking the caller and
+//   framework contract (Clippy suggests &). Sites 15.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 12.
+
 use std::num::NonZeroU32;
 
 use chrono::{DateTime, Utc};

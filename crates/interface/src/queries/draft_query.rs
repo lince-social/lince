@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: struct DraftQuery, struct Snapshot.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 21, 42, 114.
+
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
 use std::{

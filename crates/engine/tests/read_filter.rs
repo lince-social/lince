@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: fn cell, fn record, fn person, fn kind_is.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use engine::Engine;
 use engine::actions::Action;
 use engine::trust::Signer;

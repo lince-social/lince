@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: fn contains, fn placements, fn refuse_automation_assignment.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 21, 24, 123, 189,
+//   191, 231, 269, 356.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   7.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 7.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use crate::area_transition::{QuantityOperation, RecordChanges};
 use chrono::{DateTime, Utc};

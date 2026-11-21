@@ -1,4 +1,16 @@
-use super::super::{CanvasWorker, Completed, Configuration, Input};
+// non-lean-yet
+// Scope: const BODY, mod permission, fn provider, fn output.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
+use std::{
+    io::Write,
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicUsize, Ordering},
+    },
+    time::{Duration, Instant},
+};
+
 use bevy::{
     ecs::schedule::Schedules,
     prelude::{
@@ -15,14 +27,8 @@ use lince_interface::{
         protein_area::{RecordBinding, Source},
     },
 };
-use std::{
-    io::Write,
-    sync::{
-        Arc, Mutex,
-        atomic::{AtomicUsize, Ordering},
-    },
-    time::{Duration, Instant},
-};
+
+use super::super::{CanvasWorker, Completed, Configuration, Input};
 
 const BODY: &str = "Quiet inspector owner description";
 
@@ -47,7 +53,8 @@ fn output() -> crate::presentation::Output {
     let bounds = Rectangle::new([0.0; 2], [1000.0, 700.0]).unwrap();
     crate::presentation::Output {
         name: "Inspector fixture".into(),
-        viewport: OutputViewport { rotation: Default::default(),
+        viewport: OutputViewport {
+            rotation: Default::default(),
             id: OutputId(1),
             bounds,
             usable: Some(bounds),

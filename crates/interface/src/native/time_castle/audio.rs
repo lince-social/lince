@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct Panel, struct Snapshot, struct Runtime, fn controls.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 83, 98, 103, 162,
+//   187.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   98.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (103, 153, 161, 162).
+
 use super::*;
 use crate::native::actions::Action;
 use lince_interface::sound::{Cue, Mode, Output};

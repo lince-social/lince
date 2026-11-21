@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod presentation, mod tests, struct View, struct Form.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 138, 143, 145,
+//   210, 226, 248, 249, 298, 321, 328, 357, 375, 431, 531, 560, 709.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 136, 150.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (207).
+
 use crate::native::{actions::Action, sand_panel as panel};
 use bevy::prelude::*;
 use nucleus::plugins::{

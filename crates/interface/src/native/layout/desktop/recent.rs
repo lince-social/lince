@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: mod catalogue, mod ui, const LIMIT, struct History.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 133.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   acknowledge:accepted (376).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   165, 287, 328.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (60, 113, 179, 202, 329, 333, 340, 345).
+
 use super::*;
 use crate::native::{
     actions::{Action, Modifiers},

@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn elapsed_frequency_has_stable_text_and_compiles_symbolic_parameters, fn
+//   calendar_daily_weekly_and_monthly_forms_round_trip_and_compile, fn
+//   frequency_comments_order_and_calendar_parameter_overrides_are_canonical, fn
+//   overrides_fail_for_unknown_type_and_range_without_changing_revision.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 26, 39, 96,
+//   136, 417.
+
 #![cfg(test)]
 
 use std::{collections::BTreeMap, num::NonZeroU32};

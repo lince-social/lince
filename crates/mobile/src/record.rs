@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct Prepared, const SORTS, fn new_draft, fn change.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 87.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites change: String
+//   (45), prepare_change: String (54).
+
 use base64::{Engine as _, engine::general_purpose::STANDARD as B64};
 use engine::{
     actions::Action,

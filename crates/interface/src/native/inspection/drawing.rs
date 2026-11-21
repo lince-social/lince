@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: enum Mark, struct Drawing, fn retire, fn apply.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   175.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (160, 170).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 157.
+
 use super::{InspectionOverlay, Typography};
 use crate::native::{token_style, tokens::Token};
 use bevy::prelude::*;

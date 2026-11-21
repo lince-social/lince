@@ -3,6 +3,19 @@
 
 //! Unicode bidirectional algorithm.
 
+// non-lean-yet
+// Scope: type BidiLevel, struct BidiResolver, fn type_from_level, fn _reorder.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   98, 104, 105, 108, 110, 125, 127, 129, 136, 143, 145, 151, 222, 227, 232, 235, 277, 279, 282,
+//   295, 297, 299, 310, 318, 321, 324, 327, 335, 342, 351, 356, 357, 362, 368, 369, 377, 378, 380,
+//   381, 382, 405, 407, 411, 421, 428, 432, 438, 444, 453, 455, 457, 461, 474, 477, 481, 492, 495,
+//   497, 520, 525, 542, 543, 549, 566, 567, 569, 570, 571, 577, 578, 579, 584, 585, 600, 609, 617,
+//   635, 645, 646, 648, 650, 652, 658, 659, 661, 663, 759, 770, 829, 830, 831, 842, 846, 850, 870,
+//   879, 885.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (503).
+
 use alloc::vec::Vec;
 use icu_properties::props::{BidiClass, BidiMirroringGlyph, BidiPairedBracketType};
 

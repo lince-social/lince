@@ -1,3 +1,19 @@
+// non-lean-yet
+// Scope: fn field, fn manifest, struct Settings, fn client.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 178, 217, 226, 248, 265, 285, 287, 291, 306.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 217, 231, 265,
+//   268, 285.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   67, 68, 99, 106, 121, 128, 139, 146, 169, 172, 234, 266, 286.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 156, 210.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 1, 22,
+//   156, 210.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites handle: String
+//   (210), imported: String (156).
+
 use nucleus::plugins::{
     Compatibility, Contribution, Field, FieldType, ImportedRecord, Manifest, PreparedPublication,
     PublishRecord,

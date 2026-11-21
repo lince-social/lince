@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn package, fn
+//   unsupported_packages_keep_visible_metadata_and_offer_receiving_without_execution, fn
+//   changing_catalogues_discards_previous_organ_responses, fn
+//   inspecting_a_received_package_does_not_place_it_before_explicit_enable.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::sand_panel::tests::app;
 

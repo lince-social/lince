@@ -1,9 +1,21 @@
+// non-lean-yet
+// Scope: fn project, fn validate_projection, fn visit.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 45, 76, 89, 93,
+//   97, 98, 103, 150, 151.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   168, 177, 246.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 8, 20.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 8, 20.
+
+use ast::{Declaration, Document, FrequencyField, RecordField, RuleField};
+
 use super::{
     Diagnostic, ProjectedAssertion, ProjectedDocument, ProjectedFrequency, ProjectedImport,
     ProjectedRecord, ProjectedRule, ast, checked_slug, decode_description_boundaries, diagnostic,
     extension, required, typed_uid,
 };
-use ast::{Declaration, Document, FrequencyField, RecordField, RuleField};
 
 pub fn project(document: &Document) -> Result<ProjectedDocument, Diagnostic> {
     let mut output = ProjectedDocument {

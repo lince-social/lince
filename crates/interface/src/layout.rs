@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod desktop, mod outputs, const LIMIT, enum Sizing.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use serde::{Deserialize, Serialize};
 
 pub mod desktop;

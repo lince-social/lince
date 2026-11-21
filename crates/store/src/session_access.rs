@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: const MAX_USERNAME_BYTES, const MAX_PASSWORD_HASH_BYTES, const MAX_DEVICES_PER_PERSON,
+//   const MAX_DEVICES.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 424.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   compare_and_set_revoked_on:revoked (435).
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 206, 207, 407, 409.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 13, 74.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 162, 172, 229, 272, 319, 340, 370, 430, 467.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 7, 8,
+//   9, 10, 13, 14, 15, 16, 17, 18, 23, 30, 34, 38, 43, 50, 54, 58, 74, 75, 76, 77, 81, 82, 83, 84,
+//   85, 89, 90, 91, 92, 93, 97, 104, 108, 112, 162, 172, 229, 272, 319, 340, 370, 430, 467.
+
 use std::fmt;
 
 use sqlx::SqliteConnection;
@@ -202,12 +219,14 @@ async fn credential_on(
                 CASE WHEN valid = 1 THEN username END,
                 CASE WHEN valid = 1 THEN password_hash END FROM bounded"
     );
-    let row = sqlx::query_as::<_, (i64, Option<String>, Option<String>, Option<String>)>(sqlx::AssertSqlSafe(query.as_str()))
-        .bind(MAX_USERNAME_BYTES as i64)
-        .bind(MAX_PASSWORD_HASH_BYTES as i64)
-        .bind(identity)
-        .fetch_optional(&mut *connection)
-        .await?;
+    let row = sqlx::query_as::<_, (i64, Option<String>, Option<String>, Option<String>)>(
+        sqlx::AssertSqlSafe(query.as_str()),
+    )
+    .bind(MAX_USERNAME_BYTES as i64)
+    .bind(MAX_PASSWORD_HASH_BYTES as i64)
+    .bind(identity)
+    .fetch_optional(&mut *connection)
+    .await?;
     let Some(row) = row else {
         return Ok(None);
     };

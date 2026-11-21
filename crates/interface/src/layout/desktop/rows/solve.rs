@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Visible.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   40.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (116).
+
 use super::*;
 
 struct Visible<'a> {

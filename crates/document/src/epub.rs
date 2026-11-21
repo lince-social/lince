@@ -1,4 +1,25 @@
-use super::{Layout, Result, Tile};
+// non-lean-yet
+// Scope: type Pending, struct Assets, struct Epub.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 126, 133.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 114, 188, 202, 206, 214.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   188.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 188.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   151.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   26, 132.
+
+use std::{
+    collections::VecDeque,
+    io::{Cursor, Read, Seek},
+    sync::{Arc, Mutex},
+};
+
 use anyrender::{ImageRenderer, PaintScene};
 use anyrender_vello_cpu::VelloCpuImageRenderer;
 use blitz_dom::DocumentConfig;
@@ -8,11 +29,8 @@ use blitz_traits::{
     shell::{ColorScheme, Viewport},
 };
 use peniko::{Fill, color::palette::css::WHITE, kurbo::Rect};
-use std::{
-    collections::VecDeque,
-    io::{Cursor, Read, Seek},
-    sync::{Arc, Mutex},
-};
+
+use super::{Layout, Result, Tile};
 
 type Pending = (Request, Box<dyn NetHandler>);
 
@@ -59,7 +77,7 @@ impl Epub {
         let sections: Vec<_> = book
             .spine()
             .iter()
-            .filter(|entry| entry.is_linear())
+            .filter(rbook::epub::spine::EpubSpineEntry::is_linear)
             .filter_map(|entry| {
                 entry
                     .manifest_entry()
@@ -128,8 +146,8 @@ impl Epub {
         if source.len() > 4 * 1024 * 1024 {
             return Err("EPUB chapter exceeds 4 MiB".into());
         }
-        let mut base = Url::parse("https://book.invalid/")
-            .expect("the built-in EPUB base URL is valid");
+        let mut base =
+            Url::parse("https://book.invalid/").expect("the built-in EPUB base URL is valid");
         base.set_path(&self.sections[section]);
         let source = super::resources::markup(&self.book, &base, source.as_bytes(), 0)?;
         let assets = Arc::new(Assets::default());

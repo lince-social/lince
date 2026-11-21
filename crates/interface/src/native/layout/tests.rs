@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn canvas, fn fit, fn content_owned_record_height_settles_without_repeating_redraws, fn
+//   text.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::{canvas::CanvasItem, sand_text::SandText, workspace::WorkspaceMember};
 use bevy::{math::DVec2, text::TextLayoutInfo, ui::widget::TextScroll};

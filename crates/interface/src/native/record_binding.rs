@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: mod journal, mod splice_checks, mod cursors, mod identity.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 1595, 1638, 1793,
+//   1796, 1991, 2049, 2133, 2134, 2135, 2165, 2233, 2293, 2297, 2305, 2306, 2307, 2308, 2323, 2383,
+//   2400, 2401, 2403, 2404, 2405, 2406, 2506, 2507, 2662, 2664, 2711, 2712, 2713, 2716, 2717, 2783,
+//   2796, 2830, 2837.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (1995, 2333).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   2134, 2192, 2193, 2202, 2207, 2403, 2459, 2694.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (1834, 2148, 2244, 2251, 2418, 2569, 2573, 2782, 2783, 2786, 2788, 2796).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 1944, 2249, 2250.
+
 use base64::{Engine as _, engine::general_purpose::STANDARD as B64};
 use bevy::{
     prelude::*,

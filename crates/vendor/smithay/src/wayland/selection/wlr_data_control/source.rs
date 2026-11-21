@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: struct DataControlSourceUserData, struct SourceMetadata.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (51, 72).
+
 use std::sync::Mutex;
 
 use wayland_protocols_wlr::data_control::v1::server::zwlr_data_control_source_v1::{

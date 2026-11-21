@@ -1,6 +1,19 @@
-use crate::StoreError;
+// non-lean-yet
+// Scope: fn invalid, struct Saved, fn get_on, fn get.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 5.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 18, 54, 58, 78, 97.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 9, 84, 90.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 9, 10,
+//   11, 12, 13, 14, 15, 18, 54, 58, 78, 84, 85, 86, 90, 91, 92, 93, 94, 97.
+
 use nucleus::{Fact, transfer::receipt_delivery::Delivery};
 use sqlx::{SqliteConnection, SqlitePool};
+
+use crate::StoreError;
 
 fn invalid(message: impl ToString) -> StoreError {
     StoreError::Protocol(message.to_string())

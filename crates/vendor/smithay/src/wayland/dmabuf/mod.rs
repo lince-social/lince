@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: mod dispatch, struct DmabufFeedbackTranche, struct DmabufFeedbackFormatTable, struct
+//   DmabufFeedbackInner.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 477, 524, 539,
+//   543, 723, 728, 729, 770, 778, 897, 918.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 587, 796.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   484.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (514, 536, 552, 705, 756, 765, 1143, 1201).
+
 //! Linux DMABUF protocol
 //!
 //! This module provides helper to handle the linux-dmabuf protocol, which allows clients to submit their

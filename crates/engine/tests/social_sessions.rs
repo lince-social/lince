@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn session_reset_rollback_preserves_decryptable_accounts_and_authority_wallet, fn
+//   offline_fallback_supports_independent_initiations_and_encrypted_restart_state.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 132.
+
 use vodozemac::olm::{Account, AccountPickle, OlmMessage, Session, SessionConfig, SessionPickle};
 
 #[tokio::test]

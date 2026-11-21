@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: mod credits, mod persistence, mod runtime, mod tests.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 40, 75, 221, 273,
+//   377.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (192, 240, 249, 252, 260, 265, 266, 273, 276, 284, 290).
+
 mod credits;
 pub(crate) use credits::CREDITS;
 mod persistence;

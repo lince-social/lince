@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 /// Glyph with an offset and advance.
+// non-lean-yet
+// Scope: struct Glyph.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct Glyph {
     pub id: u32,

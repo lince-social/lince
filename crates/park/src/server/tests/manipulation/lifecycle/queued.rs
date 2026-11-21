@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn workspaces, fn
+//   a_queued_client_resize_cannot_revive_after_leaving_and_returning_to_its_workspace, fn
+//   an_older_frame_from_another_workspace_cannot_retire_a_valid_new_client_press, fn
+//   retiring_an_unclaimed_press_context_keeps_an_ordinary_client_press_and_release_paired.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn workspaces(fixture: &mut Fixture) -> (u64, u64, u64, Arc<crate::runtime::Completed>) {

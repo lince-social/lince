@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: struct Sink, fn tools, fn fixture, fn
+//   additional_directories_are_validated_gated_and_resent_on_load.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 48, 108, 216, 267, 352, 371, 373, 380, 381, 395, 399, 407, 415, 528, 561, 637, 638, 639,
+//   664, 665, 666, 667, 703.
+// - [Clippy: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones. Sites
+//   186, 223.
+// - [Clippy: clippy::missing_assert_message] assert without any message. Sites 33, 43.
+
 #![cfg(feature = "test-agent")]
 
 use fiote::{

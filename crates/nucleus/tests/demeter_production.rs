@@ -1,11 +1,20 @@
+// non-lean-yet
+// Scope: fn fixture, fn rounds_plants_and_buys_the_startup_gap_across_the_new_year, fn
+//   seasonal_delays_and_capacity_shortfalls_remain_visible, fn
+//   repeated_livestock_outputs_and_feed_use_the_same_template_interpreter.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 110, 132, 186, 265, 266, 267, 270, 292, 350.
+
 #![cfg(test)]
+
+use std::{collections::BTreeMap, sync::atomic::AtomicBool};
 
 use nucleus::{
     demeter::{production::*, *},
     optimization::{Options, decimal},
 };
 use serde_json::json;
-use std::{collections::BTreeMap, sync::atomic::AtomicBool};
 
 fn fixture() -> (Input, Outcome, Template, Choice) {
     let input = Input {

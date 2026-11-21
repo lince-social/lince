@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: enum Kind, struct State, struct Memory, struct Header.
+// BeautifulRust (baseline lines):
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   52, 182, 288, 301, 303, 434.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (122, 126, 129, 365, 387, 405, 406, 434).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 217.
+
 use crate::native::actions::Action;
 use bevy::ecs::query::QueryState;
 use bevy::prelude::*;

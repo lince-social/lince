@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct Exercise, fn main, fn exercise.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 36, 48, 58, 83,
+//   187.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (41, 109).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (19, 21, 22, 32, 34, 38, 43, 54, 116, 127, 130, 151, 159).
+
 use bevy::render::view::screenshot::{Screenshot, ScreenshotCaptured, save_to_disk};
 use bevy::{a11y::AccessibilityNode, prelude::*, text::EditableText, ui_widgets::Activate};
 use lince_sandbox::{description::Description, protein_area::Source};

@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn registry, fn program, fn
+//   bundled_registry_uses_ecosystem_metadata_and_rejects_unbounded_or_ambiguous_entries, fn
+//   discovery_distinguishes_missing_bridge_and_builds_a_profile_without_running_or_reading_credentials.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 20, 22, 25, 27, 28, 48, 51, 54, 59, 63, 78, 80, 95, 101, 106, 111, 115, 116, 119.
+
 use super::*;
 
 fn registry() -> Registry {

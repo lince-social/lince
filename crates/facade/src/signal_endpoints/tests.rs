@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn ailuros_clock_uses_public_https_ingress_and_discloses_only_server_identity_and_time, fn
+//   https_proxy_ingress_verifies_readings_and_enforces_body_and_origin_limits, fn
+//   global_ingress_limits_apply_before_signature_work, fn
+//   bearer_clients_update_only_the_signal_in_their_endpoint_grant.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use engine::{
     actions::Action,

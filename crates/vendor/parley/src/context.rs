@@ -3,6 +3,12 @@
 
 //! Context for layout.
 
+// non-lean-yet
+// Scope: struct LayoutContext.
+// BeautifulRust (baseline lines):
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   ranged_builder:quantize (92), style_run_builder:quantize (124), tree_builder:quantize (164).
+
 use alloc::{vec, vec::Vec};
 
 use super::FontContext;

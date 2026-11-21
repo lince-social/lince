@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: struct ColorPicker, struct ColorChanged, struct ColorPickerPlugin, fn spawn.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 328, 332, 385,
+//   444.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   spawn:alpha (52).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   209, 298, 300, 312, 314, 398.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (96, 141, 143, 150, 153, 187, 216, 332, 334, 335, 343, 344, 345, 385, 393, 407,
+//   415, 422, 427, 436, 444, 449, 454, 458, 472, 478).
+
 use crate::native::{
     castle::Castle,
     edit_mode::label,

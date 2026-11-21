@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn endpoint, fn render, fn progress_controls.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 14, 55, 64, 121,
+//   136, 176.
+
 use super::*;
 use nucleus::transfer::transport::{Activity, Direction, Journey, Step, Terms};
 

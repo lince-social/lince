@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: fn page_ranking_keeps_the_raw_id_cursor_and_does_not_skip_the_next_page, fn
+//   exhausted_evidence_count_or_bytes_still_hides_a_proven_conflict, fn
+//   conflict_paging_advances_past_muted_or_unmatched_candidates, fn
+//   a_signed_contradiction_cannot_replace_an_existing_withdrawal.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 76, 111, 189.
+
 use super::*;
 
 #[tokio::test]

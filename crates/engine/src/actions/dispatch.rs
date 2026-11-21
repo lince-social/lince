@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: mod part_0, mod part_1, mod part_2, mod part_3.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::match_same_arms] these match arms have identical bodies. Sites 245, 264.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+
 use super::*;
 use std::ops::ControlFlow;
 

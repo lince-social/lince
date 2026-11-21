@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn cell, fn op, fn head_of, fn
+//   a_materialise_of_an_op_the_log_has_already_superseded_is_refused.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use engine::Engine;
 use engine::sync::{Materialise, OpBatch, WireOp};
 use engine::trust::Signer;

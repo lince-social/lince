@@ -1,3 +1,20 @@
+// non-lean-yet
+// Scope: struct Usage, struct Cost, fn now_ms, enum StepState.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 25.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 25.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 50, 58.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 72.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 4, 5,
+//   6, 7, 8, 9, 10, 11, 12, 13, 14, 18, 19, 20, 21, 24, 29, 50, 51, 52, 53, 58, 59, 60, 61, 66, 67,
+//   68, 69, 72, 84.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites validate_steps:
+//   String (72).
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]

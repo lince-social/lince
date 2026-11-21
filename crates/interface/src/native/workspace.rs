@@ -1,3 +1,29 @@
+// non-lean-yet
+// Scope: mod allocation, mod navigation, mod preparation, mod recovery.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 282, 618, 627,
+//   687, 1228, 1229, 1230, 1237, 1238, 1267, 1272, 1286, 1297, 1315, 1328, 1347, 1459, 1526, 1695,
+//   1703, 1720, 1734, 1758, 1888, 1912, 1924, 2211, 2272, 2290, 2303, 2317, 2372, 2384, 2519, 2652,
+//   2698, 2701, 2804, 2898, 2915, 2939, 2965, 2989, 3035, 3036, 3044.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites validate_scene:
+//   String (1396).
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (783, 798,
+//   863, 903, 907, 1031, 1210, 1478, 1486, 1708, 1739, 2301, 2510, 2567, 2912, 3055).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   2860, 2864, 2868.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (1693, 1704, 1718, 1745, 1756, 1787, 1793, 1886, 1893, 1894, 1895, 1898, 1901,
+//   1909, 1913, 1918, 1934, 1936, 2209, 2247, 2253, 2260, 2270, 2274, 2277, 2290, 2298, 2315, 2328,
+//   2348, 2354, 2362, 2370, 2374, 2386, 2398, 2417, 2418, 2419, 2421, 2422, 2423, 2426, 2429, 2433,
+//   2440, 2445, 2480, 2486, 2487, 2491, 2493, 2503, 2507, 2517, 2528, 2532, 2535, 2541, 2548, 2555,
+//   2559, 2560, 2650, 2665, 2669, 2674, 2683, 2691, 2703, 2704, 2705, 2716, 2719, 2721, 2722, 2728,
+//   2732, 2751, 2754, 2756, 2766, 2774, 2775, 2787, 2789, 2802, 2818, 2820, 2822, 2858, 2876, 2878,
+//   2886, 2891, 2897, 2901, 2902, 2908, 2913, 2914, 2917, 2922, 2924, 2927, 2929, 2936, 2949, 2951,
+//   2954, 2956, 2963, 2966, 2968, 2972, 2979, 2986, 2994, 2995, 3000, 3009, 3011, 3013, 3017, 3018,
+//   3020, 3021, 3044, 3046, 3059).
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 1568.
+
 use crate::native::{
     canvas::{CanvasItem, CanvasView},
     container::BoxRoot,

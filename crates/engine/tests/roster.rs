@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn cell, fn entry, fn a_roster_of_one_is_published_signed_and_readable, fn
+//   a_contact_accepts_a_roster_that_chains_from_the_key_it_paired_with.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use engine::Engine;
 use engine::roster::{CellEntry, RosterOutcome, SignedRoster};
 use engine::trust::Signer;

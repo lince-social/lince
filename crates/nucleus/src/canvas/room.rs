@@ -1,7 +1,18 @@
-use super::{Placement, Pose};
+// non-lean-yet
+// Scope: const MAX_ROOMS, const MAX_MEMBERS, const MAX_DEPTH, mod projection.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 171, 182.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 56.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 6, 7,
+//   8, 14, 21, 29, 30, 31, 32, 46, 56, 58, 59, 60, 61, 62, 67, 68, 69, 70, 71, 75.
+
+use std::collections::{BTreeMap, BTreeSet};
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet};
+
+use super::{Placement, Pose};
 
 pub const MAX_ROOMS: usize = 16;
 pub const MAX_MEMBERS: usize = 256;

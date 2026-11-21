@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn engine, fn ast, fn save_protein_creates_updates_deletes_and_reactivates, fn
+//   save_protein_refuses_to_clobber_a_non_protein_slug.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 #![cfg(test)]
 
 use engine::Engine;

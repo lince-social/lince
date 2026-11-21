@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct Cursors, struct Snapshot, struct Prepared.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 86.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   46, 49, 94.
+
 use super::*;
 use std::sync::OnceLock;
 

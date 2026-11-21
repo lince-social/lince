@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn setup, fn activate_caption, fn assert_subject_entry, fn
+//   contact_controls_default_private_and_compose_typed_range_rules.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 fn setup() -> (App, Entity) {

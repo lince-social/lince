@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct InterruptedReceiver, struct ReceiverProcess, fn
+//   receiver_process_kill_after_import_before_acknowledgement_reopens_once.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 65, 161.
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 68.
+
 use super::*;
 use serde_json::json;
 use std::{path::PathBuf, process::Stdio, time::Duration};

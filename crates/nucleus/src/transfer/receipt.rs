@@ -1,16 +1,63 @@
+// non-lean-yet
+// Scope: mod merge, mod view, const MAX_BYTES, const MAX_EVENTS.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 31, 1344, 1464, 1480, 1482, 1485, 1496, 1498, 1585, 1591, 1601, 1655, 1668, 1689, 1691,
+//   1695, 1705, 1708, 1711, 1713, 1755, 1762, 1780.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 807, 817, 822,
+//   963.
+// - [Clippy: clippy::collapsible_if] this `if` statement can be collapsed. Sites 260.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 149, 162, 341, 424, 1004, 1085, 1125.
+// - [Clippy: clippy::large_enum_variant] large size difference between variants. Sites 1125.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   102.
+// - [Clippy: clippy::match_same_arms] these match arms have identical bodies. Sites 480, 489, 495,
+//   499, 1036, 1037, 1048, 1049, 1068, 1069, 1218, 1219, 1221, 1227, 1229, 1230.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 26, 70, 78, 91, 100, 123, 127, 134, 190, 285, 305, 375, 391, 411, 530, 534, 623, 652,
+//   661, 669, 717, 752, 773, 786, 840, 862, 884, 925, 934, 942, 978, 987, 1019, 1028, 1041, 1054,
+//   1073.
+// - [Clippy: clippy::redundant_clone] Move or borrow at the marked sites and check later uses.
+//   Sites 1477, 1650.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 18, 19,
+//   20, 21, 22, 23, 24, 26, 40, 42, 44, 46, 48, 49, 50, 51, 52, 53, 54, 63, 64, 65, 66, 70, 78, 86,
+//   87, 91, 100, 113, 114, 115, 116, 117, 118, 119, 123, 127, 134, 149, 150, 151, 152, 153, 154,
+//   155, 156, 157, 162, 163, 164, 169, 170, 172, 174, 175, 176, 178, 179, 180, 181, 182, 183, 184,
+//   185, 186, 190, 285, 290, 298, 305, 341, 342, 343, 344, 349, 350, 351, 352, 353, 358, 359, 360,
+//   365, 366, 367, 368, 369, 370, 371, 375, 391, 411, 424, 425, 426, 427, 428, 430, 431, 432, 433,
+//   434, 435, 437, 438, 440, 441, 442, 444, 445, 446, 448, 449, 450, 451, 453, 454, 455, 460, 478,
+//   508, 520, 521, 522, 523, 524, 525, 526, 530, 534, 616, 617, 618, 619, 623, 636, 638, 639, 640,
+//   641, 652, 661, 669, 680, 681, 682, 683, 684, 685, 686, 687, 688, 690, 691, 696, 698, 699, 700,
+//   701, 702, 703, 708, 710, 711, 712, 713, 717, 752, 773, 786, 834, 835, 836, 840, 862, 884, 919,
+//   920, 921, 925, 934, 942, 953, 955, 956, 957, 958, 962, 966, 978, 983, 987, 1004, 1005, 1006,
+//   1007, 1008, 1012, 1019, 1028, 1032, 1041, 1045, 1054, 1064, 1073, 1085, 1086, 1087, 1089, 1090,
+//   1092, 1093, 1094, 1096, 1097, 1098, 1100, 1101, 1102, 1104, 1105, 1106, 1108, 1109, 1110, 1116,
+//   1117, 1118, 1119, 1120, 1125, 1126, 1127, 1128, 1129, 1131, 1133, 1134, 1135, 1137, 1139, 1140,
+//   1141, 1143, 1144, 1145, 1147, 1148, 1150, 1152, 1153, 1154, 1156, 1158, 1159, 1161, 1162, 1164,
+//   1165, 1167, 1168, 1170, 1171, 1173, 1174, 1175, 1176, 1178, 1179, 1180, 1182, 1183, 1185, 1186,
+//   1188, 1189, 1191, 1192, 1193, 1194, 1196, 1197, 1198, 1199, 1200, 1202, 1204, 1205, 1207, 1208,
+//   1210, 1214, 1241.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites
+//   fact_commitment: String (123), from_revision: String (786), hash: String (1041), id: String
+//   (78, 285, 530), identity: String (1054), merge: String (1028), new: String (91), occurrence_id:
+//   String (127), opens_original_party: String (305), original_authority_records: String (26),
+//   parse: String (652, 925, 987, 1019), party_commitment: String (752), signing_bytes: String
+//   (375, 411, 623, 862), slot: String (534), validate: String (70, 134, 190, 391, 661, 717, 773,
+//   840, 884, 934, 978, 1073), validate_fragment: String (669, 942), value: String (100).
+
 use std::collections::{BTreeMap, BTreeSet};
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use super::outcome::Role;
 use crate::{
     DecimalValue,
     karma::{CanonicalHash, canonical_hash},
     social::RootSuccession,
     vocabulary::reference::MeaningReference,
 };
-
-use super::outcome::Role;
 
 mod merge;
 mod view;
@@ -189,7 +236,11 @@ pub struct Scope {
 impl Scope {
     pub fn validate(&self) -> Result<(), String> {
         self.audience.validate()?;
-        if self.upfront_terms.as_ref().is_some_and(|terms| !terms.permits(self)) {
+        if self
+            .upfront_terms
+            .as_ref()
+            .is_some_and(|terms| !terms.permits(self))
+        {
             return Err("The receipt exceeds its signed upfront public-history terms".into());
         }
         self.source.validate()?;
@@ -257,10 +308,15 @@ impl Scope {
                 let mut parties = BTreeSet::new();
                 for proof in &self.original_authorities {
                     proof.validate(self)?;
-                    if let Some(terms) = &self.upfront_terms {
-                        if proof.authority.participation.as_ref().and_then(|participation| participation.public_history.as_ref()) != Some(&terms.id()?) {
-                            return Err("The upfront manifest differs from the original signed participation grant".into());
-                        }
+                    if let Some(terms) = &self.upfront_terms
+                        && proof
+                            .authority
+                            .participation
+                            .as_ref()
+                            .and_then(|participation| participation.public_history.as_ref())
+                            != Some(&terms.id()?)
+                    {
+                        return Err("The upfront manifest differs from the original signed participation grant".into());
                     }
                     if !roles.insert(proof.role) {
                         return Err("Original Organ participation repeats a role".into());
@@ -296,10 +352,32 @@ impl Scope {
     }
 
     pub fn upfront_roles(&self) -> BTreeSet<ApprovalRole> {
-        let Some(terms) = self.upfront_terms.as_ref().filter(|terms| terms.permits(self)) else { return BTreeSet::new() };
-        if self.party_attribution != PartyAttribution::OriginalOrganAuthority { return BTreeSet::new(); }
-        let Ok(commitment) = terms.id() else { return BTreeSet::new() };
-        self.original_authorities.iter().filter(|proof| proof.role != ApprovalRole::Origin && proof.authority.participation.as_ref().and_then(|participation| participation.public_history.as_ref()) == Some(&commitment)).map(|proof| proof.role).collect()
+        let Some(terms) = self
+            .upfront_terms
+            .as_ref()
+            .filter(|terms| terms.permits(self))
+        else {
+            return BTreeSet::new();
+        };
+        if self.party_attribution != PartyAttribution::OriginalOrganAuthority {
+            return BTreeSet::new();
+        }
+        let Ok(commitment) = terms.id() else {
+            return BTreeSet::new();
+        };
+        self.original_authorities
+            .iter()
+            .filter(|proof| {
+                proof.role != ApprovalRole::Origin
+                    && proof
+                        .authority
+                        .participation
+                        .as_ref()
+                        .and_then(|participation| participation.public_history.as_ref())
+                        == Some(&commitment)
+            })
+            .map(|proof| proof.role)
+            .collect()
     }
 
     pub fn opens_original_party(
@@ -332,7 +410,9 @@ fn public_audience() -> crate::trust_analysis::contacts::Audience {
     crate::trust_analysis::contacts::Audience::Public
 }
 
-fn use_upfront_terms() -> bool { true }
+fn use_upfront_terms() -> bool {
+    true
+}
 
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, JsonSchema,
@@ -716,7 +796,13 @@ pub struct ParticipationRequest {
 impl ParticipationRequest {
     pub fn validate(&self) -> Result<(), String> {
         self.terms.validate()?;
-        if self.public_history_terms.as_ref().map(super::public_history::Terms::id).transpose()? != self.terms.public_history {
+        if self
+            .public_history_terms
+            .as_ref()
+            .map(super::public_history::Terms::id)
+            .transpose()?
+            != self.terms.public_history
+        {
             return Err("Review the exact public-history manifest before granting its future publication rights".into());
         }
         if !crate::valid_uid(&self.transfer, "r")
@@ -817,7 +903,13 @@ impl Participation {
             (origin.clone(), None)
         };
         let value = Self {
-            public_history: revision.terms.transfer.public_history.as_ref().map(super::public_history::Terms::id).transpose()?,
+            public_history: revision
+                .terms
+                .transfer
+                .public_history
+                .as_ref()
+                .map(super::public_history::Terms::id)
+                .transpose()?,
             organ,
             origin: origin.clone(),
             agreement_revision: revision.terms.revision,
@@ -981,7 +1073,14 @@ impl Review {
     }
 
     pub fn is_complete(&self) -> bool {
-        self.approvals.iter().map(|approval| approval.role).chain(self.scope.upfront_roles()).collect::<BTreeSet<_>>().len() == 3 && self.person_approvals.len() == self.scope.public_persons.len()
+        self.approvals
+            .iter()
+            .map(|approval| approval.role)
+            .chain(self.scope.upfront_roles())
+            .collect::<BTreeSet<_>>()
+            .len()
+            == 3
+            && self.person_approvals.len() == self.scope.public_persons.len()
     }
 
     pub fn parse(bytes: &[u8], now: i64) -> Result<Self, String> {
@@ -1283,8 +1382,8 @@ mod tests {
 
     fn publication() -> Publication {
         let scope = Scope {
-        audience: crate::trust_analysis::contacts::Audience::Public,
-        upfront_terms: None,
+            audience: crate::trust_analysis::contacts::Audience::Public,
+            upfront_terms: None,
             public_persons: Vec::new(),
             party_attribution: PartyAttribution::LaterOrganEndorsement,
             original_authorities: Vec::new(),

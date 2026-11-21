@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: struct Geometry, struct Inputs, struct Vertices, fn outline.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 233, 245, 267,
+//   294, 298.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   140, 141, 148, 149, 150, 157, 164, 186, 187.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (233, 265, 266, 285, 286, 292, 293, 297).
+
 use super::*;
 use bevy::{
     asset::RenderAssetUsages,

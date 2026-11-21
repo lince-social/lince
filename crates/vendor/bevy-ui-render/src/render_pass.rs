@@ -1,3 +1,18 @@
+// non-lean-yet
+// Scope: fn ui_pass, struct TransparentUi, type DrawUi, struct SetUiViewBindGroup.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 203.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 115, 241.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 9, 15, 19.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 26, 30.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 164, 184, 208.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 24, 78,
+//   79, 80, 81, 82, 83, 84, 85, 157, 164, 184, 208.
+
 use core::ops::Range;
 
 use super::{ImageNodeBindGroups, UiBatch, UiMeta, UiViewTarget};

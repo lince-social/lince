@@ -1,3 +1,8 @@
+// non-lean-yet
+// Scope: fn main.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 27.
+
 fn main() -> simulation::Result<()> {
     std::thread::Builder::new()
         .stack_size(16 * 1024 * 1024)

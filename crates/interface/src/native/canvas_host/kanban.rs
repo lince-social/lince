@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: struct Blueprint, struct Region, fn room_members, fn read.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 72, 102, 144,
+//   186, 188, 198.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (143).
+
 use super::*;
 use serde::{Deserialize, Serialize};
 

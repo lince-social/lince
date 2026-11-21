@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct ComparisonInput, enum UnitInput, struct AssertionInput, enum ConditionInput.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 
 pub(super) struct ComparisonInput<'a> {

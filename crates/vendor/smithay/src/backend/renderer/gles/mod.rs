@@ -1,3 +1,30 @@
+// non-lean-yet
+// Scope: mod element, mod error, mod format, mod shaders.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check SAFETY proof and trait invariants. Sites 83.
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 217, 382, 652, 659,
+//   696, 699, 714, 725, 728, 731, 734, 737, 745, 748, 821, 833, 855, 973, 999, 1046, 1245, 1248,
+//   1258, 1286, 1316, 1352, 1381, 1403, 1412, 1430, 1455, 1466, 1528, 1534, 1585, 1604, 1627, 1698,
+//   1701, 1704, 1707, 1713, 1716, 1719, 1725, 1728, 1731, 1737, 1743, 1774, 1833, 1865, 1870, 1872,
+//   1882, 1994, 1998, 2075, 2129, 2164, 2242, 2248, 2270, 2278, 2336, 2351, 2359, 2442, 2605, 2611,
+//   2722, 2892.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 572, 583, 680,
+//   682, 845, 848, 1014, 1159, 1201, 1203, 1209, 1235, 1325, 1390, 1453, 1499, 1516, 1642, 1912,
+//   1951, 1960, 2003, 2043, 2762, 2913.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 69, 2507, 2647, 2816.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 2159.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (175, 815,
+//   960, 1035, 1907, 1945).
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   712, 2188, 2189, 2192, 2193, 2196, 2197, 2200, 2201, 2204, 2205, 2208, 2209.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (657, 782, 854, 997, 1045, 1140, 1144, 2042, 2671, 2672, 2673, 2721).
+// - [review: §5 Panics] Verify panic isolation boundary and preserve the failure contract. Sites
+//   382.
+// - [review: §9 Modules] Check the intended public API and re-export individual items where
+//   possible. Sites 30, 32, 33, 34.
+
 //! Implementation of the rendering traits using OpenGL ES 2
 
 use cgmath::{prelude::*, Matrix3, Vector2};

@@ -1,11 +1,35 @@
-use crate::{CHUNK_BYTES, Library, Resource, Result, address, fingerprint};
-use reqwest::header::{CONTENT_LENGTH, CONTENT_RANGE, ETAG, HeaderMap, IF_RANGE, RANGE};
-use serde::{Deserialize, Serialize};
+// non-lean-yet
+// Scope: struct Snapshot, struct RangeReader, fn error, fn validator.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 54, 450.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 41, 101.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 104, 105, 106,
+//   111, 114, 179, 182.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 315, 330, 363, 366, 371, 420, 443, 444, 451.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   444.
+// - [Clippy: clippy::map_err_ignore] Preserve relevant causes and context at the boundary. Sites
+//   133, 142, 466.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 61, 93.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 31.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 31, 61,
+//   65, 93, 283, 286, 289.
+
 use std::{
     fs::{self, File},
     io::{self, Read, Seek, SeekFrom, Write},
     path::PathBuf,
 };
+
+use reqwest::header::{CONTENT_LENGTH, CONTENT_RANGE, ETAG, HeaderMap, IF_RANGE, RANGE};
+use serde::{Deserialize, Serialize};
+
+use crate::{CHUNK_BYTES, Library, Resource, Result, address, fingerprint};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct Snapshot {
@@ -77,7 +101,7 @@ impl RangeReader {
         let cached = fs::read_dir(directory)
             .into_iter()
             .flatten()
-            .filter_map(|entry| entry.ok())
+            .filter_map(std::result::Result::ok)
             .filter(|entry| {
                 entry
                     .file_name()
@@ -85,7 +109,7 @@ impl RangeReader {
                     .is_some_and(|name| name.parse::<u64>().is_ok())
             })
             .filter_map(|entry| entry.metadata().ok())
-            .filter(|metadata| metadata.is_file())
+            .filter(std::fs::Metadata::is_file)
             .map(|metadata| metadata.len())
             .sum::<u64>();
         (cached.min(snapshot.length), Some(snapshot.length))
@@ -313,7 +337,7 @@ impl RangeReader {
             previous.saturating_add(u64::from(added))
         } else {
             fs::read_dir(&self.directory)?
-                .filter_map(|entry| entry.ok())
+                .filter_map(std::result::Result::ok)
                 .filter(|entry| {
                     entry
                         .file_name()

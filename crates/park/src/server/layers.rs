@@ -1,4 +1,11 @@
-use super::*;
+// non-lean-yet
+// Scope: struct Layers, struct LayerSnapshot.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 62, 71, 205, 215,
+//   217.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (164).
+
 use smithay::{
     delegate_layer_shell,
     desktop::{LayerSurface, layer_map_for_output},
@@ -7,6 +14,8 @@ use smithay::{
         self, ExclusiveZone, Layer, LayerSurfaceData, WlrLayerShellHandler, WlrLayerShellState,
     },
 };
+
+use super::*;
 
 pub(super) struct Layers {
     shell: WlrLayerShellState,
@@ -65,24 +74,22 @@ impl Server {
                 };
                 layers
                     .into_iter()
-                    .map(|(layer, location)| {
-                        LayerSnapshot {
-                            output: *id,
-                            surface: layer.wl_surface().clone(),
-                            origin: [
-                                location
-                                    .x
-                                    .saturating_add(registered.output.current_location().x),
-                                location
-                                    .y
-                                    .saturating_add(registered.output.current_location().y),
-                            ],
-                            layer: layer.layer(),
-                            namespace: layer.namespace().into(),
-                            keyboard: layer.cached_state().keyboard_interactivity,
-                            nodes: self.state.nodes(layer.wl_surface()),
-                            popups: self.state.popup_snapshots(layer.wl_surface()),
-                        }
+                    .map(|(layer, location)| LayerSnapshot {
+                        output: *id,
+                        surface: layer.wl_surface().clone(),
+                        origin: [
+                            location
+                                .x
+                                .saturating_add(registered.output.current_location().x),
+                            location
+                                .y
+                                .saturating_add(registered.output.current_location().y),
+                        ],
+                        layer: layer.layer(),
+                        namespace: layer.namespace().into(),
+                        keyboard: layer.cached_state().keyboard_interactivity,
+                        nodes: self.state.nodes(layer.wl_surface()),
+                        popups: self.state.popup_snapshots(layer.wl_surface()),
                     })
                     .collect::<Vec<_>>()
             })

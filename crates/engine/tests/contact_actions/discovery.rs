@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn question, fn discover, fn
+//   discovery_pages_only_approved_evidence_bind_the_question_and_endpoint_and_stop_without_effects,
+//   fn
+//   discovery_of_a_claim_series_preserves_changed_scope_withdrawals_and_explicit_serving_approval.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 283.
+
 use super::serving::{all, approve, counts, fetch, peer, review};
 use super::*;
 use nucleus::{

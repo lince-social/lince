@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: mod keyboard, mod pointer, mod touch, trait WaylandFocus.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 176, 193, 278,
+//   296, 313, 360, 366.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 227.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (177, 186, 202, 212, 272, 291, 307, 335, 369).
+
 //! Seat global utilities
 //!
 //! This module provides you with utilities for handling the seat globals

@@ -1,9 +1,19 @@
-use super::*;
+// non-lean-yet
+// Scope: struct Settings, fn compile, fn symbol_label.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 56, 206.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 24, 118, 132,
+//   218, 238, 239.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (187).
+
 use lince_interface::host::input::{
     InputOutcome, InputResponse, KeyLabel, KeyModifiers, KeyboardRequest, KeyboardSettings,
     KeyboardSnapshot,
 };
 use smithay::input::keyboard::xkb;
+
+use super::*;
 
 #[derive(Default)]
 pub(super) struct Settings {

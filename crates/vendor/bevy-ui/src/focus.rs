@@ -1,3 +1,16 @@
+// non-lean-yet
+// Scope: enum DeprecatedInteraction, type Interaction, struct RelativeCursorPosition, enum
+//   FocusPolicy.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 242, 246.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 242.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 50, 121.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 140, 147.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 65.
+
 use crate::{
     ui_transform::UiGlobalTransform, CalculatedClip, ComputedNode, ComputedUiTargetCamera, UiStack,
 };

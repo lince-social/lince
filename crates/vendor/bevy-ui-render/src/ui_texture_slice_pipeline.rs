@@ -1,3 +1,35 @@
+// non-lean-yet
+// Scope: struct UiTextureSlicerPlugin, struct UiTextureSliceVertex, struct UiTextureSlicerBatch,
+//   struct UiTextureSliceMeta.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 524, 679.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   475.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 678, 738.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 263.
+// - [Clippy: clippy::trivially_copy_pass_by_ref] Consider a value parameter for small Copy inputs.
+//   Sites 863.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 172, 173, 178,
+//   187, 320, 772.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 466, 532, 669, 675, 676.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   532, 669, 675, 676.
+// - [Clippy: clippy::unnecessary_semicolon] unnecessary semicolon. Sites 500.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 4, 5, 11, 20, 21, 24.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 223, 251, 263, 273, 274, 275, 276, 277, 278, 279.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 37, 79, 85, 102, 107, 141, 194,
+//   210, 699, 719, 742.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 37, 79,
+//   80, 81, 85, 102, 103, 107, 108, 109, 110, 113, 141, 142, 194, 195, 196, 197, 198, 199, 200,
+//   201, 202, 203, 204, 205, 219, 416, 475, 692, 699, 719, 742.
+
 use core::{hash::Hash, ops::Range};
 
 use crate::clipping::clip_polygon;

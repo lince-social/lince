@@ -1,5 +1,15 @@
-use store::Store;
-use store::offers::{OfferKind, refusals, refuse, standing_refusal};
+// non-lean-yet
+// Scope: fn store, fn a_refusal_stands_for_its_window, fn
+//   a_refusal_is_remembered_per_kind_and_per_party, fn
+//   refusing_twice_moves_the_window_rather_than_stacking.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 60.
+
+use store::{
+    Store,
+    offers::{OfferKind, refusals, refuse, standing_refusal},
+};
 
 async fn store() -> Store {
     Store::open_memory().await.expect("store opens")

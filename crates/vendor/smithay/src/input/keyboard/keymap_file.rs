@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct KeymapFileId, struct KeymapFile.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 53.
+// - [review: §4 API] Check public bool parameters for a named mode or distinct operations. Sites
+//   with_fd:supports_sealed (66).
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (18, 35, 53).
+
 use std::ffi::CString;
 use std::os::unix::io::{AsFd, BorrowedFd};
 

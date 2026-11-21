@@ -1,3 +1,28 @@
+// non-lean-yet
+// Scope: struct BoxShadowPlugin, struct BoxShadowVertex, struct UiShadowsBatch, struct
+//   BoxShadowMeta.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 495, 571.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 251.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 165, 166, 171,
+//   180, 635.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 455, 510, 551, 557, 568, 572.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   510, 551, 557, 568, 572.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 6, 15, 22, 23, 25.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 213, 238, 251, 262, 263, 264, 265, 266, 267, 268, 269.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 44, 85, 92, 109, 130, 188, 201,
+//   584, 605.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 85, 86,
+//   87, 109, 110, 111, 114, 130, 131, 189, 190, 191, 192, 193, 194, 195, 196, 210, 403, 466, 582,
+//   584, 605.
+
 //! Box shadows rendering
 
 use core::{hash::Hash, ops::Range};

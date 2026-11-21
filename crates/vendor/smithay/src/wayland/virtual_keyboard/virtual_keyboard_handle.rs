@@ -1,3 +1,12 @@
+// non-lean-yet
+// Scope: struct VirtualKeyboard, struct VirtualKeyboardState, struct VirtualKeyboardHandle, struct
+//   VirtualKeyboardUserData.
+// BeautifulRust (baseline lines):
+// - [review: §8 Unsafe] Check SAFETY proof and trait invariants. Sites 51.
+// - [review: §8 Unsafe] Check local SAFETY proof against the operation. Sites 191.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (95, 105, 106, 131, 147, 148, 212).
+
 use std::os::unix::io::OwnedFd;
 use std::{
     fmt,

@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: type Subscriptions, type Snapshot, struct Order, fn empty.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 23, 26, 135.
+// - [review: §5 Panics] Check expect invariants and diagnostic context. Sites expect (121, 143).
+// - [rustc probe: elided_lifetimes_in_paths] Check API clarity and framework allowances before
+//   making lifetimes explicit. Sites 125.
+
 use super::{RecordBinding, Runtime, Source, filter};
 use crate::native::area::InfluenceArea;
 use bevy::{ecs::system::InRef, prelude::*};

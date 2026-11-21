@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: fn fenced_braces_preserve_the_body_and_following_records, fn
+//   adjacent_records_with_fences_keep_their_own_boundaries, fn
+//   bundled_lince_document_can_receive_identities_and_be_projected.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 15, 16, 30, 31.
+
 #[test]
 fn fenced_braces_preserve_the_body_and_following_records() {
     for fence in ["```", "~~~", "   ```", "   ~~~"] {

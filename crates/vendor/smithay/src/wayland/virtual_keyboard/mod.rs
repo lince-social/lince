@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: const MANAGER_VERSION, mod virtual_keyboard_handle, struct VirtualKeyboardManagerState,
+//   struct VirtualKeyboardManagerGlobalData.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 112, 166, 167.
+// - [review: allow_attributes_without_reason] Check MSRV and give intentional suppressions a
+//   reason. Sites 77, 176.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (159, 162).
+
 //! Utilities for virtual keyboard support
 //!
 //! This module provides you with utilities to handle virtual keyboard instances.

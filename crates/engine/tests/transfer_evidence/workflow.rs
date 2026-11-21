@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn publish_origin, fn receiver_statement, fn reader_permissions, fn
+//   four_lince_publication_lifecycle_roundtrip_preserves_independent_corrections_and_no_observer_credit.
+// BeautifulRust (baseline lines):
+// - [Clippy probe: clippy::panic] `panic` should not be present in production code. Sites 213, 525.
+
 use super::super::ordinary_delivery::exchange;
 use super::*;
 

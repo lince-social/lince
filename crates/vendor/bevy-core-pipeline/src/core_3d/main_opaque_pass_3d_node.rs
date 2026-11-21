@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn main_opaque_pass_3d.
+// BeautifulRust (baseline lines):
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 23, 36.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 21.
+
 use crate::{
     core_3d::Opaque3d,
     skybox::{SkyboxBindGroup, SkyboxPipelineId},

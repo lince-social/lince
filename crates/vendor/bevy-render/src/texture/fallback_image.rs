@@ -1,3 +1,17 @@
+// non-lean-yet
+// Scope: struct FallbackImage, struct FallbackImageZero, struct FallbackImageCubemap, fn
+//   fallback_image_new.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 129.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   117.
+// - [Clippy: clippy::wildcard_imports] Use explicit imports while preserving framework and test
+//   conventions. Sites 2.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 23, 59, 65, 248, 251.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 251,
+//   259.
+
 use crate::{
     render_resource::*,
     renderer::{RenderDevice, RenderQueue},

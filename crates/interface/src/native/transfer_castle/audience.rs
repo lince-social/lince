@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: mod tests, struct Scope, fn delay_label, fn delay_millis.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 134, 258, 259,
+//   287, 288, 295, 340, 355, 362, 374, 397, 398, 403, 404, 475, 482, 489, 567, 570, 600, 602, 603,
+//   745, 746.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 176.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   190, 191, 198, 199.
+// - [Clippy probe: clippy::allow_attributes] Use a reasoned expect when the diagnostic reliably
+//   fires. Sites 12.
+
 use super::*;
 use crate::native::sand_panel::{button, field, row};
 use cell::{ClientMessage, ServerMessage};

@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: mod social_journey, fn fixture, fn find, fn set.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use crate::native::sand_panel::tests::{app, connect, settle};
 use bevy::text::EditableText;

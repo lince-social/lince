@@ -1,3 +1,9 @@
+// non-lean-yet
+// Scope: fn
+//   replies_keep_request_and_source_ownership_and_connection_errors_revoke_only_their_source, fn
+//   fixture, fn pump, fn text.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use super::*;
 use std::sync::Arc;
 

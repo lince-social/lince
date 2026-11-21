@@ -1,3 +1,10 @@
+// non-lean-yet
+// Scope: fn reconnect, fn disconnected.
+// BeautifulRust (baseline lines):
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 20.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites reconnect:
+//   String (3).
+
 use super::*;
 
 pub fn reconnect(world: &mut World) -> Result<bool, String> {

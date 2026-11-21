@@ -1,3 +1,35 @@
+// non-lean-yet
+// Scope: struct SlabAllocator, trait SlabItem, trait SlabItemLayout, trait SlabItemLayoutExt.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 1279, 1292, 1299, 1360.
+// - [Clippy: clippy::missing_panics_doc] State the panic conditions for exported functions. Sites
+//   994.
+// - [Clippy: clippy::unwrap_used] Propagate or branch on recoverable failures. Prove or document
+//   retained invariants. Sites 1061.
+// - [Clippy: clippy::needless_pass_by_value] Borrow eligible inputs after checking caller and
+//   framework contracts. Sites 860.
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 708, 778, 892,
+//   917, 1039.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 141, 676, 681, 887, 907, 951, 1024, 1028, 1056, 1098, 1101, 1148, 1149, 1247.
+// - [Clippy: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion. Sites
+//   676, 951, 1098, 1101, 1148, 1149, 1247.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 1148.
+// - [Clippy: clippy::exhaustive_enums] Review whether public API evolution requires non_exhaustive.
+//   Sites 286.
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   770.
+// - [Clippy: clippy::large_enum_variant] large size difference between variants. Sites 286.
+// - [Clippy: clippy::missing_assert_message] assert without any message. Sites 674, 1043.
+// - [Clippy: clippy::unnecessary_semicolon] unnecessary semicolon. Sites 779.
+// - [rustc: elided_lifetimes_in_paths] Check API clarity and framework allowances before making
+//   lifetimes explicit. Sites 998.
+// - [rustc: missing_debug_implementations] type does not implement `std::fmt::Debug`; consider
+//   adding `#[derive(Debug)]` or a manual implementation. Sites 56, 150, 286, 301, 341, 402, 492,
+//   551, 575.
+
 //! A general-purpose allocator that manages a set of GPU buffer slabs.
 
 use alloc::borrow::Cow;

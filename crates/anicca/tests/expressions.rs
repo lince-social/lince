@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: fn scripts_and_declarations_format_without_execution, fn
+//   protein_objects_lists_and_reference_names_are_shared_syntax, fn expressions_keep_byte_spans, fn
+//   malformed_text_and_excessive_syntax_nesting_are_errors.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 43.
+// - [Clippy: clippy::panic] `panic` should not be present in production code. Sites 44, 76.
+// - [review: §5 Panics] Verify panic isolation boundary and preserve the failure contract. Sites
+//   111.
+
 #[test]
 fn scripts_and_declarations_format_without_execution() {
     let source = "dir = \"missing\"\nlet amount = 0.1 + 0.2\nprint(amount == 0.3 and true)\nTask (@task: -1) {\nprint(quantity(@secret)) stays prose.\n}\n";

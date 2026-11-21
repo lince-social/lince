@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Stream, enum Operation, struct Arguments, struct Release.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 112, 120, 139,
+//   142, 143, 144, 160, 165, 186, 209, 223.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 55, 59, 152, 201, 262.
+
 use base64::{Engine as _, engine::general_purpose::STANDARD as B64};
 use engine::{
     actions::Action,

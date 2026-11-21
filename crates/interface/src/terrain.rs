@@ -1,3 +1,11 @@
+// non-lean-yet
+// Scope: struct Draft.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 17, 23, 44.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 34.
+// - [review: §5 Errors] If exported, use a typed error with preserved causes. Sites effect: String
+//   (29).
+
 use nucleus::terrain::{Preset, TopologyEffect};
 
 #[derive(Clone, Debug)]

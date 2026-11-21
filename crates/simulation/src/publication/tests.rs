@@ -1,3 +1,7 @@
+// non-lean-yet
+// Scope: struct Evidence, fn scenario, fn run, fn incomplete.
+// BeautifulRust: No site flagged by this pass. Check contracts and feature coverage.
+
 use std::{io::Write, path::Path};
 
 use crate::{artifacts, fixtures, publication, scenario::Scenario};

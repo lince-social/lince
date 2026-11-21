@@ -1,3 +1,14 @@
+// non-lean-yet
+// Scope: fn saved_place_projection_hides_private_points_and_respects_linked_area_rules, fn
+//   person_record_audience_bounds_role_visibility_in_the_same_organ.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::indexing_slicing] Verify bounds or use checked access on fallible inputs.
+//   Sites 32, 40, 42, 55, 56, 89, 98.
+// - [Clippy: clippy::as_conversions] Use From or TryFrom when it preserves the conversion contract.
+//   Sites 80.
+// - [Clippy: clippy::cast_sign_loss] Prove the sign or preserve behavior with an explicit
+//   conversion. Sites 80.
+
 use nucleus::{
     RecordKind,
     visibility::{Condition, Data, Policy},

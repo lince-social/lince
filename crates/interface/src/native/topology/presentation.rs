@@ -1,3 +1,15 @@
+// non-lean-yet
+// Scope: mod root, struct Surface, struct DisplayedImage, struct RetainedImages.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 594, 600, 612,
+//   618, 619, 646, 658, 677, 683, 692, 693, 714, 717, 721, 823, 1197.
+// - [review: §5 Panics] Prove runtime index bounds or use checked access on fallible input. Sites
+//   301, 485, 546, 958.
+// - [review: §5 Panics] Resolve unwrap receivers and propagate or handle failure where reachable.
+//   Sites unwrap (378, 674, 692, 693, 701, 713, 771, 772, 803, 817, 823, 843, 856, 864, 866, 870,
+//   889, 901, 902, 909, 910, 912, 919, 1196, 1199, 1204, 1210, 1214, 1317, 1321, 1326, 1330, 1334,
+//   1342, 1350, 1357, 1364).
+
 use super::{
     surface_budget::{self, Request, dimensions},
     surface_render::{SurfaceCapture, SurfacePass},

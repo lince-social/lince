@@ -1,3 +1,13 @@
+// non-lean-yet
+// Scope: const CANONICAL_DOMAIN, struct CanonicalHash, fn canonical_json_bytes, fn write_value.
+// BeautifulRust (baseline lines):
+// - [Clippy: clippy::expect_used] Check the stated invariant and handle reachable failures. Sites
+//   141.
+// - [Clippy: clippy::missing_errors_doc] State the observable failure cases for exported functions.
+//   Sites 16, 60, 121.
+// - [rustc: missing_docs] Document the externally visible contracts where applicable. Sites 13, 16,
+//   36, 60, 121.
+
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de};

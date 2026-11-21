@@ -1,3 +1,28 @@
+// non-lean-yet
+// Scope: struct Counter.
+// BeautifulRust (baseline lines):
+// - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 41, 42, 43, 55,
+//   225, 240, 245, 269, 276, 333, 354, 370.
+// - [review: §5 Errors] Check discarded error causes and preserve useful context. Sites 125, 180.
+// - [Clippy probe: clippy::as_conversions] Use From or TryFrom when it preserves the conversion
+//   contract. Sites 227, 281.
+// - [Clippy probe: clippy::cast_possible_truncation] Prove the bounds or use a checked conversion.
+//   Sites 281.
+// - [Clippy probe: clippy::clone_on_ref_ptr] Make shared ownership explicit at retained clones.
+//   Sites 42.
+// - [Clippy probe: clippy::collapsible_if] this `if` statement can be collapsed. Sites 204, 376,
+//   387.
+// - [Clippy probe: clippy::indexing_slicing] Verify bounds or use checked access on fallible
+//   inputs. Sites 183, 245, 276.
+// - [Clippy probe: clippy::map_err_ignore] Preserve relevant causes and context at the boundary.
+//   Sites 125, 180.
+// - [Clippy probe: clippy::missing_errors_doc] State the observable failure cases for exported
+//   functions. Sites 26.
+// - [Clippy probe: clippy::wildcard_imports] Use explicit imports while preserving framework and
+//   test conventions. Sites 1.
+// - [rustc probe: missing_docs] Document the externally visible contracts where applicable. Sites
+//   26.
+
 use super::*;
 use futures::{StreamExt, stream};
 use nucleus::{

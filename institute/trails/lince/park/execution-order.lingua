@@ -4,17 +4,16 @@ Park — Remaining verification and conditional work (
     #part-of @park-development: 11,
     #park-workflow @park-development-cycle
 ) { r_1FMCTGVHF35B6D0T70JEQAMYDW
-Park still runs `08c087f4`. The release and probe jobs for `083dfa95` failed the Store migration integrity check. The checksum entry for `0047_directory_syncs.sql` now passes the existing local Store guard. The GPU freeze fix has local test evidence. [CI run](https://github.com/lince-social/lince/actions/runs/44768978417)
+The installed optimized Park release is `e5f68e7b` and includes the GPU freeze fix `083dfa95`. [Application artifact evidence](Overhaul.md#application-artifact-verification--2026-11-21)
 
 The 83 P Records supply the acceptance criteria. Each checkbox below produces one build receipt, test verdict, measurement, or decision about one change. Use the [development checkpoint](record:r_2KDK4ZZZJNBEK0J23TFNQAZF9Y) for earlier measurements and [Overhaul.md](Overhaul.md) for the 471 detailed coverage checks.
 
 Run the smallest relevant case first. A shared run can close several boxes when its report proves each result. Save the first failure with its revision and exact case. Give the fix and the rerun their own boxes when a failure needs more work. A waiting build is a dependency; keep independent checks available. Preserve original acceptance criteria in the linked Records.
 
-## Waiting for another build
+## Current release and measurement prerequisites
 
-- [ ] **Application artifact.** Verify the optimized Lince binary produced by CI includes the GPU freeze fix. The available local binary, `08c087f4`, predates it.
-- [ ] **Measurement probe artifact.** Verify that the optimized Park probe matches the application revision. The available local probe is a debug build from `d5048aca-backlog-final`.
-- [ ] **Install the candidate.** Use the saved shipment Command for the verified optimized release and retain its installation receipt. The local installation is still `08c087f4`.
+- [ ] **Measurement probe artifact.** Verify the packaged optimized probe matches the installed application revision `e5f68e7b`. Use the same-release packaging receipt. Running the standalone probe needs its executable locally.
+- [ ] **Install the candidate.** Retain the installation receipt for the verified optimized release from the existing NixOS generation.
 
 ### Live release and freeze
 

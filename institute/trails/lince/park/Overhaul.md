@@ -4,6 +4,10 @@ This is the single active report for the owner-requested responsiveness overhaul
 
 The [checkpoint](Development-cycle.lingua) and [execution order](execution-order.lingua) carry the live work. The sections below retain source receipts and revision-specific measurements.
 
+## Application artifact verification — 2026-11-21
+
+The installed Nix launcher and the running Park executable both returned `e5f68e7b20e811be73f5b4b0ecf7326fcb3b3547` from `--build-info`, with `optimized: true`, target `x86_64-unknown-linux-gnu`, and the UI, Instinct and Park features enabled. Git ancestry confirmed that the release contains freeze fix `083dfa95686f71905a5fe7e373262526de085b1d`. The Linux application build and `publish-main` succeeded for that exact revision. [Release run](https://github.com/lince-social/lince/actions/runs/44927273878)
+
 ## Checkout verification — 2026-11-20
 
 On `eb01745e`, all 32 Python runner/report tests and all three Anicca requirements tests passed. The source inventory audit also passed. Evidence is in `target/park-verification-eb01745e.rWMXKI3H/`. Prepared execution for P134 and P124 and native rule coverage for P140 remain open.

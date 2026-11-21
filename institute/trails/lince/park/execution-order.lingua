@@ -12,14 +12,9 @@ Run the smallest relevant case first. A shared run can close several boxes when 
 
 ## Current release and measurement prerequisites
 
-### Live freeze replay
-
-- [ ] **Freeze replay.** Use Ghostty and normal agent activity on the new build. Check that the desktop stays interactive and that the GPU-completion panic is absent during the observed session.
-  Park answered all 24 Wayland callbacks, with no compositor restart or GPU-completion error during the observed session. Ghostty tab, typing and Noctalia click feedback still need visible confirmation.
-
 ### Mixed scene and daily acceptance
 
-Physical acceptance needs the corresponding live capture setup.
+Physical acceptance needs live capture enabled when Park starts. The running `e5f68e7b` session has timing and frame capture disabled.
 
 - [ ] [P65](record:r_44DT369GKKWNAT9RSK0KX8RTA2) **Visible interaction.** Measure event-to-changed-pixel latency for typing, click, scroll and drag in the populated session. Report each distribution against B02.
 - [ ] [P64](record:r_4GVND1GYBP9J233JRJP59BE7GA) **Quiet resources.** Sample the settled daily workspace and record Park CPU, GPU and wake rates against B10.

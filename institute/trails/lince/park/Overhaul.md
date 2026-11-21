@@ -18,6 +18,12 @@ The active system profile and `/run/current-system` both resolve to NixOS genera
 
 Park was running as PID `3481557`. Running `--build-info` through `/proc/3481557/exe` identified optimized revision `e5f68e7b20e811be73f5b4b0ecf7326fcb3b3547` with Park enabled. The executable resolved to `.lince-wrapped` in generation `43`'s Lince package, and its build metadata matched the current NixOS launcher.
 
+### Live GPU freeze replay — 2026-11-21
+
+The owner confirmed that Ghostty tab switching and typed characters responded visibly during normal Codex activity. Optimized Park `e5f68e7b` stayed on PID `3481557` with zero service restarts. The live replay recorded 70 Wayland sync replies within 4.94 ms and zero GPU-completion or panic matches across 36 journal entries. This verifies the observed live replay.
+
+A separate synthetic Ghostty window submitted one buffer and timed out after 35 seconds without its requested frame callback. The fixture's visible placement was unconfirmed, so the timeout remains a separate observation. The private receipt is `target/park-freeze-ghostty-e5f68e7b.OPpbgw/replay.json`.
+
 ### P65 mixed editor focus — 2026-11-21
 
 The installed optimized `e5f68e7b20e811be73f5b4b0ecf7326fcb3b3547` binary ran `--park-performance-check` with private XDG directories. The pointer click focused the intended native editor in the 30-item, two-output scene. The input oracle checked all 120 `é` events against the exact resulting editor text. The scene recorded no focus or correctness error. Typing to GPU completion was 57.87 ms p95, and the full suite exited 1 with timing and separate Interface failures. The mandatory Protein case failed on duplicate `PointerFocusPlugin` registration. Raw results are in `target/park-p65-e5f68e7b.tDb8Qr/results.jsonl`.

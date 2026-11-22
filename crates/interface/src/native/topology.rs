@@ -34,7 +34,9 @@ pub mod splats;
 mod stacking;
 pub(crate) mod surface_budget;
 pub(crate) mod surface_render;
-pub use surface_render::{UiMaterialVersions, independent_output_images, retain_ui_material};
+pub use surface_render::{
+    RetainCaptureTopology, UiMaterialVersions, independent_output_images, retain_ui_material,
+};
 pub mod terrain;
 pub mod ui;
 pub mod view;

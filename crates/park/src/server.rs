@@ -412,6 +412,8 @@ struct State {
     _outputs: smithay::wayland::output::OutputManagerState,
     surfaces: HashSet<WlSurface>,
     windows: BTreeMap<SurfaceId, Window>,
+    #[cfg(any(feature = "native-presentation", all(test, feature = "server-tests")))]
+    scene_windows: BTreeMap<SurfaceId, Arc<WindowSnapshot>>,
     buffers: HashMap<WlSurface, Arc<ClientBuffer>>,
     backing: HashMap<WlBuffer, Weak<BufferBacking>>,
     next_id: u64,
@@ -597,6 +599,8 @@ impl Server {
             outputs,
             surfaces: HashSet::new(),
             windows: BTreeMap::new(),
+            #[cfg(any(feature = "native-presentation", all(test, feature = "server-tests")))]
+            scene_windows: BTreeMap::new(),
             buffers: HashMap::new(),
             backing: HashMap::new(),
             next_id: 1,
@@ -932,6 +936,33 @@ impl Server {
             .keys()
             .filter_map(|id| self.state.window_snapshot(*id))
             .collect()
+    }
+
+    #[cfg(any(feature = "native-presentation", all(test, feature = "server-tests")))]
+    pub(crate) fn scene_windows(&mut self) -> Arc<[Arc<WindowSnapshot>]> {
+        let state = &mut self.state;
+        let mut snapshots = Vec::with_capacity(state.windows.len());
+        // Input-method popups can move between parents with keyboard focus.
+        let reuse = state.ime.popups.is_empty();
+        for (id, window) in &state.windows {
+            if !window.role.wl_surface().is_alive() {
+                continue;
+            }
+            if let Some(snapshot) = state.scene_windows.get(id).filter(|_| reuse) {
+                snapshots.push(snapshot.clone());
+            } else if let Some(snapshot) = state.window_snapshot(*id) {
+                let snapshot = Arc::new(snapshot);
+                // Popup placement and subsurface stacking can change outside a root commit.
+                if reuse
+                    && snapshot.popups.is_empty()
+                    && matches!(snapshot.nodes.as_slice(), [node] if node.surface == snapshot.surface)
+                {
+                    state.scene_windows.insert(*id, snapshot.clone());
+                }
+                snapshots.push(snapshot);
+            }
+        }
+        snapshots.into()
     }
 
     pub fn configure(&mut self, id: SurfaceId, size: [i32; 2]) -> io::Result<()> {
@@ -1311,6 +1342,8 @@ impl State {
     }
 
     fn changed(&mut self) {
+        #[cfg(any(feature = "native-presentation", all(test, feature = "server-tests")))]
+        self.scene_windows.clear();
         self.presentation_changed();
         self.window_revision = self.revision;
     }
@@ -1415,6 +1448,10 @@ impl CompositorHandler for State {
                 return;
             };
             current = get_parent(&parent);
+            #[cfg(any(feature = "native-presentation", all(test, feature = "server-tests")))]
+            if current.is_none() && let Some(id) = self.id(&parent) {
+                self.scene_windows.remove(&id);
+            }
         }
         self.reject(surface, "Park subsurface nesting limit reached");
     }
@@ -1625,6 +1662,9 @@ impl CompositorHandler for State {
             if unchanged && callbacks.iter().all(|(_, callbacks)| callbacks.is_empty()) {
                 return;
             }
+            // A callback-only commit also advances the surface generations in the snapshot.
+            #[cfg(any(feature = "native-presentation", all(test, feature = "server-tests")))]
+            self.scene_windows.remove(&id);
             let pixels_only = pixels_changed
                 && !unchanged
                 && was_mapped

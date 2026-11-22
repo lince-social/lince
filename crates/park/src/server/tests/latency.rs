@@ -50,7 +50,7 @@ fn a_client_key_drives_verified_new_pixels_with_an_explicit_observed_proxy() {
         )
         .unwrap();
     let paint = |canvas: &mut crate::presentation::Presentation,
-                 windows: &[WindowSnapshot],
+                 windows: &[Arc<WindowSnapshot>],
                  expected: [u8; 3]| {
         let deadline = Instant::now() + Duration::from_secs(20);
         let mut frames = 0;
@@ -77,7 +77,7 @@ fn a_client_key_drives_verified_new_pixels_with_an_explicit_observed_proxy() {
             );
         }
     };
-    let (red, baseline_frames) = paint(&mut canvas, &[previous.clone()], [255, 0, 0]);
+    let (red, baseline_frames) = paint(&mut canvas, &[Arc::new(previous.clone())], [255, 0, 0]);
     assert!(
         red.chunks_exact(4)
             .filter(|p| p[0] > 220 && p[1] < 30 && p[2] < 30)
@@ -104,7 +104,7 @@ fn a_client_key_drives_verified_new_pixels_with_an_explicit_observed_proxy() {
     let _green = super::pixel_tests::colored(&mut harness, &window, [0, 255, 0]);
     let updated = harness.server.windows().remove(0);
     assert!(updated.nodes[0].content.version > previous.nodes[0].content.version);
-    let (pixels, response_frames) = paint(&mut canvas, &[updated.clone()], [0, 255, 0]);
+    let (pixels, response_frames) = paint(&mut canvas, &[Arc::new(updated.clone())], [0, 255, 0]);
     let green = pixels
         .chunks_exact(4)
         .filter(|p| p[1] > 220 && p[0] < 30 && p[2] < 30)

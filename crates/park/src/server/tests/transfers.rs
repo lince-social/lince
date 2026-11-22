@@ -76,7 +76,7 @@ fn present(
     clients: &[(&ClientWindow, SurfaceId, [u8; 4])],
     retained: &mut Vec<wl_buffer::WlBuffer>,
 ) -> crate::presentation::Frame {
-    canvas.sync_windows(&harness.server.windows()).unwrap();
+    canvas.sync_windows(&harness.server.scene_windows()).unwrap();
     let frame = settle(canvas);
     for request in frame.windows.iter() {
         harness
@@ -98,7 +98,7 @@ fn present(
             .size;
         retained.push(paint(harness, window, size, *color));
     }
-    canvas.sync_windows(&harness.server.windows()).unwrap();
+    canvas.sync_windows(&harness.server.scene_windows()).unwrap();
     settle(canvas)
 }
 

@@ -208,6 +208,49 @@ fn actual_linear_alpha_and_final_hdr_encoding_preserve_precision_and_use_the_dec
             .render(&mut target, size, Transform::Normal)
             .unwrap();
         frame
+            .clear(smithay::backend::renderer::Color32F::TRANSPARENT, &[damage])
+            .unwrap();
+        let half_white = 203.0 / 160.0;
+        frame
+            .clear(
+                smithay::backend::renderer::Color32F::new(half_white, half_white, half_white, 0.5),
+                &[Rect::from_size((2, 4).into())],
+            )
+            .unwrap();
+        frame.finish().unwrap().wait().unwrap();
+        drop(target);
+
+        // The SDR destination still contains the previous opaque frame.
+        let mut target = renderer.bind(&mut sdr).unwrap();
+        composition
+            .encode_output(
+                &mut renderer,
+                &mut target,
+                &working,
+                size,
+                Transform::Flipped180,
+                OutputColor::default(),
+            )
+            .unwrap()
+            .wait()
+            .unwrap();
+        let mapping = renderer
+            .copy_framebuffer(&target, Rect::from_size((4, 4).into()), Fourcc::Argb8888)
+            .unwrap();
+        let bytes = renderer.map_texture(&mapping).unwrap();
+        let transparent = bytes.chunks_exact(4).filter(|pixel| *pixel == [0; 4]).count();
+        let translucent = bytes
+            .chunks_exact(4)
+            .filter(|pixel| pixel.iter().all(|channel| (127..=128).contains(channel)))
+            .count();
+        assert_eq!((transparent, translucent), (8, 8));
+    }
+    {
+        let mut target = renderer.bind(&mut working).unwrap();
+        let mut frame = renderer
+            .render(&mut target, size, Transform::Normal)
+            .unwrap();
+        frame
             .clear(
                 smithay::backend::renderer::Color32F::new(12.5, 12.5, 12.5, 1.0),
                 &[damage],

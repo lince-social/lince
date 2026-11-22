@@ -32,7 +32,7 @@ use bevy::{
             StoreOp, Texture, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
         },
         renderer::RenderContext,
-        sync_world::{MainEntity, RenderEntity},
+        sync_world::{MainEntity, MainEntityHashMap, RenderEntity},
         texture::GpuImage,
         view::{
             ExtractedView, NoIndirectDrawing, ResolvedCompositingSpace, RetainedViewEntity, ViewDepthStencilTexture, ViewTarget,
@@ -40,7 +40,7 @@ use bevy::{
         },
     },
     ui_render::{
-        DrawUi, ExtractedUiItem, ExtractedUiNodes, NodeType, TransparentUi, UiCameraView,
+        DrawUi, ExtractedUiItem, ExtractedUiNode, ExtractedUiNodes, NodeType, TransparentUi, UiCameraView,
         extract_ui_camera_view, prepare_uinodes,
     },
 };
@@ -59,6 +59,7 @@ mod origins;
 mod order;
 mod retained_draws;
 pub(crate) use origins::{CaptureOrigins, CompletedCaptures};
+pub use origins::RetainCaptureTopology;
 pub use retained_draws::{UiMaterialVersions, retain_ui_material};
 use retained_draws::RetainedDraws;
 
@@ -77,6 +78,8 @@ struct CaptureCache {
     external: bool,
     pending: AtomicBool,
     fingerprints: HashMap<Entity, Fingerprint>,
+    ui_owners: Option<Vec<MainEntity>>,
+    ui_geometry: MainEntityHashMap<u64>,
     dirty: HashSet<Entity>,
     blocked: HashSet<Entity>,
     skipped: HashSet<Entity>,
@@ -114,6 +117,9 @@ pub struct ExternalCaptureCache {
 }
 
 pub fn begin_external_capture(world: &mut World) -> ExternalCaptureCache {
+    if let Some(mut ui) = world.get_resource_mut::<origins::UiOrigins>() {
+        ui.invalidate();
+    }
     let cache = world.remove_resource::<CaptureCache>().unwrap_or_default();
     let completed = world.remove_resource::<CompletedCaptures>().unwrap_or_default();
     let aliases = world.remove_resource::<crate::native::capture::render::aliases::ExternalAliases>();
@@ -124,7 +130,13 @@ pub fn begin_external_capture(world: &mut World) -> ExternalCaptureCache {
     ExternalCaptureCache { cache, completed, aliases, prepared }
 }
 
-pub fn end_external_capture(world: &mut World, saved: ExternalCaptureCache) {
+pub fn end_external_capture(world: &mut World, mut saved: ExternalCaptureCache) {
+    // The shared UI extractor may have changed groups while this cache was away.
+    saved.cache.ui_owners = None;
+    saved.cache.ui_geometry.clear();
+    if let Some(mut ui) = world.get_resource_mut::<origins::UiOrigins>() {
+        ui.invalidate();
+    }
     world.insert_resource(saved.cache);
     world.insert_resource(saved.completed);
     if let Some(aliases) = saved.aliases { world.insert_resource(aliases); }
@@ -258,6 +270,77 @@ fn rectangle(hash: &mut Fingerprint, rect: Rect) {
     floats(hash, [rect.min.x, rect.min.y, rect.max.x, rect.max.y]);
 }
 
+fn hash_ui_geometry(hash: &mut Fingerprint, node: &ExtractedUiNode) {
+    floats(hash, [node.z_order]);
+    floats(hash, node.transform.to_cols_array());
+    match node.clip.as_ref() {
+        None => hash.write_u8(0),
+        Some(CalculatedClip::FullyClipped) => hash.write_u8(1),
+        Some(CalculatedClip::Rects(regions)) => {
+            hash.write_u8(2);
+            regions.len().hash(hash);
+            for region in regions {
+                rectangle(hash, region.rect);
+                floats(hash, region.world_to_clip_local.to_cols_array());
+            }
+        }
+    }
+    match &node.item {
+        ExtractedUiItem::Node {
+            color,
+            rect,
+            atlas_scaling,
+            flip_x,
+            flip_y,
+            border_radius,
+            border,
+            node_type,
+        } => {
+            hash.write_u8(0);
+            floats(hash, color.to_f32_array());
+            rectangle(hash, *rect);
+            atlas_scaling.is_some().hash(hash);
+            if let Some(scale) = atlas_scaling {
+                floats(hash, scale.to_array());
+            }
+            flip_x.hash(hash);
+            flip_y.hash(hash);
+            floats(
+                hash,
+                [
+                    border_radius.top_left.x,
+                    border_radius.top_left.y,
+                    border_radius.top_right.x,
+                    border_radius.top_right.y,
+                    border_radius.bottom_right.x,
+                    border_radius.bottom_right.y,
+                    border_radius.bottom_left.x,
+                    border_radius.bottom_left.y,
+                ],
+            );
+            floats(hash, border.min_inset.to_array());
+            floats(hash, border.max_inset.to_array());
+            match node_type {
+                NodeType::Rect => hash.write_u8(0),
+                NodeType::Inverted => hash.write_u8(1),
+                NodeType::Border(flags) => {
+                    hash.write_u8(2);
+                    hash.write_u32(*flags);
+                }
+            }
+        }
+        ExtractedUiItem::Glyphs { glyphs } => {
+            hash.write_u8(1);
+            glyphs.len().hash(hash);
+            for glyph in glyphs {
+                floats(hash, glyph.color.to_f32_array());
+                floats(hash, glyph.translation.to_array());
+                rectangle(hash, glyph.rect);
+            }
+        }
+    }
+}
+
 fn fingerprint_captures(
     mut cache: ResMut<CaptureCache>,
     captures: Query<(Entity, Option<&UiCameraView>), With<SurfaceCapture>>,
@@ -267,7 +350,6 @@ fn fingerprint_captures(
     images: Res<RenderAssets<GpuImage>>,
     completed: Option<Res<CompletedCaptures>>,
     materials: Option<Res<origins::MaterialInputs>>,
-    mut owners: Local<Vec<MainEntity>>,
 ) {
     let _timing = crate::host::performance::Span::new(
         crate::host::performance::Stage::NativeSurfaceFingerprint,
@@ -287,7 +369,11 @@ fn fingerprint_captures(
             .is_ok_and(|(_, camera)| camera.is_some_and(|camera| views.contains(camera.0)))
     });
     cache.pending.store(true, Ordering::Relaxed);
-    cache.fingerprints.clear();
+    let previous_cameras = cache.fingerprints.len();
+    cache.fingerprints.retain(|entity, _| captures.contains(*entity));
+    let mut owners_changed = cache.ui_owners.is_none()
+        || !nodes.changed.is_empty()
+        || cache.fingerprints.len() != previous_cameras;
     cache.dirty.clear();
     cache.blocked.clear();
     cache
@@ -302,24 +388,44 @@ fn fingerprint_captures(
             floats(&mut hash, view.world_from_view.to_matrix().to_cols_array());
             view.viewport.hash(&mut hash);
         }
-        cache.fingerprints.insert(entity, hash);
+        owners_changed |= cache.fingerprints.insert(entity, hash).is_none();
     }
     let CaptureCache {
         fingerprints,
+        ui_owners,
+        ui_geometry,
         dirty,
         blocked,
         ..
     } = &mut *cache;
+    // The extractor marks owners whose groups were replaced or removed.
+    for owner in &nodes.changed {
+        ui_geometry.remove(owner);
+    }
     let mut dormant_references = 0;
     let mut dynamic_references = 0;
-    owners.clear();
-    owners.extend(nodes.uinodes.keys().copied().filter(|owner| {
-        fingerprints.contains_key(&nodes.uinodes[owner].0)
-    }));
-    owners.sort_unstable_by_key(|owner| owner.id().to_bits());
+    let owners = ui_owners.get_or_insert_with(Vec::new);
+    if owners_changed {
+        owners.clear();
+        owners.extend(nodes.uinodes.iter().filter_map(|(owner, (camera, _))| {
+            fingerprints.contains_key(camera).then_some(*owner)
+        }));
+        owners.sort_unstable_by_key(|owner| owner.id().to_bits());
+    }
     for owner in &*owners {
         let (entity, group) = &nodes.uinodes[owner];
         let hash = fingerprints.get_mut(entity).unwrap();
+        let geometry = ui_geometry.entry(*owner).or_insert_with(|| {
+            let mut hash = bevy::platform::hash::FixedHasher.build_hasher();
+            group.len().hash(&mut hash);
+            for node in group.values() {
+                hash_ui_geometry(&mut hash, node);
+            }
+            hash.finish()
+        });
+        owner.hash(hash);
+        geometry.hash(hash);
+        // A static node can sample a texture that changes on every render.
         for node in group.values() {
             let image = images.get(node.image);
             if node.image != AssetId::default() && image.is_none() {
@@ -342,78 +448,9 @@ fn fingerprint_captures(
                     }
                 }
             }
-            owner.hash(hash);
             node.image.hash(hash);
             if let Some(image) = image {
                 image.texture.id().hash(hash);
-            }
-            floats(hash, [node.z_order]);
-            floats(hash, node.transform.to_cols_array());
-            match node.clip.as_ref() {
-                None => hash.write_u8(0),
-                Some(CalculatedClip::FullyClipped) => hash.write_u8(1),
-                Some(CalculatedClip::Rects(regions)) => {
-                    hash.write_u8(2);
-                    regions.len().hash(hash);
-                    for region in regions {
-                        rectangle(hash, region.rect);
-                        floats(hash, region.world_to_clip_local.to_cols_array());
-                    }
-                }
-            }
-            match &node.item {
-                ExtractedUiItem::Node {
-                    color,
-                    rect,
-                    atlas_scaling,
-                    flip_x,
-                    flip_y,
-                    border_radius,
-                    border,
-                    node_type,
-                } => {
-                    hash.write_u8(0);
-                    floats(hash, color.to_f32_array());
-                    rectangle(hash, *rect);
-                    atlas_scaling.is_some().hash(hash);
-                    if let Some(scale) = atlas_scaling {
-                        floats(hash, scale.to_array());
-                    }
-                    flip_x.hash(hash);
-                    flip_y.hash(hash);
-                    floats(
-                        hash,
-                        [
-                            border_radius.top_left.x,
-                            border_radius.top_left.y,
-                            border_radius.top_right.x,
-                            border_radius.top_right.y,
-                            border_radius.bottom_right.x,
-                            border_radius.bottom_right.y,
-                            border_radius.bottom_left.x,
-                            border_radius.bottom_left.y,
-                        ],
-                    );
-                    floats(hash, border.min_inset.to_array());
-                    floats(hash, border.max_inset.to_array());
-                    match node_type {
-                        NodeType::Rect => hash.write_u8(0),
-                        NodeType::Inverted => hash.write_u8(1),
-                        NodeType::Border(flags) => {
-                            hash.write_u8(2);
-                            hash.write_u32(*flags);
-                        }
-                    }
-                }
-                ExtractedUiItem::Glyphs { glyphs } => {
-                    hash.write_u8(1);
-                    glyphs.len().hash(hash);
-                    for glyph in glyphs {
-                        floats(hash, glyph.color.to_f32_array());
-                        floats(hash, glyph.translation.to_array());
-                        rectangle(hash, glyph.rect);
-                    }
-                }
             }
         }
     }
@@ -707,6 +744,7 @@ pub(crate) mod tests {
 
     fn insert_text_node(world: &mut World, source: Entity, camera: Entity) {
         let mut nodes = world.resource_mut::<ExtractedUiNodes>();
+        nodes.changed.insert(source.into());
         let group = &mut nodes.uinodes.entry(source.into())
             .or_insert_with(|| (camera, Default::default())).1;
         group.insert(source, ExtractedUiNode {
@@ -725,7 +763,9 @@ pub(crate) mod tests {
     }
 
     fn node_mut(world: &mut World, source: Entity) -> Mut<'_, ExtractedUiNode> {
-        world.resource_mut::<ExtractedUiNodes>().map_unchanged(|nodes| {
+        let mut nodes = world.resource_mut::<ExtractedUiNodes>();
+        nodes.changed.insert(source.into());
+        nodes.map_unchanged(|nodes| {
             nodes
                 .uinodes
                 .get_mut(&MainEntity::from(source))
@@ -753,7 +793,14 @@ pub(crate) mod tests {
             .init_resource::<ExtractedUiNodes>()
             .init_resource::<ExtractedAssets<GpuImage>>()
             .init_resource::<RenderAssets<GpuImage>>()
-            .add_systems(Update, fingerprint_captures);
+            .add_systems(
+                Update,
+                (
+                    fingerprint_captures,
+                    |mut nodes: ResMut<ExtractedUiNodes>| nodes.changed.clear(),
+                )
+                    .chain(),
+            );
         let camera = app
             .world_mut()
             .spawn(SurfaceCapture(Handle::default()))
@@ -829,11 +876,19 @@ pub(crate) mod tests {
         app.update();
         assert_ne!(fingerprint(&app), changed_text);
         assert!(app.world().resource::<CaptureCache>().dirty.is_empty());
+        let before_image = fingerprint(&app);
+        let source_owner = MainEntity::from(source);
+        let geometry = app.world().resource::<CaptureCache>().ui_geometry[&source_owner];
         app.world_mut()
             .resource_mut::<ExtractedAssets<GpuImage>>()
             .modified
             .insert(AssetId::default());
         app.update();
+        assert_eq!(fingerprint(&app), before_image);
+        assert_eq!(
+            app.world().resource::<CaptureCache>().ui_geometry[&source_owner],
+            geometry
+        );
         assert!(
             app.world()
                 .resource::<CaptureCache>()
@@ -849,6 +904,16 @@ pub(crate) mod tests {
                 .resource::<CaptureCache>()
                 .blocked
                 .contains(&camera)
+        );
+        let other_owner = MainEntity::from(other_source);
+        {
+            let mut nodes = app.world_mut().resource_mut::<ExtractedUiNodes>();
+            nodes.uinodes.remove(&other_owner);
+            nodes.changed.insert(other_owner);
+        }
+        app.update();
+        assert!(
+            !app.world().resource::<CaptureCache>().ui_geometry.contains_key(&other_owner)
         );
         app.world_mut().despawn(camera);
         app.world_mut().despawn(other);

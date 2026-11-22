@@ -357,7 +357,7 @@ fn scaled_outputs_preserve_native_pixels_client_geometry_and_logical_editor_inpu
         harness.sync();
         publish(&mut canvas, &harness);
         canvas.focus_output(OutputId(1)).unwrap();
-        assert!(!canvas.sync_windows(&harness.server.windows()).unwrap());
+        assert!(!canvas.sync_windows(&harness.server.scene_windows()).unwrap());
         let frame = settle(&mut canvas);
         let snapshot = &harness.server.windows()[0];
         let entity = canvas
@@ -420,7 +420,7 @@ fn scaled_outputs_preserve_native_pixels_client_geometry_and_logical_editor_inpu
                 sequence: 1,
                 scene_revision: 1,
                 frame: Arc::new(frame),
-                windows: Arc::new(canvas.painted_windows()),
+                windows: canvas.painted_windows(),
                 rejected: Vec::new(),
                 input_serial: 0,
                 latency: None,
@@ -591,7 +591,7 @@ fn scaled_outputs_preserve_native_pixels_client_geometry_and_logical_editor_inpu
             popup_surface.attach(Some(&popup_buffer), 0, 0);
             popup_surface.commit();
             harness.sync();
-            completed.windows = Arc::new(harness.server.windows());
+            completed.windows = harness.server.scene_windows();
             let expected = completed.windows[0].popups[0].clone();
             let deadline = std::time::Instant::now() + Duration::from_secs(2);
             let popup_scene = loop {
@@ -843,7 +843,7 @@ fn scaled_outputs_preserve_native_pixels_client_geometry_and_logical_editor_inpu
         sequence: 1,
         scene_revision: 1,
         frame: Arc::new(settle(&mut canvas)),
-        windows: Arc::new(canvas.painted_windows()),
+        windows: canvas.painted_windows(),
         rejected: Vec::new(),
         input_serial: 0,
         latency: None,

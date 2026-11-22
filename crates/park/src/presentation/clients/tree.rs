@@ -54,25 +54,39 @@ pub(super) fn remove(world: &mut World, node: SurfaceView) {
 impl Presentation {
     pub(crate) fn sync_pixels(
         &mut self,
-        windows: &[WindowSnapshot],
+        windows: &[Arc<WindowSnapshot>],
     ) -> Result<PixelSync, ProbeFailure> {
         if self.retained.is_none()
             || self.suspended()
             || !self.rejected.is_empty()
             || windows.len() != self.painted_windows.len()
-            || windows.iter().any(|window| {
-                self.painted_windows
-                    .get(&window.id)
-                    .is_none_or(|previous| !previous.same_semantics(window))
-            })
         {
             return Ok(PixelSync::Incompatible);
+        }
+        let mut changed = Vec::new();
+        for snapshot in windows {
+            let Some(previous) = self.painted_windows.get(&snapshot.id) else {
+                return Ok(PixelSync::Incompatible);
+            };
+            if Arc::ptr_eq(snapshot, previous) {
+                continue;
+            }
+            if !previous.same_semantics(snapshot) {
+                return Ok(PixelSync::Incompatible);
+            }
+            changed.push(snapshot);
+        }
+        if changed.is_empty() {
+            return Ok(PixelSync::Compatible {
+                pending: false,
+                update: PixelUpdate::None,
+            });
         }
         self.renderer.retain_imports(windows);
         let mut pending = false;
         let mut update = PixelUpdate::None;
         let mut imported = Vec::new();
-        for snapshot in windows {
+        for snapshot in changed {
             if !snapshot.mapped {
                 self.painted_windows.insert(snapshot.id, snapshot.clone());
                 continue;
@@ -173,7 +187,7 @@ impl Presentation {
         Ok(PixelSync::Compatible { pending, update })
     }
 
-    pub fn sync_windows(&mut self, windows: &[WindowSnapshot]) -> Result<bool, ProbeFailure> {
+    pub fn sync_windows(&mut self, windows: &[Arc<WindowSnapshot>]) -> Result<bool, ProbeFailure> {
         self.retained = None;
         lince_interface::host::performance::count(
             lince_interface::host::performance::Count::ClientSync,
@@ -291,7 +305,7 @@ impl Presentation {
         Ok(pending)
     }
 
-    pub(crate) fn painted_windows(&self) -> Vec<WindowSnapshot> {
+    pub(crate) fn painted_windows(&self) -> Arc<[Arc<WindowSnapshot>]> {
         self.painted_windows.values().cloned().collect()
     }
 

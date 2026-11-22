@@ -114,21 +114,27 @@ impl Presentation {
         if let Some(time) = self.app.world().get_resource::<bevy::time::TimeReceiver>() {
             let _ = time.0.try_recv();
         }
-        let reused = previous.map_or_else(Exports::new, |previous| {
-            self.reuse_exports(&retained, previous)
+        let previous = previous.filter(|previous| {
+            Arc::ptr_eq(&retained.input, &previous.input)
+                && self.can_reuse_canvas_for_composition()
+                && !self.pipelines_pending()
         });
+        let reused = previous.map_or_else(Exports::new, |previous| self.reuse_exports(previous));
+        let render = self.app.sub_app_mut(RenderApp);
+        if previous.is_some() {
+            render.insert_resource(native::topology::RetainCaptureTopology);
+        }
         if !reused.is_empty() {
-            self.app
-                .sub_app_mut(RenderApp)
-                .insert_resource(ReusedTargets(reused.keys().copied().collect()));
+            render.insert_resource(ReusedTargets(reused.keys().copied().collect()));
         }
         self.trace_render(true);
         self.app.update_sub_app_by_label(RenderApp);
+        let render = self.app.sub_app_mut(RenderApp).world_mut();
+        if previous.is_some() {
+            render.remove_resource::<native::topology::RetainCaptureTopology>();
+        }
         if !reused.is_empty() {
-            self.app
-                .sub_app_mut(RenderApp)
-                .world_mut()
-                .remove_resource::<ReusedTargets>();
+            render.remove_resource::<ReusedTargets>();
         }
         if let Some(error) = self.app.world().get_resource::<FrameFailure>() {
             return Err(ProbeFailure {
@@ -153,12 +159,8 @@ impl Presentation {
         Ok(Some(frame))
     }
 
-    fn reuse_exports(&self, retained: &Retained, previous: &Frame) -> Exports {
-        if self.pixel_changed_owners.is_empty()
-            || !Arc::ptr_eq(&retained.input, &previous.input)
-            || !self.can_reuse_canvas_for_composition()
-            || self.pipelines_pending()
-        {
+    fn reuse_exports(&self, previous: &Frame) -> Exports {
+        if self.pixel_changed_owners.is_empty() {
             return Exports::new();
         }
         let Some(focused) = self.output_state.assignments.focused() else {

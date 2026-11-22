@@ -38,6 +38,34 @@ impl Drop for CaptureBudget {
     }
 }
 
+/// Copies validated, mapped SHM rows into a tightly packed owned upload.
+///
+/// # Safety
+/// Every row beginning at `source` with the given stride must remain mapped and
+/// readable for the call. The caller must have checked the size and row bounds.
+unsafe fn read_shm_rows(source: *const u8, stride: usize, row: usize, height: usize) -> Vec<u8> {
+    let bytes = row * height;
+    let mut pixels = Vec::<u8>::with_capacity(bytes);
+    // SAFETY: The caller validated source rows. The fresh allocation has room for
+    // all packed rows and cannot overlap the client pool. No reference to the
+    // client memory is created. The copies initialize every byte before set_len.
+    unsafe {
+        if stride == row {
+            std::ptr::copy_nonoverlapping(source, pixels.as_mut_ptr(), bytes);
+        } else {
+            for y in 0..height {
+                std::ptr::copy_nonoverlapping(
+                    source.add(y * stride),
+                    pixels.as_mut_ptr().add(y * row),
+                    row,
+                );
+            }
+        }
+        pixels.set_len(bytes);
+    }
+    pixels
+}
+
 #[cfg(feature = "nested")]
 pub(crate) fn retained_capture(
     buffer: &ClientBuffer,
@@ -137,7 +165,7 @@ impl VulkanRenderer {
             .any(crate::graphics::wait::Watch::ready)
     }
 
-    pub(crate) fn retain_imports(&self, windows: &[crate::server::WindowSnapshot]) {
+    pub(crate) fn retain_imports(&self, windows: &[Arc<crate::server::WindowSnapshot>]) {
         let mut waits = self.waits.borrow_mut();
         if waits.is_empty() {
             return;
@@ -159,8 +187,6 @@ impl VulkanRenderer {
         )>,
     ) -> Result<Option<(wgpu::Texture, bool)>> {
         let buffer: &ClientBuffer = &node.content;
-        let damage = node.buffer_damage_since(previous.map(|(_, commit)| commit));
-        let target = previous.map(|(texture, _)| texture);
         if let Some(content) = buffer.cached::<Content>() {
             if content.device != self.device {
                 return Err(ProbeFailure::at(
@@ -176,6 +202,8 @@ impl VulkanRenderer {
                 "the client buffer was released without retaining its pixels",
             ));
         }
+        let damage = node.buffer_damage_since(previous.map(|(_, commit)| commit));
+        let target = previous.map(|(texture, _)| texture);
         if let Ok(dmabuf) = get_dmabuf(buffer.buffer()) {
             let bytes_per_pixel = if dmabuf.format().code == Fourcc::Abgr16161616f {
                 8_u64
@@ -200,20 +228,9 @@ impl VulkanRenderer {
                     "unsupported DMA-BUF format",
                 ));
             }
-            for fd in dmabuf.handles() {
-                let mut poll = [rustix::event::PollFd::new(
-                    &fd,
-                    rustix::event::PollFlags::IN,
-                )];
-                rustix::event::poll(
-                    &mut poll,
-                    Some(&rustix::time::Timespec {
-                        tv_sec: 0,
-                        tv_nsec: 0,
-                    }),
-                )
-                .map_err(|error| ProbeFailure::at("client_acquire", error))?;
-                if !poll[0].revents().contains(rustix::event::PollFlags::IN) {
+            let source = match import::acquire(dmabuf, "client_acquire")? {
+                import::Acquire::Ready(source) => source,
+                import::Acquire::Pending(fd) => {
                     let key = (buffer.buffer().clone(), buffer.version);
                     let mut waits = self.waits.borrow_mut();
                     if !waits.contains_key(&key) {
@@ -227,11 +244,14 @@ impl VulkanRenderer {
                     }
                     return Ok(None);
                 }
+            };
+            {
+                let mut waits = self.waits.borrow_mut();
+                if !waits.is_empty() {
+                    waits.remove(&(buffer.buffer().clone(), buffer.version));
+                }
             }
-            self.waits
-                .borrow_mut()
-                .remove(&(buffer.buffer().clone(), buffer.version));
-            let texture = self.import_dmabuf_regions(dmabuf, target, Some(&damage))?;
+            let texture = self.import_acquired_dmabuf(source, target, Some(&damage))?;
             buffer.cache(Content {
                 device: self.device.clone(),
                 texture: texture.clone(),
@@ -285,6 +305,7 @@ impl VulkanRenderer {
                     damage
                         .iter()
                         .filter_map(|damage| damage.intersection(bounds))
+                        .filter(|region| !region.is_empty())
                         .collect::<Vec<_>>()
                 } else {
                     vec![bounds]
@@ -299,22 +320,15 @@ impl VulkanRenderer {
                 let mut uploads = Vec::with_capacity(regions.len());
                 for region in regions {
                     let row = region.size.w as usize * 4;
-                    let mut pixels = vec![0; row * region.size.h as usize];
-                    for y in 0..region.size.h as usize {
-                        // SAFETY: The callback holds the pool mapped. The validated bounds
-                        // cover this clipped row, and the destination is a separate Vec.
-                        unsafe {
-                            std::ptr::copy_nonoverlapping(
-                                pointer.add(
-                                    data.offset as usize
-                                        + (region.loc.y as usize + y) * data.stride as usize
-                                        + region.loc.x as usize * 4,
-                                ),
-                                pixels.as_mut_ptr().add(y * row),
-                                row,
-                            )
-                        };
-                    }
+                    let stride = data.stride as usize;
+                    let offset = data.offset as usize
+                        + region.loc.y as usize * stride
+                        + region.loc.x as usize * 4;
+                    // SAFETY: The callback holds the pool mapped. The validated pool
+                    // bounds cover every row in this clipped rectangle.
+                    let pixels = unsafe {
+                        read_shm_rows(pointer.add(offset), stride, row, region.size.h as usize)
+                    };
                     uploads.push((region, pixels));
                 }
                 Ok((

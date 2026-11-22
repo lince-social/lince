@@ -6,7 +6,7 @@
 // - [review: §3 Ownership] Check clones for ownership transfer or a borrow. Sites 124, 206, 207,
 //   347, 379, 384, 401, 428, 459, 466, 624.
 
-use std::os::fd::{AsRawFd, IntoRawFd};
+use std::os::fd::{AsRawFd, BorrowedFd, IntoRawFd};
 
 use smithay::backend::allocator::{Buffer, Fourcc, Modifier};
 
@@ -30,17 +30,32 @@ fn render_target_source(source: &wgpu::Texture) -> bool {
         && source.sample_count() == 1
 }
 
+pub(super) enum Acquire<'a> {
+    Ready(AcquiredDmabuf<'a>),
+    Pending(BorrowedFd<'a>),
+}
+
+pub(super) struct AcquiredDmabuf<'a>(&'a Dmabuf);
+
+pub(super) fn acquire<'a>(buffer: &'a Dmabuf, stage: &str) -> Result<Acquire<'a>> {
+    let timeout = rustix::time::Timespec {
+        tv_sec: 0,
+        tv_nsec: 0,
+    };
+    for fd in buffer.handles() {
+        let mut poll = [rustix::event::PollFd::new(&fd, rustix::event::PollFlags::IN)];
+        rustix::event::poll(&mut poll, Some(&timeout))
+            .map_err(|error| ProbeFailure::at(stage, error))?;
+        if !poll[0].revents().contains(rustix::event::PollFlags::IN) {
+            return Ok(Acquire::Pending(fd));
+        }
+    }
+    Ok(Acquire::Ready(AcquiredDmabuf(buffer)))
+}
+
 impl VulkanRenderer {
     pub(crate) fn import_dmabuf(&self, buffer: &Dmabuf) -> Result<wgpu::Texture> {
-        self.import_dmabuf_into(buffer, None)
-    }
-
-    pub(super) fn import_dmabuf_into(
-        &self,
-        buffer: &Dmabuf,
-        target: Option<&wgpu::Texture>,
-    ) -> Result<wgpu::Texture> {
-        self.import_dmabuf_regions(buffer, target, None)
+        self.import_dmabuf_regions(buffer, None, None)
     }
 
     pub(super) fn import_dmabuf_regions(
@@ -49,26 +64,24 @@ impl VulkanRenderer {
         target: Option<&wgpu::Texture>,
         damage: Option<&[smithay::utils::Rectangle<i32, smithay::utils::Buffer>]>,
     ) -> Result<wgpu::Texture> {
+        match acquire(buffer, "dmabuf_acquire")? {
+            Acquire::Ready(source) => self.import_acquired_dmabuf(source, target, damage),
+            Acquire::Pending(_descriptor) => Err(ProbeFailure::at(
+                "dmabuf_acquire",
+                "client DMA-BUF did not become readable",
+            )),
+        }
+    }
+
+    pub(super) fn import_acquired_dmabuf(
+        &self,
+        source: AcquiredDmabuf<'_>,
+        target: Option<&wgpu::Texture>,
+        damage: Option<&[smithay::utils::Rectangle<i32, smithay::utils::Buffer>]>,
+    ) -> Result<wgpu::Texture> {
         #[cfg(feature = "native-presentation")]
         let started = std::time::Instant::now();
-        for fd in buffer.handles() {
-            let mut poll = [rustix::event::PollFd::new(
-                &fd,
-                rustix::event::PollFlags::IN,
-            )];
-            let timeout = rustix::time::Timespec {
-                tv_sec: 0,
-                tv_nsec: 0,
-            };
-            rustix::event::poll(&mut poll, Some(&timeout))
-                .map_err(|error| ProbeFailure::at("dmabuf_acquire", error))?;
-            if !poll[0].revents().contains(rustix::event::PollFlags::IN) {
-                return Err(ProbeFailure::at(
-                    "dmabuf_acquire",
-                    "client DMA-BUF did not become readable",
-                ));
-            }
-        }
+        let buffer = source.0;
         let size = buffer.size();
         let (vk_format, texture_format, bytes_per_pixel) = match buffer.format().code {
             Fourcc::Argb8888 => (
@@ -462,7 +475,15 @@ impl GpuContext {
     }
 
     fn export_render_target(&self, source: &wgpu::Texture) -> Result<ExportedImage> {
-        let prepared = self.prepare_export_render_target(source)?;
+        self.export_one_render_target(source, false)
+    }
+
+    fn export_one_render_target(
+        &self,
+        source: &wgpu::Texture,
+        initialized: bool,
+    ) -> Result<ExportedImage> {
+        let prepared = self.prepare_export_render_target(source, initialized)?;
         let completion = self.submit_exports(
             prepared.commands,
             (prepared.source, prepared.target.allocation.clone()),
@@ -499,29 +520,52 @@ impl GpuContext {
         self.completion.track(&self.queue)
     }
 
-    #[cfg(feature = "native-presentation")]
+    #[cfg(all(test, feature = "native-presentation"))]
     pub(crate) fn export_render_targets(
         &self,
         sources: &[wgpu::Texture],
     ) -> Result<Vec<ExportedImage>> {
-        #[cfg(feature = "native-presentation")]
+        self.export_target_batch(sources.iter().map(|texture| (texture, false)))
+    }
+
+    /// Export the desktop's persistent canvas textures.
+    ///
+    /// # Safety
+    /// An initialized entry has an initialization ordered before this copy on
+    /// the same queue. Its contents must remain defined after initialization.
+    #[cfg(feature = "native-presentation")]
+    pub(crate) unsafe fn export_canvas_targets(
+        &self,
+        sources: &[(wgpu::Texture, bool)],
+    ) -> Result<Vec<ExportedImage>> {
+        self.export_target_batch(
+            sources.iter().map(|(texture, initialized)| (texture, *initialized)),
+        )
+    }
+
+    #[cfg(feature = "native-presentation")]
+    fn export_target_batch<'a>(
+        &self,
+        mut sources: impl ExactSizeIterator<Item = (&'a wgpu::Texture, bool)>,
+    ) -> Result<Vec<ExportedImage>> {
         let _observation =
             crate::presentation::observe_work("lince_park::graphics::export_render_targets");
-        if sources.is_empty() {
-            return Ok(Vec::new());
-        }
-        if let [source] = sources {
-            return self.export_render_target(source).map(|image| vec![image]);
+        if sources.len() < 2 {
+            return sources
+                .next()
+                .map(|(source, initialized)| self.export_one_render_target(source, initialized))
+                .into_iter()
+                .collect();
         }
         let mut targets = Vec::with_capacity(sources.len());
         let mut retained = Vec::with_capacity(sources.len());
         let mut prepare = self.device.create_command_encoder(&Default::default());
         let mut copies = self.device.create_command_encoder(&Default::default());
-        for source in sources {
+        for (source, initialized) in sources {
             let target = self.allocate_export_target(source)?;
             #[cfg(feature = "native-presentation")]
             let started = std::time::Instant::now();
-            self.encode_export_source(source, &mut prepare);
+            self.encode_export_source(source, &mut prepare, initialized);
             self.encode_export_copy(source, &target, &mut copies)?;
             #[cfg(feature = "native-presentation")]
             crate::runtime::trace_frame("dmabuf-export-copy", started);
@@ -557,12 +601,17 @@ impl GpuContext {
         Ok(target)
     }
 
-    fn encode_export_source(&self, source: &wgpu::Texture, encoder: &mut wgpu::CommandEncoder) {
-        let view = source.create_view(&wgpu::TextureViewDescriptor {
-            mip_level_count: Some(1),
-            ..Default::default()
-        });
-        {
+    fn encode_export_source(
+        &self,
+        source: &wgpu::Texture,
+        encoder: &mut wgpu::CommandEncoder,
+        initialized: bool,
+    ) {
+        if !initialized {
+            let view = source.create_view(&wgpu::TextureViewDescriptor {
+                mip_level_count: Some(1),
+                ..Default::default()
+            });
             let _pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &view,
@@ -679,12 +728,16 @@ impl GpuContext {
         Ok(())
     }
 
-    fn prepare_export_render_target(&self, source: &wgpu::Texture) -> Result<PreparedExport> {
+    fn prepare_export_render_target(
+        &self,
+        source: &wgpu::Texture,
+        initialized: bool,
+    ) -> Result<PreparedExport> {
         let target = self.allocate_export_target(source)?;
         #[cfg(feature = "native-presentation")]
         let started = std::time::Instant::now();
         let mut prepare = self.device.create_command_encoder(&Default::default());
-        self.encode_export_source(source, &mut prepare);
+        self.encode_export_source(source, &mut prepare, initialized);
         let prepare = prepare.finish();
         let mut copy = self.device.create_command_encoder(&Default::default());
         self.encode_export_copy(source, &target, &mut copy)?;
@@ -738,6 +791,29 @@ fn validate_plane(
 #[cfg(test)]
 pub(super) mod tests {
     use super::*;
+
+    #[test]
+    fn import_acquire_waits_for_the_pending_plane() {
+        use smithay::backend::allocator::dmabuf::DmabufFlags;
+        use std::{io::Write, os::unix::net::UnixStream};
+
+        let (reader, mut writer) = UnixStream::pair().unwrap();
+        let mut builder = Dmabuf::builder(
+            (1, 1),
+            Fourcc::Argb8888,
+            Modifier::Linear,
+            DmabufFlags::empty(),
+        );
+        assert!(builder.add_plane(reader.into(), 0, 0, 4));
+        let buffer = builder.build().unwrap();
+
+        let Acquire::Pending(fd) = acquire(&buffer, "test_acquire").unwrap() else {
+            panic!("An unsignaled plane must remain pending");
+        };
+        assert_eq!(fd.as_raw_fd(), buffer.handles().next().unwrap().as_raw_fd());
+        writer.write_all(&[1]).unwrap();
+        assert!(matches!(acquire(&buffer, "test_acquire"), Ok(Acquire::Ready(_))));
+    }
 
     #[cfg(feature = "native-presentation")]
     pub(in crate::graphics) mod batches;

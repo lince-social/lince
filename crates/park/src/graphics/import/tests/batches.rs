@@ -280,6 +280,15 @@ fn batched_outputs_preserve_pixels_precision_initialization_and_lifetimes() {
         assert!(bytes.iter().all(|byte| *byte == 0));
     }
     let expected = write(&renderer, &clean[0], &[23, 79, 139, 199]);
+    let replacement = target(&renderer, [39, 21], formats[2]);
+    // SAFETY: The first source was initialized by the earlier export and then
+    // repainted. The replacement still needs initialization.
+    let mixed = unsafe {
+        renderer.export_canvas_targets(&[(clean[0].clone(), true), (replacement, false)])
+    }
+    .unwrap();
+    assert_eq!(read(&renderer, &mixed[0], formats[0]), expected);
+    assert!(read(&renderer, &mixed[1], formats[2]).iter().all(|byte| *byte == 0));
     let aliased = renderer
         .export_render_targets(&[clean[0].clone(), clean[0].clone()])
         .unwrap();

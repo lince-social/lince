@@ -670,7 +670,7 @@ impl Desktop {
                 self.worker.scene(Scene {
                     revision: self.scene_serial,
                     outputs,
-                    windows: Arc::new(self.server.windows()),
+                    windows: self.server.scene_windows(),
                     display: Some(display.clone()),
                 })?;
                 self.scene_revision = self.server.window_revision();

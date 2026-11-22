@@ -92,7 +92,7 @@ fn popup_repaint_updates_composition_without_invalidating_the_canvas() {
     surface.attach(Some(&first), 0, 0);
     surface.commit();
     harness.sync();
-    let before = harness.server.windows();
+    let before = harness.server.scene_windows();
     assert!(!canvas.sync_windows(&before).unwrap());
     let frame = canvas.probe_frame().unwrap();
     let second = harness.buffer([128, 64]);
@@ -100,7 +100,7 @@ fn popup_repaint_updates_composition_without_invalidating_the_canvas() {
     surface.damage_buffer(0, 0, 128, 64);
     surface.commit();
     harness.sync();
-    let after = harness.server.windows();
+    let after = harness.server.scene_windows();
     assert_eq!(
         canvas.sync_pixels(&after).unwrap(),
         PixelSync::Compatible {
@@ -111,7 +111,7 @@ fn popup_repaint_updates_composition_without_invalidating_the_canvas() {
     assert!(canvas.retains_frame());
     assert!(frame.dmabuf().is_some());
     let painted = canvas.painted_windows();
-    let popup_version = |windows: &[WindowSnapshot]| windows[0].popups[0].nodes[0].content.version;
+    let popup_version = |windows: &[Arc<WindowSnapshot>]| windows[0].popups[0].nodes[0].content.version;
     assert_ne!(popup_version(&painted), popup_version(&before));
     assert_eq!(popup_version(&painted), popup_version(&after));
 }
@@ -399,7 +399,7 @@ fn changing_client_buffers_rebinds_materials_without_changing_window_geometry() 
         window.surface.damage_buffer(0, 0, size[0], size[1]);
         window.surface.commit();
         harness.sync();
-        assert!(!canvas.sync_windows(&harness.server.windows()).unwrap());
+        assert!(!canvas.sync_windows(&harness.server.scene_windows()).unwrap());
         for _ in 0..8 {
             canvas.probe_frame().unwrap();
         }

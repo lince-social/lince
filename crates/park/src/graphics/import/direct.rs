@@ -113,7 +113,7 @@ impl Prepared {
         }
         let mut prepare = gpu.device.create_command_encoder(&Default::default());
         for image in &self.images {
-            gpu.encode_export_source(&image.texture, &mut prepare);
+            gpu.encode_export_source(&image.texture, &mut prepare, false);
         }
         let prepare = prepare.finish();
         let mut release = gpu.device.create_command_encoder(&Default::default());

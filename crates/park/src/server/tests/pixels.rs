@@ -215,7 +215,7 @@ fn unavailable_client_pixels_sleep_while_ready_clients_input_and_fence_completio
     let ready = harness.window();
     let _initial_held = colored(&mut harness, &held, [0, 255, 0]);
     let _initial_ready = colored(&mut harness, &ready, [0, 0, 255]);
-    let scene = |harness: &Harness| Scene {
+    let scene = |harness: &mut Harness| Scene {
         revision: 1,
         outputs: harness
             .server
@@ -223,13 +223,13 @@ fn unavailable_client_pixels_sleep_while_ready_clients_input_and_fence_completio
             .into_iter()
             .map(|(name, viewport)| crate::presentation::Output { name, viewport })
             .collect(),
-        windows: Arc::new(harness.server.windows()),
+        windows: harness.server.scene_windows(),
         display: None,
     };
-    worker.scene(scene(&harness)).unwrap();
+    worker.scene(scene(&mut harness)).unwrap();
     let initial = worker_frame(&worker, |frame| frame.windows.len() == 2);
     quiet_worker(&worker, &updates);
-    worker.scene(scene(&harness)).unwrap();
+    worker.scene(scene(&mut harness)).unwrap();
     let retained = worker_frame(&worker, |frame| frame.windows.len() == 2);
     let held_id = initial
         .windows
@@ -276,7 +276,7 @@ fn unavailable_client_pixels_sleep_while_ready_clients_input_and_fence_completio
         .content
         .version;
     for _ in 0..4 {
-        worker.scene(scene(&harness)).unwrap();
+        worker.scene(scene(&mut harness)).unwrap();
         let deadline = Instant::now() + Duration::from_secs(1);
         let mut quiet = Instant::now();
         loop {
@@ -310,7 +310,7 @@ fn unavailable_client_pixels_sleep_while_ready_clients_input_and_fence_completio
         .nodes[0]
         .content
         .version;
-    worker.scene(scene(&harness)).unwrap();
+    worker.scene(scene(&mut harness)).unwrap();
     let partial = worker_frame(&worker, |frame| {
         frame.windows.iter().any(|window| {
             window.id == ready_id && window.nodes[0].content.version == expected_ready
@@ -401,7 +401,7 @@ fn unavailable_client_pixels_sleep_while_ready_clients_input_and_fence_completio
         .nodes[0]
         .content
         .version;
-    worker.scene(scene(&harness)).unwrap();
+    worker.scene(scene(&mut harness)).unwrap();
     let serial = worker.input(Input::Pointer([40.0, 40.0])).unwrap();
     let input = worker_frame(&worker, |frame| frame.input_serial >= serial);
     assert_eq!(
@@ -481,7 +481,7 @@ fn a_quiet_worker_retains_client_frames_and_resumes_native_work_for_input_metada
     let mut harness = Harness::new();
     let window = harness.window();
     let mut buffers = vec![colored(&mut harness, &window, [255, 0, 0])];
-    let scene = |harness: &Harness| {
+    let scene = |harness: &mut Harness| {
         use lince_interface::host::{OutputId, OutputViewport, Rectangle, raster::RasterMapping};
         let bounds = Rectangle::new([0.0; 2], [640.0, 480.0]).unwrap();
         Scene {
@@ -501,18 +501,18 @@ fn a_quiet_worker_retains_client_frames_and_resumes_native_work_for_input_metada
                     workspace: 1,
                 },
             }],
-            windows: Arc::new(harness.server.windows()),
+            windows: harness.server.scene_windows(),
             display: None,
         }
     };
-    worker.scene(scene(&harness)).unwrap();
+    worker.scene(scene(&mut harness)).unwrap();
     worker_frame(&worker, |frame| !frame.windows.is_empty());
     quiet_worker(&worker, &updates);
     let before = updates.load(Ordering::Acquire);
     let initial = {
         buffers.push(colored(&mut harness, &window, [0, 255, 0]));
         let expected = harness.server.windows()[0].nodes[0].content.version;
-        worker.scene(scene(&harness)).unwrap();
+        worker.scene(scene(&mut harness)).unwrap();
         worker_frame(&worker, |frame| {
             frame
                 .windows
@@ -523,7 +523,7 @@ fn a_quiet_worker_retains_client_frames_and_resumes_native_work_for_input_metada
     for color in [[0, 0, 255], [255, 0, 0], [0, 255, 0]] {
         buffers.push(colored(&mut harness, &window, color));
         let expected = harness.server.windows()[0].nodes[0].content.version;
-        worker.scene(scene(&harness)).unwrap();
+        worker.scene(scene(&mut harness)).unwrap();
         let frame = worker_frame(&worker, |frame| {
             frame
                 .windows
@@ -556,7 +556,7 @@ fn a_quiet_worker_retains_client_frames_and_resumes_native_work_for_input_metada
     let before = updates.load(Ordering::Acquire);
     window.role.set_title("Changed native window title".into());
     harness.sync();
-    worker.scene(scene(&harness)).unwrap();
+    worker.scene(scene(&mut harness)).unwrap();
     worker_frame(&worker, |frame| {
         frame
             .windows
@@ -571,7 +571,7 @@ fn a_quiet_worker_retains_client_frames_and_resumes_native_work_for_input_metada
     {
         buffers.push(colored(&mut harness, &window, color));
         let expected = harness.server.windows()[0].nodes[0].content.version;
-        worker.scene(scene(&harness)).unwrap();
+        worker.scene(scene(&mut harness)).unwrap();
         worker_frame(&worker, |frame| {
             frame
                 .windows
@@ -646,7 +646,7 @@ fn unchanged_native_scene_records_client_pixel_stream_cost_and_visible_colors() 
     let mut harness = Harness::new();
     let window = harness.window();
     let mut buffers = vec![colored(&mut harness, &window, [255, 0, 0])];
-    assert!(!canvas.sync_windows(&harness.server.windows()).unwrap());
+    assert!(!canvas.sync_windows(&harness.server.scene_windows()).unwrap());
     for _ in 0..12 {
         canvas.probe_frame().unwrap();
     }
@@ -665,7 +665,7 @@ fn unchanged_native_scene_records_client_pixel_stream_cost_and_visible_colors() 
     for index in 0..rounds {
         let color = [[255, 0, 0], [0, 255, 0], [0, 0, 255]][index % 3];
         buffers.push(colored(&mut harness, &window, color));
-        let snapshots = harness.server.windows();
+        let snapshots = harness.server.scene_windows();
         let started = Instant::now();
         let cpu_started = cpu();
         let frame = if retained {
@@ -722,7 +722,7 @@ fn unchanged_native_scene_records_client_pixel_stream_cost_and_visible_colors() 
         window.surface.commit();
         harness.sync();
         assert_eq!(
-            canvas.sync_pixels(&harness.server.windows()).unwrap(),
+            canvas.sync_pixels(&harness.server.scene_windows()).unwrap(),
             PixelSync::Compatible {
                 pending: false,
                 update: PixelUpdate::None,
@@ -744,7 +744,7 @@ fn unchanged_native_scene_records_client_pixel_stream_cost_and_visible_colors() 
         window.surface.commit();
         harness.sync();
         assert_eq!(
-            canvas.sync_pixels(&harness.server.windows()).unwrap(),
+            canvas.sync_pixels(&harness.server.scene_windows()).unwrap(),
             PixelSync::Compatible {
                 pending: false,
                 update: PixelUpdate::Canvas,
@@ -783,7 +783,7 @@ fn unchanged_native_scene_records_client_pixel_stream_cost_and_visible_colors() 
         }
         buffers.push(colored(&mut harness, &window, [255, 0, 255]));
         assert_eq!(
-            canvas.sync_pixels(&harness.server.windows()).unwrap(),
+            canvas.sync_pixels(&harness.server.scene_windows()).unwrap(),
             PixelSync::Compatible {
                 pending: false,
                 update: PixelUpdate::Canvas,

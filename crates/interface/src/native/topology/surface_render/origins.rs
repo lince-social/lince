@@ -165,10 +165,19 @@ impl CompletedCaptures {
 #[derive(Component)]
 pub(super) struct Inputs(CaptureOrigins);
 
+/// Repaint a published scene with new client textures and the same capture
+/// sources and material bindings as the last desktop extraction.
+#[derive(Resource)]
+pub struct RetainCaptureTopology;
+
 #[derive(Resource)]
 pub(super) struct MaterialInputs {
-    materials: BTreeMap<Entity, BTreeSet<AssetId<Image>>>,
+    topology: Arc<CaptureTopology>,
     writers: BTreeMap<AssetId<Image>, bool>,
+}
+
+pub(super) struct CaptureTopology {
+    materials: BTreeMap<Entity, BTreeSet<AssetId<Image>>>,
     scopes: crate::native::capture::Snapshot,
 }
 
@@ -243,6 +252,9 @@ pub(super) fn extract(
             )>,
         >,
     >,
+    retained: Option<Res<RetainCaptureTopology>>,
+    external: Option<Res<crate::native::capture::render::ExternalPass>>,
+    mut desktop_topology: Local<Option<Arc<CaptureTopology>>>,
 ) {
     let mut writers = BTreeMap::new();
     for (_, _, camera, _, target, capture) in &cameras {
@@ -256,44 +268,25 @@ pub(super) fn extract(
     if let Some(completed) = world.get_resource::<CompletedCaptures>() {
         completed.include_retained(&mut writers);
     }
-    let mut material_images = BTreeMap::new();
-    for entity in &materials {
-        let mut images = BTreeSet::new();
-        if let Some(material) = world
-            .get::<MeshMaterial3d<StandardMaterial>>(entity)
-            .and_then(|material| {
-                world
-                    .get_resource::<Assets<StandardMaterial>>()?
-                    .get(&material.0)
-            })
-        {
-            material.visit_dependencies(&mut |image| {
-                if let Ok(image) = image.try_typed::<Image>() {
-                    images.insert(image);
-                }
-            });
+    let topology = if retained.is_some()
+        && external.is_none()
+        && let Some(topology) = desktop_topology.as_ref()
+    {
+        topology.clone()
+    } else {
+        let topology = Arc::new(derive_topology(&world, &sources, materials.iter()));
+        if external.is_none() {
+            *desktop_topology = Some(topology.clone());
         }
-        if let Some(material) = world.get::<MeshMaterial3d<crate::native::description::shader::spatial::MeshMaterial>>(entity)
-            .and_then(|material| world.get_resource::<Assets<crate::native::description::shader::spatial::MeshMaterial>>()?.get(&material.0))
-        {
-            material.visit_dependencies(&mut |image| {
-                if let Ok(image) = image.try_typed::<Image>() { images.insert(image); }
-            });
-        }
-        if let Some(consumer) =
-            world.get::<crate::native::description::shader::extent::SurfaceConsumer>(entity)
-        {
-            images.insert(consumer.image.id());
-        }
-        material_images.insert(entity, images);
-    }
+        topology
+    };
     for (camera, render, _, visible, _, _) in &cameras {
         let mut origins = CaptureOrigins::empty();
         origins.contributors.insert(camera);
         if let Some(visible) = visible {
             for entity in visible.entities.values().flatten().take(MAX_LINKS + 1) {
                 origins.contributors.insert(*entity);
-                if let Some(images) = material_images.get(entity) {
+                if let Some(images) = topology.materials.get(entity) {
                     origins.images.extend(images.iter().copied());
                 }
             }
@@ -301,26 +294,88 @@ pub(super) fn extract(
         origins.bound();
         commands.entity(render).insert(Inputs(origins));
     }
+    commands.insert_resource(MaterialInputs { topology, writers });
+}
+
+fn derive_topology(
+    world: &World,
+    sources: &crate::native::capture::Sources,
+    materials: impl Iterator<Item = Entity>,
+) -> CaptureTopology {
+    use crate::native::description::shader::{extent::SurfaceConsumer, spatial::MeshMaterial};
+
+    let standard_assets = world.get_resource::<Assets<StandardMaterial>>();
+    let spatial_assets = world.get_resource::<Assets<MeshMaterial>>();
+    let mut material_images = BTreeMap::new();
+    for entity in materials {
+        let mut images = BTreeSet::new();
+        if let Some(material) = world
+            .get::<MeshMaterial3d<StandardMaterial>>(entity)
+            .and_then(|material| standard_assets?.get(&material.0))
+        {
+            material.visit_dependencies(&mut |image| {
+                if let Ok(image) = image.try_typed::<Image>() {
+                    images.insert(image);
+                }
+            });
+        }
+        if let Some(material) = world
+            .get::<MeshMaterial3d<MeshMaterial>>(entity)
+            .and_then(|material| spatial_assets?.get(&material.0))
+        {
+            material.visit_dependencies(&mut |image| {
+                if let Ok(image) = image.try_typed::<Image>() { images.insert(image); }
+            });
+        }
+        if let Some(consumer) = world.get::<SurfaceConsumer>(entity) {
+            images.insert(consumer.image.id());
+        }
+        if !images.is_empty() {
+            material_images.insert(entity, images);
+        }
+    }
     let scopes = {
         let _timing = crate::host::performance::Span::new(
             crate::host::performance::Stage::NativeCaptureSources,
         );
         sources.snapshot(MAX_LINKS + 1)
     };
-    commands.insert_resource(MaterialInputs {
+    CaptureTopology {
         materials: material_images,
-        writers,
         scopes,
-    });
+    }
 }
 
 #[derive(Resource, Default)]
-pub(super) struct UiOrigins(BTreeMap<Entity, CaptureOrigins>);
+pub(super) struct UiOrigins {
+    by_camera: BTreeMap<Entity, CaptureOrigins>,
+    writers: Option<Vec<AssetId<Image>>>,
+}
 
-pub(super) fn prepare_ui(nodes: Res<ExtractedUiNodes>, materials: Res<MaterialInputs>, mut saved: ResMut<UiOrigins>) {
-    saved.0.clear();
+impl UiOrigins {
+    pub(super) fn invalidate(&mut self) {
+        self.writers = None;
+        self.by_camera.clear();
+    }
+}
+
+pub(super) fn prepare_ui(
+    nodes: Res<ExtractedUiNodes>,
+    materials: Res<MaterialInputs>,
+    mut saved: ResMut<UiOrigins>,
+) {
+    if nodes.changed.is_empty()
+        && saved.writers.as_ref().is_some_and(|writers| writers.iter().eq(materials.writers.keys()))
+    {
+        return;
+    }
+    // Policy and transitive dependencies are resolved later for every draw.
+    let writers = saved.writers.get_or_insert_with(Vec::new);
+    writers.clear();
+    writers.extend(materials.writers.keys().copied());
+    saved.by_camera.clear();
     for (owner, (camera, group)) in &nodes.uinodes {
-        let origins = saved.0.entry(*camera).or_insert_with(CaptureOrigins::empty);
+        let origins = saved.by_camera.entry(*camera).or_insert_with(CaptureOrigins::empty);
         origins.contributors.insert(owner.id());
         for node in group.values() {
             if materials.writers.contains_key(&node.image) {
@@ -339,9 +394,9 @@ pub(super) fn surface(
     let mut origins = world.get::<Inputs>(camera).map_or_else(CaptureOrigins::default, |inputs| inputs.0.clone());
     let Some(materials) = world.get_resource::<MaterialInputs>() else { origins.complete = false; return origins; };
     for item in phase.items.values().take(MAX_LINKS + 1) { origins.contributors.insert(item.entity.1.id()); }
-    if let Some(ui) = world.get_resource::<UiOrigins>().and_then(|ui| ui.0.get(&camera)) { origins.extend(ui); }
+    if let Some(ui) = world.get_resource::<UiOrigins>().and_then(|ui| ui.by_camera.get(&camera)) { origins.extend(ui); }
     origins.images.retain(|image| materials.writers.contains_key(image));
-    origins.normalize(&materials.scopes);
+    origins.normalize(&materials.topology.scopes);
     origins
 }
 
@@ -367,17 +422,17 @@ pub(super) fn record_view(
     if let Some(visible) = visible {
         for (_, main) in visible.classes.values().flat_map(|class| class.iter_visible()).take(MAX_LINKS + 1) {
             origins.contributors.insert(main.id());
-            if let Some(images) = materials.materials.get(&main.id()) { origins.images.extend(images.iter().copied()); }
+            if let Some(images) = materials.topology.materials.get(&main.id()) { origins.images.extend(images.iter().copied()); }
         }
     }
-    if let Some(ui) = ui.0.get(&entity) { origins.extend(ui); }
+    if let Some(ui) = ui.by_camera.get(&entity) { origins.extend(ui); }
     if let Ok(view) = views.get(ui_view.map_or(entity, |view| view.0))
         && let Some(phase) = phases.get(&view.retained_view_entity)
     {
         for item in phase.items.values().take(MAX_LINKS + 1) { origins.contributors.insert(item.entity.1.id()); }
     }
     origins.images.retain(|image| materials.writers.contains_key(image));
-    origins.normalize(&materials.scopes);
+    origins.normalize(&materials.topology.scopes);
     let full = camera.physical_viewport_size == camera.physical_target_size
         && camera.viewport.as_ref().is_none_or(|viewport| viewport.physical_position == UVec2::ZERO);
     let clears = !matches!(camera.clear_color, ClearColorConfig::None)

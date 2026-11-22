@@ -197,36 +197,34 @@ impl Composition {
             .output_color
             .as_ref()
             .ok_or_else(|| io::Error::other("The final color program is unavailable"))?;
-        let values = color
+        let [red, green, blue, curve] = color
             .mode
             .output_uniforms(color.peak_nits)
             .ok_or_else(|| io::Error::other("The output color range is invalid"))?;
-        let uniforms = ["output_red", "output_green", "output_blue", "output_curve"]
-            .into_iter()
-            .zip(values)
-            .map(|(name, value)| Uniform::new(name, (value[0], value[1], value[2], value[3])))
-            .collect();
+        let uniforms = [
+            ("output_red", red),
+            ("output_green", green),
+            ("output_blue", blue),
+            ("output_curve", curve),
+        ]
+        .map(|(name, [r, g, b, a])| Uniform::new(name, (r, g, b, a)));
         let damage = Rect::from_size(transform.transform_size(size));
         let mut frame = renderer.render(target, size, transform).map_err(error)?;
+        // This draw covers the entire target. Disable blending so the shader's
+        // premultiplied result replaces old pixels, including transparent ones.
         frame
-            .clear(smithay::backend::renderer::Color32F::TRANSPARENT, &[damage])
-            .map_err(error)?;
-        frame.override_default_tex_program(program.clone(), uniforms);
-        let result = frame
             .render_texture_from_to(
                 source,
                 Rect::from_size(source.size().to_f64()),
                 damage,
                 &[damage],
-                &[],
+                &[damage],
                 Transform::Normal,
                 1.0,
-                None,
-                &[],
+                Some(program),
+                &uniforms,
             )
-            .map_err(error);
-        frame.clear_tex_program_override();
-        result?;
+            .map_err(error)?;
         let sync = frame.finish().map_err(error)?;
         crate::runtime::trace_frame("color-encode-submit", started);
         Ok(sync)

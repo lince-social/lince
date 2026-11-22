@@ -305,6 +305,19 @@ impl Composition {
             .fence(sync)
     }
 
+    fn track_submission(
+        &mut self,
+        sync: &smithay::backend::renderer::sync::SyncPoint,
+    ) -> io::Result<()> {
+        self.submitted_watch = if sync.is_reached() {
+            None
+        } else {
+            Some(self.watch(sync.clone())?)
+        };
+        self.submitted = Some(sync.clone());
+        Ok(())
+    }
+
     pub(crate) fn canvas(
         &mut self,
         renderer: &mut GlesRenderer,
@@ -670,9 +683,11 @@ impl Composition {
                     || "The linear output pipeline is unavailable".into(),
                 )));
             }
-            return self.render_scene(
+            let scene = self.render_scene(
                 renderer, target, size, transform, server, canvas, pointer, view,
-            );
+            )?;
+            self.track_submission(&scene.sync)?;
+            return Ok(scene);
         }
         self.linear_targets
             .retain(|id, _| id.is_none_or(|id| server.has_output(id)));
@@ -723,14 +738,11 @@ impl Composition {
         })();
         self.linear_composition = false;
         let result = result.and_then(|mut scene| {
-            let sync = self.encode_output(renderer, target, &linear, size, transform, color)?;
-            scene.sync = sync.clone();
-            self.submitted_watch = if sync.is_reached() {
-                None
-            } else {
-                Some(self.watch(sync.clone())?)
-            };
-            self.submitted = Some(sync);
+            // The final fence also covers the intermediate pass on this renderer.
+            // Keep the intermediate fence if the second pass fails to submit.
+            let encoded = self.encode_output(renderer, target, &linear, size, transform, color);
+            self.track_submission(encoded.as_ref().unwrap_or(&scene.sync))?;
+            scene.sync = encoded?;
             Ok(scene)
         });
         self.linear_targets.insert(key, linear);
@@ -748,7 +760,7 @@ impl Composition {
         pointer: [f64; 2],
         view: Option<&lince_interface::host::OutputViewport>,
     ) -> io::Result<Presented> {
-        self.prepare_color(renderer)?;
+        let native_frame = canvas.map(|completed| completed.frame.as_ref());
         self.touched.clear();
         if server.locked() {
             return self.render_lock(
@@ -757,14 +769,14 @@ impl Composition {
                 size,
                 transform,
                 server,
-                canvas.map(|canvas| &canvas.frame),
+                native_frame,
                 view,
             );
         }
         self.lock_frames.clear();
         self.views.retain(|(surface, _), _| surface.is_alive());
+        let draws_output = |id| view.is_none_or(|view| view.id == id);
         let layers = server.layers();
-        let native_popups = server.native_popups();
         self.layers
             .retain(|surface, _| layers.iter().any(|layer| &layer.surface == surface));
         for layer in &layers {
@@ -876,15 +888,18 @@ impl Composition {
             })
             .collect();
         let mut popup_plans = Vec::new();
-        let mut applications = HashSet::new();
         if let Some(canvas) = canvas
             && let Some(geometry) = &canvas.frame.geometry
         {
-            for item in &geometry.items {
+            for item in geometry
+                .items
+                .iter()
+                .filter(|item| draws_output(item.output))
+            {
                 let ItemId::Application(id) = item.id else {
                     continue;
                 };
-                let Some(window) = canvas.windows.iter().find(|window| window.id == id) else {
+                let Some(window) = canvas.window(id) else {
                     continue;
                 };
                 let Some(output) = geometry
@@ -904,20 +919,17 @@ impl Composition {
                         } else {
                             vec![output.bounds]
                         };
-                    popup_plans.push((
-                        popup,
-                        PopupScene {
-                            owner: PopupOwner::Application(id),
-                            surface: popup.surface.clone(),
-                            output: output.id,
-                            mapping,
-                            nodes: popup.nodes.clone(),
-                            clips,
-                        },
-                    ));
+                    popup_plans.push(PopupScene {
+                        owner: PopupOwner::Application(id),
+                        surface: popup.surface.clone(),
+                        output: output.id,
+                        mapping,
+                        nodes: popup.nodes.clone(),
+                        clips,
+                    });
                 }
             }
-            for layer in &layers {
+            for layer in layers.iter().filter(|layer| draws_output(layer.output)) {
                 if output_fullscreen(layer.output) && layer.layer != Layer::Overlay {
                     continue;
                 }
@@ -932,59 +944,51 @@ impl Composition {
                     let Some(mapping) = popup.layer_mapping(layer.origin.map(f64::from)) else {
                         continue;
                     };
-                    popup_plans.push((
-                        popup,
-                        PopupScene {
-                            owner: PopupOwner::Layer(layer.surface.clone()),
-                            surface: popup.surface.clone(),
-                            output: layer.output,
-                            mapping,
-                            nodes: popup.nodes.clone(),
-                            clips: vec![output.bounds],
-                        },
-                    ));
+                    popup_plans.push(PopupScene {
+                        owner: PopupOwner::Layer(layer.surface.clone()),
+                        surface: popup.surface.clone(),
+                        output: layer.output,
+                        mapping,
+                        nodes: popup.nodes.clone(),
+                        clips: vec![output.bounds],
+                    });
                 }
             }
         }
-        if let Some(geometry) = canvas.and_then(|canvas| canvas.frame.geometry.as_ref()) {
-            for popup in &native_popups {
+        if let Some(canvas) = canvas
+            && let Some(geometry) = &canvas.frame.geometry
+            && let Some(editor) = canvas.frame.input.editor.as_ref()
+            && let Some(output) = geometry.outputs.iter().find(|output| {
+                let [x, y, _, _] = editor.caret;
+                output.bounds.contains([f64::from(x), f64::from(y)])
+            })
+            && draws_output(output.id)
+        {
+            for popup in server.native_popups() {
                 let Some(mapping) = popup.layer_mapping([0.0; 2]) else {
                     continue;
                 };
-                let parent = canvas.and_then(|canvas| canvas.frame.input.editor.as_ref());
-                let Some(output) = parent.and_then(|editor| {
-                    geometry.outputs.iter().find(|output| {
-                        output
-                            .bounds
-                            .contains([f64::from(editor.caret[0]), f64::from(editor.caret[1])])
-                    })
-                }) else {
-                    continue;
-                };
-                popup_plans.push((
-                    popup,
-                    PopupScene {
-                        owner: PopupOwner::Native,
-                        surface: popup.surface.clone(),
-                        output: output.id,
-                        mapping,
-                        nodes: popup.nodes.clone(),
-                        clips: vec![output.usable.unwrap_or(output.bounds)],
-                    },
-                ));
+                popup_plans.push(PopupScene {
+                    owner: PopupOwner::Native,
+                    surface: popup.surface,
+                    output: output.id,
+                    mapping,
+                    nodes: popup.nodes,
+                    clips: vec![output.usable.unwrap_or(output.bounds)],
+                });
             }
         }
         let mut visible_popups = Vec::new();
         let mut popup_surfaces = HashSet::new();
-        for (popup, scene) in popup_plans {
-            let key = (popup.surface.clone(), scene.output);
+        for scene in popup_plans {
+            let key = (scene.surface.clone(), scene.output);
             popup_surfaces.insert(key.clone());
             let mut ready = true;
-            for node in &popup.nodes {
+            for node in &scene.nodes {
                 match self.import(renderer, node) {
                     Ok(imported) => ready &= imported,
                     Err(_) => {
-                        server.reject_surface(&popup.surface);
+                        server.reject_surface(&scene.surface);
                         ready = false;
                     }
                 }
@@ -998,12 +1002,18 @@ impl Composition {
                 visible_popups.push(scene.clone());
             }
         }
-        self.popups
-            .retain(|surface, _| popup_surfaces.contains(surface));
+        // Other outputs still own their last presented popup scene and imports.
+        self.popups.retain(|key @ (surface, output), _| {
+            popup_surfaces.contains(key)
+                || !draws_output(*output) && server.has_output(*output) && surface.is_alive()
+        });
         let mut callbacks = Vec::new();
         for layer in layers
             .iter()
-            .filter(|layer| layer.layer == Layer::Overlay || !output_fullscreen(layer.output))
+            .filter(|layer| {
+                draws_output(layer.output)
+                    && (layer.layer == Layer::Overlay || !output_fullscreen(layer.output))
+            })
         {
             callbacks.push((Some(layer.output), layer.nodes.clone()));
         }
@@ -1026,10 +1036,20 @@ impl Composition {
         if let Some(canvas) = canvas
             && let Some(geometry) = &canvas.frame.geometry
         {
+            let preview_output = canvas
+                .frame
+                .output
+                .or_else(|| geometry.outputs.first().map(|output| output.id))
+                .filter(|output| !canvas.frame.previewed.is_empty() && draws_output(*output));
+            let mut applications = HashSet::new();
             for item in &geometry.items {
                 let ItemId::Application(id) = item.id else {
                     continue;
                 };
+                let on_output = draws_output(item.output);
+                if !on_output && preview_output.is_none() {
+                    continue;
+                }
                 let rectangle = item.mapping.canvas;
                 let overlap = plans.iter().any(|(output, clip)| {
                     *output == item.output
@@ -1039,26 +1059,18 @@ impl Composition {
                                     > clip.origin()[axis]
                         })
                 });
-                if overlap
-                    && let Some(window) = canvas.windows.iter().find(|window| window.id == id)
-                {
-                    applications.insert(id);
-                    callbacks.push((Some(item.output), server.callback_nodes(window)));
+                if overlap && let Some(window) = canvas.window(id) {
+                    if preview_output.is_some() {
+                        applications.insert(id);
+                    }
+                    if on_output {
+                        callbacks.push((Some(item.output), server.callback_nodes(window)));
+                    }
                 }
             }
-        }
-        if let Some(canvas) = canvas
-            && let Some(geometry) = &canvas.frame.geometry
-        {
-            let output = canvas
-                .frame
-                .output
-                .or_else(|| geometry.outputs.first().map(|output| output.id));
-            if let Some(output) = output {
+            if let Some(output) = preview_output {
                 for id in canvas.frame.previewed.iter() {
-                    if applications.insert(*id)
-                        && let Some(window) = canvas.windows.iter().find(|window| window.id == *id)
-                    {
+                    if applications.insert(*id) && let Some(window) = canvas.window(*id) {
                         callbacks.push((Some(output), server.callback_nodes(window)));
                     }
                 }
@@ -1088,7 +1100,7 @@ impl Composition {
                 .map_err(error)?;
             for (_, output) in outputs
                 .iter()
-                .filter(|(_, output)| view.is_none_or(|view| view.id == output.id))
+                .filter(|(_, output)| draws_output(output.id))
             {
                 let clip = if view.is_some() {
                     Some(damage)
@@ -1096,14 +1108,10 @@ impl Composition {
                     mapping.rectangle(output.bounds).intersection(damage)
                 };
                 if let Some(clip) = clip {
-                    let output_mapping = Self::output_raster(
-                        canvas.map(|canvas| &canvas.frame),
-                        output.id,
-                        mapping,
-                    )?;
+                    let output_mapping = Self::output_raster(native_frame, output.id, mapping)?;
                     let native_drawn = self.draw_output(
                         &mut frame,
-                        canvas.map(|canvas| &canvas.frame),
+                        native_frame,
                         &presented,
                         output.id,
                         output_mapping,
@@ -1118,11 +1126,8 @@ impl Composition {
                     let _ = native_drawn;
                 }
             }
-            if let Some(output) =
-                pointer_view.filter(|output| view.is_none_or(|view| view.id == output.id))
-            {
-                let pointer_mapping =
-                    Self::output_raster(canvas.map(|canvas| &canvas.frame), output.id, mapping)?;
+            if let Some(output) = pointer_view.filter(|output| draws_output(output.id)) {
+                let pointer_mapping = Self::output_raster(native_frame, output.id, mapping)?;
                 if let Some(clip) = mapping.rectangle(output.bounds).intersection(damage) {
                     self.capture_cursor_draw(&mut frame, &presented.cursor, pointer_mapping, clip)?;
                     if drag_ready {
@@ -1139,13 +1144,9 @@ impl Composition {
             if !presented.tablets.is_empty() {
                 for (_, output) in outputs
                     .iter()
-                    .filter(|(_, output)| view.is_none_or(|view| view.id == output.id))
+                    .filter(|(_, output)| draws_output(output.id))
                 {
-                    let output_mapping = Self::output_raster(
-                        canvas.map(|canvas| &canvas.frame),
-                        output.id,
-                        mapping,
-                    )?;
+                    let output_mapping = Self::output_raster(native_frame, output.id, mapping)?;
                     if let Some(clip) = mapping.rectangle(output.bounds).intersection(damage) {
                         for tablet in presented
                             .tablets
@@ -1164,12 +1165,6 @@ impl Composition {
             }
             frame.finish().map_err(error)?
         };
-        self.submitted_watch = if sync.is_reached() {
-            None
-        } else {
-            Some(self.watch(sync.clone())?)
-        };
-        self.submitted = Some(sync.clone());
         presented.sync = sync;
         self.prune_views();
         Ok(presented)
@@ -1241,12 +1236,6 @@ impl Composition {
             )?;
         }
         let sync = frame.finish().map_err(error)?;
-        self.submitted_watch = if sync.is_reached() {
-            None
-        } else {
-            Some(self.watch(sync.clone())?)
-        };
-        self.submitted = Some(sync.clone());
         self.prune_views();
         Ok(Presented {
             colors: server.output_color_revisions(),

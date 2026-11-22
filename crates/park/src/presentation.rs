@@ -82,9 +82,12 @@ pub struct Presentation {
     renderer: Rc<VulkanRenderer>,
     client_formats: Arc<Vec<smithay::backend::allocator::Fourcc>>,
     target: Handle<Image>,
+    initialized_canvas_textures: std::collections::HashSet<bevy::render::render_resource::TextureId>,
     windows: std::collections::HashMap<lince_interface::host::SurfaceId, clients::Window>,
-    painted_windows:
-        std::collections::BTreeMap<lince_interface::host::SurfaceId, crate::server::WindowSnapshot>,
+    painted_windows: std::collections::BTreeMap<
+        lince_interface::host::SurfaceId,
+        Arc<crate::server::WindowSnapshot>,
+    >,
     identities: std::collections::HashMap<
         lince_interface::host::SurfaceId,
         lince_interface::layout::desktop::PlacementId,
@@ -930,6 +933,7 @@ impl Presentation {
             renderer,
             client_formats,
             target,
+            initialized_canvas_textures: Default::default(),
             windows: Default::default(),
             painted_windows: Default::default(),
             identities: Default::default(),
@@ -1549,24 +1553,41 @@ impl Presentation {
         let focused = self.output_state.assignments.focused();
         let mut destinations = Vec::new();
         let mut textures = Vec::new();
+        let mut initialized_canvas_textures = std::collections::HashSet::new();
+        let mut select = |asset| {
+            let retained = reused.contains_key(&asset);
+            let Some(image) = images.get(asset) else { return retained; };
+            let id = image.texture.id();
+            let initialized = self.initialized_canvas_textures.contains(&id);
+            if !retained {
+                textures.push((wgpu::Texture::clone(&image.texture), initialized));
+            }
+            if initialized || !retained {
+                initialized_canvas_textures.insert(id);
+            }
+            true
+        };
         for (id, target) in &self.output_state.targets {
             if Some(*id) == focused {
                 continue;
             }
             let asset = target.image.id();
-            if !reused.contains_key(&asset) {
-                let Some(texture) = images.get(asset) else { continue; };
-                textures.push(wgpu::Texture::clone(&texture.texture));
+            if select(asset) {
+                destinations.push((*id, target.origin, target.fullscreen, asset));
             }
-            destinations.push((*id, target.origin, target.fullscreen, asset));
         }
         let main = self.target.id();
-        if !reused.contains_key(&main) {
-            let texture = images.get(main).ok_or_else(|| input_failure("the canvas output is not prepared"))?;
-            textures.push(wgpu::Texture::clone(&texture.texture));
+        if !select(main) {
+            return Err(input_failure("the canvas output is not prepared"));
         }
+        let export = || {
+            // SAFETY: Only a successful earlier export of the exact WGPU target
+            // establishes initialization. Park's canvas attachments store on
+            // every render, and capture restores their pixels with texture copies.
+            unsafe { self.renderer.export_canvas_targets(&textures) }
+        };
         #[cfg(not(all(test, feature = "nested")))]
-        let images = self.renderer.export_render_targets(&textures)?;
+        let images = export()?;
         #[cfg(all(test, feature = "nested"))]
         let images = match self
             .app
@@ -1574,9 +1595,13 @@ impl Presentation {
             .world_mut()
             .remove_resource::<crate::graphics::direct::Prepared>()
         {
-            Some(prepared) => prepared.export(&self.renderer.gpu, &textures)?,
-            None => self.renderer.export_render_targets(&textures)?,
+            Some(prepared) => {
+                let textures = textures.iter().map(|(texture, _)| texture.clone()).collect::<Vec<_>>();
+                prepared.export(&self.renderer.gpu, &textures)?
+            }
+            None => export()?,
         };
+        self.initialized_canvas_textures = initialized_canvas_textures;
         let mut images = images.into_iter();
         let mut take = |asset| reused.remove(&asset).or_else(|| images.next())
             .ok_or_else(|| input_failure("the canvas output export is unavailable"));
@@ -2209,17 +2234,23 @@ fn output_image(size: [u32; 2]) -> Image {
 }
 
 fn output_image_format(size: [u32; 2], linear: bool) -> Image {
-    let mut image = Image::new_target_texture(
-        size[0],
-        size[1],
+    // These images get fresh handles on resize. WGPU initializes the texture on
+    // its first write or read, including the guarded DMA-BUF export path.
+    let mut image = Image::new_uninit(
+        wgpu::Extent3d {
+            width: size[0],
+            height: size[1],
+            depth_or_array_layers: 1,
+        },
+        wgpu::TextureDimension::D2,
         if linear {
             wgpu::TextureFormat::Rgba16Float
         } else {
             wgpu::TextureFormat::Bgra8UnormSrgb
         },
-        None,
+        Default::default(),
     );
-    image.texture_descriptor.usage |= wgpu::TextureUsages::COPY_SRC;
+    image.texture_descriptor.usage |= wgpu::TextureUsages::RENDER_ATTACHMENT;
     image
 }
 

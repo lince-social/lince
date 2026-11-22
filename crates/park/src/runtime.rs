@@ -125,7 +125,7 @@ pub struct Configuration {
 pub struct Scene {
     pub revision: u64,
     pub outputs: Vec<crate::presentation::Output>,
-    pub windows: Arc<Vec<WindowSnapshot>>,
+    pub windows: Arc<[Arc<WindowSnapshot>]>,
     pub display: Option<lince_interface::host::display::DisplaySnapshot>,
 }
 
@@ -214,10 +214,19 @@ pub struct Completed {
     pub sequence: u64,
     pub scene_revision: u64,
     pub frame: Arc<Frame>,
-    pub windows: Arc<Vec<WindowSnapshot>>,
+    pub windows: Arc<[Arc<WindowSnapshot>]>,
     pub rejected: Vec<SurfaceId>,
     pub input_serial: u64,
     pub(crate) latency: Option<latency::Frame>,
+}
+
+#[cfg(feature = "nested")]
+impl Completed {
+    pub(crate) fn window(&self, id: SurfaceId) -> Option<&WindowSnapshot> {
+        // Publication collects the painted snapshots in surface ID order.
+        let index = self.windows.binary_search_by_key(&id, |window| window.id).ok()?;
+        Some(&self.windows[index])
+    }
 }
 
 #[derive(bevy::prelude::Resource, Clone, Default)]
@@ -661,7 +670,7 @@ fn run(
             ));
     }
     prepare(&mut canvas);
-    let mut windows = Arc::new(Vec::new());
+    let mut windows = Arc::default();
     let mut scene_revision = 0;
     let mut started = false;
     let mut pending = false;
@@ -1284,7 +1293,7 @@ fn run(
             sequence: frame_sequence,
             scene_revision,
             frame,
-            windows: Arc::new(canvas.painted_windows()),
+            windows: canvas.painted_windows(),
             rejected: canvas.rejected_windows(),
             input_serial,
             latency: latency::Frame::new(frame_sequence, last_sample),

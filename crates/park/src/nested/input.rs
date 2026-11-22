@@ -434,7 +434,7 @@ impl Desktop {
             let ItemId::Application(id) = item.id else {
                 return Target::Native;
             };
-            if let Some(window) = current.windows.iter().find(|window| window.id == id)
+            if let Some(window) = current.window(id)
                 && let Some((surface, _)) = window.hit_content(point)
                 && surface.is_alive()
             {
@@ -483,7 +483,7 @@ impl Desktop {
                         current.frame.geometry.as_ref()?.items.iter().find(|item| {
                             item.id == ItemId::Application(id) && item.output == output
                         })?;
-                    let window = current.windows.iter().find(|window| window.id == id)?;
+                    let window = current.window(id)?;
                     let node = window.nodes.iter().find(|node| node.surface == surface)?;
                     let bounds = window.bounds()?;
                     let point = item.mapping.surface_point_unbounded(point)?;

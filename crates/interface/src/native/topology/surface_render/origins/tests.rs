@@ -19,6 +19,83 @@ fn source(entity: Entity) -> CaptureOrigins {
 }
 
 #[test]
+fn ui_dependencies_follow_writer_changes_with_unchanged_geometry() {
+    let mut app = App::new();
+    app.init_resource::<UiOrigins>()
+        .init_resource::<ExtractedUiNodes>()
+        .add_systems(Update, prepare_ui);
+    let owner = app.world_mut().spawn_empty().id();
+    let camera = app.world_mut().spawn_empty().id();
+    let image = Assets::<Image>::default().reserve_handle();
+    let mut sources = bevy::ecs::system::SystemState::<crate::native::capture::Sources>::new(app.world_mut());
+    let scopes = sources.get(app.world()).unwrap().snapshot(MAX_LINKS + 1);
+    app.world_mut().insert_resource(MaterialInputs {
+        topology: Arc::new(CaptureTopology {
+            materials: BTreeMap::new(),
+            scopes,
+        }),
+        writers: BTreeMap::new(),
+    });
+    {
+        let mut nodes = app.world_mut().resource_mut::<ExtractedUiNodes>();
+        nodes.uinodes.entry(owner.into()).or_insert_with(|| (camera, Default::default())).1.insert(
+            owner,
+            ExtractedUiNode {
+                z_order: 0.0,
+                image: image.id(),
+                transform: bevy::math::Affine2::IDENTITY,
+                clip: None,
+                item: ExtractedUiItem::Glyphs { glyphs: Vec::new() },
+            },
+        );
+    }
+    app.update();
+    assert!(app.world().resource::<UiOrigins>().by_camera[&camera].images.is_empty());
+    app.world_mut().resource_mut::<MaterialInputs>().writers.insert(image.id(), true);
+    app.update();
+    let ui = &app.world().resource::<UiOrigins>().by_camera[&camera];
+    assert_eq!(ui.contributors, BTreeSet::from([owner]));
+    assert_eq!(ui.images, BTreeSet::from([image.id()]));
+    app.world_mut().resource_mut::<MaterialInputs>().writers.clear();
+    app.update();
+    assert!(app.world().resource::<UiOrigins>().by_camera[&camera].images.is_empty());
+}
+
+#[test]
+fn client_repaints_retain_topology_and_external_captures_use_a_fresh_snapshot() {
+    let mut render = World::new();
+    let mut main = bevy::render::MainWorld::default();
+    let first = main.spawn_empty().id();
+    render.insert_resource(main);
+    let mut schedule = bevy::ecs::schedule::Schedule::new(ExtractSchedule);
+    schedule.add_systems(extract);
+    schedule.run(&mut render);
+    let desktop = render.resource::<MaterialInputs>().topology.clone();
+    assert!(desktop.scopes.resolve(first).is_some());
+
+    render.insert_resource(RetainCaptureTopology);
+    schedule.run(&mut render);
+    assert!(Arc::ptr_eq(&desktop, &render.resource::<MaterialInputs>().topology));
+
+    let extra = render.resource_mut::<bevy::render::MainWorld>().spawn_empty().id();
+    render.insert_resource(crate::native::capture::render::ExternalPass);
+    schedule.run(&mut render);
+    let capture = &render.resource::<MaterialInputs>().topology;
+    assert!(!Arc::ptr_eq(&desktop, capture));
+    assert!(capture.scopes.resolve(extra).is_some());
+
+    render.remove_resource::<crate::native::capture::render::ExternalPass>();
+    schedule.run(&mut render);
+    assert!(Arc::ptr_eq(&desktop, &render.resource::<MaterialInputs>().topology));
+
+    render.remove_resource::<RetainCaptureTopology>();
+    schedule.run(&mut render);
+    let updated = &render.resource::<MaterialInputs>().topology;
+    assert!(!Arc::ptr_eq(&desktop, updated));
+    assert!(updated.scopes.resolve(extra).is_some());
+}
+
+#[test]
 fn output_reuse_requires_complete_provenance_without_changed_sources() {
     let mut app = app();
     let mut images = Assets::<Image>::default();

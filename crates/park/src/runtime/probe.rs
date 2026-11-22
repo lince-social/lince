@@ -166,7 +166,7 @@ fn probe_mode(connected: bool) -> Result<(), ProbeFailure> {
                                 workspace: 1,
                             },
                         }],
-                        windows: Arc::new(server.windows()),
+                        windows: server.scene_windows(),
                     })
                     .map_err(|error| failure(error.to_string()))?;
                 revision = server.revision();

@@ -3520,6 +3520,43 @@ fn activation_waits_for_map_and_expired_tokens_or_pending_requests_are_discarded
 }
 
 #[test]
+fn pixel_commits_share_untouched_window_snapshots() {
+    let mut harness = Harness::new();
+    let active = harness.window();
+    let idle = harness.window();
+    let _active_buffer = harness.attach(&active, [640, 480]);
+    let _idle_buffer = harness.attach(&idle, [320, 240]);
+    let initial = harness.server.scene_windows();
+
+    let _next_buffer = harness.attach(&active, [640, 480]);
+    let next = harness.server.scene_windows();
+    assert!(!Arc::ptr_eq(&initial[0], &next[0]));
+    assert!(Arc::ptr_eq(&initial[1], &next[1]));
+    assert_ne!(
+        initial[0].nodes[0].content.version,
+        next[0].nodes[0].content.version
+    );
+
+    let callback = Arc::new(AtomicBool::new(false));
+    idle.surface.frame(&harness.queue.handle(), callback);
+    idle.surface.commit();
+    harness.sync();
+    let with_callback = harness.server.scene_windows();
+    assert!(Arc::ptr_eq(&next[0], &with_callback[0]));
+    assert!(with_callback[1].nodes[0].generation > next[1].nodes[0].generation);
+    assert_eq!(
+        with_callback[1].nodes[0].content.version,
+        next[1].nodes[0].content.version
+    );
+
+    idle.role.set_title("New title".into());
+    harness.sync();
+    let renamed = harness.server.scene_windows();
+    assert_eq!(renamed[1].title, "New title");
+    assert_eq!(initial[1].title, "A real Wayland window");
+}
+
+#[test]
 fn configure_commit_resize_and_buffer_lifetime() {
     let mut harness = Harness::new();
     let window = harness.window();

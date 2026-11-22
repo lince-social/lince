@@ -390,7 +390,7 @@ impl Toolkit {
                             .windows
                             .iter()
                             .find(|snapshot| snapshot.id == main)
-                            .and_then(WindowSnapshot::bounds)
+                            .and_then(|window| window.bounds())
                             .is_some_and(|bounds| {
                                 bounds.size.w == f64::from(window.size[0])
                                     && bounds.size.h == f64::from(window.size[1])

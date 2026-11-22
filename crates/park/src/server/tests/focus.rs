@@ -87,7 +87,7 @@ fn overview_renders_inactive_wayland_content_and_advances_only_its_presented_cal
     window.surface.commit();
     harness.sync();
     let snapshot = harness.server.windows()[0].clone();
-    canvas.sync_windows(&[snapshot.clone()]).unwrap();
+    canvas.sync_windows(&[Arc::new(snapshot.clone())]).unwrap();
     let initial = settle(&mut canvas);
     let requested = initial
         .windows
@@ -104,7 +104,7 @@ fn overview_renders_inactive_wayland_content_and_advances_only_its_presented_cal
     window.surface.frame(&qh, done.clone());
     window.surface.commit();
     harness.sync();
-    canvas.sync_windows(&harness.server.windows()).unwrap();
+    canvas.sync_windows(&harness.server.scene_windows()).unwrap();
     canvas
         .desktop_action(DesktopAction::ToggleOverview)
         .unwrap();
@@ -163,7 +163,7 @@ fn overview_renders_inactive_wayland_content_and_advances_only_its_presented_cal
         sequence: 1,
         scene_revision: 1,
         frame: Arc::new(frame),
-        windows: Arc::new(canvas.painted_windows()),
+        windows: canvas.painted_windows(),
         rejected: Vec::new(),
         input_serial: 0,
         latency: None,
@@ -213,7 +213,7 @@ fn overview_renders_inactive_wayland_content_and_advances_only_its_presented_cal
     assert_eq!(harness.client.configures, baseline);
     window.role.set_title("Renamed Wayland window".into());
     harness.sync();
-    canvas.sync_windows(&harness.server.windows()).unwrap();
+    canvas.sync_windows(&harness.server.scene_windows()).unwrap();
     settle(&mut canvas);
     assert_eq!(
         canvas.world_mut().get::<Text>(caption).unwrap().0,
@@ -451,7 +451,7 @@ fn native_and_real_wayland_targets_follow_without_rendered_frame_lag_or_client_r
     window.surface.damage_buffer(0, 0, 320, 240);
     window.surface.commit();
     harness.sync();
-    canvas.sync_windows(&harness.server.windows()).unwrap();
+    canvas.sync_windows(&harness.server.scene_windows()).unwrap();
     settle(&mut canvas);
     let (application, surface) = canvas
         .world_mut()
@@ -640,7 +640,7 @@ fn native_and_real_wayland_targets_follow_without_rendered_frame_lag_or_client_r
     window.surface.attach(None, 0, 0);
     window.surface.commit();
     harness.sync();
-    canvas.sync_windows(&harness.server.windows()).unwrap();
+    canvas.sync_windows(&harness.server.scene_windows()).unwrap();
     let frame = settle(&mut canvas);
     assert!(!native::layout::desktop::focus::following(
         canvas.world_mut(),
@@ -661,7 +661,7 @@ fn native_and_real_wayland_targets_follow_without_rendered_frame_lag_or_client_r
     window.surface.attach(Some(&buffer), 0, 0);
     window.surface.commit();
     harness.sync();
-    canvas.sync_windows(&harness.server.windows()).unwrap();
+    canvas.sync_windows(&harness.server.scene_windows()).unwrap();
     settle(&mut canvas);
     assert!(!native::layout::desktop::focus::following(
         canvas.world_mut(),

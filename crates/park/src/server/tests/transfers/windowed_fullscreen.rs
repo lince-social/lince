@@ -339,7 +339,7 @@ fn a_delayed_fullscreen_ack_keeps_the_old_buffer_without_repeating_configures_an
     let serials = harness.client.serials;
     let old_content = harness.server.windows()[0].nodes[0].content.clone();
     for _ in 0..20 {
-        canvas.sync_windows(&harness.server.windows()).unwrap();
+        canvas.sync_windows(&harness.server.scene_windows()).unwrap();
         let frame = settle(&mut canvas);
         let configuration = frame
             .windows
@@ -415,7 +415,7 @@ fn a_delayed_fullscreen_ack_keeps_the_old_buffer_without_repeating_configures_an
     window.xdg.destroy();
     window.surface.destroy();
     harness.sync();
-    canvas.sync_windows(&harness.server.windows()).unwrap();
+    canvas.sync_windows(&harness.server.scene_windows()).unwrap();
     settle(&mut canvas);
     assert!(!model(&mut canvas, root, original.1).windowed_fullscreen(original.2));
     assert!(

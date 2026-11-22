@@ -89,6 +89,8 @@
         [ pkgs.bash pkgs.dbus pkgs.coreutils pkgs.ffmpeg ]
         ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux [ pkgs.grim pkgs.slurp pkgs.wl-clipboard ];
 
+      parkRuntimeTools = pkgs: runtimeTools pkgs ++ [ pkgs.xwayland-satellite ];
+
       graphicsRuntime = pkgs: libraries: {
         schema_version = 1;
         library_paths = pkgs.lib.makeLibraryPath libraries;
@@ -175,13 +177,13 @@
           postFixup = ''
             wrapProgram "$out/bin/lince" ${pkgs.lib.escapeShellArgs (
               graphicsWrapperArgs pkgs libraries ++ [
-                "--prefix" "PATH" ":" (pkgs.lib.makeBinPath (runtimeTools pkgs))
+                "--prefix" "PATH" ":" (pkgs.lib.makeBinPath (parkRuntimeTools pkgs))
               ]
             )}
             substituteInPlace "$out/bin/lince-park-session" --replace-fail \
               'dbus-run-session -- ' 'dbus-run-session --config-file=${pkgs.dbus}/share/dbus-1/session.conf -- '
             patchShebangs "$out/bin/lince-park-session"
-            wrapProgram "$out/bin/lince-park-session" --prefix PATH : "${pkgs.lib.makeBinPath (runtimeTools pkgs)}"
+            wrapProgram "$out/bin/lince-park-session" --prefix PATH : "${pkgs.lib.makeBinPath (parkRuntimeTools pkgs)}"
           '';
           doInstallCheck = true;
           installCheckPhase = ''
@@ -996,7 +998,7 @@
             ];
           interfaceLinuxBuildInputs = linuxBuildInputs pkgs;
           interfaceLinuxRuntimeLibraries = linuxRuntimeLibraries pkgs;
-          interfaceLinuxRuntimeTools = runtimeTools pkgs;
+          interfaceLinuxRuntimeTools = parkRuntimeTools pkgs;
 
           mkLince =
             { pname, ui }:

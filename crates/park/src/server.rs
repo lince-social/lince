@@ -468,6 +468,8 @@ pub struct Server {
     keyboard_settings: keyboard::Settings,
     #[cfg(feature = "nested")]
     native_client: Option<crate::native_input::client::Client>,
+    #[cfg(feature = "nested")]
+    x11_display: Option<crate::launch::X11Display>,
     display: Display<State>,
     state: State,
     listener: Option<ListeningSocket>,
@@ -477,6 +479,16 @@ pub struct Server {
 }
 
 impl Server {
+    #[cfg(feature = "nested")]
+    pub(crate) fn x11_display(&mut self, display: crate::launch::X11Display) {
+        self.x11_display = Some(display);
+    }
+
+    #[cfg(feature = "session")]
+    pub(crate) fn session_x11_display(&self) -> Option<&crate::launch::X11Display> {
+        self.x11_display.as_ref()
+    }
+
     #[cfg(feature = "nested")]
     pub(crate) fn event_fds(&mut self) -> io::Result<Vec<OwnedFd>> {
         use std::os::fd::AsFd;
@@ -677,6 +689,8 @@ impl Server {
             keyboard_settings: Default::default(),
             #[cfg(feature = "nested")]
             native_client: None,
+            #[cfg(feature = "nested")]
+            x11_display: None,
             display,
             state,
             listener: None,
@@ -830,6 +844,8 @@ impl Server {
         socket: &std::path::Path,
         foreground: bool,
     ) -> io::Result<std::process::Child> {
+        #[cfg(feature = "nested")]
+        application.set_x11(self.x11_display.as_ref());
         let token = foreground
             .then(|| self.launch_activation_token())
             .transpose()?;

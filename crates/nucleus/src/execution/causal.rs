@@ -551,7 +551,10 @@ mod tests {
             .record_received_transfer_change("remote-command", change.clone(), 65536)
             .unwrap();
         let cycles = trace.drain("a");
-        assert_eq!(cycles[0].steps[0].transfer_changes, [change.clone()]);
+        assert_eq!(
+            cycles[0].steps[0].transfer_changes.as_slice(),
+            std::slice::from_ref(&change)
+        );
         let mut unchanged = change;
         unchanged.after = unchanged.before.clone();
         trace

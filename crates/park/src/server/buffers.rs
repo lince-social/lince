@@ -41,6 +41,7 @@ impl Server {
                     && matches!(
                         format.code,
                         Fourcc::Argb8888
+                            | Fourcc::Xrgb8888
                             | Fourcc::Abgr8888
                             | Fourcc::Abgr2101010
                             | Fourcc::Abgr16161616f

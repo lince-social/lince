@@ -119,7 +119,11 @@ pub trait TextOutput: Send + Sync {
         Ok(())
     }
     /// Records the bounded messages and tools supplied in an ordinary model request.
-    async fn model_context(&self, _messages: &[Message], _tools: &[ToolDefinition]) -> Result<(), String> {
+    async fn model_context(
+        &self,
+        _messages: &[Message],
+        _tools: &[ToolDefinition],
+    ) -> Result<(), String> {
         Ok(())
     }
     /// Supplies a private directory for captured tool output in this conversation.

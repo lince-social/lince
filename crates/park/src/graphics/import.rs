@@ -84,7 +84,7 @@ impl VulkanRenderer {
         let buffer = source.0;
         let size = buffer.size();
         let (vk_format, texture_format, bytes_per_pixel) = match buffer.format().code {
-            Fourcc::Argb8888 => (
+            Fourcc::Argb8888 | Fourcc::Xrgb8888 => (
                 vk::Format::B8G8R8A8_UNORM,
                 wgpu::TextureFormat::Bgra8Unorm,
                 4,

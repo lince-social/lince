@@ -37,6 +37,9 @@ pub mod native_input;
 pub mod nested;
 
 #[cfg(all(target_os = "linux", feature = "nested"))]
+mod xwayland;
+
+#[cfg(all(target_os = "linux", feature = "nested"))]
 pub(crate) mod desktop;
 
 #[cfg(all(target_os = "linux", feature = "nested"))]

@@ -42,6 +42,24 @@ pub struct Application {
     arguments: Vec<OsString>,
     directory: Option<PathBuf>,
     activation_token: Option<String>,
+    #[cfg(feature = "nested")]
+    x11: Option<X11Display>,
+}
+
+#[cfg(feature = "nested")]
+#[derive(Clone)]
+pub(crate) struct X11Display {
+    pub(crate) name: String,
+    pub(crate) authorization: PathBuf,
+}
+
+#[cfg(feature = "nested")]
+impl X11Display {
+    pub(crate) fn apply(&self, command: &mut Command) {
+        command
+            .env("DISPLAY", &self.name)
+            .env("XAUTHORITY", &self.authorization);
+    }
 }
 
 fn display_name<'a>(socket: &'a Path, runtime: Option<&Path>) -> &'a OsStr {
@@ -98,6 +116,8 @@ impl Application {
             arguments: Vec::new(),
             directory: None,
             activation_token: None,
+            #[cfg(feature = "nested")]
+            x11: None,
         })
     }
 
@@ -115,6 +135,11 @@ impl Application {
     pub(crate) fn activation_token(mut self, token: String) -> Self {
         self.activation_token = Some(token);
         self
+    }
+
+    #[cfg(feature = "nested")]
+    pub(crate) fn set_x11(&mut self, display: Option<&X11Display>) {
+        self.x11 = display.cloned();
     }
 
     pub fn command(&self, socket: &Path) -> io::Result<Command> {
@@ -150,6 +175,16 @@ impl Application {
             .env_remove("WAYFIRE_SOCKET")
             .env_remove("LINCE_PARK_UWSM")
             .env_remove("WAYLAND_SOCKET");
+        #[cfg(feature = "nested")]
+        if let Some(display) = &self.x11 {
+            display.apply(&mut command);
+            command
+                .env("GDK_BACKEND", "wayland,x11")
+                .env("QT_QPA_PLATFORM", "wayland;xcb")
+                // Older SDL releases accept just one driver here. Let them detect it.
+                .env_remove("SDL_VIDEODRIVER")
+                .env("SDL_VIDEO_DRIVER", "wayland,x11");
+        }
         if let Some(token) = &self.activation_token {
             command.env("XDG_ACTIVATION_TOKEN", token);
         }
@@ -287,6 +322,30 @@ mod tests {
                 Some(&Some(OsStr::new("wayland")))
             );
         }
+    }
+
+    #[cfg(feature = "nested")]
+    #[test]
+    fn launch_exports_only_the_configured_x11_connection() {
+        let display = X11Display {
+            name: ":42".into(),
+            authorization: "/run/user/1000/park-xauthority".into(),
+        };
+        let mut application = Application::new("client").unwrap();
+        application.set_x11(Some(&display));
+        let command = application
+            .command(Path::new("/run/user/1000/park-0"))
+            .unwrap();
+        let environment: BTreeMap<_, _> = command.get_envs().collect();
+        assert_eq!(
+            environment.get(OsStr::new("DISPLAY")),
+            Some(&Some(OsStr::new(":42")))
+        );
+        assert_eq!(
+            environment.get(OsStr::new("XAUTHORITY")),
+            Some(&Some(display.authorization.as_os_str()))
+        );
+        assert_eq!(environment.get(OsStr::new("WAYLAND_SOCKET")), Some(&None));
     }
 
     #[test]

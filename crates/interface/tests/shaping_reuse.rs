@@ -15,7 +15,7 @@ fn register(fonts: &mut FontContext, file: &str, name: Option<&str>) {
     let path = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../institute/assets/fonts")
         .join(file);
-    let data = Blob::from(read(path).unwrap());
+    let data = Blob::from(read(path).expect("read the bundled test font"));
     assert!(
         !fonts
             .collection
@@ -97,7 +97,9 @@ fn build(
     builder.push_default(StyleProperty::FontSize(options.size));
     builder.push_default(FontFeatures::from(options.features));
     builder.push_default(FontVariations::from(options.variations));
-    builder.push_default(StyleProperty::Locale(Some(options.locale.parse().unwrap())));
+    builder.push_default(StyleProperty::Locale(Some(
+        options.locale.parse().expect("valid test locale"),
+    )));
     builder.push_default(StyleProperty::Brush(options.brush));
     builder.push_default(StyleProperty::LetterSpacing(options.spacing));
     builder.push_default(LineHeight::FontSizeRelative(1.3));

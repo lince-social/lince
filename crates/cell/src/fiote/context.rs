@@ -36,7 +36,12 @@ pub(super) fn supplied(
         "Latest model request supplied by Lince, including tool calls/results; provider internal memory is not exposed"
     );
     value["messages"] = serde_json::json!(messages(input));
-    value["tools"] = serde_json::json!(tools.iter().map(|tool| tool.name.as_str()).collect::<Vec<_>>());
+    value["tools"] = serde_json::json!(
+        tools
+            .iter()
+            .map(|tool| tool.name.as_str())
+            .collect::<Vec<_>>()
+    );
     value["source_message"] = serde_json::json!(source);
     value["supplied_at"] = serde_json::json!(nucleus::execution::now().to_rfc3339());
     if serde_json::to_vec(&value).map_err(|e| e.to_string())?.len() > 1024 * 1024 {
@@ -107,7 +112,10 @@ impl Host {
             child["source"] = serde_json::json!("reported child session");
             child["context_available"] =
                 serde_json::json!(self.directory.join(format!("context-{uid}.json")).is_file());
-            if let Some(receipt) = receipts.iter().find(|receipt| receipt.thread.as_deref() == Some(&uid)) {
+            if let Some(receipt) = receipts
+                .iter()
+                .find(|receipt| receipt.thread.as_deref() == Some(&uid))
+            {
                 child["state"] = serde_json::json!(receipt.state);
                 child["source"] = serde_json::json!("Lince handoff receipt");
             }

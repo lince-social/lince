@@ -296,6 +296,7 @@ pub fn run(
     server.output_power_backend(true);
     hardware.rescan(&mut server)?;
     let socket = server.listen_named(&format!("wayland-park-{}", std::process::id()))?;
+    let mut xwayland = crate::xwayland::Bridge::setup(&handle, &mut server, &socket);
     for fd in server.event_fds()? {
         handle
             .insert_source(
@@ -386,6 +387,9 @@ pub fn run(
     eprintln!("Park Wayland display: {}", socket.display());
     let result: io::Result<()> = (|| {
         while desktop.running {
+            if let Some(bridge) = &mut xwayland {
+                bridge.advance();
+            }
             let mut vt_request = None;
             if stopped.load(Ordering::Acquire) && !logout_requested {
                 desktop.logout()?;
@@ -706,10 +710,13 @@ pub fn run(
                 }
                 if hardware.color_ready() {
                     let ready = desktop.ready();
-                    readiness.advance(ready == crate::desktop::Ready::Dispatched)?;
+                    readiness.advance(
+                        ready == crate::desktop::Ready::Dispatched,
+                        desktop.server.session_x11_display(),
+                    )?;
                 }
             }
-            readiness.advance(false)?;
+            readiness.advance(false, None)?;
             children.retain_mut(|child| !matches!(child.try_wait(), Ok(Some(_))));
             composition.capture(&mut hardware.renderer, &mut desktop, hardware.active)?;
             desktop.server.flush_clients()?;
@@ -732,6 +739,7 @@ pub fn run(
                             .chain(desktop.server.capture_timeout())
                             .chain(composition.capture_timeout())
                             .chain(readiness.timeout())
+                            .chain(xwayland.as_ref().and_then(crate::xwayland::Bridge::timeout))
                             .chain(hardware.callback_timeout())
                             .min(),
                         &mut events,
@@ -741,6 +749,7 @@ pub fn run(
         }
         Ok(())
     })();
+    drop(xwayland);
     signal.abort();
     desktop
         .server

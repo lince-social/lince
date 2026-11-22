@@ -218,7 +218,11 @@ impl VulkanRenderer {
                 .and_then(|pixels| pixels.checked_mul(bytes_per_pixel));
             if !matches!(
                 dmabuf.format().code,
-                Fourcc::Argb8888 | Fourcc::Abgr8888 | Fourcc::Abgr2101010 | Fourcc::Abgr16161616f
+                Fourcc::Argb8888
+                    | Fourcc::Xrgb8888
+                    | Fourcc::Abgr8888
+                    | Fourcc::Abgr2101010
+                    | Fourcc::Abgr16161616f
             ) || dmabuf.format().modifier != Modifier::Linear
                 || dmabuf.num_planes() != 1
                 || bytes.is_none_or(|bytes| bytes > 256 * 1024 * 1024)
@@ -252,13 +256,14 @@ impl VulkanRenderer {
                 }
             }
             let texture = self.import_acquired_dmabuf(source, target, Some(&damage))?;
+            let opaque = dmabuf.format().code == Fourcc::Xrgb8888;
             buffer.cache(Content {
                 device: self.device.clone(),
                 texture: texture.clone(),
-                opaque: false,
+                opaque,
                 capture: Default::default(),
             });
-            return Ok(Some((texture, false)));
+            return Ok(Some((texture, opaque)));
         }
         let started = std::time::Instant::now();
         let (uploads, size, opaque, preserve) =

@@ -157,14 +157,20 @@ impl TextOutput for Output<'_> {
         }
         Ok(())
     }
-    async fn model_context(&self, messages: &[Message], tools: &[ToolDefinition]) -> Result<(), String> {
+    async fn model_context(
+        &self,
+        messages: &[Message],
+        tools: &[ToolDefinition],
+    ) -> Result<(), String> {
         if let Some(path) = &self.context_path {
             super::context::supplied(path, messages, tools, self.source_message.as_deref())?;
         }
         Ok(())
     }
     fn tool_output_directory(&self) -> Option<PathBuf> {
-        self.summary_path.as_ref().map(|path| path.with_extension("receipts"))
+        self.summary_path
+            .as_ref()
+            .map(|path| path.with_extension("receipts"))
     }
     async fn usage(&self, report: nucleus::operation::Usage) -> Result<(), String> {
         if let Some(path) = &self.usage_path {

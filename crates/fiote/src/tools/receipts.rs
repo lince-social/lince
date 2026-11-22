@@ -25,7 +25,10 @@ pub(crate) struct Receipts {
 impl Receipts {
     pub(crate) fn new(directory: Option<PathBuf>) -> Result<Self, String> {
         if let Some(directory) = directory {
-            return Ok(Self { directory, _temporary: None });
+            return Ok(Self {
+                directory,
+                _temporary: None,
+            });
         }
         let temporary = tempfile::tempdir().map_err(|error| error.to_string())?;
         Ok(Self {
@@ -48,18 +51,23 @@ impl Receipts {
         let path = self.path(&id, Part::Result);
         if !path.is_file() {
             let mut file = self.temporary_file().map_err(|error| error.to_string())?;
-            file.write_all(result.as_bytes()).map_err(|error| error.to_string())?;
+            file.write_all(result.as_bytes())
+                .map_err(|error| error.to_string())?;
             commit(file, &path).map_err(|error| error.to_string())?;
         }
         Ok(id)
     }
 
     pub(crate) fn command(&self) -> CommandCapture<'_> {
-        CommandCapture { receipts: self, id: uuid::Uuid::new_v4().simple().to_string() }
+        CommandCapture {
+            receipts: self,
+            id: uuid::Uuid::new_v4().simple().to_string(),
+        }
     }
 
     pub(crate) fn read(&self, arguments: Value) -> Result<Value, String> {
-        let args: ReadArguments = serde_json::from_value(arguments).map_err(|error| error.to_string())?;
+        let args: ReadArguments =
+            serde_json::from_value(arguments).map_err(|error| error.to_string())?;
         if !matches!(args.receipt_id.len(), 32 | 64)
             || !args.receipt_id.bytes().all(|byte| byte.is_ascii_hexdigit())
         {
@@ -143,23 +151,34 @@ pub(crate) fn definition() -> ToolDefinition {
     }
 }
 
-pub(crate) fn read_page(mut file: File, offset: u64, limit: Option<usize>) -> Result<Value, String> {
+pub(crate) fn read_page(
+    mut file: File,
+    offset: u64,
+    limit: Option<usize>,
+) -> Result<Value, String> {
     let limit = limit.unwrap_or(PAGE_BYTES);
     if !(1..=PAGE_BYTES).contains(&limit) {
         return Err(format!("Use a page size from 1 to {PAGE_BYTES} bytes."));
     }
     let total = file.metadata().map_err(|error| error.to_string())?.len();
     if offset > total {
-        return Err(format!("The output contains {total} bytes. Use a smaller offset."));
+        return Err(format!(
+            "The output contains {total} bytes. Use a smaller offset."
+        ));
     }
-    file.seek(SeekFrom::Start(offset)).map_err(|error| error.to_string())?;
+    file.seek(SeekFrom::Start(offset))
+        .map_err(|error| error.to_string())?;
     // A page may need three extra bytes to finish its last UTF-8 character.
     let mut bytes = Vec::with_capacity(limit + 3);
-    file.take((limit + 3) as u64).read_to_end(&mut bytes).map_err(|error| error.to_string())?;
+    file.take((limit + 3) as u64)
+        .read_to_end(&mut bytes)
+        .map_err(|error| error.to_string())?;
     let mut end = limit.min(bytes.len());
     while end < bytes.len() && bytes[end] & 0xc0 == 0x80 {
         end += 1;
     }
     let next = offset + end as u64;
-    Ok(json!({"offset":offset,"next_offset":(next < total).then_some(next),"total_bytes":total,"content":String::from_utf8_lossy(&bytes[..end])}))
+    Ok(
+        json!({"offset":offset,"next_offset":(next < total).then_some(next),"total_bytes":total,"content":String::from_utf8_lossy(&bytes[..end])}),
+    )
 }

@@ -220,8 +220,9 @@ async fn delivery_inbox_breaks_equal_timestamp_ties_by_record_id()
     assert_eq!(
         rest.into_iter()
             .map(|entry| entry.message)
-            .collect::<Vec<_>>(),
-        [third.message.clone()]
+            .collect::<Vec<_>>()
+            .as_slice(),
+        std::slice::from_ref(&third.message)
     );
     Ok(())
 }

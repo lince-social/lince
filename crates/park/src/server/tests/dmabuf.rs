@@ -93,6 +93,10 @@ fn ordinary_clients_receive_render_device_and_filtered_formats_on_default_and_su
                         modifier: Modifier::Linear,
                     },
                     Format {
+                        code: Fourcc::Xrgb8888,
+                        modifier: Modifier::Linear,
+                    },
+                    Format {
                         code: Fourcc::Nv12,
                         modifier: Modifier::Linear,
                     },
@@ -108,11 +112,11 @@ fn ordinary_clients_receive_render_device_and_filtered_formats_on_default_and_su
         harness.sync();
         let manager = harness.client.dmabuf.manager.as_ref().unwrap();
         assert_eq!(manager.version(), if selected.is_some() { 4 } else { 3 });
+        let expected = [Fourcc::Argb8888, Fourcc::Xrgb8888]
+            .map(|code| (code as u32, u64::from(Modifier::Linear)));
         assert_eq!(
             harness.client.dmabuf.modifiers,
-            [(Fourcc::Argb8888 as u32, u64::from(Modifier::Linear))]
-                .into_iter()
-                .collect()
+            expected.into_iter().collect()
         );
         if selected.is_some() {
             let window = harness.window();
@@ -130,8 +134,12 @@ fn ordinary_clients_receive_render_device_and_filtered_formats_on_default_and_su
                 assert!(feedback.done);
                 assert_eq!(feedback.device, device.to_ne_bytes());
                 assert_eq!(
-                    feedback.formats,
-                    [(Fourcc::Argb8888 as u32, u64::from(Modifier::Linear))]
+                    feedback
+                        .formats
+                        .iter()
+                        .copied()
+                        .collect::<std::collections::BTreeSet<_>>(),
+                    expected.into_iter().collect()
                 );
             }
         } else {

@@ -204,9 +204,20 @@ async fn workspace_file_tools_refuse_escape_and_limit_content_before_writing() {
         false
     );
     assert_eq!(
-        registry.run("read_file", json!({"path":"large","offset":1_048_575,"limit":1})).await["result"],
+        registry
+            .run(
+                "read_file",
+                json!({"path":"large","offset":1_048_575,"limit":1})
+            )
+            .await["result"],
         json!({"path":"large","offset":1_048_575,"next_offset":1_048_576,"total_bytes":1_048_577,"content":"x"})
     );
+    std::fs::write(root.path().join("utf8"), "a💡b").unwrap();
+    let page = registry
+        .run("read_file", json!({"path":"utf8","limit":2}))
+        .await;
+    assert_eq!(page["result"]["content"], "a💡");
+    assert_eq!(page["result"]["next_offset"], 5);
     std::fs::write(root.path().join("small"), "x".repeat(1024)).unwrap();
     assert_eq!(registry.run("edit_file", json!({"path":"small","old_text":"x","new_text":"x".repeat(2048),"replace_all":true})).await["ok"], false);
     assert_eq!(
@@ -365,7 +376,12 @@ struct VerboseCommandProvider;
 #[cfg(unix)]
 #[async_trait]
 impl Provider for VerboseCommandProvider {
-    async fn complete(&self, _: &str, messages: &[Message], _: &[ToolDefinition]) -> Result<Reply, String> {
+    async fn complete(
+        &self,
+        _: &str,
+        messages: &[Message],
+        _: &[ToolDefinition],
+    ) -> Result<Reply, String> {
         let (name, arguments) = match messages.last().unwrap() {
             Message::User(_) => (
                 "run_command",
@@ -379,17 +395,28 @@ impl Provider for VerboseCommandProvider {
                 assert!(preview.ends_with("LAST") && !preview.contains("MIDDLE"));
                 assert_eq!(command["command_receipt"]["stdout_saved_bytes"], 46010);
                 assert_eq!(result["context_truncated"], true);
-                ("lince_read_tool_output", json!({"receipt_id":command["command_receipt"]["receipt_id"],"part":"stdout","offset":40000,"limit":6}))
+                (
+                    "lince_read_tool_output",
+                    json!({"receipt_id":command["command_receipt"]["receipt_id"],"part":"stdout","offset":40000,"limit":6}),
+                )
             }
             Message::Tool { result, .. } => {
                 assert_eq!(result["result"]["content"], "MIDDLE");
                 assert_eq!(result["result"]["next_offset"], 40006);
-                return Ok(Reply { text: "Read the original command output".into(), ..Default::default() });
+                return Ok(Reply {
+                    text: "Read the original command output".into(),
+                    ..Default::default()
+                });
             }
             other => panic!("Unexpected message: {other:?}"),
         };
         Ok(Reply {
-            calls: vec![ToolCall { id: name.into(), name: name.into(), arguments, signatures: None }],
+            calls: vec![ToolCall {
+                id: name.into(),
+                name: name.into(),
+                arguments,
+                signatures: None,
+            }],
             ..Default::default()
         })
     }
@@ -400,7 +427,18 @@ impl Provider for VerboseCommandProvider {
 async fn command_tail_is_inline_and_omitted_middle_can_be_read_without_rerunning() {
     let root = tempfile::tempdir().unwrap();
     let (_stop, receiver) = watch::channel(false);
-    assert_eq!(run(&VerboseCommandProvider, "", vec![Message::User("Run the fixture".into())], &tools(root.path()), receiver).await.unwrap(), "Read the original command output");
+    assert_eq!(
+        run(
+            &VerboseCommandProvider,
+            "",
+            vec![Message::User("Run the fixture".into())],
+            &tools(root.path()),
+            receiver
+        )
+        .await
+        .unwrap(),
+        "Read the original command output"
+    );
 }
 
 #[cfg(unix)]

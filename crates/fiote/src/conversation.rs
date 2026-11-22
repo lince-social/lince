@@ -232,13 +232,21 @@ pub(crate) fn project_tool_results<'a>(
         if let Message::Tool { id, name, result } = message
             && let Some(result) = project_result(name, result, receipts)?
         {
-            projected.to_mut()[index] = Message::Tool { id: id.clone(), name: name.clone(), result };
+            projected.to_mut()[index] = Message::Tool {
+                id: id.clone(),
+                name: name.clone(),
+                result,
+            };
         }
     }
     Ok(projected)
 }
 
-fn project_result(name: &str, result: &Value, receipts: Option<&Receipts>) -> Result<Option<Value>, String> {
+fn project_result(
+    name: &str,
+    result: &Value,
+    receipts: Option<&Receipts>,
+) -> Result<Option<Value>, String> {
     let encoded = serde_json::to_string(result).map_err(|error| error.to_string())?;
     if encoded.len() <= TOOL_CONTEXT_BYTES {
         return Ok(None);
@@ -250,12 +258,26 @@ fn project_result(name: &str, result: &Value, receipts: Option<&Receipts>) -> Re
     });
     if let Some(receipts) = receipts {
         projected["receipt_id"] = json!(receipts.save(&encoded)?);
-        projected["note"] = json!("Use lince_read_tool_output to read the captured result in pages.");
+        projected["note"] =
+            json!("Use lince_read_tool_output to read the captured result in pages.");
     } else {
-        projected["note"] = json!("This is a preview. Inspect the source in smaller ranges when needed.");
+        projected["note"] =
+            json!("This is a preview. Inspect the source in smaller ranges when needed.");
     }
     let details = &result["result"];
-    for key in ["success", "exit_code", "timed_out", "stdout_truncated", "stderr_truncated", "count", "total", "bytes", "offset", "next_offset", "total_bytes"] {
+    for key in [
+        "success",
+        "exit_code",
+        "timed_out",
+        "stdout_truncated",
+        "stderr_truncated",
+        "count",
+        "total",
+        "bytes",
+        "offset",
+        "next_offset",
+        "total_bytes",
+    ] {
         if let Some(value) = details.get(key)
             && (value.is_boolean() || value.is_number() || value.is_null())
         {
@@ -265,21 +287,38 @@ fn project_result(name: &str, result: &Value, receipts: Option<&Receipts>) -> Re
     if name == "run_command" && details.get("stdout").is_some() {
         for (stream, tail_key) in [("stdout", "stdout_tail"), ("stderr", "stderr_tail")] {
             let tail = details[tail_key].as_str().filter(|tail| !tail.is_empty());
-            let text = tail.or_else(|| details[stream].as_str()).unwrap_or_default();
-            projected["result"][stream] = json!(&text[text.ceil_char_boundary(text.len().saturating_sub(2048))..]);
+            let text = tail
+                .or_else(|| details[stream].as_str())
+                .unwrap_or_default();
+            projected["result"][stream] =
+                json!(&text[text.ceil_char_boundary(text.len().saturating_sub(2048))..]);
         }
         if let Some(receipt) = details.get("command_receipt").filter(|receipt| {
             receipt.is_object() && nucleus::json::encoded_len(receipt).is_ok_and(|size| size <= 512)
         }) {
             projected["result"]["command_receipt"] = receipt.clone();
-            projected["note"] = json!("Use lince_read_tool_output with the command_receipt ID and part stdout or stderr for recorded streams. Use the top-level receipt ID for the captured result JSON.");
+            projected["note"] = json!(
+                "Use lince_read_tool_output with the command_receipt ID and part stdout or stderr for recorded streams. Use the top-level receipt ID for the captured result JSON."
+            );
         }
-    } else if name == "read_file" && let Some(text) = details["content"].as_str() {
-        projected["result"]["content"] = json!(&text[..text.floor_char_boundary(text.len().min(3072))]);
+    } else if name == "read_file"
+        && let Some(text) = details["content"].as_str()
+    {
+        let end = text.floor_char_boundary(text.len().min(3072));
+        projected["result"]["content"] = json!(&text[..end]);
+        projected["result"]["next_offset"] = json!((end < text.len()).then_some(end));
+        projected["result"]["total_bytes"] = json!(text.len());
+        if let Some(path) = details["path"].as_str().filter(|path| path.len() <= 512) {
+            projected["result"]["path"] = json!(path);
+        }
     } else {
         let start_end = encoded.floor_char_boundary(2048);
         let tail_start = encoded.ceil_char_boundary(encoded.len() - 2048);
-        projected["preview"] = json!(format!("{}\n[Middle omitted]\n{}", &encoded[..start_end], &encoded[tail_start..]));
+        projected["preview"] = json!(format!(
+            "{}\n[Middle omitted]\n{}",
+            &encoded[..start_end],
+            &encoded[tail_start..]
+        ));
     }
     Ok(Some(projected))
 }

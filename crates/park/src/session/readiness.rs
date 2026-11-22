@@ -40,7 +40,11 @@ impl Readiness {
         })
     }
 
-    pub(super) fn advance(&mut self, interactive: bool) -> io::Result<()> {
+    pub(super) fn advance(
+        &mut self,
+        interactive: bool,
+        x11: Option<&crate::launch::X11Display>,
+    ) -> io::Result<()> {
         if self.finished {
             return Ok(());
         }
@@ -54,6 +58,10 @@ impl Readiness {
             };
             let mut command = Command::new(program);
             command.args(["finalize", "XDG_CURRENT_DESKTOP"]);
+            if let Some(display) = x11 {
+                display.apply(&mut command);
+                command.arg("XAUTHORITY");
+            }
             crate::launch::restore_graphics_environment(&mut command, |name| {
                 std::env::var_os(name)
             })?;

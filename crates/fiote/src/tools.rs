@@ -60,16 +60,21 @@ impl Registry {
         self.register(CreateFile::new(directory)?);
         workspace::register(self, directory)?;
         let command = RunCommand::new(directory)?;
-        self.0.insert(command.definition().name, Entry::Command(command));
+        self.0
+            .insert(command.definition().name, Entry::Command(command));
         Ok(())
     }
 
     pub fn register(&mut self, tool: impl Tool + 'static) {
-        self.0.insert(tool.definition().name, Entry::Tool(Arc::new(tool)));
+        self.0
+            .insert(tool.definition().name, Entry::Tool(Arc::new(tool)));
     }
 
     pub fn definitions(&self) -> Vec<ToolDefinition> {
-        self.0.values().map(|entry| entry.tool().definition()).collect()
+        self.0
+            .values()
+            .map(|entry| entry.tool().definition())
+            .collect()
     }
 
     pub async fn run(&self, name: &str, arguments: Value) -> Value {
@@ -84,7 +89,9 @@ impl Registry {
     ) -> Value {
         let result = match (self.0.get(name), receipts) {
             (Some(Entry::Command(command)), Some(receipts)) => {
-                command.run_captured(arguments, Some(&receipts.command())).await
+                command
+                    .run_captured(arguments, Some(&receipts.command()))
+                    .await
             }
             (Some(entry), _) => entry.tool().run(arguments).await,
             (None, _) => Err(format!("Tool {name} is not available.")),

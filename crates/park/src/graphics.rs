@@ -304,6 +304,10 @@ impl VulkanRenderer {
                     .contains(vk::ExternalMemoryHandleTypeFlags::DMA_BUF_EXT)
             {
                 formats.push(fourcc);
+                // The same BGRA image format backs opaque XRGB client buffers.
+                if fourcc == smithay::backend::allocator::Fourcc::Argb8888 {
+                    formats.push(smithay::backend::allocator::Fourcc::Xrgb8888);
+                }
             }
         }
         formats

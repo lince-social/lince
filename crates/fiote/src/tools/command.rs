@@ -103,17 +103,15 @@ impl Stream {
             let excess = self.tail.len().saturating_sub(TAIL_BYTES);
             self.tail.drain(..excess);
         }
-        let retained = bytes.len().min(OUTPUT_LIMIT.saturating_sub(self.head.len()));
+        let retained = bytes
+            .len()
+            .min(OUTPUT_LIMIT.saturating_sub(self.head.len()));
         self.head.extend_from_slice(&bytes[..retained]);
         self.total += bytes.len();
         Ok(())
     }
 
-    fn finish(
-        &mut self,
-        capture: Option<&CommandCapture<'_>>,
-        part: Part,
-    ) -> io::Result<()> {
+    fn finish(&mut self, capture: Option<&CommandCapture<'_>>, part: Part) -> io::Result<()> {
         if let (Some(file), Some(capture)) = (self.spool.take(), capture) {
             capture.finish(part, file)?;
         }
@@ -220,7 +218,8 @@ impl RunCommand {
             Ok(result) => {
                 #[cfg(unix)]
                 drop(group);
-                let (status, (), ()) = result.map_err(|e| format!("Cannot capture command output: {e}"))?;
+                let (status, (), ()) =
+                    result.map_err(|e| format!("Cannot capture command output: {e}"))?;
                 (status.code(), false)
             }
             Err(_) => {
@@ -236,10 +235,14 @@ impl RunCommand {
         } else {
             None
         };
-        out.finish(capture, Part::Stdout).map_err(|e| format!("Cannot save command stdout: {e}"))?;
-        err.finish(capture, Part::Stderr).map_err(|e| format!("Cannot save command stderr: {e}"))?;
+        out.finish(capture, Part::Stdout)
+            .map_err(|e| format!("Cannot save command stdout: {e}"))?;
+        err.finish(capture, Part::Stderr)
+            .map_err(|e| format!("Cannot save command stderr: {e}"))?;
         let mut result = json!({"working_directory":self.directory,"success":exit_code == Some(0) && !timed_out,"exit_code":exit_code,"timed_out":timed_out,"stdout":String::from_utf8_lossy(&out.head),"stderr":String::from_utf8_lossy(&err.head),"stdout_truncated":out.total > out.head.len(),"stderr_truncated":err.total > err.head.len(),"diff":diff});
-        if let Some(capture) = capture && (out.saved != 0 || err.saved != 0) {
+        if let Some(capture) = capture
+            && (out.saved != 0 || err.saved != 0)
+        {
             result["command_receipt"] = json!({
                 "receipt_id": capture.id(),
                 "stdout_saved_bytes": out.saved,

@@ -1,6 +1,8 @@
 # Using Park
 
-Park runs Lince's canvas as a native Wayland compositor. Sandbox remains the ordinary windowed Lince application. Park targets one graphics device, with preferred modes, horizontal placement, and scale 1 as defaults. Local preferences configure mode, position and fractional scale. X11 programs need a native Wayland mode; XWayland is not included.
+Park runs Lince's canvas as a native Wayland compositor. Sandbox remains the ordinary windowed Lince application. Park targets one graphics device, with preferred modes, horizontal placement, and scale 1 as defaults. Local preferences configure mode, position and fractional scale.
+
+Park starts Xwayland on demand through `xwayland-satellite`. Open X11 programs through the normal launcher. Each Park session owns its X11 display and authorization file, including when Park runs nested inside another desktop. The Nix packages include the bridge. For an unpackaged build, install a version of `xwayland-satellite` that supports socket activation and X11 authorization.
 
 Current performance and correctness checks are tracked in the [Park plan](../../trails/lince/park/Park.lingua).
 
@@ -12,7 +14,7 @@ From a separate TTY, using an existing terminal program as the first application
 cargo xtask park session --directory /path/to/lince-data -- foot
 ```
 
-Replace `foot` with an installed native Wayland application and its literal arguments. Everything after `--` belongs to that program. An installed executable starts with `lince --park`; `--directory` is optional and otherwise uses Lince's usual data directory.
+Replace `foot` with an installed application and its literal arguments. Everything after `--` belongs to that program. An installed executable starts with `lince --park`; `--directory` is optional and otherwise uses Lince's usual data directory.
 
 The session opens the real Cell and claims its directory. Starting ordinary Lince against the same directory activates Park's Operation instead of opening another Cell. Closing the last application window leaves the desktop running. Logout waits for native edits and workspace storage; if they cannot be saved, Park cancels logout and shows feedback. Successful logout releases the Cell and directory lock. The selected session manager handles other session processes.
 

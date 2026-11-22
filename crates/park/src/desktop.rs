@@ -207,6 +207,7 @@ pub fn run(
     let output_count = options.outputs.clamp(1, 16);
     configure_outputs(&mut server, size, output_count)?;
     let socket = server.listen()?;
+    let mut xwayland = crate::xwayland::Bridge::setup(&handle, &mut server, &socket);
     for fd in server.event_fds()? {
         handle
             .insert_source(Generic::new(fd, Interest::READ, Mode::Level), |_, _, _| {
@@ -251,6 +252,9 @@ pub fn run(
                 .duration
                 .is_none_or(|duration| started.elapsed() < duration)
         {
+            if let Some(bridge) = &mut xwayland {
+                bridge.advance();
+            }
             for event in input.drain(..) {
                 if matches!(event, WinitEvent::Redraw) {
                     draw_allowed = true;
@@ -406,12 +410,14 @@ pub fn run(
                     .chain(desktop.server.control_timeout())
                     .chain(desktop.scene_timeout())
                     .chain(composition.capture_timeout())
+                    .chain(xwayland.as_ref().and_then(crate::xwayland::Bridge::timeout))
                     .min();
                 event_loop.dispatch(timeout, &mut input).map_err(error)?;
             }
         }
         Ok(())
     })();
+    drop(xwayland);
     desktop
         .server
         .clear_input(started.elapsed().as_millis() as u32);

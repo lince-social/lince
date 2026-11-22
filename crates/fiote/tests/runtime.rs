@@ -402,29 +402,62 @@ impl Provider for PreviewReader {
         messages: &[Message],
         tools: &[ToolDefinition],
     ) -> Result<Reply, String> {
-        assert!(tools.iter().any(|tool| tool.name == "lince_read_tool_output"));
+        assert!(
+            tools
+                .iter()
+                .any(|tool| tool.name == "lince_read_tool_output")
+        );
         let (name, arguments) = match messages.last().unwrap() {
             Message::User(_) => match self.0.lock().unwrap().as_ref() {
-                Some(receipt_id) => ("lince_read_tool_output", json!({"receipt_id":receipt_id,"offset":40000,"limit":64})),
+                Some(receipt_id) => (
+                    "lince_read_tool_output",
+                    json!({"receipt_id":receipt_id,"offset":40000,"limit":64}),
+                ),
                 None => ("large_result", json!({})),
             },
             Message::Tool { name, result, .. } if name == "large_result" => {
                 assert_eq!(result["context_truncated"], true);
                 assert!(serde_json::to_vec(result).unwrap().len() < 32 * 1024);
                 *self.0.lock().unwrap() = Some(result["receipt_id"].as_str().unwrap().into());
-                return Ok(Reply { text: "Previewed".into(), ..Default::default() });
+                return Ok(Reply {
+                    text: "Previewed".into(),
+                    ..Default::default()
+                });
             }
             Message::Tool { result, .. } => {
+                if result["ok"] == false {
+                    assert!(
+                        result["error"]
+                            .as_str()
+                            .unwrap()
+                            .contains("current conversation")
+                    );
+                    return Ok(Reply {
+                        text: "Receipt unavailable".into(),
+                        ..Default::default()
+                    });
+                }
                 assert_eq!(result["ok"], true);
                 assert_eq!(result["result"]["next_offset"], 40064);
-                assert!(result["result"]["content"].as_str().unwrap().contains("private-fixture-"));
-                return Ok(Reply { text: "Read original bytes".into(), ..Default::default() });
+                assert!(
+                    result["result"]["content"]
+                        .as_str()
+                        .unwrap()
+                        .contains("private-fixture-")
+                );
+                return Ok(Reply {
+                    text: "Read original bytes".into(),
+                    ..Default::default()
+                });
             }
             other => panic!("Unexpected message: {other:?}"),
         };
         Ok(Reply {
             calls: vec![ToolCall {
-                id: format!("call-{name}"), name: name.into(), arguments, signatures: None,
+                id: format!("call-{name}"),
+                name: name.into(),
+                arguments,
+                signatures: None,
             }],
             ..Default::default()
         })
@@ -451,12 +484,40 @@ async fn first_large_result_is_bounded_and_readable_after_its_frames_leave_conte
     let root = tempfile::tempdir().unwrap();
     let output = PersistentOutput(root.path().join("thread"));
     let provider = PreviewReader::default();
-    for (goal, expected) in [("Get a result", "Previewed"), ("Read the receipt", "Read original bytes")] {
+    for (goal, expected) in [
+        ("Get a result", "Previewed"),
+        ("Read the receipt", "Read original bytes"),
+    ] {
         let (_stop, receiver) = watch::channel(false);
-        assert_eq!(fiote::runtime::run_streamed(
-            &provider, "", vec![Message::User(goal.into())], &tools, receiver, &output,
-        ).await.unwrap(), expected);
+        assert_eq!(
+            fiote::runtime::run_streamed(
+                &provider,
+                "",
+                vec![Message::User(goal.into())],
+                &tools,
+                receiver,
+                &output,
+            )
+            .await
+            .unwrap(),
+            expected
+        );
     }
+    let isolated = PersistentOutput(root.path().join("another-thread"));
+    let (_stop, receiver) = watch::channel(false);
+    assert_eq!(
+        fiote::runtime::run_streamed(
+            &provider,
+            "",
+            vec![Message::User("Try the same receipt".into())],
+            &tools,
+            receiver,
+            &isolated,
+        )
+        .await
+        .unwrap(),
+        "Receipt unavailable"
+    );
 }
 
 #[derive(Default)]

@@ -456,20 +456,11 @@ fn shader(
     if world.resource::<EffectAssets>().shaders.len() >= if priority { 72 } else { 64 } {
         return Err("Shader cache is full. Close unused effect views before editing.".into());
     }
-    let mut shader = Shader::from_wesl(source, "record-mesh.wesl");
-    shader.validate_shader = ValidateShader::Enabled;
     let available = {
         let mut pools = world.resource_mut::<ShaderPools>();
         pools.available[stage as usize].pop()
     };
     let handle = if let Some(handle) = available {
-        world
-            .resource_mut::<Assets<Shader>>()
-            .insert(handle.id(), shader)
-            .map_err(|error| error.to_string())?;
-        if let Some(status) = world.get_resource::<PipelineStatus>() {
-            status.0.lock().unwrap().remove(&handle.id());
-        }
         handle
     } else {
         let mut pools = world.resource_mut::<ShaderPools>();
@@ -478,13 +469,86 @@ fn shader(
             return Err("Mesh stage shader budget reached. Close unused effects.".into());
         }
         *count += 1;
-        world.resource_mut::<Assets<Shader>>().add(shader)
+        world.resource::<Assets<Shader>>().reserve_handle()
     };
+    // WESL resolves modules by import path, independently of the shader asset ID.
+    // Give simultaneous stages distinct modules and keep a slot's name on reuse.
+    let module = match handle.id() {
+        AssetId::Index { index, .. } => format!("lince_record_mesh_{:016x}.wesl", index.to_bits()),
+        AssetId::Uuid { uuid } => format!("lince_record_mesh_{}.wesl", uuid.simple()),
+    };
+    let mut shader = Shader::from_wesl(source, module);
+    shader.validate_shader = ValidateShader::Enabled;
+    world
+        .resource_mut::<Assets<Shader>>()
+        .insert(handle.id(), shader)
+        .map_err(|error| error.to_string())?;
+    if let Some(status) = world.get_resource::<PipelineStatus>() {
+        status.0.lock().unwrap().remove(&handle.id());
+    }
     world
         .resource_mut::<EffectAssets>()
         .shaders
         .insert(key, handle.clone());
     Ok(handle)
+}
+
+#[cfg(test)]
+mod shader_module_tests {
+    use super::*;
+    use bevy::shader::{ShaderCache, ShaderCacheSource};
+
+    #[test]
+    fn live_mesh_stages_and_recycled_slots_keep_independent_wesl_modules() {
+        let mut world = World::new();
+        world.init_resource::<Assets<Shader>>();
+        world.init_resource::<EffectAssets>();
+        world.init_resource::<ShaderPools>();
+        let vertex_source =
+            "@vertex fn lince_vertex() -> @builtin(position) vec4<f32> { return vec4<f32>(0.0); }";
+        let fragment_source =
+            "@fragment fn lince_fragment() -> @location(0) vec4<f32> { return vec4<f32>(1.0); }";
+        let vertex = shader(&mut world, vertex_source.into(), false, Stage::Vertex).unwrap();
+        let fragment = shader(&mut world, fragment_source.into(), false, Stage::Fragment).unwrap();
+        let mut cache = ShaderCache::new((), |_, source, _| match source {
+            ShaderCacheSource::Wgsl(source) => Ok(source),
+            ShaderCacheSource::SpirV(_) => panic!("Expected composed WGSL"),
+        });
+        for handle in [&vertex, &fragment] {
+            let asset = world.resource::<Assets<Shader>>().get(handle).unwrap();
+            cache.set_shader(handle.id(), asset.clone());
+        }
+        let vertex_wgsl = cache.get(0, vertex.id(), &[]).unwrap();
+        let fragment_wgsl = cache.get(0, fragment.id(), &[]).unwrap();
+        assert!(vertex_wgsl.contains("fn lince_vertex("));
+        assert!(fragment_wgsl.contains("fn lince_fragment("));
+
+        let key = format!("{}{vertex_source}", Stage::Vertex.prefix());
+        let retired = world
+            .resource_mut::<EffectAssets>()
+            .shaders
+            .remove(&key)
+            .unwrap();
+        assert!(recycle(&mut world, &key, retired).is_none());
+        let shaders = world.resource::<Assets<Shader>>();
+        let old_path = shaders.get(&vertex).unwrap().path.clone();
+        let replacement = shader(
+            &mut world,
+            vertex_source.replace("lince_vertex", "replacement_vertex"),
+            false,
+            Stage::Vertex,
+        )
+        .unwrap();
+        let shaders = world.resource::<Assets<Shader>>();
+        let asset = shaders.get(&replacement).unwrap();
+        assert_eq!(replacement.id(), vertex.id());
+        assert_eq!(asset.path, old_path);
+        cache.set_shader(replacement.id(), asset.clone());
+        let replacement_wgsl = cache.get(1, replacement.id(), &[]).unwrap();
+        let fragment_wgsl = cache.get(1, fragment.id(), &[]).unwrap();
+        assert!(replacement_wgsl.contains("fn replacement_vertex("));
+        assert!(fragment_wgsl.contains("fn lince_fragment("));
+    }
 }
 
 fn release(world: &mut World, bundle: Bundle) {

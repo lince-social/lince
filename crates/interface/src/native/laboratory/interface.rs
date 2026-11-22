@@ -830,13 +830,16 @@ fn fixture(size: UVec2, scale: f32) -> (App, Entity) {
     reason = "Missing edit controls make the shared interface fixture invalid"
 )]
 fn prepare_fixture(mut app: App, size: UVec2, scale: f32, target: RenderTarget) -> (App, Entity) {
+    use bevy::input_focus::pointer_focus::PointerFocusPlugin;
+    if !app.is_plugin_added::<PointerFocusPlugin>() {
+        app.add_plugins(PointerFocusPlugin);
+    }
     app.add_plugins((
         crate::native::theme::ThemePlugin,
         crate::native::sand::SandPlugin,
         crate::native::workspace::WorkspacePlugin,
         crate::native::edit_mode::EditModePlugin,
         bevy::input_focus::tab_navigation::TabNavigationPlugin,
-        bevy::input_focus::pointer_focus::PointerFocusPlugin,
         crate::native::icons::IconPlugin,
     ))
     .init_resource::<Assets<TextureAtlasLayout>>()

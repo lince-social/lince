@@ -14,7 +14,7 @@ use bevy::{
     prelude::*,
     winit::WinitSettings,
 };
-use std::time::Instant;
+use std::{path::PathBuf, time::Instant};
 
 #[derive(Component)]
 pub struct LaboratoryRoot;
@@ -490,10 +490,34 @@ fn load_park_report(world: &mut World) {
     let Some(panel) = world.query_filtered::<Entity, With<LaboratoryPanel>>().iter(world).next() else {
         return;
     };
+    let path = if scope(world).is_some() {
+        let path = world
+            .get::<Children>(panel)
+            .into_iter()
+            .flat_map(|children| children.iter())
+            .find(|&input| world.get::<ParkReportPath>(input).is_some())
+            .and_then(|input| crate::native::sand_panel::value(world, input).ok())
+            .map(PathBuf::from);
+        let Some(path) = path.filter(|path| path.is_absolute()) else {
+            world.resource_mut::<Laboratory>().status =
+                "Enter the full path to a Park JSON or JSONL report.".into();
+            return;
+        };
+        Some(path)
+    } else {
+        None
+    };
+    let from_path = path.is_some();
     let queued = crate::native::file_explorer::worker::run(
         world,
-        || rfd::FileDialog::new().add_filter("Park responsiveness report", &["json", "jsonl"])
-            .pick_file().map(|path| super::park_report::ParkReport::read(&path)),
+        move || {
+            path.or_else(|| {
+                rfd::FileDialog::new()
+                    .add_filter("Park responsiveness report", &["json", "jsonl"])
+                    .pick_file()
+            })
+            .map(|path| super::park_report::ParkReport::read(&path))
+        },
         move |world, report| {
             if !active(world) || world.get::<LaboratoryPanel>(panel).is_none() {
                 return;
@@ -515,10 +539,54 @@ fn load_park_report(world: &mut World) {
     lab.status = match queued {
         Ok(()) => {
             lab.loading_park_report = true;
-            "Choose a Park responsiveness report".into()
+            if from_path {
+                "Loading Park report…".into()
+            } else {
+                "Choose a Park responsiveness report".into()
+            }
         }
         Err(error) => error,
     };
+}
+
+#[cfg(test)]
+#[test]
+fn scoped_laboratory_loads_a_report_from_its_native_path() {
+    let directory = tempfile::tempdir().expect("create a private report directory");
+    let path = directory.path().join("park-report.jsonl");
+    let revision = "0123456789abcdef0123456789abcdef01234567";
+    let report = serde_json::json!({
+        "suite": "park-responsiveness-v1",
+        "revision": revision,
+        "optimized": true,
+        "cases": [],
+    });
+    std::fs::write(&path, format!("{{}}\n{report}\n")).expect("write the report fixture");
+
+    let mut world = World::new();
+    let root = world.spawn_empty().id();
+    world.insert_resource(Laboratory::scoped_for_test(root, 2, 1));
+    world.init_resource::<crate::native::file_explorer::worker::Worker>();
+    let panel = world.spawn(LaboratoryPanel).id();
+    world.spawn((
+        ParkReportPath,
+        ChildOf(panel),
+        bevy::text::EditableText::new(path.to_str().expect("UTF-8 report path")),
+    ));
+
+    load_park_report(&mut world);
+    let deadline = Instant::now() + std::time::Duration::from_secs(5);
+    while world.resource::<Laboratory>().loading_park_report {
+        crate::native::file_explorer::worker::poll(&mut world);
+        assert!(Instant::now() < deadline, "the report worker did not finish");
+        std::thread::sleep(std::time::Duration::from_millis(1));
+    }
+    let lab = world.resource::<Laboratory>();
+    assert_eq!(lab.status, "Park report loaded");
+    assert_eq!(
+        lab.park_report.as_ref().expect("loaded report").source["revision"],
+        revision
+    );
 }
 
 fn stop(world: &mut World) {
@@ -666,6 +734,9 @@ fn tick(world: &mut World) {
 #[derive(Component)]
 struct LaboratoryPanel;
 
+#[derive(Component)]
+struct ParkReportPath;
+
 fn render(world: &mut World) {
     let lab = world.resource::<Laboratory>();
     let Some(root) = lab.root else {
@@ -812,6 +883,10 @@ fn render(world: &mut World) {
                 .insert(crate::native::workspace::WorkspaceMember(workspace));
         }
         label(world, panel, "Performance & Behavior", 22.0);
+        if scope(world).is_some() {
+            let path = crate::native::sand_panel::field(world, panel, "Park report path", "");
+            world.entity_mut(path).insert(ParkReportPath);
+        }
         let buttons = world
             .spawn((
                 ChildOf(panel),

@@ -1,14 +1,10 @@
 Park (@park-development: 0, is #chapter) { r_0PCR2DTXNGTQGBE6RBWR0ECTXW
 ## Can test with the current binary
 
-- [ ] **P134 · Local Record persistence.** In a private workspace, save a short title, description and body edit, then reopen the Record and its dependent views. Verify the exact saved values and that a separate unsaved draft remains attached to its own Record.
-- [ ] **Two-output rendering.** Show native panels and an ordinary Wayland window across the two monitors at their normal scales. Verify labels and controls stay painted and visible without blank boxes, clipping or intermittent disappearance.
-- [ ] **P148 · Display preview rollback.** In Customization, preview one supported display change and let it expire. Verify the original layout and usable windows return on both monitors.
-- [ ] **P104 · Laboratory report picker.** Diagnose why Load Park report opened no chooser on the installed release. Verify a real JSON/JSONL report shows its revision, results and missing measurements. If diagnosis establishes a code fix, keep only the post-fix import check in the next-binary group.
-
 ## Cannot test with the current binary alone
 
-- [ ] **P142 · Mandatory Laboratory case.** On a compatible build, verify the Protein filter case runs through a passing report with the expected Record and rendered labels. The installed `e5f68e7b` run stopped on duplicate `PointerFocusPlugin` registration.
+- [ ] **P104 · Laboratory report import.** In Park's Laboratory, paste the full path to a real JSON/JSONL report and click Load Park report. Verify the revision, results and missing measurements are shown.
+- [ ] **P142 · Mandatory Laboratory case.** Run the optimized probe containing the focus-plugin registration fix. Verify the first Protein filter case passes with readable choices, successful selection, and the expected Record. Probe `077349d4` stopped before opening the filter because it registered `PointerFocusPlugin` twice.
 - [ ] **P134 R08 · Capture privacy.** With the matching private capture fixture, hold a capture across a source retirement or authorization change. Verify the pending frame exposes no retired private pixels.
 - [ ] **P134 R09 · Save and recovery.** With the matching isolated crash/reopen fixture, explicitly save one IDE document, leave a separate draft, and verify the saved contents and the draft recover independently.
 
